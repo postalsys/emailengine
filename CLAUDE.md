@@ -96,6 +96,7 @@ Path-scoped rules in `.claude/rules/` load automatically when you work with the 
 - Never use emojis in code or documentation, only printable ASCII characters
 - Use a single hyphen-minus (`-`) as a dash in UI copy and user-facing strings. Never use double hyphens (`--`), em dashes, or en dashes.
 - When composing git commit messages do not include Claude as co-contributor
+- Prefer the `fix:` conventional-commit prefix for changes that alter runtime behavior. `feat:` is reserved for a genuinely new, noticeable capability a user would look for in the changelog - a new endpoint, a new setting, a new provider. Raising a limit, tightening a bound, reworking internals or improving existing behavior is a `fix:` even when the diff is large, because the prefix drives the release notes and a minor bump promises users something new to try.
 - For commits that do not change runtime behavior (docs, comments, CI/workflow tweaks, formatting), append `[skip ci]` to the commit message to avoid triggering the GitHub Actions workflows. Exception: do not add `[skip ci]` to commits using a `fix:` or `feat:` prefix - those must run so the release action is triggered.
 - After making code changes:
   1. Run `/simplify` to review changed code for reuse, quality, and efficiency
