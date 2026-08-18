@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.79.0](https://github.com/postalsys/emailengine/compare/v2.78.0...v2.79.0) (2026-08-18)
+
+
+### Features
+
+* **lists:** add suppression list management to the admin UI ([d684030](https://github.com/postalsys/emailengine/commit/d6840305a3dc0940f248c12e650e068aed866e28))
+* **lists:** link suppression entries to the subscription management page ([b4e1d49](https://github.com/postalsys/emailengine/commit/b4e1d49ff105d95f24462b8ceb0f80b453378cc9))
+* **oauth2:** migrate legacy settings-based OAuth2 apps into the app registry ([4aeb7f5](https://github.com/postalsys/emailengine/commit/4aeb7f5bee45d0ec32ab17d72252bf8d13b57018))
+* **reference:** confirm irreversible Try it requests before running them ([546c32e](https://github.com/postalsys/emailengine/commit/546c32e352a70061ae188c59f54b78933d2bde20))
+* **reference:** edit Try it request bodies in a JSON editor ([dbd38e8](https://github.com/postalsys/emailengine/commit/dbd38e857f16a1ce28c86a32a9105b0e5cb36ca6))
+* **reference:** make large schemas readable in the API reference ([9874821](https://github.com/postalsys/emailengine/commit/9874821288f543d531af757366eced663b738705))
+* **reference:** show an example value and usage guidance for every field ([c974f19](https://github.com/postalsys/emailengine/commit/c974f19e393c6d7519c3599b772a58a898f7c4ce))
+* **reference:** warn in Try it only where running the request has a consequence ([4f53d02](https://github.com/postalsys/emailengine/commit/4f53d02d068f88707419aaffecee6618b2f0bd71))
+* **sentry:** enable error reporting by default for trial licenses ([9c918bc](https://github.com/postalsys/emailengine/commit/9c918bcb9cbb45113c1006db649a6fbf871c6c81))
+* **tokens:** granular access token permissions ([#633](https://github.com/postalsys/emailengine/issues/633)) ([f30bf0a](https://github.com/postalsys/emailengine/commit/f30bf0a838958f64a057afe8f44767a0b3de306a))
+* **webhooks:** show the effective webhook routing on the account page ([0cdbbff](https://github.com/postalsys/emailengine/commit/0cdbbffacfc19ed7af2ef200061edd7e06930b26))
+
+
+### Bug Fixes
+
+* **deps:** move to ioredis 6 ([da4904a](https://github.com/postalsys/emailengine/commit/da4904aba141f7fffeef2200a726254994ae3f9b))
+* **deps:** override deepmerge-ts to clear GHSA-ggr8-5vv4-36mx ([#635](https://github.com/postalsys/emailengine/issues/635)) ([6d68432](https://github.com/postalsys/emailengine/commit/6d6843217ee5246e150e66307e2c2bae94fbc89b))
+* **deps:** refresh dependencies and dedupe node-html-parser ([5502c04](https://github.com/postalsys/emailengine/commit/5502c0467da52eb2d285c1a057818d6c0eb7694e))
+* **logging:** standardize log levels and keep credentials out of error logs ([a229bdc](https://github.com/postalsys/emailengine/commit/a229bdca3b8662338db889568fa132503c5e89c9))
+* **queues:** move to BullMQ 6 and fix outbox paging ([eba0761](https://github.com/postalsys/emailengine/commit/eba0761f162c2561bab81460b481743e42ab4608))
+* **reference:** count the minted token's expiry down while the page is open ([356dfd0](https://github.com/postalsys/emailengine/commit/356dfd0ac9178bcd2ad007f351c2ded3af0936ce))
+* **ui:** share the confirm dialog helper and stop the reference page scrolling sideways ([994ddec](https://github.com/postalsys/emailengine/commit/994ddec7d42c91c1a7ea5167cfe5ee6df689b4d2))
+* **ui:** stop partial blocks from losing content wrapped in a bare condition ([0887172](https://github.com/postalsys/emailengine/commit/0887172c4fe18d23c8a3bd9f9d26249fc7551a9a))
+
 ## [2.78.0](https://github.com/postalsys/emailengine/compare/v2.77.0...v2.78.0) (2026-08-12)
 
 
