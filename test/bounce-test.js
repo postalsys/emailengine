@@ -215,10 +215,13 @@ test('decodeDeliveryStatus', async t => {
         assert.deepStrictEqual(entries.action, ['failed']);
     });
 
-    await t.test('a "__proto__" field does not reach Object.prototype', () => {
+    await t.test('a "__proto__" field is dropped and does not reach Object.prototype', () => {
         const entries = decodeDeliveryStatus(['__proto__: polluted', '', 'Action: failed'].join('\r\n'));
 
-        assert.deepStrictEqual(entries['__proto__'], ['polluted']);
+        // decodeHeaders() drops the name at the parse boundary now, so it no longer rides along in
+        // the accumulator. parseDeliveryReport() already refused to emit it, so nothing a caller
+        // ever saw has changed
+        assert.ok(!Object.hasOwn(entries, '__proto__'));
         assert.deepStrictEqual(entries.action, ['failed']);
         assert.strictEqual({}.polluted, undefined);
     });
