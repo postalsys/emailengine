@@ -42,6 +42,19 @@
                     by default.</span>
             </div>
 
+            <div>
+                {{> ui/setting-ref name="tokenAuditLog"}}
+
+                {{#> ui/checkbox id="tokenAuditLog" name="tokenAuditLog" label="Access Token Audit Log"
+                checked=values.tokenAuditLog error=errors.tokenAuditLog}}
+                {{> ui/badge label=(when values.tokenAuditLog "enabled" "disabled") variant=(when values.tokenAuditLog "success" "neutral")}}
+                {{/ui/checkbox}}
+                <span class="helper-text">Record which requests each access token makes, readable at <a
+                        href="/admin/reference/access-tokens#getV1TokensTokenLog" target="_blank"
+                        rel="noopener noreferrer" class="link link-animated">the token log endpoint</a>. Adds a write to
+                    every authenticated request, and entries only exist from the point this is switched on.</span>
+            </div>
+
     {{/ui/card}}
 
     {{#> ui/card title="Secrets and Encryption" id="secrets" bodyClass="space-y-4"}}

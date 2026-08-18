@@ -156,6 +156,35 @@ describe('joi to OpenAPI schema conversion', () => {
         assert.deepEqual(result.required, ['dependent']);
     });
 
+    test('does not flatten a requirement that lives in the otherwise branch', () => {
+        // Understating one field, on purpose. Reading both branches was tried: a flat `required`
+        // array cannot hold two sides of an exclusive choice, so CreateOAuth2App ended up requiring
+        // the 3-legged fields and the service-account fields at once - an array no request body can
+        // satisfy, which is worse than the optional it replaced. Such a rule goes in the field's
+        // description instead.
+        const { result } = convert(
+            Joi.object({
+                trigger: Joi.boolean(),
+                dependent: Joi.string().when('trigger', { is: true, then: Joi.optional(), otherwise: Joi.required() })
+            })
+        );
+
+        assert.equal(result.required, undefined);
+    });
+
+    test('publishes the size rules of an object', () => {
+        // `.min(1)` on an object is how "at least one of these" is said in joi. Without it the
+        // document described `{}` as an acceptable token narrowing, which the API refuses.
+        const { result } = convert(
+            Joi.object({ axis: Joi.array().items(Joi.string()) })
+                .min(1)
+                .max(2)
+        );
+
+        assert.equal(result.minProperties, 1);
+        assert.equal(result.maxProperties, 2);
+    });
+
     test('omits hidden and forbidden keys', () => {
         const { result } = convert(
             Joi.object({

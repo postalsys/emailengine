@@ -26,6 +26,8 @@ const session = (overrides = {}) => Object.assign({ remoteAddress: '127.0.0.1' }
 let proxyToken;
 let apiScopeToken;
 let ipRestrictedToken;
+let readOnlyToken;
+let fullMailToken;
 let apiAppId;
 let prevPassword;
 const accountKeys = [];
@@ -41,6 +43,23 @@ test.before(async () => {
 
     proxyToken = await tokens.provision({ account: ACCOUNT, scopes: ['imap-proxy'], description: 'proxy test', nolog: true });
     apiScopeToken = await tokens.provision({ account: ACCOUNT, scopes: ['api'], description: 'proxy wrong scope', nolog: true });
+    // The proxy is checked once at LOGIN and then pipes the sockets straight together, so a token
+    // narrowed to reading would get a session that can EXPUNGE and delete folders. It is refused at
+    // login instead, which is the only honest answer while there is no per-command gate.
+    readOnlyToken = await tokens.provision({
+        account: ACCOUNT,
+        scopes: ['imap-proxy'],
+        permissions: { actions: ['read'] },
+        description: 'proxy read-only permissions',
+        nolog: true
+    });
+    fullMailToken = await tokens.provision({
+        account: ACCOUNT,
+        scopes: ['imap-proxy'],
+        permissions: { groups: ['message', 'mailbox'] },
+        description: 'proxy full mail permissions',
+        nolog: true
+    });
     ipRestrictedToken = await tokens.provision({
         account: ACCOUNT,
         scopes: ['imap-proxy'],
@@ -59,7 +78,7 @@ test.before(async () => {
 });
 
 registerRedisTeardown(redis, async () => {
-    for (const tok of [proxyToken, apiScopeToken, ipRestrictedToken]) {
+    for (const tok of [proxyToken, apiScopeToken, ipRestrictedToken, readOnlyToken, fullMailToken]) {
         if (tok) {
             try {
                 await tokens.delete(tok);
@@ -136,8 +155,23 @@ test('IMAP proxy auth handler', async t => {
         }
     });
 
+    await t.test('rejects a token narrowed below what an IMAP session can do', async () => {
+        // Holds the imap-proxy scope, so only the permission check stands between this credential and
+        // a session that could STORE \\Deleted, EXPUNGE and delete folders. Admitting it as
+        // "read-only" would be a guarantee the surface cannot keep.
+        await assert.rejects(() => authenticate({ username: ACCOUNT, password: readOnlyToken }, session()), /permissions do not allow/);
+    });
+
     await t.test('accepts a valid scoped token bound to the account', async () => {
         const { accountData } = await authenticate({ username: ACCOUNT, password: proxyToken }, session());
+        assert.strictEqual(accountData.account, ACCOUNT);
+    });
+
+    await t.test('accepts a narrowed token that holds everything the session can exercise', async () => {
+        // Narrowed to the two mail groups with every action, which is exactly what the proxy asks
+        // for - so the narrowing is real (it cannot send, export, or touch settings) without being a
+        // promise about what it does inside the IMAP session
+        const { accountData } = await authenticate({ username: ACCOUNT, password: fullMailToken }, session());
         assert.strictEqual(accountData.account, ACCOUNT);
     });
 

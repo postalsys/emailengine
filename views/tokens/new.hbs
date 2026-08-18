@@ -3,6 +3,22 @@
 {{!-- the account level renders only for account-scoped tokens (ui/breadcrumb skips empty levels) --}}
 {{> ui/breadcrumb parentHref="/admin/tokens" parentLabel="Access Tokens" midHref=(when account accountTokensLink) midLabel=account.name current="New" class="mt-6 mb-6"}}
 
+{{!-- A token is never invalidated once minted, so one handed to a caller that reached this page
+     without authenticating would keep working - POST /admin/tokens/new refuses for that reason. The
+     form used to render anyway, so the only way to discover it was to fill it in and lose the work to
+     a 403. Same condition as the gate, so the two cannot disagree. --}}
+{{#unless canProvision}}
+{{#> ui/stat-card variant="error" title="Set an admin password first" icon="icon-[tabler--shield-lock]" class="mb-6"}}
+
+<p class="mb-4">Access tokens do not expire on their own, so EmailEngine only issues one to a request
+    that carries an admin session. This instance has no admin password set, so there is no session to
+    carry - set one and the form appears here.</p>
+<div>
+    {{> ui/btn href="/admin/account/password" variant="primary" icon="icon-[tabler--arrow-right]" label="Enable authentication"}}
+</div>
+
+{{/ui/stat-card}}
+{{else}}
 <form method="post" id="token-form" action="/admin/tokens/new">
     <input type="hidden" name="crumb" value="{{crumb}}" />
     <input type="hidden" id="account" name="account" value="{{values.account}}" />
@@ -30,6 +46,99 @@
                             name="scopesAPI" data-scope="api" {{#if values.scopesAPI}}checked{{/if}} />
                         <label class="label-text grow p-0" for="scopesAPI">API</label>
                         <div class="text-base-content/60 code-link">["api"]</div>
+                    </li>
+
+                    {{!-- Nested inside the API row, not stacked in a card of its own. As two sibling
+                          cards the relationship had to be asserted in prose: a reader saw "Allowed
+                          scopes" and "Permissions" and had no reason to think the second was a
+                          subset of one row of the first. Here the indent says it. --}}
+                    <li id="permissionRow" class="p-4 hidden">
+                        <div class="border-s-2 border-base-content/10 ps-4 space-y-4">
+                            <div>
+                                <h6 class="mb-1 font-bold">Limit what the API token can do</h6>
+                                <p class="text-base-content/60 text-sm mb-3">
+                                    By default this token can use the whole API. Restrict it to hand out a
+                                    credential for a single job: an agent that reads mail but cannot delete
+                                    it, or a service that can only send.
+                                </p>
+
+                                <div id="permissionToggle">
+                                                    {{> ui/checkbox id="permissionsEnabled" label="Restrict what this token can do" checked=values.permissionsEnabled error=errors.permissions noName=true}}
+                                                </div>
+                            </div>
+
+                            <div id="permissionSection" class="space-y-5{{#unless values.permissionsEnabled}} hidden{{/unless}}">
+
+                                            <div>
+                                                <h6 class="mb-1 font-bold">Pick a preset</h6>
+                                                <p class="text-base-content/60 text-sm mb-2">
+                                                    These cover the usual shapes. Adjust the details below if you need something else.
+                                                </p>
+                                                <div class="flex flex-wrap gap-2">
+                                                    {{#each permissionPresets}}
+                                                    <button type="button" class="btn btn-sm btn-soft permission-preset" data-actions="{{actionList}}"
+                                                        data-groups="{{groupList}}" title="{{title}}">{{label}}</button>
+                                                    {{/each}}
+                                                </div>
+                                            </div>
+
+                                            {{!-- The whole point of the two axes is what they produce together, and a reader should
+                                                  not have to multiply four boxes by thirteen to find out. Saying what the token
+                                                  CANNOT do matters as much: that is the reassurance someone wants when handing out
+                                                  a restricted credential. --}}
+                                            <div id="permissionOutcome" class="rounded-box border border-base-content/10 bg-base-200/40 p-4 text-sm space-y-1"></div>
+
+                                            {{!-- Filled in by the script below whenever a scope or an axis changes. Holding a
+                                                  scope the permissions make unusable is legitimate, so this warns rather than
+                                                  refuses - but it should never be a surprise. What each surface requires is
+                                                  handed over as data, derived from the tables that enforce it, so this cannot
+                                                  describe rules that have since changed. --}}
+                                            <div id="permissionScopeWarning" class="alert alert-soft alert-warning text-sm hidden"
+                                                data-surfaces="{{permissionSurfacesJson}}"></div>
+
+                                            <div>
+                                                <h6 class="mb-2 font-bold">What it can do</h6>
+                                                <ul class="divide-y divide-base-content/10 rounded-box border border-base-content/10">
+                                                    {{#each permissionActions}}
+                                                    <li class="flex items-center gap-2 p-4">
+                                                        {{> ui/checkbox id=inputId label=label checked=checked noName=true dataValue=value class="permission-axis permission-action"}}
+                                                        <div class="text-base-content/60 code-link ms-auto self-start">["{{value}}"]</div>
+                                                    </li>
+                                                    {{/each}}
+                                                </ul>
+                                            </div>
+
+                                            <div>
+                                                <h6 class="mb-2 font-bold">What it can reach</h6>
+                                                <div class="space-y-3">
+                                                    {{#each permissionGroupClusters}}
+                                                    <div>
+                                                        <div class="text-base-content/60 text-xs uppercase tracking-wide mb-1">{{label}}</div>
+                                                        <ul class="divide-y divide-base-content/10 rounded-box border border-base-content/10">
+                                                            {{#each groups}}
+                                                            <li class="flex items-center gap-2 p-4">
+                                                                {{> ui/checkbox id=inputId label=label checked=checked hint=description noName=true dataValue=value class="permission-axis permission-group"}}
+                                                                <div class="text-base-content/60 code-link ms-auto self-start">["{{value}}"]</div>
+                                                            </li>
+                                                            {{/each}}
+                                                        </ul>
+                                                    </div>
+                                                    {{/each}}
+                                                </div>
+
+                                                {{!-- Rendered as a visibly refused option rather than omitted: leaving it out
+                                                      entirely reads as an oversight, and the reason is the point. --}}
+                                                <div class="mt-3 alert alert-soft alert-warning text-sm">
+                                                    <span class="icon-[tabler--lock] size-5 shrink-0"></span>
+                                                    <span>
+                                                        Some endpoints are never available to a restricted token, whatever you select here:
+                                                        settings, OAuth2 applications, licensing, access tokens and stored account
+                                                        credentials. A token that could reach those could grant itself more.
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                        </div>
                     </li>
 
                     <li class="flex items-center gap-2 p-4">
@@ -63,7 +172,9 @@
     </div>
 </form>
 
-{{#> ui/modal id="showToken" title="Access tokens" static=true}}
+{{!-- Wider than the default: the token is 64 characters and this is the only time it is shown, so
+      it has to be readable in full rather than scrolled through a 32-character window. --}}
+{{#> ui/modal id="showToken" title="Access tokens" static=true dialogClass="max-w-2xl"}}
 <div class="modal-body">
     <div id="showTokenLoader" class="py-2 text-center">
         <span class="loading loading-spinner loading-sm align-middle"></span> Generating token&hellip;
@@ -71,7 +182,11 @@
     <div id="showTokenContent" class="hidden">
 
         <div class="mb-2">Access token:</div>
-        {{> ui/copy-field id="showTokenValue" ariaLabel="Access token" join=true inputClass="font-mono bg-base-200 border-0 autoselect"}}
+        {{!-- w-full because ui/copy-field's join wrapper is inline-flex, so the `grow` on the input
+              has nothing to grow inside and the field kept its intrinsic width. text-sm so all 64
+              characters fit: this is the only time the value is ever shown, and a token truncated at
+              32 characters cannot be checked against what was copied. --}}
+        {{> ui/copy-field id="showTokenValue" ariaLabel="Access token" join=true class="w-full" inputClass="font-mono text-sm bg-base-200 border-0 autoselect"}}
 
     </div>
     <div id="showTokenError" class="hidden alert alert-soft alert-error whitespace-pre-line"></div>
@@ -86,11 +201,192 @@
 
         let showTokenValueElm = document.getElementById('showTokenValue');
 
+        // The permission axes only mean anything while the restriction is on, so the whole block is
+        // hidden until then rather than shown greyed out - an axis you can read but not use invites
+        // the reading that it applies.
+        let permissionsEnabledElm = document.getElementById('permissionsEnabled');
+        let permissionSectionElm = document.getElementById('permissionSection');
+        let permissionRowElm = document.getElementById('permissionRow');
+
+        // Permissions are resolved per endpoint on the REST API. Without API access there is no
+        // setting here that helps: the remaining scopes are checked once against everything their
+        // surface can do, so any restriction either changes nothing or leaves the token unable to do
+        // the one thing it was issued for. Scopes are fixed once the token exists, so the row is
+        // absent rather than disabled - and its absence needs no caption, because a section that
+        // only appears under API is self-evidently about API.
+        //
+        // "All scopes" only disables the individual boxes, it does not tick them, so the API row can
+        // be greyed while this is open. That reads correctly: API access is granted by "All", and
+        // this is how to narrow it.
+        let hasApiScope = () =>
+            Array.from(document.querySelectorAll('.scope-entry')).some(
+                elm => elm.checked && !elm.disabled && (elm.dataset.scope === '*' || elm.dataset.scope === 'api')
+            );
+
+        let syncPermissionSection = () => {
+            let apiScope = hasApiScope();
+
+            permissionRowElm.classList.toggle('hidden', !apiScope);
+            permissionSectionElm.classList.toggle('hidden', !apiScope || !permissionsEnabledElm.checked);
+        };
+
+        permissionsEnabledElm.addEventListener('change', () => {
+            // Enabling with nothing ticked would post two empty allowlists, which grant nothing. Start
+            // from everything selected so the first state is "no narrowing yet" and each untick is a
+            // deliberate subtraction.
+            if (permissionsEnabledElm.checked && !document.querySelector('.permission-axis:checked')) {
+                for (let elm of document.querySelectorAll('.permission-axis')) {
+                    elm.checked = true;
+                }
+            }
+            syncPermissionSection();
+        });
+
+        syncPermissionSection();
+
+        let permissionWarningElm = document.getElementById('permissionScopeWarning');
+
+        // Derived server-side from SCOPE_OPERATIONS and the route map rather than restated here, so a
+        // change to what a surface requires cannot leave this warning describing the old rules.
+        let surfaceRequirements = {};
+        for (let entry of JSON.parse(permissionWarningElm.dataset.surfaces || '[]')) {
+            surfaceRequirements[entry.scope] = {
+                label: entry.label,
+                actions: entry.actionList.split(',').filter(value => value),
+                groups: entry.groupList.split(',').filter(value => value)
+            };
+        }
+        let permissionOutcomeElm = document.getElementById('permissionOutcome');
+
+        let tickedLabels = selector =>
+            Array.from(document.querySelectorAll(selector))
+                .filter(elm => elm.checked)
+                .map(elm => document.querySelector('label[for="' + elm.id + '"]').textContent.trim());
+
+        let untickedLabels = selector =>
+            Array.from(document.querySelectorAll(selector))
+                .filter(elm => !elm.checked)
+                .map(elm => document.querySelector('label[for="' + elm.id + '"]').textContent.trim());
+
+        let asList = values => (values.length > 1 ? values.slice(0, -1).join(', ') + ' and ' + values[values.length - 1] : values[0] || '');
+
+        // Says what the two axes produce together. Without it a reader has to cross four boxes with
+        // thirteen to work out what they just built - and the half that reassures, what the token
+        // CANNOT do, is not visible anywhere at all.
+        let syncPermissionOutcome = () => {
+            let actions = tickedLabels('.permission-action');
+            let groups = tickedLabels('.permission-group');
+            let deniedActions = untickedLabels('.permission-action');
+
+            permissionOutcomeElm.replaceChildren();
+
+            if (!actions.length || !groups.length) {
+                let line = document.createElement('div');
+                line.className = 'text-warning';
+                line.textContent = 'Nothing is selected yet, so this token would not be able to do anything.';
+                permissionOutcomeElm.append(line);
+                return;
+            }
+
+            let can = document.createElement('div');
+            let canLabel = document.createElement('strong');
+            canLabel.textContent = 'This token can ';
+            can.append(canLabel, document.createTextNode(asList(actions).toLowerCase() + ' in ' + asList(groups) + '.'));
+            permissionOutcomeElm.append(can);
+
+            if (deniedActions.length) {
+                let cannot = document.createElement('div');
+                cannot.className = 'text-base-content/60';
+                cannot.textContent = 'It cannot ' + asList(deniedActions).toLowerCase() + ', anywhere.';
+                permissionOutcomeElm.append(cannot);
+            }
+
+            let rest = document.createElement('div');
+            rest.className = 'text-base-content/60';
+            rest.textContent = 'It cannot reach anything else, or read credentials and settings.';
+            permissionOutcomeElm.append(rest);
+        };
+
+        let syncPermissionWarning = () => {
+            if (!permissionsEnabledElm.checked || !hasApiScope()) {
+                permissionWarningElm.classList.add('hidden');
+                return;
+            }
+
+            let selectedScopes = Array.from(document.querySelectorAll('.scope-entry'))
+                .filter(elm => elm.checked && !elm.disabled)
+                .map(elm => elm.dataset.scope);
+
+            // "All scopes" carries every surface with it
+            if (selectedScopes.includes('*')) {
+                selectedScopes = Object.keys(surfaceRequirements);
+            }
+
+            let ticked = selector => Array.from(document.querySelectorAll(selector)).filter(elm => elm.checked).map(elm => elm.dataset.value);
+            let actions = ticked('.permission-action');
+            let groups = ticked('.permission-group');
+
+            let blocked = selectedScopes
+                .filter(scope => surfaceRequirements[scope])
+                .filter(scope => {
+                    let need = surfaceRequirements[scope];
+                    return !need.actions.every(value => actions.includes(value)) || !need.groups.every(value => groups.includes(value));
+                })
+                .map(scope => surfaceRequirements[scope].label);
+
+            if (!blocked.length) {
+                permissionWarningElm.classList.add('hidden');
+                return;
+            }
+
+            permissionWarningElm.textContent =
+                'These permissions stop the token doing something its scopes allow: it will not be able to ' +
+                blocked.join(', or ') +
+                '. Untick that scope, or allow what it needs.';
+            permissionWarningElm.classList.remove('hidden');
+        };
+
+        for (let elm of document.querySelectorAll('.permission-axis, .scope-entry')) {
+            elm.addEventListener('change', () => {
+                syncPermissionSection();
+                syncPermissionWarning();
+                syncPermissionOutcome();
+            });
+        }
+        permissionsEnabledElm.addEventListener('change', () => {
+            syncPermissionWarning();
+            syncPermissionOutcome();
+        });
+        syncPermissionWarning();
+        syncPermissionOutcome();
+
+        for (let button of document.querySelectorAll('.permission-preset')) {
+            button.addEventListener('click', () => {
+                let actions = (button.dataset.actions || '').split(',').filter(value => value);
+                let groups = (button.dataset.groups || '').split(',').filter(value => value);
+
+                for (let elm of document.querySelectorAll('.permission-action')) {
+                    elm.checked = actions.includes(elm.dataset.value);
+                }
+                for (let elm of document.querySelectorAll('.permission-group')) {
+                    elm.checked = groups.includes(elm.dataset.value);
+                }
+
+                syncPermissionWarning();
+                syncPermissionOutcome();
+            });
+        }
+
         document.getElementById('token-form').addEventListener('submit', e => {
             e.preventDefault()
 
             let description = document.getElementById('description').value.trim();
             document.getElementById('description').value = description
+
+            let collectAxis = selector =>
+                Array.from(document.querySelectorAll(selector))
+                    .filter(elm => elm.checked)
+                    .map(elm => elm.dataset.value);
 
             let scopes = [];
             let scopeElms = document.querySelectorAll('.scope-entry');
@@ -123,9 +419,34 @@
             document.getElementById('showTokenError').classList.add('hidden');
             uiModal.open('#showToken');
 
+            // Sent only when the restriction is on. Omitting the field is what "not narrowed" means on
+            // the record, so an unchecked box must not post an empty object - that is a different
+            // answer, and the API refuses it.
+            let permissions = permissionsEnabledElm.checked && hasApiScope()
+                ? {
+                      actions: collectAxis('.permission-action'),
+                      groups: collectAxis('.permission-group')
+                  }
+                : null;
+
+            // Said here rather than left to the schema. tokenPermissionsSchema refuses an empty axis
+            // too, but a joi rejection reaches this page as a bare "HTTP error! status: 400", which
+            // tells the reader nothing about the box they left unticked.
+            if (permissions && (!permissions.actions.length || !permissions.groups.length)) {
+                let missing = !permissions.actions.length ? 'action' : 'section';
+                document.getElementById('showTokenLoader').classList.add('hidden');
+                document.getElementById('showTokenContent').classList.add('hidden');
+                document.getElementById('showTokenError').classList.remove('hidden');
+                document.getElementById('showTokenError').textContent =
+                    `Select at least one ${missing}. A restriction that allows nothing would create a token that cannot make any request.`;
+                uiModal.open('#showToken');
+                return;
+            }
+
             uiPostJson('/admin/tokens/new', {
                 description,
                 scopes,
+                permissions,
                 account: document.getElementById('account').value || ''
             }).then(data => {
 
@@ -149,3 +470,4 @@
         });
     })
 </script>
+{{/unless}}

@@ -71,6 +71,9 @@ const { matchesExpectedIdentity, pendingSetupExpectation, resolveExpectedIdentit
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
+const tokenPermissions = require('../lib/token-permissions');
+const tokenAuditLog = require('../lib/token-audit-log');
+const { routeGrant } = require('../lib/api-routes/permission-map');
 
 const { redis, documentsQueue } = require('../lib/db');
 const { Account } = require('../lib/account');
@@ -909,6 +912,36 @@ const init = async () => {
                 request.logger.setBindings({ tokenId: tokenData.id, tokenAccount: tokenData.account || null });
             }
 
+            const grant = routeGrant(request.route);
+
+            // This strategy runs before route validation, so `request.query` is whatever the client
+            // sent: a repeated `?account=` arrives as an array. Only a string can name an account,
+            // and this value is persisted into the audit log, so anything else is not one.
+            const queryAccount = request.query && typeof request.query.account === 'string' ? request.query.account : null;
+
+            // Shared by every audit entry below, so an allow and a deny describe the same request.
+            // Built before the first check that can refuse: a rejection is the strongest signal of
+            // credential misuse there is, and a trail that only held the calls that succeeded would
+            // be silent about exactly the ones worth looking at.
+            const auditEntry = {
+                tokenId: tokenData.id,
+                ip: request.app.ip,
+                method: request.route.method,
+                path: request.route.path,
+                action: grant.action,
+                group: grant.group,
+                // The account the REQUEST addressed, which is not always the one in the path: the
+                // routes that take it as a query argument are the ones a bound token gets refused
+                // on, and falling straight through to the token's own account recorded a
+                // cross-account attempt against the account it was entitled to reach - the opposite
+                // of what the entry exists to show. The token's account is still the answer for the
+                // routes that name no account at all.
+                //
+                // The refusals below log this field rather than re-deriving it, so the application
+                // log and the audit row cannot disagree about which account a denial concerned.
+                account: (request.params && request.params.account) || queryAccount || tokenData.account || null
+            };
+
             if (scope && tokenData.scopes && !tokenData.scopes.includes(scope) && !tokenData.scopes.includes('*')) {
                 // failed scope validation
                 logger.warn({
@@ -919,8 +952,40 @@ const init = async () => {
                     tokenScopes: tokenData.scopes
                 });
 
+                tokenAuditLog.denied(auditEntry, 'scope');
+
                 let error = Boom.forbidden('Unauthorized scope');
                 error.output.payload.requestedScope = scope;
+                throw error;
+            }
+
+            // Narrowing below the scope. Runs after the scope check and before the account binding,
+            // so the order is: token resolved, scope, permissions, account, restrictions.
+            //
+            // Before the account switch on purpose - that switch reads the account from the query or
+            // from a Redis membership check for the three /v1/templates special cases, and none of
+            // that should happen for a request the permissions already refuse.
+            //
+            // Only subtracts: a token with no `permissions` field takes the allowed path, which is
+            // every token issued before this shipped.
+            const permissionCheck = tokenPermissions.check({ tokenData, operation: grant });
+            if (!permissionCheck.allowed) {
+                logger.warn({
+                    msg: 'Token permissions do not allow this operation',
+                    tokenAccount: tokenData.account,
+                    tokenId: tokenData.id,
+                    account: auditEntry.account,
+                    reason: permissionCheck.reason,
+                    required: permissionCheck.required
+                });
+
+                let error = Boom.forbidden('Unauthorized permission');
+                // Mirrors how the scope failure above attaches requestedScope: an agent that gets a
+                // 403 needs to know WHICH grant it lacked, not just that it lacked one.
+                // A refused call is the interesting record, so it is logged before the throw
+                tokenAuditLog.denied(auditEntry, permissionCheck.reason);
+
+                error.output.payload.requiredPermission = permissionCheck.required;
                 throw error;
             }
 
@@ -931,10 +996,19 @@ const init = async () => {
 
                 // allow specific routes that have an account component but not in the URL params section
                 switch (request.route.path) {
+                    // The two listings that take the account as a query argument. `/v1/tokens` is
+                    // here because it replaced GET /v1/tokens/account/{account}, which carried the
+                    // account in the path and so reached a bound token's own tokens through the
+                    // default branch below - the replacement had nothing reading the argument, so
+                    // the capability disappeared with no alias and no error a caller could act on.
+                    // Both stay under the same rule as everything else: the argument has to name the
+                    // token's own account, and omitting it still refuses, because a bound credential
+                    // must not enumerate the instance.
                     case '/v1/templates':
+                    case '/v1/tokens':
                         switch (request.method) {
                             case 'get':
-                                accountIdSource = request.query && request.query.account;
+                                accountIdSource = queryAccount;
                                 break;
                         }
                         break;
@@ -968,8 +1042,10 @@ const init = async () => {
                         msg: 'Trying to use invalid account for a token',
                         tokenAccount: tokenData.account,
                         tokenId: tokenData.id,
-                        account: (request.params && request.params.account) || null
+                        account: auditEntry.account
                     });
+
+                    tokenAuditLog.denied(auditEntry, 'account');
 
                     let error = Boom.forbidden('Unauthorized account');
                     throw error;
@@ -982,10 +1058,12 @@ const init = async () => {
                         msg: 'Trying to use invalid IP for a token',
                         tokenAccount: tokenData.account,
                         tokenId: tokenData.id,
-                        account: (request.params && request.params.account) || null,
+                        account: auditEntry.account,
                         remoteAddress: request.app.ip,
                         addressAllowlist: tokenData.restrictions.addresses
                     });
+
+                    tokenAuditLog.denied(auditEntry, 'address');
 
                     let error = Boom.forbidden('Unauthorized address');
                     error.output.payload.remoteAddress = request.app.ip;
@@ -1001,10 +1079,12 @@ const init = async () => {
                         msg: 'Trying to use invalid referer for a token',
                         tokenAccount: tokenData.account,
                         tokenId: tokenData.id,
-                        account: (request.params && request.params.account) || null,
+                        account: auditEntry.account,
                         referer: request.headers.referer,
                         referrerAllowlist: tokenData.restrictions.referrers
                     });
+
+                    tokenAuditLog.denied(auditEntry, 'referrer');
 
                     let error = Boom.forbidden('Unauthorized referrer');
                     throw error;
@@ -1020,6 +1100,8 @@ const init = async () => {
 
                     if (!rateLimit.success) {
                         logger.warn({ msg: 'Rate limited', token: tokenData.id, rateLimit });
+                        tokenAuditLog.denied(auditEntry, 'rateLimit');
+
                         let error = Boom.tooManyRequests('Rate limit exceeded');
                         error.output.payload.ttl = Math.ceil(rateLimit.ttl);
                         error.output.headers = {
@@ -1036,6 +1118,13 @@ const init = async () => {
                     }
                 }
             }
+
+            // The one point every accepted token request passes. "allowed" means the credential was
+            // accepted, not that the request succeeded: this runs in the auth strategy, before
+            // payload validation and the handler, so a call recorded here can still end in a 400 or
+            // a 404. That is the right boundary for a credential trail - it answers what the token
+            // was permitted to attempt.
+            tokenAuditLog.allowed(auditEntry);
 
             return { isValid: true, credentials: { token }, artifacts: tokenData };
         }

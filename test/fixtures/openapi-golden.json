@@ -4321,7 +4321,7 @@
           },
           "proxy": {
             "type": "string",
-            "description": "Optional proxy URL to use when connecting to the SMTP server",
+            "description": "Optional proxy URL to use when connecting to the SMTP server. A token with restricted permissions can not set this - it redirects a session that carries the account credentials",
             "example": "socks5://proxy.example.com:1080",
             "x-format": {
               "uri": {
@@ -5911,7 +5911,7 @@
           },
           "proxy": {
             "type": "string",
-            "description": "Optional proxy URL to use when connecting to the SMTP server",
+            "description": "Optional proxy URL to use when connecting to the SMTP server. A token with restricted permissions can not set this - it redirects a session that carries the account credentials",
             "example": "socks5://proxy.example.com:1080",
             "x-format": {
               "uri": {
@@ -9355,6 +9355,12 @@
               }
             }
           },
+          "tokenAuditLog": {
+            "type": "boolean",
+            "description": "Record which requests each access token makes, readable at GET /v1/tokens/{token}/log. Disabled by default, and entries only exist from the point it is enabled",
+            "example": false,
+            "nullable": true
+          },
           "proxyEnabled": {
             "type": "boolean",
             "description": "Route outbound connections through a proxy server",
@@ -10039,6 +10045,11 @@
                 "allowRelative": false
               }
             }
+          },
+          "tokenAuditLog": {
+            "type": "boolean",
+            "description": "Record which requests each access token makes, readable at GET /v1/tokens/{token}/log. Disabled by default, and entries only exist from the point it is enabled",
+            "example": false
           },
           "proxyEnabled": {
             "type": "boolean",
@@ -11145,32 +11156,12 @@
           "id"
         ]
       },
-      "TokenScope": {
-        "type": "string",
-        "x-meta": {
-          "enumDescriptions": {
-            "api": "Call the REST API",
-            "smtp": "Authenticate against the built-in SMTP submission server",
-            "imap-proxy": "Authenticate against the built-in IMAP proxy"
-          }
-        },
-        "enum": [
-          "api",
-          "smtp",
-          "imap-proxy"
-        ]
-      },
-      "Scopes": {
+      "TokenScopes": {
         "type": "array",
-        "description": "Token permission scopes: \"api\" for REST API access, \"smtp\" for SMTP submission, \"imap-proxy\" for IMAP proxy authentication",
-        "default": [
-          "api"
-        ],
-        "x-constraint": {
-          "single": true
-        },
+        "description": "Scopes this token is valid for",
         "items": {
-          "$ref": "#/components/schemas/TokenScope"
+          "type": "string",
+          "example": "api"
         }
       },
       "ReferrerAllowlist": {
@@ -11256,101 +11247,109 @@
           }
         }
       },
-      "CreateToken": {
-        "type": "object",
-        "properties": {
-          "account": {
-            "type": "string",
-            "description": "Unique identifier for the email account",
-            "example": "user123",
-            "maxLength": 256,
-            "x-convert": {
-              "trim": true
-            }
-          },
-          "description": {
-            "type": "string",
-            "description": "Token description",
-            "example": "Token description",
-            "maxLength": 1024,
-            "x-convert": {
-              "trim": true
-            }
-          },
-          "scopes": {
-            "$ref": "#/components/schemas/Scopes"
-          },
-          "metadata": {
-            "type": "string",
-            "description": "Related metadata in JSON format",
-            "example": "{\"example\": \"value\"}",
-            "maxLength": 1048576
-          },
-          "restrictions": {
-            "$ref": "#/components/schemas/TokenRestrictions"
-          },
-          "ip": {
-            "type": "string",
-            "description": "IP address of the requester",
-            "example": "127.0.0.1",
-            "x-format": {
-              "ip": {
-                "cidr": "forbidden",
-                "version": [
-                  "ipv4",
-                  "ipv6"
-                ]
-              }
-            },
-            "x-convert": {
-              "trim": true
-            }
+      "TokenAction": {
+        "type": "string",
+        "x-meta": {
+          "enumDescriptions": {
+            "read": "Read data without changing anything",
+            "write": "Create or modify data",
+            "send": "Hand a message to a mail server, so it reaches real recipients",
+            "destructive": "Call the endpoints that remove data. Deleting a message is a move to Trash, which a write grant can perform directly, so withholding this narrows the endpoints rather than the outcome for mail"
           }
         },
-        "required": [
-          "account",
-          "description",
-          "scopes"
+        "enum": [
+          "read",
+          "write",
+          "send",
+          "destructive"
         ]
       },
-      "CreateTokenResponse": {
-        "type": "object",
-        "properties": {
-          "token": {
-            "type": "string",
-            "description": "Access token",
-            "example": "123456",
-            "x-constraint": {
-              "length": 64
-            },
-            "x-format": {
-              "hex": {
-                "byteAligned": false,
-                "prefix": false
-              }
-            }
-          }
+      "TokenActions": {
+        "type": "array",
+        "description": "Which kinds of operation this token may perform. Omit to allow all of them",
+        "example": [
+          "read",
+          "write"
+        ],
+        "minItems": 1,
+        "x-constraint": {
+          "single": true
         },
-        "required": [
-          "token"
-        ]
-      },
-      "DeleteTokenRequestResponse": {
-        "type": "object",
-        "properties": {
-          "deleted": {
-            "type": "boolean",
-            "description": "Was the token deleted",
-            "default": true
-          }
+        "items": {
+          "$ref": "#/components/schemas/TokenAction"
         }
       },
-      "TokenScopes": {
+      "TokenGroup": {
+        "type": "string",
+        "x-meta": {
+          "enumDescriptions": {
+            "account": "Manage email accounts and their connection state",
+            "mailbox": "Create, rename, delete and list mailbox folders",
+            "message": "Read, modify, move and delete messages, including bulk actions and search",
+            "submit": "Send email, including scheduled sends and the delivery test. A send may reference a stored message to forward it, so this also reads the message it names",
+            "outbox": "Inspect and cancel queued outbound messages",
+            "export": "Bulk export an account. One call archives every folder, so this is separate from message access",
+            "template": "Manage stored email templates",
+            "blocklist": "Manage suppression lists",
+            "webhook": "Read webhook route definitions",
+            "gateway": "Manage SMTP gateways, which hold outbound SMTP credentials",
+            "events": "Subscribe to the instance-wide change stream, which covers every account",
+            "diagnostics": "Read statistics and service status",
+            "logs": "Read the per-account connection log. Entries are the raw protocol trace, so they include folder names and message subjects"
+          }
+        },
+        "enum": [
+          "account",
+          "mailbox",
+          "message",
+          "submit",
+          "outbox",
+          "export",
+          "template",
+          "blocklist",
+          "webhook",
+          "gateway",
+          "events",
+          "diagnostics",
+          "logs"
+        ]
+      },
+      "TokenGroups": {
         "type": "array",
-        "description": "Scopes this token is valid for",
+        "description": "Which parts of the API this token may reach. Omit to allow all of them",
+        "example": [
+          "message",
+          "mailbox"
+        ],
+        "minItems": 1,
+        "x-constraint": {
+          "single": true
+        },
         "items": {
-          "type": "string",
-          "example": "api"
+          "$ref": "#/components/schemas/TokenGroup"
+        }
+      },
+      "TokenPermissions": {
+        "type": "object",
+        "description": "Restricts a token below its scope. Each axis is an allowlist that only narrows, and both apply together, so an operation must match the actions AND the groups. Endpoints that hand out credentials or change instance configuration can never be reached by a token that sets this field, whatever it lists",
+        "example": {
+          "actions": [
+            "read"
+          ],
+          "groups": [
+            "message",
+            "mailbox"
+          ]
+        },
+        "nullable": true,
+        "minProperties": 1,
+        "properties": {
+          "actions": {
+            "$ref": "#/components/schemas/TokenActions"
+          },
+          "groups": {
+            "$ref": "#/components/schemas/TokenGroups"
+          }
         }
       },
       "TokenAccess": {
@@ -11384,116 +11383,14 @@
           }
         }
       },
-      "RootTokensItem": {
-        "type": "object",
-        "properties": {
-          "description": {
-            "type": "string",
-            "description": "Token description",
-            "example": "Token description",
-            "maxLength": 1024,
-            "x-convert": {
-              "trim": true
-            }
-          },
-          "metadata": {
-            "type": "string",
-            "description": "Related metadata in JSON format",
-            "example": "{\"example\": \"value\"}",
-            "maxLength": 1048576
-          },
-          "ip": {
-            "type": "string",
-            "description": "IP address of the requester",
-            "example": "127.0.0.1",
-            "x-format": {
-              "ip": {
-                "cidr": "forbidden",
-                "version": [
-                  "ipv4",
-                  "ipv6"
-                ]
-              }
-            },
-            "x-convert": {
-              "trim": true
-            }
-          },
-          "remoteAddress": {
-            "type": "string",
-            "description": "IP address of the client that created the token",
-            "example": "127.0.0.1",
-            "x-format": {
-              "ip": {
-                "cidr": "forbidden",
-                "version": [
-                  "ipv4",
-                  "ipv6"
-                ]
-              }
-            },
-            "x-convert": {
-              "trim": true
-            }
-          },
-          "scopes": {
-            "$ref": "#/components/schemas/TokenScopes"
-          },
-          "restrictions": {
-            "$ref": "#/components/schemas/TokenRestrictions"
-          },
-          "created": {
-            "type": "string",
-            "format": "date-time",
-            "description": "The time this token was created",
-            "example": "2021-02-17T13:43:18.860Z"
-          },
-          "expires": {
-            "type": "string",
-            "format": "date-time",
-            "description": "The time this token stops working. Absent for tokens that never expire",
-            "example": "2021-02-17T14:43:18.860Z"
-          },
-          "access": {
-            "$ref": "#/components/schemas/TokenAccess"
-          },
-          "id": {
-            "type": "string",
-            "description": "Token identifier (SHA-256 hash of the token)",
-            "example": "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a",
-            "x-constraint": {
-              "length": 64
-            },
-            "x-format": {
-              "hex": {
-                "byteAligned": false,
-                "prefix": false
-              }
-            }
-          }
-        }
-      },
-      "RootTokensEntries": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/RootTokensItem"
-        }
-      },
-      "RootTokensResponse": {
-        "type": "object",
-        "properties": {
-          "tokens": {
-            "$ref": "#/components/schemas/RootTokensEntries"
-          }
-        }
-      },
-      "AccountTokensItem": {
+      "TokensItem": {
         "type": "object",
         "properties": {
           "account": {
             "type": "string",
-            "description": "Unique identifier for the email account",
+            "description": "Account this token is bound to, or null for an instance-wide token",
             "example": "user123",
+            "nullable": true,
             "maxLength": 256,
             "x-convert": {
               "trim": true
@@ -11554,6 +11451,9 @@
           "restrictions": {
             "$ref": "#/components/schemas/TokenRestrictions"
           },
+          "permissions": {
+            "$ref": "#/components/schemas/TokenPermissions"
+          },
           "created": {
             "type": "string",
             "format": "date-time",
@@ -11583,22 +11483,410 @@
               }
             }
           }
-        },
-        "required": [
-          "account"
-        ]
-      },
-      "AccountTokensEntries": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/AccountTokensItem"
         }
       },
-      "AccountsTokensResponse": {
+      "TokensEntries": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/TokensItem"
+        }
+      },
+      "TokensResponse": {
         "type": "object",
         "properties": {
+          "account": {
+            "type": "string",
+            "description": "The account filter that was applied, or null when every token was listed",
+            "example": "user123",
+            "nullable": true,
+            "maxLength": 256,
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "total": {
+            "type": "integer",
+            "description": "How many tokens match",
+            "example": 12
+          },
+          "page": {
+            "type": "integer",
+            "description": "Current page (zero indexed)",
+            "example": 0
+          },
+          "pages": {
+            "type": "integer",
+            "description": "Total page count",
+            "example": 1
+          },
           "tokens": {
-            "$ref": "#/components/schemas/AccountTokensEntries"
+            "$ref": "#/components/schemas/TokensEntries"
+          }
+        }
+      },
+      "TokenScope": {
+        "type": "string",
+        "x-meta": {
+          "enumDescriptions": {
+            "api": "Call the REST API",
+            "smtp": "Authenticate against the built-in SMTP submission server",
+            "imap-proxy": "Authenticate against the built-in IMAP proxy"
+          }
+        },
+        "enum": [
+          "api",
+          "smtp",
+          "imap-proxy"
+        ]
+      },
+      "Scopes": {
+        "type": "array",
+        "description": "Token permission scopes: \"api\" for REST API access, \"smtp\" for SMTP submission, \"imap-proxy\" for IMAP proxy authentication",
+        "default": [
+          "api"
+        ],
+        "x-constraint": {
+          "single": true
+        },
+        "items": {
+          "$ref": "#/components/schemas/TokenScope"
+        }
+      },
+      "CreateToken": {
+        "type": "object",
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Bind the token to one account. Omit for an instance-wide token, which then has to set `permissions`",
+            "example": "user123",
+            "maxLength": 256,
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "description": {
+            "type": "string",
+            "description": "Token description",
+            "example": "Token description",
+            "maxLength": 1024,
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "scopes": {
+            "$ref": "#/components/schemas/Scopes"
+          },
+          "metadata": {
+            "type": "string",
+            "description": "Related metadata in JSON format",
+            "example": "{\"example\": \"value\"}",
+            "maxLength": 1048576
+          },
+          "restrictions": {
+            "$ref": "#/components/schemas/TokenRestrictions"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/TokenPermissions"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Optional time when this token stops working. Omit for a token that never expires",
+            "example": "2021-02-17T14:43:18.860Z"
+          },
+          "ip": {
+            "type": "string",
+            "description": "IP address of the requester",
+            "example": "127.0.0.1",
+            "x-format": {
+              "ip": {
+                "cidr": "forbidden",
+                "version": [
+                  "ipv4",
+                  "ipv6"
+                ]
+              }
+            },
+            "x-convert": {
+              "trim": true
+            }
+          }
+        },
+        "required": [
+          "description",
+          "scopes"
+        ]
+      },
+      "CreateTokenResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "The access token. This is the only time it is returned - store it now",
+            "example": "123456",
+            "x-constraint": {
+              "length": 64
+            },
+            "x-format": {
+              "hex": {
+                "byteAligned": false,
+                "prefix": false
+              }
+            }
+          },
+          "id": {
+            "type": "string",
+            "description": "Identifier for this token, as reported by the token listings",
+            "example": "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a",
+            "x-constraint": {
+              "length": 64
+            },
+            "x-format": {
+              "hex": {
+                "byteAligned": false,
+                "prefix": false
+              }
+            }
+          }
+        },
+        "required": [
+          "token",
+          "id"
+        ]
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Account this token is bound to, or null for an instance-wide token",
+            "example": "user123",
+            "nullable": true,
+            "maxLength": 256,
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "description": {
+            "type": "string",
+            "description": "Token description",
+            "example": "Token description",
+            "maxLength": 1024,
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "metadata": {
+            "type": "string",
+            "description": "Related metadata in JSON format",
+            "example": "{\"example\": \"value\"}",
+            "maxLength": 1048576
+          },
+          "ip": {
+            "type": "string",
+            "description": "IP address of the requester",
+            "example": "127.0.0.1",
+            "x-format": {
+              "ip": {
+                "cidr": "forbidden",
+                "version": [
+                  "ipv4",
+                  "ipv6"
+                ]
+              }
+            },
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "remoteAddress": {
+            "type": "string",
+            "description": "IP address of the client that created the token",
+            "example": "127.0.0.1",
+            "x-format": {
+              "ip": {
+                "cidr": "forbidden",
+                "version": [
+                  "ipv4",
+                  "ipv6"
+                ]
+              }
+            },
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "scopes": {
+            "$ref": "#/components/schemas/TokenScopes"
+          },
+          "restrictions": {
+            "$ref": "#/components/schemas/TokenRestrictions"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/TokenPermissions"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The time this token was created",
+            "example": "2021-02-17T13:43:18.860Z"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The time this token stops working. Absent for tokens that never expire",
+            "example": "2021-02-17T14:43:18.860Z"
+          },
+          "access": {
+            "$ref": "#/components/schemas/TokenAccess"
+          },
+          "id": {
+            "type": "string",
+            "description": "Token identifier (SHA-256 hash of the token)",
+            "example": "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a",
+            "x-constraint": {
+              "length": 64
+            },
+            "x-format": {
+              "hex": {
+                "byteAligned": false,
+                "prefix": false
+              }
+            }
+          }
+        }
+      },
+      "DeleteTokenRequestResponse": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "description": "Was the token deleted",
+            "default": true
+          }
+        }
+      },
+      "TokenLogStatus": {
+        "type": "string",
+        "description": "Whether the request was served",
+        "example": "allowed",
+        "enum": [
+          "allowed",
+          "denied"
+        ]
+      },
+      "TokenLogEntry": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the request was made",
+            "example": "2021-02-17T13:43:18.860Z"
+          },
+          "ip": {
+            "type": "string",
+            "description": "Address the request came from",
+            "example": "127.0.0.1",
+            "nullable": true,
+            "x-format": {
+              "ip": {
+                "cidr": "forbidden",
+                "version": [
+                  "ipv4",
+                  "ipv6"
+                ]
+              }
+            },
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "method": {
+            "type": "string",
+            "description": "HTTP method, or the surface name for SMTP and the IMAP proxy",
+            "example": "get",
+            "nullable": true
+          },
+          "path": {
+            "type": "string",
+            "description": "Route that was called",
+            "example": "/v1/account/{account}/messages",
+            "nullable": true
+          },
+          "action": {
+            "type": "string",
+            "description": "Permission action the operation required",
+            "example": "read",
+            "nullable": true
+          },
+          "group": {
+            "type": "string",
+            "description": "Permission group the operation belongs to",
+            "example": "message",
+            "nullable": true
+          },
+          "account": {
+            "type": "string",
+            "description": "Account the request addressed",
+            "example": "user123",
+            "nullable": true,
+            "maxLength": 256,
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/TokenLogStatus"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why it was refused. Null when it was allowed",
+            "example": "group",
+            "nullable": true
+          }
+        }
+      },
+      "TokenLogEntries": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/TokenLogEntry"
+        }
+      },
+      "TokenLogResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Token identifier (SHA-256 hash of the token)",
+            "example": "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a",
+            "x-constraint": {
+              "length": 64
+            },
+            "x-format": {
+              "hex": {
+                "byteAligned": false,
+                "prefix": false
+              }
+            }
+          },
+          "total": {
+            "type": "integer",
+            "description": "How many entries are stored for this token",
+            "example": 120
+          },
+          "page": {
+            "type": "integer",
+            "description": "Current page (zero indexed)",
+            "example": 0
+          },
+          "pages": {
+            "type": "integer",
+            "description": "Total page count",
+            "example": 6
+          },
+          "entries": {
+            "$ref": "#/components/schemas/TokenLogEntries"
           }
         }
       },
@@ -12319,14 +12607,16 @@
         },
         "x-ee-behavior": [
           "Credentials are not verified while handling this request. The account connects afterwards, and an authentication failure surfaces as an authenticationError state rather than an error here. Use the account verification endpoint to test credentials up front."
-        ]
+        ],
+        "x-ee-action": "write",
+        "x-ee-group": "admin"
       }
     },
     "/v1/account/{account}": {
       "get": {
         "summary": "Get account info",
         "operationId": "getV1AccountAccount",
-        "description": "Returns stored information about the account. Passwords are not included.<br/><br/>Quota reporting is not available for Gmail API or MS Graph accounts; the quota field is omitted for those.",
+        "description": "Returns stored information about the account. Credentials are masked: stored passwords, the credentials in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\". A masked value is not the stored one - leave the field out of an update rather than writing it back, otherwise the mask replaces the credential.<br/><br/>Quota reporting is not available for Gmail API or MS Graph accounts; the quota field is omitted for those.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -12443,7 +12733,9 @@
         },
         "x-ee-behavior": [
           "Quota reporting is not available for Gmail API or MS Graph accounts; the quota field is omitted for those."
-        ]
+        ],
+        "x-ee-action": "read",
+        "x-ee-group": "account"
       },
       "put": {
         "summary": "Update account info",
@@ -12564,7 +12856,9 @@
         },
         "x-ee-behavior": [
           "Credentials are not verified while handling this request. The account connects afterwards, and an authentication failure surfaces as an authenticationError state rather than an error here. Use the account verification endpoint to test credentials up front."
-        ]
+        ],
+        "x-ee-action": "write",
+        "x-ee-group": "admin"
       },
       "delete": {
         "summary": "Remove account",
@@ -12690,7 +12984,9 @@
         "x-ee-impact": "destructive",
         "x-ee-behavior": [
           "Removes the account, its credentials, its cached data and any messages still queued for delivery. Webhook events generated before the deletion are never delivered afterwards and are discarded once the queue reaches them. Records of deliveries that had already failed permanently are not removed here; they expire on the queue retention window, seven days by default."
-        ]
+        ],
+        "x-ee-action": "destructive",
+        "x-ee-group": "account"
       }
     },
     "/v1/account/{account}/attachment/{attachment}": {
@@ -12823,7 +13119,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "message"
       }
     },
     "/v1/account/{account}/export": {
@@ -12946,7 +13244,9 @@
         },
         "x-ee-behavior": [
           "Runs as a background job. Follow it either by polling the status endpoint or by waiting for the completion webhook."
-        ]
+        ],
+        "x-ee-action": "write",
+        "x-ee-group": "export"
       }
     },
     "/v1/account/{account}/export/{exportId}": {
@@ -13069,7 +13369,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "export"
       },
       "delete": {
         "summary": "Delete export",
@@ -13191,7 +13493,9 @@
             }
           }
         },
-        "x-ee-impact": "destructive"
+        "x-ee-impact": "destructive",
+        "x-ee-action": "destructive",
+        "x-ee-group": "export"
       }
     },
     "/v1/account/{account}/export/{exportId}/download": {
@@ -13324,7 +13628,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "export"
       }
     },
     "/v1/account/{account}/exports": {
@@ -13451,7 +13757,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "export"
       }
     },
     "/v1/account/{account}/flush": {
@@ -13575,7 +13883,9 @@
         "x-ee-impact": "destructive",
         "x-ee-behavior": [
           "The request only schedules the work and returns before it finishes. Watch the account state, or the accountInitialized and authenticationError webhooks, for the result."
-        ]
+        ],
+        "x-ee-action": "destructive",
+        "x-ee-group": "account"
       }
     },
     "/v1/account/{account}/mailbox": {
@@ -13705,7 +14015,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "mailbox"
       },
       "put": {
         "summary": "Modify mailbox",
@@ -13833,7 +14145,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "mailbox"
       },
       "delete": {
         "summary": "Delete mailbox",
@@ -13964,7 +14278,9 @@
             }
           }
         },
-        "x-ee-impact": "destructive"
+        "x-ee-impact": "destructive",
+        "x-ee-action": "destructive",
+        "x-ee-group": "mailbox"
       }
     },
     "/v1/account/{account}/mailboxes": {
@@ -14095,7 +14411,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "mailbox"
       }
     },
     "/v1/account/{account}/message": {
@@ -14228,7 +14546,9 @@
         },
         "x-ee-behavior": [
           "For MS Graph accounts only drafts can be uploaded, and the draft flag cannot be changed afterwards."
-        ]
+        ],
+        "x-ee-action": "write",
+        "x-ee-group": "message"
       }
     },
     "/v1/account/{account}/message/{message}": {
@@ -14434,7 +14754,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "message"
       },
       "put": {
         "summary": "Update message",
@@ -14577,7 +14899,9 @@
         },
         "x-ee-behavior": [
           "For Gmail API accounts the entire label set cannot be replaced in one call. Add and remove labels individually instead of using the set operation."
-        ]
+        ],
+        "x-ee-action": "write",
+        "x-ee-group": "message"
       },
       "delete": {
         "summary": "Delete message",
@@ -14722,7 +15046,9 @@
         "x-ee-impact": "destructive",
         "x-ee-behavior": [
           "For Gmail API accounts the message is always moved to Trash. The force option, which permanently deletes on IMAP accounts, has no effect."
-        ]
+        ],
+        "x-ee-action": "destructive",
+        "x-ee-group": "message"
       }
     },
     "/v1/account/{account}/message/{message}/move": {
@@ -14864,7 +15190,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "message"
       }
     },
     "/v1/account/{account}/message/{message}/source": {
@@ -14997,7 +15325,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "message"
       }
     },
     "/v1/account/{account}/message/{message}/submit": {
@@ -15166,7 +15496,9 @@
             "label": "Minimal",
             "source": "curl -X POST \"$EMAILENGINE_URL/v1/account/example/message/AAAAAQAACnA/submit\" \\\n    -H \"Authorization: Bearer $EMAILENGINE_TOKEN\" \\\n    -H \"Content-Type: application/json\" \\\n    -d '{}'"
           }
-        ]
+        ],
+        "x-ee-action": "send",
+        "x-ee-group": "submit"
       }
     },
     "/v1/account/{account}/messages": {
@@ -15341,7 +15673,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "message"
       },
       "put": {
         "summary": "Update messages",
@@ -15483,7 +15817,9 @@
         },
         "x-ee-behavior": [
           "For Gmail API accounts the entire label set cannot be replaced in one call. Add and remove labels individually instead of using the set operation."
-        ]
+        ],
+        "x-ee-action": "write",
+        "x-ee-group": "message"
       }
     },
     "/v1/account/{account}/messages/delete": {
@@ -15638,7 +15974,9 @@
         "x-ee-impact": "destructive",
         "x-ee-behavior": [
           "For Gmail API accounts the message is always moved to Trash. The force option, which permanently deletes on IMAP accounts, has no effect."
-        ]
+        ],
+        "x-ee-action": "destructive",
+        "x-ee-group": "message"
       }
     },
     "/v1/account/{account}/messages/move": {
@@ -15779,7 +16117,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "message"
       }
     },
     "/v1/account/{account}/oauth-token": {
@@ -15890,7 +16230,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "admin"
       }
     },
     "/v1/account/{account}/reconnect": {
@@ -16013,7 +16355,9 @@
         },
         "x-ee-behavior": [
           "The request only schedules the work and returns before it finishes. Watch the account state, or the accountInitialized and authenticationError webhooks, for the result."
-        ]
+        ],
+        "x-ee-action": "write",
+        "x-ee-group": "account"
       }
     },
     "/v1/account/{account}/search": {
@@ -16219,7 +16563,9 @@
             }
           }
         },
-        "x-ee-impact": "readonly"
+        "x-ee-impact": "readonly",
+        "x-ee-action": "read",
+        "x-ee-group": "message"
       }
     },
     "/v1/account/{account}/server-signatures": {
@@ -16330,7 +16676,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "account"
       }
     },
     "/v1/account/{account}/submit": {
@@ -16503,7 +16851,9 @@
         "x-ee-behavior": [
           "Delivery is asynchronous. A 2xx means the message was queued, not that it was sent. Failed attempts are retried with exponential backoff up to the configured deliveryAttempts; follow the outcome through the Outbox endpoints or the messageSent, messageDeliveryError and messageFailed webhooks.",
           "For SMTP accounts EmailEngine uploads the sent message to the Sent Mail folder after delivery. Gmail API and MS Graph accounts file sent messages themselves, so no upload is performed."
-        ]
+        ],
+        "x-ee-action": "send",
+        "x-ee-group": "submit"
       }
     },
     "/v1/account/{account}/sync": {
@@ -16626,7 +16976,9 @@
         },
         "x-ee-behavior": [
           "The request only schedules the work and returns before it finishes. Watch the account state, or the accountInitialized and authenticationError webhooks, for the result."
-        ]
+        ],
+        "x-ee-action": "write",
+        "x-ee-group": "account"
       }
     },
     "/v1/account/{account}/text/{text}": {
@@ -16790,7 +17142,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "message"
       }
     },
     "/v1/accounts": {
@@ -16946,7 +17300,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "account"
       }
     },
     "/v1/authentication/form": {
@@ -17051,7 +17407,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "admin"
       }
     },
     "/v1/autoconfig": {
@@ -17151,7 +17509,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "diagnostics"
       }
     },
     "/v1/blocklist/{listId}": {
@@ -17287,7 +17647,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "blocklist"
       },
       "post": {
         "summary": "Add to blocklist",
@@ -17404,7 +17766,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "blocklist"
       },
       "delete": {
         "summary": "Remove from blocklist",
@@ -17527,7 +17891,9 @@
             }
           }
         },
-        "x-ee-impact": "destructive"
+        "x-ee-impact": "destructive",
+        "x-ee-action": "destructive",
+        "x-ee-group": "blocklist"
       }
     },
     "/v1/blocklists": {
@@ -17639,7 +18005,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "blocklist"
       }
     },
     "/v1/changes": {
@@ -17718,7 +18086,9 @@
         },
         "x-ee-behavior": [
           "A long-lived Server-Sent Events stream rather than a normal request and response. The connection stays open until the client closes it."
-        ]
+        ],
+        "x-ee-action": "read",
+        "x-ee-group": "events"
       }
     },
     "/v1/chat/{account}": {
@@ -17838,7 +18208,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "admin"
       }
     },
     "/v1/delivery-test/account/{account}": {
@@ -17962,7 +18334,9 @@
         "x-ee-impact": "sends",
         "x-ee-behavior": [
           "Runs as a background job. Follow it either by polling the status endpoint or by waiting for the completion webhook."
-        ]
+        ],
+        "x-ee-action": "send",
+        "x-ee-group": "submit"
       }
     },
     "/v1/delivery-test/check/{deliveryTest}": {
@@ -18077,7 +18451,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "diagnostics"
       }
     },
     "/v1/gateway": {
@@ -18172,14 +18548,16 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "admin"
       }
     },
     "/v1/gateway/{gateway}": {
       "get": {
         "summary": "Get gateway info",
         "operationId": "getV1GatewayGateway",
-        "description": "Returns stored information about the gateway. Passwords are not included.",
+        "description": "Returns stored information about the gateway. Credentials are masked: stored passwords, the credentials in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\". A masked value is not the stored one - leave the field out of an update rather than writing it back, otherwise the mask replaces the credential.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -18280,7 +18658,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "gateway"
       },
       "delete": {
         "summary": "Remove SMTP gateway",
@@ -18387,7 +18767,9 @@
             }
           }
         },
-        "x-ee-impact": "destructive"
+        "x-ee-impact": "destructive",
+        "x-ee-action": "destructive",
+        "x-ee-group": "gateway"
       }
     },
     "/v1/gateway/edit/{gateway}": {
@@ -18504,7 +18886,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "admin"
       }
     },
     "/v1/gateways": {
@@ -18616,7 +19000,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "gateway"
       }
     },
     "/v1/license": {
@@ -18692,7 +19078,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "admin"
       },
       "post": {
         "summary": "Register a license",
@@ -18785,7 +19173,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "admin"
       },
       "delete": {
         "summary": "Remove license",
@@ -18860,7 +19250,9 @@
             }
           }
         },
-        "x-ee-impact": "destructive"
+        "x-ee-impact": "destructive",
+        "x-ee-action": "destructive",
+        "x-ee-group": "admin"
       }
     },
     "/v1/logs/{account}": {
@@ -18964,7 +19356,9 @@
         },
         "x-ee-behavior": [
           "Only available for IMAP accounts. Gmail API and MS Graph accounts have no equivalent."
-        ]
+        ],
+        "x-ee-action": "read",
+        "x-ee-group": "logs"
       }
     },
     "/v1/oauth2": {
@@ -19076,7 +19470,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "admin"
       },
       "post": {
         "summary": "Register OAuth2 application",
@@ -19169,7 +19565,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "admin"
       }
     },
     "/v1/oauth2/{app}": {
@@ -19277,7 +19675,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "admin"
       },
       "put": {
         "summary": "Update OAuth2 application",
@@ -19392,7 +19792,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "admin"
       },
       "delete": {
         "summary": "Remove OAuth2 application",
@@ -19499,7 +19901,9 @@
             }
           }
         },
-        "x-ee-impact": "destructive"
+        "x-ee-impact": "destructive",
+        "x-ee-action": "destructive",
+        "x-ee-group": "admin"
       }
     },
     "/v1/oauth2/{app}/verify": {
@@ -19617,14 +20021,16 @@
             }
           }
         },
-        "x-ee-impact": "readonly"
+        "x-ee-impact": "readonly",
+        "x-ee-action": "read",
+        "x-ee-group": "admin"
       }
     },
     "/v1/outbox": {
       "get": {
         "summary": "List queued messages",
         "operationId": "getV1Outbox",
-        "description": "Lists messages in the Outbox",
+        "description": "Lists messages in the Outbox. Credentials are masked: stored passwords, the credentials in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\". A masked value is not the stored one - leave the field out of an update rather than writing it back, otherwise the mask replaces the credential.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -19729,14 +20135,16 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "outbox"
       }
     },
     "/v1/outbox/{queueId}": {
       "get": {
         "summary": "Get queued message",
         "operationId": "getV1OutboxQueueid",
-        "description": "Gets a queued message in the Outbox",
+        "description": "Gets a queued message in the Outbox. Credentials are masked: stored passwords, the credentials in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\". A masked value is not the stored one - leave the field out of an update rather than writing it back, otherwise the mask replaces the credential.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -19837,7 +20245,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "outbox"
       },
       "delete": {
         "summary": "Remove a message",
@@ -19934,7 +20344,9 @@
             }
           }
         },
-        "x-ee-impact": "destructive"
+        "x-ee-impact": "destructive",
+        "x-ee-action": "destructive",
+        "x-ee-group": "outbox"
       }
     },
     "/v1/pubsub/status": {
@@ -20046,7 +20458,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "diagnostics"
       }
     },
     "/v1/settings": {
@@ -20285,6 +20699,14 @@
           },
           {
             "name": "authServer",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "tokenAuditLog",
             "in": "query",
             "schema": {
               "type": "boolean",
@@ -20828,7 +21250,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "admin"
       },
       "post": {
         "summary": "Set setting values",
@@ -20921,7 +21345,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "admin"
       }
     },
     "/v1/settings/queue/{queue}": {
@@ -21026,7 +21452,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "admin"
       },
       "put": {
         "summary": "Set queue settings",
@@ -21138,7 +21566,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "admin"
       }
     },
     "/v1/stats": {
@@ -21236,7 +21666,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "diagnostics"
       }
     },
     "/v1/templates": {
@@ -21369,7 +21801,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "template"
       }
     },
     "/v1/templates/account/{account}": {
@@ -21491,7 +21925,9 @@
             }
           }
         },
-        "x-ee-impact": "destructive"
+        "x-ee-impact": "destructive",
+        "x-ee-action": "destructive",
+        "x-ee-group": "template"
       }
     },
     "/v1/templates/template": {
@@ -21596,7 +22032,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "template"
       }
     },
     "/v1/templates/template/{template}": {
@@ -21704,7 +22142,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "template"
       },
       "put": {
         "summary": "Update a template",
@@ -21819,7 +22259,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "template"
       },
       "delete": {
         "summary": "Remove a template",
@@ -21916,14 +22358,156 @@
             }
           }
         },
-        "x-ee-impact": "destructive"
+        "x-ee-impact": "destructive",
+        "x-ee-action": "destructive",
+        "x-ee-group": "template"
       }
     },
-    "/v1/token": {
+    "/v1/tokens": {
+      "get": {
+        "summary": "List access tokens",
+        "operationId": "getV1Tokens",
+        "description": "Lists access tokens. Returns every token on the instance unless narrowed with the account argument. Token values are never returned - only the id each token is listed under.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "Page number (zero indexed, so use 0 for first page)",
+              "example": 0,
+              "default": 0,
+              "minimum": 0,
+              "maximum": 1048576
+            },
+            "description": "Page number (zero indexed, so use 0 for first page)"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "How many entries per page",
+              "example": 20,
+              "default": 20,
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "description": "How many entries per page"
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "Filter by description, id or account",
+              "example": "agent",
+              "maxLength": 1024,
+              "x-convert": {
+                "trim": true
+              }
+            },
+            "description": "Filter by description, id or account"
+          },
+          {
+            "name": "account",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "Only list tokens bound to this account. Omit to list every token on the instance",
+              "example": "user123",
+              "maxLength": 256,
+              "x-convert": {
+                "trim": true
+              }
+            },
+            "description": "Only list tokens bound to this account. Omit to list every token on the instance"
+          }
+        ],
+        "tags": [
+          "Access Tokens"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the matching access tokens. Token values are never returned after creation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokensResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "admin"
+      },
       "post": {
         "summary": "Provision an access token",
-        "operationId": "postV1Token",
-        "description": "Provisions a new access token for an account",
+        "operationId": "postV1Tokens",
+        "description": "Provisions a new access token. Either bind it to an account, or set `permissions` - an instance-wide token that is not narrowed reaches every account and every endpoint, so the API declines to mint one.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -22021,13 +22605,131 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "admin"
       }
     },
-    "/v1/token/{token}": {
+    "/v1/tokens/{token}": {
+      "get": {
+        "summary": "Get token info",
+        "operationId": "getV1TokensToken",
+        "description": "Returns stored information about a single access token. The token value itself is never returned - it is only shown once, when the token is created.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+          },
+          {
+            "name": "token",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "The token id, as reported by POST /v1/tokens and the token listing",
+              "example": "123456",
+              "x-constraint": {
+                "length": 64
+              },
+              "x-format": {
+                "hex": {
+                  "byteAligned": false,
+                  "prefix": false
+                }
+              }
+            },
+            "description": "The token id, as reported by POST /v1/tokens and the token listing",
+            "required": true
+          }
+        ],
+        "tags": [
+          "Access Tokens"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the stored token record. The token value is not included.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - the requested entity (account, message, mailbox, etc.) does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "admin"
+      },
       "delete": {
         "summary": "Remove a token",
-        "operationId": "deleteV1TokenToken",
+        "operationId": "deleteV1TokensToken",
         "description": "Delete an access token",
         "parameters": [
           {
@@ -22047,7 +22749,7 @@
             "in": "path",
             "schema": {
               "type": "string",
-              "description": "Access token",
+              "description": "The access token value, or the token id from a listing",
               "example": "123456",
               "x-constraint": {
                 "length": 64
@@ -22059,7 +22761,7 @@
                 }
               }
             },
-            "description": "Access token",
+            "description": "The access token value, or the token id from a listing",
             "required": true
           }
         ],
@@ -22128,90 +22830,16 @@
             }
           }
         },
-        "x-ee-impact": "destructive"
+        "x-ee-impact": "destructive",
+        "x-ee-action": "destructive",
+        "x-ee-group": "admin"
       }
     },
-    "/v1/tokens": {
+    "/v1/tokens/{token}/log": {
       "get": {
-        "summary": "List root tokens",
-        "operationId": "getV1Tokens",
-        "description": "Lists access tokens registered for root access",
-        "parameters": [
-          {
-            "name": "x-ee-timeout",
-            "in": "header",
-            "schema": {
-              "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
-              "example": 30000,
-              "minimum": 0,
-              "maximum": 7200000
-            },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
-          }
-        ],
-        "tags": [
-          "Access Tokens"
-        ],
-        "responses": {
-          "200": {
-            "description": "Returns the root access tokens. Token values are never returned after creation.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RootTokensResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Rate limit exceeded - too many requests were made with this access token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RateLimitErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error - an unexpected error occurred while processing the request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/tokens/account/{account}": {
-      "get": {
-        "summary": "List account tokens",
-        "operationId": "getV1TokensAccountAccount",
-        "description": "Lists access tokens registered for an account",
+        "summary": "Get token audit log",
+        "operationId": "getV1TokensTokenLog",
+        "description": "Lists recent requests made with an access token, newest first. Requires the tokenAuditLog setting to be enabled; it is off by default, and entries only exist from the point it was switched on.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -22226,19 +22854,50 @@
             "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
           },
           {
-            "name": "account",
+            "name": "token",
             "in": "path",
             "schema": {
               "type": "string",
-              "description": "Unique identifier for the email account",
-              "example": "user123",
-              "maxLength": 256,
-              "x-convert": {
-                "trim": true
+              "description": "The token id, as reported by POST /v1/tokens and the token listing",
+              "example": "123456",
+              "x-constraint": {
+                "length": 64
+              },
+              "x-format": {
+                "hex": {
+                  "byteAligned": false,
+                  "prefix": false
+                }
               }
             },
-            "description": "Unique identifier for the email account",
+            "description": "The token id, as reported by POST /v1/tokens and the token listing",
             "required": true
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "Page number (zero indexed, so use 0 for first page)",
+              "example": 0,
+              "default": 0,
+              "minimum": 0,
+              "maximum": 1048576
+            },
+            "description": "Page number (zero indexed, so use 0 for first page)"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "How many entries per page",
+              "example": 20,
+              "default": 20,
+              "minimum": 1,
+              "maximum": 200
+            },
+            "description": "How many entries per page"
           }
         ],
         "tags": [
@@ -22246,11 +22905,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Returns the access tokens scoped to the account.",
+            "description": "Returns the recorded requests for this token, newest first.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AccountsTokensResponse"
+                  "$ref": "#/components/schemas/TokenLogResponse"
                 }
               }
             }
@@ -22285,6 +22944,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not found - the requested entity (account, message, mailbox, etc.) does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorResponse"
+                }
+              }
+            }
+          },
           "429": {
             "description": "Rate limit exceeded - too many requests were made with this access token",
             "content": {
@@ -22305,7 +22974,10 @@
               }
             }
           }
-        }
+        },
+        "x-ee-impact": "readonly",
+        "x-ee-action": "read",
+        "x-ee-group": "admin"
       }
     },
     "/v1/unified/search": {
@@ -22427,7 +23099,9 @@
             }
           }
         },
-        "x-ee-impact": "readonly"
+        "x-ee-impact": "readonly",
+        "x-ee-action": "read",
+        "x-ee-group": "admin"
       }
     },
     "/v1/verifyAccount": {
@@ -22523,14 +23197,16 @@
             }
           }
         },
-        "x-ee-impact": "readonly"
+        "x-ee-impact": "readonly",
+        "x-ee-action": "read",
+        "x-ee-group": "admin"
       }
     },
     "/v1/webhookRoutes": {
       "get": {
         "summary": "List webhook routes",
         "operationId": "getV1Webhookroutes",
-        "description": "List custom webhook routes",
+        "description": "List custom webhook routes. Credentials are masked: stored passwords, the credentials in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\". A masked value is not the stored one - leave the field out of an update rather than writing it back, otherwise the mask replaces the credential.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -22635,14 +23311,16 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "webhook"
       }
     },
     "/v1/webhookRoutes/webhookRoute/{webhookRoute}": {
       "get": {
         "summary": "Get webhook route information",
         "operationId": "getV1WebhookroutesWebhookrouteWebhookroute",
-        "description": "Retrieve webhook route content and information",
+        "description": "Retrieve webhook route content and information. Credentials are masked: stored passwords, the credentials in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\". A masked value is not the stored one - leave the field out of an update rather than writing it back, otherwise the mask replaces the credential.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -22743,7 +23421,9 @@
               }
             }
           }
-        }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "webhook"
       }
     }
   }

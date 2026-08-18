@@ -22,6 +22,7 @@ const { buildModel } = require('../lib/api-reference/model');
 const { buildSchemaTree, buildExample, typeLabel, rowExample, enumInfo } = require('../lib/api-reference/schema-tree');
 const { buildCodeSamples, readCodeSamples } = require('../lib/api-reference/code-samples');
 const { formatDescription, slugify, constraintList } = require('../lib/api-reference/format');
+const { DECLARABLE_IMPACTS } = require('../lib/api-routes/operation-impact');
 
 let spec;
 let model;
@@ -248,7 +249,9 @@ test('API reference model', async t => {
         // which is how a reader learns to skim past the ones that matter. Weight now follows
         // lib/api-routes/operation-impact.js: nothing on a read, a muted line on a write, a
         // warning where the effect cannot be taken back.
-        const known = new Set(['destructive', 'sends', 'readonly']);
+        // The vocabulary comes from the module that owns it. A hand-written copy here drifted the
+        // moment IMPACT gained a member.
+        const known = DECLARABLE_IMPACTS;
         const declared = [];
         for (const path of Object.keys(spec.paths)) {
             for (const method of Object.keys(spec.paths[path])) {
