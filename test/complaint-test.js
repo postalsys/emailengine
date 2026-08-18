@@ -323,3 +323,36 @@ test('camelCaseComplaint', async t => {
         assert.deepStrictEqual(Object.keys(complaint), ['arf']);
     });
 });
+
+// A feedback report is an attacker-supplied attachment, and libmime.decodeHeaders() hands back
+// "__proto__" as a real own key, which arfDetect() would otherwise write into report.arf. No
+// global pollution is possible, and the reportDefaults merge at the end of arfDetect() already
+// discards the resulting prototype swap on its own - so this pins the observable contract, and
+// only fails if BOTH that merge and the key guard are dropped.
+test('ARF reports with prototype-shaped field names', async t => {
+    await t.test('returns a clean report that survives the webhook round-trip', async () => {
+        // Field names go into the raw report body rather than an object literal, since a literal
+        // keyed by "__proto__" would set the literal's prototype instead of a key.
+        const report = await arfDetect({
+            from: { address: 'complaints@example.com' },
+            subject: 'complaint about message',
+            messageSpecialUse: '\\Inbox',
+            attachments: [
+                {
+                    contentType: 'message/feedback-report',
+                    content: Buffer.from('Feedback-Type: abuse\r\n__proto__: injected\r\nUser-Agent: SomeUA\r\n')
+                }
+            ]
+        });
+
+        assert.strictEqual(Object.getPrototypeOf(report.arf), Object.prototype);
+        assert.strictEqual(report.arf['feedback-type'], 'abuse');
+        assert.ok(!Object.keys(report.arf).includes('__proto__'));
+
+        const complaint = camelCaseComplaint(report);
+        assert.strictEqual(Object.getPrototypeOf(complaint.arf), Object.prototype);
+        assert.strictEqual(complaint.arf.feedbackType, 'abuse');
+        // The payload is published as JSON, so it has to survive a round-trip unchanged
+        assert.deepStrictEqual(JSON.parse(JSON.stringify(complaint)).arf, complaint.arf);
+    });
+});
