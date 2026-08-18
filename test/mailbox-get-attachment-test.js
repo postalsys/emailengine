@@ -20,14 +20,22 @@ const { Mailbox } = require('../lib/email-client/imap/mailbox');
 // blocked behind it. Aborting is the normal path when an HTTP client disconnects
 // mid-download, so this is routine traffic rather than an edge case.
 
-function createMockContext() {
+// getAttachment hands the content stream back to its caller, so its tests need one that stays open
+// until they end or destroy it. getText buffers the stream to completion, so its tests need one
+// that ends on its own.
+function createMockContext({ downloadError, makeContent = () => new PassThrough() } = {}) {
     const events = [];
 
     const connectionClient = {
-        download: async () => ({
-            meta: { contentType: 'application/pdf', filename: 'report.pdf', disposition: 'attachment' },
-            content: new PassThrough()
-        })
+        download: async () => {
+            if (downloadError) {
+                throw downloadError;
+            }
+            return {
+                meta: { contentType: 'application/pdf', filename: 'report.pdf', disposition: 'attachment' },
+                content: makeContent()
+            };
+        }
     };
 
     const ctx = {
@@ -69,7 +77,12 @@ test('Mailbox.getAttachment() lock handling', async t => {
         assert.deepEqual(events, ['release', 'onTaskCompleted'], 'an aborted download must give the mailbox lock back');
     });
 
-    await t.test('releases the lock exactly once on a completed download', async () => {
+    await t.test('returns the connection to its main mailbox after a completed download', async () => {
+        // The download SELECTs the attachment's mailbox on this connection. Reporting the task is
+        // what arms the re-select back to the monitored mailbox, and getAttachment was the only
+        // method here that skipped it on success - leaving the connection parked in the
+        // attachment's folder, and so idling on the wrong one, until the next resync 15 minutes
+        // later.
         const { ctx, events } = createMockContext();
 
         const content = await Mailbox.prototype.getAttachment.call(ctx, { uid: 42 }, '2', {}, {});
@@ -79,7 +92,7 @@ test('Mailbox.getAttachment() lock handling', async t => {
         await tick();
         await tick();
 
-        assert.deepEqual(events, ['release'], 'a completed download releases the lock on end, and the close backstop must not double-release');
+        assert.deepEqual(events, ['release', 'onTaskCompleted'], 'a completed download must release the lock once and report the task');
     });
 
     await t.test('releases the lock when the download fails without being destroyed', async () => {
@@ -107,5 +120,43 @@ test('Mailbox.getAttachment() lock handling', async t => {
         await tick();
 
         assert.deepEqual(events, ['release', 'onTaskCompleted'], 'a failed download must not release the lock twice');
+    });
+});
+
+// getText() holds the same per-connection mailbox lock across its FETCHes. It released the lock
+// from a finally but reported the task after the try/finally, so a FETCH that threw returned the
+// lock and left the connection parked on the message's mailbox - idling on the wrong one until
+// the next resync, 15 minutes later.
+
+function endedStream(text) {
+    const stream = new PassThrough();
+    stream.end(text);
+    return stream;
+}
+
+test('Mailbox.getText() lock handling', async t => {
+    await t.test('reports the task after a successful fetch', async () => {
+        const { ctx, events } = createMockContext({ makeContent: () => endedStream('message text') });
+
+        await Mailbox.prototype.getText.call(ctx, { uid: 42 }, ['1'], {}, {});
+
+        assert.deepEqual(events, ['release', 'onTaskCompleted']);
+    });
+
+    await t.test('reports the task when the fetch throws', async () => {
+        const downloadError = new Error('IMAP connection dropped mid-fetch');
+        const { ctx, events } = createMockContext({ downloadError });
+
+        await assert.rejects(() => Mailbox.prototype.getText.call(ctx, { uid: 42 }, ['1'], {}, {}), /dropped mid-fetch/);
+
+        assert.deepEqual(events, ['release', 'onTaskCompleted'], 'a failed fetch must still send the connection back to its mailbox');
+    });
+
+    await t.test('takes no lock and reports nothing when the caller already holds one', async () => {
+        const { ctx, events } = createMockContext({ makeContent: () => endedStream('message text') });
+
+        await Mailbox.prototype.getText.call(ctx, { uid: 42 }, ['1'], { skipLock: true }, {});
+
+        assert.deepEqual(events, [], 'skipLock means an outer operation owns the lock and will report the task itself');
     });
 });
