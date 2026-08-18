@@ -13,7 +13,7 @@ const tokens = require('../lib/tokens');
 const settings = require('../lib/settings');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
-const { REDIS_PREFIX } = require('../lib/consts');
+const { REDIS_PREFIX, MAX_ACCOUNT_ID_LENGTH } = require('../lib/consts');
 
 const TOKEN_ID = 'f'.repeat(64);
 const logKey = `${REDIS_PREFIX}tokens:log:${TOKEN_ID}`;
@@ -138,6 +138,20 @@ test('token audit log', async t => {
         // trim rather than a target it may drift past
         const len = await redis.llen(logKey);
         assert.equal(len, auditLog.LOG_ENTRIES, `expected the list capped at ${auditLog.LOG_ENTRIES}, got ${len}`);
+    });
+
+    await t.test('truncates an over-long account to the longest one that could be real', async () => {
+        // The entry is built in the authentication step, which runs before route validation, so this
+        // field is whatever the client put in the path or the `?account=` query argument. Storing it
+        // whole let a token holder blow past the size the retention cap is meant to bound.
+        await redis.del(logKey);
+        auditLog.record(entry({ account: 'a'.repeat(5000) }));
+        await waitForEntries(1);
+
+        // Pinned to the value rather than its length, which would also pass for a slice taken from
+        // the wrong end, or for something else entirely of the right size
+        const { entries } = await auditLog.list(TOKEN_ID);
+        assert.equal(entries[0].account, 'a'.repeat(MAX_ACCOUNT_ID_LENGTH));
     });
 
     await t.test('bounds how long a log survives its last use', async () => {
