@@ -18,7 +18,7 @@
 const os = require('os');
 const path = require('path');
 const { test, expect } = require('@playwright/test');
-const { ensureAdminSession, trackConsoleErrors, BASE_URL } = require('./helpers/bootstrap');
+const { ensureAdminSession, dismissTokenReveal, trackConsoleErrors, BASE_URL } = require('./helpers/bootstrap');
 
 const STATE_FILE = path.join(os.tmpdir(), 'ee-e2e-tokens-state.json');
 
@@ -145,10 +145,10 @@ test.describe('access token pages', () => {
         const overflow = await tokenValue.evaluate(el => el.scrollWidth - el.clientWidth);
         expect(overflow, 'the access token does not fit its field and is being cut off').toBeLessThanOrEqual(0);
 
-        await page.getByRole('button', { name: 'Done' }).click();
-
-        // Closing the reveal modal navigates back to the listing
-        await page.waitForURL(/\/admin\/tokens/);
+        // Closing the reveal modal navigates back to the listing. Through the shared helper, which
+        // settles the opening transition before clicking and waits the navigation out - this spec
+        // used to do it by hand and got both halves wrong.
+        await dismissTokenReveal(page);
 
         // Searched rather than scanned: tokens.list() sorts by the token hash, so a newly minted one
         // lands in an arbitrary position and falls off page one once the shared instance has enough
