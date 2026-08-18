@@ -208,6 +208,7 @@ test.describe('access token pages', () => {
             await page.getByRole('button', { name: 'Generate a token' }).click();
 
             await expect(page.locator('#showTokenValue')).toHaveValue(/^[0-9a-f]{64}$/, { timeout: 15000 });
+            const boundToken = await page.locator('#showTokenValue').inputValue();
             await dismissTokenReveal(page);
 
             // A bound token is not in the unbound listing at all, so the reveal modal hands the
@@ -223,6 +224,18 @@ test.describe('access token pages', () => {
             const listed = page.locator('tr', { hasText: BOUND_TOKEN_DESCRIPTION });
             await expect(listed).toBeVisible();
             await expect(listed).toContainText(BOUND_ACCOUNT_ID);
+
+            // The binding is real over the API, not just a label on a listing
+            const boundAuth = { Authorization: `Bearer ${boundToken}` };
+            expect((await request.get(`/v1/account/${BOUND_ACCOUNT_ID}`, { headers: boundAuth })).status()).toBe(200);
+
+            // And deleting the account revokes it. The record used to survive in the global token
+            // hash, where it went on authenticating with nothing anywhere listing it.
+            await request.delete(`/v1/account/${BOUND_ACCOUNT_ID}`, { headers: auth });
+            expect(
+                (await request.get(`/v1/account/${BOUND_ACCOUNT_ID}`, { headers: boundAuth })).status(),
+                'a token bound to a deleted account must no longer authenticate'
+            ).toBe(401);
 
             expect(errors).toEqual([]);
         } finally {

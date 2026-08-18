@@ -8,6 +8,7 @@ const crypto = require('crypto');
 process.env.EENGINE_REDIS_PREFIX = 'test_tokens';
 
 const tokens = require('../lib/tokens');
+const tokenAuditLog = require('../lib/token-audit-log');
 const { redis } = require('../lib/db');
 const { REDIS_PREFIX } = require('../lib/consts');
 
@@ -552,6 +553,58 @@ test('Token management tests', async t => {
         const used = await tokens.getAccess(id);
         assert.ok(used.time instanceof Date, 'last use is a Date, matching the listing');
         assert.equal(used.ip, '10.1.2.3');
+    });
+
+    await t.test('deleteForAccount() takes an account credentials with it', async () => {
+        // Deleting an account used to unlink only its token index, leaving credentials that still
+        // authenticated behind it
+        const account = 'token-revoke-test';
+        const bound = await tokens.provision({ account, description: 'bound to a doomed account', nolog: true });
+        const unrelated = await tokens.provision({ description: 'unrelated root token', nolog: true });
+        createdTokens.push(unrelated);
+
+        const boundId = tokens.tokenId(bound);
+        // Stands in for an audit log without depending on the setting that writes one: what matters
+        // is that the key named after the token id goes too, since nothing else would collect it
+        await redis.set(tokenAuditLog.logKey(boundId), 'placeholder');
+
+        assert.equal(await tokens.deleteForAccount(account), 1);
+
+        assert.equal(await redis.hget(`${REDIS_PREFIX}tokens`, boundId), null, 'the record itself is gone, not just the index');
+        assert.equal(await redis.hget(`${REDIS_PREFIX}tokens:access`, boundId), null);
+        assert.equal(await redis.exists(tokenAuditLog.logKey(boundId)), 0);
+        assert.equal(await redis.exists(`${REDIS_PREFIX}iat:${account}`), 0);
+
+        await assert.rejects(() => tokens.get(bound), /Unknown token/, 'the token no longer authenticates');
+        assert.ok(await tokens.get(unrelated), 'a token bound to nothing is untouched');
+
+        assert.equal(await tokens.deleteForAccount('account-that-never-existed'), 0);
+    });
+
+    await t.test('list() reads past one batch and filters while it reads', async () => {
+        // Records are read in batches and non-matches are dropped as they arrive, so a search across
+        // an instance-sized listing never holds every record at once. Sized off the batch itself, so
+        // that raising it cannot leave this test passing while no longer crossing a boundary: the
+        // matching description below sits past the first batch, so a broken loop returns nothing.
+        const account = 'batched-list-test';
+        const count = tokens.TOKEN_BATCH_SIZE + 100;
+
+        await Promise.all(Array.from({ length: count }, (v, i) => tokens.provision({ account, description: `batched ${i}`, nolog: true })));
+
+        const all = await tokens.list(account, 0, count);
+        assert.equal(all.total, count);
+        assert.equal(all.tokens.length, count, 'every record is read, including the ones past the first batch');
+        assert.ok(
+            all.tokens.every(entry => entry.access && 'time' in entry.access),
+            'the last-use record is attached to each listed token, though it is read separately'
+        );
+
+        const last = `batched ${count - 1}`;
+        const filtered = await tokens.list(account, 0, 20, last);
+        assert.equal(filtered.total, 1, 'the filter counts matches, not records read');
+        assert.equal(filtered.tokens[0].description, last);
+
+        assert.equal(await tokens.deleteForAccount(account), count);
     });
 
     await t.test('list({all}) covers bound and unbound tokens alike', async () => {
