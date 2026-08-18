@@ -78,6 +78,48 @@ test('destroying the reader aborts the transfer and releases the source (Commit 
     }
 });
 
+test('an abort that lands before the transfer starts does not throw', async () => {
+    // Reported from production: IMAP workers holding ~700 accounts each died roughly twice a
+    // day with an uncaught ERR_STREAM_UNABLE_TO_PIPE. See the comment on pipeToMessagePort()
+    // for the mechanism; the sequence below is the one that reached it.
+    const { port1, port2 } = new MessageChannel();
+
+    try {
+        // The consumer goes away while the IMAP worker is still awaiting its upstream fetch.
+        const reader = new MessagePortReadable(port1);
+        reader.destroy();
+
+        // The fetch resolves only now, so the writable is built against a port whose peer has
+        // already cancelled, and the queued cancel destroys it before the transfer starts.
+        const source = new PassThrough();
+        const writable = new MessagePortWritable(port2);
+
+        await tick();
+        assert.strictEqual(writable.destroyed, true, 'the queued cancel must have destroyed the writable first');
+
+        const debugMessages = [];
+        assert.doesNotThrow(() => {
+            pipeToMessagePort(source, writable, {
+                error() {},
+                debug(entry) {
+                    debugMessages.push(entry.msg);
+                }
+            });
+        }, 'piping into an already-destroyed destination must not throw ERR_STREAM_UNABLE_TO_PIPE');
+
+        assert.strictEqual(source.destroyed, true, 'the source must be released so its mailbox lock is not held forever');
+        assert.deepEqual(debugMessages, ['Message stream transfer aborted by consumer before it started'], 'the abort must leave a trace in the log');
+
+        // The helper is also reachable without a logger.
+        const unloggedSource = new PassThrough();
+        assert.doesNotThrow(() => pipeToMessagePort(unloggedSource, writable));
+        assert.strictEqual(unloggedSource.destroyed, true, 'the source must be released even when nothing is logging');
+    } finally {
+        port1.close();
+        port2.close();
+    }
+});
+
 test('a producer error reaches the reader as a stream error, not a clean end (Commit 3)', async () => {
     const { port1, port2 } = new MessageChannel();
 

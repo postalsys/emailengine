@@ -765,8 +765,8 @@ class ConnectionHandler {
             if (Buffer.isBuffer(source)) {
                 // The consumer may have aborted and destroyed the writable (via a cancel
                 // message) before this runs; ending a destroyed stream would emit an
-                // unhandled 'error' and take down the worker. The streaming branch is
-                // safe because pipeline() tears down a destroyed destination cleanly.
+                // unhandled 'error' and take down the worker. pipeToMessagePort() carries
+                // the equivalent guard for the streaming branch.
                 if (!stream.destroyed) {
                     stream.end(source);
                 }
@@ -810,8 +810,8 @@ class ConnectionHandler {
             if (Buffer.isBuffer(source.data)) {
                 // The consumer may have aborted and destroyed the writable (via a cancel
                 // message) before this runs; ending a destroyed stream would emit an
-                // unhandled 'error' and take down the worker. The streaming branch is
-                // safe because pipeline() tears down a destroyed destination cleanly.
+                // unhandled 'error' and take down the worker. pipeToMessagePort() carries
+                // the equivalent guard for the streaming branch.
                 if (!stream.destroyed) {
                     stream.end(source.data);
                 }
