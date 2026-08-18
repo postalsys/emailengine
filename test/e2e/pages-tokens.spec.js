@@ -18,12 +18,17 @@
 const os = require('os');
 const path = require('path');
 const { test, expect } = require('@playwright/test');
-const { ensureAdminSession, dismissTokenReveal, trackConsoleErrors, BASE_URL } = require('./helpers/bootstrap');
+const { ensureAdminSession, createApiToken, dismissTokenReveal, trackConsoleErrors, BASE_URL } = require('./helpers/bootstrap');
 
 const STATE_FILE = path.join(os.tmpdir(), 'ee-e2e-tokens-state.json');
 
 // Unique per run so a re-run against the same Redis does not match a previous token's row
 const TOKEN_DESCRIPTION = `e2e restricted ${Date.now()}`;
+const BOUND_TOKEN_DESCRIPTION = `e2e bound ${Date.now()}`;
+
+// The account the binding test points at. Registered over the REST API rather than through the
+// account wizard: what is under test is the token form, and the wizard needs a working mail server.
+const BOUND_ACCOUNT_ID = 'e2e-token-binding';
 
 test.describe('access token pages', () => {
     test.use({ storageState: STATE_FILE });
@@ -163,6 +168,68 @@ test.describe('access token pages', () => {
         await expect(row).toContainText('Folders');
 
         expect(errors).toEqual([]);
+    });
+
+    test('a token can be bound to an account typed into the form', async ({ page, request }) => {
+        // The binding used to be reachable only by opening the form from an account page, which put
+        // the account in the URL and out of sight. It is what the token IS - the credential is
+        // refused for every other account - so it has to be visible and editable on the form itself.
+        const errors = trackConsoleErrors(page);
+
+        const apiToken = await createApiToken(page, `e2e binding setup ${Date.now()}`);
+        await dismissTokenReveal(page);
+        const auth = { Authorization: `Bearer ${apiToken}` };
+
+        // No imap/smtp block: the token form resolves the account record and never touches the mail
+        // server, and a half-configured account would have the IMAP worker dialling out for the
+        // length of the test for nothing
+        await request.delete(`/v1/account/${BOUND_ACCOUNT_ID}`, { headers: auth }).catch(() => {});
+        const created = await request.post('/v1/account', {
+            headers: auth,
+            data: {
+                account: BOUND_ACCOUNT_ID,
+                name: 'E2E Token Binding',
+                email: 'e2e-token-binding@ethereal.email'
+            }
+        });
+        expect(created.ok(), `POST /v1/account -> ${created.status()} ${await created.text()}`).toBeTruthy();
+
+        try {
+            await page.goto(`${BASE_URL}/admin/tokens/new`);
+
+            // Optional: an empty field is what an unbound, instance-wide token looks like
+            await expect(page.locator('#account')).toHaveValue('');
+
+            await page.locator('#description').fill(BOUND_TOKEN_DESCRIPTION);
+            await page.locator('#account').fill(BOUND_ACCOUNT_ID);
+            await page.getByRole('button', { name: 'Generate a token' }).click();
+
+            await expect(page.locator('#showTokenValue')).toHaveValue(/^[0-9a-f]{64}$/, { timeout: 15000 });
+            await dismissTokenReveal(page);
+
+            // A bound token is not in the unbound listing at all, so the reveal modal hands the
+            // reader over to the listing for the account it was just bound to
+            await expect(page).toHaveURL(new RegExp(`/admin/tokens\\?account=${BOUND_ACCOUNT_ID}$`));
+            await expect(page.locator('tr', { hasText: BOUND_TOKEN_DESCRIPTION })).toBeVisible();
+
+            expect(errors).toEqual([]);
+        } finally {
+            await request.delete(`/v1/account/${BOUND_ACCOUNT_ID}`, { headers: auth }).catch(() => {});
+        }
+    });
+
+    test('an account ID that does not exist is refused, and says so', async ({ page }) => {
+        // Free text, so a typo is the failure to design for. It has to name the value that was not
+        // found rather than report a bare "Not Found", which says nothing about which field to fix.
+        await page.goto(`${BASE_URL}/admin/tokens/new`);
+
+        await page.locator('#description').fill(`e2e unknown account ${Date.now()}`);
+        await page.locator('#account').fill('e2e-no-such-account');
+        await page.getByRole('button', { name: 'Generate a token' }).click();
+
+        const error = page.locator('#showTokenError');
+        await expect(error).toBeVisible({ timeout: 15000 });
+        await expect(error).toContainText('e2e-no-such-account');
     });
 
     test('warns when a restriction contradicts one of the token own scopes', async ({ page }) => {

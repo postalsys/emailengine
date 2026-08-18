@@ -21,13 +21,17 @@
 {{else}}
 <form method="post" id="token-form" action="/admin/tokens/new">
     <input type="hidden" name="crumb" value="{{crumb}}" />
-    <input type="hidden" id="account" name="account" value="{{values.account}}" />
 
     <div class="card bg-base-100 shadow-md mb-6">
 
         <div class="card-body space-y-4">
 
             {{> ui/form-field id="description" label="Description" value=values.description error=errors.description required=true hint="This description is shown when listing active tokens."}}
+
+            {{!-- Free text rather than a select: an instance can hold far more accounts than a list
+                  could usefully carry. The ID is resolved on submit, so a typo is refused rather than
+                  minting a token bound to nothing. --}}
+            {{> ui/form-field id="account" label="Account ID (optional)" value=values.account error=errors.account placeholder="Leave empty to allow all accounts" hint="A bound token only works for that one account. Requests made for any other account are refused."}}
 
             <div>
                 <h6 class="mb-2 font-bold">Allowed scopes</h6>
@@ -383,6 +387,10 @@
             let description = document.getElementById('description').value.trim();
             document.getElementById('description').value = description
 
+            // Trimmed so the redirect below filters the listing on the same value that was posted
+            let account = document.getElementById('account').value.trim();
+            document.getElementById('account').value = account
+
             let collectAxis = selector =>
                 Array.from(document.querySelectorAll(selector))
                     .filter(elm => elm.checked)
@@ -409,7 +417,6 @@
                 showTokenValueElm.value = '';
 
                 if (wasShown) {
-                    let account = document.getElementById('account').value || '';
                     location.assign("/admin/tokens" + (account ? '?account=' + encodeURIComponent(account) : ''));
                 }
             }, { once: true });
@@ -447,7 +454,7 @@
                 description,
                 scopes,
                 permissions,
-                account: document.getElementById('account').value || ''
+                account
             }).then(data => {
 
                 if (!data.success) {
