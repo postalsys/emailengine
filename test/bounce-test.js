@@ -358,3 +358,62 @@ test('applyDeliveryReport', async t => {
         assert.strictEqual(messageInfo.deliveryReport, undefined);
     });
 });
+
+// The headers of the bounced message are rebuilt from mailparser's headerLines, whose keys come
+// straight from that message. A bare `!headers[key]` probe finds the inherited value for a name
+// like "__proto__" and pushes onto it, throwing out of the whole block: the report then lost every
+// header of the bounced message, plus the Message-ID and any delivery-status carried in the same
+// attachment, because the surrounding try/catch swallowed it.
+test('bounced message headers with prototype-shaped names', async t => {
+    const bounceWithOriginalHeaders = extraHeaders =>
+        Buffer.from(
+            [
+                'From: mailer-daemon@example.com',
+                'To: sender@example.com',
+                'Subject: Undelivered Mail Returned to Sender',
+                'Content-Type: multipart/report; report-type=delivery-status; boundary="B"',
+                'MIME-Version: 1.0',
+                '',
+                '--B',
+                'Content-Type: text/plain',
+                '',
+                'delivery failed',
+                '',
+                '--B',
+                'Content-Type: message/delivery-status',
+                '',
+                'Reporting-MTA: dns; mx.example.com',
+                '',
+                'Final-Recipient: rfc822; bob@example.com',
+                'Action: failed',
+                'Status: 5.1.1',
+                '',
+                '--B',
+                'Content-Type: message/rfc822',
+                '',
+                'Subject: original subject'
+            ]
+                .concat(extraHeaders)
+                .concat(['Message-ID: <orig@example.com>', 'From: sender@example.com', 'To: bob@example.com', '', 'original body', '', '--B--', ''])
+                .join('\r\n')
+        );
+
+    await t.test('keeps the rest of the report when the bounced message carries one', async () => {
+        const bounce = await bounceDetect(bounceWithOriginalHeaders(['__proto__: injected', 'constructor: c']));
+
+        assert.strictEqual(bounce.recipient, 'bob@example.com');
+        assert.strictEqual(bounce.action, 'failed');
+        assert.strictEqual(bounce.messageId, '<orig@example.com>');
+        // The poisoned names are dropped, every real header of the bounced message survives
+        assert.deepStrictEqual(Object.keys(bounce.messageHeaders).sort(), ['from', 'message-id', 'subject', 'to']);
+        assert.deepStrictEqual(bounce.messageHeaders.subject, ['original subject']);
+        assert.strictEqual({}.injected, undefined);
+    });
+
+    await t.test('matches a bounce carrying no such header', async () => {
+        const poisoned = await bounceDetect(bounceWithOriginalHeaders(['__proto__: injected']));
+        const clean = await bounceDetect(bounceWithOriginalHeaders([]));
+
+        assert.deepStrictEqual(poisoned.messageHeaders, clean.messageHeaders);
+    });
+});
