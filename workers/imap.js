@@ -19,7 +19,7 @@ const { BaseClient } = require('../lib/email-client/base-client');
 const { Account } = require('../lib/account');
 const { oauth2Apps, isApiBasedApp } = require('../lib/oauth2-apps');
 const { redis, notifyQueue, submitQueue, documentsQueue, getFlowProducer } = require('../lib/db');
-const { MessagePortWritable, pipeToMessagePort } = require('../lib/message-port-stream');
+const { sendToMessagePort } = require('../lib/message-port-stream');
 const { packRpcError, unpackRpcError } = require('../lib/worker-rpc-error');
 const { getESClient } = require('../lib/document-store');
 const settings = require('../lib/settings');
@@ -756,24 +756,7 @@ class ConnectionHandler {
             throw err;
         }
 
-        // Build the cross-thread writable only after we know there is content to send.
-        // Constructing it earlier leaks the transferred MessagePort (and its message
-        // listener) whenever the lookup above throws (e.g. a 404).
-        let stream = new MessagePortWritable(message.port);
-
-        setImmediate(() => {
-            if (Buffer.isBuffer(source)) {
-                // The consumer may have aborted and destroyed the writable (via a cancel
-                // message) before this runs; ending a destroyed stream would emit an
-                // unhandled 'error' and take down the worker. pipeToMessagePort() carries
-                // the equivalent guard for the streaming branch.
-                if (!stream.destroyed) {
-                    stream.end(source);
-                }
-            } else {
-                pipeToMessagePort(source, stream, accountData.connection.logger);
-            }
-        });
+        sendToMessagePort(message.port, source, accountData.connection.logger);
 
         return {
             headers: {
@@ -801,24 +784,11 @@ class ConnectionHandler {
             throw err;
         }
 
-        // Build the cross-thread writable only after we know there is content to send.
-        // Constructing it earlier leaks the transferred MessagePort (and its message
-        // listener) whenever the lookup above throws (e.g. a 404).
-        let stream = new MessagePortWritable(message.port);
+        // IMAP resolves an attachment to the download stream itself, Gmail and Graph to a Buffer
+        // wrapped alongside the headers.
+        let payload = Buffer.isBuffer(source.data) ? source.data : source;
 
-        setImmediate(() => {
-            if (Buffer.isBuffer(source.data)) {
-                // The consumer may have aborted and destroyed the writable (via a cancel
-                // message) before this runs; ending a destroyed stream would emit an
-                // unhandled 'error' and take down the worker. pipeToMessagePort() carries
-                // the equivalent guard for the streaming branch.
-                if (!stream.destroyed) {
-                    stream.end(source.data);
-                }
-            } else {
-                pipeToMessagePort(source, stream, accountData.connection.logger);
-            }
-        });
+        sendToMessagePort(message.port, payload, accountData.connection.logger);
 
         return {
             headers: source.headers,

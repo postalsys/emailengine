@@ -12,7 +12,7 @@ const assert = require('node:assert').strict;
 const { Readable, PassThrough } = require('node:stream');
 const { MessageChannel } = require('node:worker_threads');
 
-const { MessagePortWritable, MessagePortReadable, pipeToMessagePort } = require('../lib/message-port-stream');
+const { MessagePortWritable, MessagePortReadable, pipeToMessagePort, sendToMessagePort } = require('../lib/message-port-stream');
 
 function tick() {
     return new Promise(resolve => setImmediate(resolve));
@@ -116,6 +116,99 @@ test('an abort that lands before the transfer starts does not throw', async () =
         assert.strictEqual(unloggedSource.destroyed, true, 'the source must be released even when nothing is logging');
     } finally {
         port1.close();
+        port2.close();
+    }
+});
+
+test('a producer whose port closes mid-transfer fails the read instead of hanging it', async () => {
+    // The { cancel: true } / { error } handshake only works while both sides are alive to speak
+    // it. When the producing worker dies, the channel closes with nothing said, and without a
+    // reaction to the port's own 'close' the reader would never push null and never error - the
+    // HTTP response would hang until its socket timed out.
+    const { port1, port2 } = new MessageChannel();
+
+    try {
+        const reader = new MessagePortReadable(port1);
+
+        let readerError = null;
+        let endedCleanly = false;
+        reader.on('error', err => {
+            readerError = err;
+        });
+        reader.on('end', () => {
+            endedCleanly = true;
+        });
+        reader.resume();
+
+        // Half a message arrives, then the producing thread goes away.
+        port2.postMessage({ value: Buffer.from('half a message'), done: false });
+        port2.close();
+
+        await tick();
+        await tick();
+
+        assert.ok(readerError, 'a channel that closes before { done: true } must surface as an error');
+        assert.strictEqual(endedCleanly, false, 'a truncated body must never be reported as a complete message');
+    } finally {
+        port1.close();
+    }
+});
+
+test('a complete transfer is not mistaken for an interrupted one when the port closes', async () => {
+    // The producer closes its port immediately after { done: true }, so 'close' arrives on every
+    // healthy download too. Queued messages are delivered first, which is what lets the two be
+    // told apart - assert it rather than trusting it.
+    const { port1, port2 } = new MessageChannel();
+
+    try {
+        const writable = new MessagePortWritable(port2);
+        const reader = new MessagePortReadable(port1);
+        const source = new PassThrough();
+
+        pipeToMessagePort(source, writable, { error() {}, debug() {} });
+
+        let readerError = null;
+        reader.on('error', err => {
+            readerError = err;
+        });
+        const chunks = [];
+        reader.on('data', chunk => chunks.push(chunk));
+        const ended = new Promise(resolve => reader.on('end', resolve));
+
+        source.end('the whole message');
+        await ended;
+        await tick();
+        await tick();
+
+        assert.strictEqual(readerError, null, 'a completed transfer must not be failed by the port closing behind it');
+        assert.strictEqual(Buffer.concat(chunks).toString(), 'the whole message');
+    } finally {
+        port1.close();
+        port2.close();
+    }
+});
+
+test('a consumer whose port closes releases the producer and its mailbox lock', async () => {
+    // Mirror image: the API worker dies without sending a cancel. The producer must stop rather
+    // than draining the whole attachment into a port nobody is reading.
+    const { port1, port2 } = new MessageChannel();
+
+    try {
+        const writable = new MessagePortWritable(port2);
+        const source = new PassThrough();
+
+        pipeToMessagePort(source, writable, { error() {}, debug() {} });
+        source.write('first chunk');
+
+        await new Promise(resolve => {
+            writable.on('close', resolve);
+            port1.close();
+        });
+        await tick();
+
+        assert.strictEqual(writable.destroyed, true, 'the writable must be torn down when the channel closes');
+        assert.strictEqual(source.destroyed, true, 'the source must be released so its mailbox lock is not held for the whole download');
+    } finally {
         port2.close();
     }
 });
@@ -244,5 +337,85 @@ test('normal completion closes the reader port and removes its listener (Commit 
     } finally {
         port1.close();
         port2.close();
+    }
+});
+
+// sendToMessagePort() is the single entry point both workers/imap.js download handlers use. The
+// Buffer branch (Gmail and Graph) and the streaming branch (IMAP) have to survive the same
+// consumer-abort race, which is why the check lives here rather than at each call site.
+
+test('sendToMessagePort() delivers a Buffer payload', async () => {
+    const { port1, port2 } = new MessageChannel();
+
+    try {
+        const reader = new MessagePortReadable(port1);
+        sendToMessagePort(port2, Buffer.from('a Gmail attachment'), { error() {}, debug() {} });
+
+        const chunks = [];
+        reader.on('data', chunk => chunks.push(chunk));
+        await new Promise(resolve => reader.on('end', resolve));
+
+        assert.strictEqual(Buffer.concat(chunks).toString(), 'a Gmail attachment');
+    } finally {
+        port1.close();
+        port2.close();
+    }
+});
+
+test('sendToMessagePort() delivers a stream payload', async () => {
+    const { port1, port2 } = new MessageChannel();
+
+    try {
+        const reader = new MessagePortReadable(port1);
+        const source = new PassThrough();
+        sendToMessagePort(port2, source, { error() {}, debug() {} });
+        source.end('an IMAP attachment');
+
+        const chunks = [];
+        reader.on('data', chunk => chunks.push(chunk));
+        await new Promise(resolve => reader.on('end', resolve));
+
+        assert.strictEqual(Buffer.concat(chunks).toString(), 'an IMAP attachment');
+    } finally {
+        port1.close();
+        port2.close();
+    }
+});
+
+test('sendToMessagePort() survives a consumer that aborted before the transfer started', async () => {
+    // Production ordering: the consumer gives up while the IMAP worker is still awaiting its
+    // upstream fetch, so { cancel: true } is already sitting in the port's queue by the time the
+    // writable is built. Attaching the writable's listener starts the port, that queued cancel is
+    // delivered on the next turn, and the deferred dispatch runs after it.
+    for (const payload of ['buffer', 'stream']) {
+        const { port1, port2 } = new MessageChannel();
+
+        try {
+            const reader = new MessagePortReadable(port1);
+            reader.destroy();
+            await tick();
+
+            const source = payload === 'buffer' ? Buffer.from('never sent') : new PassThrough();
+            const debugMessages = [];
+
+            const writable = sendToMessagePort(port2, source, {
+                error() {},
+                debug(entry) {
+                    debugMessages.push(entry.msg);
+                }
+            });
+
+            await tick();
+            await tick();
+
+            assert.strictEqual(writable.destroyed, true, `${payload}: the queued cancel must destroy the writable`);
+            assert.deepEqual(debugMessages, ['Message stream transfer aborted by consumer before it started'], `${payload}: the abort must be logged`);
+            if (payload === 'stream') {
+                assert.strictEqual(source.destroyed, true, 'the source must be released so its mailbox lock is not held forever');
+            }
+        } finally {
+            port1.close();
+            port2.close();
+        }
     }
 });
