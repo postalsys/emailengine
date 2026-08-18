@@ -19,7 +19,7 @@
 const os = require('os');
 const path = require('path');
 const { test, expect, request } = require('@playwright/test');
-const { ensureAdminSession, createApiToken, trackConsoleErrors, BASE_URL } = require('./helpers/bootstrap');
+const { ensureAdminSession, createApiToken, dismissTokenReveal, trackConsoleErrors, BASE_URL } = require('./helpers/bootstrap');
 
 // One real login per run: the admin session cookie is captured in beforeAll and
 // reused by every test via storageState. Logging in per test trips the login
@@ -133,16 +133,6 @@ async function deleteViaModal(page, listUrlRe, opts) {
     }
     await page.locator('#deleteModal button[type="submit"]').click();
     await page.waitForURL(listUrlRe);
-}
-
-// Dismisses the one-time token reveal modal createApiToken leaves open: settle
-// the opening transition (a click mid-animation is swallowed), then wait out the
-// location.assign the Done button triggers - navigating while it is in flight
-// aborts with ERR_ABORTED.
-async function dismissTokenReveal(page) {
-    await expect(page.locator('#showToken')).toHaveCSS('opacity', '1');
-    await page.locator('#showToken button', { hasText: 'Done' }).click();
-    await page.waitForURL(/\/admin\/tokens(\?|$)/);
 }
 
 // Asserts the TLS certificate label's FlyonUI tooltip: the cert status text

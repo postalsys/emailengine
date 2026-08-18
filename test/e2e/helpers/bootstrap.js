@@ -86,4 +86,26 @@ async function createApiToken(page, description = 'e2e token') {
     return tokenInput.inputValue();
 }
 
-module.exports = { ADMIN_PASSWORD, PORT, BASE_URL, ensureAdminSession, ensureTrial, createApiToken, trackConsoleErrors };
+/**
+ * Dismisses the one-time token reveal modal createApiToken leaves open.
+ *
+ * Two waits, and both are load-bearing. The opening transition has to settle first, because a click
+ * landing mid-animation is swallowed and the modal never emits its close event - the Done button
+ * then appears to do nothing and whatever waits for the listing waits forever. And the close handler
+ * navigates by location.assign, so the caller has to wait that out rather than issue a navigation of
+ * its own into it, which aborts with ERR_ABORTED.
+ *
+ * The URL pattern is anchored on what follows the path on purpose: an unanchored /\/admin\/tokens/
+ * also matches the /admin/tokens/new the page is still on, so the wait returns against the CURRENT
+ * url and gives none of the protection above.
+ *
+ * Lives here rather than in a spec because it is the counterpart of createApiToken, and a spec that
+ * re-derived it got both waits wrong - one failing only on a slower machine, the other only in CI.
+ */
+async function dismissTokenReveal(page) {
+    await expect(page.locator('#showToken')).toHaveCSS('opacity', '1');
+    await page.locator('#showToken button', { hasText: 'Done' }).click();
+    await page.waitForURL(/\/admin\/tokens(\?|$)/);
+}
+
+module.exports = { ADMIN_PASSWORD, PORT, BASE_URL, ensureAdminSession, ensureTrial, createApiToken, dismissTokenReveal, trackConsoleErrors };
