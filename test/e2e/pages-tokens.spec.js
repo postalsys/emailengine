@@ -163,6 +163,9 @@ test.describe('access token pages', () => {
         const row = page.locator('tr', { hasText: TOKEN_DESCRIPTION });
         await expect(row).toBeVisible();
         await expect(row).toContainText('Restricted');
+        // An unbound token is usable for every account, which the binding column has to say out loud
+        // now that it also reports the tokens that are pinned to one
+        await expect(row).toContainText('All accounts');
         await expect(row).toContainText('Can read in');
         await expect(row).toContainText('Messages');
         await expect(row).toContainText('Folders');
@@ -211,6 +214,15 @@ test.describe('access token pages', () => {
             // reader over to the listing for the account it was just bound to
             await expect(page).toHaveURL(new RegExp(`/admin/tokens\\?account=${BOUND_ACCOUNT_ID}$`));
             await expect(page.locator('tr', { hasText: BOUND_TOKEN_DESCRIPTION })).toBeVisible();
+
+            // And it is on the Access Tokens page itself, which reads every token rather than only
+            // the unbound index - otherwise the page that manages credentials would be the one place
+            // this one could not be found. Searched rather than scanned: the listing sorts by token
+            // hash, so a new row lands in an arbitrary position.
+            await page.goto(`${BASE_URL}/admin/tokens?query=${encodeURIComponent(BOUND_TOKEN_DESCRIPTION)}`);
+            const listed = page.locator('tr', { hasText: BOUND_TOKEN_DESCRIPTION });
+            await expect(listed).toBeVisible();
+            await expect(listed).toContainText(BOUND_ACCOUNT_ID);
 
             expect(errors).toEqual([]);
         } finally {

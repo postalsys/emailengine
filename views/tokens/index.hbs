@@ -29,6 +29,9 @@
             <thead>
                 <tr>
                     <th>Description</th>
+                    {{#if showAccountColumn}}
+                    <th>Bound to</th>
+                    {{/if}}
                     <th>Scopes</th>
                     <th>Last used</th>
                     <th class="w-12"><span class="sr-only">Actions</span></th>
@@ -50,6 +53,23 @@
                         <div class="text-base-content/60 text-xs">Expires <span class="relative-time" data-time="{{expiresStr}}"></span></div>
                         {{/if}}
                     </td>
+
+                    {{#if ../showAccountColumn}}
+                    <td class="align-top">
+                        {{#if account}}
+                        {{#if accountKnown}}
+                        <a href="/admin/accounts/{{account}}" class="link link-animated">{{account}}</a>
+                        {{else}}
+                        <div>{{account}}</div>
+                        {{!-- Deleting an account leaves its tokens behind and they still
+                              authenticate, so this is a state to act on, not a rendering accident --}}
+                        {{> ui/badge label="Account deleted" variant="warning" soft=true icon="" class="mt-1"}}
+                        {{/if}}
+                        {{else}}
+                        <span class="text-base-content/60">All accounts</span>
+                        {{/if}}
+                    </td>
+                    {{/if}}
 
                     <td class="align-top">
                         {{#if scopes}}
