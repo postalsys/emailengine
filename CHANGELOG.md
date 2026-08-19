@@ -1,5 +1,44 @@
 # Changelog
 
+## [2.79.1](https://github.com/postalsys/emailengine/compare/v2.79.0...v2.79.1) (2026-08-19)
+
+
+### Bug Fixes
+
+* **admin:** flag webhook routes that can never deliver on the account page ([416f612](https://github.com/postalsys/emailengine/commit/416f612b616380371f825d673c0b80ad0f975924))
+* **admin:** percent-encode an account or gateway ID interpolated into a link ([522d267](https://github.com/postalsys/emailengine/commit/522d2673eeb33c2f9cc85e7faf78550b99afe361))
+* **admin:** percent-encode every ID a redirect interpolates ([d21c2ab](https://github.com/postalsys/emailengine/commit/d21c2ab5d5892fb94e85a2962a2a252fc865a03d))
+* **admin:** probe a listing's accounts in one round trip ([a9a4c8a](https://github.com/postalsys/emailengine/commit/a9a4c8aeeb30b16b09f22e62847bb93671e8e46d))
+* **admin:** stop reporting a suppression-list read failure as a missing list ([bd414a9](https://github.com/postalsys/emailengine/commit/bd414a94e7ff51f3c6cd68241ff3b94c8996ed2d))
+* **downloads:** end a cross-thread transfer when the peer closes the channel ([8875e79](https://github.com/postalsys/emailengine/commit/8875e799b7d2d365822f3666160450e137130673))
+* **downloads:** notice a consumer that closed the channel before the transfer began ([ce295e6](https://github.com/postalsys/emailengine/commit/ce295e6060c556a0223bbc7bce11078513cbd0ae))
+* **downloads:** stop an aborted attachment download from killing the IMAP worker ([f937993](https://github.com/postalsys/emailengine/commit/f937993b47c518683da3137eebcc7188c8bd9f3e))
+* **gmail:** keep prototype-shaped header names from breaking message formatting ([a494f13](https://github.com/postalsys/emailengine/commit/a494f1308f04fd24dc1ce9bceb27a46ca326fa71))
+* **headers:** drop a __proto__ field name when parsing a header block ([fae64fd](https://github.com/postalsys/emailengine/commit/fae64fd5754f8236b51c26f6095df5c81f299a90))
+* **headers:** drop a constructor field name too, and guard the bounced-message map ([b5fcf32](https://github.com/postalsys/emailengine/commit/b5fcf32003d99254e8288ad2c7d330d14d138637))
+* **headers:** drop a prototype-shaped field name the camelCase step re-creates ([77a3beb](https://github.com/postalsys/emailengine/commit/77a3bebaff9ca61de2ebff875cd50cd9648533c6))
+* **imap:** keep a prototype-shaped content subtype from breaking a text fetch ([d90e013](https://github.com/postalsys/emailengine/commit/d90e0131f236a085bf10537f567b267de0a25481))
+* **imap:** release the mailbox lock when a download resolves without a stream ([8513432](https://github.com/postalsys/emailengine/commit/8513432f9968061eb01fef8e90654904ebdce3cf))
+* **imap:** return the connection to its mailbox after a download or text fetch ([33db6a2](https://github.com/postalsys/emailengine/commit/33db6a20ed64112d9f5c446f89abb82fb9f33101))
+* **imap:** return the connection to its mailbox after deleting one ([0cac841](https://github.com/postalsys/emailengine/commit/0cac8418a296b0bea41c646bcaa539b2862eed69))
+* **imap:** return the connection to its mailbox after renaming one ([6014093](https://github.com/postalsys/emailengine/commit/601409377c19f7f16eb9d8d60d88b5b906ecf1b1))
+* **imap:** stop a secondary connection's task from re-selecting the primary mailbox ([d12a046](https://github.com/postalsys/emailengine/commit/d12a046eaa5d9ef584bc8c88778fcfedc3e3d533))
+* **metrics:** derive the Prometheus queue gauges from BullMQ itself ([7968678](https://github.com/postalsys/emailengine/commit/796867886a2d8ba9ad0e8fee8e9d53dea1af5b3d))
+* **oauth2:** harden the legacy app migration and restore the auth-failure alert ([50710be](https://github.com/postalsys/emailengine/commit/50710bebe5b4c108313add39beabe74e6c0dd0f8))
+* **reference:** leave the deprecated token aliases out of the published document ([1ff4697](https://github.com/postalsys/emailengine/commit/1ff46975d47f130289d2cb2702d11cedbf16a6b6))
+* **reports:** drop every prototype-shaped name a camelCased report can carry ([77abf0e](https://github.com/postalsys/emailengine/commit/77abf0ee7b3266de92885e66ae48824598dc822f))
+* **settings:** refuse masked credential values posted back to the settings API ([7e51155](https://github.com/postalsys/emailengine/commit/7e51155641b72f2622d0d6f7c31d94e2b01ef9fa))
+* **settings:** seed the trial Sentry default atomically ([1e276f8](https://github.com/postalsys/emailengine/commit/1e276f8ef0dac49a6c4fe3470fff572f57cfab94))
+* **startup:** name the prepared-settings keys that get ignored ([9e23ceb](https://github.com/postalsys/emailengine/commit/9e23ceb9d20dff5f7c64690f71f307bf427bac59))
+* **tokens:** bind an access token to an account from the create form ([6f4fc93](https://github.com/postalsys/emailengine/commit/6f4fc936ef254710b7bc99582776c6d1700d7195))
+* **tokens:** keep the audit log page size default inside its own range ([c688756](https://github.com/postalsys/emailengine/commit/c6887564e0ef20e9e5c2b4ec4a5560d3eec3fc8d))
+* **tokens:** raise the audit log retention cap and bound the account it stores ([6c8039a](https://github.com/postalsys/emailengine/commit/6c8039a1fb2bc5325a8b815a79b51d4f318a059f))
+* **tokens:** register the pre-2.79 token endpoints as deprecated aliases ([5cb2887](https://github.com/postalsys/emailengine/commit/5cb2887c6c6c94e7b3dd9686f5223ae6b7dafb29))
+* **tokens:** revoke an account's access tokens when the account is deleted ([61c9a17](https://github.com/postalsys/emailengine/commit/61c9a178c8a55b4f869fc8d204755519f48a3e48))
+* **tokens:** show account-bound tokens on the Access Tokens page ([716ca0d](https://github.com/postalsys/emailengine/commit/716ca0dc5a56a9d853c5064f4c059fbefd8b0551))
+* **tokens:** stop a whitespace-only search from reading every record ([eb1f398](https://github.com/postalsys/emailengine/commit/eb1f398f5a99c613e4fe30d5e91a93cd80399603))
+* **webhooks:** log the reason a delivery is skipped ([c34df7d](https://github.com/postalsys/emailengine/commit/c34df7d0fbe1724e2bea8baa1d66ce3e7a3e3f40))
+
 ## [2.79.0](https://github.com/postalsys/emailengine/compare/v2.78.0...v2.79.0) (2026-08-18)
 
 
