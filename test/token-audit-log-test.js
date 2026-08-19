@@ -186,6 +186,16 @@ test('token audit log', async t => {
         );
     });
 
+    await t.test('the default page size is one the route schema would accept', async () => {
+        // Joi does not validate a schema's own default against that schema, so a default above the
+        // maximum is handed back for an absent value while the same number sent explicitly is
+        // refused with a 400 - and it is the published default that generated SDKs send explicitly.
+        // MAX_PAGE_SIZE follows EENGINE_TOKEN_LOG_ENTRIES, so on an instance keeping fewer than 20
+        // entries the two used to disagree.
+        assert.ok(auditLog.DEFAULT_LOG_PAGE_SIZE >= 1, 'the default has to satisfy the route min()');
+        assert.ok(auditLog.DEFAULT_LOG_PAGE_SIZE <= auditLog.MAX_PAGE_SIZE, 'the default has to satisfy the route max()');
+    });
+
     await t.test('an empty log reads as empty rather than failing', async () => {
         // The normal state on an instance that just enabled the setting
         const result = await auditLog.list('0'.repeat(64));
