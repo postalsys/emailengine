@@ -381,4 +381,71 @@ test('ARF reports with prototype-shaped field names', async t => {
         // The payload is published as JSON, so it has to survive a round-trip unchanged
         assert.deepStrictEqual(JSON.parse(JSON.stringify(complaint)).arf, complaint.arf);
     });
+
+    await t.test('drops a field name the camelCase step turns into an Object.prototype method name', async () => {
+        // "to-string" is a name the parse boundary has no reason to refuse, but camelCased it
+        // shadows Object.prototype.toString as an own string property - the first consumer that
+        // string-coerces the published report then throws "Cannot convert object to a primitive
+        // value". Same for "has-own-property" and hasOwnProperty().
+        const report = await arfDetect({
+            from: { address: 'complaints@example.com' },
+            subject: 'complaint about message',
+            messageSpecialUse: '\\Inbox',
+            attachments: [
+                {
+                    contentType: 'message/feedback-report',
+                    content: Buffer.from('Feedback-Type: abuse\r\nTo-String: injected\r\nHas-Own-Property: injected\r\nUser-Agent: SomeUA\r\n')
+                }
+            ]
+        });
+
+        const complaint = camelCaseComplaint(report);
+
+        assert.deepStrictEqual(Object.keys(complaint.arf), ['feedbackType', 'userAgent']);
+        assert.strictEqual(typeof complaint.arf.toString, 'function', 'toString stays the inherited method');
+        assert.strictEqual(typeof complaint.arf.hasOwnProperty, 'function', 'hasOwnProperty stays the inherited method');
+        assert.strictEqual(typeof `${complaint.arf}`, 'string', 'the section still string-coerces');
+    });
+});
+
+test('ARF Source-IP precedence', async t => {
+    await t.test('the feedback report Source-IP wins over an X-Sender-IP header', async () => {
+        const report = await arfDetect({
+            from: { address: 'complaints@example.com' },
+            subject: 'complaint about message',
+            messageSpecialUse: '\\Inbox',
+            attachments: [
+                {
+                    contentType: 'message/feedback-report',
+                    content: Buffer.from('Feedback-Type: abuse\r\nSource-IP: 192.0.2.1\r\n')
+                },
+                {
+                    contentType: 'message/rfc822-headers',
+                    content: Buffer.from('X-Sender-IP: 198.51.100.2\r\nSubject: original\r\n\r\n')
+                }
+            ]
+        });
+
+        assert.strictEqual(report.arf['source-ip'], '192.0.2.1', 'the authoritative Source-IP is kept');
+    });
+
+    await t.test('X-Sender-IP fills in when the feedback report has no Source-IP', async () => {
+        const report = await arfDetect({
+            from: { address: 'complaints@example.com' },
+            subject: 'complaint about message',
+            messageSpecialUse: '\\Inbox',
+            attachments: [
+                {
+                    contentType: 'message/feedback-report',
+                    content: Buffer.from('Feedback-Type: abuse\r\n')
+                },
+                {
+                    contentType: 'message/rfc822-headers',
+                    content: Buffer.from('X-Sender-IP: 198.51.100.2\r\nSubject: original\r\n\r\n')
+                }
+            ]
+        });
+
+        assert.strictEqual(report.arf['source-ip'], '198.51.100.2', 'the fallback header is used');
+    });
 });

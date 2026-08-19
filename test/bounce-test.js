@@ -324,6 +324,18 @@ test('parseDeliveryReport', async t => {
         assert.deepStrictEqual(msgpack.decode(msgpack.encode(report)), { finalRecipient: { label: 'rfc822', value: 'user@example.com' } });
     });
 
+    await t.test('drops a field name the camelCase step turns into an Object.prototype method name', () => {
+        // "to-string" is a name the parse boundary has no reason to refuse, but camelCased it
+        // shadows Object.prototype.toString as an own property - the first consumer that
+        // string-coerces the published report then throws. Same for "has-own-property".
+        const report = parseDeliveryReport(['Final-Recipient: rfc822; user@example.com', 'To-String: injected', 'Has-Own-Property: injected'].join('\r\n'));
+
+        assert.deepStrictEqual(Object.keys(report), ['finalRecipient']);
+        assert.strictEqual(typeof report.toString, 'function', 'toString stays the inherited method');
+        assert.ok(Object.hasOwn(report, 'finalRecipient') && !Object.hasOwn(report, 'toString'));
+        assert.strictEqual(typeof `${report}`, 'string', 'the report still string-coerces');
+    });
+
     await t.test('ignores a block that is only a continuation line', () => {
         // decodeHeaders returns a single empty key for such a block, which is not a header
         const report = parseDeliveryReport(['Reporting-MTA: dns; mx.example.com', '', '  orphaned continuation', '', 'Action: failed'].join('\r\n'));
