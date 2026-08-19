@@ -747,10 +747,10 @@
                 {{#if webhookRouting.customRoutes.length}}
                 <ul class="list-none p-0 m-0">
                     {{#each webhookRouting.customRoutes}}
-                    <li><a href="/admin/webhooks/webhook/{{this.id}}" class="link link-primary">{{this.name}}</a> <code class="text-base-content/60">{{this.targetUrl}}</code></li>
+                    <li><a href="/admin/webhooks/webhook/{{this.id}}" class="link link-primary">{{this.name}}</a> <code class="text-base-content/60">{{this.targetUrl}}</code>{{#if this.missingFilter}} {{> ui/badge label="no filter - never delivers" variant="warning" soft=true}}{{/if}}</li>
                     {{/each}}
                 </ul>
-                <small class="text-base-content/60">Enabled webhook routes deliver independently of the default target; each route applies its own filter function instead of the event type list.</small>
+                <small class="text-base-content/60">Enabled webhook routes deliver independently of the default target; each route applies its own filter function instead of the event type list. A route without a filter function never delivers anything.</small>
                 {{else}}
                 <span class="text-base-content/60">None enabled</span>
                 {{/if}}

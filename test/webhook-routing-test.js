@@ -125,6 +125,29 @@ test('Webhook routing tests', async t => {
                 null
             ]
         });
-        assert.deepStrictEqual(described.customRoutes, [{ id: 'r1', name: 'Enabled', targetUrl: 'https://r1.example.com' }]);
+        assert.deepStrictEqual(described.customRoutes, [{ id: 'r1', name: 'Enabled', targetUrl: 'https://r1.example.com', missingFilter: false }]);
+    });
+
+    await t.test('describeEffectiveRouting() flags an enabled route that has no filter function', async () => {
+        // The worker's delivery gate (lib/webhooks.js pushToQueue) also requires a compiled
+        // filter function, so an enabled route without one never fires - the card must not
+        // present it as delivering.
+        let described = describeEffectiveRouting({
+            routes: [
+                { id: 'r1', name: 'With filter', targetUrl: 'https://r1.example.com', enabled: true, hasFilter: true },
+                { id: 'r2', name: 'No filter', targetUrl: 'https://r2.example.com', enabled: true, hasFilter: false },
+                // no marker at all (the caller did not probe this route) must not raise the flag
+                { id: 'r3', name: 'Unknown', targetUrl: 'https://r3.example.com', enabled: true }
+            ]
+        });
+
+        assert.deepStrictEqual(
+            described.customRoutes.map(route => ({ id: route.id, missingFilter: route.missingFilter })),
+            [
+                { id: 'r1', missingFilter: false },
+                { id: 'r2', missingFilter: true },
+                { id: 'r3', missingFilter: false }
+            ]
+        );
     });
 });
