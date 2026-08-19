@@ -169,3 +169,85 @@ test('IMAPClient.deleteMailbox() returns the connection to its mailbox', async t
         assert.deepEqual(completed, [connectionClient]);
     });
 });
+
+// The rename sibling of the deleteMailbox() gap above: ImapFlow's RENAME CLOSEs the mailbox first
+// when it is the selected one, so renaming the watched mailbox left the primary connection sitting
+// in AUTHENTICATED state with no mailbox and no IDLE armed until the next resync pass.
+test('IMAPClient.modifyMailbox() returns the connection to its mailbox after a rename', async t => {
+    function createModifyClient({ renameThrows = false, lockThrows = false } = {}) {
+        const client = Object.create(IMAPClient.prototype);
+        const completed = [];
+        const released = [];
+
+        client.logger = { debug() {}, error() {}, info() {} };
+        client.checkIMAPConnection = () => {};
+        client.onTaskCompleted = connectionClient => completed.push(connectionClient);
+        client.runPostListing = () => {};
+
+        const connectionClient = {
+            id: 'primary',
+            getMailboxLock: async () => {
+                if (lockThrows) {
+                    throw new Error('SELECT refused');
+                }
+                return { release: () => released.push('lock') };
+            },
+            mailboxRename: async (path, newPath) => {
+                if (renameThrows) {
+                    let err = new Error('Command failed');
+                    err.responseStatus = 'NO';
+                    throw err;
+                }
+                return { path, newPath };
+            },
+            mailboxSubscribe: async () => {},
+            mailboxUnsubscribe: async () => {}
+        };
+        client.getImapConnection = async () => connectionClient;
+
+        return { client, connectionClient, completed, released };
+    }
+
+    await t.test('reports the task and releases the lock after a rename', async () => {
+        const { client, connectionClient, completed, released } = createModifyClient();
+
+        const result = await client.modifyMailbox('Old folder', 'New folder');
+
+        assert.strictEqual(result.renamed, true);
+        assert.deepEqual(completed, [connectionClient], 'the connection has to be sent back to the mailbox it watches');
+        assert.deepEqual(released, ['lock']);
+    });
+
+    await t.test('reports the task even when the server refuses the rename', async () => {
+        // The RENAME may have run its CLOSE before failing, so the deselected state has to be
+        // undone whether or not the rename went through.
+        const { client, connectionClient, completed, released } = createModifyClient({ renameThrows: true });
+
+        await assert.rejects(() => client.modifyMailbox('Old folder', 'New folder'), /Can not rename mailbox/);
+
+        assert.deepEqual(completed, [connectionClient]);
+        assert.deepEqual(released, ['lock']);
+    });
+
+    await t.test('still renames when the mailbox cannot be selected', async () => {
+        // Selection is not a prerequisite of RENAME (a phantom folder rejects SELECT but renames
+        // fine), so a failed lock is logged and the rename still runs - and still reports the task.
+        const { client, connectionClient, completed } = createModifyClient({ lockThrows: true });
+
+        const result = await client.modifyMailbox('Old folder', 'New folder');
+
+        assert.strictEqual(result.renamed, true);
+        assert.deepEqual(completed, [connectionClient]);
+    });
+
+    await t.test('a subscription-only change does not move the connection', async () => {
+        // SUBSCRIBE never deselects anything, so there is no state to undo and no reason to drag
+        // the primary back to the main mailbox.
+        const { client, completed } = createModifyClient();
+
+        const result = await client.modifyMailbox('Some folder', null, true);
+
+        assert.strictEqual(result.subscribed, true);
+        assert.deepEqual(completed, []);
+    });
+});
