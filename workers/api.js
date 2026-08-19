@@ -481,6 +481,11 @@ const init = async () => {
     // keep using "danger" etc.
     handlebars.registerHelper('eeColor', value => (value === 'danger' ? 'error' : value || 'neutral'));
 
+    // Percent-encode a value for interpolation into a URL path segment. Handlebars escapes for
+    // HTML, which leaves "#", "/", "?" and "%" untouched - and an account ID is free text, so
+    // href="/admin/accounts/{{account}}" resolves somewhere else entirely for an ID carrying one.
+    handlebars.registerHelper('urlpart', value => encodeURIComponent(value === null || value === undefined ? '' : value));
+
     // Join string fragments in subexpressions, e.g. building composed partial
     // hash values: text=(concat "Up to " (formatInteger n locale) " lines")
     handlebars.registerHelper('concat', (...args) => args.slice(0, -1).join(''));

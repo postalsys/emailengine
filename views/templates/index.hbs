@@ -13,7 +13,7 @@
     {{#if account}}
     <div class="card-body">
         <div>
-            Currently showing email templates for <strong><a href="/admin/accounts/{{account.account}}"
+            Currently showing email templates for <strong><a href="/admin/accounts/{{urlpart account.account}}"
                     class="link link-animated">{{account.name}}</a></strong>. These templates cannot be
             used by other accounts.
         </div>
@@ -64,7 +64,7 @@
 {{#if account}}
 {{#> ui/list-empty noun="templates" query=query firstPage=firstPage createHref=newLink createLabel="Create your first template" clearHref="/admin/templates"}}
 <div class="mb-2">
-    Currently showing email templates for <strong><a href="/admin/accounts/{{account.account}}"
+    Currently showing email templates for <strong><a href="/admin/accounts/{{urlpart account.account}}"
             class="link link-animated">{{#if account.name}}{{account.name}}{{else}}{{account.email}}{{/if}}</a></strong>.
     These templates cannot be used by other accounts.
 </div>

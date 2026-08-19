@@ -1,8 +1,8 @@
 {{> accounts_header}}
 
-{{> ui/breadcrumb parentHref="/admin/accounts" parentLabel="Accounts" midHref=(concat "/admin/accounts/" account) midLabel=account current="Edit" class="mt-6 mb-6"}}
+{{> ui/breadcrumb parentHref="/admin/accounts" parentLabel="Accounts" midHref=(concat "/admin/accounts/" (urlpart account)) midLabel=account current="Edit" class="mt-6 mb-6"}}
 
-<form method="post" action="/admin/accounts/{{account}}/edit">
+<form method="post" action="/admin/accounts/{{urlpart account}}/edit">
     <input type="hidden" name="crumb" value="{{crumb}}">
 
     <div class="card bg-base-100 shadow-md mb-6">

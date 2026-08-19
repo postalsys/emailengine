@@ -15,7 +15,7 @@
 
         {{#> ui/detail-toolbar label="Gateway actions"}}
         {{#> ui/tooltip text="Modify gateway settings"}}
-        {{> ui/btn variant="primary" style="outline" size="sm" href=(concat "/admin/gateways/edit/" gateway.gateway) icon="icon-[tabler--edit]" label="Edit gateway"}}
+        {{> ui/btn variant="primary" style="outline" size="sm" href=(concat "/admin/gateways/edit/" (urlpart gateway.gateway)) icon="icon-[tabler--edit]" label="Edit gateway"}}
         {{/ui/tooltip}}
 
         {{> ui/overflow-menu label="More gateway actions" deleteLabel="Delete gateway"}}
@@ -67,7 +67,7 @@
 
 {{/ui/card}}
 
-{{#> ui/confirm-modal id="deleteModal" title="Delete Gateway" action=(concat "/admin/gateways/delete/" gateway.gateway)
+{{#> ui/confirm-modal id="deleteModal" title="Delete Gateway" action=(concat "/admin/gateways/delete/" (urlpart gateway.gateway))
 submitLabel="Delete Gateway"}}
 <p>Delete gateway "{{gateway.name}}"? This action cannot be undone.</p>
 {{/ui/confirm-modal}}

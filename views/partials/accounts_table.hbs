@@ -29,16 +29,16 @@
                 {{#each accounts}}
                 <tr class="hover:bg-base-200/60">
                     <td class="relative">
-                        {{> ui/row-link href=(concat "/admin/accounts/" account) label="Open account"}}
+                        {{> ui/row-link href=(concat "/admin/accounts/" (urlpart account)) label="Open account"}}
                         <div><strong>{{name}}</strong></div>
                         {{> ui/entity-id id=account label="Account ID"}}
                     </td>
                     <td class="relative">
-                        {{> ui/row-link href=(concat "/admin/accounts/" account)}}{{email}}
+                        {{> ui/row-link href=(concat "/admin/accounts/" (urlpart account))}}{{email}}
                     </td>
 
                     <td class="relative">
-                        {{> ui/row-link href=(concat "/admin/accounts/" account)}}
+                        {{> ui/row-link href=(concat "/admin/accounts/" (urlpart account))}}
                         {{#if type.icon}}
                         {{!-- relative z-[1] lifts the tooltip trigger above the row link --}}
                         {{#> ui/tooltip text=type.label class="relative z-[1]"}}
@@ -53,13 +53,13 @@
                     </td>
 
                     <td class="relative w-32">
-                        {{> ui/row-link href=(concat "/admin/accounts/" account)}}
+                        {{> ui/row-link href=(concat "/admin/accounts/" (urlpart account))}}
                         {{!-- live state badge: app.js updates the badge-{type} class,
                               text and error tooltip through the /admin/changes SSE
                               feed. The wrapping link lifts the badge above the row
                               overlay so the tooltip fires while clicks still
                               navigate. --}}
-                        <a href="/admin/accounts/{{account}}" class="relative z-[1] inline-flex">
+                        <a href="/admin/accounts/{{urlpart account}}" class="relative z-[1] inline-flex">
                             {{> ui/state-badge label=stateLabel account=account pointer=true}}
                         </a>
                     </td>
@@ -68,8 +68,8 @@
                           row, not the partial params, so the cell silently vanished (phantom column) --}}
                     {{#if ../showActions}}
                     <td class="relative text-end">
-                        {{> ui/row-actions openHref=(concat "/admin/accounts/" account) label="Account actions"
-                        deleteModal="#deleteAccount" deleteName=(when name name email) deleteAction=(concat "/admin/accounts/" account "/delete")}}
+                        {{> ui/row-actions openHref=(concat "/admin/accounts/" (urlpart account)) label="Account actions"
+                        deleteModal="#deleteAccount" deleteName=(when name name email) deleteAction=(concat "/admin/accounts/" (urlpart account) "/delete")}}
                     </td>
                     {{/if}}
                 </tr>

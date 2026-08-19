@@ -1,6 +1,6 @@
 {{> gateways_header}}
 
-{{> ui/breadcrumb parentHref="/admin/gateways" parentLabel="Gateways" midHref=(concat "/admin/gateways/gateway/" gatewayData.gateway) midLabel=gatewayData.gateway current="Edit" class="mt-6 mb-6"}}
+{{> ui/breadcrumb parentHref="/admin/gateways" parentLabel="Gateways" midHref=(concat "/admin/gateways/gateway/" (urlpart gatewayData.gateway)) midLabel=gatewayData.gateway current="Edit" class="mt-6 mb-6"}}
 
 <form method="post" action="/admin/gateways/edit">
     <input type="hidden" name="crumb" value="{{crumb}}">

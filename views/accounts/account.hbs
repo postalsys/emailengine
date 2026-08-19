@@ -18,12 +18,12 @@
             {{!-- Primary: the two most common reasons to open an account --}}
             {{#if canReadMail}}
             {{#> ui/tooltip text="Browse messages in this account"}}
-            {{> ui/btn variant="primary" size="sm" href=(concat "/admin/accounts/" account.account "/browse") icon="icon-[tabler--folder-open]" label="Browse messages"}}
+            {{> ui/btn variant="primary" size="sm" href=(concat "/admin/accounts/" (urlpart account.account) "/browse") icon="icon-[tabler--folder-open]" label="Browse messages"}}
             {{/ui/tooltip}}
             {{/if}}
 
             {{#> ui/tooltip text="Edit account configuration"}}
-            {{> ui/btn variant="primary" style="outline" size="sm" href=(concat "/admin/accounts/" account.account "/edit") icon="icon-[tabler--user-edit]" label="Edit"}}
+            {{> ui/btn variant="primary" style="outline" size="sm" href=(concat "/admin/accounts/" (urlpart account.account) "/edit") icon="icon-[tabler--user-edit]" label="Edit"}}
             {{/ui/tooltip}}
 
             <div class="bg-base-content/10 mx-1 hidden h-6 w-px self-center sm:block" aria-hidden="true"></div>
@@ -105,7 +105,7 @@
                 </button>
                 <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-56" role="menu"
                     aria-orientation="vertical" aria-labelledby="logs-info">
-                    <li><a class="dropdown-item" href="/admin/accounts/{{account.account}}/logs.txt" download>Download stored logs</a></li>
+                    <li><a class="dropdown-item" href="/admin/accounts/{{urlpart account.account}}/logs.txt" download>Download stored logs</a></li>
                     <li>
                         <div class="divider my-1"></div>
                     </li>
@@ -125,9 +125,9 @@
         {{!-- Related resources scoped to this account (these navigate elsewhere) --}}
         <div class="mb-4 text-base-content/60 text-sm">
             <span class="font-semibold">Related:</span>
-            <a class="link link-animated" href="/admin/templates/?account={{account.account}}">Email templates</a>
+            <a class="link link-animated" href="/admin/templates/?account={{urlpart account.account}}">Email templates</a>
             <span class="text-base-content/30 mx-1">&middot;</span>
-            <a class="link link-animated" href="/admin/tokens/?account={{account.account}}">Access tokens</a>
+            <a class="link link-animated" href="/admin/tokens/?account={{urlpart account.account}}">Access tokens</a>
         </div>
 
         <dl class="ee-dl">
@@ -792,7 +792,7 @@
 </div>
 {{/ui/modal}}
 
-{{#> ui/confirm-modal id="deleteModal" title="Delete Account" action=(concat "/admin/accounts/" account.account "/delete")
+{{#> ui/confirm-modal id="deleteModal" title="Delete Account" action=(concat "/admin/accounts/" (urlpart account.account) "/delete")
 submitLabel="Delete account"}}
 <p>Are you sure you want to delete the account for {{account.name}}? This action cannot be undone.</p>
 {{/ui/confirm-modal}}

@@ -24,16 +24,16 @@
                 {{#each gateways}}
                 <tr class="hover:bg-base-200/60">
                     <td class="relative">
-                        {{> ui/row-link href=(concat "/admin/gateways/gateway/" gateway) label="Open gateway"}}
+                        {{> ui/row-link href=(concat "/admin/gateways/gateway/" (urlpart gateway)) label="Open gateway"}}
                         <div><strong>{{name}}</strong></div>
                         {{> ui/entity-id id=gateway label="Gateway ID"}}
                     </td>
                     <td class="relative">
-                        {{> ui/row-link href=(concat "/admin/gateways/gateway/" gateway)}}{{deliveries}}
+                        {{> ui/row-link href=(concat "/admin/gateways/gateway/" (urlpart gateway))}}{{deliveries}}
                     </td>
 
                     <td class="relative">
-                        {{> ui/row-link href=(concat "/admin/gateways/gateway/" gateway)}}
+                        {{> ui/row-link href=(concat "/admin/gateways/gateway/" (urlpart gateway))}}
                         {{#if timeStr}}
                         <span class="relative-time" data-time="{{timeStr}}"></span>
                         {{else}}
@@ -42,17 +42,17 @@
                     </td>
 
                     <td class="relative w-32">
-                        {{> ui/row-link href=(concat "/admin/gateways/gateway/" gateway)}}
+                        {{> ui/row-link href=(concat "/admin/gateways/gateway/" (urlpart gateway))}}
                         {{!-- live state badge with an error tooltip; wrapping link
                               lifts the badge above the row overlay --}}
-                        <a href="/admin/gateways/gateway/{{gateway}}" class="relative z-[1] inline-flex">
+                        <a href="/admin/gateways/gateway/{{urlpart gateway}}" class="relative z-[1] inline-flex">
                             {{> ui/state-badge label=label account=gateway pointer=true}}
                         </a>
                     </td>
 
                     <td class="relative text-end">
-                        {{> ui/row-actions openHref=(concat "/admin/gateways/gateway/" gateway) label="Gateway actions"
-                        deleteModal="#deleteGateway" deleteName=name deleteAction=(concat "/admin/gateways/delete/" gateway)}}
+                        {{> ui/row-actions openHref=(concat "/admin/gateways/gateway/" (urlpart gateway)) label="Gateway actions"
+                        deleteModal="#deleteGateway" deleteName=name deleteAction=(concat "/admin/gateways/delete/" (urlpart gateway))}}
                     </td>
 
                 </tr>

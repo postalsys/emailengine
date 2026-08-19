@@ -1,6 +1,6 @@
 {{> accounts_header}}
 
-{{> ui/breadcrumb parentHref="/admin/accounts" parentLabel="Accounts" midHref=(concat "/admin/accounts/" account) midLabel=account current="Browse" class="mt-6 mb-6"}}
+{{> ui/breadcrumb parentHref="/admin/accounts" parentLabel="Accounts" midHref=(concat "/admin/accounts/" (urlpart account)) midLabel=account current="Browse" class="mt-6 mb-6"}}
 
 <div id="email-client"></div>
 
