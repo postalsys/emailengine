@@ -19,7 +19,7 @@ const { BaseClient } = require('../lib/email-client/base-client');
 const { Account } = require('../lib/account');
 const { oauth2Apps, isApiBasedApp } = require('../lib/oauth2-apps');
 const { redis, notifyQueue, submitQueue, documentsQueue, getFlowProducer } = require('../lib/db');
-const { sendToMessagePort } = require('../lib/message-port-stream');
+const { sendToMessagePort, MessagePortWritable } = require('../lib/message-port-stream');
 const { packRpcError, unpackRpcError } = require('../lib/worker-rpc-error');
 const { getESClient } = require('../lib/document-store');
 const settings = require('../lib/settings');
@@ -741,59 +741,82 @@ class ConnectionHandler {
     }
 
     async getRawMessage(message) {
-        if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP_ERR;
-        }
+        // Built before the fetch rather than after it: the fetch can take minutes, and a consumer
+        // whose thread dies in the meantime closes the port with nothing queued, which only reaches
+        // a listener that was already attached. See the MessagePortWritable constructor.
+        const writable = new MessagePortWritable(message.port);
+        try {
+            if (!this.accounts.has(message.account)) {
+                throw NO_ACTIVE_HANDLER_RESP_ERR;
+            }
 
-        let accountData = this.accounts.get(message.account);
-        if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP_ERR;
-        }
-        let source = await accountData.connection.getRawMessage(message.message);
-        if (!source) {
-            let err = new Error('Requested file not found');
-            err.statusCode = 404;
+            let accountData = this.accounts.get(message.account);
+            if (!accountData.connection) {
+                throw NO_ACTIVE_HANDLER_RESP_ERR;
+            }
+            let source = await accountData.connection.getRawMessage(message.message);
+            if (!source) {
+                let err = new Error('Requested file not found');
+                err.statusCode = 404;
+                throw err;
+            }
+
+            sendToMessagePort(writable, source, accountData.connection.logger);
+
+            return {
+                headers: {
+                    'content-type': 'message/rfc822',
+                    'content-disposition': `attachment; filename=message.eml`
+                },
+                contentType: 'message/rfc822'
+            };
+        } catch (err) {
+            // Nothing to send, so the port goes back untouched - the consumer is about to be handed
+            // this error, and a closed port would reach it as a failed transfer instead.
+            writable.releaseListeners();
             throw err;
         }
-
-        sendToMessagePort(message.port, source, accountData.connection.logger);
-
-        return {
-            headers: {
-                'content-type': 'message/rfc822',
-                'content-disposition': `attachment; filename=message.eml`
-            },
-            contentType: 'message/rfc822'
-        };
     }
 
     async getAttachment(message) {
-        if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP_ERR;
-        }
+        // Built before the download starts, not after: an attachment is the longest wait on this
+        // worker, and a consumer thread that dies during it closes the port with nothing queued -
+        // which only a listener attached beforehand ever sees. See the MessagePortWritable
+        // constructor.
+        const writable = new MessagePortWritable(message.port);
+        try {
+            if (!this.accounts.has(message.account)) {
+                throw NO_ACTIVE_HANDLER_RESP_ERR;
+            }
 
-        let accountData = this.accounts.get(message.account);
-        if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP_ERR;
-        }
+            let accountData = this.accounts.get(message.account);
+            if (!accountData.connection) {
+                throw NO_ACTIVE_HANDLER_RESP_ERR;
+            }
 
-        let source = await accountData.connection.getAttachment(message.attachment);
-        if (!source) {
-            let err = new Error('Requested file not found');
-            err.statusCode = 404;
+            let source = await accountData.connection.getAttachment(message.attachment);
+            if (!source) {
+                let err = new Error('Requested file not found');
+                err.statusCode = 404;
+                throw err;
+            }
+
+            // IMAP resolves an attachment to the download stream itself, Gmail and Graph to a Buffer
+            // wrapped alongside the headers.
+            let payload = Buffer.isBuffer(source.data) ? source.data : source;
+
+            sendToMessagePort(writable, payload, accountData.connection.logger);
+
+            return {
+                headers: source.headers,
+                contentType: source.contentType
+            };
+        } catch (err) {
+            // Nothing to send, so the port goes back untouched - the consumer is about to be handed
+            // this error, and a closed port would reach it as a failed transfer instead.
+            writable.releaseListeners();
             throw err;
         }
-
-        // IMAP resolves an attachment to the download stream itself, Gmail and Graph to a Buffer
-        // wrapped alongside the headers.
-        let payload = Buffer.isBuffer(source.data) ? source.data : source;
-
-        sendToMessagePort(message.port, payload, accountData.connection.logger);
-
-        return {
-            headers: source.headers,
-            contentType: source.contentType
-        };
     }
 
     // Shutdown teardown: closes every account connection this worker owns. The main thread owns

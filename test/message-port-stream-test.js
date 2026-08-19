@@ -349,7 +349,7 @@ test('sendToMessagePort() delivers a Buffer payload', async () => {
 
     try {
         const reader = new MessagePortReadable(port1);
-        sendToMessagePort(port2, Buffer.from('a Gmail attachment'), { error() {}, debug() {} });
+        sendToMessagePort(new MessagePortWritable(port2), Buffer.from('a Gmail attachment'), { error() {}, debug() {} });
 
         const chunks = [];
         reader.on('data', chunk => chunks.push(chunk));
@@ -368,7 +368,7 @@ test('sendToMessagePort() delivers a stream payload', async () => {
     try {
         const reader = new MessagePortReadable(port1);
         const source = new PassThrough();
-        sendToMessagePort(port2, source, { error() {}, debug() {} });
+        sendToMessagePort(new MessagePortWritable(port2), source, { error() {}, debug() {} });
         source.end('an IMAP attachment');
 
         const chunks = [];
@@ -385,12 +385,13 @@ test('sendToMessagePort() delivers a stream payload', async () => {
 test('sendToMessagePort() survives a consumer that aborted before the transfer started', async () => {
     // Production ordering: the consumer gives up while the IMAP worker is still awaiting its
     // upstream fetch, so { cancel: true } is already sitting in the port's queue by the time the
-    // writable is built. Attaching the writable's listener starts the port, that queued cancel is
-    // delivered on the next turn, and the deferred dispatch runs after it.
+    // transfer is dispatched. The writable's listener started the port when it was built, that
+    // queued cancel is delivered on the next turn, and the deferred dispatch runs after it.
     for (const payload of ['buffer', 'stream']) {
         const { port1, port2 } = new MessageChannel();
 
         try {
+            const writable = new MessagePortWritable(port2);
             const reader = new MessagePortReadable(port1);
             reader.destroy();
             await tick();
@@ -398,7 +399,7 @@ test('sendToMessagePort() survives a consumer that aborted before the transfer s
             const source = payload === 'buffer' ? Buffer.from('never sent') : new PassThrough();
             const debugMessages = [];
 
-            const writable = sendToMessagePort(port2, source, {
+            sendToMessagePort(writable, source, {
                 error() {},
                 debug(entry) {
                     debugMessages.push(entry.msg);
@@ -417,5 +418,114 @@ test('sendToMessagePort() survives a consumer that aborted before the transfer s
             port1.close();
             port2.close();
         }
+    }
+});
+
+// A close event only lands on a macrotask, so setImmediate() is not enough to observe one - and a
+// download long enough for the consumer's thread to die is well past either.
+function settle() {
+    return new Promise(resolve => setTimeout(resolve, 10));
+}
+
+test('a destination built when the port arrives catches a consumer whose thread died', async () => {
+    // The other half of the abort case above. A consumer that gives up sends { cancel: true }; a
+    // consumer whose THREAD dies sends nothing and the channel simply closes - and a port that
+    // closes with nothing queued behind it only reports that to a listener already attached. This
+    // is why the producer builds the destination when the port arrives rather than once the
+    // download has resolved, which for a large attachment is minutes later: built late, the
+    // transfer is piped into a dead port that swallows every message, pulling the whole download
+    // off the wire while the mailbox lock is held for its duration.
+    for (const payload of ['buffer', 'stream']) {
+        const { port1, port2 } = new MessageChannel();
+
+        try {
+            const writable = new MessagePortWritable(port2);
+
+            // No reader, no cancel message: what a MessagePortReadable in a thread that exited
+            // leaves behind.
+            port1.close();
+            await settle();
+
+            assert.strictEqual(writable.destroyed, true, `${payload}: the destination must see a close nothing else was listening for`);
+
+            const source = payload === 'buffer' ? Buffer.from('never sent') : new PassThrough();
+            const debugMessages = [];
+
+            sendToMessagePort(writable, source, {
+                error() {},
+                debug(entry) {
+                    debugMessages.push(entry.msg);
+                }
+            });
+
+            await tick();
+            await tick();
+
+            assert.deepEqual(debugMessages, ['Message stream transfer aborted by consumer before it started'], `${payload}: the abort must be logged`);
+            if (payload === 'stream') {
+                assert.strictEqual(source.destroyed, true, 'the source must be released so its mailbox lock is not held forever');
+            }
+        } finally {
+            port1.close();
+            port2.close();
+        }
+    }
+});
+
+test('a destination built only once there is content to send misses that close entirely', async () => {
+    // The control for the test above, pinning why the destination cannot be built late: with
+    // nothing attached at close time the port is never started, so the event is not queued for a
+    // later listener either - it is gone. pipeToMessagePort() then sees a destination that looks
+    // alive and pipes the whole download into a port that silently swallows it.
+    const { port1, port2 } = new MessageChannel();
+
+    try {
+        port1.close();
+        await settle();
+
+        const source = new PassThrough();
+        const writable = sendToMessagePort(new MessagePortWritable(port2), source, { error() {}, debug() {} });
+
+        await tick();
+        await tick();
+        await settle();
+
+        assert.strictEqual(writable.destroyed, false, 'built late, a dead channel is indistinguishable from a live one');
+        assert.strictEqual(source.destroyed, false, 'which is exactly how the download drains into nothing with the lock held');
+    } finally {
+        port1.close();
+        port2.close();
+    }
+});
+
+test('releaseListeners() hands a port back without reporting a failed transfer', async () => {
+    // What a producer that took the port and then found nothing to send does (a 404). Closing the
+    // port instead would reach the consumer as an interrupted transfer rather than as the error it
+    // is about to be handed, and leaving the listeners attached would leak them.
+    const { port1, port2 } = new MessageChannel();
+
+    try {
+        const reader = new MessagePortReadable(port1);
+        const errors = [];
+        reader.on('error', err => errors.push(err.message));
+
+        const writable = new MessagePortWritable(port2);
+        writable.releaseListeners();
+
+        await settle();
+
+        assert.deepEqual(errors, [], 'the consumer must not be told the transfer failed');
+        assert.strictEqual(writable.destroyed, false);
+
+        // The port is inert afterwards: a cancel from the consumer no longer reaches the released
+        // destination, which is what makes this safe to call before handing the port on
+        port1.postMessage({ cancel: true });
+        await settle();
+        assert.strictEqual(writable.destroyed, false);
+
+        reader.destroy();
+    } finally {
+        port1.close();
+        port2.close();
     }
 });
