@@ -23,7 +23,11 @@ const { Mailbox } = require('../lib/email-client/imap/mailbox');
 // getAttachment hands the content stream back to its caller, so its tests need one that stays open
 // until they end or destroy it. getText buffers the stream to completion, so its tests need one
 // that ends on its own.
-function createMockContext({ downloadError, makeContent = () => new PassThrough() } = {}) {
+function createMockContext({
+    downloadError,
+    meta = { contentType: 'application/pdf', filename: 'report.pdf', disposition: 'attachment' },
+    makeContent = () => new PassThrough()
+} = {}) {
     const events = [];
 
     const connectionClient = {
@@ -32,7 +36,7 @@ function createMockContext({ downloadError, makeContent = () => new PassThrough(
                 throw downloadError;
             }
             return {
-                meta: { contentType: 'application/pdf', filename: 'report.pdf', disposition: 'attachment' },
+                meta,
                 content: makeContent()
             };
         }
@@ -150,6 +154,26 @@ test('Mailbox.getText() lock handling', async t => {
         await assert.rejects(() => Mailbox.prototype.getText.call(ctx, { uid: 42 }, ['1'], {}, {}), /dropped mid-fetch/);
 
         assert.deepEqual(events, ['release', 'onTaskCompleted'], 'a failed fetch must still send the connection back to its mailbox');
+    });
+
+    await t.test('groups a prototype-shaped content subtype as plain text', async () => {
+        // The subtype comes from the message, so a sender picks it. Keyed straight into the
+        // accumulator, "text/__proto__" made the `!result[typeKey]` probe find Object.prototype,
+        // skip the initializer and then throw on .reduce() - a crafted message that fails every
+        // text fetch of itself.
+        for (const subtype of ['__proto__', 'constructor']) {
+            const { ctx, events } = createMockContext({
+                meta: { contentType: `text/${subtype}` },
+                makeContent: () => endedStream('message text')
+            });
+
+            const result = await Mailbox.prototype.getText.call(ctx, { uid: 42 }, ['1'], {}, {});
+
+            assert.strictEqual(result.plain, 'message text', `text/${subtype} must still be returned`);
+            assert.strictEqual(Object.getPrototypeOf(result), Object.prototype, `text/${subtype} must not swap the result's prototype`);
+            assert.ok(!Object.keys(result).includes(subtype), `text/${subtype} must not become a key of its own`);
+            assert.deepEqual(events, ['release', 'onTaskCompleted']);
+        }
     });
 
     await t.test('takes no lock and reports nothing when the caller already holds one', async () => {
