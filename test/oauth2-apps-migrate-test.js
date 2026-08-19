@@ -6,6 +6,7 @@ const assert = require('node:assert').strict;
 const { redis } = require('../lib/db');
 const settings = require('../lib/settings');
 const { oauth2Apps } = require('../lib/oauth2-apps');
+const { encrypt } = require('../lib/encrypt');
 const { REDIS_PREFIX } = require('../lib/consts');
 
 const ACCOUNT_ID = 'legacy-migrate-test-account';
@@ -34,7 +35,7 @@ async function cleanup() {
         await redis.hdel(`${REDIS_PREFIX}oapp:c`, `${id}:data`, `${id}:meta`);
         await redis.del(`${REDIS_PREFIX}oapp:a:${id}`);
     }
-    await redis.hdel(`${REDIS_PREFIX}settings`, ...Object.keys(LEGACY_SETTINGS));
+    await redis.hdel(`${REDIS_PREFIX}settings`, ...Object.keys(LEGACY_SETTINGS), 'outlookEnabled', 'outlookClientId', 'outlookClientSecret');
     await redis.srem(`${REDIS_PREFIX}ia:accounts`, ACCOUNT_ID);
     await redis.del(`${REDIS_PREFIX}iad:${ACCOUNT_ID}`);
 }
@@ -132,15 +133,55 @@ test('Legacy OAuth2 app migration', async t => {
         await settings.set('mailRuEnabled', true);
         await settings.set('mailRuClientId', 'existing-client');
 
+        // an account referencing the app whose earlier run died before the backfill
+        await redis.sadd(`${REDIS_PREFIX}ia:accounts`, ACCOUNT_ID);
+        await redis.hset(`${REDIS_PREFIX}iad:${ACCOUNT_ID}`, 'oauth2', JSON.stringify({ provider: 'mailRu', auth: { user: 'legacy.user@example.com' } }));
+
         let migrated = await oauth2Apps.migrateLegacyApps();
         assert.deepStrictEqual(migrated, [], 'existing record is not migrated again');
 
         let mailRuApp = await oauth2Apps.get('mailRu');
         assert.equal(mailRuApp.name, 'Existing', 'record was not overwritten');
 
+        // the rerun completed what the interrupted run left undone: the account membership set
+        assert.equal(mailRuApp.accounts, 1, 'existing account was linked on the rerun');
+
         assert.equal(await settings.get('mailRuClientId'), null, 'lingering settings were still cleaned up');
 
         await redis.srem(`${REDIS_PREFIX}oapp:i`, 'mailRu');
         await redis.hdel(`${REDIS_PREFIX}oapp:c`, 'mailRu:data');
+    });
+
+    await t.test('migrateLegacyApps() leaves an app with an undecryptable secret untouched', async () => {
+        // a fully configured app whose secret no longer decrypts (the service secret was rotated
+        // or lost) - the plaintext keys still read fine, only the ciphertext comes back as null
+        await settings.set('gmailEnabled', true);
+        await settings.set('gmailClientId', LEGACY_SETTINGS.gmailClientId);
+        await settings.set('gmailRedirectUrl', LEGACY_SETTINGS.gmailRedirectUrl);
+        await redis.hset(`${REDIS_PREFIX}settings`, 'gmailClientSecret', encrypt(JSON.stringify('legacy-secret'), 'a-different-service-secret'));
+
+        // a healthy sibling app must still migrate in the same run
+        await settings.set('outlookEnabled', true);
+        await settings.set('outlookClientId', 'outlook-client-id');
+        await settings.set('outlookClientSecret', 'outlook-client-secret');
+        await settings.set('outlookRedirectUrl', 'https://example.com/oauth');
+
+        let migrated = await oauth2Apps.migrateLegacyApps();
+        assert.deepStrictEqual(migrated, ['outlook'], 'only the healthy app was migrated');
+
+        assert.equal(await oauth2Apps.get('gmail'), false, 'no app record was created without its secret');
+
+        // every gmail key survived, most importantly the ciphertext - restoring the original
+        // service secret and restarting completes the migration
+        for (let key of ['gmailEnabled', 'gmailClientId', 'gmailClientSecret', 'gmailRedirectUrl']) {
+            assert.equal(await redis.hexists(`${REDIS_PREFIX}settings`, key), 1, `${key} was kept`);
+        }
+
+        // the healthy app's keys are gone
+        for (let key of ['outlookEnabled', 'outlookClientId', 'outlookClientSecret', 'outlookRedirectUrl']) {
+            assert.equal(await redis.hexists(`${REDIS_PREFIX}settings`, key), 0, `${key} was removed`);
+        }
+
+        await redis.hdel(`${REDIS_PREFIX}settings`, 'gmailEnabled', 'gmailClientId', 'gmailClientSecret', 'gmailRedirectUrl');
     });
 });

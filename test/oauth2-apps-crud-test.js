@@ -108,6 +108,23 @@ test('OAuth2AppsHandler CRUD and encryption', async t => {
         );
     });
 
+    await t.test('listAuthFlags reports apps whose meta carries an auth failure', async () => {
+        const flaggedId = await createApp({ name: 'Flagged app' });
+        const healthyId = await createApp({ name: 'Healthy app' });
+
+        // what setFlag() writes when a token request is refused
+        await oauth2Apps.setMeta(flaggedId, { authFlag: { message: 'Failed to renew the access token' } });
+        // a cleared flag (successful auth) must not alert
+        await oauth2Apps.setMeta(healthyId, { authFlag: false });
+
+        const flags = await oauth2Apps.listAuthFlags();
+        const flagged = flags.find(entry => entry.app === flaggedId);
+
+        assert.ok(flagged, 'the flagged app is reported');
+        assert.strictEqual(flagged.authFlag.message, 'Failed to renew the access token');
+        assert.ok(!flags.some(entry => entry.app === healthyId), 'an app without an active flag is not reported');
+    });
+
     await t.test('del removes the app and its index entry', async () => {
         const id = await createApp();
         // sanity: present before delete

@@ -1004,8 +1004,7 @@ const init = async () => {
                     // The two listings that take the account as a query argument. `/v1/tokens` is
                     // here because it replaced GET /v1/tokens/account/{account}, which carried the
                     // account in the path and so reached a bound token's own tokens through the
-                    // default branch below - the replacement had nothing reading the argument, so
-                    // the capability disappeared with no alias and no error a caller could act on.
+                    // default branch below - as its deprecated alias registration still does.
                     // Both stay under the same rule as everything else: the argument has to name the
                     // token's own account, and omitting it still refuses, because a bound credential
                     // must not enumerate the instance.
@@ -2744,13 +2743,37 @@ const init = async () => {
         isCached: false,
 
         async context(request) {
-            const pendingMessages = await flash(redis, request);
+            // The three reads are independent, and this runs on every admin page render. The
+            // OAuth2 auth flags are best-effort - a failure to read them must not take the page
+            // down with it.
+            const [pendingMessages, settingsValues, oauthAuthFlags] = await Promise.all([
+                flash(redis, request),
+                settings.getMulti(
+                    'upgrade',
+                    'subexp',
+                    'webhookErrorFlag',
+                    'webhooksEnabled',
+                    'disableTokens',
+                    'tract',
+                    'templateHeader',
+                    'templateHtmlHead',
+                    'documentStoreEnabled',
+                    'serviceUrl',
+                    'language',
+                    'locale',
+                    'timezone',
+                    'pageBrandName',
+                    'notificationBaseUrl'
+                ),
+                oauth2Apps.listAuthFlags().catch(err => {
+                    logger.error({ msg: 'Failed to list OAuth2 app auth flags', err });
+                    return [];
+                })
+            ]);
+
             const {
                 upgrade: upgradeInfo,
                 subexp,
-                outlookAuthFlag,
-                gmailAuthFlag,
-                gmailServiceAuthFlag,
                 webhookErrorFlag,
                 webhooksEnabled,
                 disableTokens,
@@ -2764,26 +2787,7 @@ const init = async () => {
                 timezone,
                 pageBrandName,
                 notificationBaseUrl
-            } = await settings.getMulti(
-                'upgrade',
-                'subexp',
-                'outlookAuthFlag',
-                'gmailAuthFlag',
-                'gmailServiceAuthFlag',
-                'webhookErrorFlag',
-                'webhooksEnabled',
-                'disableTokens',
-                'tract',
-                'templateHeader',
-                'templateHtmlHead',
-                'documentStoreEnabled',
-                'serviceUrl',
-                'language',
-                'locale',
-                'timezone',
-                'pageBrandName',
-                'notificationBaseUrl'
-            );
+            } = settingsValues;
 
             let systemAlerts = [];
             let authData;
@@ -2857,30 +2861,15 @@ const init = async () => {
                 });
             }
 
-            if (outlookAuthFlag && outlookAuthFlag.message) {
+            // OAuth2 apps whose token requests are being refused (setFlag() writes the failure
+            // into app meta). Shown on every admin page: the accounts on such an app sit
+            // disconnected until the operator acts, so the OAuth config page alone is not enough.
+            for (let { app, authFlag } of oauthAuthFlags) {
                 systemAlerts.push({
-                    url: outlookAuthFlag.url || '/admin/config/oauth/app/outlook',
+                    url: authFlag.url || `/admin/config/oauth/app/${encodeURIComponent(app)}`,
                     level: 'danger',
                     icon: 'icon-[tabler--lock-open]',
-                    message: outlookAuthFlag.message
-                });
-            }
-
-            if (gmailAuthFlag && gmailAuthFlag.message) {
-                systemAlerts.push({
-                    url: gmailAuthFlag.url || '/admin/config/oauth/app/gmail',
-                    level: 'danger',
-                    icon: 'icon-[tabler--lock-open]',
-                    message: gmailAuthFlag.message
-                });
-            }
-
-            if (gmailServiceAuthFlag && gmailServiceAuthFlag.message) {
-                systemAlerts.push({
-                    url: gmailServiceAuthFlag.url || '/admin/config/oauth/app/gmailService',
-                    level: 'danger',
-                    icon: 'icon-[tabler--lock-open]',
-                    message: gmailServiceAuthFlag.message
+                    message: authFlag.message
                 });
             }
 
