@@ -607,6 +607,47 @@ test('Token management tests', async t => {
         assert.equal(await tokens.deleteForAccount(account), count);
     });
 
+    await t.test('list() treats a whitespace-only query as no query', async () => {
+        // The two halves used to disagree: `!query` took a single space for a real search term while
+        // the filter trimmed it away and matched everything. A search box holding one space then put
+        // the listing on the read-every-record path with nothing filtered out of it - the results
+        // came back identical, so the only thing that told the two apart was the work done.
+        const account = 'blank-query-test';
+        const count = 12;
+        const pageSize = 2;
+        await Promise.all(Array.from({ length: count }, (v, i) => tokens.provision({ account, description: `blank ${i}`, nolog: true })));
+
+        const recordReads = [];
+        const hmgetBuffer = redis.hmgetBuffer.bind(redis);
+        redis.hmgetBuffer = (key, ids) => {
+            if (key === `${REDIS_PREFIX}tokens`) {
+                recordReads.push(ids.length);
+            }
+            return hmgetBuffer(key, ids);
+        };
+
+        let blank;
+        let none;
+        try {
+            blank = await tokens.list(account, 0, pageSize, '   ');
+            const blankReads = recordReads.splice(0);
+            none = await tokens.list(account, 0, pageSize, null);
+
+            assert.deepEqual(blankReads, [pageSize], 'a whitespace-only query must read one page, not every record on the instance');
+            assert.deepEqual(recordReads, [pageSize]);
+        } finally {
+            redis.hmgetBuffer = hmgetBuffer;
+        }
+
+        assert.deepEqual(
+            { total: blank.total, pages: blank.pages, listed: blank.tokens.length },
+            { total: none.total, pages: none.pages, listed: none.tokens.length },
+            'a whitespace-only query must page exactly like no query at all'
+        );
+
+        assert.equal(await tokens.deleteForAccount(account), count);
+    });
+
     await t.test('list({all}) covers bound and unbound tokens alike', async () => {
         // What GET /v1/tokens answers by default. "Which credentials exist on this instance" needed
         // one request per account before it, because root tokens and each account's lived behind
