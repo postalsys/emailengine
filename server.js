@@ -115,6 +115,7 @@ initSentry('main');
 // Import additional dependencies
 const pathlib = require('path');
 const { redis, queueConf, notifyQueue, submitQueue, documentsQueue, exportQueue } = require('./lib/db');
+const { queueStats } = require('./lib/queue-stats');
 const { packRpcError, unpackRpcError } = require('./lib/worker-rpc-error');
 const promClient = require('prom-client');
 const fs = require('fs').promises;
@@ -2266,25 +2267,28 @@ async function updateQueueCounters() {
     // Set unresponsive workers metric
     metrics.unresponsiveWorkers.set(unresponsiveCount);
 
-    // Update queue metrics
-    for (let queue of ['notify', 'submit', 'documents']) {
-        const [resActive, resDelayed, resPaused, resWaiting] = await redis
-            .multi()
-            .llen(`${REDIS_PREFIX}bull:${queue}:active`)
-            .zcard(`${REDIS_PREFIX}bull:${queue}:delayed`)
-            .llen(`${REDIS_PREFIX}bull:${queue}:paused`)
-            .llen(`${REDIS_PREFIX}bull:${queue}:wait`)
-            .exec();
-        let countError = resActive[0] || resDelayed[0] || resPaused[0] || resWaiting[0];
-        if (countError) {
-            logger.error({ msg: 'Queue length count failed', queue, err: countError });
+    // Update queue metrics through BullMQ's own API (lib/queue-stats.js). Counting raw
+    // llen/zcard against BullMQ's private key layout broke silently in the 5.x -> 6.x bump: the
+    // `:paused` list no longer exists (a paused queue holds its jobs in `wait`), and a leftover
+    // `0:` wait-list marker from a 5.x install counts as a phantom waiting job. The `paused`
+    // gauge is kept at the 0 the getter reports so existing dashboards keep their series.
+    for (let [queue, queueObj] of [
+        ['notify', notifyQueue],
+        ['submit', submitQueue],
+        ['documents', documentsQueue]
+    ]) {
+        let stats;
+        try {
+            stats = await queueStats(queueObj);
+        } catch (err) {
+            logger.error({ msg: 'Queue length count failed', queue, err });
             return false;
         }
 
-        metrics.queues.set({ queue: `${queue}`, state: `active` }, Number(resActive[1]) || 0);
-        metrics.queues.set({ queue: `${queue}`, state: `delayed` }, Number(resDelayed[1]) || 0);
-        metrics.queues.set({ queue: `${queue}`, state: `paused` }, Number(resPaused[1]) || 0);
-        metrics.queues.set({ queue: `${queue}`, state: `waiting` }, Number(resWaiting[1]) || 0);
+        metrics.queues.set({ queue: `${queue}`, state: `active` }, stats.active);
+        metrics.queues.set({ queue: `${queue}`, state: `delayed` }, stats.delayed);
+        metrics.queues.set({ queue: `${queue}`, state: `paused` }, stats.paused);
+        metrics.queues.set({ queue: `${queue}`, state: `waiting` }, stats.waiting);
     }
 
     // Update Redis metrics
