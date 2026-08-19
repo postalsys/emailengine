@@ -26,6 +26,7 @@ const assert = require('node:assert').strict;
 // registerRedisTeardown force-exits for exactly that reason; every other file in this tier talks to
 // the server over HTTP only and needs none of this.
 const tokens = require('../../lib/tokens');
+const settings = require('../../lib/settings');
 const { redis } = require('../../lib/db');
 const registerRedisTeardown = require('../helpers/redis-teardown');
 
@@ -45,6 +46,10 @@ const AUTH_REQUIRED_ROUTES = [
     ['get', `/v1/tokens/${'a'.repeat(64)}`],
     ['get', `/v1/tokens/${'a'.repeat(64)}/log`],
     ['get', '/v1/tokens'],
+    // deprecated pre-2.79 aliases
+    ['post', '/v1/token'],
+    ['delete', `/v1/token/${'a'.repeat(64)}`],
+    ['get', '/v1/tokens/account/main-account'],
 
     // mailbox-routes.js
     ['get', '/v1/account/main-account/mailboxes'],
@@ -317,11 +322,40 @@ test('narrowed access tokens', async t => {
         assert.equal(byId.body.access.time, null, 'a token that has never authenticated has no last use');
     });
 
+    await t.test('the deprecated token endpoint aliases still work', async () => {
+        // v2.79.0 renamed the token endpoints, which 404-ed every pre-2.79 integration on a minor
+        // upgrade. The old paths are back as deprecated aliases of the same handlers, so a
+        // provision-list-revoke round trip written against the old surface has to keep working.
+        const description = `smoke: alias round trip ${Date.now()}`;
+        const created = await authed.post('/v1/token').send({
+            description,
+            scopes: ['api'],
+            permissions: { actions: ['read'], groups: ['diagnostics'] }
+        });
+        assert.equal(created.status, 200, `expected the alias to mint a token, got ${created.status} ${JSON.stringify(created.body)}`);
+        narrowedTokens.push(created.body.token);
+
+        // the pre-2.79 per-account listing shape: a bare `tokens` array, no paging metadata
+        const bound = await provision({ account: BOUND_ACCOUNT, description: `smoke: alias listing ${Date.now()}` });
+        const listed = await authed.get(`/v1/tokens/account/${BOUND_ACCOUNT}`);
+        assert.equal(listed.status, 200);
+        assert.ok(
+            listed.body.tokens.some(entry => entry.id === tokens.tokenId(bound)),
+            'the alias listing did not include the account token'
+        );
+        assert.ok(!Object.hasOwn(listed.body, 'total'), 'the alias keeps the pre-2.79 response shape');
+
+        const deleted = await authed.delete(`/v1/token/${created.body.token}`);
+        assert.equal(deleted.status, 200);
+        assert.equal(deleted.body.deleted, true);
+        assert.equal((await authed.get(`/v1/tokens/${created.body.id}`)).status, 404, 'the alias delete did not revoke the token');
+    });
+
     await t.test('an account-bound token lists its own tokens and no others', async () => {
         // GET /v1/tokens/account/{account} carried the account in the path, so a bound token reached
         // its own tokens through the default branch of the binding check. The replacement takes the
-        // account as a query argument, which that check never read - so the capability disappeared
-        // with no alias and no error a caller could act on.
+        // account as a query argument, which that check never read - so this branch was added, and
+        // the old path is registered again as a deprecated alias.
         const token = await provision({ account: BOUND_ACCOUNT, description: `smoke: bound self-listing ${Date.now()}` });
         const boundAgent = supertest.agent(baseUrl).auth(token, { type: 'bearer' });
 
@@ -460,5 +494,55 @@ test('Extracted API routes smoke test', async t => {
             res.body.tokens.some(token => token.id === expectedId),
             'the prepared token should be listed with its SHA-256 id'
         );
+    });
+});
+
+test('settings credential masking round trip', async t => {
+    const WEBHOOK_URL = 'https://smoke-user:smoke-secret@webhook.example.com/hook';
+    const MASKED_URL = 'https://******:******@webhook.example.com/hook';
+
+    t.after(async () => {
+        // do not leave a webhook target or changed settings behind for the rest of the tier
+        await settings.clear('webhooks');
+        await settings.clear('webhooksCustomHeaders');
+        await settings.clear('notifyText');
+    });
+
+    await t.test('posting the masked echo back does not destroy the stored credential', async () => {
+        const stored = await authed.post('/v1/settings').send({ webhooks: WEBHOOK_URL });
+        assert.equal(stored.status, 200);
+        assert.deepEqual(stored.body.updated, ['webhooks']);
+
+        // what a read-modify-write client sees
+        const read = await authed.get('/v1/settings?webhooks=true');
+        assert.equal(read.body.webhooks, MASKED_URL, 'the read must return the masked value');
+
+        // ...and posts back untouched next to some other change
+        const echoed = await authed.post('/v1/settings').send({ webhooks: read.body.webhooks, notifyText: true });
+        assert.equal(echoed.status, 200, `the masked echo must be accepted, got ${echoed.status} ${JSON.stringify(echoed.body)}`);
+        assert.deepEqual(echoed.body.updated, ['notifyText'], 'the echoed masked key must not be reported as updated');
+
+        // v2.79.0 stored the literal mask here, breaking webhook auth silently
+        assert.equal(await settings.get('webhooks'), WEBHOOK_URL, 'the stored credential must survive the round trip');
+    });
+
+    await t.test('a masked value that is not the stored echo is refused', async () => {
+        const res = await authed.post('/v1/settings').send({ webhooks: 'https://******:******@other.example.com/hook' });
+        assert.equal(res.status, 400, `a mask over a different destination cannot be resolved, got ${res.status}`);
+        assert.match(res.body.message, /masked placeholder/);
+    });
+
+    await t.test('masked custom header values round-trip without being stored', async () => {
+        const headers = [{ key: 'Authorization', value: 'Bearer smoke-secret' }];
+        assert.equal((await authed.post('/v1/settings').send({ webhooksCustomHeaders: headers })).status, 200);
+
+        const read = await authed.get('/v1/settings?webhooksCustomHeaders=true');
+        assert.equal(read.body.webhooksCustomHeaders[0].value, '******');
+
+        const echoed = await authed.post('/v1/settings').send({ webhooksCustomHeaders: read.body.webhooksCustomHeaders });
+        assert.equal(echoed.status, 200);
+        assert.deepEqual(echoed.body.updated, []);
+
+        assert.deepEqual(await settings.get('webhooksCustomHeaders'), headers, 'the stored header credential must survive the round trip');
     });
 });

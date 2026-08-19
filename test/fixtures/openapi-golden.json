@@ -11156,12 +11156,32 @@
           "id"
         ]
       },
-      "TokenScopes": {
+      "TokenScope": {
+        "type": "string",
+        "x-meta": {
+          "enumDescriptions": {
+            "api": "Call the REST API",
+            "smtp": "Authenticate against the built-in SMTP submission server",
+            "imap-proxy": "Authenticate against the built-in IMAP proxy"
+          }
+        },
+        "enum": [
+          "api",
+          "smtp",
+          "imap-proxy"
+        ]
+      },
+      "Scopes": {
         "type": "array",
-        "description": "Scopes this token is valid for",
+        "description": "Token permission scopes: \"api\" for REST API access, \"smtp\" for SMTP submission, \"imap-proxy\" for IMAP proxy authentication",
+        "default": [
+          "api"
+        ],
+        "x-constraint": {
+          "single": true
+        },
         "items": {
-          "type": "string",
-          "example": "api"
+          "$ref": "#/components/schemas/TokenScope"
         }
       },
       "ReferrerAllowlist": {
@@ -11352,6 +11372,126 @@
           }
         }
       },
+      "CreateToken": {
+        "type": "object",
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Bind the token to one account. Omit for an instance-wide token, which then has to set `permissions`",
+            "example": "user123",
+            "maxLength": 256,
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "description": {
+            "type": "string",
+            "description": "Token description",
+            "example": "Token description",
+            "maxLength": 1024,
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "scopes": {
+            "$ref": "#/components/schemas/Scopes"
+          },
+          "metadata": {
+            "type": "string",
+            "description": "Related metadata in JSON format",
+            "example": "{\"example\": \"value\"}",
+            "maxLength": 1048576
+          },
+          "restrictions": {
+            "$ref": "#/components/schemas/TokenRestrictions"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/TokenPermissions"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Optional time when this token stops working. Omit for a token that never expires",
+            "example": "2021-02-17T14:43:18.860Z"
+          },
+          "ip": {
+            "type": "string",
+            "description": "IP address of the requester",
+            "example": "127.0.0.1",
+            "x-format": {
+              "ip": {
+                "cidr": "forbidden",
+                "version": [
+                  "ipv4",
+                  "ipv6"
+                ]
+              }
+            },
+            "x-convert": {
+              "trim": true
+            }
+          }
+        },
+        "required": [
+          "description",
+          "scopes"
+        ]
+      },
+      "CreateTokenResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "The access token. This is the only time it is returned - store it now",
+            "example": "9a6d24f8f43e01b1f2c4f11a5c5b8e51fe0a4e0eda06e1be5b8d6cc2c66b95dc",
+            "x-constraint": {
+              "length": 64
+            },
+            "x-format": {
+              "hex": {
+                "byteAligned": false,
+                "prefix": false
+              }
+            }
+          },
+          "id": {
+            "type": "string",
+            "description": "Identifier for this token, as reported by the token listings",
+            "example": "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a",
+            "x-constraint": {
+              "length": 64
+            },
+            "x-format": {
+              "hex": {
+                "byteAligned": false,
+                "prefix": false
+              }
+            }
+          }
+        },
+        "required": [
+          "token",
+          "id"
+        ]
+      },
+      "DeleteTokenRequestResponse": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "description": "Was the token deleted",
+            "default": true
+          }
+        }
+      },
+      "TokenScopes": {
+        "type": "array",
+        "description": "Scopes this token is valid for",
+        "items": {
+          "type": "string",
+          "example": "api"
+        }
+      },
       "TokenAccess": {
         "type": "object",
         "description": "Token usage information",
@@ -11524,136 +11664,6 @@
           }
         }
       },
-      "TokenScope": {
-        "type": "string",
-        "x-meta": {
-          "enumDescriptions": {
-            "api": "Call the REST API",
-            "smtp": "Authenticate against the built-in SMTP submission server",
-            "imap-proxy": "Authenticate against the built-in IMAP proxy"
-          }
-        },
-        "enum": [
-          "api",
-          "smtp",
-          "imap-proxy"
-        ]
-      },
-      "Scopes": {
-        "type": "array",
-        "description": "Token permission scopes: \"api\" for REST API access, \"smtp\" for SMTP submission, \"imap-proxy\" for IMAP proxy authentication",
-        "default": [
-          "api"
-        ],
-        "x-constraint": {
-          "single": true
-        },
-        "items": {
-          "$ref": "#/components/schemas/TokenScope"
-        }
-      },
-      "CreateToken": {
-        "type": "object",
-        "properties": {
-          "account": {
-            "type": "string",
-            "description": "Bind the token to one account. Omit for an instance-wide token, which then has to set `permissions`",
-            "example": "user123",
-            "maxLength": 256,
-            "x-convert": {
-              "trim": true
-            }
-          },
-          "description": {
-            "type": "string",
-            "description": "Token description",
-            "example": "Token description",
-            "maxLength": 1024,
-            "x-convert": {
-              "trim": true
-            }
-          },
-          "scopes": {
-            "$ref": "#/components/schemas/Scopes"
-          },
-          "metadata": {
-            "type": "string",
-            "description": "Related metadata in JSON format",
-            "example": "{\"example\": \"value\"}",
-            "maxLength": 1048576
-          },
-          "restrictions": {
-            "$ref": "#/components/schemas/TokenRestrictions"
-          },
-          "permissions": {
-            "$ref": "#/components/schemas/TokenPermissions"
-          },
-          "expires": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Optional time when this token stops working. Omit for a token that never expires",
-            "example": "2021-02-17T14:43:18.860Z"
-          },
-          "ip": {
-            "type": "string",
-            "description": "IP address of the requester",
-            "example": "127.0.0.1",
-            "x-format": {
-              "ip": {
-                "cidr": "forbidden",
-                "version": [
-                  "ipv4",
-                  "ipv6"
-                ]
-              }
-            },
-            "x-convert": {
-              "trim": true
-            }
-          }
-        },
-        "required": [
-          "description",
-          "scopes"
-        ]
-      },
-      "CreateTokenResponse": {
-        "type": "object",
-        "properties": {
-          "token": {
-            "type": "string",
-            "description": "The access token. This is the only time it is returned - store it now",
-            "example": "123456",
-            "x-constraint": {
-              "length": 64
-            },
-            "x-format": {
-              "hex": {
-                "byteAligned": false,
-                "prefix": false
-              }
-            }
-          },
-          "id": {
-            "type": "string",
-            "description": "Identifier for this token, as reported by the token listings",
-            "example": "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a",
-            "x-constraint": {
-              "length": 64
-            },
-            "x-format": {
-              "hex": {
-                "byteAligned": false,
-                "prefix": false
-              }
-            }
-          }
-        },
-        "required": [
-          "token",
-          "id"
-        ]
-      },
       "TokenResponse": {
         "type": "object",
         "properties": {
@@ -11753,16 +11763,6 @@
                 "prefix": false
               }
             }
-          }
-        }
-      },
-      "DeleteTokenRequestResponse": {
-        "type": "object",
-        "properties": {
-          "deleted": {
-            "type": "boolean",
-            "description": "Was the token deleted",
-            "default": true
           }
         }
       },
@@ -11887,6 +11887,124 @@
           },
           "entries": {
             "$ref": "#/components/schemas/TokenLogEntries"
+          }
+        }
+      },
+      "AccountTokensItem": {
+        "type": "object",
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Unique identifier for the email account",
+            "example": "user123",
+            "maxLength": 256,
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "description": {
+            "type": "string",
+            "description": "Token description",
+            "example": "Token description",
+            "maxLength": 1024,
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "metadata": {
+            "type": "string",
+            "description": "Related metadata in JSON format",
+            "example": "{\"example\": \"value\"}",
+            "maxLength": 1048576
+          },
+          "ip": {
+            "type": "string",
+            "description": "IP address of the requester",
+            "example": "127.0.0.1",
+            "x-format": {
+              "ip": {
+                "cidr": "forbidden",
+                "version": [
+                  "ipv4",
+                  "ipv6"
+                ]
+              }
+            },
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "remoteAddress": {
+            "type": "string",
+            "description": "IP address of the client that created the token",
+            "example": "127.0.0.1",
+            "x-format": {
+              "ip": {
+                "cidr": "forbidden",
+                "version": [
+                  "ipv4",
+                  "ipv6"
+                ]
+              }
+            },
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "scopes": {
+            "$ref": "#/components/schemas/TokenScopes"
+          },
+          "restrictions": {
+            "$ref": "#/components/schemas/TokenRestrictions"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/TokenPermissions"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The time this token was created",
+            "example": "2021-02-17T13:43:18.860Z"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The time this token stops working. Absent for tokens that never expire",
+            "example": "2021-02-17T14:43:18.860Z"
+          },
+          "access": {
+            "$ref": "#/components/schemas/TokenAccess"
+          },
+          "id": {
+            "type": "string",
+            "description": "Token identifier (SHA-256 hash of the token)",
+            "example": "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a",
+            "x-constraint": {
+              "length": 64
+            },
+            "x-format": {
+              "hex": {
+                "byteAligned": false,
+                "prefix": false
+              }
+            }
+          }
+        },
+        "required": [
+          "account"
+        ]
+      },
+      "AccountTokensEntries": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AccountTokensItem"
+        }
+      },
+      "AccountsTokensResponse": {
+        "type": "object",
+        "properties": {
+          "tokens": {
+            "$ref": "#/components/schemas/AccountTokensEntries"
           }
         }
       },
@@ -20467,7 +20585,7 @@
       "get": {
         "summary": "List specific settings",
         "operationId": "getV1Settings",
-        "description": "List setting values for specific keys",
+        "description": "List setting values for specific keys. Credentials are masked: the credentials in any proxy or webhook URL and the values of custom webhook headers read back as \"******\", and encrypted secrets are returned as booleans. A masked value is not the stored one - POST /v1/settings skips it when it matches the stored value and refuses it otherwise.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -21257,7 +21375,7 @@
       "post": {
         "summary": "Set setting values",
         "operationId": "postV1Settings",
-        "description": "Set setting values for specific keys",
+        "description": "Set setting values for specific keys. Masked credential values (\"******\") read from GET /v1/settings are not accepted: a masked value that matches the stored one is skipped as unchanged, any other value carrying the mask is refused. Send the real credential, or leave the key out to keep the stored value.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -22363,6 +22481,224 @@
         "x-ee-group": "template"
       }
     },
+    "/v1/token": {
+      "post": {
+        "summary": "Provision an access token (deprecated)",
+        "operationId": "postV1Token",
+        "description": "Deprecated alias of `POST /v1/tokens`, which behaves identically - use that path instead.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+          }
+        ],
+        "tags": [
+          "Access Tokens"
+        ],
+        "deprecated": true,
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateToken"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Returns the new token value. This is the only time it is shown - store it now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - the requested entity (account, message, mailbox, etc.) does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "admin"
+      }
+    },
+    "/v1/token/{token}": {
+      "delete": {
+        "summary": "Remove a token (deprecated)",
+        "operationId": "deleteV1TokenToken",
+        "description": "Deprecated alias of `DELETE /v1/tokens/{token}`, which behaves identically - use that path instead.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+          },
+          {
+            "name": "token",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "The access token value, or the token id from a listing",
+              "example": "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a",
+              "x-constraint": {
+                "length": 64
+              },
+              "x-format": {
+                "hex": {
+                  "byteAligned": false,
+                  "prefix": false
+                }
+              }
+            },
+            "description": "The access token value, or the token id from a listing",
+            "required": true
+          }
+        ],
+        "tags": [
+          "Access Tokens"
+        ],
+        "deprecated": true,
+        "responses": {
+          "200": {
+            "description": "Returns a deletion marker. The token stops working immediately.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteTokenRequestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-impact": "destructive",
+        "x-ee-action": "destructive",
+        "x-ee-group": "admin"
+      }
+    },
     "/v1/tokens": {
       "get": {
         "summary": "List access tokens",
@@ -22634,7 +22970,7 @@
             "schema": {
               "type": "string",
               "description": "The token id, as reported by POST /v1/tokens and the token listing",
-              "example": "123456",
+              "example": "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a",
               "x-constraint": {
                 "length": 64
               },
@@ -22750,7 +23086,7 @@
             "schema": {
               "type": "string",
               "description": "The access token value, or the token id from a listing",
-              "example": "123456",
+              "example": "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a",
               "x-constraint": {
                 "length": 64
               },
@@ -22859,7 +23195,7 @@
             "schema": {
               "type": "string",
               "description": "The token id, as reported by POST /v1/tokens and the token listing",
-              "example": "123456",
+              "example": "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a",
               "x-constraint": {
                 "length": 64
               },
@@ -22976,6 +23312,110 @@
           }
         },
         "x-ee-impact": "readonly",
+        "x-ee-action": "read",
+        "x-ee-group": "admin"
+      }
+    },
+    "/v1/tokens/account/{account}": {
+      "get": {
+        "summary": "List account tokens (deprecated)",
+        "operationId": "getV1TokensAccountAccount",
+        "description": "Deprecated alias for listing the access tokens of one account - use `GET /v1/tokens` with the `account` argument instead, which also pages the listing.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+          },
+          {
+            "name": "account",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Unique identifier for the email account",
+              "example": "user123",
+              "maxLength": 256,
+              "x-convert": {
+                "trim": true
+              }
+            },
+            "description": "Unique identifier for the email account",
+            "required": true
+          }
+        ],
+        "tags": [
+          "Access Tokens"
+        ],
+        "deprecated": true,
+        "responses": {
+          "200": {
+            "description": "Returns the access tokens scoped to the account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountsTokensResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
         "x-ee-action": "read",
         "x-ee-group": "admin"
       }

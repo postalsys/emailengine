@@ -7,7 +7,16 @@ const assert = require('node:assert').strict;
 const Boom = require('@hapi/boom');
 const Joi = require('joi');
 
-const { handleError, maskCustomHeaders, maskUrlPassword, maskSecrets, assertNoNetworkOverride, MASKED } = require('../lib/api-routes/route-helpers');
+const {
+    handleError,
+    maskCustomHeaders,
+    maskUrlPassword,
+    maskSecrets,
+    containsMaskedSecret,
+    isMaskedRoundTrip,
+    assertNoNetworkOverride,
+    MASKED
+} = require('../lib/api-routes/route-helpers');
 
 // Minimal request stub - handleError logs at warn (4xx) or error (5xx)
 const fakeRequest = { logger: { warn() {}, error() {} } };
@@ -354,5 +363,52 @@ test('assertNoNetworkOverride keeps a narrowed token off the connection route', 
         assertNoNetworkOverride({ payload: { to: [{ address: 'x@example.com' }] }, auth: { artifacts: narrowed } });
         assertNoNetworkOverride({ payload: {}, auth: { artifacts: narrowed } });
         assertNoNetworkOverride({ auth: { artifacts: narrowed } });
+    });
+});
+
+test('write-side mask guards', async t => {
+    await t.test('containsMaskedSecret spots the mask in URL credentials', () => {
+        assert.equal(containsMaskedSecret('webhooks', `https://${MASKED}:${MASKED}@example.com/hook`), true);
+        assert.equal(containsMaskedSecret('proxyUrl', `socks5://${MASKED}@proxy.example.com:1080`), true);
+        assert.equal(containsMaskedSecret('httpProxyUrl', `http://user:${MASKED}@proxy.example.com:3128`), true);
+
+        assert.equal(containsMaskedSecret('webhooks', 'https://user:real-secret@example.com/hook'), false);
+        assert.equal(containsMaskedSecret('webhooks', 'https://example.com/hook'), false);
+        assert.equal(containsMaskedSecret('webhooks', 'not a url'), false);
+        assert.equal(containsMaskedSecret('webhooks', null), false);
+    });
+
+    await t.test('containsMaskedSecret spots the mask in header values', () => {
+        assert.equal(containsMaskedSecret('webhooksCustomHeaders', [{ key: 'Authorization', value: MASKED }]), true);
+        assert.equal(containsMaskedSecret('webhooksCustomHeaders', [{ key: 'Authorization', value: 'Bearer real' }]), false);
+        assert.equal(containsMaskedSecret('webhooksCustomHeaders', []), false);
+    });
+
+    await t.test('containsMaskedSecret ignores keys that are never masked', () => {
+        assert.equal(containsMaskedSecret('serviceUrl', `https://${MASKED}:${MASKED}@example.com/`), false);
+        assert.equal(containsMaskedSecret('notifyText', true), false);
+    });
+
+    await t.test('isMaskedRoundTrip accepts exactly the masked echo of the stored value', () => {
+        const stored = 'https://user:secret@example.com/hook';
+        const echo = maskUrlPassword(stored);
+
+        assert.equal(isMaskedRoundTrip('webhooks', echo, stored), true);
+        // same mask, different destination - the credential cannot be carried over
+        assert.equal(isMaskedRoundTrip('webhooks', `https://${MASKED}:${MASKED}@other.example.com/hook`, stored), false);
+        // nothing stored to echo
+        assert.equal(isMaskedRoundTrip('webhooks', echo, null), false);
+    });
+
+    await t.test('isMaskedRoundTrip compares header lists on key and value', () => {
+        const stored = [
+            { key: 'Authorization', value: 'Bearer real' },
+            { key: 'X-Plain', value: '' }
+        ];
+        const echo = maskCustomHeaders(stored);
+
+        assert.equal(isMaskedRoundTrip('webhooksCustomHeaders', echo, stored), true);
+        assert.equal(isMaskedRoundTrip('webhooksCustomHeaders', [{ key: 'Authorization', value: MASKED }], stored), false);
+        assert.equal(isMaskedRoundTrip('webhooksCustomHeaders', [{ key: 'Other', value: MASKED }], []), false);
     });
 });
