@@ -446,7 +446,9 @@ const preparedSettingsString = readEnvValue('EENGINE_SETTINGS') || config.settin
 if (preparedSettingsString) {
     // Parse and validate pre-configured settings
     try {
-        const { error, value } = Joi.object(settingsSchema).validate(JSON.parse(preparedSettingsString), {
+        const parsedSettings = JSON.parse(preparedSettingsString);
+
+        const { error, value } = Joi.object(settingsSchema).validate(parsedSettings, {
             abortEarly: false,
             stripUnknown: true,
             convert: true
@@ -454,6 +456,22 @@ if (preparedSettingsString) {
 
         if (error) {
             throw error;
+        }
+
+        // stripUnknown drops unknown keys without an error, which silently swallows both typos
+        // and keys that used to be settings - most notably the legacy gmail*/outlook*/mailRu*
+        // OAuth2 keys that moved into the OAuth2 app registry. Booting on regardless is right
+        // (an upgraded install must not be bricked by a stale env variable), but the drop has
+        // to be visible: for the legacy keys the operator has to create an OAuth2 app instead,
+        // because nothing reads these values anymore.
+        if (parsedSettings && typeof parsedSettings === 'object') {
+            const droppedKeys = Object.keys(parsedSettings).filter(key => !Object.hasOwn(settingsSchema, key));
+            if (droppedKeys.length) {
+                logger.error({
+                    msg: 'Ignoring unknown keys in the prepared settings. Settings-based OAuth2 configuration is not supported anymore - use an OAuth2 app instead',
+                    keys: droppedKeys
+                });
+            }
         }
 
         preparedSettings = value;
