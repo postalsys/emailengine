@@ -501,11 +501,29 @@ test('settings credential masking round trip', async t => {
     const WEBHOOK_URL = 'https://smoke-user:smoke-secret@webhook.example.com/hook';
     const MASKED_URL = 'https://******:******@webhook.example.com/hook';
 
+    // The keys these tests overwrite carry the tier's LIVE webhook configuration: the prepared
+    // settings in config/test.toml point the global webhooks target at the shared test receiver,
+    // are applied only at server startup, and every later file in the serial tier depends on
+    // them. RESTORE the values rather than clearing them - a clear() here silently broke every
+    // messageSent/trackOpen/trackClick wait for the rest of the tier, which read as provider
+    // latency until the webhook worker's silent no-target skip was traced.
+    const RESTORE_KEYS = ['webhooks', 'webhooksCustomHeaders', 'notifyText'];
+    const originalValues = new Map();
+    t.before(async () => {
+        for (const key of RESTORE_KEYS) {
+            originalValues.set(key, await settings.get(key));
+        }
+    });
+
     t.after(async () => {
-        // do not leave a webhook target or changed settings behind for the rest of the tier
-        await settings.clear('webhooks');
-        await settings.clear('webhooksCustomHeaders');
-        await settings.clear('notifyText');
+        for (const key of RESTORE_KEYS) {
+            const value = originalValues.get(key);
+            if (value === null || typeof value === 'undefined') {
+                await settings.clear(key);
+            } else {
+                await settings.set(key, value);
+            }
+        }
     });
 
     await t.test('posting the masked echo back does not destroy the stored credential', async () => {
