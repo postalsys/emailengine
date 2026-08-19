@@ -125,6 +125,19 @@ test('Mailbox.getAttachment() lock handling', async t => {
 
         assert.deepEqual(events, ['release', 'onTaskCompleted'], 'a failed download must not release the lock twice');
     });
+
+    await t.test('releases the lock when the download resolves without a stream', async () => {
+        // finished() is what gives the lock back once the stream is done, and it throws
+        // synchronously on anything that is not one. The `streaming` flag that tells the finally
+        // block the stream has taken over is therefore set only after finished() returns - set
+        // before it, this case would leave the lock held with nothing left to release it.
+        const { ctx, events } = createMockContext({ makeContent: () => null });
+
+        const content = await Mailbox.prototype.getAttachment.call(ctx, { uid: 42 }, '2', {}, {});
+
+        assert.strictEqual(content, false, 'a download with no stream is not an attachment');
+        assert.deepEqual(events, ['release', 'onTaskCompleted'], 'the lock must not outlive a download that produced nothing');
+    });
 });
 
 // getText() holds the same per-connection mailbox lock across its FETCHes. It released the lock
