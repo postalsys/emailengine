@@ -310,6 +310,20 @@ test('parseDeliveryReport', async t => {
         assert.deepStrictEqual(msgpack.decode(msgpack.encode(report)), { finalRecipient: { label: 'rfc822', value: 'user@example.com' } });
     });
 
+    await t.test('drops a field name the camelCase step turns into "__proto__"', () => {
+        // The name reaching the report is not the name in the message: toCamelCase() rebuilds it,
+        // and "_-_proto__" camelCases straight into "__proto__". The blocklist at the parse boundary
+        // runs before that and so never sees the name it exists to catch, which left the guarded
+        // sink reachable through a name nothing had a reason to refuse.
+        const report = parseDeliveryReport(['Final-Recipient: rfc822; user@example.com', '_-_proto__: rfc822; injected'].join('\r\n'));
+
+        assert.strictEqual(Object.getPrototypeOf(report), Object.prototype);
+        assert.deepStrictEqual(Object.keys(report), ['finalRecipient']);
+        assert.strictEqual(report.label, undefined, 'the report must not inherit the injected object');
+        assert.strictEqual({}.label, undefined);
+        assert.deepStrictEqual(msgpack.decode(msgpack.encode(report)), { finalRecipient: { label: 'rfc822', value: 'user@example.com' } });
+    });
+
     await t.test('ignores a block that is only a continuation line', () => {
         // decodeHeaders returns a single empty key for such a block, which is not a header
         const report = parseDeliveryReport(['Reporting-MTA: dns; mx.example.com', '', '  orphaned continuation', '', 'Action: failed'].join('\r\n'));

@@ -330,6 +330,32 @@ test('camelCaseComplaint', async t => {
 // discards the resulting prototype swap on its own - so this pins the observable contract, and
 // only fails if BOTH that merge and the key guard are dropped.
 test('ARF reports with prototype-shaped field names', async t => {
+    await t.test('drops a field name the camelCase step turns into "__proto__"', async () => {
+        // The name published in the complaint is not the name in the report: camelCaseComplaint()
+        // rebuilds it, and "_-_proto__" camelCases straight into "__proto__". Nothing before that
+        // has a reason to refuse the name, and the assignment then swaps the prototype of the
+        // section rather than storing a field - so unlike the case below, no later merge hides it
+        // and this fails on its own if the guard goes.
+        const report = await arfDetect({
+            from: { address: 'complaints@example.com' },
+            subject: 'complaint about message',
+            messageSpecialUse: '\\Inbox',
+            attachments: [
+                {
+                    contentType: 'message/feedback-report',
+                    content: Buffer.from('Feedback-Type: abuse\r\n_-_proto__: injected\r\nUser-Agent: SomeUA\r\n')
+                }
+            ]
+        });
+
+        const complaint = camelCaseComplaint(report);
+
+        assert.strictEqual(Object.getPrototypeOf(complaint.arf), Object.prototype);
+        assert.deepStrictEqual(Object.keys(complaint.arf), ['feedbackType', 'userAgent']);
+        assert.strictEqual(complaint.arf.length, undefined, 'the section must not inherit the injected value');
+        assert.deepStrictEqual(JSON.parse(JSON.stringify(complaint)).arf, complaint.arf);
+    });
+
     await t.test('returns a clean report that survives the webhook round-trip', async () => {
         // Field names go into the raw report body rather than an object literal, since a literal
         // keyed by "__proto__" would set the literal's prototype instead of a key.
