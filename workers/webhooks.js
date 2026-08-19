@@ -227,6 +227,15 @@ const notifyWorker = new Worker(
 
         let webhooksEnabled = await settings.get('webhooksEnabled');
         if (!webhooksEnabled) {
+            logger.debug({
+                msg: 'Webhooks are disabled',
+                action: 'webhook',
+                queue: job.queue.name,
+                code: 'webhooks_disabled',
+                job: job.id,
+                event: job.name,
+                account: job.data.account
+            });
             return;
         }
 
@@ -246,7 +255,18 @@ const notifyWorker = new Worker(
         // the global setting is only fetched when neither a custom route nor the account override decides the target
         let webhooks = resolveTargetUrl(customRoute && customRoute.targetUrl, accountWebhooks, null).url || (await settings.get('webhooks'));
         if (!webhooks) {
-            // logger.debug({ msg: 'Webhook URL is not set', action: 'webhook', event: job.name, account: job.data.account });
+            // A skipped delivery still reports the job as completed, so without this line a
+            // missing target is indistinguishable from a successful delivery - it reads as the
+            // receiver being slow rather than as nothing having been sent
+            logger.debug({
+                msg: 'Webhook URL is not set',
+                action: 'webhook',
+                queue: job.queue.name,
+                code: 'no_target_url',
+                job: job.id,
+                event: job.name,
+                account: job.data.account
+            });
             return;
         }
 
