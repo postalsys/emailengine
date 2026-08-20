@@ -3055,7 +3055,13 @@ const init = async () => {
                 .code(error.output.statusCode);
         }
 
-        if (request.errorInfo && request.route && request.route.settings && request.route.settings.tags && request.route.settings.tags.includes('api')) {
+        const routeTags = (request.route && request.route.settings && request.route.settings.tags) || [];
+
+        // `external` covers the MCP endpoint and its OAuth routes: machine-facing surfaces whose
+        // clients expect JSON errors, never the admin HTML error page
+        const wantsJsonError = routeTags.includes('api') || routeTags.includes('external');
+
+        if (request.errorInfo && wantsJsonError) {
             // JSON response for API requests
 
             let res = h.response(request.errorInfo);
@@ -3068,10 +3074,7 @@ const init = async () => {
             return res.code(request.errorInfo.statusCode || 500);
         }
 
-        const tags = (request.route && request.route.settings && request.route.settings.tags) || [];
-        const isApiRoute = tags.includes('api') || tags.includes('test');
-
-        if (isApiRoute) {
+        if (wantsJsonError || routeTags.includes('test')) {
             // API path
             return h.response(request.errorInfo).code(request.errorInfo.statusCode || 500);
         }

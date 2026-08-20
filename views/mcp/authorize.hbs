@@ -46,8 +46,13 @@
 
     <div>
         {{> ui/form-field id="account" label="Limit to one account" value=values.account error=errors.account
-            placeholder="account id"
+            list="consentAccountList" placeholder="account id"
             hint="Recommended. The token then only reaches this account. Leave empty to allow every account on the instance."}}
+        <datalist id="consentAccountList">
+            {{#each accountOptions}}
+            <option value="{{account}}">{{label}}</option>
+            {{/each}}
+        </datalist>
     </div>
 
     {{/ui/card}}

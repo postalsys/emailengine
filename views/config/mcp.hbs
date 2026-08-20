@@ -38,47 +38,190 @@
     </div>
     {{/ui/card}}
 
-    {{#> ui/card title="Connecting a client" bodyClass="space-y-4"}}
+    <div class="mb-6">
+        {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
+    </div>
+</form>
 
-    {{#if mcpUrl}}
+{{#> ui/card title="Connect an agent" bodyClass="space-y-4"}}
+
+<p class="text-sm">Generate an access token and a ready-to-paste connection command in one step. The token gets the
+    <code>mcp</code> scope, so it works against the MCP endpoint and nothing else.</p>
+
+{{#unless canProvision}}
+<div class="alert alert-soft alert-warning text-sm">
+    <span class="icon-[tabler--lock] size-5 shrink-0"></span>
+    <span>Generating a token requires an authenticated admin session. Set an admin password and sign in first.</span>
+</div>
+{{/unless}}
+
+<div id="mcpTokenGen" data-presets="{{json mcpTokenPresets}}" data-mcp-url="{{mcpUrl}}" class="space-y-4">
+    <div class="grid gap-4 sm:grid-cols-2">
+        {{> ui/form-field id="mcpGenLabel" label="What is this token for?" value="Claude"
+            hint="Shows up as the token description, so you can tell agents apart on the Access Tokens page."}}
+
+        {{> ui/form-field id="mcpGenAccount" label="Limit to one account" list="mcpGenAccountList"
+            placeholder="account id"
+            hint="Recommended. Leave empty to allow every account on the instance."}}
+        <datalist id="mcpGenAccountList">
+            {{#each accountOptions}}
+            <option value="{{account}}">{{label}}</option>
+            {{/each}}
+        </datalist>
+    </div>
+
+    <div>
+        {{> ui/checkbox id="mcpGenReadOnly" label="Read-only" checked=true noName=true
+        hint="The agent can list, search and read, but not change anything, delete anything, or send mail. Untick to allow the full tool set."}}
+    </div>
+
+    <div class="flex items-center gap-3">
+        {{#if canProvision}}
+        <button type="button" id="mcpGenSubmit" class="btn btn-primary">
+            <span class="icon-[tabler--key] size-4 shrink-0"></span>Generate connection command
+        </button>
+        {{/if}}
+        <span id="mcpGenError" class="text-error text-sm hidden"></span>
+    </div>
+
+    <div id="mcpGenResult" class="hidden space-y-4">
+        <div class="alert alert-soft alert-warning text-sm">
+            <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+            <span>The token below is shown only once. It is revocable any time on the
+                <a href="/admin/tokens" class="link">Access Tokens</a> page.</span>
+        </div>
+
+        <div>
+            <div class="flex items-center justify-between gap-2 mb-1">
+                <span class="label-text">Claude Code</span>
+                {{> ui/copy-btn target="mcpGenClaudeCmd" small=true}}
+            </div>
+            <pre class="ee-code-block"><code id="mcpGenClaudeCmd"></code></pre>
+        </div>
+
+        <div>
+            <div class="flex items-center justify-between gap-2 mb-1">
+                <span class="label-text">Generic client configuration</span>
+                {{> ui/copy-btn target="mcpGenJsonCfg" small=true}}
+            </div>
+            <pre class="ee-code-block"><code id="mcpGenJsonCfg"></code></pre>
+        </div>
+    </div>
+</div>
+
+{{/ui/card}}
+
+{{#> ui/details summary="Exposed tools" summarySmall=(concat toolCatalog.length " tools")}}
+<div class="px-6 pb-6">
+    <p class="text-sm text-base-content/60 mb-4">This is exactly what a connected agent receives from
+        <code>tools/list</code>. Whether a given token can call a tool also depends on its account binding and
+        permission restrictions.</p>
+    <div class="space-y-3">
+        {{#each toolCatalog}}
+        <div class="flex flex-wrap items-baseline gap-2">
+            <code>{{name}}</code>
+            {{> ui/badge label=badge.label variant=badge.variant soft=true}}
+            <span class="text-sm text-base-content/60 basis-full sm:basis-auto sm:grow">{{description}}</span>
+        </div>
+        {{/each}}
+    </div>
+</div>
+{{/ui/details}}
+
+{{#> ui/details summary="Manual configuration"}}
+<div class="px-6 pb-6 space-y-4">
+
     <div>
         <label class="label-text" for="mcpEndpointUrl">MCP endpoint</label>
         {{> ui/copy-field id="mcpEndpointUrl" value=mcpUrl ariaLabel="MCP endpoint URL"}}
     </div>
 
-    <div>
-        <span class="label-text">Claude Code</span>
-        <pre class="ee-code-block"><code>claude mcp add --transport http emailengine {{mcpUrl}} \
-    --header "Authorization: Bearer &lt;access token&gt;"</code></pre>
-    </div>
-
-    <div>
-        <span class="label-text">Generic client configuration</span>
-        <pre class="ee-code-block"><code>{
-    "url": "{{mcpUrl}}",
-    "headers": {
-        "Authorization": "Bearer &lt;access token&gt;"
-    }
-}</code></pre>
-    </div>
-    {{else}}
+    {{#unless serviceUrlConfigured}}
     <div class="alert alert-soft alert-info text-sm">
         <span class="icon-[tabler--info-circle] size-5 shrink-0"></span>
-        <span>Set the Service URL on the <a href="/admin/config/service" class="link">General</a> page to see
-            copy-ready connection snippets; the endpoint itself is <code>/mcp</code> on this instance.</span>
+        <span>No Service URL is configured, so the address above is how this browser reached the instance. Set the
+            Service URL on the <a href="/admin/config/service" class="link">General</a> page to pin the public
+            endpoint address.</span>
     </div>
-    {{/if}}
+    {{/unless}}
+
+    <div>
+        <span class="label-text">Claude Code</span>
+        <pre class="ee-code-block"><code id="mcpManualClaudeCmd"></code></pre>
+    </div>
 
     <div class="text-sm text-base-content/60">
-        Create tokens on the <a href="/admin/tokens" class="link">Access Tokens</a> page. For an AI agent, prefer a
-        token bound to a single account, with the <code>mcp</code> scope. Message content flows into whatever model the
-        connected client runs, and instructions inside received email are a real prompt-injection risk - grant sending
-        rights deliberately.
+        Any access token from the <a href="/admin/tokens" class="link">Access Tokens</a> page works. For an AI agent,
+        prefer a token bound to a single account, with the <code>mcp</code> scope. Message content flows into whatever
+        model the connected client runs, and instructions inside received email are a real prompt-injection risk -
+        grant sending rights deliberately.
     </div>
 
-    {{/ui/card}}
+</div>
+{{/ui/details}}
 
-    <div class="mb-6">
-        {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
-    </div>
-</form>
+<script>
+    (() => {
+        let container = document.getElementById('mcpTokenGen');
+        let presets = JSON.parse(container.dataset.presets || '{}');
+        let mcpUrl = container.dataset.mcpUrl;
+
+        // The one place the command is written; the manual block shows it with a placeholder,
+        // the generator repeats it with the real token
+        let claudeCommand = token => 'claude mcp add --transport http emailengine ' + mcpUrl + ' \\\n    --header "Authorization: Bearer ' + token + '"';
+
+        document.getElementById('mcpManualClaudeCmd').textContent = claudeCommand('<access token>');
+
+        let submitElm = document.getElementById('mcpGenSubmit');
+        if (!submitElm) {
+            return;
+        }
+
+        let errorElm = document.getElementById('mcpGenError');
+
+        submitElm.addEventListener('click', async () => {
+            errorElm.classList.add('hidden');
+            uiButtonBusy(submitElm, true);
+
+            let label = (document.getElementById('mcpGenLabel').value || '').trim() || 'MCP agent';
+            let account = (document.getElementById('mcpGenAccount').value || '').trim();
+            let readOnly = document.getElementById('mcpGenReadOnly').checked;
+
+            try {
+                if (readOnly && !presets.readOnly) {
+                    // A missing preset must not silently mint a wider credential than the
+                    // ticked box promises
+                    throw new Error('The read-only preset failed to load. Reload the page and try again.');
+                }
+
+                let data = await uiPostJson('/admin/tokens/new', {
+                    description: 'MCP: ' + label,
+                    scopes: ['mcp'],
+                    account: account || null,
+                    // Full access is the absence of a permissions record - the mcp scope
+                    // already bounds the token to the MCP tool surface
+                    permissions: readOnly ? presets.readOnly : null
+                });
+
+                if (!data.success) {
+                    throw new Error(data.message || data.error || 'Failed to generate the token');
+                }
+
+                document.getElementById('mcpGenClaudeCmd').textContent = claudeCommand(data.token);
+
+                document.getElementById('mcpGenJsonCfg').textContent = JSON.stringify(
+                    { url: mcpUrl, headers: { Authorization: 'Bearer ' + data.token } },
+                    null,
+                    4
+                );
+
+                document.getElementById('mcpGenResult').classList.remove('hidden');
+            } catch (err) {
+                errorElm.textContent = err.message;
+                errorElm.classList.remove('hidden');
+            } finally {
+                uiButtonBusy(submitElm, false);
+            }
+        });
+    })();
+</script>
