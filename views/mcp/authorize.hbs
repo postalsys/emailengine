@@ -1,0 +1,67 @@
+{{> ui/page-header title="Authorize MCP client" icon="icon-[tabler--plug-connected]" class="mb-1"}}
+
+{{#if errorMessage}}
+
+<div class="mt-6 alert alert-soft alert-warning">
+    <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+    <span>{{errorMessage}}</span>
+</div>
+
+{{else}}
+
+<p class="mb-6">An MCP client is requesting access to this EmailEngine instance. Approving creates a new access token with
+    the <code>mcp</code> scope - it appears on the Access Tokens page and can be revoked there at any time.</p>
+
+{{#unless canProvision}}
+<div class="mb-6 alert alert-soft alert-warning">
+    <span class="icon-[tabler--lock] size-5 shrink-0"></span>
+    <span>Authorizing a client requires an authenticated admin session. Set an admin password and sign in first -
+        otherwise the request below can only be denied.</span>
+</div>
+{{/unless}}
+
+<form method="post" action="/admin/mcp/authorize">
+    <input type="hidden" name="crumb" value="{{crumb}}" />
+    <input type="hidden" name="client_id" value="{{values.client_id}}" />
+    <input type="hidden" name="redirect_uri" value="{{values.redirect_uri}}" />
+    <input type="hidden" name="state" value="{{values.state}}" />
+    <input type="hidden" name="code_challenge" value="{{values.code_challenge}}" />
+    <input type="hidden" name="resource" value="{{values.resource}}" />
+
+    {{#> ui/card bodyClass="space-y-4"}}
+
+    <div class="flex flex-col gap-1">
+        <div><span class="text-base-content/60">Client:</span> <strong>{{clientName}}</strong></div>
+        <div><span class="text-base-content/60">Returns to:</span> <code>{{redirectHost}}</code></div>
+    </div>
+
+    {{!-- Derived from SURFACE_GRANTS.mcp rather than written out, so this screen cannot promise
+          less than the token grants after the tool set changes --}}
+    <div class="alert alert-soft alert-info text-sm">
+        <span class="icon-[tabler--info-circle] size-5 shrink-0"></span>
+        <span>Through the MCP tool set the client can <strong>{{grantActions}}</strong> (including sending real email)
+            across <code>{{grantGroups}}</code> on the accounts its token can reach. It cannot read stored credentials
+            or change instance settings.</span>
+    </div>
+
+    <div>
+        {{> ui/form-field id="account" label="Limit to one account" value=values.account error=errors.account
+            placeholder="account id"
+            hint="Recommended. The token then only reaches this account. Leave empty to allow every account on the instance."}}
+    </div>
+
+    {{/ui/card}}
+
+    <div class="mb-6 flex gap-2">
+        {{#if canProvision}}
+        <button type="submit" name="decision" value="approve" class="btn btn-primary">
+            <span class="icon-[tabler--check] size-4 shrink-0"></span>Approve
+        </button>
+        {{/if}}
+        <button type="submit" name="decision" value="deny" class="btn btn-neutral btn-outline">
+            <span class="icon-[tabler--x] size-4 shrink-0"></span>Deny
+        </button>
+    </div>
+</form>
+
+{{/if}}

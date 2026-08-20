@@ -9452,6 +9452,18 @@
             "description": "Include parsed calendar event data in webhook payloads",
             "nullable": true
           },
+          "mcpEnabled": {
+            "type": "boolean",
+            "description": "Enable the MCP (Model Context Protocol) endpoint at /mcp, which lets AI agents work with the connected email accounts using access tokens. Disabled by default",
+            "example": false,
+            "nullable": true
+          },
+          "mcpOAuthEnabled": {
+            "type": "boolean",
+            "description": "Enable the built-in OAuth2 authorization server for the MCP endpoint, used by MCP clients that cannot be configured with a static access token. Requires mcpEnabled and a configured serviceUrl. Disabled by default",
+            "example": false,
+            "nullable": true
+          },
           "documentStorePassword": {
             "type": "boolean",
             "description": "Whether a value is set for this setting. Secret values are never returned, only a boolean marker",
@@ -10131,6 +10143,16 @@
           "notifyCalendarEvents": {
             "type": "boolean",
             "description": "Include parsed calendar event data in webhook payloads"
+          },
+          "mcpEnabled": {
+            "type": "boolean",
+            "description": "Enable the MCP (Model Context Protocol) endpoint at /mcp, which lets AI agents work with the connected email accounts using access tokens. Disabled by default",
+            "example": false
+          },
+          "mcpOAuthEnabled": {
+            "type": "boolean",
+            "description": "Enable the built-in OAuth2 authorization server for the MCP endpoint, used by MCP clients that cannot be configured with a static access token. Requires mcpEnabled and a configured serviceUrl. Disabled by default",
+            "example": false
           },
           "logs": {
             "$ref": "#/components/schemas/LogSettings"
@@ -11530,18 +11552,20 @@
           "enumDescriptions": {
             "api": "Call the REST API",
             "smtp": "Authenticate against the built-in SMTP submission server",
-            "imap-proxy": "Authenticate against the built-in IMAP proxy"
+            "imap-proxy": "Authenticate against the built-in IMAP proxy",
+            "mcp": "Connect AI agents through the MCP endpoint. Admits only the operations the MCP tool set wraps, and is not valid for plain REST calls"
           }
         },
         "enum": [
           "api",
           "smtp",
-          "imap-proxy"
+          "imap-proxy",
+          "mcp"
         ]
       },
       "Scopes": {
         "type": "array",
-        "description": "Token permission scopes: \"api\" for REST API access, \"smtp\" for SMTP submission, \"imap-proxy\" for IMAP proxy authentication",
+        "description": "Token permission scopes: \"api\" for REST API access, \"smtp\" for SMTP submission, \"imap-proxy\" for IMAP proxy authentication, \"mcp\" for the MCP endpoint only",
         "default": [
           "api"
         ],
@@ -20795,6 +20819,22 @@
           },
           {
             "name": "notifyCalendarEvents",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "mcpEnabled",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "mcpOAuthEnabled",
             "in": "query",
             "schema": {
               "type": "boolean",

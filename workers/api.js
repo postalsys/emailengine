@@ -72,8 +72,11 @@ const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
 const tokenPermissions = require('../lib/token-permissions');
+const { mcpFeatureEnabled } = require('../lib/mcp');
+const mcpListen = require('../lib/mcp/listen');
 const tokenAuditLog = require('../lib/token-audit-log');
-const { routeGrant } = require('../lib/api-routes/permission-map');
+const { routeGrant, surfaceAdmits } = require('../lib/api-routes/permission-map');
+const { mcpOptions } = require('../lib/api-routes/route-metadata');
 
 const { redis, documentsQueue } = require('../lib/db');
 const { Account } = require('../lib/account');
@@ -439,6 +442,9 @@ parentPort.on('message', message => {
 
     if (message && message.cmd === 'change') {
         publishChangeEvent(message);
+        // The MCP subscriptions/listen streams ride the same fanout as the admin change feed,
+        // but frame the event as a JSON-RPC notification, so they keep their own registry
+        mcpListen.publishAccountChange(message, logger);
     }
 
     if (message && message.cmd === 'settings') {
@@ -801,8 +807,12 @@ const init = async () => {
             request.setUrl(`${url.pathname}${url.search}`);
         }
 
-        // make license info available for the request
-        request.app.licenseInfo = await call({ cmd: 'license', timeout: request.headers['x-ee-timeout'] });
+        // make license info available for the request. An MCP-dispatched inject seeds it from
+        // the outer request (lib/mcp/inject.js), so the IPC round trip is not paid twice for
+        // one answer that cannot differ within a request.
+        if (!request.app.licenseInfo) {
+            request.app.licenseInfo = await call({ cmd: 'license', timeout: request.headers['x-ee-timeout'] });
+        }
 
         // flash notifications
         request.flash = async message => await flash(redis, request, message);
@@ -871,19 +881,13 @@ const init = async () => {
                 };
             }
 
-            let scope = false;
+            // Every scope a route names admits a token that holds it. Single-scope routes behave
+            // exactly as before; the MCP endpoint is the one route naming two (`scope:api` and
+            // `scope:mcp`), so both kinds of credential can open it.
             let tags = (request.route && request.route.settings && request.route.settings.tags) || [];
-            if (tags.includes('api')) {
-                scope = 'api';
-            } else {
-                for (let tag of tags) {
-                    if (/^scope:/.test(tag)) {
-                        scope = tag.substr('scope:'.length);
-                    }
-                }
-            }
+            let scopes = tags.filter(tag => tag === 'api' || /^scope:/.test(tag)).map(tag => tag.replace(/^scope:/, ''));
 
-            if (token.startsWith('sess_') && scope === 'api') {
+            if (token.startsWith('sess_') && scopes.includes('api')) {
                 // seems like a session token
                 let isValidSessionToken = await tokens.validateSessionToken(
                     request.state && request.state.ee && request.state.ee.sid,
@@ -902,7 +906,10 @@ const init = async () => {
 
             let tokenData;
             try {
-                tokenData = await tokens.get(token, false, { log: true, remoteAddress: request.app.ip });
+                // The last-use record is skipped on MCP-dispatched injects: the outer /mcp
+                // request just wrote the same credential's entry, and the second write would
+                // only repeat it
+                tokenData = await tokens.get(token, false, { log: !request.app.mcpInternal, remoteAddress: request.app.ip });
             } catch (err) {
                 return {
                     isValid: false,
@@ -918,6 +925,12 @@ const init = async () => {
             }
 
             const grant = routeGrant(request.route);
+
+            // The MCP endpoint (lib/api-routes/mcp-routes.js) is a protocol multiplexer with no
+            // operation of its own: every tools/call becomes an injected API request that runs
+            // this whole strategy again against the route it actually targets. Three checks below
+            // defer to that inner request, and each says so where it does.
+            const mcpEndpoint = !!mcpOptions(request.route).endpoint;
 
             // This strategy runs before route validation, so `request.query` is whatever the client
             // sent: a repeated `?account=` arrives as an array. Only a string can name an account,
@@ -947,20 +960,35 @@ const init = async () => {
                 account: (request.params && request.params.account) || queryAccount || tokenData.account || null
             };
 
-            if (scope && tokenData.scopes && !tokenData.scopes.includes(scope) && !tokenData.scopes.includes('*')) {
+            // `mcp` is a surface scope like `smtp`: it admits exactly the API operations the MCP
+            // tool set wraps (surfaceAdmits over SURFACE_GRANTS.mcp), and only on requests the
+            // MCP endpoint dispatched itself - request.app.mcpInternal is set by
+            // lib/mcp/inject.js and cannot be set from the network, so an mcp-scoped token
+            // presented to plain REST is refused here like any other missing scope.
+            const mcpSurfaceAdmits =
+                scopes.includes('api') && tokenData.scopes && tokenData.scopes.includes('mcp') && !!request.app.mcpInternal && surfaceAdmits('mcp', grant);
+
+            const hasRequiredScope =
+                !scopes.length ||
+                !tokenData.scopes ||
+                tokenData.scopes.includes('*') ||
+                tokenData.scopes.some(entry => scopes.includes(entry)) ||
+                mcpSurfaceAdmits;
+
+            if (!hasRequiredScope) {
                 // failed scope validation
                 logger.warn({
                     msg: 'Trying to use invalid scope for a token',
                     tokenAccount: tokenData.account,
                     tokenId: tokenData.id,
-                    requestedScope: scope,
+                    requestedScope: scopes.join(', '),
                     tokenScopes: tokenData.scopes
                 });
 
                 tokenAuditLog.denied(auditEntry, 'scope');
 
                 let error = Boom.forbidden('Unauthorized scope');
-                error.output.payload.requestedScope = scope;
+                error.output.payload.requestedScope = scopes.join(', ');
                 throw error;
             }
 
@@ -973,7 +1001,10 @@ const init = async () => {
             //
             // Only subtracts: a token with no `permissions` field takes the allowed path, which is
             // every token issued before this shipped.
-            const permissionCheck = tokenPermissions.check({ tokenData, operation: grant });
+            // The MCP door defers this check: its own routeGrant() resolves to no group on
+            // purpose, and the operation a narrowed token must hold a grant for is the injected
+            // inner request, which re-runs this strategy with the real route.
+            const permissionCheck = mcpEndpoint ? { allowed: true } : tokenPermissions.check({ tokenData, operation: grant });
             if (!permissionCheck.allowed) {
                 logger.warn({
                     msg: 'Token permissions do not allow this operation',
@@ -994,7 +1025,13 @@ const init = async () => {
                 throw error;
             }
 
-            if (tokenData.account) {
+            if (tokenData.account && mcpEndpoint) {
+                // The door names no account, so the binding cannot be checked here; it is
+                // enforced on every injected inner request, which does name one. Parked on the
+                // request so the MCP layer can seed resources/list and the agent instructions
+                // for a bound credential.
+                request.app.mcpBoundAccount = tokenData.account;
+            } else if (tokenData.account) {
                 // account token
 
                 let accountIdSource;
@@ -1128,7 +1165,14 @@ const init = async () => {
             // payload validation and the handler, so a call recorded here can still end in a 400 or
             // a 404. That is the right boundary for a credential trail - it answers what the token
             // was permitted to attempt.
-            tokenAuditLog.allowed(auditEntry);
+            //
+            // Except at the MCP door, where "allowed" describes no operation at all (the permission
+            // check above was deferred): every tool call writes its own row as the injected API
+            // request it becomes, and a second content-free row per call would halve the capped
+            // audit retention for MCP traffic. Denials at the door are still recorded above.
+            if (!mcpEndpoint) {
+                tokenAuditLog.allowed(auditEntry);
+            }
 
             return { isValid: true, credentials: { token }, artifacts: tokenData };
         }
@@ -2697,6 +2741,7 @@ const init = async () => {
         MAX_BODY_SIZE,
         MAX_PAYLOAD_TIMEOUT,
         documentStoreFeatureEnabled,
+        mcpFeatureEnabled,
         oauth2Schema,
         imapSchema,
         smtpSchema,

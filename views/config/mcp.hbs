@@ -1,0 +1,84 @@
+{{> ui/page-header title="MCP" icon="icon-[tabler--plug-connected]" class="mb-1"}}
+
+<p class="mb-6">
+    Let AI agents work with the connected email accounts over the Model Context Protocol. The MCP endpoint exposes a
+    curated tool set (list and search messages, read content, organize and delete messages, create drafts, send mail)
+    and authenticates with the same access tokens as the REST API.
+</p>
+
+{{#unless mcpFeatureEnabled}}
+<div class="mb-6 alert alert-soft alert-warning">
+    <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+    <span>The MCP endpoint is disabled for this deployment (<code>EENGINE_MCP_ENABLED</code> or <code>[mcp]
+            enabled</code> in the configuration file), so the settings below have no effect until that gate is turned
+        back on and EmailEngine is restarted.</span>
+</div>
+{{/unless}}
+
+<form method="post" action="/admin/config/mcp">
+    {{!-- no id: the layout already renders the #crumb element scripts read --}}
+    <input type="hidden" name="crumb" value="{{crumb}}" />
+
+    {{#> ui/card bodyClass="space-y-4"}}
+    <div>
+        {{> ui/setting-ref name="mcpEnabled"}}
+        {{> ui/checkbox id="settingsMcpEnabled" name="mcpEnabled" label="Enable the MCP endpoint"
+        checked=values.mcpEnabled error=errors.mcpEnabled}}
+        <span class="helper-text">Serves the Model Context Protocol at <code>/mcp</code>. Clients authenticate with an
+            access token; a token with the <code>mcp</code> scope works only here and not against the REST API.</span>
+    </div>
+
+    <div>
+        {{> ui/setting-ref name="mcpOAuthEnabled"}}
+        {{> ui/checkbox id="settingsMcpOAuthEnabled" name="mcpOAuthEnabled" label="Enable OAuth sign-in for MCP clients"
+        checked=values.mcpOAuthEnabled error=errors.mcpOAuthEnabled}}
+        <span class="helper-text">For MCP clients that cannot be configured with a static token (for example claude.ai
+            web connectors). The client registers itself, you approve it on a consent page, and EmailEngine issues it
+            an <code>mcp</code>-scoped access token. Requires the Service URL to be set under General.</span>
+    </div>
+    {{/ui/card}}
+
+    {{#> ui/card title="Connecting a client" bodyClass="space-y-4"}}
+
+    {{#if mcpUrl}}
+    <div>
+        <label class="label-text" for="mcpEndpointUrl">MCP endpoint</label>
+        {{> ui/copy-field id="mcpEndpointUrl" value=mcpUrl ariaLabel="MCP endpoint URL"}}
+    </div>
+
+    <div>
+        <span class="label-text">Claude Code</span>
+        <pre class="ee-code-block"><code>claude mcp add --transport http emailengine {{mcpUrl}} \
+    --header "Authorization: Bearer &lt;access token&gt;"</code></pre>
+    </div>
+
+    <div>
+        <span class="label-text">Generic client configuration</span>
+        <pre class="ee-code-block"><code>{
+    "url": "{{mcpUrl}}",
+    "headers": {
+        "Authorization": "Bearer &lt;access token&gt;"
+    }
+}</code></pre>
+    </div>
+    {{else}}
+    <div class="alert alert-soft alert-info text-sm">
+        <span class="icon-[tabler--info-circle] size-5 shrink-0"></span>
+        <span>Set the Service URL on the <a href="/admin/config/service" class="link">General</a> page to see
+            copy-ready connection snippets; the endpoint itself is <code>/mcp</code> on this instance.</span>
+    </div>
+    {{/if}}
+
+    <div class="text-sm text-base-content/60">
+        Create tokens on the <a href="/admin/tokens" class="link">Access Tokens</a> page. For an AI agent, prefer a
+        token bound to a single account, with the <code>mcp</code> scope. Message content flows into whatever model the
+        connected client runs, and instructions inside received email are a real prompt-injection risk - grant sending
+        rights deliberately.
+    </div>
+
+    {{/ui/card}}
+
+    <div class="mb-6">
+        {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
+    </div>
+</form>

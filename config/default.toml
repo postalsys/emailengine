@@ -36,6 +36,12 @@ proxy = false      # Set to true if using HAProxy with send-proxy option
 # all document-store API/UI endpoints are only available when this is enabled.
 enabled = false
 
+[mcp]
+# MCP (Model Context Protocol) endpoint at /mcp. This deployment-level gate controls whether
+# the endpoint exists in the route table at all; the runtime on/off switch is the mcpEnabled
+# setting (Configuration > MCP in the admin UI), which starts out disabled.
+enabled = true
+
 [dbs]
 # redis connection
 redis = "redis://127.0.0.1:6379/8"

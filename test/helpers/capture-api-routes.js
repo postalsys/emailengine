@@ -45,6 +45,10 @@ function buildMockArgs(server, overrides) {
             // table. The gate is a plain argument here (not an env read at module load like the
             // UI side), so the off state is captured by passing it in - no child process needed.
             documentStoreFeatureEnabled: true,
+            // The MCP gate defaults on (it ships enabled in config/default.toml), so the golden
+            // table includes the /mcp routes; the gate-off state is captured explicitly in
+            // test/api-routes-table-test.js
+            mcpFeatureEnabled: true,
 
             // Plain Joi key maps (not compiled schemas) - the route modules wrap them in Joi.object()
             oauth2Schema,
@@ -78,8 +82,9 @@ function describeRoute(cfg, method) {
         // rather than reading the route modules by hand. Undefined for routes that take no payload.
         payload: options.validate && options.validate.payload,
         // Shaped the way a live request.route is, so the described route can be handed straight to
-        // routeGrant() rather than reassembled by the caller
-        settings: { plugins: options.plugins || {} }
+        // routeGrant() - and to buildToolRegistry() in lib/mcp/tools.js, which reads the joi
+        // validation schemas and the route description the same way it does off server.table()
+        settings: { plugins: options.plugins || {}, validate: options.validate || {}, description: options.description }
     };
 }
 

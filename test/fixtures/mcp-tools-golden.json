@@ -1,0 +1,1968 @@
+[
+    {
+        "name": "create_draft",
+        "title": "Create draft",
+        "description": "Store a new message in a folder, typically a draft in the Drafts folder. Takes structured fields (from, to, subject, text, html). Nothing is sent - use send_message for that.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Target mailbox folder path",
+                    "examples": [
+                        "INBOX"
+                    ]
+                },
+                "flags": {
+                    "type": "array",
+                    "description": "Message flags",
+                    "examples": [
+                        [
+                            "\\Seen",
+                            "\\Draft"
+                        ]
+                    ],
+                    "items": {
+                        "type": "string",
+                        "maxLength": 128
+                    }
+                },
+                "internalDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Sets the internal date for this message",
+                    "examples": [
+                        "2021-07-08T07:06:34.336Z"
+                    ]
+                },
+                "reference": {
+                    "type": "object",
+                    "description": "Configuration for replying to or forwarding an existing message",
+                    "properties": {
+                        "message": {
+                            "type": "string",
+                            "description": "EmailEngine message ID to reply to or forward",
+                            "examples": [
+                                "AAAAAQAACnA"
+                            ],
+                            "maxLength": 256
+                        },
+                        "action": {
+                            "type": "string",
+                            "description": "What to do with the referenced message",
+                            "examples": [
+                                "reply"
+                            ],
+                            "default": "reply",
+                            "enum": [
+                                "forward",
+                                "reply",
+                                "reply-all"
+                            ]
+                        },
+                        "inline": {
+                            "type": "boolean",
+                            "description": "Include the original message as quoted text in the response",
+                            "default": false
+                        },
+                        "forwardAttachments": {
+                            "type": "boolean",
+                            "description": "Include original attachments when forwarding",
+                            "default": false
+                        },
+                        "ignoreMissing": {
+                            "type": "boolean",
+                            "description": "Continue sending even if the referenced message cannot be found",
+                            "default": false
+                        },
+                        "messageId": {
+                            "type": "string",
+                            "description": "Verify the Message-ID of the referenced email matches this value before proceeding",
+                            "examples": [
+                                "<test123@example.com>"
+                            ],
+                            "maxLength": 996
+                        },
+                        "threadId": {
+                            "type": "string",
+                            "description": "Gmail thread ID to attach the outgoing message to",
+                            "examples": [
+                                "1694936993596975454"
+                            ]
+                        }
+                    }
+                },
+                "raw": {
+                    "type": "string",
+                    "description": "A Base64-encoded email message in RFC 822 format",
+                    "examples": [
+                        "TUlNRS1WZXJzaW9uOiAxLjANClN1YmplY3Q6IGhlbGxvIHdvcmxkDQoNCkhlbGxvIQ0K"
+                    ],
+                    "maxLength": 5242880
+                },
+                "from": {
+                    "type": "object",
+                    "description": "Sender email address",
+                    "examples": [
+                        {
+                            "name": "From Me",
+                            "address": "sender@example.com"
+                        }
+                    ],
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "Display name for the email address",
+                            "examples": [
+                                "Some Name"
+                            ],
+                            "maxLength": 256
+                        },
+                        "address": {
+                            "type": "string",
+                            "description": "Email address",
+                            "examples": [
+                                "user@example.com"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "address"
+                    ]
+                },
+                "to": {
+                    "type": "array",
+                    "description": "List of addresses",
+                    "examples": [
+                        [
+                            {
+                                "address": "recipient@example.com"
+                            }
+                        ]
+                    ],
+                    "items": {
+                        "type": "object",
+                        "description": "Email address with optional display name",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Display name for the email address",
+                                "examples": [
+                                    "Some Name"
+                                ],
+                                "maxLength": 256
+                            },
+                            "address": {
+                                "type": "string",
+                                "description": "Email address",
+                                "examples": [
+                                    "user@example.com"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "address"
+                        ]
+                    }
+                },
+                "cc": {
+                    "type": "array",
+                    "description": "List of addresses",
+                    "items": {
+                        "type": "object",
+                        "description": "Email address with optional display name",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Display name for the email address",
+                                "examples": [
+                                    "Some Name"
+                                ],
+                                "maxLength": 256
+                            },
+                            "address": {
+                                "type": "string",
+                                "description": "Email address",
+                                "examples": [
+                                    "user@example.com"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "address"
+                        ]
+                    }
+                },
+                "bcc": {
+                    "type": "array",
+                    "description": "List of addresses",
+                    "items": {
+                        "type": "object",
+                        "description": "Email address with optional display name",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Display name for the email address",
+                                "examples": [
+                                    "Some Name"
+                                ],
+                                "maxLength": 256
+                            },
+                            "address": {
+                                "type": "string",
+                                "description": "Email address",
+                                "examples": [
+                                    "user@example.com"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "address"
+                        ]
+                    }
+                },
+                "subject": {
+                    "type": "string",
+                    "description": "Message subject",
+                    "examples": [
+                        "What a wonderful message"
+                    ],
+                    "maxLength": 10240
+                },
+                "text": {
+                    "type": "string",
+                    "description": "Message Text",
+                    "examples": [
+                        "Hello from myself!"
+                    ],
+                    "maxLength": 5242880
+                },
+                "html": {
+                    "type": "string",
+                    "description": "Message HTML",
+                    "examples": [
+                        "<p>Hello from myself!</p>"
+                    ],
+                    "maxLength": 5242880
+                },
+                "attachments": {
+                    "type": "array",
+                    "description": "List of attachments",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "filename": {
+                                "type": "string",
+                                "examples": [
+                                    "transparent.gif"
+                                ],
+                                "maxLength": 256
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "examples": [
+                                    "image/gif"
+                                ],
+                                "maxLength": 256
+                            },
+                            "contentDisposition": {
+                                "type": "string",
+                                "enum": [
+                                    "inline",
+                                    "attachment"
+                                ]
+                            },
+                            "cid": {
+                                "type": "string",
+                                "description": "Content-ID value for embedded images",
+                                "examples": [
+                                    "unique-image-id@localhost"
+                                ],
+                                "maxLength": 256
+                            },
+                            "encoding": {
+                                "type": "string",
+                                "default": "base64",
+                                "enum": [
+                                    "base64"
+                                ]
+                            },
+                            "reference": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "description": "References an existing attachment by its ID instead of providing new attachment content",
+                                "examples": [
+                                    "AAAAAQAACnAcde"
+                                ],
+                                "enum": [
+                                    false,
+                                    null
+                                ],
+                                "maxLength": 256
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "Base64 formatted attachment file",
+                                "examples": [
+                                    "R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs="
+                                ],
+                                "maxLength": 5242880
+                            }
+                        },
+                        "required": [
+                            "content"
+                        ]
+                    }
+                },
+                "messageId": {
+                    "type": "string",
+                    "description": "Message ID",
+                    "examples": [
+                        "<test123@example.com>"
+                    ],
+                    "maxLength": 996
+                },
+                "headers": {
+                    "type": "object",
+                    "description": "Custom Headers",
+                    "examples": [
+                        {
+                            "X-My-Custom-Header": "Custom header value"
+                        }
+                    ]
+                },
+                "locale": {
+                    "type": "string",
+                    "description": "Optional locale",
+                    "examples": [
+                        "fr"
+                    ],
+                    "maxLength": 100
+                },
+                "tz": {
+                    "type": "string",
+                    "description": "Optional timezone",
+                    "examples": [
+                        "Europe/Tallinn"
+                    ],
+                    "maxLength": 100
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "path"
+            ]
+        },
+        "annotations": {
+            "title": "Create draft",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "delete_message",
+        "title": "Delete message",
+        "description": "Delete one message. It is moved to Trash when possible, and deleted permanently when it already is in Trash.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "message": {
+                    "type": "string",
+                    "description": "Message ID",
+                    "examples": [
+                        "AAAAAQAACnA"
+                    ],
+                    "maxLength": 256
+                },
+                "force": {
+                    "type": "boolean",
+                    "description": "Delete message even if not in Trash. Not supported for Gmail API accounts.",
+                    "default": false
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "message"
+            ]
+        },
+        "annotations": {
+            "title": "Delete message",
+            "readOnlyHint": false,
+            "destructiveHint": true,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "get_account",
+        "title": "Get account",
+        "description": "Get one account: its display name, email address, connection state and sync status. Credentials are masked.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "quota": {
+                    "type": "boolean",
+                    "description": "If true, then include quota information in the response",
+                    "default": false
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account"
+            ]
+        },
+        "annotations": {
+            "title": "Get account",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "get_attachment",
+        "title": "Get attachment",
+        "description": "Download one attachment, returned inline as a base64 resource. The attachment id comes from the attachments list of get_message. Fails above 1 MB - larger files have to be fetched over the REST API.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "attachment": {
+                    "type": "string",
+                    "description": "Attachment ID",
+                    "examples": [
+                        "AAAAAQAACnAcde"
+                    ],
+                    "maxLength": 2048
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "attachment"
+            ]
+        },
+        "annotations": {
+            "title": "Get attachment",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "get_message",
+        "title": "Get message",
+        "description": "Get one message: subject, addresses, date, flags, attachment list and the text id used by get_message_text. Set textType to also include the message text directly.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "message": {
+                    "type": "string",
+                    "description": "Message ID",
+                    "examples": [
+                        "AAAAAQAACnA"
+                    ],
+                    "maxLength": 256
+                },
+                "maxBytes": {
+                    "type": "integer",
+                    "description": "Max length of text content",
+                    "examples": [
+                        5248000
+                    ],
+                    "minimum": 0,
+                    "maximum": 1073741824
+                },
+                "textType": {
+                    "type": "string",
+                    "description": "Which text content to return, use * for all. By default text content is not returned.",
+                    "examples": [
+                        "*"
+                    ],
+                    "enum": [
+                        "html",
+                        "plain",
+                        "*"
+                    ]
+                },
+                "webSafeHtml": {
+                    "type": "boolean",
+                    "description": "Shorthand option to fetch and preprocess HTML and inline images",
+                    "default": false
+                },
+                "embedAttachedImages": {
+                    "type": "boolean",
+                    "description": "If true, then fetches attached images and embeds these in the HTML as data URIs",
+                    "default": false
+                },
+                "preProcessHtml": {
+                    "type": "boolean",
+                    "description": "If true, then pre-processes HTML for compatibility",
+                    "default": false
+                },
+                "markAsSeen": {
+                    "type": "boolean",
+                    "description": "If true, then marks unseen email as seen while returning the message",
+                    "default": false
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "message"
+            ]
+        },
+        "annotations": {
+            "title": "Get message",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "get_message_text",
+        "title": "Get message text",
+        "description": "Fetch the text content of a message. The text id comes from the text.id field of get_message or list_messages.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "text": {
+                    "type": "string",
+                    "description": "Message text ID",
+                    "examples": [
+                        "AAAAAQAACnAcdfaaN"
+                    ],
+                    "maxLength": 10240
+                },
+                "maxBytes": {
+                    "type": "integer",
+                    "description": "Max length of text content. Ignored for Gmail API and MS Graph API accounts (full content is always returned)",
+                    "examples": [
+                        5242880
+                    ],
+                    "minimum": 0,
+                    "maximum": 1073741824
+                },
+                "textType": {
+                    "type": "string",
+                    "description": "Which text content to return, use * for all. By default all contents are returned.",
+                    "examples": [
+                        "*"
+                    ],
+                    "default": "*",
+                    "enum": [
+                        "html",
+                        "plain",
+                        "*"
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "text"
+            ]
+        },
+        "annotations": {
+            "title": "Get message text",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "get_outbox",
+        "title": "List outbox",
+        "description": "List messages queued for delivery, paged, including scheduled sends and their delivery progress.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer",
+                    "description": "Page number (zero indexed, so use 0 for first page)",
+                    "examples": [
+                        0
+                    ],
+                    "default": 0,
+                    "minimum": 0,
+                    "maximum": 1048576
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "description": "How many entries per page",
+                    "examples": [
+                        20
+                    ],
+                    "default": 20,
+                    "minimum": 1,
+                    "maximum": 1000
+                }
+            },
+            "additionalProperties": false
+        },
+        "annotations": {
+            "title": "List outbox",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "list_accounts",
+        "title": "List accounts",
+        "description": "List the email accounts on this instance, paged. Use the returned account id as the account argument of the other tools. Check the state field: only connected accounts can be read.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer",
+                    "description": "Page number (zero indexed, so use 0 for first page)",
+                    "examples": [
+                        0
+                    ],
+                    "default": 0,
+                    "minimum": 0,
+                    "maximum": 1048576
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "description": "How many entries per page",
+                    "examples": [
+                        20
+                    ],
+                    "default": 20,
+                    "minimum": 1,
+                    "maximum": 1000
+                },
+                "state": {
+                    "type": "string",
+                    "description": "Filter accounts by state",
+                    "examples": [
+                        "connected"
+                    ],
+                    "enum": [
+                        "init",
+                        "unset",
+                        "connected",
+                        "connecting",
+                        "syncing",
+                        "authenticationError",
+                        "connectError",
+                        "disconnected",
+                        "paused"
+                    ]
+                },
+                "query": {
+                    "type": "string",
+                    "description": "Filter accounts by string match",
+                    "examples": [
+                        "user@example.com"
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "annotations": {
+            "title": "List accounts",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "list_mailboxes",
+        "title": "List mailboxes",
+        "description": "List the folders of an account with message counts and special-use roles (Inbox, Sent, Trash and so on). Folder paths from here are what list_messages, search_messages and move_message take.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "counters": {
+                    "type": "boolean",
+                    "description": "If true, then includes message counters in the response",
+                    "default": false
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account"
+            ]
+        },
+        "annotations": {
+            "title": "List mailboxes",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "list_messages",
+        "title": "List messages",
+        "description": "List messages in one mailbox folder, newest first, paged. The folder path comes from list_mailboxes.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Mailbox folder path. Can use special use labels like \"\\Sent\". Special value \"\\All\" is available for Gmail IMAP, Gmail API, MS Graph API accounts.",
+                    "examples": [
+                        "INBOX"
+                    ]
+                },
+                "cursor": {
+                    "type": "string",
+                    "description": "Paging cursor from `nextPageCursor` or `prevPageCursor` value",
+                    "examples": [
+                        "imap_kcQIji3UobDDTxc"
+                    ],
+                    "maxLength": 1048576
+                },
+                "page": {
+                    "type": "integer",
+                    "description": "Page number (zero-indexed, so use 0 for the first page). Only supported for IMAP accounts",
+                    "examples": [
+                        0
+                    ],
+                    "default": 0,
+                    "minimum": 0,
+                    "maximum": 1048576
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "description": "How many entries per page",
+                    "examples": [
+                        20
+                    ],
+                    "default": 20,
+                    "minimum": 1,
+                    "maximum": 1000
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "path"
+            ]
+        },
+        "annotations": {
+            "title": "List messages",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "list_templates",
+        "title": "List templates",
+        "description": "List stored email templates, paged. Pass an account id for account-specific templates or omit it for shared ones.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Account ID to list the templates for",
+                    "examples": [
+                        "example"
+                    ],
+                    "maxLength": 256
+                },
+                "page": {
+                    "type": "integer",
+                    "description": "Page number (zero indexed, so use 0 for first page)",
+                    "examples": [
+                        0
+                    ],
+                    "default": 0,
+                    "minimum": 0,
+                    "maximum": 1048576
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "description": "How many entries per page",
+                    "examples": [
+                        20
+                    ],
+                    "default": 20,
+                    "minimum": 1,
+                    "maximum": 1000
+                }
+            },
+            "additionalProperties": false
+        },
+        "annotations": {
+            "title": "List templates",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "move_message",
+        "title": "Move message",
+        "description": "Move one message to another folder. The target folder path comes from list_mailboxes.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "message": {
+                    "type": "string",
+                    "description": "Message ID",
+                    "examples": [
+                        "AAAAAQAACnA"
+                    ],
+                    "maxLength": 256
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Destination mailbox folder path",
+                    "examples": [
+                        "INBOX"
+                    ]
+                },
+                "source": {
+                    "type": "string",
+                    "description": "Source mailbox folder path (Gmail API only). Needed to remove the label from the message.",
+                    "examples": [
+                        "INBOX"
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "message",
+                "path"
+            ]
+        },
+        "annotations": {
+            "title": "Move message",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "search_messages",
+        "title": "Search messages",
+        "description": "Search for messages in one folder using structured criteria (from, to, subject, body, date ranges, flags). Searches a single folder, not the whole account.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "cursor": {
+                    "type": "string",
+                    "description": "Paging cursor from `nextPageCursor` or `prevPageCursor` value",
+                    "examples": [
+                        "imap_kcQIji3UobDDTxc"
+                    ],
+                    "maxLength": 1048576
+                },
+                "page": {
+                    "type": "integer",
+                    "description": "Page number (zero-indexed, so use 0 for the first page). Only supported for IMAP accounts",
+                    "examples": [
+                        0
+                    ],
+                    "default": 0,
+                    "minimum": 0,
+                    "maximum": 1048576
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "description": "How many entries per page",
+                    "examples": [
+                        20
+                    ],
+                    "default": 20,
+                    "minimum": 1,
+                    "maximum": 1000
+                },
+                "useOutlookSearch": {
+                    "type": "boolean",
+                    "description": "MS Graph only. Use the $search parameter for search queries instead of $filter"
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Mailbox folder path. Can use special use labels like \"\\Sent\". Special value \"\\All\" is available for Gmail IMAP, Gmail API, MS Graph API accounts.",
+                    "examples": [
+                        "INBOX"
+                    ]
+                },
+                "search": {
+                    "type": "object",
+                    "description": "Search criteria for filtering messages",
+                    "properties": {
+                        "seq": {
+                            "type": "string",
+                            "description": "Sequence number range (e.g., \"1:10\" or \"1,3,5\"). Only supported for IMAP.",
+                            "examples": [
+                                "1:10"
+                            ],
+                            "maxLength": 8192
+                        },
+                        "answered": {
+                            "type": "boolean",
+                            "description": "Filter for messages that have been replied to. Only supported for IMAP."
+                        },
+                        "deleted": {
+                            "type": "boolean",
+                            "description": "Filter for messages marked for deletion. Only supported for IMAP."
+                        },
+                        "draft": {
+                            "type": "boolean",
+                            "description": "Filter for draft messages"
+                        },
+                        "unseen": {
+                            "type": "boolean",
+                            "description": "Filter for unread messages"
+                        },
+                        "flagged": {
+                            "type": "boolean",
+                            "description": "Filter for flagged/starred messages"
+                        },
+                        "seen": {
+                            "type": "boolean",
+                            "description": "Filter for read messages"
+                        },
+                        "from": {
+                            "type": "string",
+                            "description": "Search in From addresses",
+                            "examples": [
+                                "nyan.cat@example.com"
+                            ],
+                            "maxLength": 256
+                        },
+                        "to": {
+                            "type": "string",
+                            "description": "Search in To addresses. Not supported for MS Graph API.",
+                            "examples": [
+                                "support@example.com"
+                            ],
+                            "maxLength": 256
+                        },
+                        "cc": {
+                            "type": "string",
+                            "description": "Search in Cc addresses. Not supported for MS Graph API.",
+                            "examples": [
+                                "billing@example.com"
+                            ],
+                            "maxLength": 256
+                        },
+                        "bcc": {
+                            "type": "string",
+                            "description": "Search in Bcc addresses. Not supported for MS Graph API.",
+                            "examples": [
+                                "archive@example.com"
+                            ],
+                            "maxLength": 256
+                        },
+                        "body": {
+                            "type": "string",
+                            "description": "Search in message body content",
+                            "examples": [
+                                "Hello world"
+                            ],
+                            "maxLength": 256
+                        },
+                        "subject": {
+                            "type": "string",
+                            "description": "Search in message subject",
+                            "examples": [
+                                "Hello world"
+                            ],
+                            "maxLength": 2560
+                        },
+                        "larger": {
+                            "type": "integer",
+                            "description": "Find messages larger than specified size in bytes. Not supported for MS Graph API.",
+                            "examples": [
+                                1048576
+                            ],
+                            "minimum": 0,
+                            "maximum": 1073741824
+                        },
+                        "smaller": {
+                            "type": "integer",
+                            "description": "Find messages smaller than specified size in bytes. Not supported for MS Graph API.",
+                            "examples": [
+                                102400
+                            ],
+                            "minimum": 0,
+                            "maximum": 1073741824
+                        },
+                        "uid": {
+                            "type": "string",
+                            "description": "UID range (e.g., \"100:200\" or \"150,200,250\"). Only supported for IMAP.",
+                            "examples": [
+                                "100:200"
+                            ],
+                            "maxLength": 8192
+                        },
+                        "modseq": {
+                            "type": "integer",
+                            "description": "Find messages with modification sequence higher than specified value. Only supported for IMAP with CONDSTORE.",
+                            "examples": [
+                                12345
+                            ],
+                            "minimum": 0
+                        },
+                        "before": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Find messages received before this date",
+                            "examples": [
+                                "2024-08-09"
+                            ]
+                        },
+                        "since": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Find messages received after this date",
+                            "examples": [
+                                "2022-08-09"
+                            ]
+                        },
+                        "sentBefore": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Find messages sent before this date",
+                            "examples": [
+                                "2024-08-09"
+                            ]
+                        },
+                        "sentSince": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Find messages sent after this date",
+                            "examples": [
+                                "2022-08-09"
+                            ]
+                        },
+                        "emailId": {
+                            "type": "string",
+                            "description": "Globally unique email identifier (when supported by the email server)",
+                            "examples": [
+                                "1278455344230334865"
+                            ],
+                            "maxLength": 256
+                        },
+                        "threadId": {
+                            "type": "string",
+                            "description": "Thread identifier for email conversations (when supported by the email server)",
+                            "examples": [
+                                "1694936993596975454"
+                            ]
+                        },
+                        "header": {
+                            "type": "object",
+                            "description": "Search specific email headers",
+                            "examples": [
+                                {
+                                    "Message-ID": "<1DAF52A51E674A2@example.com>"
+                                }
+                            ]
+                        },
+                        "gmailRaw": {
+                            "type": "string",
+                            "description": "Gmail search syntax (only works with Gmail accounts)",
+                            "examples": [
+                                "has:attachment in:unread"
+                            ],
+                            "maxLength": 1024
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "Filter by Gmail labels or MS Graph (Outlook) categories. Not supported for generic IMAP accounts.",
+                            "properties": {
+                                "has": {
+                                    "type": "array",
+                                    "description": "Match messages that contain ALL of these labels/categories. Supported for Gmail and MS Graph (Outlook) accounts only.",
+                                    "examples": [
+                                        [
+                                            "Horizon"
+                                        ]
+                                    ],
+                                    "items": {
+                                        "type": "string",
+                                        "maxLength": 128
+                                    }
+                                },
+                                "not": {
+                                    "type": "array",
+                                    "description": "Match messages that contain NONE of these labels/categories. Supported for Gmail and MS Graph (Outlook) accounts only.",
+                                    "examples": [
+                                        [
+                                            "Horizon"
+                                        ]
+                                    ],
+                                    "items": {
+                                        "type": "string",
+                                        "maxLength": 128
+                                    }
+                                }
+                            }
+                        },
+                        "emailIds": {
+                            "type": "array",
+                            "description": "List of specific email IDs to fetch",
+                            "examples": [
+                                [
+                                    "1278455344230334865"
+                                ]
+                            ],
+                            "items": {
+                                "type": "string",
+                                "description": "Globally unique email identifier (when supported by the email server)",
+                                "examples": [
+                                    "1278455344230334865"
+                                ],
+                                "maxLength": 256
+                            }
+                        }
+                    }
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "search"
+            ]
+        },
+        "annotations": {
+            "title": "Search messages",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "send_message",
+        "title": "Send message",
+        "description": "Send an email from the account to real recipients - confirm with the user before calling this. Takes structured fields (to, subject, text, html). Set reference to reply to or forward a stored message. Delivery is queued; the response carries the queue id for get_outbox.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "useStructuredFormat": {
+                    "type": "boolean",
+                    "description": "For MS Graph accounts: send as structured JSON instead of raw MIME",
+                    "default": false
+                },
+                "reference": {
+                    "type": "object",
+                    "description": "Configuration for replying to or forwarding an existing message",
+                    "properties": {
+                        "message": {
+                            "type": "string",
+                            "description": "EmailEngine message ID to reply to or forward",
+                            "examples": [
+                                "AAAAAQAACnA"
+                            ],
+                            "maxLength": 256
+                        },
+                        "action": {
+                            "type": "string",
+                            "description": "What to do with the referenced message",
+                            "examples": [
+                                "reply"
+                            ],
+                            "default": "reply",
+                            "enum": [
+                                "forward",
+                                "reply",
+                                "reply-all"
+                            ]
+                        },
+                        "inline": {
+                            "type": "boolean",
+                            "description": "Include the original message as quoted text in the response",
+                            "default": false
+                        },
+                        "forwardAttachments": {
+                            "type": "boolean",
+                            "description": "Include original attachments when forwarding",
+                            "default": false
+                        },
+                        "ignoreMissing": {
+                            "type": "boolean",
+                            "description": "Continue sending even if the referenced message cannot be found",
+                            "default": false
+                        },
+                        "messageId": {
+                            "type": "string",
+                            "description": "Verify the Message-ID of the referenced email matches this value before proceeding",
+                            "examples": [
+                                "<test123@example.com>"
+                            ],
+                            "maxLength": 996
+                        },
+                        "threadId": {
+                            "type": "string",
+                            "description": "Gmail thread ID to attach the outgoing message to",
+                            "examples": [
+                                "1694936993596975454"
+                            ]
+                        }
+                    }
+                },
+                "from": {
+                    "type": "object",
+                    "description": "Sender email address",
+                    "examples": [
+                        {
+                            "name": "From Me",
+                            "address": "sender@example.com"
+                        }
+                    ],
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "Display name for the email address",
+                            "examples": [
+                                "Some Name"
+                            ],
+                            "maxLength": 256
+                        },
+                        "address": {
+                            "type": "string",
+                            "description": "Email address",
+                            "examples": [
+                                "user@example.com"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "address"
+                    ]
+                },
+                "replyTo": {
+                    "type": "array",
+                    "description": "List of Reply-To addresses",
+                    "examples": [
+                        [
+                            {
+                                "name": "From Me",
+                                "address": "sender@example.com"
+                            }
+                        ]
+                    ],
+                    "items": {
+                        "type": "object",
+                        "description": "Email address with optional display name",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Display name for the email address",
+                                "examples": [
+                                    "Some Name"
+                                ],
+                                "maxLength": 256
+                            },
+                            "address": {
+                                "type": "string",
+                                "description": "Email address",
+                                "examples": [
+                                    "user@example.com"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "address"
+                        ]
+                    }
+                },
+                "subject": {
+                    "type": "string",
+                    "description": "Email subject line",
+                    "examples": [
+                        "What a wonderful message"
+                    ],
+                    "maxLength": 10240
+                },
+                "text": {
+                    "type": "string",
+                    "description": "Plain text message content",
+                    "examples": [
+                        "Hello from myself!"
+                    ],
+                    "maxLength": 5242880
+                },
+                "html": {
+                    "type": "string",
+                    "description": "HTML message content",
+                    "examples": [
+                        "<p>Hello from myself!</p>"
+                    ],
+                    "maxLength": 5242880
+                },
+                "previewText": {
+                    "type": "string",
+                    "description": "Preview text shown in email clients after the subject line",
+                    "examples": [
+                        "Welcome to our newsletter!"
+                    ],
+                    "maxLength": 1024
+                },
+                "template": {
+                    "type": "string",
+                    "description": "Stored template ID to load the email content from",
+                    "examples": [
+                        "example"
+                    ],
+                    "maxLength": 256
+                },
+                "mailMerge": {
+                    "type": "array",
+                    "description": "Mail merge options. A separate email is generated for each recipient",
+                    "minItems": 1,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "to": {
+                                "type": "object",
+                                "description": "Email address with optional display name",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Display name for the email address",
+                                        "examples": [
+                                            "Some Name"
+                                        ],
+                                        "maxLength": 256
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "description": "Email address",
+                                        "examples": [
+                                            "user@example.com"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "address"
+                                ]
+                            },
+                            "messageId": {
+                                "type": "string",
+                                "description": "Message ID",
+                                "examples": [
+                                    "<test123@example.com>"
+                                ],
+                                "maxLength": 996
+                            },
+                            "params": {
+                                "type": "object",
+                                "description": "An object of variables for the template renderer",
+                                "examples": [
+                                    {
+                                        "firstName": "Nyan",
+                                        "orderId": "4815"
+                                    }
+                                ]
+                            },
+                            "sendAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "description": "Send message at specified time. Overrides message level `sendAt` value.",
+                                "examples": [
+                                    "2021-07-08T07:06:34.336Z"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "to"
+                        ]
+                    }
+                },
+                "envelope": {
+                    "type": "object",
+                    "description": "An optional object specifying the SMTP envelope used during email transmission",
+                    "properties": {
+                        "from": {
+                            "type": "string",
+                            "examples": [
+                                "sender@example.com"
+                            ]
+                        },
+                        "to": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "examples": [
+                                    "recipient@example.com"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "raw": {
+                    "type": "string",
+                    "description": "A Base64-encoded email message in RFC 822 format",
+                    "examples": [
+                        "TUlNRS1WZXJzaW9uOiAxLjANClN1YmplY3Q6IGhlbGxvIHdvcmxkDQoNCkhlbGxvIQ0K"
+                    ],
+                    "maxLength": 5242880
+                },
+                "to": {
+                    "type": "array",
+                    "description": "List of recipient addresses",
+                    "examples": [
+                        [
+                            {
+                                "address": "recipient@example.com"
+                            }
+                        ]
+                    ],
+                    "items": {
+                        "type": "object",
+                        "description": "Email address with optional display name",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Display name for the email address",
+                                "examples": [
+                                    "Some Name"
+                                ],
+                                "maxLength": 256
+                            },
+                            "address": {
+                                "type": "string",
+                                "description": "Email address",
+                                "examples": [
+                                    "user@example.com"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "address"
+                        ]
+                    }
+                },
+                "cc": {
+                    "type": "array",
+                    "description": "List of CC addresses",
+                    "items": {
+                        "type": "object",
+                        "description": "Email address with optional display name",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Display name for the email address",
+                                "examples": [
+                                    "Some Name"
+                                ],
+                                "maxLength": 256
+                            },
+                            "address": {
+                                "type": "string",
+                                "description": "Email address",
+                                "examples": [
+                                    "user@example.com"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "address"
+                        ]
+                    }
+                },
+                "bcc": {
+                    "type": "array",
+                    "description": "List of BCC addresses",
+                    "items": {
+                        "type": "object",
+                        "description": "Email address with optional display name",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Display name for the email address",
+                                "examples": [
+                                    "Some Name"
+                                ],
+                                "maxLength": 256
+                            },
+                            "address": {
+                                "type": "string",
+                                "description": "Email address",
+                                "examples": [
+                                    "user@example.com"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "address"
+                        ]
+                    }
+                },
+                "render": {
+                    "type": "object",
+                    "description": "Template rendering options. Set to `false` to send the template as-is, without rendering it.",
+                    "enum": [
+                        false
+                    ],
+                    "properties": {
+                        "format": {
+                            "type": "string",
+                            "description": "Markup language the template is written in",
+                            "default": "html",
+                            "enum": [
+                                "html",
+                                "markdown"
+                            ]
+                        },
+                        "params": {
+                            "type": "object",
+                            "description": "An object of variables for the template renderer",
+                            "examples": [
+                                {
+                                    "firstName": "Nyan",
+                                    "orderId": "4815"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "attachments": {
+                    "type": "array",
+                    "description": "List of attachments",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "filename": {
+                                "type": "string",
+                                "examples": [
+                                    "transparent.gif"
+                                ],
+                                "maxLength": 256
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "examples": [
+                                    "image/gif"
+                                ],
+                                "maxLength": 256
+                            },
+                            "contentDisposition": {
+                                "type": "string",
+                                "enum": [
+                                    "inline",
+                                    "attachment"
+                                ]
+                            },
+                            "cid": {
+                                "type": "string",
+                                "description": "Content-ID value for embedded images",
+                                "examples": [
+                                    "unique-image-id@localhost"
+                                ],
+                                "maxLength": 256
+                            },
+                            "encoding": {
+                                "type": "string",
+                                "default": "base64",
+                                "enum": [
+                                    "base64"
+                                ]
+                            },
+                            "reference": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "description": "References an existing attachment by its ID instead of providing new attachment content",
+                                "examples": [
+                                    "AAAAAQAACnAcde"
+                                ],
+                                "enum": [
+                                    false,
+                                    null
+                                ],
+                                "maxLength": 256
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "Base64 formatted attachment file",
+                                "examples": [
+                                    "R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs="
+                                ],
+                                "maxLength": 5242880
+                            }
+                        },
+                        "required": [
+                            "content"
+                        ]
+                    }
+                },
+                "messageId": {
+                    "type": "string",
+                    "description": "Message ID",
+                    "examples": [
+                        "<test123@example.com>"
+                    ],
+                    "maxLength": 996
+                },
+                "headers": {
+                    "type": "object",
+                    "description": "Custom Headers",
+                    "examples": [
+                        {
+                            "X-My-Custom-Header": "Custom header value"
+                        }
+                    ]
+                },
+                "trackOpens": {
+                    "type": "boolean",
+                    "description": "Should EmailEngine track opens for this message",
+                    "examples": [
+                        false
+                    ]
+                },
+                "trackClicks": {
+                    "type": "boolean",
+                    "description": "Should EmailEngine track clicks for this message",
+                    "examples": [
+                        false
+                    ]
+                },
+                "copy": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "description": "If set then either copies the message to the Sent Mail folder or not. If not set then uses the account's default setting",
+                    "examples": [
+                        null
+                    ]
+                },
+                "sentMailPath": {
+                    "type": "string",
+                    "description": "Upload sent message to this folder. By default the account's Sent Mail folder is used.",
+                    "examples": [
+                        "Sent Mail"
+                    ],
+                    "maxLength": 1024
+                },
+                "locale": {
+                    "type": "string",
+                    "description": "Optional locale",
+                    "examples": [
+                        "fr"
+                    ],
+                    "maxLength": 100
+                },
+                "tz": {
+                    "type": "string",
+                    "description": "Optional timezone",
+                    "examples": [
+                        "Europe/Tallinn"
+                    ],
+                    "maxLength": 100
+                },
+                "sendAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Send message at specified time",
+                    "examples": [
+                        "2021-07-08T07:06:34.336Z"
+                    ]
+                },
+                "deliveryAttempts": {
+                    "type": "integer",
+                    "description": "How many delivery attempts to make until message is considered as failed",
+                    "examples": [
+                        10
+                    ]
+                },
+                "gateway": {
+                    "type": "string",
+                    "description": "Optional SMTP gateway ID for message routing",
+                    "examples": [
+                        "example"
+                    ],
+                    "maxLength": 256
+                },
+                "listId": {
+                    "type": "string",
+                    "description": "List ID for Mail Merge. Must use a subdomain name format. Lists are registered ad-hoc, so a new identifier defines a new list.",
+                    "examples": [
+                        "test-list"
+                    ]
+                },
+                "dsn": {
+                    "type": "object",
+                    "description": "Request DSN notifications",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "The envelope identifier that would be included in the response (ENVID)",
+                            "examples": [
+                                "order-4815-notify"
+                            ],
+                            "maxLength": 256
+                        },
+                        "return": {
+                            "type": "string",
+                            "description": "Specifies if only headers or the entire body of the message should be included in the response (RET)",
+                            "enum": [
+                                "headers",
+                                "full"
+                            ]
+                        },
+                        "notify": {
+                            "type": "array",
+                            "description": "Defines the conditions under which a DSN response should be sent",
+                            "examples": [
+                                [
+                                    "failure",
+                                    "delay"
+                                ]
+                            ],
+                            "items": {
+                                "type": "string",
+                                "enum": [
+                                    "never",
+                                    "success",
+                                    "failure",
+                                    "delay"
+                                ]
+                            }
+                        },
+                        "recipient": {
+                            "type": "string",
+                            "description": "The email address the DSN should be sent (ORCPT)",
+                            "examples": [
+                                "bounces@example.com"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "return"
+                    ]
+                },
+                "baseUrl": {
+                    "type": "string",
+                    "description": "Optional base URL for trackers. This URL must point to your EmailEngine instance.",
+                    "examples": [
+                        "https://customer123.myservice.com"
+                    ]
+                },
+                "dryRun": {
+                    "type": "boolean",
+                    "description": "If true, then EmailEngine does not send the email and returns an RFC822 formatted email file. Tracking information is not added to the email.",
+                    "default": false
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account"
+            ]
+        },
+        "annotations": {
+            "title": "Send message",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": true
+        }
+    },
+    {
+        "name": "update_message",
+        "title": "Update message flags",
+        "description": "Update the flags or labels of one message, e.g. add \\Seen to mark it read or \\Flagged to star it.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "message": {
+                    "type": "string",
+                    "description": "Message ID",
+                    "examples": [
+                        "AAAAAQAACnA"
+                    ],
+                    "maxLength": 256
+                },
+                "flags": {
+                    "type": "object",
+                    "description": "Flag operations to perform",
+                    "properties": {
+                        "add": {
+                            "type": "array",
+                            "description": "Flags to add to the message",
+                            "examples": [
+                                [
+                                    "\\Seen"
+                                ]
+                            ],
+                            "items": {
+                                "type": "string",
+                                "maxLength": 128
+                            }
+                        },
+                        "delete": {
+                            "type": "array",
+                            "description": "Flags to remove from the message",
+                            "examples": [
+                                [
+                                    "\\Flagged"
+                                ]
+                            ],
+                            "items": {
+                                "type": "string",
+                                "maxLength": 128
+                            }
+                        },
+                        "set": {
+                            "type": "array",
+                            "description": "Replace all flags with this list",
+                            "examples": [
+                                [
+                                    "\\Seen",
+                                    "\\Flagged"
+                                ]
+                            ],
+                            "items": {
+                                "type": "string",
+                                "maxLength": 128
+                            }
+                        }
+                    }
+                },
+                "labels": {
+                    "type": "object",
+                    "description": "Label operations to perform (Gmail only)",
+                    "properties": {
+                        "add": {
+                            "type": "array",
+                            "description": "Gmail labels to add (use label ID or path)",
+                            "examples": [
+                                [
+                                    "Label_971539351003152516"
+                                ]
+                            ],
+                            "items": {
+                                "type": "string",
+                                "maxLength": 128
+                            }
+                        },
+                        "delete": {
+                            "type": "array",
+                            "description": "Gmail labels to remove (use label ID or path)",
+                            "examples": [
+                                [
+                                    "Label_971539351003152516"
+                                ]
+                            ],
+                            "items": {
+                                "type": "string",
+                                "maxLength": 128
+                            }
+                        }
+                    }
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "message"
+            ]
+        },
+        "annotations": {
+            "title": "Update message flags",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    }
+]

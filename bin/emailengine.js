@@ -112,6 +112,13 @@ const GLOBAL_OPTIONS = [
         type: 'boolean',
         default: false,
         group: 'Document Store (deprecated)'
+    },
+    {
+        name: '--mcp.enabled',
+        description: 'Register the MCP endpoint at /mcp (the mcpEnabled runtime setting still has to be turned on)',
+        type: 'boolean',
+        default: true,
+        group: 'MCP'
     }
 ];
 
@@ -497,7 +504,7 @@ function run() {
                 switch (tokensCmd) {
                     case 'issue':
                         {
-                            let allowedScopes = ['*', 'api', 'metrics', 'smtp', 'imap-proxy'];
+                            let allowedScopes = ['*', 'api', 'metrics', 'smtp', 'imap-proxy', 'mcp'];
                             let scopes = []
                                 .concat(argv.scope || [])
                                 .concat(argv.s || [])

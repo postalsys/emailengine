@@ -33,6 +33,7 @@ const { redis } = require('../lib/db');
 const { captureApiRoutes } = require('./helpers/capture-api-routes');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 const { ACTION, GROUP, GRANTABLE_GROUPS, NEVER_GRANTABLE, IMPACT_ACTIONS, ROUTE_GROUPS, routeGrant } = require('../lib/api-routes/permission-map');
+const { mcpOptions } = require('../lib/api-routes/route-metadata');
 const { ENUM_DESCRIPTIONS } = require('../lib/enum-descriptions');
 const { IMPACT } = require('../lib/api-routes/operation-impact');
 
@@ -50,6 +51,7 @@ const { IMPACT } = require('../lib/api-routes/operation-impact');
 // chat-routes.js. It is under /admin, so it uses the session default like the rest of the
 // admin surface and is exempt from the /v1 auth check below.
 const GOLDEN_ROUTES = [
+    'DELETE /mcp',
     'DELETE /v1/account/{account}',
     'DELETE /v1/account/{account}/export/{exportId}',
     'DELETE /v1/account/{account}/mailbox',
@@ -63,6 +65,9 @@ const GOLDEN_ROUTES = [
     'DELETE /v1/templates/template/{template}',
     'DELETE /v1/token/{token}',
     'DELETE /v1/tokens/{token}',
+    'GET /.well-known/oauth-authorization-server',
+    'GET /.well-known/oauth-protected-resource/{suffix?}',
+    'GET /mcp',
     'GET /v1/account/{account}',
     'GET /v1/account/{account}/attachment/{attachment}',
     'GET /v1/account/{account}/export/{exportId}',
@@ -102,6 +107,9 @@ const GOLDEN_ROUTES = [
     'GET /v1/webhookRoutes',
     'GET /v1/webhookRoutes/webhookRoute/{webhookRoute}',
     'POST /admin/config/document-store/chat/test',
+    'POST /mcp',
+    'POST /mcp/oauth/register',
+    'POST /mcp/oauth/token',
     'POST /v1/account',
     'POST /v1/account/{account}/export',
     'POST /v1/account/{account}/mailbox',
@@ -393,6 +401,25 @@ test('API route table and authentication', async t => {
             `lib/api-routes/index.js registered a Hapi plugin: ${JSON.stringify(registeredPlugins)}. ` +
                 'Plugin-registered routes bypass this guardrail entirely.'
         );
+    });
+
+    await t.test('the MCP endpoint requires an API token and disappears when its gate is off', async () => {
+        // /mcp is outside /v1, so the blanket auth assertion above does not cover it - and it is
+        // the one non-/v1 route reachable with a bearer token, so its auth block gets the same
+        // explicit guarantee. The GET/DELETE registration is the 405 method guard of the
+        // Streamable HTTP transport and intentionally carries no auth (it reveals nothing).
+        const door = captured.find(route => route.route === 'POST /mcp');
+        assert.ok(door, 'POST /mcp must be registered when the gate is on');
+        assert.equal(door.authStrategy, 'api-token');
+        assert.equal(door.authMode, 'required');
+        assert.ok(!door.tags.includes('api'), 'POST /mcp must not carry the api tag - it has no OpenAPI operation');
+        assert.ok(door.tags.includes('external'), 'POST /mcp must skip the CSRF crumb via the external tag');
+        assert.ok(mcpOptions(door).endpoint, 'POST /mcp must carry the plugins.mcp.endpoint marker the auth strategy keys on');
+
+        const { routes: disabled } = await captureApiRoutes({ mcpFeatureEnabled: false });
+        const mcpRoutes = disabled.map(route => route.route).filter(route => / \/mcp$/.test(route));
+        assert.deepEqual(mcpRoutes, [], `expected no /mcp routes with the gate off, got ${JSON.stringify(mcpRoutes)}`);
+        assert.ok(disabled.map(route => route.route).includes('GET /v1/accounts'), 'unrelated routes must still be registered');
     });
 
     await t.test('the document-store endpoints disappear when the feature gate is off', async () => {

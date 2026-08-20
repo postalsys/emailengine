@@ -1,0 +1,90 @@
+'use strict';
+
+// The joi-to-JSON-Schema bridge for MCP tool definitions (lib/mcp/json-schema.js): the OpenAPI
+// 3.0 idioms of the shared SchemaConverter have to come out as their 2020-12 equivalents, with
+// every named schema inlined - a $ref has nothing to point at inside a tool definition.
+
+const test = require('node:test');
+const assert = require('node:assert').strict;
+
+const Joi = require('joi');
+
+const { joiToJsonSchema } = require('../lib/mcp/json-schema');
+const { walkJson: walk } = require('./helpers/walk-json');
+
+test('MCP JSON Schema conversion', async t => {
+    await t.test('inlines labelled schemas instead of emitting $ref', () => {
+        const schema = Joi.object({
+            entry: Joi.object({ id: Joi.string().required() }).label('NamedEntry'),
+            list: Joi.array().items(Joi.string().valid('a', 'b').label('NamedEnum'))
+        }).label('NamedRoot');
+
+        const converted = joiToJsonSchema(schema);
+
+        walk(converted, (node, pointer) => {
+            if (node && typeof node === 'object' && !Array.isArray(node)) {
+                assert.ok(!('$ref' in node), `unexpected $ref at ${pointer}`);
+            }
+        });
+
+        assert.equal(converted.properties.entry.type, 'object');
+        assert.deepEqual(converted.properties.entry.required, ['id']);
+        assert.deepEqual(converted.properties.list.items.enum, ['a', 'b']);
+    });
+
+    await t.test('rewrites nullable into a type array and extends enums with null', () => {
+        const converted = joiToJsonSchema(
+            Joi.object({
+                plain: Joi.string().allow(null),
+                choice: Joi.string().valid('x', 'y').allow(null)
+            })
+        );
+
+        assert.deepEqual(converted.properties.plain.type, ['string', 'null']);
+        assert.deepEqual(converted.properties.choice.type, ['string', 'null']);
+        assert.deepEqual(converted.properties.choice.enum, ['x', 'y', null]);
+
+        walk(converted, (node, pointer) => {
+            if (node && typeof node === 'object' && !Array.isArray(node)) {
+                assert.ok(!('nullable' in node), `nullable survived at ${pointer}`);
+            }
+        });
+    });
+
+    await t.test('moves the singular example into the examples array and drops x- extensions', () => {
+        const converted = joiToJsonSchema(
+            Joi.object({
+                field: Joi.string().hostname().trim().example('mail.example.com').meta({ internal: true })
+            })
+        );
+
+        assert.deepEqual(converted.properties.field.examples, ['mail.example.com']);
+
+        walk(converted, (node, pointer) => {
+            if (node && typeof node === 'object' && !Array.isArray(node)) {
+                for (const key of Object.keys(node)) {
+                    assert.ok(!/^x-/.test(key), `vendor extension ${key} survived at ${pointer}`);
+                    assert.ok(key !== 'example', `singular example survived at ${pointer}`);
+                }
+            }
+        });
+    });
+
+    await t.test('keeps standard keywords intact', () => {
+        const converted = joiToJsonSchema(
+            Joi.object({
+                count: Joi.number().integer().min(1).max(10).default(5),
+                name: Joi.string().max(256).required(),
+                tags: Joi.array().items(Joi.string()).max(4)
+            })
+        );
+
+        assert.equal(converted.properties.count.type, 'integer');
+        assert.equal(converted.properties.count.minimum, 1);
+        assert.equal(converted.properties.count.maximum, 10);
+        assert.equal(converted.properties.count.default, 5);
+        assert.equal(converted.properties.name.maxLength, 256);
+        assert.deepEqual(converted.required, ['name']);
+        assert.equal(converted.properties.tags.maxItems, 4);
+    });
+});
