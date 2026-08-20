@@ -21,6 +21,7 @@
         "lint:src": "npx eslint 'lib/**/*.js' 'workers/**/*.js' server.js",
         "swagger": "./getswagger.sh",
         "build:css": "tailwindcss -i static/css/src/app.tailwind.css -o static/css/flyonui.css --minify",
+        "build:icon": "node scripts/build-icon.js",
         "build-source": "rm -rf node_modules && npm install && rm -rf node_modules && npm ci --omit=dev && rm -rf node_modules/ace-builds node_modules/@postalsys/ee-client && ./prepare-bundle-deps.sh && ./update-info.sh",
         "build-dist": "pkg --compress Brotli package.json && npm install && node winconf.js",
         "build-dist-fast": "pkg --debug package.json && npm install && node winconf.js",

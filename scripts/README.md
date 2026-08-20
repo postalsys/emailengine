@@ -1,5 +1,30 @@
 # Scripts
 
+## build-icon.js
+
+Regenerates `static/emailengine.ico` from `static/logo.png`. The result is committed, so run
+this only when the logo artwork changes - a normal build does not need ImageMagick.
+
+### Usage
+
+```bash
+brew install imagemagick
+npm run build:icon
+```
+
+### What it does
+
+Builds a 7-image icon (256, 128, 64, 48, 32, 24, 16), PNG-compressing the two largest members
+and using uncompressed 32-bit DIBs for the rest.
+
+### Notes
+
+- Do not replace it with a plain `magick -define icon:auto-resize=...` call. ImageMagick writes
+  every member as an uncompressed BMP, and the resulting icon is large enough to break the
+  packaged Windows executable outright. The header comment in the script explains why.
+- `winconf.js` prints the remaining `.rsrc` headroom on every build. That number is the budget
+  for any future icon or resource change.
+
 ## refresh-test-tokens.js
 
 Helper script to refresh OAuth2 tokens for Gmail test accounts.
