@@ -60,6 +60,8 @@ test('MCP endpoint', async t => {
     await t.test('answers 404 while the mcpEnabled setting is off', async () => {
         const res = await legacyRpc('ping');
         assert.equal(res.status, 404);
+        // the first error every integrator hits has to say where the switch is
+        assert.match(res.body.message, /Configuration > MCP/);
     });
 
     await t.test('setting mcpEnabled over the API turns the endpoint on', async () => {
@@ -149,6 +151,7 @@ test('MCP endpoint', async t => {
         const unknownTool = await legacyRpc('tools/call', { name: 'no_such_tool', arguments: {} });
         assert.equal(unknownTool.status, 200);
         assert.equal(unknownTool.body.error.code, -32602);
+        assert.match(unknownTool.body.error.message, /tools\/list/);
 
         const badArgs = await legacyRpc('tools/call', { name: 'list_accounts', arguments: { bogus: true } });
         assert.equal(badArgs.status, 200);
