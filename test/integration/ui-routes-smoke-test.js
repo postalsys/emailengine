@@ -52,6 +52,7 @@ const GET_ROUTES = [
     '/admin/config/imap-proxy',
     '/admin/config/license',
     '/admin/config/logging',
+    '/admin/config/mcp',
     '/admin/config/network',
     '/admin/config/oauth',
     '/admin/config/oauth/new',

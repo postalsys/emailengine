@@ -165,6 +165,13 @@
                         <label class="label-text grow p-0" for="scopesMetrics">Metrics</label>
                         <div class="text-base-content/60 code-link">["metrics"]</div>
                     </li>
+
+                    <li class="flex items-center gap-2 p-4">
+                        <input type="checkbox" class="checkbox checkbox-sm scope-entry scope-list" id="scopesMcp"
+                            name="scopesMcp" data-scope="mcp" {{#if values.scopesMcp}}checked{{/if}} />
+                        <label class="label-text grow p-0" for="scopesMcp">MCP</label>
+                        <div class="text-base-content/60 code-link">["mcp"]</div>
+                    </li>
                 </ul>
             </div>
 
@@ -212,26 +219,26 @@
         let permissionSectionElm = document.getElementById('permissionSection');
         let permissionRowElm = document.getElementById('permissionRow');
 
-        // Permissions are resolved per endpoint on the REST API. Without API access there is no
-        // setting here that helps: the remaining scopes are checked once against everything their
-        // surface can do, so any restriction either changes nothing or leaves the token unable to do
-        // the one thing it was issued for. Scopes are fixed once the token exists, so the row is
-        // absent rather than disabled - and its absence needs no caption, because a section that
-        // only appears under API is self-evidently about API.
+        // Permissions are resolved per endpoint on the REST API and per tool call on the MCP
+        // endpoint, so both of those scopes can carry a narrowing. The login-time scopes (SMTP,
+        // IMAP proxy, Metrics) are checked once against everything their surface can do, so for
+        // them any restriction either changes nothing or leaves the token unable to do the one
+        // thing it was issued for. Scopes are fixed once the token exists, so the row is absent
+        // rather than disabled when no per-request scope is ticked.
         //
         // "All scopes" only disables the individual boxes, it does not tick them, so the API row can
         // be greyed while this is open. That reads correctly: API access is granted by "All", and
         // this is how to narrow it.
-        let hasApiScope = () =>
+        let hasNarrowableScope = () =>
             Array.from(document.querySelectorAll('.scope-entry')).some(
-                elm => elm.checked && !elm.disabled && (elm.dataset.scope === '*' || elm.dataset.scope === 'api')
+                elm => elm.checked && !elm.disabled && ['*', 'api', 'mcp'].includes(elm.dataset.scope)
             );
 
         let syncPermissionSection = () => {
-            let apiScope = hasApiScope();
+            let narrowableScope = hasNarrowableScope();
 
-            permissionRowElm.classList.toggle('hidden', !apiScope);
-            permissionSectionElm.classList.toggle('hidden', !apiScope || !permissionsEnabledElm.checked);
+            permissionRowElm.classList.toggle('hidden', !narrowableScope);
+            permissionSectionElm.classList.toggle('hidden', !narrowableScope || !permissionsEnabledElm.checked);
         };
 
         permissionsEnabledElm.addEventListener('change', () => {
@@ -256,8 +263,12 @@
         for (let entry of JSON.parse(permissionWarningElm.dataset.surfaces || '[]')) {
             surfaceRequirements[entry.scope] = {
                 label: entry.label,
+                // 'all': checked once at login, every grant required. 'any': checked per
+                // request, usable while a single grant pair stays allowed.
+                mode: entry.mode,
                 actions: entry.actionList.split(',').filter(value => value),
-                groups: entry.groupList.split(',').filter(value => value)
+                groups: entry.groupList.split(',').filter(value => value),
+                grants: entry.grantList.split(',').filter(value => value).map(pair => pair.split(':'))
             };
         }
         let permissionOutcomeElm = document.getElementById('permissionOutcome');
@@ -312,7 +323,7 @@
         };
 
         let syncPermissionWarning = () => {
-            if (!permissionsEnabledElm.checked || !hasApiScope()) {
+            if (!permissionsEnabledElm.checked || !hasNarrowableScope()) {
                 permissionWarningElm.classList.add('hidden');
                 return;
             }
@@ -334,6 +345,10 @@
                 .filter(scope => surfaceRequirements[scope])
                 .filter(scope => {
                     let need = surfaceRequirements[scope];
+                    if (need.mode === 'any') {
+                        // Per-request surface: usable while any one (action, group) pair survives
+                        return !need.grants.some(([action, group]) => actions.includes(action) && groups.includes(group));
+                    }
                     return !need.actions.every(value => actions.includes(value)) || !need.groups.every(value => groups.includes(value));
                 })
                 .map(scope => surfaceRequirements[scope].label);
@@ -429,7 +444,7 @@
             // Sent only when the restriction is on. Omitting the field is what "not narrowed" means on
             // the record, so an unchecked box must not post an empty object - that is a different
             // answer, and the API refuses it.
-            let permissions = permissionsEnabledElm.checked && hasApiScope()
+            let permissions = permissionsEnabledElm.checked && hasNarrowableScope()
                 ? {
                       actions: collectAxis('.permission-action'),
                       groups: collectAxis('.permission-group')
