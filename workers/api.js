@@ -243,7 +243,12 @@ const CORS_CONFIG = !CORS_ORIGINS
                   )
               ) || ['*']
           ),
-          additionalHeaders: ['X-EE-Timeout'],
+          // The MCP entries are what lets a browser-based MCP client reach /mcp at all: the
+          // modern revision mirrors the method and tool name into routing headers and carries
+          // the protocol version in one, so a preflight lists all four and Hapi rejects it
+          // unless they are allowed here (lib/mcp/protocol.js isAllowedOrigin admits the origin,
+          // this admits the headers).
+          additionalHeaders: ['X-EE-Timeout', 'MCP-Protocol-Version', 'Mcp-Method', 'Mcp-Name', 'Mcp-Session-Id'],
           additionalExposedHeaders: ['Accept'],
           preflightStatusCode: 204,
           maxAge:

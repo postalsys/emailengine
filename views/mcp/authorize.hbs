@@ -35,13 +35,20 @@
         <div><span class="text-base-content/60">Returns to:</span> <code>{{redirectHost}}</code></div>
     </div>
 
-    {{!-- Derived from SURFACE_GRANTS.mcp rather than written out, so this screen cannot promise
-          less than the token grants after the tool set changes --}}
-    <div class="alert alert-soft alert-info text-sm">
+    {{!-- Both sentences are derived from SURFACE_GRANTS.mcp rather than written out, so this
+          screen cannot promise less than the token grants after the tool set changes --}}
+    <div id="consentGrantFull" class="alert alert-soft alert-warning text-sm hidden">
+        <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+        <span>Through the MCP tool set the client will be able to <strong>{{grantActions}}</strong> (including sending
+            real email and deleting messages) across <code>{{grantGroups}}</code> on the accounts its token can reach.
+            It cannot read stored credentials or change instance settings.</span>
+    </div>
+
+    <div id="consentGrantReadOnly" class="alert alert-soft alert-info text-sm">
         <span class="icon-[tabler--info-circle] size-5 shrink-0"></span>
-        <span>Through the MCP tool set the client can <strong>{{grantActions}}</strong> (including sending real email)
-            across <code>{{grantGroups}}</code> on the accounts its token can reach. It cannot read stored credentials
-            or change instance settings.</span>
+        <span>Through the MCP tool set the client will be able to <strong>read</strong> across
+            <code>{{readGrantGroups}}</code> on the accounts its token can reach. It cannot send email, delete
+            anything, change anything, read stored credentials, or change instance settings.</span>
     </div>
 
     <div>
@@ -55,6 +62,11 @@
         </datalist>
     </div>
 
+    <div>
+        {{> ui/checkbox id="readOnly" label="Read-only access" checked=readOnlyChecked
+        hint="Recommended. The client can read and search mail but cannot send, delete or modify anything. Email content reaches whatever model this client runs, and instructions inside received mail are a real prompt-injection risk - grant sending rights deliberately."}}
+    </div>
+
     {{/ui/card}}
 
     <div class="mb-6 flex gap-2">
@@ -66,7 +78,27 @@
         <button type="submit" name="decision" value="deny" class="btn btn-neutral btn-outline">
             <span class="icon-[tabler--x] size-4 shrink-0"></span>Deny
         </button>
+        {{!-- Denying needs no admin session, so this button works in every state the page
+              renders in --}}
     </div>
 </form>
+
+<script>
+    (() => {
+        // The two grant sentences describe the same token under the two settings of the box, so
+        // whichever is showing is the one the operator is about to approve
+        let readOnlyElm = document.getElementById('readOnly');
+        let fullElm = document.getElementById('consentGrantFull');
+        let readOnlyGrantElm = document.getElementById('consentGrantReadOnly');
+
+        let sync = () => {
+            fullElm.classList.toggle('hidden', readOnlyElm.checked);
+            readOnlyGrantElm.classList.toggle('hidden', !readOnlyElm.checked);
+        };
+
+        readOnlyElm.addEventListener('change', sync);
+        sync();
+    })();
+</script>
 
 {{/if}}
