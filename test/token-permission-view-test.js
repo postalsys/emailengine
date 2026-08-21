@@ -9,8 +9,16 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert').strict;
 
-const { formModel, summarize, ACTION_LABELS, GROUP_LABELS } = require('../lib/token-permission-view');
-const { ACTION, GRANTABLE_GROUPS, GROUP } = require('../lib/api-routes/permission-map');
+const {
+    formModel,
+    summarize,
+    ACTION_LABELS,
+    GROUP_LABELS,
+    MCP_READ_ONLY_PERMISSIONS,
+    MCP_MAIL_AGENT_PERMISSIONS,
+    MCP_ACCESS_LEVELS
+} = require('../lib/token-permission-view');
+const { ACTION, GRANTABLE_GROUPS, GROUP, SURFACE_GRANTS } = require('../lib/api-routes/permission-map');
 
 describe('token permission view', () => {
     describe('formModel', () => {
@@ -74,6 +82,36 @@ describe('token permission view', () => {
             const everything = model.permissionPresets.find(preset => preset.groupList.split(',').length === GRANTABLE_GROUPS.length);
             assert.ok(everything, 'no preset covers every grantable group');
             assert.deepEqual(everything.actionList.split(',').sort(), Object.values(ACTION).sort());
+        });
+    });
+
+    describe('MCP access levels', () => {
+        const mcpGrants = SURFACE_GRANTS.mcp;
+
+        it('offers exactly the three levels the consent page and generator present', () => {
+            assert.deepEqual(Object.keys(MCP_ACCESS_LEVELS).sort(), ['full', 'mail', 'read']);
+            assert.equal(MCP_ACCESS_LEVELS.read, MCP_READ_ONLY_PERMISSIONS);
+            assert.equal(MCP_ACCESS_LEVELS.mail, MCP_MAIL_AGENT_PERMISSIONS);
+            assert.equal(MCP_ACCESS_LEVELS.full, null, 'full access is the absence of a permissions record');
+        });
+
+        it('keeps the read-only level to the surface read grants and nothing else', () => {
+            // [...] copies before sorting: .sort() in place would reorder the exported record
+            // itself, which other suites deepEqual against minted token records
+            assert.deepEqual(MCP_READ_ONLY_PERMISSIONS.actions, [ACTION.READ]);
+            assert.deepEqual(
+                [...MCP_READ_ONLY_PERMISSIONS.groups].sort(),
+                [...new Set(mcpGrants.filter(grant => grant.action === ACTION.READ).map(grant => grant.group))].sort()
+            );
+        });
+
+        it('gives the mail-agent level everything but the destructive action', () => {
+            // Derived from the same table the enforcement reads: a destructive grant added to
+            // the surface must never leak into this level, and a new non-destructive action
+            // must appear in it without anyone remembering to copy it here
+            const nonDestructive = mcpGrants.filter(grant => grant.action !== ACTION.DESTRUCTIVE);
+            assert.deepEqual([...MCP_MAIL_AGENT_PERMISSIONS.actions].sort(), [...new Set(nonDestructive.map(grant => grant.action))].sort());
+            assert.deepEqual([...MCP_MAIL_AGENT_PERMISSIONS.groups].sort(), [...new Set(nonDestructive.map(grant => grant.group))].sort());
         });
     });
 

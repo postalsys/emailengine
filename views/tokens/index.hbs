@@ -13,6 +13,12 @@
 
 {{> ui/search-crumb parentHref="/admin/tokens" parentLabel="Access Tokens" query=query}}
 
+{{!-- The scope deep-link filter (the MCP pages link here with ?scope=mcp): named the same way an
+     active search is, with the parent crumb as the way out of it --}}
+{{#if scopeFilter}}
+{{> ui/breadcrumb parentHref="/admin/tokens" parentLabel="Access Tokens" current=(concat 'Tokens with the "' scopeFilter '" scope') class="mb-6"}}
+{{/if}}
+
 {{#if data.tokens}}
 <div class="card bg-base-100 shadow-md mb-6">
     {{#if account}}
@@ -116,7 +122,7 @@
      program-association bug (the account note never rendered). Keep the block's first
      content token a static element. --}}
 {{#if account}}
-{{#> ui/list-empty noun="access tokens" query=query firstPage=firstPage createHref=newLink createLabel="Create your first access token" clearHref="/admin/tokens"}}
+{{#> ui/list-empty noun="access tokens" query=query filterActive=scopeFilter firstPage=firstPage createHref=newLink createLabel="Create your first access token" clearHref="/admin/tokens"}}
 <div class="mb-2">
     Currently showing tokens for <strong><a href="/admin/accounts/{{urlpart account.account}}"
             class="link link-animated">{{#if account.name}}{{account.name}}{{else}}{{account.email}}{{/if}}</a></strong>.
@@ -124,7 +130,7 @@
 </div>
 {{/ui/list-empty}}
 {{else}}
-{{> ui/list-empty noun="access tokens" query=query firstPage=firstPage createHref=newLink createLabel="Create your first access token" clearHref="/admin/tokens"}}
+{{> ui/list-empty noun="access tokens" query=query filterActive=scopeFilter firstPage=firstPage createHref=newLink createLabel="Create your first access token" clearHref="/admin/tokens"}}
 {{/if}}
 {{/if}}
 

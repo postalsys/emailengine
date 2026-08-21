@@ -1,0 +1,41 @@
+{{!--
+    ui/radio - one radio option with label, optional help tooltip, hint and error.
+    Emits no outer margin (caller owns spacing, same as ui/checkbox). Options
+    group by sharing a name; render one partial per option.
+    Usage:
+      {{> ui/radio id="accessRead" name="access" value="read" label="Read-only" checked=true hint="Recommended."}}
+    Params:
+      id         - control id (required)
+      name       - input name shared by the group (required; radios group by name)
+      value      - the value this option posts (required)
+      label      - label text (required)
+      labelTitle - title attribute on the label, shown on hover (optional)
+      selected   - the group's selected value; this option renders checked when
+                    it equals value (the natural API for a radio group)
+      checked    - true to render checked (alternative to selected, for a
+                    static default)
+      tooltip    - help text shown on hover behind a question icon (optional)
+      hint       - muted helper text under the control (optional)
+      error      - validation error message (optional)
+      disabled   - true to render the input disabled (optional)
+      class      - extra classes on the input (optional)
+--}}
+<div class="w-full">
+    <div class="flex items-center gap-2">
+        <input type="radio" class="radio radio-sm{{#if error}} is-invalid{{/if}}{{#if class}} {{class}}{{/if}}" id="{{id}}" name="{{name}}" value="{{value}}"
+            {{#if checked}}checked {{else}}{{#equals selected value}}checked {{/equals}}{{/if}}{{#if disabled}}disabled {{/if}}>
+        <label class="label-text p-0" for="{{id}}" {{#if labelTitle}}title="{{labelTitle}}" {{/if}}>{{label}}</label>
+        {{#if tooltip}}
+        {{!-- class="" blocks this partial's own class param (meant for the
+              input) from falling through onto the tooltip wrapper --}}
+        {{#> ui/tooltip text=tooltip class=""}}<span
+            class="icon-[tabler--help-circle] size-4 text-base-content/50"></span>{{/ui/tooltip}}
+        {{/if}}
+    </div>
+    {{#if error}}
+    <span class="helper-text text-error">{{error}}</span>
+    {{/if}}
+    {{#if hint}}
+    <span class="helper-text">{{hint}}</span>
+    {{/if}}
+</div>

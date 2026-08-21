@@ -10,7 +10,8 @@
 {{else}}
 
 <p class="mb-6">An MCP client is requesting access to this EmailEngine instance. Approving creates a new access token with
-    the <code>mcp</code> scope - it appears on the Access Tokens page and can be revoked there at any time.</p>
+    the <code>mcp</code> scope - it appears on the <a href="/admin/tokens?scope=mcp" class="link">Access Tokens</a> page
+    and can be revoked there at any time.</p>
 
 {{#unless canProvision}}
 <div class="mb-6 alert alert-soft alert-warning">
@@ -35,20 +36,30 @@
         <div><span class="text-base-content/60">Returns to:</span> <code>{{redirectHost}}</code></div>
     </div>
 
-    {{!-- Both sentences are derived from SURFACE_GRANTS.mcp rather than written out, so this
-          screen cannot promise less than the token grants after the tool set changes --}}
-    <div id="consentGrantFull" class="alert alert-soft alert-warning text-sm hidden">
-        <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
-        <span>Through the MCP tool set the client will be able to <strong>{{grantActions}}</strong> (including sending
-            real email and deleting messages) across <code>{{grantGroups}}</code> on the accounts its token can reach.
-            It cannot read stored credentials or change instance settings.</span>
-    </div>
-
-    <div id="consentGrantReadOnly" class="alert alert-soft alert-info text-sm">
+    {{!-- The grant sentences are derived from SURFACE_GRANTS.mcp rather than written out, so this
+          screen cannot promise less than the token grants after the tool set changes. One is
+          visible at a time - the one describing the selected access level. --}}
+    <div data-access="read" class="consent-grant alert alert-soft alert-info text-sm{{#equals accessLevel 'read'}}{{else}} hidden{{/equals}}">
         <span class="icon-[tabler--info-circle] size-5 shrink-0"></span>
         <span>Through the MCP tool set the client will be able to <strong>read</strong> across
             <code>{{readGrantGroups}}</code> on the accounts its token can reach. It cannot send email, delete
             anything, change anything, read stored credentials, or change instance settings.</span>
+    </div>
+
+    <div data-access="mail" class="consent-grant alert alert-soft alert-warning text-sm{{#equals accessLevel 'mail'}}{{else}} hidden{{/equals}}">
+        <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+        <span>Through the MCP tool set the client will be able to <strong>read, create and send real email</strong>
+            across <code>{{mailGrantGroups}}</code> on the accounts its token can reach - everything except the delete
+            tool. Instructions inside received mail are a real prompt-injection risk once sending is granted. It cannot
+            read stored credentials or change instance settings.</span>
+    </div>
+
+    <div data-access="full" class="consent-grant alert alert-soft alert-warning text-sm{{#equals accessLevel 'full'}}{{else}} hidden{{/equals}}">
+        <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+        <span>Through the MCP tool set the client will be able to <strong>{{grantActions}}</strong> (including sending
+            real email and deleting messages) across <code>{{grantGroups}}</code> on the accounts its token can reach.
+            Instructions inside received mail are a real prompt-injection risk once sending is granted. It cannot read
+            stored credentials or change instance settings.</span>
     </div>
 
     <div>
@@ -62,10 +73,15 @@
         </datalist>
     </div>
 
-    <div>
-        {{> ui/checkbox id="readOnly" label="Read-only access" checked=readOnlyChecked
-        hint="Recommended. The client can read and search mail but cannot send, delete or modify anything. Email content reaches whatever model this client runs, and instructions inside received mail are a real prompt-injection risk - grant sending rights deliberately."}}
-    </div>
+    <fieldset class="space-y-2">
+        <legend class="label-text mb-1">Access level</legend>
+        {{> ui/radio id="accessRead" name="access" value="read" label="Read-only" selected=accessLevel
+            hint="Recommended. List, search and read mail - cannot send, delete or change anything."}}
+        {{> ui/radio id="accessMail" name="access" value="mail" label="Mail agent" selected=accessLevel
+            hint="Read, organize, draft and send mail - everything except the delete tool."}}
+        {{> ui/radio id="accessFull" name="access" value="full" label="Full access" selected=accessLevel
+            hint="Every MCP tool, including deleting messages."}}
+    </fieldset>
 
     {{/ui/card}}
 
@@ -85,18 +101,18 @@
 
 <script>
     (() => {
-        // The two grant sentences describe the same token under the two settings of the box, so
+        // The grant sentences describe the same token under each setting of the radio, so
         // whichever is showing is the one the operator is about to approve
-        let readOnlyElm = document.getElementById('readOnly');
-        let fullElm = document.getElementById('consentGrantFull');
-        let readOnlyGrantElm = document.getElementById('consentGrantReadOnly');
+        let radios = Array.from(document.querySelectorAll('input[name="access"]'));
+        let grants = Array.from(document.querySelectorAll('.consent-grant'));
 
         let sync = () => {
-            fullElm.classList.toggle('hidden', readOnlyElm.checked);
-            readOnlyGrantElm.classList.toggle('hidden', !readOnlyElm.checked);
+            let selected = radios.find(radio => radio.checked);
+            let access = (selected && selected.value) || 'read';
+            grants.forEach(grant => grant.classList.toggle('hidden', grant.dataset.access !== access));
         };
 
-        readOnlyElm.addEventListener('change', sync);
+        radios.forEach(radio => radio.addEventListener('change', sync));
         sync();
     })();
 </script>

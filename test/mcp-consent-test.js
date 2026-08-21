@@ -24,7 +24,7 @@ const { pkcePair } = require('./helpers/pkce');
 const settings = require('../lib/settings');
 const tokens = require('../lib/tokens');
 const tokenPermissions = require('../lib/token-permissions');
-const { MCP_READ_ONLY_PERMISSIONS } = require('../lib/token-permission-view');
+const { MCP_READ_ONLY_PERMISSIONS, MCP_MAIL_AGENT_PERMISSIONS } = require('../lib/token-permission-view');
 const { registerClient, redeemAuthorizationCode } = require('../lib/mcp/oauth');
 const mcpConsentRoutes = require('../lib/ui-routes/mcp-consent-routes');
 
@@ -111,7 +111,7 @@ test('MCP consent flow', async t => {
         assert.equal(res.result.template, 'mcp/authorize');
         assert.equal(res.result.context.clientName, 'Consent flow test');
         assert.equal(res.result.context.canProvision, true);
-        assert.equal(res.result.context.readOnlyChecked, true, 'read-only must be the default');
+        assert.equal(res.result.context.accessLevel, 'read', 'read-only must be the default access level');
         assert.equal(res.result.context.values.client_id, client.client_id);
         assert.ok(!res.result.context.errorMessage);
     });
@@ -170,25 +170,23 @@ test('MCP consent flow', async t => {
         assert.ok(!res.headers.location);
     });
 
-    await t.test('Approve mints a code that redeems into a read-only mcp token', async () => {
+    // Approval and the client's half of the exchange, exactly as the token endpoint runs it.
+    // Shared by every access-level case; hands back the redirect target too, so the case that
+    // asserts on the authorization response does not have to inline the flow.
+    const approveAndRedeem = async payloadOverrides => {
         const { verifier, challenge } = pkcePair();
 
         const res = await server.inject({
             method: 'POST',
             url: '/admin/mcp/authorize',
-            payload: approvalPayload({ code_challenge: challenge, readOnly: 'on' }),
+            payload: approvalPayload(Object.assign({ code_challenge: challenge }, payloadOverrides)),
             headers: { 'x-test-admin': '1' }
         });
-
         assert.equal(res.statusCode, 302);
         const location = new URL(res.headers.location);
-        assert.equal(location.origin, new URL(REDIRECT_URI).origin);
-        assert.equal(location.searchParams.get('state'), 'test-state');
-        assert.equal(location.searchParams.get('iss'), ORIGIN);
         const code = location.searchParams.get('code');
         assert.ok(code, 'approval must carry the authorization code');
 
-        // the client's half of the exchange, exactly as the token endpoint runs it
         const tokenResponse = await redeemAuthorizationCode({
             code,
             clientId: client.client_id,
@@ -199,6 +197,16 @@ test('MCP consent flow', async t => {
             ip: '198.51.100.7'
         });
 
+        return { location, tokenResponse };
+    };
+
+    await t.test('Approve mints a code that redeems into a read-only mcp token', async () => {
+        const { location, tokenResponse } = await approveAndRedeem({ access: 'read' });
+
+        assert.equal(location.origin, new URL(REDIRECT_URI).origin);
+        assert.equal(location.searchParams.get('state'), 'test-state');
+        assert.equal(location.searchParams.get('iss'), ORIGIN);
+
         assert.equal(tokenResponse.token_type, 'Bearer');
         assert.equal(tokenResponse.scope, 'mcp');
 
@@ -207,7 +215,7 @@ test('MCP consent flow', async t => {
             assert.deepEqual(tokenData.scopes, ['mcp']);
             assert.match(tokenData.description, /Consent flow test/);
 
-            // the checkbox the operator saw is the narrowing the credential carries: the exact
+            // the level the operator saw is the narrowing the credential carries: the exact
             // read-only record, refusing send and destructive operations
             assert.deepEqual(tokenData.permissions, MCP_READ_ONLY_PERMISSIONS);
             assert.equal(tokenPermissions.check({ tokenData, operation: { action: 'send', group: 'submit' } }).allowed, false);
@@ -218,33 +226,43 @@ test('MCP consent flow', async t => {
         }
     });
 
-    await t.test('clearing the read-only box mints an unnarrowed token', async () => {
-        const { verifier, challenge } = pkcePair();
+    await t.test('the mail-agent level mints a token that can send but not delete', async () => {
+        const { tokenResponse } = await approveAndRedeem({ access: 'mail' });
 
-        // an unchecked checkbox posts nothing, so the payload simply omits readOnly
-        const res = await server.inject({
-            method: 'POST',
-            url: '/admin/mcp/authorize',
-            payload: approvalPayload({ code_challenge: challenge }),
-            headers: { 'x-test-admin': '1' }
-        });
-        assert.equal(res.statusCode, 302);
-        const code = new URL(res.headers.location).searchParams.get('code');
+        const tokenData = await tokens.get(tokenResponse.access_token, false);
+        try {
+            assert.deepEqual(tokenData.scopes, ['mcp']);
+            assert.deepEqual(tokenData.permissions, MCP_MAIL_AGENT_PERMISSIONS);
+            assert.equal(tokenPermissions.check({ tokenData, operation: { action: 'send', group: 'submit' } }).allowed, true);
+            assert.equal(tokenPermissions.check({ tokenData, operation: { action: 'write', group: 'message' } }).allowed, true);
+            assert.equal(tokenPermissions.check({ tokenData, operation: { action: 'read', group: 'message' } }).allowed, true);
+            assert.equal(tokenPermissions.check({ tokenData, operation: { action: 'destructive', group: 'message' } }).allowed, false);
+        } finally {
+            await tokens.delete(tokenResponse.access_token);
+        }
+    });
 
-        const tokenResponse = await redeemAuthorizationCode({
-            code,
-            clientId: client.client_id,
-            redirectUri: REDIRECT_URI,
-            codeVerifier: verifier,
-            resource: `${ORIGIN}/mcp`,
-            origin: ORIGIN,
-            ip: '198.51.100.7'
-        });
+    await t.test('the full level mints an unnarrowed token', async () => {
+        const { tokenResponse } = await approveAndRedeem({ access: 'full' });
 
         const tokenData = await tokens.get(tokenResponse.access_token, false);
         try {
             assert.deepEqual(tokenData.scopes, ['mcp']);
             assert.ok(!tokenData.permissions, 'the wide grant carries no permissions record - the mcp scope itself is the bound');
+        } finally {
+            await tokens.delete(tokenResponse.access_token);
+        }
+    });
+
+    await t.test('a payload naming no access level mints the read-only token, never the wide one', async () => {
+        // The fail-safe direction of the schema default: a stale form or a hand-crafted POST
+        // that omits the field gets the narrowest credential. Under the old checkbox an omitted
+        // field was how FULL access was requested, so this is the inversion the radio buys.
+        const { tokenResponse } = await approveAndRedeem({});
+
+        const tokenData = await tokens.get(tokenResponse.access_token, false);
+        try {
+            assert.deepEqual(tokenData.permissions, MCP_READ_ONLY_PERMISSIONS);
         } finally {
             await tokens.delete(tokenResponse.access_token);
         }

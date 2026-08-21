@@ -319,6 +319,25 @@ test('Token management tests', async t => {
         assert.ok(result.total >= 1);
     });
 
+    await t.test('list() with a scope filter keeps only tokens naming that scope', async () => {
+        const account = 'scope-filter-test';
+
+        const mcpToken = await tokens.provision({ account, description: 'Scoped agent', scopes: ['mcp'], nolog: true });
+        const apiToken = await tokens.provision({ account, description: 'Plain API', scopes: ['api'], nolog: true });
+        // Would serve the MCP surface, but was not minted for it - the filter answers
+        // "which tokens were minted for this scope", so it must not match
+        const wideToken = await tokens.provision({ account, description: 'All scopes', scopes: ['*'], nolog: true });
+        createdTokens.push(mcpToken, apiToken, wideToken);
+
+        const result = await tokens.list(account, 0, 10, null, { scope: 'mcp' });
+
+        assert.strictEqual(result.total, 1);
+        assert.strictEqual(result.pages, 1, 'pages must count the matches, not the unfiltered list');
+        assert.strictEqual(result.tokens.length, 1);
+        assert.strictEqual(result.tokens[0].description, 'Scoped agent');
+        assert.deepStrictEqual(result.tokens[0].scopes, ['mcp']);
+    });
+
     await t.test('getRawData() returns token data', async () => {
         const token = await tokens.provision({
             account: 'raw-data-test',

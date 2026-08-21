@@ -79,10 +79,15 @@
         </datalist>
     </div>
 
-    <div>
-        {{> ui/checkbox id="mcpGenReadOnly" label="Read-only" checked=true noName=true
-        hint="The agent can list, search and read, but not change anything, delete anything, or send mail. Untick to allow the full tool set."}}
-    </div>
+    <fieldset class="space-y-2">
+        <legend class="label-text mb-1">Access level</legend>
+        {{> ui/radio id="mcpGenAccessRead" name="mcpGenAccess" value="read" label="Read-only" checked=true
+            hint="Recommended. The agent can list, search and read, but not change anything, delete anything, or send mail."}}
+        {{> ui/radio id="mcpGenAccessMail" name="mcpGenAccess" value="mail" label="Mail agent"
+            hint="Read, organize, draft and send mail - everything except the delete tool. Sending means prompt-injected mail could trigger real email."}}
+        {{> ui/radio id="mcpGenAccessFull" name="mcpGenAccess" value="full" label="Full access"
+            hint="Every MCP tool, including deleting messages."}}
+    </fieldset>
 
     <div class="flex items-center gap-3">
         {{#if canProvision}}
@@ -97,7 +102,7 @@
         <div class="alert alert-soft alert-warning text-sm">
             <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
             <span>The token below is shown only once. It is revocable any time on the
-                <a href="/admin/tokens" class="link">Access Tokens</a> page.</span>
+                <a href="/admin/tokens?scope=mcp" class="link">Access Tokens</a> page.</span>
         </div>
 
         <div>
@@ -115,6 +120,11 @@
             </div>
             <pre class="ee-code-block"><code id="mcpGenJsonCfg"></code></pre>
         </div>
+    </div>
+
+    <div class="text-sm text-base-content/60">
+        Every connected agent is an ordinary access token with the <code>mcp</code> scope - review or revoke them on
+        the <a href="/admin/tokens?scope=mcp" class="link">Access Tokens</a> page.
     </div>
 </div>
 
@@ -194,13 +204,14 @@
 
             let label = (document.getElementById('mcpGenLabel').value || '').trim() || 'MCP agent';
             let account = (document.getElementById('mcpGenAccount').value || '').trim();
-            let readOnly = document.getElementById('mcpGenReadOnly').checked;
+            let accessElm = document.querySelector('input[name="mcpGenAccess"]:checked');
+            let access = (accessElm && accessElm.value) || 'read';
 
             try {
-                if (readOnly && !presets.readOnly) {
+                if (!Object.prototype.hasOwnProperty.call(presets, access)) {
                     // A missing preset must not silently mint a wider credential than the
-                    // ticked box promises
-                    throw new Error('The read-only preset failed to load. Reload the page and try again.');
+                    // selected level promises
+                    throw new Error('The access preset failed to load. Reload the page and try again.');
                 }
 
                 let data = await uiPostJson('/admin/tokens/new', {
@@ -209,9 +220,9 @@
                     // The empty string, not null: accountIdSchema is `Joi.string().empty('')`,
                     // which converts '' to the schema default and refuses an explicit null
                     account: account,
-                    // Full access is the absence of a permissions record - the mcp scope
-                    // already bounds the token to the MCP tool surface
-                    permissions: readOnly ? presets.readOnly : null
+                    // The access-level table maps 'full' to null: the absence of a permissions
+                    // record, because the mcp scope already bounds the token to the MCP surface
+                    permissions: presets[access]
                 });
 
                 if (!data.success) {
