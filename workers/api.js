@@ -892,7 +892,16 @@ const init = async () => {
             let tags = (request.route && request.route.settings && request.route.settings.tags) || [];
             let scopes = tags.filter(tag => tag === 'api' || /^scope:/.test(tag)).map(tag => tag.replace(/^scope:/, ''));
 
-            if (token.startsWith('sess_') && scopes.includes('api')) {
+            // The MCP endpoint (lib/api-routes/mcp-routes.js) is a protocol multiplexer with no
+            // operation of its own: every tools/call becomes an injected API request that runs
+            // this whole strategy again against the route it actually targets. Several checks
+            // below defer to that inner request, and each says so where it does.
+            const mcpEndpoint = !!mcpOptions(request.route).endpoint;
+
+            // Session tokens are refused at the MCP door rather than half-admitted: a session
+            // credential carries no bearer token the injected inner requests could forward, so
+            // it could initialize and list tools but every tools/call would die on an inner 401.
+            if (token.startsWith('sess_') && scopes.includes('api') && !mcpEndpoint) {
                 // seems like a session token
                 let isValidSessionToken = await tokens.validateSessionToken(
                     request.state && request.state.ee && request.state.ee.sid,
@@ -930,12 +939,6 @@ const init = async () => {
             }
 
             const grant = routeGrant(request.route);
-
-            // The MCP endpoint (lib/api-routes/mcp-routes.js) is a protocol multiplexer with no
-            // operation of its own: every tools/call becomes an injected API request that runs
-            // this whole strategy again against the route it actually targets. Three checks below
-            // defer to that inner request, and each says so where it does.
-            const mcpEndpoint = !!mcpOptions(request.route).endpoint;
 
             // This strategy runs before route validation, so `request.query` is whatever the client
             // sent: a repeated `?account=` arrives as an array. Only a string can name an account,
@@ -1136,7 +1139,11 @@ const init = async () => {
                     throw error;
                 }
 
-                if (tokenData.restrictions.rateLimit) {
+                // Skipped on MCP-dispatched injects like the last-use record above: the outer
+                // /mcp request already spent one unit of this token's budget at the door, and
+                // counting the inner request too silently halved every restricted token's
+                // effective limit over MCP.
+                if (tokenData.restrictions.rateLimit && !request.app.mcpInternal) {
                     let rateLimit = await checkRateLimit(
                         `api:${tokenData.id}`,
                         1,

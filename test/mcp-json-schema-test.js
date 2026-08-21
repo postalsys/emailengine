@@ -51,6 +51,19 @@ test('MCP JSON Schema conversion', async t => {
         });
     });
 
+    await t.test('nullable alternatives gain a null branch instead of losing the nullability', () => {
+        // The converter parks `nullable: true` next to `anyOf` with no type keyword to widen;
+        // dropping it published a tool schema that forbade null where the API accepts it
+        const converted = joiToJsonSchema(
+            Joi.object({
+                either: Joi.alternatives().try(Joi.string(), Joi.number()).allow(null)
+            })
+        );
+
+        assert.deepEqual(converted.properties.either.anyOf, [{ type: 'string' }, { type: 'number' }, { type: 'null' }]);
+        assert.ok(!('nullable' in converted.properties.either));
+    });
+
     await t.test('moves the singular example into the examples array and drops x- extensions', () => {
         const converted = joiToJsonSchema(
             Joi.object({
