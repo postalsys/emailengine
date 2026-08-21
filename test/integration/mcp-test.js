@@ -410,7 +410,11 @@ test('MCP endpoint', async t => {
 
             const consent = await browser.get(`/admin/mcp/authorize?${params.toString()}`);
             assert.equal(consent.status, 200);
-            assert.match(consent.text, /Read-only access/, 'the consent form offers the read-only narrowing');
+            // the three access levels, with read-only pre-selected as the default
+            for (const level of ['read', 'mail', 'full']) {
+                assert.match(consent.text, new RegExp(`name="access" value="${level}"`), `the consent form offers the ${level} level`);
+            }
+            assert.match(consent.text, /value="read"\s+checked/, 'read-only must be the pre-selected level');
 
             const crumb = (consent.text.match(/name="crumb"\s+value="([^"]+)"/) || [])[1];
             assert.ok(crumb, 'the consent form carries a crumb');
