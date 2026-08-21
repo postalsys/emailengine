@@ -290,6 +290,11 @@
 
         let showTokenValueElm = document.getElementById('showTokenValue');
 
+        // Read by the tool count as well as by the submit handler: binding a token to an account
+        // changes which MCP tools it is offered, so the field is an input to the editor and not
+        // only a payload field.
+        let accountElm = document.getElementById('account');
+
         let accessCardElm = document.getElementById('accessCard');
         let accessAppliesToElm = document.getElementById('accessAppliesTo');
         let mcpLevelBlockElm = document.getElementById('mcpLevelBlock');
@@ -492,12 +497,18 @@
             // on the matrix can still leave an agent holding a single tool - and the count is the
             // only place that shows up before the client connects.
             if (hasMcpScope() && mcpTools.length) {
-                let available = mcpTools.filter(tool => record.actions.includes(tool.action) && record.groups.includes(tool.group));
+                // Both halves of what tools/list filters on. The account binding is the other one:
+                // a credential bound to one account never sees the instance-wide tools, because
+                // they take no account argument to bind, so counting without it overstates the
+                // catalog the agent will actually receive.
+                let bound = !!accountElm.value.trim();
+                let offered = bound ? mcpTools.filter(tool => tool.accountScoped) : mcpTools;
+                let available = offered.filter(tool => record.actions.includes(tool.action) && record.groups.includes(tool.group));
 
                 let tools = document.createElement('div');
                 tools.className = 'pt-1';
                 let toolsLabel = document.createElement('strong');
-                toolsLabel.textContent = available.length + ' of ' + mcpTools.length + ' MCP tools available';
+                toolsLabel.textContent = available.length + ' of ' + offered.length + ' MCP tools available';
                 tools.append(toolsLabel);
                 permissionOutcomeElm.append(tools);
 
@@ -505,6 +516,17 @@
                 names.className = 'text-base-content/60 break-words';
                 names.textContent = available.length ? available.map(tool => tool.name).join(', ') : 'A connected agent would see no tools at all.';
                 permissionOutcomeElm.append(names);
+
+                // Said out loud rather than left as a smaller total: the tools that disappear are
+                // the ones an agent would otherwise use to discover what it is connected to.
+                let instanceWide = mcpTools.filter(tool => !tool.accountScoped);
+                if (bound && instanceWide.length) {
+                    let note = document.createElement('div');
+                    note.className = 'text-base-content/60';
+                    note.textContent =
+                        'Bound to one account, so the instance-wide tools are not offered: ' + instanceWide.map(tool => tool.name).join(', ') + '.';
+                    permissionOutcomeElm.append(note);
+                }
             }
         };
 
@@ -635,6 +657,10 @@
             elm.addEventListener('change', syncAll);
         }
 
+        // Per keystroke, because what the binding costs an agent should be visible while the field
+        // is being filled in rather than only after it loses focus
+        accountElm.addEventListener('input', syncAll);
+
         for (let button of document.querySelectorAll('.permission-preset')) {
             button.addEventListener('click', () => {
                 applyRecord((button.dataset.actions || '').split(',').filter(value => value), (button.dataset.groups || '').split(',').filter(value => value));
@@ -651,8 +677,8 @@
             document.getElementById('description').value = description
 
             // Trimmed so the redirect below filters the listing on the same value that was posted
-            let account = document.getElementById('account').value.trim();
-            document.getElementById('account').value = account
+            let account = accountElm.value.trim();
+            accountElm.value = account
 
             let scopes = [];
             for (let elm of scopeElms) {

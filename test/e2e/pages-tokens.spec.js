@@ -344,6 +344,40 @@ test.describe('access token pages', () => {
         expect(errors).toEqual([]);
     });
 
+    test('binding a token to an account takes the instance-wide tools out of the count', async ({ page }) => {
+        // tools/list hides the tools that take no account argument from a bound credential, because
+        // there is nothing to bind them to. Counting without that rule promises an agent a catalog
+        // it will not receive - the count and lib/api-routes/mcp-routes.js have to apply the same
+        // two filters.
+        const errors = trackConsoleErrors(page);
+        await page.goto(`${BASE_URL}/admin/tokens/new`);
+
+        await page.locator('#scopesAll').uncheck();
+        await page.locator('#scopesMcp').check();
+
+        const outcome = page.locator('#permissionOutcome');
+        const unbound = (await outcome.textContent()).match(/(\d+) of (\d+) MCP tools available/);
+        expect(unbound, 'the unbound tool count should be shown').not.toBeNull();
+
+        await page.locator('#account').fill('some-account');
+
+        const bound = (await outcome.textContent()).match(/(\d+) of (\d+) MCP tools available/);
+        // Both halves shrink: a bound credential is never offered those tools at all
+        expect(Number(bound[2])).toBeLessThan(Number(unbound[2]));
+        expect(Number(bound[1])).toBeLessThan(Number(unbound[1]));
+
+        // Named rather than left as a smaller total - these are the tools an agent would use to
+        // discover what it is connected to
+        await expect(outcome).toContainText('the instance-wide tools are not offered');
+        await expect(outcome).toContainText('list_accounts');
+
+        // And it follows the field back
+        await page.locator('#account').fill('');
+        await expect(outcome).toContainText(`${unbound[1]} of ${unbound[2]} MCP tools available`);
+
+        expect(errors).toEqual([]);
+    });
+
     test('the custom level lists only the sections MCP can reach', async ({ page }) => {
         // Ticking "Webhook routes" on a token that can only call MCP tools grants nothing. A control
         // with no effect reads as a permission, so those rows are taken out rather than left inert.
