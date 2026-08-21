@@ -21,6 +21,18 @@
 </div>
 {{/unless}}
 
+{{!-- Two jobs share this page: configuring the instance (a settings form, done once) and
+     connecting agents (done every time a new client shows up). Tabbed so each reads as the
+     other settings pages do - the form's Save sits at the bottom of its own content instead
+     of mid-page above a wall of unrelated cards. Settings stays the default tab so a
+     validation-error re-render can never hide the errors behind the other tab. --}}
+{{#> ui/tabs label="MCP configuration sections" class="mb-6"}}
+{{> ui/tab target="mcp-settings" label="Settings" active=true}}
+{{> ui/tab target="mcp-connect" label="Connect an agent"}}
+{{/ui/tabs}}
+
+<div id="mcp-settings" role="tabpanel" aria-labelledby="mcp-settings-tab">
+
 <form method="post" action="/admin/config/mcp">
     {{!-- no id: the layout already renders the #crumb element scripts read --}}
     <input type="hidden" name="crumb" value="{{crumb}}" />
@@ -52,7 +64,24 @@
     </div>
 </form>
 
-{{#> ui/card title="Connect an agent" bodyClass="space-y-4"}}
+</div>
+
+<div id="mcp-connect" class="hidden" role="tabpanel" aria-labelledby="mcp-connect-tab">
+
+{{!-- Only the "gate on, setting off" state: with the deployment gate off, the page-level
+     warning above already says the settings are inert, and telling the operator to flip a
+     switch that will not help would contradict it --}}
+{{#if mcpFeatureEnabled}}
+{{#unless values.mcpEnabled}}
+<div class="mb-6 alert alert-soft alert-warning">
+    <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+    <span>The MCP endpoint is not enabled yet, so a connected client would get nothing to talk to. Turn it on under
+        <button type="button" id="mcpConnectGotoSettings" class="link cursor-pointer">Settings</button> first.</span>
+</div>
+{{/unless}}
+{{/if}}
+
+{{#> ui/card bodyClass="space-y-4"}}
 
 <p class="text-sm">Generate an access token and a ready-to-paste connection command in one step. The token gets the
     <code>mcp</code> scope, so it works against the MCP endpoint and nothing else.</p>
@@ -84,9 +113,14 @@
         {{> ui/radio id="mcpGenAccessRead" name="mcpGenAccess" value="read" label="Read-only" checked=true
             hint="Recommended. The agent can list, search and read, but not change anything, delete anything, or send mail."}}
         {{> ui/radio id="mcpGenAccessMail" name="mcpGenAccess" value="mail" label="Mail agent"
-            hint="Read, organize, draft and send mail - everything except the delete tool. Sending means prompt-injected mail could trigger real email."}}
+            hint="Read, organize, draft and send mail - everything except the delete tool."}}
         {{> ui/radio id="mcpGenAccessFull" name="mcpGenAccess" value="full" label="Full access"
             hint="Every MCP tool, including deleting messages."}}
+
+        {{!-- At the decision point rather than only in the collapsed manual-config block: the
+              level chosen here is what decides whether injected instructions can act --}}
+        <p class="text-base-content/60 text-sm">Email content flows into whatever model the connected client runs, and
+            instructions inside received mail can steer it - grant sending and deleting rights deliberately.</p>
     </fieldset>
 
     <div class="flex items-center gap-3">
@@ -179,6 +213,8 @@
 </div>
 {{/ui/details}}
 
+</div>
+
 <script>
     (() => {
         let container = document.getElementById('mcpTokenGen');
@@ -190,6 +226,13 @@
         let claudeCommand = token => 'claude mcp add --transport http emailengine ' + mcpUrl + ' \\\n    --header "Authorization: Bearer ' + token + '"';
 
         document.getElementById('mcpManualClaudeCmd').textContent = claudeCommand('<access token>');
+
+        // The endpoint-disabled alert points at the other tab, and a pointer with nothing to
+        // click is worse than none - this makes the word do what it says
+        let gotoSettings = document.getElementById('mcpConnectGotoSettings');
+        if (gotoSettings) {
+            gotoSettings.addEventListener('click', () => document.getElementById('mcp-settings-tab').click());
+        }
 
         let submitElm = document.getElementById('mcpGenSubmit');
         if (!submitElm) {
