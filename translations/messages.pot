@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-08-17 09:37+0000\n"
+"POT-Creation-Date: 2026-08-21 20:02+0000\n"
 
 #: views/error.hbs:6
-#: workers/api.js:2913
+#: workers/api.js:3053
 msgid "Something went wrong"
 msgstr ""
 
@@ -26,35 +26,6 @@ msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:28
-#: views/account-identity-error.hbs:32
-msgid "Try Again"
-msgstr ""
 
 #: views/unsubscribe.hbs:7
 #: views/unsubscribe.hbs:60
@@ -98,6 +69,35 @@ msgstr ""
 #: views/unsubscribe.hbs:70
 #: views/accounts/register/imap.hbs:25
 msgid "Email address"
+msgstr ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:28
+#: views/account-identity-error.hbs:32
+msgid "Try Again"
 msgstr ""
 
 #: views/accounts/register/index.hbs:6
@@ -283,19 +283,19 @@ msgid ""
 "connect your account."
 msgstr ""
 
-#: lib/tools.js:1228
+#: lib/tools.js:1304
 #: lib/ui-routes/unsubscribe-routes.js:29
 #: lib/ui-routes/unsubscribe-routes.js:93
 msgid "Invalid input"
 msgstr ""
 
-#: lib/tools.js:2094
+#: lib/tools.js:2154
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:2117
-#: lib/tools.js:2123
-#: lib/tools.js:2128
+#: lib/tools.js:2177
+#: lib/tools.js:2183
+#: lib/tools.js:2188
 #: lib/ui-routes/account-routes.js:1058
 msgid "Invalid or expired account setup URL"
 msgstr ""
@@ -306,9 +306,9 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:765
 #: lib/ui-routes/account-routes.js:818
 #: lib/ui-routes/account-routes.js:1171
-#: lib/ui-routes/route-helpers.js:366
-#: workers/api.js:2089
-#: workers/api.js:2159
+#: lib/ui-routes/route-helpers.js:368
+#: workers/api.js:2238
+#: workers/api.js:2308
 msgid "Email Account Setup"
 msgstr ""
 
@@ -329,45 +329,45 @@ msgstr ""
 
 #: lib/ui-routes/account-routes.js:888
 #: lib/ui-routes/account-routes.js:899
-#: lib/ui-routes/admin-entities-routes.js:2051
+#: lib/ui-routes/admin-entities-routes.js:2058
 msgid "Server hostname was not found"
 msgstr ""
 
 #: lib/ui-routes/account-routes.js:891
 #: lib/ui-routes/account-routes.js:902
-#: lib/ui-routes/admin-entities-routes.js:2054
+#: lib/ui-routes/admin-entities-routes.js:2061
 msgid "Invalid username or password"
 msgstr ""
 
 #: lib/ui-routes/account-routes.js:905
-#: lib/ui-routes/admin-entities-routes.js:2057
+#: lib/ui-routes/admin-entities-routes.js:2064
 msgid "Authentication credentials were not provided"
 msgstr ""
 
 #: lib/ui-routes/account-routes.js:908
-#: lib/ui-routes/admin-entities-routes.js:2060
+#: lib/ui-routes/admin-entities-routes.js:2067
 msgid "OAuth2 authentication failed"
 msgstr ""
 
 #: lib/ui-routes/account-routes.js:911
 #: lib/ui-routes/account-routes.js:915
-#: lib/ui-routes/admin-entities-routes.js:2063
-#: lib/ui-routes/admin-entities-routes.js:2067
+#: lib/ui-routes/admin-entities-routes.js:2070
+#: lib/ui-routes/admin-entities-routes.js:2074
 msgid "TLS protocol error"
 msgstr ""
 
 #: lib/ui-routes/account-routes.js:919
-#: lib/ui-routes/admin-entities-routes.js:2071
+#: lib/ui-routes/admin-entities-routes.js:2078
 msgid "Connection timed out"
 msgstr ""
 
 #: lib/ui-routes/account-routes.js:922
-#: lib/ui-routes/admin-entities-routes.js:2074
+#: lib/ui-routes/admin-entities-routes.js:2081
 msgid "Could not connect to server"
 msgstr ""
 
 #: lib/ui-routes/account-routes.js:925
-#: lib/ui-routes/admin-entities-routes.js:2077
+#: lib/ui-routes/admin-entities-routes.js:2084
 msgid "Unexpected server response"
 msgstr ""
 
@@ -375,7 +375,7 @@ msgstr ""
 msgid "Temporary error, please try again"
 msgstr ""
 
-#: lib/ui-routes/admin-config-routes.js:168
+#: lib/ui-routes/admin-config-routes.js:173
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
@@ -387,33 +387,33 @@ msgstr ""
 msgid "Indefinite"
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:130
+#: lib/ui-routes/route-helpers.js:132
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:133
+#: lib/ui-routes/route-helpers.js:135
 msgid "The server unexpectedly closed the connection."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:136
+#: lib/ui-routes/route-helpers.js:138
 msgid ""
 "The server unexpectedly closed the connection. This usually happens when "
 "attempting to connect to a TLS port without TLS enabled."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:141
+#: lib/ui-routes/route-helpers.js:143
 msgid ""
 "The server refused the connection. This typically occurs if the server is "
 "not running, is overloaded, or you are connecting to the wrong host or port."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:195
+#: lib/ui-routes/route-helpers.js:197
 msgid "Delegated"
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:196
+#: lib/ui-routes/route-helpers.js:198
 msgid "Using credentials from \"%s\""
 msgstr ""
 
@@ -429,7 +429,7 @@ msgstr ""
 msgid "Couldn't process request. Try again."
 msgstr ""
 
-#: workers/api.js:2912
-#: workers/api.js:3013
+#: workers/api.js:3052
+#: workers/api.js:3156
 msgid "Requested page not found"
 msgstr ""
