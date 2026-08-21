@@ -76,6 +76,11 @@ test('MCP tool registry', async t => {
             if (!surfaceAdmits('mcp', grant)) {
                 outside.push(`${name} (${tool.method.toUpperCase()} ${tool.path} -> ${grant.action}/${grant.group})`);
             }
+
+            // The grant stored on the registry entry is what tools/list filters a narrowed
+            // credential's catalog by, so it has to be the same operation the inner request
+            // will enforce - re-derived here rather than trusted
+            assert.deepEqual(tool.grant, grant, `${name}: stored grant differs from routeGrant()`);
         }
 
         assert.deepEqual(outside, [], `tools outside SURFACE_GRANTS.mcp: ${JSON.stringify(outside)}`);

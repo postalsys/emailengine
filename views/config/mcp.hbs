@@ -34,7 +34,10 @@
         checked=values.mcpOAuthEnabled error=errors.mcpOAuthEnabled}}
         <span class="helper-text">For MCP clients that cannot be configured with a static token (for example claude.ai
             web connectors). The client registers itself, you approve it on a consent page, and EmailEngine issues it
-            an <code>mcp</code>-scoped access token. Requires the Service URL to be set under General.</span>
+            an <code>mcp</code>-scoped access token. Requires the Service URL to be set under General. The consent page
+            is part of the admin interface, so approvals happen wherever admin access works - if admin access is
+            limited to specific IP addresses (<code>EENGINE_ADMIN_ACCESS_ADDRESSES</code>), connect new clients from
+            one of those addresses.</span>
     </div>
     {{/ui/card}}
 
