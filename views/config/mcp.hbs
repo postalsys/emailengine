@@ -3,13 +3,13 @@
 <p class="mb-6">
     Let AI agents work with the connected email accounts over the Model Context Protocol. The MCP endpoint exposes a
     curated tool set (list and search messages, read content, organize and delete messages, create drafts, send mail)
-    and authenticates with the same access tokens as the REST API.
+    and accepts the same access tokens as the REST API.
 </p>
 
 <div class="mb-6 alert alert-soft alert-info">
     <span class="icon-[tabler--flask] size-5 shrink-0"></span>
     <span>MCP support is in beta. The endpoint is off by default and the tool set may still change between releases -
-        feedback is welcome while the surface settles.</span>
+        feedback is welcome.</span>
 </div>
 
 {{#unless mcpFeatureEnabled}}
@@ -42,16 +42,18 @@
         {{> ui/setting-ref name="mcpEnabled"}}
         {{> ui/checkbox id="settingsMcpEnabled" name="mcpEnabled" label="Enable the MCP endpoint"
         checked=values.mcpEnabled error=errors.mcpEnabled}}
-        <span class="helper-text">Serves the Model Context Protocol at <code>/mcp</code>. Clients authenticate with an
-            access token; a token with the <code>mcp</code> scope works only here and not against the REST API.</span>
+        <span class="helper-text">Serves the Model Context Protocol at <code>/mcp</code>. The
+            <button type="button" class="link cursor-pointer" data-goto-tab="mcp-connect">Connect an agent</button> tab
+            generates access tokens and ready-to-paste setup for clients; a token with the <code>mcp</code> scope works
+            only here and not against the REST API.</span>
     </div>
 
     <div>
         {{> ui/setting-ref name="mcpOAuthEnabled"}}
         {{> ui/checkbox id="settingsMcpOAuthEnabled" name="mcpOAuthEnabled" label="Enable OAuth sign-in for MCP clients"
         checked=values.mcpOAuthEnabled error=errors.mcpOAuthEnabled}}
-        <span class="helper-text">For MCP clients that cannot be configured with a static token, for example claude.ai
-            web connectors. Requires the Service URL to be set under General. The
+        <span class="helper-text">For web connectors and other MCP clients that cannot be configured with a static
+            token. Requires the Service URL to be set under General. The
             <button type="button" class="link cursor-pointer" data-goto-tab="mcp-connect-oauth">Connect an agent</button>
             tab shows exactly what to enter in the client's connector form.</span>
     </div>
@@ -81,12 +83,14 @@
 
 {{!-- The two connection methods are mutually exclusive per client, so they are a segmented
      switch (labeled by client type - "which one am I connecting" is the question the operator
-     arrives with), not stacked cards to scroll past. The badge and the OAuth panel's warnings
-     all key on the one route-supplied oauthMethodBlocker, which also owns the rationale for
-     keeping a blocked method's tab clickable. --}}
+     arrives with), not stacked cards to scroll past. Deliberately vendor-neutral: EmailEngine
+     is a generic MCP server, so specific clients appear only as examples inside the panels.
+     The badge and the OAuth panel's warnings all key on the one route-supplied
+     oauthMethodBlocker, which also owns the rationale for keeping a blocked method's tab
+     clickable. --}}
 {{#> ui/tabs label="Connection methods" variant="segment" class="mb-4"}}
-{{> ui/tab target="mcp-connect-token" label="Claude Code and self-hosted agents" active=true}}
-{{> ui/tab target="mcp-connect-oauth" label="claude.ai and web connectors"
+{{> ui/tab target="mcp-connect-token" label="Desktop and self-hosted agents" active=true}}
+{{> ui/tab target="mcp-connect-oauth" label="Web connectors"
     badgeLabel=(when oauthMethodBlocker "not enabled" "") badgeVariant="warning"}}
 {{/ui/tabs}}
 
@@ -94,7 +98,7 @@
 
 {{#> ui/card bodyClass="space-y-4"}}
 
-<p class="text-sm">Generate an access token and a ready-to-paste connection command in one step. The token gets the
+<p class="text-sm">Generate an access token and ready-to-paste client configuration in one step. The token gets the
     <code>mcp</code> scope, so it works against the MCP endpoint and nothing else.</p>
 
 {{#unless canProvision}}
@@ -107,17 +111,10 @@
 <div id="mcpTokenGen" data-presets="{{json mcpTokenPresets}}" data-mcp-url="{{mcpUrl}}" class="space-y-4">
     {{!-- One column on purpose: two-up put the account field a full screen away from its
           label-mate on wide displays, and the form reads as one top-to-bottom flow --}}
-    {{> ui/form-field id="mcpGenLabel" label="What is this token for?" value="Claude"
+    {{> ui/form-field id="mcpGenLabel" label="What is this token for?" placeholder="for example Cursor or Claude"
         hint="Shows up as the token description, so you can tell agents apart on the Access Tokens page."}}
 
-    {{> ui/form-field id="mcpGenAccount" label="Limit to one account" list="mcpGenAccountList"
-        placeholder="account id"
-        hint="Recommended. Leave empty to allow every account on the instance."}}
-    <datalist id="mcpGenAccountList">
-        {{#each accountOptions}}
-        <option value="{{account}}">{{label}}</option>
-        {{/each}}
-    </datalist>
+    {{> mcp_account_limit id="mcpGenAccount" list="mcpGenAccountList"}}
 
     <fieldset class="space-y-2">
         <legend class="label-text mb-1">Access level</legend>
@@ -146,21 +143,14 @@
             <span>The token below is shown only once.</span>
         </div>
 
-        <div>
-            <div class="flex items-center justify-between gap-2 mb-1">
-                <span class="label-text">Claude Code</span>
-                {{> ui/copy-btn target="mcpGenClaudeCmd" small=true}}
-            </div>
-            <pre class="ee-code-block"><code id="mcpGenClaudeCmd"></code></pre>
-        </div>
+        {{#> ui/code-block id="mcpGenJsonCfg" label="JSON configuration" copy=true}}
+        For clients configured through a JSON file, for example Cursor or a project-level <code>.mcp.json</code>. Some
+        clients name the top-level key <code>servers</code> instead of <code>mcpServers</code>.
+        {{/ui/code-block}}
 
-        <div>
-            <div class="flex items-center justify-between gap-2 mb-1">
-                <span class="label-text">Generic client configuration</span>
-                {{> ui/copy-btn target="mcpGenJsonCfg" small=true}}
-            </div>
-            <pre class="ee-code-block"><code id="mcpGenJsonCfg"></code></pre>
-        </div>
+        {{#> ui/code-block id="mcpGenClaudeCmd" label="Command-line example (Claude Code)" copy=true}}
+        Other command-line clients register MCP servers with a similar command - check the client's documentation.
+        {{/ui/code-block}}
     </div>
 
     <div class="text-sm text-base-content/60">
@@ -188,10 +178,9 @@
     </div>
     {{/unless}}
 
-    <div>
-        <span class="label-text">Claude Code</span>
-        <pre class="ee-code-block"><code id="mcpManualClaudeCmd"></code></pre>
-    </div>
+    {{> ui/code-block id="mcpManualJsonCfg" label="JSON configuration"}}
+
+    {{> ui/code-block id="mcpManualClaudeCmd" label="Command-line example (Claude Code)"}}
 
     {{!-- No prompt-injection sentence here: the generator fieldset in this same panel already
           carries it, at the point where the access level is chosen --}}
@@ -209,8 +198,8 @@
 
 {{#> ui/card bodyClass="space-y-4"}}
 
-<p class="text-sm">These connectors cannot store a pre-made token, so the client signs itself in with OAuth
-    instead. In the client, fill the connector form like this:</p>
+<p class="text-sm">Web-based agents (for example a claude.ai connector) cannot store a pre-made token, so the
+    client signs itself in with OAuth instead. In the client, fill the connector form like this:</p>
 
 {{!-- One blocking precondition at a time, keyed on the same oauthMethodBlocker the tab badge
       reads, so the badge and its "matching warning" cannot disagree --}}
@@ -247,7 +236,7 @@
     <span class="label-text">OAuth Client ID and Client Secret</span>
     <p class="text-base-content/60 text-sm">Leave both empty - there is no pre-made client ID to copy. EmailEngine
         supports automatic client registration, so the connector creates its own credentials when it first connects.
-        In claude.ai these fields sit behind the "Advanced settings" toggle; other clients name it similarly.</p>
+        Some clients, claude.ai among them, keep these fields behind an "Advanced settings" toggle.</p>
 </div>
 
 <div>
@@ -296,10 +285,15 @@
         let presets = JSON.parse(container.dataset.presets || '{}');
         let mcpUrl = container.dataset.mcpUrl;
 
-        // The one place the command is written; the manual block shows it with a placeholder,
-        // the generator repeats it with the real token
+        // The one place each artifact is written; the manual block shows them with a
+        // placeholder, the generator repeats them with the real token. The mcpServers shape
+        // is what most JSON-configured clients read (Cursor, project-level .mcp.json files);
+        // "type" disambiguates the transport for clients that ask.
         let claudeCommand = token => 'claude mcp add --transport http emailengine ' + mcpUrl + ' \\\n    --header "Authorization: Bearer ' + token + '"';
+        let jsonConfig = token =>
+            JSON.stringify({ mcpServers: { emailengine: { type: 'http', url: mcpUrl, headers: { Authorization: 'Bearer ' + token } } } }, null, 4);
 
+        document.getElementById('mcpManualJsonCfg').textContent = jsonConfig('<access token>');
         document.getElementById('mcpManualClaudeCmd').textContent = claudeCommand('<access token>');
 
         // Cross-tab pointers on this page use data-goto-tab, handled centrally in ui.js
@@ -342,13 +336,8 @@
                     throw new Error(data.message || data.error || 'Failed to generate the token');
                 }
 
+                document.getElementById('mcpGenJsonCfg').textContent = jsonConfig(data.token);
                 document.getElementById('mcpGenClaudeCmd').textContent = claudeCommand(data.token);
-
-                document.getElementById('mcpGenJsonCfg').textContent = JSON.stringify(
-                    { url: mcpUrl, headers: { Authorization: 'Bearer ' + data.token } },
-                    null,
-                    4
-                );
 
                 document.getElementById('mcpGenResult').classList.remove('hidden');
             } catch (err) {

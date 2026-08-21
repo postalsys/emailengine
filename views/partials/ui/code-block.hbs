@@ -1,0 +1,26 @@
+{{!--
+    ui/code-block - labeled preformatted code block with an optional copy button (handled
+    centrally by the .copy-btn listener in static/js/ui.js). The <code> element renders empty -
+    pages fill it by id from their script. Optional block content renders as muted helper text
+    under the block; it is block content rather than a hash param so it can carry inline markup.
+      {{> ui/code-block id="x" label="..." copy=true}}
+      {{#> ui/code-block id="x" label="..."}}helper text{{/ui/code-block}}
+    Params:
+      id    - id of the inner <code> element (required; also the copy target)
+      label - label text above the block (required)
+      copy  - true to render a copy-to-clipboard button
+--}}
+<div>
+    {{#if copy}}
+    <div class="flex items-center justify-between gap-2 mb-1">
+        <span class="label-text">{{label}}</span>
+        {{> ui/copy-btn target=id small=true}}
+    </div>
+    {{else}}
+    <span class="label-text">{{label}}</span>
+    {{/if}}
+    <pre class="ee-code-block"><code id="{{id}}"></code></pre>
+    {{#if @partial-block}}
+    <span class="helper-text">{{> @partial-block id="" label="" copy=""}}</span>
+    {{/if}}
+</div>

@@ -45,45 +45,40 @@
     <div class="space-y-4">
 
         <fieldset class="space-y-2">
-            <legend class="label-text mb-1">Allow it to</legend>
+            <legend class="label-text mb-1">Access level</legend>
             {{> mcp_access_levels name="access" idPrefix="access" selected=accessLevel}}
         </fieldset>
 
-        {{!-- The grant sentences are derived from SURFACE_GRANTS.mcp rather than written out, so this
-              screen cannot promise less than the token grants after the tool set changes. One is
-              visible at a time - the one describing the selected access level. --}}
+        {{!-- The grant word lists come from MCP_GRANT_WORDING (derived from SURFACE_GRANTS.mcp,
+              never written out here), so this screen cannot promise less than the token grants
+              after the tool set changes. The framing prose around them is bespoke per level - a
+              level added to MCP_ACCESS_LEVELS needs its own alert block here. One is visible at
+              a time - the one describing the selected access level. --}}
         <div data-access="read" class="consent-grant alert alert-soft alert-info text-sm{{#equals accessLevel 'read'}}{{else}} hidden{{/equals}}">
             <span class="icon-[tabler--info-circle] size-5 shrink-0"></span>
-            <span>Through the MCP tool set the client will be able to <strong>read</strong> across
-                <code>{{readGrantGroups}}</code> on the accounts its token can reach. It cannot send email, delete
-                anything, change anything, read stored credentials, or change instance settings.</span>
+            <span>Through the MCP tool set the client will be able to <strong>{{grantWording.read.actions}}</strong>
+                {{grantWording.read.groups}} on the accounts its token can reach. It cannot send email, delete anything,
+                change anything, read stored credentials, or change instance settings.</span>
         </div>
 
         <div data-access="mail" class="consent-grant alert alert-soft alert-warning text-sm{{#equals accessLevel 'mail'}}{{else}} hidden{{/equals}}">
             <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
-            <span>Through the MCP tool set the client will be able to <strong>read, create and send real email</strong>
-                across <code>{{mailGrantGroups}}</code> on the accounts its token can reach - everything except the delete
-                tool. Instructions inside received mail are a real prompt-injection risk once sending is granted. It cannot
-                read stored credentials or change instance settings.</span>
+            <span>Through the MCP tool set the client will be able to <strong>{{grantWording.mail.actions}}</strong>
+                across {{grantWording.mail.groups}} on the accounts its token can reach - everything except the delete
+                tool. Instructions inside received mail are a real prompt-injection risk once sending is granted. It
+                cannot read stored credentials or change instance settings.</span>
         </div>
 
         <div data-access="full" class="consent-grant alert alert-soft alert-warning text-sm{{#equals accessLevel 'full'}}{{else}} hidden{{/equals}}">
             <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
-            <span>Through the MCP tool set the client will be able to <strong>{{grantActions}}</strong> (including sending
-                real email and deleting messages) across <code>{{grantGroups}}</code> on the accounts its token can reach.
-                Instructions inside received mail are a real prompt-injection risk once sending is granted. It cannot read
-                stored credentials or change instance settings.</span>
+            <span>Through the MCP tool set the client will be able to <strong>{{grantWording.full.actions}}</strong>
+                across {{grantWording.full.groups}} on the accounts its token can reach. Instructions inside received
+                mail are a real prompt-injection risk once sending is granted. It cannot read stored credentials or
+                change instance settings.</span>
         </div>
 
         <div>
-            {{> ui/form-field id="account" label="Limit to one account" value=values.account error=errors.account
-                list="consentAccountList" placeholder="account id"
-                hint="Recommended. The token then only reaches this account. Leave empty to allow every account on the instance."}}
-            <datalist id="consentAccountList">
-                {{#each accountOptions}}
-                <option value="{{account}}">{{label}}</option>
-                {{/each}}
-            </datalist>
+            {{> mcp_account_limit id="account" list="consentAccountList" value=values.account error=errors.account}}
         </div>
 
         <div class="flex gap-3 pt-2">
