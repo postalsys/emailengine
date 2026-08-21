@@ -94,7 +94,9 @@
 {{/unless}}
 
 <div id="mcpTokenGen" data-presets="{{json mcpTokenPresets}}" data-mcp-url="{{mcpUrl}}" class="space-y-4">
-    <div class="grid gap-4 sm:grid-cols-2">
+    {{!-- One column on purpose: two-up put the account field a full screen away from its
+          label-mate on wide displays, and the form reads as one top-to-bottom flow --}}
+    <div class="space-y-4">
         {{> ui/form-field id="mcpGenLabel" label="What is this token for?" value="Claude"
             hint="Shows up as the token description, so you can tell agents apart on the Access Tokens page."}}
 
