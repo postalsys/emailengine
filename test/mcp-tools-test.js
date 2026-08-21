@@ -22,8 +22,9 @@ const Joi = require('joi');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 const { captureApiRoutes } = require('./helpers/capture-api-routes');
-const { buildToolRegistry, callTool, MAX_TOOL_RESULT_BYTES, MAX_TOOL_BINARY_BYTES } = require('../lib/mcp/tools');
-const { surfaceAdmits, routeGrant } = require('../lib/api-routes/permission-map');
+const { buildToolRegistry, callTool, toolVisibleTo, MAX_TOOL_RESULT_BYTES, MAX_TOOL_BINARY_BYTES } = require('../lib/mcp/tools');
+const { surfaceAdmits, routeGrant, ACTION, GROUP } = require('../lib/api-routes/permission-map');
+const { MCP_READ_ONLY_PERMISSIONS, MCP_MAIL_AGENT_PERMISSIONS } = require('../lib/token-permission-view');
 const { walkJson: walk } = require('./helpers/walk-json');
 
 const GOLDEN_PATH = path.join(__dirname, 'fixtures', 'mcp-tools-golden.json');
@@ -84,6 +85,53 @@ test('MCP tool registry', async t => {
         }
 
         assert.deepEqual(outside, [], `tools outside SURFACE_GRANTS.mcp: ${JSON.stringify(outside)}`);
+    });
+
+    await t.test('the admin pages predict the same catalog tools/list advertises', () => {
+        // The three pages that mint an mcp-scoped token report how many tools the credential
+        // would be offered. They run in a browser, where neither toolVisibleTo() nor the
+        // permission checker can be called, so they apply a two-allowlist model over the data
+        // toolGrants() hands them. This asserts the two agree over the whole catalog: if the
+        // enforcement grows a rule the pages do not know about, the count starts promising an
+        // agent tools it will not receive, and only this test would notice.
+        //
+        // Not a re-implementation of the rule under test - it is the browser's simplified model,
+        // written out once here so its equivalence is checked rather than assumed. The page-side
+        // copy lives in uiMcpToolCount() in static/js/ui.js.
+        const grants = tools.map(tool => {
+            const entry = byName.get(tool.name);
+            return { name: tool.name, accountScoped: entry.sources.has('account'), ...entry.grant };
+        });
+
+        const browserModel = (record, boundAccount) =>
+            grants
+                .filter(tool => !boundAccount || tool.accountScoped)
+                .filter(tool => !record || (record.actions.includes(tool.action) && record.groups.includes(tool.group)))
+                .map(tool => tool.name);
+
+        const enforced = (record, boundAccount) =>
+            tools.filter(tool => toolVisibleTo(byName.get(tool.name), { tokenData: { permissions: record }, boundAccount })).map(tool => tool.name);
+
+        // Every level the pages offer, plus the shapes a hand-built custom record takes: one axis
+        // emptied out, and one section that carries no tool at all
+        const records = [
+            null,
+            MCP_READ_ONLY_PERMISSIONS,
+            MCP_MAIL_AGENT_PERMISSIONS,
+            { actions: [ACTION.DESTRUCTIVE], groups: [GROUP.MESSAGE] },
+            { actions: [ACTION.READ], groups: [GROUP.WEBHOOK] },
+            { actions: [], groups: [] }
+        ];
+
+        for (const record of records) {
+            for (const boundAccount of [null, 'acct-1']) {
+                assert.deepEqual(
+                    browserModel(record, boundAccount),
+                    enforced(record, boundAccount),
+                    `the browser tool count disagrees with tools/list for ${JSON.stringify(record)} (bound: ${boundAccount})`
+                );
+            }
+        }
     });
 
     await t.test('tool schemas are self-contained JSON Schema', () => {

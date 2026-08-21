@@ -1941,4 +1941,32 @@ test.describe('admin shell', () => {
         const unexpected = errors.filter(text => !/Failed to load folders|Failed to auto-select inbox|503 \(Service Unavailable\)/.test(text));
         expect(unexpected, unexpected.join('\n')).toHaveLength(0);
     });
+
+    test('the MCP generator says how many tools the selected level leaves', async ({ page }) => {
+        // The count is uiMcpToolCount(), shared with the access-token form and the OAuth consent
+        // prompt, auto-wired here from the access-level radios and the account field. What it
+        // predicts is asserted against the real tools/list rule in test/mcp-tools-test.js; this
+        // covers the other half - that the wiring on the page actually follows both controls.
+        const errors = trackConsoleErrors(page);
+        await page.goto(`${BASE_URL}/admin/config/mcp`);
+        await page.getByRole('tab', { name: 'Connect an agent' }).click();
+
+        const count = page.locator('#mcpGenToolCount');
+        // Read-only is the default level, so the count is there before anything is touched
+        await expect(count).toContainText('MCP tools available');
+        const readOnly = (await count.textContent()).match(/(\d+) of (\d+) MCP tools available/);
+        expect(readOnly).not.toBeNull();
+        expect(Number(readOnly[1])).toBeLessThan(Number(readOnly[2]));
+
+        // Full access mints no permissions record, so every tool survives
+        await page.locator('#mcpGenAccessfull').check();
+        await expect(count).toContainText(/(\d+) of \1 MCP tools available/);
+
+        // And limiting the client to one account takes the instance-wide tools away from it
+        await page.locator('#mcpGenAccount').fill('some-account');
+        await expect(count).toContainText('the instance-wide tools are not offered');
+        await expect(count).toContainText('list_accounts');
+
+        expect(errors).toEqual([]);
+    });
 });

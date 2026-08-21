@@ -645,3 +645,88 @@ window.uiCodeExamples = config => {
     return renderExamples;
 };
 
+
+// The MCP tool count: how many of the endpoint's tools a credential would actually be offered.
+//
+// Shared by the three places an mcp-scoped token is minted - the access-token form, the MCP config
+// page's generator and the OAuth consent prompt - because all three ask the same question, and the
+// count is the one thing a permission record does not tell a reader: the MCP surface reaches six of
+// the thirteen sections, so a record that looks generous can still leave an agent holding one tool.
+//
+// Two filters, the same two lib/mcp/tools.js toolVisibleTo() applies to tools/list: the permission
+// record, and the account binding - a credential bound to one account is never offered the tools
+// that take no account argument, because there is nothing to bind them to. This is the browser's
+// copy of that rule, and test/mcp-tools-test.js asserts the two agree over the whole catalog.
+//
+// `record` is { actions, groups, unrestricted, account }. `unrestricted` is the absence of a
+// permissions record, which is a different answer from an empty one: the scopes are the only bound.
+// A null record clears the element - the question does not apply to this credential at all, which
+// is not the same as it having no tools.
+window.uiMcpToolCount = (elm, record) => {
+    let tools = JSON.parse(elm.dataset.mcpTools || '[]');
+
+    elm.replaceChildren();
+    if (!tools.length || !record) {
+        return;
+    }
+
+    let bound = !!(record.account || '').trim();
+    let offered = bound ? tools.filter(tool => tool.accountScoped) : tools;
+    let available = record.unrestricted ? offered : offered.filter(tool => record.actions.includes(tool.action) && record.groups.includes(tool.group));
+
+    let count = document.createElement('div');
+    let countLabel = document.createElement('strong');
+    countLabel.textContent = available.length + ' of ' + offered.length + ' MCP tools available';
+    count.append(countLabel);
+    elm.append(count);
+
+    let names = document.createElement('div');
+    names.className = 'text-base-content/60 break-words';
+    names.textContent = available.length ? available.map(tool => tool.name).join(', ') : 'A connected agent would see no tools at all.';
+    elm.append(names);
+
+    // Said out loud rather than left as a smaller total: the tools a binding takes away are the
+    // ones an agent would otherwise use to discover what it is connected to.
+    let instanceWide = tools.filter(tool => !tool.accountScoped);
+    if (bound && instanceWide.length) {
+        let note = document.createElement('div');
+        note.className = 'text-base-content/60';
+        note.textContent = 'Bound to one account, so the instance-wide tools are not offered: ' + instanceWide.map(tool => tool.name).join(', ') + '.';
+        elm.append(note);
+    }
+};
+
+// Auto-wiring for the pages whose whole answer is a named access level (the MCP config generator
+// and the consent prompt). The access-token form drives its own count instead, because its fourth
+// option is a hand-built record rather than a level, and it carries no data-mcp-level-name.
+document.addEventListener('DOMContentLoaded', () => {
+    for (let elm of document.querySelectorAll('[data-mcp-level-name]')) {
+        let presets = JSON.parse(elm.dataset.mcpPresets || '{}');
+        let accountElm = elm.dataset.mcpAccountId ? document.getElementById(elm.dataset.mcpAccountId) : null;
+        let radios = Array.from(document.querySelectorAll('input[name="' + elm.dataset.mcpLevelName + '"]'));
+
+        let paint = () => {
+            let selected = radios.find(radio => radio.checked);
+            let level = (selected && selected.value) || 'read';
+            let preset = presets[level];
+
+            window.uiMcpToolCount(elm, {
+                actions: preset ? preset.actions : [],
+                groups: preset ? preset.groups : [],
+                // A level the table stores as null is the unrestricted one. A level missing from
+                // the table entirely is not, and counts as nothing rather than as everything -
+                // the same direction every other reader of this table fails in.
+                unrestricted: !preset && Object.prototype.hasOwnProperty.call(presets, level),
+                account: accountElm ? accountElm.value : ''
+            });
+        };
+
+        radios.forEach(radio => radio.addEventListener('change', paint));
+        if (accountElm) {
+            // Per keystroke, so what the binding costs is visible while the field is being filled
+            // in rather than only after it loses focus
+            accountElm.addEventListener('input', paint);
+        }
+        paint();
+    }
+});

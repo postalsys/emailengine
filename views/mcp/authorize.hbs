@@ -81,6 +81,12 @@
             {{> mcp_account_limit id="account" list="consentAccountList" value=values.account error=errors.account}}
         </div>
 
+        {{!-- The grant sentences above say what a level allows in the permission vocabulary; this
+              says which tools the client ends up holding, which is closer to the thing being
+              approved. Follows the account field too, because limiting the client to one account
+              takes the instance-wide tools away from it. --}}
+        {{> mcp_tool_count id="consentToolCount" levelName="access" accountId="account"}}
+
         <div class="flex gap-3 pt-2">
             <button type="submit" name="decision" value="deny" class="btn btn-neutral btn-outline grow">
                 <span class="icon-[tabler--x] size-4 shrink-0"></span>Deny

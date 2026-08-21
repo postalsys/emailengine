@@ -108,7 +108,7 @@
 </div>
 {{/unless}}
 
-<div id="mcpTokenGen" data-presets="{{json mcpTokenPresets}}" data-mcp-url="{{mcpUrl}}" class="space-y-4">
+<div id="mcpTokenGen" data-presets="{{json mcpAccessPresets}}" data-mcp-url="{{mcpUrl}}" class="space-y-4">
     {{!-- One column on purpose: two-up put the account field a full screen away from its
           label-mate on wide displays, and the form reads as one top-to-bottom flow --}}
     {{> ui/form-field id="mcpGenLabel" label="What is this token for?" placeholder="for example Cursor or Claude"
@@ -119,6 +119,11 @@
     <fieldset class="space-y-2">
         <legend class="label-text mb-1">Access level</legend>
         {{> mcp_access_levels name="mcpGenAccess" idPrefix="mcpGenAccess" selected="read"}}
+
+        {{!-- What the selected level actually leaves the client able to call, which the level
+              names alone cannot say: the count follows both the level and the account limit
+              above, exactly as tools/list will --}}
+        {{> mcp_tool_count id="mcpGenToolCount" levelName="mcpGenAccess" accountId="mcpGenAccount" class="pt-1"}}
 
         {{!-- At the decision point rather than only in the collapsed manual-config block: the
               level chosen here is what decides whether injected instructions can act --}}

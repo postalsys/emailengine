@@ -134,8 +134,7 @@
           The record itself stays single: one `permissions` object narrows whatever surface the
           request arrives on. That is why this is one editor with two modes rather than a tab per
           scope - separate panes would promise two records that cannot exist. --}}
-    <div id="accessCard" class="hidden" data-surfaces="{{permissionSurfacesJson}}" data-mcp-tools="{{mcpToolsJson}}"
-        data-mcp-presets="{{mcpAccessPresetsJson}}">
+    <div id="accessCard" class="hidden" data-surfaces="{{permissionSurfacesJson}}" data-mcp-presets="{{json mcpAccessPresets}}">
         {{#> ui/card bodyClass="space-y-4"}}
 
         <div>
@@ -178,7 +177,13 @@
               matters as much: that is the reassurance someone wants when handing out a restricted
               credential. Outside #permissionSection because the MCP levels need it too - picking
               "Mail agent" should say what that is, not only reveal a matrix. --}}
-        <div id="permissionOutcome" class="rounded-box border border-base-content/10 bg-base-200/40 p-4 text-sm space-y-1 hidden"></div>
+        <div id="permissionOutcome" class="rounded-box border border-base-content/10 bg-base-200/40 p-4 text-sm space-y-1 hidden">
+            <div id="permissionOutcomeText" class="space-y-1"></div>
+            {{!-- Its own element rather than more appended lines: the count is the same one the
+                  MCP config generator and the consent prompt show, and it is painted by the
+                  shared helper that owns the rule. --}}
+            {{> mcp_tool_count id="mcpToolCount" class="pt-1"}}
+        </div>
 
         {{!-- Filled in by the script below whenever a scope or an axis changes. Holding a scope the
               permissions make unusable is legitimate, so this warns rather than refuses - but it
@@ -303,6 +308,8 @@
         let permissionSectionElm = document.getElementById('permissionSection');
         let permissionPresetRowElm = document.getElementById('permissionPresetRow');
         let permissionOutcomeElm = document.getElementById('permissionOutcome');
+        let permissionOutcomeTextElm = document.getElementById('permissionOutcomeText');
+        let mcpToolCountElm = document.getElementById('mcpToolCount');
         let permissionWarningElm = document.getElementById('permissionScopeWarning');
         let permissionMcpNoteElm = document.getElementById('permissionMcpScopeNote');
 
@@ -323,7 +330,6 @@
             };
         }
 
-        let mcpTools = JSON.parse(accessCardElm.dataset.mcpTools || '[]');
         let mcpAccessPresets = JSON.parse(accessCardElm.dataset.mcpPresets || '{}');
         // What the mcp scope can reach at all, which is also what the "Full access" level means:
         // that level stores no record, so the surface grant list is its own description.
@@ -454,19 +460,26 @@
         let syncPermissionOutcome = () => {
             let visible = narrowableScope() && (mcpLevelMode() || permissionsEnabledElm.checked);
 
-            permissionOutcomeElm.replaceChildren();
+            permissionOutcomeTextElm.replaceChildren();
             permissionOutcomeElm.classList.toggle('hidden', !visible);
             if (!visible) {
+                window.uiMcpToolCount(mcpToolCountElm, null);
                 return;
             }
 
             let record = effectiveRecord();
 
+            // The same count the MCP config generator and the consent prompt show, painted by the
+            // shared helper rather than restated here - it owns both filters, the permission record
+            // and the account binding. Null when the token does not carry the surface at all, so a
+            // stale count cannot survive a scope change.
+            window.uiMcpToolCount(mcpToolCountElm, hasMcpScope() ? Object.assign({ account: accountElm.value }, record) : null);
+
             if (!record.unrestricted && (!record.actions.length || !record.groups.length)) {
                 let line = document.createElement('div');
                 line.className = 'text-warning';
                 line.textContent = 'Nothing is selected yet, so this token would not be able to do anything.';
-                permissionOutcomeElm.append(line);
+                permissionOutcomeTextElm.append(line);
                 return;
             }
 
@@ -477,57 +490,20 @@
                 canLabel,
                 document.createTextNode(asList(labelsFor('action', record.actions)).toLowerCase() + ' in ' + asList(labelsFor('group', record.groups)) + '.')
             );
-            permissionOutcomeElm.append(can);
+            permissionOutcomeTextElm.append(can);
 
             let deniedActions = allActions.filter(value => !record.actions.includes(value));
             if (deniedActions.length) {
                 let cannot = document.createElement('div');
                 cannot.className = 'text-base-content/60';
                 cannot.textContent = 'It cannot ' + asList(labelsFor('action', deniedActions)).toLowerCase() + ', anywhere.';
-                permissionOutcomeElm.append(cannot);
+                permissionOutcomeTextElm.append(cannot);
             }
 
             let rest = document.createElement('div');
             rest.className = 'text-base-content/60';
             rest.textContent = 'It cannot reach anything else, or read credentials and settings.';
-            permissionOutcomeElm.append(rest);
-
-            // The one thing the two axes cannot tell a reader: how much of the tool set survives.
-            // The MCP surface reaches six of the thirteen sections, so a record that looks generous
-            // on the matrix can still leave an agent holding a single tool - and the count is the
-            // only place that shows up before the client connects.
-            if (hasMcpScope() && mcpTools.length) {
-                // Both halves of what tools/list filters on. The account binding is the other one:
-                // a credential bound to one account never sees the instance-wide tools, because
-                // they take no account argument to bind, so counting without it overstates the
-                // catalog the agent will actually receive.
-                let bound = !!accountElm.value.trim();
-                let offered = bound ? mcpTools.filter(tool => tool.accountScoped) : mcpTools;
-                let available = offered.filter(tool => record.actions.includes(tool.action) && record.groups.includes(tool.group));
-
-                let tools = document.createElement('div');
-                tools.className = 'pt-1';
-                let toolsLabel = document.createElement('strong');
-                toolsLabel.textContent = available.length + ' of ' + offered.length + ' MCP tools available';
-                tools.append(toolsLabel);
-                permissionOutcomeElm.append(tools);
-
-                let names = document.createElement('div');
-                names.className = 'text-base-content/60 break-words';
-                names.textContent = available.length ? available.map(tool => tool.name).join(', ') : 'A connected agent would see no tools at all.';
-                permissionOutcomeElm.append(names);
-
-                // Said out loud rather than left as a smaller total: the tools that disappear are
-                // the ones an agent would otherwise use to discover what it is connected to.
-                let instanceWide = mcpTools.filter(tool => !tool.accountScoped);
-                if (bound && instanceWide.length) {
-                    let note = document.createElement('div');
-                    note.className = 'text-base-content/60';
-                    note.textContent =
-                        'Bound to one account, so the instance-wide tools are not offered: ' + instanceWide.map(tool => tool.name).join(', ') + '.';
-                    permissionOutcomeElm.append(note);
-                }
-            }
+            permissionOutcomeTextElm.append(rest);
         };
 
         let syncPermissionWarning = () => {

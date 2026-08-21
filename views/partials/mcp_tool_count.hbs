@@ -1,0 +1,19 @@
+{{!--
+    The "N of M MCP tools available" line, shown by every page that mints an mcp-scoped token so
+    the three cannot disagree about what a credential will actually be offered. The counting rule
+    is uiMcpToolCount() in static/js/ui.js - the browser's copy of toolVisibleTo(), pinned to it by
+    test/mcp-tools-test.js. Reads mcpTools (and mcpAccessPresets, when auto-wired) from the
+    page context.
+
+    Pass levelName to have ui.js drive the count from a named access level (the MCP config
+    generator and the consent prompt); leave it out and the page repaints the element itself,
+    which is what the access-token form does for its custom-permissions option.
+    Params:
+      id        - element id (required; the page's own script needs it, and so does nothing else)
+      levelName - the radio group name to follow, for the auto-wired pages (optional)
+      accountId - id of the "limit to one account" field to follow (optional, with levelName)
+      class     - extra classes on the wrapper (optional)
+--}}
+<div id="{{id}}" class="text-sm space-y-1{{#if class}} {{class}}{{/if}}" data-mcp-tools="{{json mcpTools}}"
+    {{#if levelName}}data-mcp-level-name="{{levelName}}" data-mcp-account-id="{{accountId}}"
+    data-mcp-presets="{{json mcpAccessPresets}}"{{/if}}></div>

@@ -114,6 +114,14 @@ test('MCP consent flow', async t => {
         assert.equal(res.result.context.accessLevel, 'read', 'read-only must be the default access level');
         assert.equal(res.result.context.values.client_id, client.client_id);
         assert.ok(!res.result.context.errorMessage);
+
+        // What the tool count under the radios reads. This server registers only the consent
+        // routes, so its catalog is empty - which is the case worth pinning here: the count is a
+        // nicety and the decision is not, so an empty or failed catalog still has to render a
+        // usable consent page rather than throw. A populated count is covered where a real route
+        // table exists (the MCP config page's e2e test, and test/mcp-tools-test.js for the rule).
+        assert.ok(Array.isArray(res.result.context.mcpTools), 'the consent page needs a tool list, even an empty one');
+        assert.deepEqual(Object.keys(res.result.context.mcpAccessPresets).sort(), ['full', 'mail', 'read']);
     });
 
     await t.test('an unauthenticated GET still renders, marked unable to approve', async () => {
