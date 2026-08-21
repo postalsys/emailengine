@@ -169,7 +169,8 @@
                     <li class="flex items-center gap-2 p-4">
                         <input type="checkbox" class="checkbox checkbox-sm scope-entry scope-list" id="scopesMcp"
                             name="scopesMcp" data-scope="mcp" {{#if values.scopesMcp}}checked{{/if}} />
-                        <label class="label-text grow p-0" for="scopesMcp">MCP</label>
+                        <label class="label-text grow p-0" for="scopesMcp">MCP
+                            {{> ui/badge label="Beta" variant="info" soft=true class="badge-sm align-middle" icon="" elId=""}}</label>
                         <div class="text-base-content/60 code-link">["mcp"]</div>
                     </li>
                 </ul>
