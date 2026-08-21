@@ -61,6 +61,9 @@ async function withOAuthEnabled(fn) {
     }
 }
 
+// Tool names from a tools/list response, in catalog order
+const toolNames = res => res.body.result.tools.map(tool => tool.name);
+
 // The three assertions that make a list_accounts tool call a success end to end: the door
 // admitted it, the injected inner request succeeded, and the result carries the listing
 function assertListAccountsOk(res) {
@@ -143,7 +146,7 @@ test('MCP endpoint', async t => {
 
         const list = await legacyRpc('tools/list');
         assert.equal(list.status, 200);
-        const names = list.body.result.tools.map(tool => tool.name);
+        const names = toolNames(list);
         assert.ok(names.includes('list_accounts'));
         assert.ok(names.includes('send_message'));
         assert.equal(new Set(names).size, names.length);
@@ -219,6 +222,12 @@ test('MCP endpoint', async t => {
             assert.equal(outbox.status, 200);
             assert.equal(outbox.body.result.isError, true);
             assert.match(outbox.body.result.content[0].text, /permission/i);
+
+            // and the narrowing shapes the advertised catalog: read across the account group
+            // is exactly two tools, so the agent never plans around a tool it cannot call
+            const list = await modernRpc('tools/list', {}, { token: mcpToken });
+            assert.equal(list.status, 200);
+            assert.deepEqual(toolNames(list), ['get_account', 'list_accounts']);
         } finally {
             await tokens.delete(mcpToken);
         }
@@ -300,7 +309,7 @@ test('MCP endpoint', async t => {
 
             const list = await modernRpc('tools/list', {}, { token: provision.body.token });
             assert.equal(list.status, 200);
-            const names = list.body.result.tools.map(tool => tool.name);
+            const names = toolNames(list);
 
             // the instance-wide listings would only ever answer a bound credential with a 403
             assert.ok(!names.includes('list_accounts'), 'list_accounts must be hidden from a bound credential');
@@ -467,6 +476,17 @@ test('MCP endpoint', async t => {
             try {
                 // reads work through the real door and the injected inner request
                 assertListAccountsOk(await modernRpc('tools/call', { name: 'list_accounts', arguments: {} }, { token: oauthToken }));
+
+                // the advertised catalog reflects the read-only narrowing: nothing that sends,
+                // writes or deletes is listed to the agent
+                const list = await modernRpc('tools/list', {}, { token: oauthToken });
+                assert.equal(list.status, 200);
+                const names = toolNames(list);
+                assert.ok(names.includes('list_messages'));
+                assert.ok(names.includes('search_messages'));
+                for (const hidden of ['send_message', 'delete_message', 'update_message', 'move_message', 'create_draft']) {
+                    assert.ok(!names.includes(hidden), `${hidden} must be hidden from a read-only credential`);
+                }
 
                 // the read-only narrowing the consent page defaults to reaches the wire: send
                 // and destructive tools are refused by the token's own permission record
