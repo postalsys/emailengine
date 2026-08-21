@@ -17,6 +17,19 @@ const crypto = require('crypto');
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
+// The live server shares the test Redis database with this process (the same recipe as
+// token-scope-test.js), so tokens and authorization codes provisioned through the libraries
+// below are honored by the HTTP endpoints under test.
+const tokens = require('../../lib/tokens');
+const { redis } = require('../../lib/db');
+const { createAuthorizationCode } = require('../../lib/mcp/oauth');
+const { MCP_READ_ONLY_PERMISSIONS } = require('../../lib/token-permission-view');
+const registerRedisTeardown = require('../helpers/redis-teardown');
+const { pkcePair } = require('../helpers/pkce');
+
+// Force the process to exit once tests finish; lib/db keeps connections open.
+registerRedisTeardown(redis);
+
 // Static access token provisioned via `preparedToken` in config/test.toml (scope "*").
 const accessToken = '2aa97ad0456d6624a55d30780aa2ff61bfb7edc6fa00935b40814b271e718660';
 const baseUrl = `http://127.0.0.1:${config.api.port}`;
@@ -27,7 +40,34 @@ const authed = supertest.agent(baseUrl).auth(accessToken, { type: 'bearer' });
 const MODERN = '2026-07-28';
 const META_VERSION = 'io.modelcontextprotocol/protocolVersion';
 
+// The callback address every OAuth test registers; what claude.ai actually uses
+const REDIRECT_URI = 'https://claude.ai/api/mcp/auth_callback';
+
 let requestCounter = 0;
+
+// Enables the OAuth flow settings around one test body and restores them after, so no other
+// test in the serial tier sees the flow open
+async function withOAuthEnabled(fn) {
+    const stored = await authed.get('/v1/settings?serviceUrl=true');
+    const previousServiceUrl = (stored.body && stored.body.serviceUrl) || '';
+
+    const setup = await authed.post('/v1/settings').send({ mcpOAuthEnabled: true, serviceUrl: baseUrl });
+    assert.equal(setup.status, 200);
+
+    try {
+        await fn();
+    } finally {
+        await authed.post('/v1/settings').send({ mcpOAuthEnabled: false, serviceUrl: previousServiceUrl });
+    }
+}
+
+// The three assertions that make a list_accounts tool call a success end to end: the door
+// admitted it, the injected inner request succeeded, and the result carries the listing
+function assertListAccountsOk(res) {
+    assert.equal(res.status, 200, JSON.stringify(res.body).slice(0, 512));
+    assert.ok(!res.body.result.isError, JSON.stringify(res.body.result).slice(0, 512));
+    assert.ok(Array.isArray(res.body.result.structuredContent.accounts));
+}
 
 // A legacy-era (initialize-handshake revisions) JSON-RPC request
 function legacyRpc(method, params) {
@@ -108,10 +148,7 @@ test('MCP endpoint', async t => {
         assert.ok(names.includes('send_message'));
         assert.equal(new Set(names).size, names.length);
 
-        const call = await legacyRpc('tools/call', { name: 'list_accounts', arguments: {} });
-        assert.equal(call.status, 200);
-        assert.ok(!call.body.result.isError, JSON.stringify(call.body.result).slice(0, 512));
-        assert.ok(Array.isArray(call.body.result.structuredContent.accounts));
+        assertListAccountsOk(await legacyRpc('tools/call', { name: 'list_accounts', arguments: {} }));
     });
 
     await t.test('modern era: discover, tools/call, header enforcement', async () => {
@@ -168,21 +205,76 @@ test('MCP endpoint', async t => {
         assert.equal(provision.status, 200, JSON.stringify(provision.body));
         const mcpToken = provision.body.token;
 
-        // admitted at the door and through the injected inner request
-        const call = await modernRpc('tools/call', { name: 'list_accounts', arguments: {} }, { token: mcpToken });
-        assert.equal(call.status, 200, JSON.stringify(call.body).slice(0, 512));
-        assert.ok(Array.isArray(call.body.result.structuredContent.accounts));
+        try {
+            // admitted at the door and through the injected inner request
+            assertListAccountsOk(await modernRpc('tools/call', { name: 'list_accounts', arguments: {} }, { token: mcpToken }));
 
-        // refused on plain REST with the scope error
-        const rest = await server.get('/v1/accounts').auth(mcpToken, { type: 'bearer' });
-        assert.equal(rest.status, 403);
-        assert.match(rest.body.message, /scope/i);
+            // refused on plain REST with the scope error
+            const rest = await server.get('/v1/accounts').auth(mcpToken, { type: 'bearer' });
+            assert.equal(rest.status, 403);
+            assert.match(rest.body.message, /scope/i);
 
-        // the token's own permission narrowing still applies inside MCP
-        const outbox = await modernRpc('tools/call', { name: 'get_outbox', arguments: {} }, { token: mcpToken });
-        assert.equal(outbox.status, 200);
-        assert.equal(outbox.body.result.isError, true);
-        assert.match(outbox.body.result.content[0].text, /permission/i);
+            // the token's own permission narrowing still applies inside MCP
+            const outbox = await modernRpc('tools/call', { name: 'get_outbox', arguments: {} }, { token: mcpToken });
+            assert.equal(outbox.status, 200);
+            assert.equal(outbox.body.result.isError, true);
+            assert.match(outbox.body.result.content[0].text, /permission/i);
+        } finally {
+            await tokens.delete(mcpToken);
+        }
+    });
+
+    await t.test('a referrer-restricted token works over MCP when the outer request carries the Referer', async () => {
+        const restricted = await tokens.provision({
+            scopes: ['api'],
+            restrictions: { referrers: ['https://allowed.example.com/*'] },
+            description: 'mcp referrer restriction test',
+            nolog: true
+        });
+
+        try {
+            // no Referer refuses at the door, same as REST
+            const bare = await modernRpc('tools/call', { name: 'list_accounts', arguments: {} }, { token: restricted });
+            assert.equal(bare.status, 403);
+            assert.match(bare.body.message, /referrer/i);
+
+            // with a matching Referer the door passes AND the injected inner request passes -
+            // the inner request re-runs the restriction, so this only works because the outer
+            // Referer is forwarded to it
+            assertListAccountsOk(
+                await modernRpc('tools/call', { name: 'list_accounts', arguments: {} }, { token: restricted }).set(
+                    'Referer',
+                    'https://allowed.example.com/dashboard'
+                )
+            );
+        } finally {
+            await tokens.delete(restricted);
+        }
+    });
+
+    await t.test('a rate-limited token gets its whole budget as tool calls', async () => {
+        // Each tool call is one outer /mcp request plus one injected inner request. The inner
+        // one must not count against restrictions.rateLimit, or a token allowed N requests
+        // silently got N/2 tool calls.
+        const limited = await tokens.provision({
+            scopes: ['api'],
+            restrictions: { rateLimit: { maxRequests: 4, timeWindow: 3600 } },
+            description: 'mcp rate limit test',
+            nolog: true
+        });
+
+        try {
+            for (let i = 0; i < 4; i++) {
+                const call = await modernRpc('tools/call', { name: 'list_accounts', arguments: {} }, { token: limited });
+                assert.equal(call.status, 200, `call ${i + 1} of 4 must fit the budget: ${JSON.stringify(call.body).slice(0, 512)}`);
+                assert.ok(!call.body.result.isError, `call ${i + 1} of 4 must succeed: ${JSON.stringify(call.body.result).slice(0, 512)}`);
+            }
+
+            const over = await modernRpc('tools/call', { name: 'list_accounts', arguments: {} }, { token: limited });
+            assert.equal(over.status, 429, 'the call past the budget is refused at the door');
+        } finally {
+            await tokens.delete(limited);
+        }
     });
 
     await t.test('an account-bound token sees only the tools it can call', async () => {
@@ -225,13 +317,7 @@ test('MCP endpoint', async t => {
         const closed = await server.get('/.well-known/oauth-authorization-server');
         assert.equal(closed.status, 404);
 
-        const stored = await authed.get('/v1/settings?serviceUrl=true');
-        const previousServiceUrl = (stored.body && stored.body.serviceUrl) || '';
-
-        const setup = await authed.post('/v1/settings').send({ mcpOAuthEnabled: true, serviceUrl: baseUrl });
-        assert.equal(setup.status, 200);
-
-        try {
+        await withOAuthEnabled(async () => {
             const asMeta = await server.get('/.well-known/oauth-authorization-server');
             assert.equal(asMeta.status, 200);
             assert.equal(asMeta.body.issuer, baseUrl);
@@ -247,12 +333,18 @@ test('MCP endpoint', async t => {
             assert.equal(challenge.status, 401);
             assert.match(challenge.headers['www-authenticate'] || '', /resource_metadata=/);
 
-            // dynamic registration filters redirect URIs by policy
-            const registration = await server
+            // dynamic registration refuses a list carrying any unacceptable redirect URI
+            // (RFC 7591), naming the refused entry instead of silently registering the rest
+            const rejected = await server
                 .post('/mcp/oauth/register')
-                .send({ redirect_uris: ['https://claude.ai/api/mcp/auth_callback', 'http://evil.example.com/cb'], client_name: 'Integration test client' });
+                .send({ redirect_uris: [REDIRECT_URI, 'http://evil.example.com/cb'], client_name: 'Integration test client' });
+            assert.equal(rejected.status, 400);
+            assert.equal(rejected.body.error, 'invalid_redirect_uri');
+            assert.match(rejected.body.error_description, /evil\.example\.com/);
+
+            const registration = await server.post('/mcp/oauth/register').send({ redirect_uris: [REDIRECT_URI], client_name: 'Integration test client' });
             assert.equal(registration.status, 201);
-            assert.deepEqual(registration.body.redirect_uris, ['https://claude.ai/api/mcp/auth_callback']);
+            assert.deepEqual(registration.body.redirect_uris, [REDIRECT_URI]);
             assert.equal(registration.body.token_endpoint_auth_method, 'none');
 
             // a bogus code is refused with an OAuth error shape
@@ -263,35 +355,27 @@ test('MCP endpoint', async t => {
                     grant_type: 'authorization_code',
                     code: crypto.randomBytes(32).toString('base64url'),
                     client_id: registration.body.client_id,
-                    redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
+                    redirect_uri: REDIRECT_URI,
                     code_verifier: crypto.randomBytes(48).toString('base64url'),
                     resource: `${baseUrl}/mcp`
                 });
             assert.equal(redeem.status, 400);
             assert.equal(redeem.body.error, 'invalid_grant');
-        } finally {
-            // restore rather than clear, mirroring how the webhook suites treat tier settings
-            await authed.post('/v1/settings').send({ mcpOAuthEnabled: false, serviceUrl: previousServiceUrl });
-        }
+        });
     });
 
     await t.test('the consent page never redirects off-origin before a human decides', async () => {
-        const stored = await authed.get('/v1/settings?serviceUrl=true');
-        const previousServiceUrl = (stored.body && stored.body.serviceUrl) || '';
-        await authed.post('/v1/settings').send({ mcpOAuthEnabled: true, serviceUrl: baseUrl });
-
         // Its own cookie jar: the consent form is CSRF-protected, so the crumb cookie set by the
         // GET has to be presented with the POST
         const browser = supertest.agent(baseUrl);
-        const redirectUri = 'https://claude.ai/api/mcp/auth_callback';
 
-        try {
-            const registration = await server.post('/mcp/oauth/register').send({ redirect_uris: [redirectUri], client_name: 'Consent test client' });
+        await withOAuthEnabled(async () => {
+            const registration = await server.post('/mcp/oauth/register').send({ redirect_uris: [REDIRECT_URI], client_name: 'Consent test client' });
             assert.equal(registration.status, 201);
 
             const params = new URLSearchParams({
                 client_id: registration.body.client_id,
-                redirect_uri: redirectUri,
+                redirect_uri: REDIRECT_URI,
                 response_type: 'code',
                 state: 'test-state',
                 code_challenge: 'a'.repeat(43),
@@ -312,7 +396,7 @@ test('MCP endpoint', async t => {
                 const res = await browser.get(`/admin/mcp/authorize?${probe.toString()}`);
                 assert.equal(res.status, 200, `${key}=${value} must render, not redirect`);
                 assert.ok(!res.headers.location, `${key}=${value} must not send a Location header`);
-                assert.ok(!(res.text || '').includes(redirectUri), `${key}=${value} must not link the client address`);
+                assert.ok(!(res.text || '').includes(REDIRECT_URI), `${key}=${value} must not link the client address`);
             }
 
             const consent = await browser.get(`/admin/mcp/authorize?${params.toString()}`);
@@ -330,7 +414,7 @@ test('MCP endpoint', async t => {
                 .send({
                     crumb,
                     client_id: registration.body.client_id,
-                    redirect_uri: redirectUri,
+                    redirect_uri: REDIRECT_URI,
                     state: 'test-state',
                     code_challenge: 'a'.repeat(43),
                     decision: 'deny'
@@ -339,8 +423,87 @@ test('MCP endpoint', async t => {
             assert.equal(denied.status, 302, 'Deny must answer the client, not 403');
             assert.match(denied.headers.location, /error=access_denied/);
             assert.match(denied.headers.location, /state=test-state/);
-        } finally {
-            await authed.post('/v1/settings').send({ mcpOAuthEnabled: false, serviceUrl: previousServiceUrl });
+        });
+    });
+
+    await t.test('an approved authorization redeems over HTTP into a token that works at /mcp', async () => {
+        await withOAuthEnabled(async () => {
+            const registration = await server.post('/mcp/oauth/register').send({ redirect_uris: [REDIRECT_URI], client_name: 'Redeem flow client' });
+            assert.equal(registration.status, 201);
+
+            const { verifier, challenge } = pkcePair();
+
+            // The consent POST's outcome, minted directly into the shared Redis: the browser
+            // half (render, session gate, Deny/Approve) is covered by test/mcp-consent-test.js;
+            // what this tier adds is the half that needs the live server - the HTTP token
+            // endpoint and the minted credential hitting the real /mcp door.
+            const code = await createAuthorizationCode({
+                clientId: registration.body.client_id,
+                redirectUri: REDIRECT_URI,
+                codeChallenge: challenge,
+                resource: `${baseUrl}/mcp`,
+                account: null,
+                permissions: MCP_READ_ONLY_PERMISSIONS,
+                description: 'MCP: Redeem flow client'
+            });
+
+            const redeem = await server
+                .post('/mcp/oauth/token')
+                .type('form')
+                .send({
+                    grant_type: 'authorization_code',
+                    code,
+                    client_id: registration.body.client_id,
+                    redirect_uri: REDIRECT_URI,
+                    code_verifier: verifier,
+                    resource: `${baseUrl}/mcp`
+                });
+            assert.equal(redeem.status, 200, JSON.stringify(redeem.body));
+            assert.equal(redeem.body.token_type, 'Bearer');
+            assert.equal(redeem.body.scope, 'mcp');
+            assert.match(redeem.headers['cache-control'] || '', /no-store/);
+
+            const oauthToken = redeem.body.access_token;
+            try {
+                // reads work through the real door and the injected inner request
+                assertListAccountsOk(await modernRpc('tools/call', { name: 'list_accounts', arguments: {} }, { token: oauthToken }));
+
+                // the read-only narrowing the consent page defaults to reaches the wire: send
+                // and destructive tools are refused by the token's own permission record
+                for (const [name, toolArgs] of [
+                    ['send_message', { account: 'redeem-flow-account' }],
+                    ['delete_message', { account: 'redeem-flow-account', message: 'AAAAAQAACnA' }]
+                ]) {
+                    const refused = await modernRpc('tools/call', { name, arguments: toolArgs }, { token: oauthToken });
+                    assert.equal(refused.status, 200, name);
+                    assert.equal(refused.body.result.isError, true, name);
+                    assert.match(refused.body.result.content[0].text, /permission/i, name);
+                }
+
+                // and the credential stays surface-bound: plain REST refuses it
+                const rest = await server.get('/v1/accounts').auth(oauthToken, { type: 'bearer' });
+                assert.equal(rest.status, 403);
+            } finally {
+                await tokens.delete(oauthToken);
+            }
+        });
+    });
+
+    // Last on purpose: it exhausts the per-IP registration budget, which stays spent for an
+    // hour, and every earlier test that registers a client has already drawn from it
+    await t.test('unauthenticated OAuth endpoints are rate limited per IP', async () => {
+        // The budget is counted before the feature gate answers, so this needs no OAuth setup.
+        // Walk to the refusal rather than assuming a fresh bucket.
+        let refused;
+        for (let i = 0; i < 25 && !refused; i++) {
+            const res = await server.post('/mcp/oauth/register').send({ redirect_uris: ['https://claude.ai/cb'], client_name: `rate limit probe ${i}` });
+            if (res.status === 429) {
+                refused = res;
+            }
         }
+
+        assert.ok(refused, 'the per-IP registration budget must run out');
+        assert.ok(refused.body.ttl > 0, 'the refusal names when to come back');
+        assert.ok(Number(refused.headers['retry-after']) > 0, 'a 429 carries the conventional Retry-After header');
     });
 });

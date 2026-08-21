@@ -107,6 +107,19 @@ test('MCP protocol', async t => {
         assert.equal(decodeHeaderValue(undefined), undefined);
     });
 
+    await t.test('a malformed base64 sentinel decodes to a plain string instead of throwing', () => {
+        // Buffer.from(x, 'base64') is best-effort, so garbage inside the sentinel decodes to
+        // some deterministic string. What matters for the header-mismatch checks is that it
+        // comes back as a string without throwing (a throw would fail this subtest on its own).
+        for (const value of ['=?base64?!!!?=', '=?base64??=', '=?base64?%%bad%%?=', '=?base64?SGVsbG8?extra?=']) {
+            assert.equal(typeof decodeHeaderValue(value), 'string', value);
+        }
+
+        // an incomplete sentinel is not a sentinel: passes through untouched
+        assert.equal(decodeHeaderValue('=?base64?SGVsbG8='), '=?base64?SGVsbG8=');
+        assert.equal(decodeHeaderValue('?base64?SGVsbG8?='), '?base64?SGVsbG8?=');
+    });
+
     await t.test('modern: requires the header to match the body version', async () => {
         const { body, headers } = modernRequest('ping');
         headers['mcp-protocol-version'] = '2025-11-25';

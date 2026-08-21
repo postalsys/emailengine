@@ -4,13 +4,12 @@
 // and the single-use code exchange. Talks to the test Redis database like the other unit-tier
 // suites; the HTTP shells around these functions are covered by the integration tier.
 
-const crypto = require('crypto');
-
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
+const { pkcePair } = require('./helpers/pkce');
 const tokens = require('../lib/tokens');
 const tokenPermissions = require('../lib/token-permissions');
 const { MCP_READ_ONLY_PERMISSIONS } = require('../lib/token-permission-view');
@@ -27,12 +26,6 @@ const {
 registerRedisTeardown(redis);
 
 const ORIGIN = 'https://emailengine.example.com';
-
-function pkcePair() {
-    const verifier = crypto.randomBytes(48).toString('base64url');
-    const challenge = crypto.createHash('sha256').update(verifier).digest('base64url');
-    return { verifier, challenge };
-}
 
 test('MCP OAuth', async t => {
     await t.test('redirect URI policy', () => {
@@ -56,20 +49,29 @@ test('MCP OAuth', async t => {
         assert.ok(!isAcceptableResource('https://elsewhere.example.com/mcp', ORIGIN));
     });
 
-    await t.test('registration keeps only acceptable redirect URIs and refuses none at all', async () => {
+    await t.test('registration accepts a clean redirect URI list and refuses one carrying any bad entry', async () => {
         const client = await registerClient({
-            redirectUris: ['https://claude.ai/cb', 'http://example.com/evil'],
+            redirectUris: ['https://claude.ai/cb', 'http://localhost:33418/cb'],
             clientName: 'Test client'
         });
 
         assert.match(client.client_id, /^[0-9a-f]{32}$/);
-        assert.deepEqual(client.redirect_uris, ['https://claude.ai/cb']);
+        assert.deepEqual(client.redirect_uris, ['https://claude.ai/cb', 'http://localhost:33418/cb']);
         assert.equal(client.token_endpoint_auth_method, 'none');
 
         const stored = await getClient(client.client_id);
         assert.equal(stored.client_name, 'Test client');
 
-        await assert.rejects(registerClient({ redirectUris: ['http://example.com/evil'] }), /redirect_uris/);
+        // RFC 7591 3.2.2: one unacceptable URI fails the whole registration, naming the URI -
+        // silently registering the acceptable subset just deferred the failure to authorize
+        // time, where the client saw a generic error page instead
+        await assert.rejects(
+            registerClient({ redirectUris: ['https://claude.ai/cb', 'http://example.com/evil'] }),
+            err => err.oauthError === 'invalid_redirect_uri' && /http:\/\/example\.com\/evil/.test(err.message)
+        );
+
+        await assert.rejects(registerClient({ redirectUris: [] }), /redirect_uris/);
+        await assert.rejects(registerClient({ redirectUris: Array.from({ length: 11 }, (_, i) => `https://claude.ai/cb${i}`) }), /redirect_uris/);
     });
 
     await t.test('PKCE S256 verification', () => {
@@ -113,6 +115,13 @@ test('MCP OAuth', async t => {
             redeemAuthorizationCode(Object.assign({}, base, { code: await mint(), resource: 'https://elsewhere.example.com/mcp' })),
             /resource/
         );
+        // RFC 8707: a resource acceptable on its own still has to be the one the code was
+        // issued for - the code above was minted for {ORIGIN}/mcp, not the bare origin
+        await assert.rejects(redeemAuthorizationCode(Object.assign({}, base, { code: await mint(), resource: ORIGIN })), /authorization request/);
+        // a trailing slash is the same resource, not a mismatch
+        const slashed = await redeemAuthorizationCode(Object.assign({}, base, { code: await mint(), resource: `${ORIGIN}/mcp/` }));
+        assert.equal(slashed.token_type, 'Bearer');
+        await tokens.delete(slashed.access_token);
 
         // the happy path issues a real mcp-scoped token...
         const code = await mint();
