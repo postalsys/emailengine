@@ -11,6 +11,7 @@ const {
     processMcpRequest,
     decodeHeaderValue,
     isAllowedOrigin,
+    acceptsEventStream,
     ERROR_CODES,
     MODERN_PROTOCOL_VERSION,
     LEGACY_PROTOCOL_VERSIONS,
@@ -81,6 +82,23 @@ test('MCP protocol', async t => {
         assert.ok(!isAllowedOrigin('null', policy));
         assert.ok(!isAllowedOrigin('https://evil.example.net', { serviceUrl: 'not a url', corsOrigins: [] }));
         assert.ok(isAllowedOrigin('https://anywhere.example.net', { serviceUrl: '', corsOrigins: ['*'] }));
+    });
+
+    await t.test('the Accept test honors q-values, not just the media type', () => {
+        assert.ok(acceptsEventStream('application/json, text/event-stream'));
+        assert.ok(acceptsEventStream('text/event-stream;q=0.9'));
+        assert.ok(acceptsEventStream('*/*'));
+        assert.ok(acceptsEventStream('text/*'));
+
+        // The standard way for a JSON-only client to refuse the stream. Matching the media type
+        // and stopping at the ';' handed it an SSE response it had said it cannot consume.
+        assert.ok(!acceptsEventStream('application/json, text/event-stream;q=0'));
+        assert.ok(!acceptsEventStream('text/event-stream; q=0'));
+        assert.ok(!acceptsEventStream('*/*;q=0'));
+
+        assert.ok(!acceptsEventStream('application/json'));
+        assert.ok(!acceptsEventStream(''));
+        assert.ok(!acceptsEventStream(undefined));
     });
 
     await t.test('decodes the base64 header sentinel', () => {

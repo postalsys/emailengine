@@ -416,9 +416,29 @@ test('API route table and authentication', async t => {
         assert.ok(door.tags.includes('external'), 'POST /mcp must skip the CSRF crumb via the external tag');
         assert.ok(mcpOptions(door).endpoint, 'POST /mcp must carry the plugins.mcp.endpoint marker the auth strategy keys on');
 
+        // Matches the OAuth routes as well as the endpoint itself. A ` /mcp$` filter covered only
+        // two of the six: the four that mint credentials without authentication - the OAuth
+        // registration, token and discovery routes - could have escaped the gate entirely while
+        // this assertion still passed, and those are the ones an operator most wants compiled out.
         const { routes: disabled } = await captureApiRoutes({ mcpFeatureEnabled: false });
-        const mcpRoutes = disabled.map(route => route.route).filter(route => / \/mcp$/.test(route));
-        assert.deepEqual(mcpRoutes, [], `expected no /mcp routes with the gate off, got ${JSON.stringify(mcpRoutes)}`);
+        const mcpRoutes = disabled.map(route => route.route).filter(route => /\s\/(mcp\b|\.well-known\/oauth-)/.test(route));
+        assert.deepEqual(mcpRoutes, [], `expected no MCP or MCP OAuth routes with the gate off, got ${JSON.stringify(mcpRoutes)}`);
+
+        // and the filter is not vacuous - it has to match every one of them with the gate on:
+        // POST/GET/DELETE /mcp, the two OAuth endpoints, and the two discovery documents
+        const enabled = captured
+            .map(route => route.route)
+            .filter(route => /\s\/(mcp\b|\.well-known\/oauth-)/.test(route))
+            .sort();
+        assert.deepEqual(enabled, [
+            'DELETE /mcp',
+            'GET /.well-known/oauth-authorization-server',
+            'GET /.well-known/oauth-protected-resource/{suffix?}',
+            'GET /mcp',
+            'POST /mcp',
+            'POST /mcp/oauth/register',
+            'POST /mcp/oauth/token'
+        ]);
         assert.ok(disabled.map(route => route.route).includes('GET /v1/accounts'), 'unrelated routes must still be registered');
     });
 

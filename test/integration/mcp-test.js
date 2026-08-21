@@ -274,4 +274,73 @@ test('MCP endpoint', async t => {
             await authed.post('/v1/settings').send({ mcpOAuthEnabled: false, serviceUrl: previousServiceUrl });
         }
     });
+
+    await t.test('the consent page never redirects off-origin before a human decides', async () => {
+        const stored = await authed.get('/v1/settings?serviceUrl=true');
+        const previousServiceUrl = (stored.body && stored.body.serviceUrl) || '';
+        await authed.post('/v1/settings').send({ mcpOAuthEnabled: true, serviceUrl: baseUrl });
+
+        // Its own cookie jar: the consent form is CSRF-protected, so the crumb cookie set by the
+        // GET has to be presented with the POST
+        const browser = supertest.agent(baseUrl);
+        const redirectUri = 'https://claude.ai/api/mcp/auth_callback';
+
+        try {
+            const registration = await server.post('/mcp/oauth/register').send({ redirect_uris: [redirectUri], client_name: 'Consent test client' });
+            assert.equal(registration.status, 201);
+
+            const params = new URLSearchParams({
+                client_id: registration.body.client_id,
+                redirect_uri: redirectUri,
+                response_type: 'code',
+                state: 'test-state',
+                code_challenge: 'a'.repeat(43),
+                code_challenge_method: 'S256'
+            });
+
+            // Registration is open and unauthenticated, so a validated redirect_uri is not
+            // enough to make an automatic redirect safe: anyone can register their own address
+            // and aim these at it. Every pre-consent failure has to render, not redirect.
+            for (const [key, value] of [
+                ['response_type', 'token'],
+                ['code_challenge_method', 'plain'],
+                ['resource', 'https://elsewhere.example.com/mcp']
+            ]) {
+                const probe = new URLSearchParams(params);
+                probe.set(key, value);
+
+                const res = await browser.get(`/admin/mcp/authorize?${probe.toString()}`);
+                assert.equal(res.status, 200, `${key}=${value} must render, not redirect`);
+                assert.ok(!res.headers.location, `${key}=${value} must not send a Location header`);
+                assert.ok(!(res.text || '').includes(redirectUri), `${key}=${value} must not link the client address`);
+            }
+
+            const consent = await browser.get(`/admin/mcp/authorize?${params.toString()}`);
+            assert.equal(consent.status, 200);
+            assert.match(consent.text, /Read-only access/, 'the consent form offers the read-only narrowing');
+
+            const crumb = (consent.text.match(/name="crumb"\s+value="([^"]+)"/) || [])[1];
+            assert.ok(crumb, 'the consent form carries a crumb');
+
+            // Denying is the one decision that needs no admin session - this tier runs with no
+            // admin password, so the page hides Approve and tells the operator exactly that
+            const denied = await browser
+                .post('/admin/mcp/authorize')
+                .type('form')
+                .send({
+                    crumb,
+                    client_id: registration.body.client_id,
+                    redirect_uri: redirectUri,
+                    state: 'test-state',
+                    code_challenge: 'a'.repeat(43),
+                    decision: 'deny'
+                });
+
+            assert.equal(denied.status, 302, 'Deny must answer the client, not 403');
+            assert.match(denied.headers.location, /error=access_denied/);
+            assert.match(denied.headers.location, /state=test-state/);
+        } finally {
+            await authed.post('/v1/settings').send({ mcpOAuthEnabled: false, serviceUrl: previousServiceUrl });
+        }
+    });
 });

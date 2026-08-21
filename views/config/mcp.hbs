@@ -197,7 +197,9 @@
                 let data = await uiPostJson('/admin/tokens/new', {
                     description: 'MCP: ' + label,
                     scopes: ['mcp'],
-                    account: account || null,
+                    // The empty string, not null: accountIdSchema is `Joi.string().empty('')`,
+                    // which converts '' to the schema default and refuses an explicit null
+                    account: account,
                     // Full access is the absence of a permissions record - the mcp scope
                     // already bounds the token to the MCP tool surface
                     permissions: readOnly ? presets.readOnly : null

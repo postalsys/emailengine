@@ -155,6 +155,13 @@ test('MCP tool executor', async t => {
 
     server.route({
         method: 'GET',
+        path: '/v1/demo/huge-utf8',
+        handler: () => ({ blob: '世'.repeat(MAX_TOOL_RESULT_BYTES) }),
+        options: { plugins: { mcp: { name: 'demo_huge_utf8', title: 'Demo huge utf8', description: 'demo' } } }
+    });
+
+    server.route({
+        method: 'GET',
         path: '/v1/demo/binary/{size}',
         handler: (request, h) => h.response(Buffer.alloc(Number(request.params.size), 7)).type('application/pdf'),
         options: {
@@ -190,9 +197,10 @@ test('MCP tool executor', async t => {
     });
 
     await t.test('API validation errors come back as tool errors, not exceptions', async () => {
-        // The stub server keeps hapi's terse default failAction; the production routes attach
-        // their own detailed one, so only the error mapping is asserted here
-        const result = await callTool({ server, tool: byName.get('demo_post'), args: { id: 'x' }, request: outerRequest() });
+        // A value the schema refuses reaches the injected request and fails there. The stub
+        // server keeps hapi's terse default failAction; the production routes attach their own
+        // detailed one, so only the error mapping is asserted here.
+        const result = await callTool({ server, tool: byName.get('demo_post'), args: { id: 'x', value: 'v', count: 'not-a-number' }, request: outerRequest() });
         assert.equal(result.isError, true);
         assert.match(result.content[0].text, /Bad Request/);
     });
@@ -203,6 +211,30 @@ test('MCP tool executor', async t => {
         assert.ok(Buffer.byteLength(result.content[0].text) < MAX_TOOL_RESULT_BYTES + 1024);
         assert.match(result.content[0].text, /Result truncated by EmailEngine/);
         assert.ok(!('structuredContent' in result));
+    });
+
+    await t.test('the size cap is measured in bytes, so multibyte results are really truncated', async () => {
+        // String.slice() counts UTF-16 code units: a result of CJK text is ~3 bytes per unit, so
+        // slicing at the byte cap returned the whole thing while claiming it had been truncated
+        const result = await callTool({ server, tool: byName.get('demo_huge_utf8'), args: {}, request: outerRequest() });
+
+        assert.ok(!result.isError);
+        assert.match(result.content[0].text, /Result truncated by EmailEngine/);
+        assert.ok(
+            Buffer.byteLength(result.content[0].text) < MAX_TOOL_RESULT_BYTES + 1024,
+            `expected the result to respect the byte cap, got ${Buffer.byteLength(result.content[0].text)} bytes`
+        );
+        // and the cut never splits a code point into a replacement character
+        assert.ok(!result.content[0].text.includes('�'), 'truncation must not split a multibyte character');
+    });
+
+    await t.test('a missing required argument is named, rather than becoming a bare 404', async () => {
+        // Omitting a path parameter renders an empty path segment, which Hapi answers with a
+        // plain "Not Found" that names neither the tool nor the argument
+        const result = await callTool({ server, tool: byName.get('demo_get'), args: {}, request: outerRequest() });
+
+        assert.equal(result.isError, true);
+        assert.match(result.content[0].text, /Missing required tool argument: id/);
     });
 
     await t.test('binary tools return an embedded base64 resource, capped', async () => {

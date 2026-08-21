@@ -12,6 +12,8 @@ const assert = require('node:assert').strict;
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 const tokens = require('../lib/tokens');
+const tokenPermissions = require('../lib/token-permissions');
+const { MCP_READ_ONLY_PERMISSIONS } = require('../lib/token-permission-view');
 const {
     registerClient,
     getClient,
@@ -124,6 +126,45 @@ test('MCP OAuth', async t => {
 
         // ...and the code is spent
         await assert.rejects(redeemAuthorizationCode(Object.assign({}, base, { code })), /expired/);
+
+        await tokens.delete(response.access_token);
+    });
+
+    await t.test('the narrowing the operator approved reaches the minted token', async () => {
+        // The consent page defaults to read-only, and that choice is only worth anything if it
+        // survives the code record into the credential - otherwise the browser flow, aimed at
+        // the least controllable clients, would issue send-capable tokens regardless
+        const client = await registerClient({ redirectUris: ['https://claude.ai/cb'], clientName: 'Narrowed' });
+        const { verifier, challenge } = pkcePair();
+
+        const code = await createAuthorizationCode({
+            clientId: client.client_id,
+            redirectUri: 'https://claude.ai/cb',
+            codeChallenge: challenge,
+            resource: `${ORIGIN}/mcp`,
+            account: null,
+            permissions: MCP_READ_ONLY_PERMISSIONS,
+            description: 'MCP: Narrowed'
+        });
+
+        const response = await redeemAuthorizationCode({
+            code,
+            clientId: client.client_id,
+            redirectUri: 'https://claude.ai/cb',
+            codeVerifier: verifier,
+            resource: `${ORIGIN}/mcp`,
+            origin: ORIGIN,
+            ip: '198.51.100.7'
+        });
+
+        const tokenData = await tokens.get(response.access_token, false);
+        assert.deepEqual(tokenData.permissions, MCP_READ_ONLY_PERMISSIONS);
+        assert.deepEqual(tokenData.permissions.actions, ['read']);
+
+        // and the narrowing is the one the enforcement would apply: a send is refused
+        assert.equal(tokenPermissions.check({ tokenData, operation: { action: 'send', group: 'submit' } }).allowed, false);
+        assert.equal(tokenPermissions.check({ tokenData, operation: { action: 'destructive', group: 'message' } }).allowed, false);
+        assert.equal(tokenPermissions.check({ tokenData, operation: { action: 'read', group: 'message' } }).allowed, true);
 
         await tokens.delete(response.access_token);
     });
