@@ -5,6 +5,7 @@
       label    - link text (required)
       icon     - full iconify class incl. size, e.g. "icon-[tabler--users] size-4.5" (optional)
       active   - true to highlight as the current page
+      badge    - small soft badge text after the label, e.g. "Beta" (optional)
       warnText - when non-empty, renders a trailing warning icon whose tooltip
                  shows this text (optional)
 --}}
@@ -13,9 +14,13 @@
         {{#if icon}}<span class="{{icon}}"></span>{{/if}}
         {{#if warnText}}
         <span class="grow">{{label}}</span>
+        {{#if badge}}{{> ui/badge label=badge variant="info" soft=true class="badge-sm shrink-0" icon="" elId=""}}{{/if}}
         {{#> ui/tooltip text=warnText class="shrink-0"}}
         <span class="icon-[tabler--alert-triangle] text-warning size-4 shrink-0"></span>
         {{/ui/tooltip}}
+        {{else if badge}}
+        <span class="grow">{{label}}</span>
+        {{> ui/badge label=badge variant="info" soft=true class="badge-sm shrink-0" icon="" elId=""}}
         {{else}}
         <span>{{label}}</span>
         {{/if}}</a>

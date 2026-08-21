@@ -1,10 +1,16 @@
-{{> ui/page-header title="MCP" icon="icon-[tabler--plug-connected]" class="mb-1"}}
+{{> ui/page-header title="MCP" icon="icon-[tabler--plug-connected]" badgeLabel="Beta" badgeVariant="info" class="mb-1"}}
 
 <p class="mb-6">
     Let AI agents work with the connected email accounts over the Model Context Protocol. The MCP endpoint exposes a
     curated tool set (list and search messages, read content, organize and delete messages, create drafts, send mail)
     and authenticates with the same access tokens as the REST API.
 </p>
+
+<div class="mb-6 alert alert-soft alert-info">
+    <span class="icon-[tabler--flask] size-5 shrink-0"></span>
+    <span>MCP support is in beta. The endpoint is off by default and the tool set may still change between releases -
+        feedback is welcome while the surface settles.</span>
+</div>
 
 {{#unless mcpFeatureEnabled}}
 <div class="mb-6 alert alert-soft alert-warning">
