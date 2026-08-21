@@ -282,29 +282,127 @@ test.describe('access token pages', () => {
         await expect(warning).toBeHidden();
     });
 
-    test('the editor lives under the API scope and follows it', async ({ page }) => {
-        // Nested rather than stacked in a card of its own: as siblings, nothing said the permissions
-        // were a subset of one scope, and the relationship had to be asserted in prose. Permissions
-        // resolve per endpoint on the REST API, so without that scope every setting would either
-        // change nothing or leave the token unable to do its one job - and scopes are fixed once the
-        // token exists, so no later state rescues it.
+    test('the access editor is its own section and names the scopes it affects', async ({ page }) => {
+        // It used to be a row nested under the API checkbox, which put it under an unticked box
+        // whenever MCP alone was selected - titled for a surface that token would not even have.
+        // What ties it to the scopes now is the sentence naming them, so that is what is asserted.
         await page.goto(`${BASE_URL}/admin/tokens/new`);
 
-        const row = page.locator('#permissionRow');
+        const card = page.locator('#accessCard');
+        const appliesTo = page.locator('#accessAppliesTo');
 
-        // It is a row of the scope list, not a separate section
-        await expect(page.locator('ul', { has: page.locator('#scopesAPI') }).locator('#permissionRow')).toHaveCount(1);
+        // Not inside the scope list any more
+        await expect(page.locator('ul', { has: page.locator('#scopesAPI') }).locator('#accessCard')).toHaveCount(0);
 
-        // "All scopes" carries API with it
-        await expect(row).toBeVisible();
+        // "All scopes" carries both per-request surfaces with it
+        await expect(card).toBeVisible();
+        await expect(appliesTo).toContainText('REST API requests and MCP tool calls');
 
+        // The login-time scopes are checked once against everything their surface can do, so a
+        // narrowing either changes nothing or breaks them - there is nothing to edit
         await page.locator('#scopesAll').uncheck();
         await page.locator('#scopesSMTP').check();
-        await expect(row).toBeHidden();
+        await expect(card).toBeHidden();
 
-        // Adding API access brings it back
         await page.locator('#scopesAPI').check();
+        await expect(card).toBeVisible();
+        await expect(appliesTo).toHaveText('Applies to REST API requests.');
+    });
+
+    test('an MCP-only token is provisioned by access level, not by the API matrix', async ({ page }) => {
+        // Ticking MCP used to open a block titled "Limit what the API token can do", nested under an
+        // API checkbox that was not even ticked. An mcp-scoped token cannot call /v1 at all, so the
+        // editor offers the same named levels the OAuth consent prompt and the MCP config page do.
+        const errors = trackConsoleErrors(page);
+        await page.goto(`${BASE_URL}/admin/tokens/new`);
+
+        await page.locator('#scopesAll').uncheck();
+        await page.locator('#scopesMcp').check();
+
+        await expect(page.locator('#accessAppliesTo')).toHaveText('Applies to MCP tool calls.');
+        await expect(page.locator('#mcpLevelBlock')).toBeVisible();
+        // No "restrict?" toggle in this mode: an agent credential starts read-only rather than
+        // unrestricted, which is the wrong way round for something a model drives
+        await expect(page.locator('#apiLimitBlock')).toBeHidden();
+        await expect(page.locator('#mcpAccess_read')).toBeChecked();
+
+        // The matrix is the detail view behind the levels, not the way in
+        await expect(page.locator('#permissionSection')).toBeHidden();
+
+        // Read-only leaves the reading tools and nothing else, which is the number the two axes
+        // cannot tell anyone by themselves
+        const outcome = page.locator('#permissionOutcome');
+        await expect(outcome).toBeVisible();
+        await expect(outcome).toContainText('MCP tools available');
+        const readOnlyCount = await outcome.textContent();
+
+        await page.locator('#mcpAccess_full').check();
+        // Full access mints no permissions record at all, so every tool survives
+        await expect(outcome).toContainText(/(\d+) of \1 MCP tools available/);
+        expect(await outcome.textContent()).not.toBe(readOnlyCount);
+
+        expect(errors).toEqual([]);
+    });
+
+    test('the custom level lists only the sections MCP can reach', async ({ page }) => {
+        // Ticking "Webhook routes" on a token that can only call MCP tools grants nothing. A control
+        // with no effect reads as a permission, so those rows are taken out rather than left inert.
+        const errors = trackConsoleErrors(page);
+        await page.goto(`${BASE_URL}/admin/tokens/new`);
+
+        await page.locator('#scopesAll').uncheck();
+        await page.locator('#scopesMcp').check();
+        await page.locator('#mcpAccess_custom').check();
+
+        await expect(page.locator('#permissionSection')).toBeVisible();
+        // The API presets are shapes for the REST API; the named levels above are this mode's presets
+        await expect(page.locator('#permissionPresetRow')).toBeHidden();
+        await expect(page.locator('#permissionMcpScopeNote')).toBeVisible();
+
+        // Six of the thirteen sections carry an MCP tool
+        await expect(page.locator('#permissionGroup_message')).toBeVisible();
+        await expect(page.locator('#permissionGroup_webhook')).toBeHidden();
+        await expect(page.locator('#permissionGroup_gateway')).toBeHidden();
+        // A cluster whose every section is out of reach is a heading over nothing
+        await expect(page.locator('[data-cluster="Monitoring"]')).toBeHidden();
+
+        // Custom starts from the level it was opened out of, which is what its hint promises
+        await expect(page.locator('#permissionAction_read')).toBeChecked();
+        await expect(page.locator('#permissionAction_destructive')).not.toBeChecked();
+
+        // Narrowing it down to a single tool family is visible before the client ever connects
+        for (const group of ['account', 'mailbox', 'outbox', 'template']) {
+            await page.locator(`#permissionGroup_${group}`).uncheck();
+        }
+        await expect(page.locator('#permissionOutcome')).toContainText('MCP tools available');
+
+        expect(errors).toEqual([]);
+    });
+
+    test('an MCP token minted at a named level carries that level permissions', async ({ page }) => {
+        // The level has to mean the same thing here as it does on the consent prompt, so what is
+        // asserted is the record that reaches Redis and comes back on the listing - not the radio.
+        const description = `e2e mcp level ${Date.now()}`;
+
+        await page.goto(`${BASE_URL}/admin/tokens/new`);
+        await page.locator('#description').fill(description);
+        await page.locator('#scopesAll').uncheck();
+        await page.locator('#scopesMcp').check();
+        await page.locator('#mcpAccess_mail').check();
+
+        await page.getByRole('button', { name: 'Generate a token' }).click();
+        await expect(page.locator('#showTokenValue')).toHaveValue(/^[0-9a-f]{64}$/, { timeout: 15000 });
+        await dismissTokenReveal(page);
+
+        await page.goto(`${BASE_URL}/admin/tokens?query=${encodeURIComponent(description)}`);
+        const row = page.locator('tr', { hasText: description });
         await expect(row).toBeVisible();
+        await expect(row).toContainText('mcp');
+        // The mail agent level is the non-destructive subset of the MCP surface: it can send, and it
+        // cannot reach the delete tool. Asserted as the whole sentence rather than a fragment, since
+        // the sentence lists exactly the actions the record allows - "delete" being absent from it is
+        // the assertion (a `not.toContainText` would match the row's own Delete button instead).
+        await expect(row).toContainText('Can read, create and modify, send email in Accounts, Folders, Messages, Sending, Sending queue, Templates');
     });
 
     test('unticking every box is refused rather than minting a token that can do nothing', async ({ page }) => {
