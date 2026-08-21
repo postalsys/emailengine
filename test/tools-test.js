@@ -598,6 +598,37 @@ test('Tools utility tests', async t => {
         assert.ok(!cids.has('part.00000000.ffffffffffffffff@example.com'));
     });
 
+    await t.test('truncateTextContents() caps each text type and reports truncation', async () => {
+        const textContents = { plain: 'aaaaaaaaaa', html: 'bbb' };
+        assert.strictEqual(tools.truncateTextContents(textContents, 5), true);
+        assert.strictEqual(textContents.plain, 'aaaaa');
+        assert.strictEqual(textContents.html, 'bbb');
+    });
+
+    await t.test('truncateTextContents() leaves content under the limit alone', async () => {
+        const textContents = { plain: 'aaa', html: 'bbb' };
+        assert.strictEqual(tools.truncateTextContents(textContents, 5), false);
+        assert.deepStrictEqual(textContents, { plain: 'aaa', html: 'bbb' });
+    });
+
+    await t.test('truncateTextContents() without a limit is a no-op', async () => {
+        const textContents = { plain: 'aaaaaaaaaa' };
+        assert.strictEqual(tools.truncateTextContents(textContents, 0), false);
+        assert.strictEqual(tools.truncateTextContents(textContents, undefined), false);
+        assert.strictEqual(textContents.plain, 'aaaaaaaaaa');
+        assert.strictEqual(tools.truncateTextContents(undefined, 5), false);
+    });
+
+    await t.test('truncateTextContents() only touches the plain and html keys', async () => {
+        const textContents = { plain: 'aaaaaaaaaa', html: undefined, id: 'attachment-reference-id', hasMore: false };
+        assert.strictEqual(tools.truncateTextContents(textContents, 5), true);
+        assert.strictEqual(textContents.plain, 'aaaaa');
+        assert.strictEqual(textContents.html, undefined);
+        // a text id or flag riding on the same object must never be clipped
+        assert.strictEqual(textContents.id, 'attachment-reference-id');
+        assert.strictEqual(textContents.hasMore, false);
+    });
+
     await t.test('cidReferenceRegex() returns a fresh regex each call so no lastIndex state leaks', async () => {
         const re = tools.cidReferenceRegex();
         assert.notStrictEqual(re, tools.cidReferenceRegex());
