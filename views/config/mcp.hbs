@@ -130,7 +130,7 @@
 
 {{/ui/card}}
 
-{{#> ui/details summary="Exposed tools" summarySmall=(concat toolCatalog.length " tools")}}
+{{#> ui/details summary="Exposed tools" summarySmall=(concat toolCatalog.length " tools") class="card bg-base-100 shadow-md mb-6"}}
 <div class="px-6 pb-6">
     <p class="text-sm text-base-content/60 mb-4">This is exactly what a connected agent receives from
         <code>tools/list</code>. Whether a given token can call a tool also depends on its account binding and
@@ -147,7 +147,7 @@
 </div>
 {{/ui/details}}
 
-{{#> ui/details summary="Manual configuration"}}
+{{#> ui/details summary="Manual configuration" class="card bg-base-100 shadow-md mb-6"}}
 <div class="px-6 pb-6 space-y-4">
 
     <div>
