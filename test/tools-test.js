@@ -539,4 +539,76 @@ test('Tools utility tests', async t => {
         const payload = JSON.parse(Buffer.from(url.searchParams.get('data'), 'base64url').toString());
         assert.deepStrictEqual(payload, { act: 'unsub', acc: 'acc1', list: 'newsletter', rcpt: 'user@example.com' });
     });
+
+    await t.test('collectCidReferences() finds ids in quoted and unquoted attributes', async () => {
+        const cids = tools.collectCidReferences(
+            '<img src="cid:part1@example.com"><img src=\'cid:part2@example.com\'><img src=cid:part3@example.com alt=x><img src=cid:part4@example.com>'
+        );
+        assert.ok(cids.has('part1@example.com'));
+        assert.ok(cids.has('part2@example.com'));
+        assert.ok(cids.has('part3@example.com'));
+        assert.ok(cids.has('part4@example.com'));
+    });
+
+    await t.test('collectCidReferences() resolves CSS url(cid:...) references', async () => {
+        const cids = tools.collectCidReferences('<div style="background: url(cid:bg1@example.com)">x</div>');
+        assert.ok(cids.has('bg1@example.com'));
+    });
+
+    await t.test('collectCidReferences() matches whole reference tokens only', async () => {
+        const cids = tools.collectCidReferences('<img src="cid:part1.extended@example.com">');
+        // a content id that is only a prefix of the referenced id must not match
+        assert.ok(!cids.has('part1'));
+        assert.ok(!cids.has('part1.extended'));
+        assert.ok(cids.has('part1.extended@example.com'));
+    });
+
+    await t.test('collectCidReferences() ignores ids that appear outside cid: links', async () => {
+        const cids = tools.collectCidReferences('<p>the id part1@example.com is mentioned in text</p>');
+        assert.strictEqual(cids.size, 0);
+    });
+
+    await t.test('collectCidReferences() never contains the empty id', async () => {
+        const cids = tools.collectCidReferences('<img src="cid:"><a href="x">cid:</a>');
+        assert.ok(!cids.has(''));
+    });
+
+    await t.test('collectCidReferences() returns an empty set for non-string or empty input', async () => {
+        assert.strictEqual(tools.collectCidReferences(undefined).size, 0);
+        assert.strictEqual(tools.collectCidReferences(false).size, 0);
+        assert.strictEqual(tools.collectCidReferences('').size, 0);
+        assert.strictEqual(tools.collectCidReferences(Buffer.from('<img src="cid:x@y">')).size, 0);
+    });
+
+    await t.test('collectCidReferences() handles a multi-megabyte body dense with partial matches', async () => {
+        // the shape from the DELLI report: a large body full of similar cid:
+        // references - the per-attachment indexOf scans this helper replaced
+        // took seconds of blocking CPU on the same input
+        let chunk = [];
+        for (let i = 0; i < 100; i++) {
+            chunk.push(`<img src="cid:part.${i.toString().padStart(8, '0')}.eeeeeeeeeeeeeeee@example.com">`);
+        }
+        let block = chunk.join('');
+        let html = block.repeat(Math.ceil((6 * 1024 * 1024) / block.length));
+
+        const cids = tools.collectCidReferences(html);
+        assert.strictEqual(cids.size, 100);
+        assert.ok(cids.has('part.00000000.eeeeeeeeeeeeeeee@example.com'));
+        assert.ok(cids.has('part.00000099.eeeeeeeeeeeeeeee@example.com'));
+        assert.ok(!cids.has('part.00000000.ffffffffffffffff@example.com'));
+    });
+
+    await t.test('cidReferenceRegex() returns a fresh regex each call so no lastIndex state leaks', async () => {
+        const re = tools.cidReferenceRegex();
+        assert.notStrictEqual(re, tools.cidReferenceRegex());
+        assert.ok(re.global);
+
+        // the collection helper must tokenize with this same grammar
+        const html = '<img src="cid:part1@example.com">';
+        assert.deepStrictEqual(
+            [...html.matchAll(tools.cidReferenceRegex())].map(m => m[1]),
+            ['part1@example.com']
+        );
+        assert.ok(tools.collectCidReferences(html).has('part1@example.com'));
+    });
 });
