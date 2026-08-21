@@ -40,6 +40,13 @@
                         {{> ui/row-link href=(concat "/admin/config/oauth/app/" id) label="Open OAuth2 app"}}
                         <div><strong>{{name}}</strong></div>
                         {{> ui/entity-id id=id prefix="Provider ID"}}
+                        {{!-- The provider-issued client id, which for Azure Entra is the same
+                              value the portal lists as "Application (client) ID" - showing it
+                              here is what lets an operator match this row against the Entra
+                              app list without opening every app --}}
+                        {{#if clientId}}
+                        <div>{{> ui/entity-id id=clientId prefix="Client ID"}}</div>
+                        {{/if}}
                     </td>
 
                     <td class="relative">
