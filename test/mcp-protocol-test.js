@@ -13,6 +13,7 @@ const {
     isAllowedOrigin,
     acceptsEventStream,
     ERROR_CODES,
+    CACHE_TTLS,
     MODERN_PROTOCOL_VERSION,
     LEGACY_PROTOCOL_VERSIONS,
     SUPPORTED_PROTOCOL_VERSIONS,
@@ -179,6 +180,43 @@ test('MCP protocol', async t => {
         assert.ok(result.instructions.length);
     });
 
+    await t.test('modern: cache hints follow the declared policy for every result-bearing method', async () => {
+        // The Caching utility of the modern revision: complete results of the discovery and
+        // listing methods MUST carry ttlMs >= 0 and a cacheScope; strict clients (Claude Code
+        // among them) refuse a tools/list without them. A null policy entry declares a method
+        // non-cacheable, and its results must not pretend otherwise. Everything this endpoint
+        // serves is caller-shaped, so the scope is always private.
+        //
+        // Driven by the exported policy table, so a method added there without a request recipe
+        // here fails the coverage check instead of going untested.
+        const requestOpts = {
+            'server/discover': {},
+            'tools/list': {},
+            'resources/list': {},
+            'resources/templates/list': {},
+            'resources/read': { params: { uri: 'emailengine://account/a' }, name: 'emailengine://account/a' },
+            ping: {},
+            'tools/call': { params: { name: 'demo_tool', arguments: {} }, name: 'demo_tool' }
+        };
+        assert.deepEqual(Object.keys(CACHE_TTLS).sort(), Object.keys(requestOpts).sort());
+
+        for (const [method, ttlMs] of Object.entries(CACHE_TTLS)) {
+            const { body, headers } = modernRequest(method, requestOpts[method]);
+            const outcome = await processMcpRequest({ body, headers, ctx: ctx() });
+            assert.equal(outcome.httpStatus, 200, method);
+
+            const result = outcome.body.result;
+            if (ttlMs === null) {
+                assert.ok(!('ttlMs' in result), method);
+                assert.ok(!('cacheScope' in result), method);
+            } else {
+                assert.equal(result.ttlMs, ttlMs, method);
+                assert.ok(result.ttlMs >= 0, method);
+                assert.equal(result.cacheScope, 'private', method);
+            }
+        }
+    });
+
     await t.test('modern: unknown methods are 404 with a method-not-found error', async () => {
         const { body, headers } = modernRequest('prompts/list');
         const outcome = await processMcpRequest({ body, headers, ctx: ctx() });
@@ -228,7 +266,7 @@ test('MCP protocol', async t => {
         assert.equal(countered.body.result.protocolVersion, LEGACY_PROTOCOL_VERSIONS[0]);
     });
 
-    await t.test('legacy: results carry no resultType marker', async () => {
+    await t.test('legacy: results carry no resultType marker and no cache hints', async () => {
         const outcome = await processMcpRequest({
             body: { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} },
             headers: { 'mcp-protocol-version': '2025-06-18' },
@@ -237,6 +275,8 @@ test('MCP protocol', async t => {
         assert.equal(outcome.httpStatus, 200);
         assert.deepEqual(outcome.body.result.tools, TOOLS);
         assert.ok(!('resultType' in outcome.body.result));
+        assert.ok(!('ttlMs' in outcome.body.result));
+        assert.ok(!('cacheScope' in outcome.body.result));
     });
 
     await t.test('legacy: unknown methods stay HTTP 200', async () => {
