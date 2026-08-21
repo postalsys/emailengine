@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="EmailEngine Application page; The Ultimate Email API for Developers" />
+    <meta name="author" content="Postal Systems OÜ">
+
+    <title>{{#if pageTitleFull}}{{pageTitleFull}}{{else}}{{pageBrandName}}{{#if pageTitle}} &ndash;
+        {{pageTitle}}{{/if}}{{/if}}</title>
+
+    {{> head_assets}}
+
+    <link href="/static/css/flyonui.css" rel="stylesheet">
+
+</head>
+
+{{!-- Focused single-decision pages (the MCP consent prompt): one centered card with no
+      navigation chrome, so the page reads as a dialog rather than a place in the admin app.
+      Still an admin-surface layout - same design system, assets and session handling as the
+      login layout it mirrors - NOT one of the framework-free public pages. --}}
+
+<body class="from-primary to-secondary min-h-screen bg-gradient-to-br">
+
+    <div class="container mx-auto px-4">
+
+        <div class="flex justify-center">
+
+            <div class="w-full max-w-xl">
+
+                <div class="card bg-base-100 my-12 overflow-hidden shadow-lg">
+                    <div class="alert-margin">
+                        {{> alerts}}
+
+                        <div class="p-8 sm:p-10">
+
+                            <div class="mb-8 flex justify-center">
+                                <img src="/static/logo/EmailEngine_logo_horiz.png" alt="EmailEngine" class="max-h-7">
+                            </div>
+
+                            {{{content}}}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="/static/js/flyonui.js"></script>
+    <script src="/static/js/ui.js"></script>
+
+    <script src="/static/js/app.js"></script>
+
+</body>
+
+</html>

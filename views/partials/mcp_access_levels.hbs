@@ -1,0 +1,13 @@
+{{!--
+    The MCP access-level radio group, rendered identically by the OAuth consent prompt and the
+    admin token generator so the two cannot drift on what each level promises. The options come
+    from MCP_ACCESS_LEVEL_OPTIONS (lib/token-permission-view.js) through the accessOptions
+    context value.
+    Params:
+      name     - input name shared by the radio group (required)
+      idPrefix - per-page prefix for the input ids (required)
+      selected - the selected value (required; pass "read" for the static default)
+--}}
+{{#each accessOptions}}
+{{> ui/radio id=(concat ../idPrefix value) name=../name value=value label=label selected=../selected hint=hint}}
+{{/each}}

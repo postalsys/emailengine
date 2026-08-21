@@ -1,23 +1,36 @@
-{{> ui/page-header title="Authorize MCP client" icon="icon-[tabler--plug-connected]" class="mb-1"}}
+{{!-- The human decision point of the MCP OAuth flow, rendered in the chrome-free `prompt`
+      layout so it reads as a consent dialog rather than a settings page. The operator arrives
+      here from an MCP client, decides, and leaves - the admin navigation would only suggest
+      this is a place to stay. --}}
 
 {{#if errorMessage}}
 
-<div class="mt-6 alert alert-soft alert-warning">
-    <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
-    <span>{{errorMessage}}</span>
+<div class="text-center">
+    <div class="bg-warning/10 text-warning mx-auto mb-4 flex size-12 items-center justify-center rounded-full">
+        <span class="icon-[tabler--plug-connected-x] size-6"></span>
+    </div>
+    <h1 class="text-base-content mb-2 text-xl font-semibold">Cannot authorize this client</h1>
+    <p class="text-base-content/60 mb-6 text-sm">{{errorMessage}}</p>
+    <a href="/admin" class="link link-animated text-sm">Go to the EmailEngine dashboard</a>
 </div>
 
 {{else}}
 
-<p class="mb-6">An MCP client is requesting access to this EmailEngine instance. Approving creates a new access token with
-    the <code>mcp</code> scope - it appears on the <a href="/admin/tokens?scope=mcp" class="link">Access Tokens</a> page
-    and can be revoked there at any time.</p>
+<div class="mb-6 text-center">
+    <div class="bg-primary/10 text-primary mx-auto mb-4 flex size-12 items-center justify-center rounded-full">
+        <span class="icon-[tabler--plug-connected] size-6"></span>
+    </div>
+    <h1 class="text-base-content text-xl font-semibold">{{clientName}} wants to connect</h1>
+    <p class="text-base-content/60 mt-2 text-sm">An MCP client is asking for access to the email accounts on this
+        EmailEngine instance. Once you decide, the browser returns to <code>{{redirectHost}}</code>.</p>
+</div>
 
 {{#unless canProvision}}
-<div class="mb-6 alert alert-soft alert-warning">
+<div class="alert alert-soft alert-warning mb-6 text-sm">
     <span class="icon-[tabler--lock] size-5 shrink-0"></span>
-    <span>Authorizing a client requires an authenticated admin session. Set an admin password and sign in first -
-        otherwise the request below can only be denied.</span>
+    <span>Authorizing a client requires an authenticated admin session.
+        <a href="/admin/account/password" target="_blank" rel="noopener noreferrer" class="link">Set an admin
+            password</a> and sign in first - otherwise this request can only be denied.</span>
 </div>
 {{/unless}}
 
@@ -29,73 +42,67 @@
     <input type="hidden" name="code_challenge" value="{{values.code_challenge}}" />
     <input type="hidden" name="resource" value="{{values.resource}}" />
 
-    {{#> ui/card bodyClass="space-y-4"}}
+    <div class="space-y-4">
 
-    <div class="flex flex-col gap-1">
-        <div><span class="text-base-content/60">Client:</span> <strong>{{clientName}}</strong></div>
-        <div><span class="text-base-content/60">Returns to:</span> <code>{{redirectHost}}</code></div>
-    </div>
+        <fieldset class="space-y-2">
+            <legend class="label-text mb-1">Allow it to</legend>
+            {{> mcp_access_levels name="access" idPrefix="access" selected=accessLevel}}
+        </fieldset>
 
-    {{!-- The grant sentences are derived from SURFACE_GRANTS.mcp rather than written out, so this
-          screen cannot promise less than the token grants after the tool set changes. One is
-          visible at a time - the one describing the selected access level. --}}
-    <div data-access="read" class="consent-grant alert alert-soft alert-info text-sm{{#equals accessLevel 'read'}}{{else}} hidden{{/equals}}">
-        <span class="icon-[tabler--info-circle] size-5 shrink-0"></span>
-        <span>Through the MCP tool set the client will be able to <strong>read</strong> across
-            <code>{{readGrantGroups}}</code> on the accounts its token can reach. It cannot send email, delete
-            anything, change anything, read stored credentials, or change instance settings.</span>
-    </div>
+        {{!-- The grant sentences are derived from SURFACE_GRANTS.mcp rather than written out, so this
+              screen cannot promise less than the token grants after the tool set changes. One is
+              visible at a time - the one describing the selected access level. --}}
+        <div data-access="read" class="consent-grant alert alert-soft alert-info text-sm{{#equals accessLevel 'read'}}{{else}} hidden{{/equals}}">
+            <span class="icon-[tabler--info-circle] size-5 shrink-0"></span>
+            <span>Through the MCP tool set the client will be able to <strong>read</strong> across
+                <code>{{readGrantGroups}}</code> on the accounts its token can reach. It cannot send email, delete
+                anything, change anything, read stored credentials, or change instance settings.</span>
+        </div>
 
-    <div data-access="mail" class="consent-grant alert alert-soft alert-warning text-sm{{#equals accessLevel 'mail'}}{{else}} hidden{{/equals}}">
-        <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
-        <span>Through the MCP tool set the client will be able to <strong>read, create and send real email</strong>
-            across <code>{{mailGrantGroups}}</code> on the accounts its token can reach - everything except the delete
-            tool. Instructions inside received mail are a real prompt-injection risk once sending is granted. It cannot
-            read stored credentials or change instance settings.</span>
-    </div>
+        <div data-access="mail" class="consent-grant alert alert-soft alert-warning text-sm{{#equals accessLevel 'mail'}}{{else}} hidden{{/equals}}">
+            <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+            <span>Through the MCP tool set the client will be able to <strong>read, create and send real email</strong>
+                across <code>{{mailGrantGroups}}</code> on the accounts its token can reach - everything except the delete
+                tool. Instructions inside received mail are a real prompt-injection risk once sending is granted. It cannot
+                read stored credentials or change instance settings.</span>
+        </div>
 
-    <div data-access="full" class="consent-grant alert alert-soft alert-warning text-sm{{#equals accessLevel 'full'}}{{else}} hidden{{/equals}}">
-        <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
-        <span>Through the MCP tool set the client will be able to <strong>{{grantActions}}</strong> (including sending
-            real email and deleting messages) across <code>{{grantGroups}}</code> on the accounts its token can reach.
-            Instructions inside received mail are a real prompt-injection risk once sending is granted. It cannot read
-            stored credentials or change instance settings.</span>
-    </div>
+        <div data-access="full" class="consent-grant alert alert-soft alert-warning text-sm{{#equals accessLevel 'full'}}{{else}} hidden{{/equals}}">
+            <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+            <span>Through the MCP tool set the client will be able to <strong>{{grantActions}}</strong> (including sending
+                real email and deleting messages) across <code>{{grantGroups}}</code> on the accounts its token can reach.
+                Instructions inside received mail are a real prompt-injection risk once sending is granted. It cannot read
+                stored credentials or change instance settings.</span>
+        </div>
 
-    <div>
-        {{> ui/form-field id="account" label="Limit to one account" value=values.account error=errors.account
-            list="consentAccountList" placeholder="account id"
-            hint="Recommended. The token then only reaches this account. Leave empty to allow every account on the instance."}}
-        <datalist id="consentAccountList">
-            {{#each accountOptions}}
-            <option value="{{account}}">{{label}}</option>
-            {{/each}}
-        </datalist>
-    </div>
+        <div>
+            {{> ui/form-field id="account" label="Limit to one account" value=values.account error=errors.account
+                list="consentAccountList" placeholder="account id"
+                hint="Recommended. The token then only reaches this account. Leave empty to allow every account on the instance."}}
+            <datalist id="consentAccountList">
+                {{#each accountOptions}}
+                <option value="{{account}}">{{label}}</option>
+                {{/each}}
+            </datalist>
+        </div>
 
-    <fieldset class="space-y-2">
-        <legend class="label-text mb-1">Access level</legend>
-        {{> ui/radio id="accessRead" name="access" value="read" label="Read-only" selected=accessLevel
-            hint="Recommended. List, search and read mail - cannot send, delete or change anything."}}
-        {{> ui/radio id="accessMail" name="access" value="mail" label="Mail agent" selected=accessLevel
-            hint="Read, organize, draft and send mail - everything except the delete tool."}}
-        {{> ui/radio id="accessFull" name="access" value="full" label="Full access" selected=accessLevel
-            hint="Every MCP tool, including deleting messages."}}
-    </fieldset>
+        <div class="flex gap-3 pt-2">
+            <button type="submit" name="decision" value="deny" class="btn btn-neutral btn-outline grow">
+                <span class="icon-[tabler--x] size-4 shrink-0"></span>Deny
+            </button>
+            {{!-- Denying needs no admin session, so that button works in every state the page
+                  renders in --}}
+            {{#if canProvision}}
+            <button type="submit" name="decision" value="approve" class="btn btn-primary grow">
+                <span class="icon-[tabler--check] size-4 shrink-0"></span>Approve
+            </button>
+            {{/if}}
+        </div>
 
-    {{/ui/card}}
+        <p class="text-base-content/60 text-center text-xs">Approving creates an access token with the <code>mcp</code>
+            scope - it appears on the <a href="/admin/tokens?scope=mcp" class="link">Access Tokens</a> page and can be
+            revoked there at any time.</p>
 
-    <div class="mb-6 flex gap-2">
-        {{#if canProvision}}
-        <button type="submit" name="decision" value="approve" class="btn btn-primary">
-            <span class="icon-[tabler--check] size-4 shrink-0"></span>Approve
-        </button>
-        {{/if}}
-        <button type="submit" name="decision" value="deny" class="btn btn-neutral btn-outline">
-            <span class="icon-[tabler--x] size-4 shrink-0"></span>Deny
-        </button>
-        {{!-- Denying needs no admin session, so this button works in every state the page
-              renders in --}}
     </div>
 </form>
 
