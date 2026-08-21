@@ -393,17 +393,33 @@ document.addEventListener('click', e => {
 });
 
 // Cross-tab links: an element with data-goto-tab="<panel id>" activates that
-// panel's tab in a ui/tabs strip. Works for any strip because ui/tab renders
-// its button with the id "<panel id>-tab". Delegated like the copy buttons,
-// so pages need no script of their own for a "see the other tab" pointer.
+// panel's tab in a ui/tabs strip. The target may sit inside another strip's
+// panel (a nested method switch), so the whole ancestor chain of tabpanels is
+// activated outermost-first - otherwise the target tab would light up inside
+// a panel that stays hidden. Each panel names its own button through
+// aria-labelledby (the ui/tabs contract, read the same way in reference.js)
+// rather than this handler recomposing ui/tab's "<id>-tab" id convention.
+// Delegated like the copy buttons, so pages need no script of their own for
+// a "see the other tab" pointer.
 document.addEventListener('click', e => {
     let link = e.target.closest('[data-goto-tab]');
     if (!link) {
         return;
     }
 
-    let tab = document.getElementById(link.dataset.gotoTab + '-tab');
-    if (tab) {
+    let tabs = [];
+    for (
+        let panel = document.getElementById(link.dataset.gotoTab);
+        panel;
+        panel = panel.parentElement && panel.parentElement.closest('[role="tabpanel"]')
+    ) {
+        let tab = document.getElementById(panel.getAttribute('aria-labelledby'));
+        if (tab) {
+            tabs.unshift(tab);
+        }
+    }
+
+    for (let tab of tabs) {
         tab.click();
     }
 });

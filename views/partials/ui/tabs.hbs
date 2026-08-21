@@ -5,9 +5,12 @@
       {{> ui/tab target="text" label="Plain text"}}
       {{/ui/tabs}}
     Params:
-      label - aria-label describing the strip (required)
-      elId  - element id (optional; see ui/badge for why it is not called `id`)
-      class - extra classes on the nav, e.g. "mb-4" (optional)
+      label   - aria-label describing the strip (required)
+      elId    - element id (optional; see ui/badge for why it is not called `id`)
+      class   - extra classes on the nav, e.g. "mb-4" (optional)
+      variant - "segment" for the pill/segmented style (.tabs-segment in
+                app.tailwind.css), for a choice nested inside a page that
+                already has a bordered strip at the top; default bordered
     flex-wrap because FlyonUI lays the strip out as a nowrap flex row with no overflow
     handling, so one wider than its column pushes the whole page sideways instead of
     adapting: an API reference operation documents up to eight status codes, which is 464px
@@ -19,7 +22,7 @@
     The auth-method tabs in oauth_form.hbs intentionally do NOT use this partial -
     they run a custom script instead of the FlyonUI data-tabs plugin.
 --}}
-<nav class="tabs tabs-bordered flex-wrap{{#if class}} {{class}}{{/if}}" aria-label="{{label}}" role="tablist"{{#if elId}} id="{{elId}}"{{/if}} data-tabs>
+<nav class="tabs {{#equals variant 'segment'}}tabs-segment{{else}}tabs-bordered{{/equals}} flex-wrap{{#if class}} {{class}}{{/if}}" aria-label="{{label}}" role="tablist"{{#if elId}} id="{{elId}}"{{/if}} data-tabs>
     {{!-- own hash params neutralized against fallthrough into the block --}}
-    {{> @partial-block label="" id="" class=""}}
+    {{> @partial-block label="" elId="" class="" variant=""}}
 </nav>
