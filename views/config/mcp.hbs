@@ -50,12 +50,10 @@
         {{> ui/setting-ref name="mcpOAuthEnabled"}}
         {{> ui/checkbox id="settingsMcpOAuthEnabled" name="mcpOAuthEnabled" label="Enable OAuth sign-in for MCP clients"
         checked=values.mcpOAuthEnabled error=errors.mcpOAuthEnabled}}
-        <span class="helper-text">For MCP clients that cannot be configured with a static token (for example claude.ai
-            web connectors). The client registers itself, you approve it on a consent page, and EmailEngine issues it
-            an <code>mcp</code>-scoped access token. Requires the Service URL to be set under General. The consent page
-            is part of the admin interface, so approvals happen wherever admin access works - if admin access is
-            limited to specific IP addresses (<code>EENGINE_ADMIN_ACCESS_ADDRESSES</code>), connect new clients from
-            one of those addresses.</span>
+        <span class="helper-text">For MCP clients that cannot be configured with a static token, for example claude.ai
+            web connectors. Requires the Service URL to be set under General. The
+            <button type="button" class="link cursor-pointer" data-goto-tab="mcp-connect">Connect an agent</button> tab
+            shows exactly what to enter in the client's connector form.</span>
     </div>
     {{/ui/card}}
 
@@ -76,12 +74,16 @@
 <div class="mb-6 alert alert-soft alert-warning">
     <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
     <span>The MCP endpoint is not enabled yet, so a connected client would get nothing to talk to. Turn it on under
-        <button type="button" id="mcpConnectGotoSettings" class="link cursor-pointer">Settings</button> first.</span>
+        <button type="button" class="link cursor-pointer" data-goto-tab="mcp-settings">Settings</button> first.</span>
 </div>
 {{/unless}}
 {{/if}}
 
-{{#> ui/card bodyClass="space-y-4"}}
+<p class="mb-6 text-sm">There are two ways to connect an agent: generate an access token here and paste it into a
+    client you configure yourself (Claude Code, desktop and self-hosted agents), or let a web connector like claude.ai
+    sign itself in with OAuth.</p>
+
+{{#> ui/card title="Connect with an access token" bodyClass="space-y-4"}}
 
 <p class="text-sm">Generate an access token and a ready-to-paste connection command in one step. The token gets the
     <code>mcp</code> scope, so it works against the MCP endpoint and nothing else.</p>
@@ -112,12 +114,7 @@
 
     <fieldset class="space-y-2">
         <legend class="label-text mb-1">Access level</legend>
-        {{> ui/radio id="mcpGenAccessRead" name="mcpGenAccess" value="read" label="Read-only" checked=true
-            hint="Recommended. The agent can list, search and read, but not change anything, delete anything, or send mail."}}
-        {{> ui/radio id="mcpGenAccessMail" name="mcpGenAccess" value="mail" label="Mail agent"
-            hint="Read, organize, draft and send mail - everything except the delete tool."}}
-        {{> ui/radio id="mcpGenAccessFull" name="mcpGenAccess" value="full" label="Full access"
-            hint="Every MCP tool, including deleting messages."}}
+        {{> mcp_access_levels name="mcpGenAccess" idPrefix="mcpGenAccess" selected="read"}}
 
         {{!-- At the decision point rather than only in the collapsed manual-config block: the
               level chosen here is what decides whether injected instructions can act --}}
@@ -163,6 +160,73 @@
         the <a href="/admin/tokens?scope=mcp" class="link">Access Tokens</a> page.
     </div>
 </div>
+
+{{/ui/card}}
+
+{{#> ui/card title="Connect claude.ai and other OAuth clients" bodyClass="space-y-4"}}
+
+<p class="text-sm">Web connectors cannot store a pre-made token. Instead the client signs itself in with OAuth: it
+    registers itself, sends you to a consent prompt on this instance, and receives its own <code>mcp</code>-scoped
+    access token when you approve. In the client, fill the connector form like this:</p>
+
+{{!-- One blocking precondition at a time - on a fresh instance both hold, and two stacked
+      warnings saying "this will not work yet" are noise. The toggle comes first because it is
+      the page-local action; its helper text on the other tab already names the Service URL
+      requirement. --}}
+{{#if mcpFeatureEnabled}}
+{{#unless values.mcpOAuthEnabled}}
+<div class="alert alert-soft alert-warning text-sm">
+    <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+    <span>OAuth sign-in is not enabled yet, so a connector cannot sign itself in. Turn on "Enable OAuth sign-in for
+        MCP clients" under <button type="button" class="link cursor-pointer" data-goto-tab="mcp-settings">Settings</button>
+        first.</span>
+</div>
+{{else}}
+{{#unless serviceUrlConfigured}}
+<div class="alert alert-soft alert-warning text-sm">
+    <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+    <span>No Service URL is configured, and OAuth sign-in stays inactive without one - the sign-in flow has to
+        publish a fixed public address. Set it on the <a href="/admin/config/service" class="link">General</a>
+        page.</span>
+</div>
+{{/unless}}
+{{/unless}}
+{{/if}}
+
+<div>
+    <span class="label-text">Name</span>
+    <p class="text-base-content/60 text-sm">Anything that identifies this instance in the client, for example
+        "EmailEngine".</p>
+</div>
+
+<div>
+    <label class="label-text" for="mcpOAuthUrl">Remote MCP server URL</label>
+    {{> ui/copy-field id="mcpOAuthUrl" value=mcpUrl ariaLabel="MCP endpoint URL for OAuth connectors"}}
+    <span class="helper-text">The full endpoint address, including the <code>/mcp</code> path.</span>
+</div>
+
+<div>
+    <span class="label-text">OAuth Client ID and Client Secret</span>
+    <p class="text-base-content/60 text-sm">Leave both empty - there is no pre-made client ID to copy. EmailEngine
+        supports automatic client registration, so the connector creates its own credentials when it first connects.
+        In claude.ai these fields sit behind the "Advanced settings" toggle; other clients name it similarly.</p>
+</div>
+
+<div>
+    <span class="label-text">What happens next</span>
+    <ol class="text-base-content/80 ms-4 mt-1 list-decimal space-y-1 text-sm">
+        <li>When you connect, the client opens this instance's authorization prompt in the browser. Sign in with the
+            admin credentials if asked.</li>
+        <li>On the prompt, pick the access level (read-only is the default) and optionally limit the connector to a
+            single account, then approve.</li>
+        <li>The connector receives its own access token with the <code>mcp</code> scope - review or revoke it at any
+            time on the <a href="/admin/tokens?scope=mcp" class="link">Access Tokens</a> page.</li>
+    </ol>
+</div>
+
+<div class="text-base-content/60 text-sm">Approval happens on the admin interface, so it works wherever admin access
+    works - if admin access is limited to specific IP addresses (<code>EENGINE_ADMIN_ACCESS_ADDRESSES</code>), connect
+    new clients from one of those addresses.</div>
 
 {{/ui/card}}
 
@@ -229,12 +293,7 @@
 
         document.getElementById('mcpManualClaudeCmd').textContent = claudeCommand('<access token>');
 
-        // The endpoint-disabled alert points at the other tab, and a pointer with nothing to
-        // click is worse than none - this makes the word do what it says
-        let gotoSettings = document.getElementById('mcpConnectGotoSettings');
-        if (gotoSettings) {
-            gotoSettings.addEventListener('click', () => document.getElementById('mcp-settings-tab').click());
-        }
+        // Cross-tab pointers on this page use data-goto-tab, handled centrally in ui.js
 
         let submitElm = document.getElementById('mcpGenSubmit');
         if (!submitElm) {

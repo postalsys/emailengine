@@ -392,6 +392,22 @@ document.addEventListener('click', e => {
     window.uiCopyText(value, btn);
 });
 
+// Cross-tab links: an element with data-goto-tab="<panel id>" activates that
+// panel's tab in a ui/tabs strip. Works for any strip because ui/tab renders
+// its button with the id "<panel id>-tab". Delegated like the copy buttons,
+// so pages need no script of their own for a "see the other tab" pointer.
+document.addEventListener('click', e => {
+    let link = e.target.closest('[data-goto-tab]');
+    if (!link) {
+        return;
+    }
+
+    let tab = document.getElementById(link.dataset.gotoTab + '-tab');
+    if (tab) {
+        tab.click();
+    }
+});
+
 // Resource-list row delete: a .list-delete-btn (rendered by ui/row-actions in
 // a kebab menu) opens the page's shared confirm modal, filling in the resource
 // name and either the modal form's hidden id field (payload-based delete
