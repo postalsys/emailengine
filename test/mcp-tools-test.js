@@ -22,7 +22,7 @@ const Joi = require('joi');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 const { captureApiRoutes } = require('./helpers/capture-api-routes');
-const { buildToolRegistry, callTool, toolVisibleTo, MAX_TOOL_RESULT_BYTES, MAX_TOOL_BINARY_BYTES } = require('../lib/mcp/tools');
+const { buildToolRegistry, callTool, toolVisibleTo, toolDefinitionFor, MAX_TOOL_RESULT_BYTES, MAX_TOOL_BINARY_BYTES } = require('../lib/mcp/tools');
 const { surfaceAdmits, routeGrant, ACTION, GROUP } = require('../lib/api-routes/permission-map');
 const { MCP_READ_ONLY_PERMISSIONS, MCP_MAIL_AGENT_PERMISSIONS } = require('../lib/token-permission-view');
 const { walkJson: walk } = require('./helpers/walk-json');
@@ -33,12 +33,13 @@ const UPDATE_ENV = 'UPDATE_MCP_GOLDEN';
 // Requiring lib/api-routes opens Redis and BullMQ handles that outlive the tests.
 registerRedisTeardown(redis);
 
-// A fake outer /mcp request carrying just what callTool() reads
-function outerRequest() {
+// A fake outer /mcp request carrying just what callTool() reads. `boundAccount` mirrors what the
+// api-token strategy parks on request.app for an account-bound credential.
+function outerRequest(boundAccount) {
     return {
         auth: { credentials: { token: 'a'.repeat(64) } },
         headers: { 'x-ee-timeout': '5000' },
-        app: { ip: '198.51.100.7' }
+        app: { ip: '198.51.100.7', mcpBoundAccount: boundAccount }
     };
 }
 
@@ -159,6 +160,66 @@ test('MCP tool registry', async t => {
         }
     });
 
+    await t.test('the body-rendering knobs are pinned rather than offered', () => {
+        // One canonical body shape is what an agent can reason about, so the tools that return a
+        // message body neither ask which rendering to produce nor let the caller pick one
+        for (const [name, forced] of [
+            ['get_message', { textType: '*', preProcessHtml: true, maxBytes: 64 * 1024 }],
+            ['get_message_text', { webSafeHtml: true }]
+        ]) {
+            const tool = tools.find(entry => entry.name === name);
+            for (const key of ['textType', 'webSafeHtml', 'preProcessHtml', 'embedAttachedImages']) {
+                assert.ok(!(key in tool.inputSchema.properties), `${name} must not expose ${key}`);
+            }
+            assert.deepEqual(byName.get(name).forcedValues, forced, name);
+        }
+    });
+
+    await t.test('a forced argument is never also an offered one', () => {
+        // Advertising an argument whose value is then discarded reads to the model as a control it
+        // does not have, so the builder refuses `force` without a matching `omit`. Asserted over
+        // the real catalog as well, in case a route declares one half of the pair.
+        for (const entry of byName.values()) {
+            for (const key of Object.keys(entry.forcedValues)) {
+                assert.ok(!(key in entry.definition.inputSchema.properties), `${entry.definition.name}: ${key} is both forced and offered`);
+            }
+        }
+    });
+
+    await t.test('the body tools tell the model where the quoted thread starts', () => {
+        // The collapse marker is the machine-readable "show more" boundary, and it is only useful
+        // to an agent that has been told the class name means that
+        for (const name of ['get_message', 'get_message_text']) {
+            const tool = tools.find(entry => entry.name === name);
+            assert.match(tool.description, /ee-collapsed-thread/, `${name} must name the collapse marker`);
+        }
+    });
+
+    await t.test('a bound credential is offered tools that take no account argument', () => {
+        // The endpoint already knows which account the credential reaches. Asking the model for it
+        // anyway asks for a value it cannot look up - the same credential is refused list_accounts.
+        for (const tool of tools) {
+            const entry = byName.get(tool.name);
+            if (!entry.sources.has('account')) {
+                continue;
+            }
+
+            const bound = toolDefinitionFor(entry, { boundAccount: 'acct-1' });
+
+            assert.ok('account' in tool.inputSchema.properties, `${tool.name}: unbound definition must still take an account`);
+            assert.ok(!('account' in bound.inputSchema.properties), `${tool.name}: bound definition must not take an account`);
+            assert.ok(!(bound.inputSchema.required || []).includes('account'), `${tool.name}: bound definition must not require an account`);
+
+            // Nothing else about the tool changes, and the shared definition is not mutated
+            assert.equal(bound.name, tool.name);
+            assert.deepEqual(
+                Object.keys(bound.inputSchema.properties),
+                Object.keys(tool.inputSchema.properties).filter(key => key !== 'account')
+            );
+            assert.ok('account' in toolDefinitionFor(entry, {}).inputSchema.properties, `${tool.name}: the unbound definition was mutated`);
+        }
+    });
+
     await t.test('destructive and sending tools carry honest annotations', () => {
         const annotations = Object.fromEntries(tools.map(tool => [tool.name, tool.annotations]));
 
@@ -196,6 +257,33 @@ test('MCP tool executor', async t => {
                 payload: Joi.object({ value: Joi.string().required(), count: Joi.number().integer() })
             },
             plugins: { mcp: { name: 'demo_post', title: 'Demo post', description: 'demo' } }
+        }
+    });
+
+    // Mirrors what the message routes wrap: an account-scoped tool with pinned rendering arguments,
+    // answering with the bodies under `text` and the web-safe marker beside them
+    server.route({
+        method: 'GET',
+        path: '/v1/demo/account/{account}/message/{message}',
+        handler: request => ({
+            account: request.params.account,
+            asked: request.query,
+            text: { html: '<p>hello</p>', plain: 'hello', webSafe: request.query.preProcessHtml === 'true' }
+        }),
+        options: {
+            validate: {
+                params: Joi.object({ account: Joi.string().required(), message: Joi.string().required() }),
+                query: Joi.object({ textType: Joi.string(), preProcessHtml: Joi.string(), markAsSeen: Joi.string() })
+            },
+            plugins: {
+                mcp: {
+                    name: 'demo_message',
+                    title: 'Demo message',
+                    description: 'demo',
+                    omit: ['textType', 'preProcessHtml'],
+                    force: { textType: '*', preProcessHtml: 'true' }
+                }
+            }
         }
     });
 
@@ -288,6 +376,57 @@ test('MCP tool executor', async t => {
 
         assert.equal(result.isError, true);
         assert.match(result.content[0].text, /Missing required tool argument: id/);
+    });
+
+    await t.test("forced arguments are sent, and are not the caller's to set", async () => {
+        const result = await callTool({ server, tool: byName.get('demo_message'), args: { account: 'acct-1', message: 'msg-1' }, request: outerRequest() });
+        assert.deepEqual(JSON.parse(result.content[0].text).asked, { textType: '*', preProcessHtml: 'true' });
+
+        // A forced key is omitted from the schema, so naming it is naming an argument the tool
+        // does not have - refused, rather than accepted and then quietly overridden
+        const refused = await callTool({
+            server,
+            tool: byName.get('demo_message'),
+            args: { account: 'acct-1', message: 'msg-1', textType: 'plain' },
+            request: outerRequest()
+        });
+        assert.equal(refused.isError, true);
+        assert.match(refused.content[0].text, /Unknown tool argument: textType/);
+    });
+
+    await t.test('the plaintext twin is dropped from a web-safe body', async () => {
+        // The generated HTML is built from both parts, so returning the plaintext beside it is the
+        // same message twice - on the largest results this endpoint produces
+        const message = await callTool({ server, tool: byName.get('demo_message'), args: { account: 'a', message: 'm' }, request: outerRequest() });
+        const messageBody = JSON.parse(message.content[0].text);
+        assert.equal(messageBody.text.webSafe, true);
+        assert.equal(messageBody.text.html, '<p>hello</p>');
+        assert.ok(!('plain' in messageBody.text), 'the plaintext twin must not survive');
+
+        // A response the API did not mark web-safe keeps whatever it carries: the rule is keyed on
+        // the marker, not on a tool name
+        const raw = await callTool({ server, tool: byName.get('demo_get'), args: { id: 'x' }, request: outerRequest() });
+        assert.equal(JSON.parse(raw.content[0].text).id, 'x');
+    });
+
+    await t.test('a bound credential does not have to name its account', async () => {
+        const filled = await callTool({ server, tool: byName.get('demo_message'), args: { message: 'msg-1' }, request: outerRequest('acct-9') });
+        assert.equal(JSON.parse(filled.content[0].text).account, 'acct-9');
+
+        // An account the caller does send is passed through rather than silently rewritten: the
+        // mismatch is the inner request's 403 to give, not this layer's to paper over
+        const explicit = await callTool({
+            server,
+            tool: byName.get('demo_message'),
+            args: { account: 'acct-other', message: 'msg-1' },
+            request: outerRequest('acct-9')
+        });
+        assert.equal(JSON.parse(explicit.content[0].text).account, 'acct-other');
+
+        // and without a binding the argument is still required, named rather than 404ed
+        const missing = await callTool({ server, tool: byName.get('demo_message'), args: { message: 'msg-1' }, request: outerRequest() });
+        assert.equal(missing.isError, true);
+        assert.match(missing.content[0].text, /Missing required tool argument: account/);
     });
 
     await t.test('binary tools return an embedded base64 resource, capped', async () => {

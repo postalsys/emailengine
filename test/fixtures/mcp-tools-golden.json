@@ -486,7 +486,7 @@
     {
         "name": "get_message",
         "title": "Get message",
-        "description": "Get one message: subject, addresses, date, flags, attachment list and the text id used by get_message_text. Set textType to also include the message text directly.",
+        "description": "Get one message: subject, addresses, date, flags, attachment list and the body. The body arrives in text.html as sanitized HTML, generated from the plaintext part when the message carries no HTML one, with no separate plaintext copy. It is capped at 65536 bytes - text.hasMore true means the rest is available from get_message_text. Quoted reply and forward history is wrapped in a <details class=\"ee-collapsed-thread\"> element - what an email client hides behind a \"show more\" control - so everything outside it is what the sender wrote this time.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -505,42 +505,6 @@
                         "AAAAAQAACnA"
                     ],
                     "maxLength": 256
-                },
-                "maxBytes": {
-                    "type": "integer",
-                    "description": "Max length of text content",
-                    "examples": [
-                        5248000
-                    ],
-                    "minimum": 0,
-                    "maximum": 1073741824
-                },
-                "textType": {
-                    "type": "string",
-                    "description": "Which text content to return, use * for all. By default text content is not returned.",
-                    "examples": [
-                        "*"
-                    ],
-                    "enum": [
-                        "html",
-                        "plain",
-                        "*"
-                    ]
-                },
-                "webSafeHtml": {
-                    "type": "boolean",
-                    "description": "Shorthand option to fetch and preprocess HTML and inline images",
-                    "default": false
-                },
-                "embedAttachedImages": {
-                    "type": "boolean",
-                    "description": "If true, then fetches attached images and embeds these in the HTML as data URIs",
-                    "default": false
-                },
-                "preProcessHtml": {
-                    "type": "boolean",
-                    "description": "If true, then pre-processes HTML for compatibility",
-                    "default": false
                 },
                 "markAsSeen": {
                     "type": "boolean",
@@ -564,7 +528,7 @@
     {
         "name": "get_message_text",
         "title": "Get message text",
-        "description": "Fetch the text content of a message. The text id comes from the text.id field of get_message or list_messages.",
+        "description": "Fetch the body of a message as sanitized HTML, generated from the plaintext part when the message carries no HTML one. The text id comes from the text.id field of get_message or list_messages. Quoted reply and forward history is wrapped in a <details class=\"ee-collapsed-thread\"> element - what an email client hides behind a \"show more\" control - so everything outside it is what the sender wrote this time.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -592,19 +556,6 @@
                     ],
                     "minimum": 0,
                     "maximum": 1073741824
-                },
-                "textType": {
-                    "type": "string",
-                    "description": "Which text content to return, use * for all. By default all contents are returned.",
-                    "examples": [
-                        "*"
-                    ],
-                    "default": "*",
-                    "enum": [
-                        "html",
-                        "plain",
-                        "*"
-                    ]
                 }
             },
             "additionalProperties": false,

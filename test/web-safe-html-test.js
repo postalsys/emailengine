@@ -6,7 +6,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { messageWebSafeHtml, collapseThreadHistory } = require('../lib/web-safe-html');
+const { messageWebSafeHtml, webSafeTextResponse, collapseThreadHistory } = require('../lib/web-safe-html');
 const { COLLAPSE_CLASS, COLLAPSE_TOGGLE_CLASS } = require('../lib/consts');
 
 const MARKER = `<details class="${COLLAPSE_CLASS}">`;
@@ -290,5 +290,43 @@ test('messageWebSafeHtml', async t => {
         assert.doesNotMatch(html, /onclick/);
         assert.doesNotMatch(html, /<script/);
         assert.match(html, /Hello there/);
+    });
+});
+
+test('webSafeTextResponse', async t => {
+    await t.test('returns one rendering and drops the plaintext twin', async () => {
+        const response = await webSafeTextResponse({
+            html: '<html><body><div>Hello there</div></body></html>',
+            plain: 'Hello there',
+            hasMore: false
+        });
+
+        assert.equal(response.webSafe, true);
+        assert.equal(response.hasMore, false);
+        assert.match(response.html, /Hello there/);
+        // The whole point: the caller is not handed the same message twice
+        assert.ok(!('plain' in response), 'the plaintext part must not be returned beside the generated HTML');
+    });
+
+    await t.test('generates HTML for a message that carries only a plaintext part', async () => {
+        const response = await webSafeTextResponse({ plain: 'Hello there', hasMore: true });
+
+        assert.equal(response.webSafe, true);
+        assert.equal(response.hasMore, true);
+        assert.match(response.html, /Hello there/);
+    });
+
+    await t.test('folds the quoted thread, so the boundary survives into the response', async () => {
+        const response = await webSafeTextResponse({ html: gmailReply.text.html, plain: gmailReply.text.plain });
+
+        assert.match(response.html, new RegExp(`<details class="${COLLAPSE_CLASS}"`));
+        assert.match(response.html, /Yes, Monday works for me/);
+        assert.match(response.html, /walk through the deploy plan/);
+    });
+
+    await t.test('leaves a response with no body alone', async () => {
+        // An empty `html` marked web-safe would claim more than the message says
+        assert.deepEqual(await webSafeTextResponse({ hasMore: false }), { hasMore: false });
+        assert.equal(await webSafeTextResponse(null), null);
     });
 });

@@ -6151,13 +6151,18 @@
         "properties": {
           "plain": {
             "type": "string",
-            "description": "Plaintext content",
+            "description": "Plaintext content. Not returned when webSafeHtml was requested",
             "example": "Hello world"
           },
           "html": {
             "type": "string",
             "description": "HTML content",
             "example": "<p>Hello world</p>"
+          },
+          "webSafe": {
+            "type": "boolean",
+            "description": "Whether the HTML content has been processed into a web-safe version (set when webSafeHtml was requested)",
+            "example": true
           },
           "hasMore": {
             "type": "boolean",
@@ -17080,6 +17085,19 @@
               }
             },
             "description": "Which text content to return, use * for all. By default all contents are returned."
+          },
+          {
+            "name": "webSafeHtml",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "description": "If true, then returns a single sanitized HTML rendering of the body instead of the raw text parts",
+              "x-meta": {
+                "usage": "Turn this on when you are rendering the body in your own UI and want EmailEngine to do the sanitising. Both MIME parts are fetched and folded into one sanitised HTML rendering, which is generated from the plaintext part when the message carries no HTML one.\n\nThe response then carries `html` and no `plain`: the two would be the same message twice. Quoted thread history is folded into one collapsed `<details class=\"ee-collapsed-thread\">` element so you can hide it behind a single control. Its `<summary>` is deliberately empty, so supply your own label."
+              },
+              "default": false
+            },
+            "description": "If true, then returns a single sanitized HTML rendering of the body instead of the raw text parts"
           }
         ],
         "tags": [

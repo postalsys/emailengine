@@ -18,8 +18,11 @@ const {
     LEGACY_PROTOCOL_VERSIONS,
     SUPPORTED_PROTOCOL_VERSIONS,
     META_PROTOCOL_VERSION,
-    SERVER_INFO
+    SERVER_INFO,
+    SERVER_INSTRUCTIONS,
+    serverInstructions
 } = require('../lib/mcp/protocol');
+const { COLLAPSE_CLASS } = require('../lib/consts');
 
 const TOOLS = [{ name: 'demo_tool', description: 'demo', inputSchema: { type: 'object', properties: {} } }];
 
@@ -178,6 +181,24 @@ test('MCP protocol', async t => {
         assert.ok(result.capabilities.tools);
         assert.deepEqual(result._meta['io.modelcontextprotocol/serverInfo'], SERVER_INFO);
         assert.ok(result.instructions.length);
+    });
+
+    await t.test('the instructions describe the credential the client is actually holding', () => {
+        // The generic set opens by telling the agent to list the accounts and pass an id, and a
+        // bound credential can do neither - it is refused the listing tools and its tools carry no
+        // account argument at all
+        assert.match(SERVER_INSTRUCTIONS, /list_accounts/);
+
+        const bound = serverInstructions('acct-1');
+        assert.doesNotMatch(bound, /list_accounts/);
+        assert.match(bound, /acct-1/);
+        assert.match(bound, /no account argument/);
+
+        // Both tell the model where an email client would put its "show more" control, which is
+        // the only way it can tell this message apart from the thread quoted under it
+        for (const instructions of [SERVER_INSTRUCTIONS, bound]) {
+            assert.match(instructions, new RegExp(COLLAPSE_CLASS));
+        }
     });
 
     await t.test('modern: cache hints follow the declared policy for every result-bearing method', async () => {
