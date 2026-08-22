@@ -1,17 +1,14 @@
 {{!--
     The "Limit to one account" field, offered identically by the OAuth consent prompt and the
     admin token generator so the two cannot drift on the wording - the same reason
-    mcp_access_levels.hbs exists. Reads accountOptions from the page context.
+    mcp_access_levels.hbs exists. The control itself is the shared ui/account-picker; only the
+    label and the hint, which are about what the binding means for an MCP client, live here.
     Params:
-      id    - input id, also the posted field name (required)
-      list  - datalist id, unique per page (required)
-      value - current value, for validation re-renders (optional)
-      error - validation error message (optional)
+      id       - input id, also the posted field name (required)
+      value    - current value, for validation re-renders (optional)
+      selected - picker entry for that value (optional)
+      error    - validation error message (optional)
 --}}
-{{> ui/form-field id=id label="Limit to one account" value=value error=error list=list placeholder="account id"
-    hint="Recommended. The token then only reaches this account. Leave empty to allow every account on the instance."}}
-<datalist id="{{list}}">
-    {{#each accountOptions}}
-    <option value="{{account}}">{{label}}</option>
-    {{/each}}
-</datalist>
+{{> ui/account-picker id=id value=value selected=selected error=error label="Limit to one account"
+    placeholder="Search by name, address or account id"
+    hint="Recommended. The client then only reaches this account, and its tools stop asking which account to act on. Leave empty to allow every account on the instance."}}

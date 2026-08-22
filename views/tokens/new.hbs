@@ -28,10 +28,14 @@
 
             {{> ui/form-field id="description" label="Description" value=values.description error=errors.description required=true hint="This description is shown when listing active tokens."}}
 
-            {{!-- Free text rather than a select: an instance can hold far more accounts than a list
-                  could usefully carry. The ID is resolved on submit, so a typo is refused rather than
-                  minting a token bound to nothing. --}}
-            {{> ui/form-field id="account" label="Account ID (optional)" value=values.account error=errors.account placeholder="Leave empty to allow all accounts" hint="A bound token only works for that one account. Requests made for any other account are refused."}}
+            {{!-- A search box rather than a select or free text: an instance can hold far more
+                  accounts than a list could usefully carry, and an account id is the one thing
+                  about an account nobody remembers. The ID is still resolved on submit, so a value
+                  naming a deleted account is refused rather than minting a token bound to
+                  nothing. --}}
+            {{> ui/account-picker id="account" label="Account (optional)" value=values.account selected=selectedAccount error=errors.account
+                placeholder="Leave empty to allow all accounts"
+                hint="A bound token only works for that one account. Requests made for any other account are refused."}}
 
             <div>
                 <h6 class="mb-1 font-bold">Allowed scopes</h6>

@@ -19,7 +19,7 @@
 const os = require('os');
 const path = require('path');
 const { test, expect, request } = require('@playwright/test');
-const { ensureAdminSession, createApiToken, dismissTokenReveal, trackConsoleErrors, BASE_URL } = require('./helpers/bootstrap');
+const { ensureAdminSession, createApiToken, dismissTokenReveal, trackConsoleErrors, setPickedAccount, BASE_URL } = require('./helpers/bootstrap');
 
 // One real login per run: the admin session cookie is captured in beforeAll and
 // reused by every test via storageState. Logging in per test trips the login
@@ -1963,7 +1963,7 @@ test.describe('admin shell', () => {
         await expect(count).toContainText(/(\d+) of \1 MCP tools available/);
 
         // And limiting the client to one account takes the instance-wide tools away from it
-        await page.locator('#mcpGenAccount').fill('some-account');
+        await setPickedAccount(page, '#mcpGenAccount', 'some-account');
         await expect(count).toContainText('the instance-wide tools are not offered');
         await expect(count).toContainText('list_accounts');
 

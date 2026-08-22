@@ -18,7 +18,7 @@
 const os = require('os');
 const path = require('path');
 const { test, expect } = require('@playwright/test');
-const { ensureAdminSession, createApiToken, dismissTokenReveal, trackConsoleErrors, BASE_URL } = require('./helpers/bootstrap');
+const { ensureAdminSession, createApiToken, dismissTokenReveal, trackConsoleErrors, setPickedAccount, BASE_URL } = require('./helpers/bootstrap');
 
 const STATE_FILE = path.join(os.tmpdir(), 'ee-e2e-tokens-state.json');
 
@@ -29,6 +29,9 @@ const BOUND_TOKEN_DESCRIPTION = `e2e bound ${Date.now()}`;
 // The account the binding test points at. Registered over the REST API rather than through the
 // account wizard: what is under test is the token form, and the wizard needs a working mail server.
 const BOUND_ACCOUNT_ID = 'e2e-token-binding';
+
+// The account the picker test searches for. Its own, so the two tests cannot race over one record.
+const PICKER_ACCOUNT_ID = 'e2e-token-picker';
 
 test.describe('access token pages', () => {
     test.use({ storageState: STATE_FILE });
@@ -173,7 +176,7 @@ test.describe('access token pages', () => {
         expect(errors).toEqual([]);
     });
 
-    test('a token can be bound to an account typed into the form', async ({ page, request }) => {
+    test('a token can be bound to an account picked on the form', async ({ page, request }) => {
         // The binding used to be reachable only by opening the form from an account page, which put
         // the account in the URL and out of sight. It is what the token IS - the credential is
         // refused for every other account - so it has to be visible and editable on the form itself.
@@ -204,7 +207,19 @@ test.describe('access token pages', () => {
             await expect(page.locator('#account')).toHaveValue('');
 
             await page.locator('#description').fill(BOUND_TOKEN_DESCRIPTION);
-            await page.locator('#account').fill(BOUND_ACCOUNT_ID);
+
+            // The account is searched for and picked, never typed as an id: the whole point of the
+            // picker is that the id is the one thing about an account nobody remembers
+            await page.locator('#account-search').fill('E2E Token Binding');
+            const suggestion = page.locator('#account-results [role="option"]', { hasText: BOUND_ACCOUNT_ID });
+            await expect(suggestion).toBeVisible();
+            await suggestion.click();
+
+            // Picking replaces the box with the account it named, and fills the value the form posts
+            await expect(page.locator('#account')).toHaveValue(BOUND_ACCOUNT_ID);
+            await expect(page.locator('#account-search')).toBeHidden();
+            await expect(page.locator('[data-picker-card]')).toContainText('E2E Token Binding');
+
             await page.getByRole('button', { name: 'Generate a token' }).click();
 
             await expect(page.locator('#showTokenValue')).toHaveValue(/^[0-9a-f]{64}$/, { timeout: 15000 });
@@ -244,17 +259,84 @@ test.describe('access token pages', () => {
     });
 
     test('an account ID that does not exist is refused, and says so', async ({ page }) => {
-        // Free text, so a typo is the failure to design for. It has to name the value that was not
-        // found rather than report a bare "Not Found", which says nothing about which field to fix.
+        // The picker cannot produce an id that names nothing, but the form is not the only way to
+        // reach the route: a page left open while the account was deleted posts exactly this. The
+        // refusal has to name the value rather than report a bare "Not Found", which says nothing
+        // about which field to fix.
         await page.goto(`${BASE_URL}/admin/tokens/new`);
 
         await page.locator('#description').fill(`e2e unknown account ${Date.now()}`);
-        await page.locator('#account').fill('e2e-no-such-account');
+        await setPickedAccount(page, '#account', 'e2e-no-such-account');
         await page.getByRole('button', { name: 'Generate a token' }).click();
 
         const error = page.locator('#showTokenError');
         await expect(error).toBeVisible({ timeout: 15000 });
         await expect(error).toContainText('e2e-no-such-account');
+    });
+
+    test('the account picker searches, shows what was picked, and can be cleared', async ({ page, request }) => {
+        // The control replaces a free-text account id, which is the one field on this form nobody
+        // could fill in from memory. Three things have to hold for that to be an improvement: it
+        // finds an account from something a person actually knows, it shows back what was picked
+        // rather than an opaque id, and it lets go of it again.
+        const errors = trackConsoleErrors(page);
+
+        const apiToken = await createApiToken(page, `e2e picker setup ${Date.now()}`);
+        await dismissTokenReveal(page);
+        const auth = { Authorization: `Bearer ${apiToken}` };
+
+        await request.delete(`/v1/account/${PICKER_ACCOUNT_ID}`, { headers: auth }).catch(() => {});
+        const created = await request.post('/v1/account', {
+            headers: auth,
+            data: { account: PICKER_ACCOUNT_ID, name: 'E2E Picker Account', email: 'e2e-picker@ethereal.email' }
+        });
+        expect(created.ok(), `POST /v1/account -> ${created.status()} ${await created.text()}`).toBeTruthy();
+
+        try {
+            await page.goto(`${BASE_URL}/admin/tokens/new`);
+
+            const box = page.locator('#account-search');
+            const results = page.locator('#account-results');
+
+            // Focusing offers what is there, before anything is typed - on a small instance that is
+            // the whole answer and no typing is needed at all
+            await box.click();
+            await expect(results).toBeVisible();
+
+            // Found by address, which is neither the id nor the name
+            await box.fill('e2e-picker@ethereal.email');
+            const option = results.locator('[role="option"]', { hasText: PICKER_ACCOUNT_ID });
+            await expect(option).toBeVisible();
+
+            // The row identifies the account by name as well as by id, which is what makes it
+            // pickable by someone who only knows one of them
+            await expect(option).toContainText('E2E Picker Account');
+
+            await option.click();
+            await expect(page.locator('#account')).toHaveValue(PICKER_ACCOUNT_ID);
+            await expect(results).toBeHidden();
+
+            // Clearing hands the search box back, empty
+            await page.getByRole('button', { name: 'Clear the selected account' }).click();
+            await expect(page.locator('#account')).toHaveValue('');
+            await expect(box).toBeVisible();
+            await expect(box).toHaveValue('');
+
+            // A search that matches nothing says so rather than showing an empty box
+            await box.fill('no-account-matches-this-string');
+            await expect(results).toContainText('No account matches that.');
+
+            // Arriving from an account's own token list pre-binds the form, and the picker opens
+            // showing that account rather than an id nobody would recognise
+            await page.goto(`${BASE_URL}/admin/tokens/new?account=${PICKER_ACCOUNT_ID}`);
+            await expect(page.locator('#account')).toHaveValue(PICKER_ACCOUNT_ID);
+            await expect(page.locator('#account-search')).toBeHidden();
+            await expect(page.locator('[data-picker-card]')).toContainText('E2E Picker Account');
+
+            expect(errors).toEqual([]);
+        } finally {
+            await request.delete(`/v1/account/${PICKER_ACCOUNT_ID}`, { headers: auth }).catch(() => {});
+        }
     });
 
     test('warns when a restriction contradicts one of the token own scopes', async ({ page }) => {
@@ -359,7 +441,7 @@ test.describe('access token pages', () => {
         const unbound = (await outcome.textContent()).match(/(\d+) of (\d+) MCP tools available/);
         expect(unbound, 'the unbound tool count should be shown').not.toBeNull();
 
-        await page.locator('#account').fill('some-account');
+        await setPickedAccount(page, '#account', 'some-account');
 
         const bound = (await outcome.textContent()).match(/(\d+) of (\d+) MCP tools available/);
         // Both halves shrink: a bound credential is never offered those tools at all
@@ -372,7 +454,7 @@ test.describe('access token pages', () => {
         await expect(outcome).toContainText('list_accounts');
 
         // And it follows the field back
-        await page.locator('#account').fill('');
+        await setPickedAccount(page, '#account', '');
         await expect(outcome).toContainText(`${unbound[1]} of ${unbound[2]} MCP tools available`);
 
         expect(errors).toEqual([]);

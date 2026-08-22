@@ -1,0 +1,59 @@
+{{!--
+    ui/account-picker - the "which account" field.
+
+    A free-text account id is a field only the person who already knows the id can fill in, and the
+    id is the one thing about an account nobody remembers. This is a search box instead: type any
+    part of an id, a name or an address, pick from the suggestions, and the box is replaced by a
+    card naming the account that was picked, with a button to clear it again.
+
+    The posted value stays a plain account id in a hidden input carrying the given id, so a page
+    that already reads or watches that field keeps working - static/js/ui.js fires `input` and
+    `change` on it whenever the choice changes, exactly as typing into a text field would.
+
+    Suggestions come from GET /admin/accounts/suggestions; the card is painted by ui.js from the
+    same JSON shape, so a server-rendered selection and a just-picked one cannot look different.
+
+    Hand-rolled rather than FlyonUI's HSComboBox, which the vendored bundle does carry: that
+    component renders items from template strings, and every field on a row here (a display name,
+    an address) arrives from a mail provider, so the rows are built as text nodes instead. The
+    hidden-id-plus-card shape is not one of its modes either.
+      {{> ui/account-picker id="account" label="Account" value=values.account selected=selectedAccount}}
+    Params:
+      id          - hidden input id, also the default posted name and what page scripts read (required)
+      name        - posted field name (defaults to id)
+      label       - field label (optional)
+      hint        - muted helper text under the control (optional)
+      error       - validation error message (optional)
+      value       - current account id (optional)
+      selected    - picker entry for `value`: {account, name, email, state} (optional; without it a
+                    value renders as an id the picker could not resolve, which is what a deleted
+                    account looks like)
+      placeholder - search box placeholder (optional)
+--}}
+<div class="w-full">
+    {{#if label}}
+    <label class="label-text" for="{{id}}-search">{{label}}</label>
+    {{/if}}
+    <div data-account-picker data-input="{{id}}" {{#if selected}}data-selected="{{json selected}}" {{/if}}>
+        <input type="hidden" id="{{id}}" name="{{#if name}}{{name}}{{else}}{{id}}{{/if}}" {{#if value}}value="{{value}}" {{/if}}>
+
+        {{!-- The picked account. Empty until ui.js paints it, and hidden whenever nothing is picked. --}}
+        <div class="ee-account-picker-card hidden" data-picker-card></div>
+
+        <div class="ee-account-picker-search" data-picker-search>
+            <div class="input{{#if error}} is-invalid{{/if}}">
+                <span class="icon-[tabler--search] text-base-content/60 my-auto me-2 size-4 shrink-0"></span>
+                <input type="text" class="grow" id="{{id}}-search" role="combobox" aria-expanded="false" aria-autocomplete="list"
+                    aria-controls="{{id}}-results" autocomplete="off" data-lpignore="true"
+                    placeholder="{{#if placeholder}}{{placeholder}}{{else}}Search by name, address or account id{{/if}}">
+            </div>
+            <div class="ee-account-picker-results hidden" id="{{id}}-results" role="listbox" data-picker-results></div>
+        </div>
+    </div>
+    {{#if error}}
+    <span class="helper-text text-error">{{error}}</span>
+    {{/if}}
+    {{#if hint}}
+    <span class="helper-text">{{hint}}</span>
+    {{/if}}
+</div>

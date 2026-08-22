@@ -41,6 +41,7 @@ const GET_ROUTES = [
     '/admin/account/password',
     '/admin/account/security',
     '/admin/accounts',
+    '/admin/accounts/suggestions',
     '/admin/config/ai',
     '/admin/config/branding',
     '/admin/config/document-store',

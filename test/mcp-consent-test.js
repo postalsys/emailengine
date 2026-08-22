@@ -98,7 +98,7 @@ test('MCP consent flow', async t => {
             return h.continue;
         });
 
-        mcpConsentRoutes({ server, call: async () => ({ accounts: [] }) });
+        mcpConsentRoutes({ server });
         await server.initialize();
 
         client = await registerClient({ redirectUris: [REDIRECT_URI], clientName: 'Consent flow test' });
@@ -176,6 +176,11 @@ test('MCP consent flow', async t => {
         assert.equal(res.statusCode, 200);
         assert.equal(res.result.context.errors.account, 'No such account');
         assert.ok(!res.headers.location);
+        // The account picker is handed nothing to show back, because there is no such account to
+        // describe. The id itself survives in `values`, which is what the field renders as the
+        // unresolved choice it is.
+        assert.equal(res.result.context.selectedAccount, null);
+        assert.equal(res.result.context.values.account, 'consent-test-no-such-account');
     });
 
     // Approval and the client's half of the exchange, exactly as the token endpoint runs it.

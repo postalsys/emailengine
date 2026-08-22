@@ -1,5 +1,7 @@
 'use strict';
 
+/* global Event */
+
 // Idempotent admin-UI bootstrap helpers for the e2e suite. Every spec shares one booted
 // EmailEngine instance and the isolated Redis db 14 (see playwright.config.js), so these must
 // tolerate an instance another spec has already bootstrapped: set the first admin password on a
@@ -108,4 +110,32 @@ async function dismissTokenReveal(page) {
     await page.waitForURL(/\/admin\/tokens(\?|$)/);
 }
 
-module.exports = { ADMIN_PASSWORD, PORT, BASE_URL, ensureAdminSession, ensureTrial, createApiToken, dismissTokenReveal, trackConsoleErrors };
+/**
+ * Puts an account id into an account picker without going through the search box.
+ *
+ * The picker (views/partials/ui/account-picker.hbs) writes the hidden input and fires `input` on
+ * it, and that event is the whole contract anything else on the page follows. Tests about what
+ * FOLLOWS the field use this, so they need no account fixture; the picker's own behaviour is
+ * covered by driving the search box in test/e2e/pages-tokens.spec.js.
+ *
+ * @param {Object} page - Playwright page
+ * @param {String} selector - selector for the picker's hidden input
+ * @param {String} account - account id to set, or '' to clear
+ */
+const setPickedAccount = (page, selector, account) =>
+    page.locator(selector).evaluate((elm, value) => {
+        elm.value = value;
+        elm.dispatchEvent(new Event('input', { bubbles: true }));
+    }, account);
+
+module.exports = {
+    ADMIN_PASSWORD,
+    PORT,
+    BASE_URL,
+    ensureAdminSession,
+    ensureTrial,
+    createApiToken,
+    dismissTokenReveal,
+    trackConsoleErrors,
+    setPickedAccount
+};

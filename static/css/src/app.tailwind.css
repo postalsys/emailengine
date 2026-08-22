@@ -645,4 +645,58 @@
     .alert-margin .alert {
         margin: 10px 10px 0 0;
     }
+
+    /* --- Account picker (ui/account-picker) --------------------------------
+     * The suggestion list and the card that replaces the search box once an
+     * account is picked. Classes rather than utilities because the list is an
+     * overlay: it has to be positioned, layered and scroll-bounded as one
+     * piece, and that is a component rather than a string of utilities on a
+     * node ui.js builds. (Utilities in ui.js ARE scanned - it is an @source
+     * above - so the row-level styling stays inline there.) */
+    .ee-account-picker-search {
+        position: relative;
+    }
+    .ee-account-picker-results {
+        position: absolute;
+        z-index: 20;
+        inset-inline: 0;
+        top: calc(100% + 0.25rem);
+        max-height: 18rem;
+        overflow-y: auto;
+        /* the list is an overlay over page content, so it needs its own ground */
+        background-color: var(--color-base-100);
+        border: var(--border, 1px) solid color-mix(in oklab, var(--color-base-content) 12%, transparent);
+        border-radius: var(--radius-box, 0.5rem);
+        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        padding: 0.25rem;
+    }
+    .ee-account-picker-option {
+        display: block;
+        width: 100%;
+        text-align: start;
+        cursor: pointer;
+        padding: 0.5rem 0.625rem;
+        border-radius: var(--radius-field, 0.375rem);
+        /* every row is one account: its lines must not wrap into each other */
+        min-width: 0;
+    }
+    /* Hover and keyboard land on the same highlight, so the row under the
+     * pointer and the row Enter would pick are never two different rows. */
+    .ee-account-picker-option.is-active {
+        background-color: color-mix(in oklab, var(--color-base-content) 8%, transparent);
+    }
+    .ee-account-picker-note {
+        padding: 0.5rem 0.625rem;
+        font-size: 0.875rem;
+        color: color-mix(in oklab, var(--color-base-content) 60%, transparent);
+    }
+    .ee-account-picker-card {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.625rem 0.75rem;
+        border: var(--border, 1px) solid color-mix(in oklab, var(--color-base-content) 12%, transparent);
+        border-radius: var(--radius-field, 0.375rem);
+        background-color: var(--color-base-200);
+    }
 }

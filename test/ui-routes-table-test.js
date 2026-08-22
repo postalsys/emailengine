@@ -31,7 +31,7 @@ const { redis } = require('../lib/db');
 const { captureRoutes } = require('./helpers/capture-ui-routes');
 
 // The complete, sorted set of routes registered by lib/routes-ui.js (including the
-// already-extracted admin-entities-routes.js it wires in). 148 routes.
+// already-extracted admin-entities-routes.js it wires in). 149 routes.
 const GOLDEN_ROUTES = [
     'DELETE /admin/accounts/{account}/export/{exportId}',
     'GET /.well-known/acme-challenge/{token}',
@@ -47,6 +47,7 @@ const GOLDEN_ROUTES = [
     'GET /admin/accounts/{account}/export/{exportId}/download',
     'GET /admin/accounts/{account}/exports',
     'GET /admin/accounts/{account}/logs.txt',
+    'GET /admin/accounts/suggestions',
     'GET /admin/config/ai',
     'GET /admin/config/branding',
     'GET /admin/config/document-store',

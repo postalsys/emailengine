@@ -11,7 +11,10 @@ ARGV:
   [2] skip - Number of matching entries to skip (pagination offset)
   [3] count - Maximum number of entries to return
   [4] prefix - Key prefix for account data hashes (e.g., "ee:")
-  [5] strsearch - Case-insensitive substring to search in account, name, or email fields
+  [5] strsearch - Case-insensitive substring to search in account, name, or email fields.
+      Folded here as well as by the caller, so a caller that passes it as typed still gets a
+      case-insensitive search. string.lower() folds ASCII only; a caller that has to match
+      non-ASCII has to fold the needle itself before passing it in.
 
 Returns:
   Array with:
@@ -28,7 +31,7 @@ local filterState = ARGV[1];
 local skip = tonumber(ARGV[2]) or 0;
 local count = tonumber(ARGV[3]) or 0;
 local prefix = ARGV[4];
-local strsearch = ARGV[5];
+local strsearch = string.lower(ARGV[5] or '');
 
 -- filterState may be a comma-separated list; build a lookup set once
 local stateSet = nil;
