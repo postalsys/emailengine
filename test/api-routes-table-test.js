@@ -181,6 +181,45 @@ test('API route table and authentication', async t => {
         );
     });
 
+    await t.test('non-/v1 routes declare their auth deliberately', () => {
+        // The assertion above covers /v1 only, and the trap it describes is not confined to /v1: a
+        // route with no `auth` key inherits server.auth.default(), which is the admin session
+        // strategy and is installed only when an admin password is set. On a passwordless instance
+        // such a route is simply open. `auth: false` says that on purpose; saying nothing says it
+        // by accident, and the two are indistinguishable from the route table without this list.
+        //
+        // Every entry here is a deliberate decision, so adding a non-/v1 route means adding a line
+        // and thinking about which of the three it is.
+        const EXPECTED_NON_V1_AUTH = {
+            // The Document Store chat test. Admin-surface route inside the /admin perimeter,
+            // session-gated whenever the instance is secured.
+            'POST /admin/config/document-store/chat/test': 'inherited',
+
+            // The MCP endpoint proper. Everything else under /mcp is protocol discovery that a
+            // client reads before it holds a credential.
+            'POST /mcp': 'api-token/required',
+            'GET /mcp': 'false',
+            'DELETE /mcp': 'false',
+            'GET /.well-known/oauth-protected-resource/{suffix?}': 'false',
+            'GET /.well-known/oauth-authorization-server': 'false',
+            // Open client registration (RFC 7591) and the code-for-token exchange, which
+            // authenticates with the PKCE verifier rather than with a credential
+            'POST /mcp/oauth/register': 'false',
+            'POST /mcp/oauth/token': 'false'
+        };
+
+        const declared = Object.fromEntries(captured.filter(route => !route.path.startsWith('/v1/')).map(route => [route.route, route.authDeclared]));
+
+        assert.deepEqual(
+            declared,
+            EXPECTED_NON_V1_AUTH,
+            'a non-/v1 route was added, removed or changed its auth. "inherited" means the route falls back to ' +
+                'server.auth.default() - the admin session strategy, which is only installed when an admin password ' +
+                'is set, so the route is open on a passwordless instance. Decide which of the three it should be, ' +
+                'then update this table.'
+        );
+    });
+
     await t.test('every /v1 route is tagged "api"', () => {
         const untagged = v1Routes.filter(route => !route.tags.includes('api')).map(route => route.route);
 

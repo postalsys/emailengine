@@ -77,6 +77,11 @@ function describeRoute(cfg, method) {
         // server.auth.default(), which for a /v1 route is never what you want.
         authStrategy: auth && typeof auth === 'object' ? auth.strategy : undefined,
         authMode: auth && typeof auth === 'object' ? auth.mode : undefined,
+        // What the route actually wrote, which `authStrategy` alone cannot tell apart: `auth: false`
+        // (deliberately public) and no `auth` key (inherits server.auth.default(), which is the
+        // conditionally-installed admin session) both leave the two fields above undefined, and
+        // those are very different statements about a route.
+        authDeclared: auth === false ? 'false' : auth === undefined ? 'inherited' : `${auth.strategy}/${auth.mode}`,
         tags: options.tags || [],
         // The request-body schema as registered, so a guardrail can ask what fields a route accepts
         // rather than reading the route modules by hand. Undefined for routes that take no payload.

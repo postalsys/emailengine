@@ -75,7 +75,7 @@ const tokenPermissions = require('../lib/token-permissions');
 const { mcpFeatureEnabled } = require('../lib/mcp');
 const mcpListen = require('../lib/mcp/listen');
 const tokenAuditLog = require('../lib/token-audit-log');
-const { routeGrant, surfaceAdmits } = require('../lib/api-routes/permission-map');
+const { routeGrant, surfaceAdmits, sessionTokenAdmits } = require('../lib/api-routes/permission-map');
 const { mcpOptions } = require('../lib/api-routes/route-metadata');
 
 const { redis, documentsQueue } = require('../lib/db');
@@ -910,6 +910,31 @@ const init = async () => {
                     900
                 );
                 if (isValidSessionToken) {
+                    // A session token is bound to the account whose page minted it (checked above,
+                    // against request.params.account), but it used to reach every api-tagged route
+                    // naming that account - it never met the permission model at all. It lives in
+                    // the page HTML where any script on the page can read it, which the HttpOnly
+                    // session cookie does not, so it must not be the wider of the two credentials:
+                    // SESSION_TOKEN_GRANTS is what the browser actually calls, and everything else
+                    // - the account edit that rewrites a webhook target, the route that hands out
+                    // the account's provider access token - is refused here.
+                    if (!sessionTokenAdmits(routeGrant(request.route), { account: request.params.account })) {
+                        logger.warn({
+                            msg: 'Session token used outside the message browser grants',
+                            account: request.params.account,
+                            method: request.route.method,
+                            path: request.route.path
+                        });
+                        throw Boom.forbidden('Unauthorized permission');
+                    }
+
+                    // The credential is bounded by a grant list rather than by a permissions
+                    // record, so anything that keys off "is this token narrowed" cannot see it -
+                    // assertNoNetworkOverride() is the one that matters, since `send/submit` is
+                    // admitted above and a submit payload's `proxy` decides where the session
+                    // carrying the account's SMTP credential connects.
+                    request.app.sessionToken = true;
+
                     return {
                         isValid: true,
                         credentials: {},
@@ -1212,6 +1237,15 @@ const init = async () => {
         path: '/'
     });
 
+    // The version an SSO login stamps into its session, so the check in validate() below can end
+    // it later. The password logins in lib/ui-routes/auth-routes.js stamp the same field from the
+    // same place; without it a session is refused on the first request after any version bump,
+    // which is a forced re-login rather than a lockout.
+    const sessionPasswordVersion = async () => {
+        const authData = await settings.get('authData');
+        return (authData && authData.passwordVersion) || 0;
+    };
+
     // Authentication for admin pages
     server.auth.strategy('session', 'cookie', {
         cookie: {
@@ -1225,6 +1259,20 @@ const init = async () => {
         redirectTo: '/admin/login',
 
         async validate(request, session) {
+            const authData = await settings.get('authData');
+
+            // "Log out all sessions" and a password change both bump authData.passwordVersion, and
+            // a session stamped with an older one is over. Checked before the provider switch
+            // because it is true of every session: the SSO branch used to return before reaching
+            // it, so an SSO session - and the sess_ tokens sliding their TTL through it - outlived
+            // the click that was supposed to end every session. Only reachable when a local
+            // password exists at all, which is also the only case where this strategy is installed
+            // (isInstanceSecured() is `!!authData`).
+            if (authData && authData.passwordVersion && authData.passwordVersion !== session.passwordVersion) {
+                // force logout
+                return { isValid: false };
+            }
+
             switch (session.provider) {
                 case 'okta':
                 case 'oidc': {
@@ -1259,14 +1307,8 @@ const init = async () => {
                 }
             }
 
-            const authData = await settings.get('authData');
             if (!authData) {
                 return { isValid: true, credentials: { enabled: false } };
-            }
-
-            if (authData.passwordVersion && authData.passwordVersion !== session.passwordVersion) {
-                // force logout
-                return { isValid: false };
             }
 
             const account = authData.user === session.user;
@@ -1331,9 +1373,9 @@ const init = async () => {
         server.route({
             method: ['GET', 'POST'],
             path: '/admin/login/okta',
-            handler(request, h) {
+            async handler(request, h) {
                 assertSsoAuthenticated(request);
-                setAdminSession(request, request.auth.credentials);
+                setAdminSession(request, Object.assign({}, request.auth.credentials, { passwordVersion: await sessionPasswordVersion() }));
                 let oktaUser = request.auth.credentials && request.auth.credentials.profile && request.auth.credentials.profile.username;
                 request.logger.info({ msg: 'Admin login successful', user: oktaUser || 'unknown', method: 'okta', remoteAddress: request.app.ip });
                 return h.redirect('/admin');
@@ -1421,6 +1463,7 @@ const init = async () => {
                     // `ee` cookie past the ~4KB browser limit and cause a silent login loop.
                     // Group names are kept so the per-request authorization re-check works;
                     // the id_token is kept only as the logout id_token_hint (RP-initiated logout).
+                    const passwordVersion = await sessionPasswordVersion();
                     setAdminSession(request, {
                         provider: 'oidc',
                         profile: {
@@ -1433,6 +1476,7 @@ const init = async () => {
                             emailVerified: profile.emailVerified,
                             groups: profile.groups
                         },
+                        passwordVersion,
                         idToken: (request.auth.artifacts && request.auth.artifacts.id_token) || null
                     });
 
@@ -1546,6 +1590,16 @@ const init = async () => {
         }
     });
 
+    // The dependency inventory. Unlike the licence texts and the favicon next to it this is not
+    // public content: it names every package and version the instance runs, which is the first
+    // thing worth having when looking for a way in. An operator or an auditor asking for it holds a
+    // token; nobody else has business reading it.
+    //
+    // `scope:api` rather than a scope of its own, and no `api` tag: the tag is what selects a route
+    // into /swagger.json, and this is a file download rather than an API operation. The route names
+    // no account, so an account-bound token is refused by the binding check, and it is in no
+    // permission group, so a narrowed token is refused as unclassified - both correct for a
+    // instance-wide inventory.
     server.route({
         method: 'GET',
         path: '/sbom.json',
@@ -1553,8 +1607,11 @@ const init = async () => {
             file: { path: pathlib.join(__dirname, '..', 'sbom.json'), confine: false }
         },
         options: {
-            auth: false,
-            tags: ['static']
+            tags: ['static', 'scope:api'],
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            }
         }
     });
 
@@ -3191,15 +3248,24 @@ const init = async () => {
     // An IP allowlist is only as trustworthy as the address it matches against. If the deployment
     // takes the client address from X-Forwarded-For but does not say which peers may set it, any
     // client that can reach this port can present whatever address the allowlist expects.
+    //
+    // Fired on the configuration rather than on the admin allowlist alone: per-token
+    // `restrictions.addresses` reads the same resolved address and is just as spoofable, and those
+    // live on individual token records rather than in a startup value, so there is nothing to test
+    // for here - an instance in this state cannot rely on either control.
+    //
     // Length-checked, not just null-checked: readEnvList returns [] for a variable that is present
     // but empty (an unset shell interpolation, an empty secret), which is truthy. resolveClientIp
     // treats that as no proxies configured, so the warning has to agree or it goes quiet in
     // exactly the deployment it exists to warn.
-    if (ADMIN_ACCESS_ADDRESSES && ADMIN_ACCESS_ADDRESSES.length && !API_PROXY_ADDRESSES?.length && (await settings.get('enableApiProxy'))) {
+    if (!API_PROXY_ADDRESSES?.length && (await settings.get('enableApiProxy'))) {
         logger.warn({
-            msg: 'Admin IP allowlist is spoofable because X-Forwarded-For is trusted from any peer. Set EENGINE_API_PROXY_ADDRESSES to the addresses of your proxies, or disable the API proxy setting.',
+            msg:
+                'X-Forwarded-For is trusted from any peer, so the resolved client address is caller-controlled. ' +
+                'The admin IP allowlist and per-token restrictions.addresses cannot be relied on in this configuration. ' +
+                'Set EENGINE_API_PROXY_ADDRESSES to the addresses of your proxies, or disable the API proxy setting.',
             component: 'api',
-            allowedAddresses: ADMIN_ACCESS_ADDRESSES
+            allowedAddresses: ADMIN_ACCESS_ADDRESSES && ADMIN_ACCESS_ADDRESSES.length ? ADMIN_ACCESS_ADDRESSES : null
         });
     }
 

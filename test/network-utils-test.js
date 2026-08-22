@@ -11,6 +11,21 @@ test('Network Utilities tests', async t => {
     });
 
     // matchIp tests
+    await t.test('matchIp() refuses an IPv4-mapped range whose prefix predates the mapped block', async () => {
+        // ::ffff:10.0.0.0/104 is 10.0.0.0/8 - the mapped prefix takes the first 96 bits
+        assert.strictEqual(matchIp('10.1.2.3', ['::ffff:10.0.0.0/104']), true);
+        assert.strictEqual(matchIp('11.1.2.3', ['::ffff:10.0.0.0/104']), false);
+
+        // A shorter prefix describes no IPv4 subnet at all. Clamping the remainder to zero turned
+        // it into 0.0.0.0/0, so one mistyped digit in an allowlist matched every IPv4 address -
+        // the one direction an allowlist must never fail in.
+        assert.strictEqual(matchIp('203.0.113.9', ['::ffff:10.0.0.0/80']), false);
+        assert.strictEqual(matchIp('10.1.2.3', ['::ffff:10.0.0.0/80']), false);
+
+        // and a bad entry does not take the rest of the list with it
+        assert.strictEqual(matchIp('10.1.2.3', ['::ffff:10.0.0.0/80', '10.0.0.0/8']), true);
+    });
+
     await t.test('matchIp() matches exact IPv4 address', async () => {
         assert.strictEqual(matchIp('192.168.1.1', ['192.168.1.1']), true);
         assert.strictEqual(matchIp('192.168.1.1', ['192.168.1.2']), false);

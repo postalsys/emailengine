@@ -341,6 +341,21 @@ test('assertNoNetworkOverride keeps a narrowed token off the connection route', 
         );
     });
 
+    await t.test('refuses a submit-time proxy from a browse-page session token', () => {
+        // A session token is bounded by SESSION_TOKEN_GRANTS rather than by a permissions record,
+        // so it reads as unnarrowed here - and it holds send/submit while being refused the account
+        // edit that this guard's "unnarrowed tokens can do it anyway" carve-out assumes. Without
+        // the marker the one credential that lives in page HTML could still post the account's SMTP
+        // session to an address of its choosing.
+        assert.throws(
+            () => assertNoNetworkOverride({ payload: proxyPayload, app: { sessionToken: true }, auth: { artifacts: {} } }),
+            err => Boom.isBoom(err) && err.output.statusCode === 403
+        );
+
+        // and the same request without the marker is the unnarrowed API token, which is allowed
+        assert.doesNotThrow(() => assertNoNetworkOverride({ payload: proxyPayload, app: {}, auth: { artifacts: {} } }));
+    });
+
     await t.test('reads an unusable permissions record as narrowed', () => {
         // `{}` is malformed to lib/token-permissions.js, not absent, and both enforcement points
         // deny on it. This must not be the one reader that takes it for "no narrowing".

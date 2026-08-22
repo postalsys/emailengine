@@ -86,6 +86,31 @@ test('Token management tests', async t => {
         assert.strictEqual(isValid, false);
     });
 
+    await t.test('validateSessionToken() denies rather than throwing when there is no session id', async () => {
+        // A request with no `ee` cookie reaches this with sessionId undefined, and createHmac()
+        // throws on an undefined key - which surfaced as a 500 where the honest answer is 401
+        const token = await tokens.getSessionToken('session-for-missing-sid', 'some-account', 3600);
+
+        assert.strictEqual(await tokens.validateSessionToken(undefined, token, 'some-account', 3600), false);
+        assert.strictEqual(await tokens.validateSessionToken(null, token, 'some-account', 3600), false);
+        assert.strictEqual(await tokens.validateSessionToken('', token, 'some-account', 3600), false);
+    });
+
+    await t.test('validateSessionToken() denies rather than throwing for an expired token', async () => {
+        // The record is gone, so the Redis GET answers null - splitting that threw. An expired
+        // session token is the ordinary case, not an exceptional one.
+        const sessionId = 'session-for-expired-test';
+        const token = await tokens.getSessionToken(sessionId, 'some-account', 3600);
+
+        const hashedToken = crypto
+            .createHash('sha256')
+            .update(Buffer.from(token.slice('sess_'.length), 'hex'))
+            .digest('hex');
+        await redis.del(`${REDIS_PREFIX}sess:token:${hashedToken}`);
+
+        assert.strictEqual(await tokens.validateSessionToken(sessionId, token, 'some-account', 3600), false);
+    });
+
     await t.test('validateSessionToken() rejects invalid token format', async () => {
         const isValid = await tokens.validateSessionToken('session', 'invalid-token', 'account', 3600);
         assert.strictEqual(isValid, false);
