@@ -2991,7 +2991,7 @@
       },
       "MessageReference": {
         "type": "object",
-        "description": "Configuration for replying to or forwarding an existing message",
+        "description": "Reply to or forward a stored message. EmailEngine fills in the subject, the recipients and the In-Reply-To/References headers from the referenced message, and flags it as answered or forwarded once the new message is sent, so only the new content has to be supplied",
         "properties": {
           "message": {
             "type": "string",
@@ -3004,12 +3004,12 @@
           },
           "inline": {
             "type": "boolean",
-            "description": "Include the original message as quoted text in the response",
+            "description": "Quote the referenced message under the new text, the way an email client does. Without it only the new text is sent",
             "default": false
           },
           "forwardAttachments": {
             "type": "boolean",
-            "description": "Include original attachments when forwarding",
+            "description": "Carry the attachments of the referenced message over to the forwarded copy. Only valid when action is \"forward\"",
             "default": false
           },
           "ignoreMissing": {

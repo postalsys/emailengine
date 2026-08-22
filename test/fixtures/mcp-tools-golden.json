@@ -2,7 +2,7 @@
     {
         "name": "create_draft",
         "title": "Create draft",
-        "description": "Store a new message in a folder, typically a draft in the Drafts folder. Takes structured fields (from, to, subject, text, html). Nothing is sent - use send_message for that.",
+        "description": "Store a new message in a folder, typically a draft in the Drafts folder. Takes structured fields (from, to, subject, text, html). It takes the same `reference` block as send_message, so a reply or a forward can be drafted for the user to look over first. Nothing is sent - use send_message for that.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -45,7 +45,7 @@
                 },
                 "reference": {
                     "type": "object",
-                    "description": "Configuration for replying to or forwarding an existing message",
+                    "description": "Reply to or forward a stored message. EmailEngine fills in the subject, the recipients and the In-Reply-To/References headers from the referenced message, and flags it as answered or forwarded once the new message is sent, so only the new content has to be supplied",
                     "properties": {
                         "message": {
                             "type": "string",
@@ -57,7 +57,7 @@
                         },
                         "action": {
                             "type": "string",
-                            "description": "What to do with the referenced message",
+                            "description": "What to do with the referenced message. \"forward\" - Forward the message to new recipients; \"reply\" - Reply to the sender; \"reply-all\" - Reply to the sender and every other recipient",
                             "examples": [
                                 "reply"
                             ],
@@ -70,12 +70,12 @@
                         },
                         "inline": {
                             "type": "boolean",
-                            "description": "Include the original message as quoted text in the response",
+                            "description": "Quote the referenced message under the new text, the way an email client does. Without it only the new text is sent",
                             "default": false
                         },
                         "forwardAttachments": {
                             "type": "boolean",
-                            "description": "Include original attachments when forwarding",
+                            "description": "Carry the attachments of the referenced message over to the forwarded copy. Only valid when action is \"forward\"",
                             "default": false
                         },
                         "ignoreMissing": {
@@ -278,7 +278,8 @@
                                 "enum": [
                                     "inline",
                                     "attachment"
-                                ]
+                                ],
+                                "description": "\"inline\" - Rendered inside the message body, referenced by a cid: URL; \"attachment\" - Offered as a downloadable file"
                             },
                             "cid": {
                                 "type": "string",
@@ -637,7 +638,7 @@
                 },
                 "state": {
                     "type": "string",
-                    "description": "Filter accounts by state",
+                    "description": "Filter accounts by state. \"init\" - The account was just registered and has not connected yet; \"unset\" - No IMAP or OAuth2 configuration is set, so the account is not synced; \"connected\" - Connected and watching for changes. This is the healthy steady state; \"connecting\" - Connecting to the mail server or authorizing with the provider; \"syncing\" - Connected and performing the initial or a periodic mailbox sync; \"authenticationError\" - The credentials were rejected. Requires re-authentication before syncing resumes; \"connectError\" - The server could not be reached or the TLS handshake failed. Retried with backoff; \"disconnected\" - The connection dropped and EmailEngine is retrying with backoff; \"paused\" - Syncing was paused through the API. No connection is maintained",
                     "examples": [
                         "connected"
                     ],
@@ -1168,7 +1169,7 @@
     {
         "name": "send_message",
         "title": "Send message",
-        "description": "Send an email from the account to real recipients - confirm with the user before calling this. Takes structured fields (to, subject, text, html). Set reference to reply to or forward a stored message. Delivery is queued; the response carries the queue id for get_outbox.",
+        "description": "Send an email from the account to real recipients - confirm with the user before calling this. Takes structured fields (to, subject, text, html). To answer or pass on a message the user is looking at, set `reference.message` to its id and `reference.action` to reply, reply-all or forward, and write only the new text: the subject, the recipients (for a reply) and the threading headers come from the referenced message. Add `reference.inline` to quote the original under it, and `reference.forwardAttachments` to carry its attachments along when forwarding. Delivery is queued; the response carries the queue id for get_outbox.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -1187,7 +1188,7 @@
                 },
                 "reference": {
                     "type": "object",
-                    "description": "Configuration for replying to or forwarding an existing message",
+                    "description": "Reply to or forward a stored message. EmailEngine fills in the subject, the recipients and the In-Reply-To/References headers from the referenced message, and flags it as answered or forwarded once the new message is sent, so only the new content has to be supplied",
                     "properties": {
                         "message": {
                             "type": "string",
@@ -1199,7 +1200,7 @@
                         },
                         "action": {
                             "type": "string",
-                            "description": "What to do with the referenced message",
+                            "description": "What to do with the referenced message. \"forward\" - Forward the message to new recipients; \"reply\" - Reply to the sender; \"reply-all\" - Reply to the sender and every other recipient",
                             "examples": [
                                 "reply"
                             ],
@@ -1212,12 +1213,12 @@
                         },
                         "inline": {
                             "type": "boolean",
-                            "description": "Include the original message as quoted text in the response",
+                            "description": "Quote the referenced message under the new text, the way an email client does. Without it only the new text is sent",
                             "default": false
                         },
                         "forwardAttachments": {
                             "type": "boolean",
-                            "description": "Include original attachments when forwarding",
+                            "description": "Carry the attachments of the referenced message over to the forwarded copy. Only valid when action is \"forward\"",
                             "default": false
                         },
                         "ignoreMissing": {
@@ -1540,7 +1541,7 @@
                     "properties": {
                         "format": {
                             "type": "string",
-                            "description": "Markup language the template is written in",
+                            "description": "Markup language the template is written in. \"html\" - The template is already HTML; \"markdown\" - The template is Markdown and is converted to HTML",
                             "default": "html",
                             "enum": [
                                 "html",
@@ -1761,7 +1762,8 @@
                                     "success",
                                     "failure",
                                     "delay"
-                                ]
+                                ],
+                                "description": "\"never\" - Never send a delivery status notification; \"success\" - Notify when the message is delivered; \"failure\" - Notify when the message cannot be delivered; \"delay\" - Notify when the message is delayed"
                             }
                         },
                         "recipient": {
