@@ -48,7 +48,12 @@
             only here and not against the REST API.</span>
     </div>
 
-    <div>
+    {{!-- Nested rather than a peer: OAuth is a sub-option of an endpoint that is already on,
+          not a second decision of equal weight. It adds the sign-in path for clients that
+          cannot hold a static token, so with the endpoint off it decides nothing. The nesting
+          is presentational only - the checkbox is never disabled, so toggling the endpoint off
+          and back on cannot silently clear the stored setting. --}}
+    <div class="ps-6">
         {{> ui/setting-ref name="mcpOAuthEnabled"}}
         {{> ui/checkbox id="settingsMcpOAuthEnabled" name="mcpOAuthEnabled" label="Enable OAuth sign-in for MCP clients"
         checked=values.mcpOAuthEnabled error=errors.mcpOAuthEnabled}}
