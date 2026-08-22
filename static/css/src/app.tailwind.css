@@ -685,6 +685,15 @@
     .ee-account-picker-option.is-active {
         background-color: color-mix(in oklab, var(--color-base-content) 8%, transparent);
     }
+    /* A modal body scrolls its own content (`overflow: hidden auto` in FlyonUI), which would clip
+     * the overlay to whatever room is left below the field. In flow the body simply grows and
+     * scrolls to the list instead - keyed on the ancestor rather than on a class ui.js would have
+     * to add, since the DOM already says where the picker is. */
+    .modal-body .ee-account-picker-results {
+        position: static;
+        margin-top: 0.25rem;
+        box-shadow: none;
+    }
     .ee-account-picker-note {
         padding: 0.5rem 0.625rem;
         font-size: 0.875rem;

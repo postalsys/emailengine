@@ -97,7 +97,7 @@ fieldName="template" fieldValue=template.id submitLabel="Delete template"}}
 <div class="modal-body space-y-4">
 
     {{#unless account}}
-    {{> ui/form-field id="inputAccount" name="account" label="Account ID" required=true hint="The account ID to send email as."}}
+    {{> ui/account-picker id="inputAccount" name="account" label="Account" hint="The account to send the test email as."}}
     {{/unless}}
 
     {{> ui/form-field id="inputTo" name="inputTo" type="email" label="Recipient's email address" required=true hint="Where to send the test email to."}}
@@ -153,7 +153,7 @@ fieldName="template" fieldValue=template.id submitLabel="Delete template"}}
             editorJson.session.setValue('{\n    "keyName": "value"\n}');
 
             if (inputAccount) {
-                inputAccount.value = '';
+                uiAccountPickerClear(inputAccount);
             }
             inputTo.value = '';
 
@@ -194,9 +194,10 @@ fieldName="template" fieldValue=template.id submitLabel="Delete template"}}
         });
 
         if (inputAccount) {
+            // The picker fires both on the hidden input whenever the choice changes. No keyup:
+            // the field cannot be typed into.
             inputAccount.addEventListener('input', setStateUpdate);
             inputAccount.addEventListener('change', setStateUpdate);
-            inputAccount.addEventListener('keyup', setStateUpdate);
         }
 
         inputTo.addEventListener('input', setStateUpdate);

@@ -870,15 +870,21 @@ window.uiAccountPicker = root => {
         const clearIcon = document.createElement('span');
         clearIcon.className = 'icon-[tabler--x] size-4';
         clear.append(clearIcon);
-        clear.addEventListener('click', () => {
-            select(null);
-            box.value = '';
-            box.focus();
-        });
+        clear.addEventListener('click', () => clearSelection(true));
 
         card.append(text, clear);
         card.classList.remove('hidden');
         search.classList.add('hidden');
+    };
+
+    // Back to empty: the hidden input, the card and the search box all have to agree, so this is
+    // one path rather than a clear button that happens to do the same three things.
+    const clearSelection = focus => {
+        select(null);
+        box.value = '';
+        if (focus) {
+            box.focus();
+        }
     };
 
     // The one writer of the hidden input. The events are what the rest of the page listens to, and
@@ -1031,6 +1037,10 @@ window.uiAccountPicker = root => {
         close();
     });
 
+    // Reached from the card's own clear button and, through window.uiAccountPickerClear() below,
+    // from a page resetting a form it did not build.
+    root.uiPickerClear = clearSelection;
+
     // A stored value the server could resolve renders as the account it names; one it could not is
     // still shown, because an id pointing at a deleted account is exactly the thing the person
     // filling in the form needs to see rather than an empty box.
@@ -1044,6 +1054,22 @@ window.uiAccountPicker = root => {
         initial = { account: input.value, name: '', email: '', state: { type: 'error', name: 'No such account' } };
     }
     paint(initial);
+};
+
+/**
+ * Clears an account picker, given its hidden input.
+ *
+ * For pages that reset a form as a whole - the template page empties its "send test email" modal
+ * every time it opens. Assigning '' to the input is not enough on its own: the card is painted from
+ * the last choice, so the control would keep showing an account the form no longer carries.
+ *
+ * @param {Element} input - the picker's hidden input
+ */
+window.uiAccountPickerClear = input => {
+    const root = input && input.closest && input.closest('[data-account-picker]');
+    if (root && root.uiPickerClear) {
+        root.uiPickerClear();
+    }
 };
 
 document.addEventListener('DOMContentLoaded', () => {

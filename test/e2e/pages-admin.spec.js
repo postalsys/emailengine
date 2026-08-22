@@ -716,6 +716,40 @@ test.describe('admin shell', () => {
         await page.locator('#test-btn').click();
         await expect(page.locator('#sendTestModal.open')).toHaveCount(1);
         expect(await page.evaluate(() => document.getElementById('send-test-btn').disabled)).toBe(true);
+
+        // The account field in this modal is the shared picker. A modal body scrolls its own
+        // content, which would clip an absolutely positioned dropdown, so the list joins the flow
+        // here - and the send button, which gates on the account, has to follow a pick.
+        // This template was created above with no account, so the picker always renders here -
+        // asserted rather than branched on, or a change that stopped rendering it would leave the
+        // rest of this block silently doing nothing
+        await expect(page.locator('#sendTestModal [data-account-picker]')).toHaveCount(1);
+
+        await page.locator('#inputAccount-search').click();
+        const results = page.locator('#inputAccount-results');
+        await expect(results).toBeVisible();
+
+        const option = page.locator('#inputAccount-results [role="option"]').first();
+        // A standalone run of this spec has no account registered yet, and an empty list is a
+        // correct answer rather than a broken control
+        if (await option.count()) {
+            await option.click();
+            await expect(page.locator('#inputAccount')).not.toHaveValue('');
+            await page.locator('#inputTo').fill('someone@ethereal.email');
+            expect(await page.evaluate(() => document.getElementById('send-test-btn').disabled)).toBe(false);
+
+            // Reopening resets the form, and the card has to go with it - writing '' into the
+            // hidden input alone would leave an account on screen the form no longer holds
+            await page.keyboard.press('Escape');
+            await expect(page.locator('#sendTestModal.open')).toHaveCount(0);
+            await page.locator('#test-btn').click();
+            await expect(page.locator('#sendTestModal.open')).toHaveCount(1);
+            await expect(page.locator('#inputAccount')).toHaveValue('');
+            await expect(page.locator('#inputAccount-search')).toBeVisible();
+        } else {
+            await expect(results).toContainText('No account matches that.');
+        }
+
         await page.keyboard.press('Escape');
         await expect(page.locator('#sendTestModal.open')).toHaveCount(0);
 
