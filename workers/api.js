@@ -41,7 +41,8 @@ const {
     verifyServiceSignature,
     claimFormNonce,
     releaseFormNonce,
-    setAdminSession
+    setAdminSession,
+    isEndedSession
 } = require('../lib/tools');
 const { matchIp, resolveClientIp, detectAutomatedRequest } = require('../lib/utils/network');
 
@@ -903,12 +904,27 @@ const init = async () => {
             // it could initialize and list tools but every tools/call would die on an inner 401.
             if (token.startsWith('sess_') && scopes.includes('api') && !mcpEndpoint) {
                 // seems like a session token
-                let isValidSessionToken = await tokens.validateSessionToken(
-                    request.state && request.state.ee && request.state.ee.sid,
-                    token,
-                    request.params.account,
-                    900
-                );
+                const session = (request.state && request.state.ee) || {};
+
+                // "Log out all sessions" has to reach this credential too. The session strategy's
+                // own passwordVersion check never runs here - an API request authenticates with
+                // this strategy and only reads the cookie for its `sid` - and validateSessionToken()
+                // slides the token's TTL on every use, so a cookie-plus-token pair left behind on a
+                // device the operator no longer controls stayed usable indefinitely after the click
+                // that was supposed to end every session. Same predicate as the session strategy,
+                // including its "only when a local password exists" condition, so a session stamped
+                // before this shipped is not force-expired.
+                if (isEndedSession(await sessionPasswordVersion(), session)) {
+                    logger.warn({
+                        msg: 'Session token presented for an ended session',
+                        account: request.params.account,
+                        method: request.route.method,
+                        path: request.route.path
+                    });
+                    throw Boom.unauthorized('Session has ended');
+                }
+
+                let isValidSessionToken = await tokens.validateSessionToken(session.sid, token, request.params.account, 900);
                 if (isValidSessionToken) {
                     // A session token is bound to the account whose page minted it (checked above,
                     // against request.params.account), but it used to reach every api-tagged route
@@ -1237,10 +1253,15 @@ const init = async () => {
         path: '/'
     });
 
-    // The version an SSO login stamps into its session, so the check in validate() below can end
-    // it later. The password logins in lib/ui-routes/auth-routes.js stamp the same field from the
-    // same place; without it a session is refused on the first request after any version bump,
-    // which is a forced re-login rather than a lockout.
+    // The version an SSO login stamps into its session, so the checks that end a session later can
+    // compare against it. The password logins in lib/ui-routes/auth-routes.js stamp the same field
+    // from the same place; without it a session is refused on the first request after any version
+    // bump, which is a forced re-login rather than a lockout.
+    //
+    // Read by both strategies that accept a session: the cookie strategy below, and the session
+    // token branch of the api-token strategy above - the two credentials the same cookie carries,
+    // and "log out all sessions" has to end both. Declared here rather than above because both
+    // consumers only call it at request time, which is after this whole function has run.
     const sessionPasswordVersion = async () => {
         const authData = await settings.get('authData');
         return (authData && authData.passwordVersion) || 0;
@@ -1264,11 +1285,14 @@ const init = async () => {
             // "Log out all sessions" and a password change both bump authData.passwordVersion, and
             // a session stamped with an older one is over. Checked before the provider switch
             // because it is true of every session: the SSO branch used to return before reaching
-            // it, so an SSO session - and the sess_ tokens sliding their TTL through it - outlived
-            // the click that was supposed to end every session. Only reachable when a local
-            // password exists at all, which is also the only case where this strategy is installed
-            // (isInstanceSecured() is `!!authData`).
-            if (authData && authData.passwordVersion && authData.passwordVersion !== session.passwordVersion) {
+            // it, so an SSO session outlived the click that was supposed to end every session.
+            // Only reachable when a local password exists at all, which is also the only case
+            // where this strategy is installed (isInstanceSecured() is `!!authData`).
+            //
+            // This ends the admin session. The browse page's `sess_` API token rides the same
+            // cookie and never reaches this strategy, so it applies the same predicate for itself
+            // in the api-token strategy above - neither check covers the other.
+            if (isEndedSession((authData && authData.passwordVersion) || 0, session)) {
                 // force logout
                 return { isValid: false };
             }

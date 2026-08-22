@@ -104,9 +104,13 @@
             {{/if}}
         </div>
 
+        {{!-- The lifecycle is revocation, not expiry: this flow issues no refresh token and sets no
+              TTL, so an approved client holds its token until someone takes it away. Said here
+              because this is the screen where the decision is made, and the person making it has
+              no other place to learn it. --}}
         <p class="text-base-content/60 text-center text-xs">Approving creates an access token with the <code>mcp</code>
-            scope - it appears on the <a href="/admin/tokens?scope=mcp" class="link">Access Tokens</a> page and can be
-            revoked there at any time.</p>
+            scope. It does not expire - it appears on the <a href="/admin/tokens?scope=mcp" class="link">Access
+                Tokens</a> page and stays valid until you revoke it there.</p>
 
     </div>
 </form>

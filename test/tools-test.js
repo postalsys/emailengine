@@ -642,4 +642,25 @@ test('Tools utility tests', async t => {
         );
         assert.ok(tools.collectCidReferences(html).has('part1@example.com'));
     });
+
+    await t.test('isEndedSession() ends a session only when a later version exists', () => {
+        // The read side of the passwordVersion setAdminSession() stamps. Two Hapi strategies in
+        // workers/api.js ask it about the same cookie - the admin session and the browse page's
+        // sess_ API token - so "log out all sessions" ends both or neither.
+        assert.strictEqual(tools.isEndedSession(2, { passwordVersion: 1 }), true);
+        assert.strictEqual(tools.isEndedSession(2, { passwordVersion: 2 }), false);
+
+        // A session stamped before the field existed, against an instance that has never bumped
+        // the version, is not force-expired - but one bump ends it
+        assert.strictEqual(tools.isEndedSession(0, {}), false);
+        assert.strictEqual(tools.isEndedSession(1, {}), true);
+
+        // No local password at all (an unsecured instance) never ends anything
+        assert.strictEqual(tools.isEndedSession(0, { passwordVersion: 3 }), false);
+
+        // A request carrying no cookie has no session to end; the credential checks that follow
+        // are what refuse it
+        assert.strictEqual(tools.isEndedSession(0, undefined), false);
+        assert.strictEqual(tools.isEndedSession(1, undefined), true);
+    });
 });

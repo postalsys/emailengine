@@ -165,6 +165,23 @@ test('MCP consent flow', async t => {
         assert.equal(res.statusCode, 403);
     });
 
+    await t.test('approving for a foreign resource renders rather than minting a dead code', async () => {
+        // The GET checks this too, but the GET is not what supplies the value - a hand-crafted form
+        // can name any resource. Redemption refuses a code whose resource is not this server, so
+        // without the check here the approval succeeds and the exchange fails, which reads to the
+        // operator as an approval that did nothing.
+        const res = await server.inject({
+            method: 'POST',
+            url: '/admin/mcp/authorize',
+            payload: approvalPayload({ resource: 'https://elsewhere.example.com/mcp' }),
+            headers: { 'x-test-admin': '1' }
+        });
+
+        assert.equal(res.statusCode, 200);
+        assert.match(res.payload, /names a different server as its resource/);
+        assert.ok(!res.headers.location, 'a pre-consent failure must not redirect off the origin');
+    });
+
     await t.test('approving an unknown account re-renders with the field error', async () => {
         const res = await server.inject({
             method: 'POST',
