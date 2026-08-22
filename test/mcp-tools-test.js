@@ -24,6 +24,7 @@ const registerRedisTeardown = require('./helpers/redis-teardown');
 const { captureApiRoutes } = require('./helpers/capture-api-routes');
 const { buildToolRegistry, callTool, toolVisibleTo, toolDefinitionFor, MAX_TOOL_RESULT_BYTES, MAX_TOOL_BINARY_BYTES } = require('../lib/mcp/tools');
 const { surfaceAdmits, routeGrant, ACTION, GROUP } = require('../lib/api-routes/permission-map');
+const { MCP_MAX_PAGE_SIZE } = require('../lib/consts');
 const { MCP_READ_ONLY_PERMISSIONS, MCP_MAIL_AGENT_PERMISSIONS } = require('../lib/token-permission-view');
 const { walkJson: walk } = require('./helpers/walk-json');
 
@@ -153,25 +154,78 @@ test('MCP tool registry', async t => {
         }
     });
 
-    await t.test('omitted arguments stay out of the schema', () => {
+    await t.test('the composition tools expose the message, not the operator settings around it', () => {
+        // The exhaustive property set is locked by the golden fixture. What is asserted here is
+        // the intent behind it, so a re-record cannot quietly wave through the entries that
+        // matter: `raw` and `envelope` are each a way around the structured fields the tool is
+        // made of, and `mailMerge` would turn one call into a bulk send.
+        for (const [name, keys] of Object.entries({
+            send_message: ['raw', 'envelope', 'mailMerge', 'headers', 'gateway'],
+            create_draft: ['raw', 'headers']
+        })) {
+            const tool = tools.find(entry => entry.name === name);
+            for (const key of keys) {
+                assert.ok(!(key in tool.inputSchema.properties), `${name} must not expose ${key}`);
+            }
+        }
+
+        // ...and still take the message itself, so the narrowing cannot hollow the tool out
         const sendMessage = tools.find(tool => tool.name === 'send_message');
-        for (const key of ['proxy', 'localAddress', 'documentStore']) {
-            assert.ok(!(key in sendMessage.inputSchema.properties), `send_message must not expose ${key}`);
+        for (const key of ['to', 'subject', 'text', 'html', 'reference', 'attachments']) {
+            assert.ok(key in sendMessage.inputSchema.properties, `send_message must expose ${key}`);
         }
     });
 
     await t.test('the body-rendering knobs are pinned rather than offered', () => {
         // One canonical body shape is what an agent can reason about, so the tools that return a
         // message body neither ask which rendering to produce nor let the caller pick one
-        for (const [name, forced] of [
-            ['get_message', { textType: '*', preProcessHtml: true, maxBytes: 64 * 1024 }],
+        for (const [name, pinned] of [
+            ['get_message', { webSafeHtml: true, embedAttachedImages: false }],
             ['get_message_text', { webSafeHtml: true }]
         ]) {
             const tool = tools.find(entry => entry.name === name);
-            for (const key of ['textType', 'webSafeHtml', 'preProcessHtml', 'embedAttachedImages']) {
+            for (const key of ['textType', 'webSafeHtml', 'preProcessHtml', 'embedAttachedImages', 'maxBytes']) {
                 assert.ok(!(key in tool.inputSchema.properties), `${name} must not expose ${key}`);
             }
-            assert.deepEqual(byName.get(name).forcedValues, forced, name);
+
+            // The rendering is pinned to one shape; the budget beside it is a number the golden
+            // fixture records and the test below relates to the result cap, so here it only has to
+            // be present
+            const forced = byName.get(name).forcedValues;
+            assert.deepEqual(Object.fromEntries(Object.entries(forced).filter(([key]) => key !== 'maxBytes')), pinned, name);
+            assert.equal(typeof forced.maxBytes, 'number', `${name} must pin a body budget`);
+        }
+    });
+
+    await t.test('the two body budgets leave margin under the result cap, and the follow-up tool is the larger one', () => {
+        // get_message caps the body it inlines and tells the model get_message_text returns more of
+        // it, so a text budget at or below the message budget would make that pointer a dead end.
+        //
+        // The margin is the other half. A budget merely BELOW the cap would not establish that a
+        // result fits: maxBytes counts characters per text part before the web-safe rendering, and
+        // that rendering reads both parts and can come out larger than either. Half the cap is
+        // what keeps a normal message clear of a truncation that hands the caller a JSON fragment
+        // it cannot parse.
+        const bodyBudget = byName.get('get_message').forcedValues.maxBytes;
+        const textBudget = byName.get('get_message_text').forcedValues.maxBytes;
+
+        assert.ok(textBudget > bodyBudget, `get_message_text (${textBudget}) must return more than get_message (${bodyBudget})`);
+        assert.ok(
+            textBudget <= MAX_TOOL_RESULT_BYTES / 2,
+            `get_message_text (${textBudget}) leaves no margin under MAX_TOOL_RESULT_BYTES (${MAX_TOOL_RESULT_BYTES})`
+        );
+    });
+
+    await t.test('every listing tool advertises a page a model can afford', () => {
+        // Asserted over the whole catalog rather than the five known listings, so one added later
+        // cannot quietly ship the route's own 1000 (see MCP_MAX_PAGE_SIZE for why it must not)
+        for (const entry of byName.values()) {
+            const pageSize = entry.definition.inputSchema.properties.pageSize;
+            if (!pageSize) {
+                continue;
+            }
+            assert.equal(pageSize.maximum, MCP_MAX_PAGE_SIZE, `${entry.definition.name} advertises pageSize up to ${pageSize.maximum}`);
+            assert.equal(entry.bounds.get('pageSize'), MCP_MAX_PAGE_SIZE, `${entry.definition.name} does not clamp pageSize on dispatch`);
         }
     });
 
@@ -287,6 +341,18 @@ test('MCP tool executor', async t => {
         }
     });
 
+    // Mirrors what the listing routes wrap: a page size the REST schema takes in full and the tool
+    // narrows, so the clamp can be exercised without depending on a real listing's numbers
+    server.route({
+        method: 'GET',
+        path: '/v1/demo/listing',
+        handler: request => ({ pageSize: request.query.pageSize }),
+        options: {
+            validate: { query: Joi.object({ pageSize: Joi.number().integer().min(1).max(1000).default(20) }) },
+            plugins: { mcp: { name: 'demo_listing', title: 'Demo listing', description: 'demo', bounds: { pageSize: 100 } } }
+        }
+    });
+
     server.route({
         method: 'GET',
         path: '/v1/demo/huge',
@@ -335,6 +401,71 @@ test('MCP tool executor', async t => {
         const result = await callTool({ server, tool: byName.get('demo_get'), args: { id: 'x', nope: 1 }, request: outerRequest() });
         assert.equal(result.isError, true);
         assert.match(result.content[0].text, /nope/);
+    });
+
+    await t.test('a bounded argument is narrowed in the schema and clamped on dispatch', async () => {
+        // Two halves of one bound. The schema half is what a well-behaved client never exceeds;
+        // the dispatch half is what holds for a client that ignores the schema, or a model that
+        // repeats a number it saw elsewhere.
+        assert.equal(byName.get('demo_listing').definition.inputSchema.properties.pageSize.maximum, 100);
+
+        for (const [asked, expected] of [
+            [1000, 100],
+            ['1000', 100],
+            [50, 50],
+            [undefined, 20]
+        ]) {
+            const result = await callTool({
+                server,
+                tool: byName.get('demo_listing'),
+                args: asked === undefined ? {} : { pageSize: asked },
+                request: outerRequest()
+            });
+            assert.equal(JSON.parse(result.content[0].text).pageSize, expected, `pageSize ${asked}`);
+        }
+    });
+
+    await t.test('a bound that does not narrow an exposed argument is refused at build time', () => {
+        const route = bounds => ({
+            method: 'get',
+            path: '/v1/demo/bounded',
+            settings: {
+                validate: { query: Joi.object({ pageSize: Joi.number().integer().max(1000), name: Joi.string() }) },
+                plugins: { mcp: { name: 'demo_bounded', title: 'Demo', description: 'demo', bounds } }
+            }
+        });
+
+        assert.throws(() => buildToolRegistry([route({ missing: 10 })]), /bounded argument missing is not an exposed argument/);
+        assert.throws(() => buildToolRegistry([route({ pageSize: 1000 })]), /does not narrow the schema maximum/);
+        assert.throws(() => buildToolRegistry([route({ name: 10 })]), /does not narrow the schema maximum/);
+    });
+
+    await t.test('a declaration that hides nothing, or hides too much, is refused at build time', () => {
+        // Every knob in a plugins.mcp block hides or pins something on the agent-facing schema, so
+        // a knob that quietly does nothing is the opposite of what was declared - a misspelled key
+        // under `omit` leaves the argument exposed, one under `keep` leaves it hidden.
+        const route = mcp => ({
+            method: 'post',
+            path: '/v1/demo/declared',
+            settings: {
+                validate: {
+                    params: Joi.object({ account: Joi.string().required() }),
+                    payload: Joi.object({ subject: Joi.string(), raw: Joi.string() })
+                },
+                plugins: { mcp: Object.assign({ name: 'demo_declared', title: 'Demo', description: 'demo' }, mcp) }
+            }
+        });
+
+        assert.throws(() => buildToolRegistry([route({ omit: ['nosuch'] })]), /omitted argument nosuch is not an argument/);
+        assert.throws(() => buildToolRegistry([route({ keep: ['nosuch'] })]), /kept argument nosuch is not an argument/);
+        assert.throws(() => buildToolRegistry([route({ keep: ['subject'], omit: ['raw'] })]), /declare either keep or omit, not both/);
+        assert.throws(() => buildToolRegistry([route({ bound: { subject: 1 } })]), /unknown plugins\.mcp option: bound/);
+
+        // A required argument the tool does not offer and does not force is a tool whose every
+        // call dies on the same joi 400, with nothing the model can do about it
+        assert.throws(() => buildToolRegistry([route({ keep: ['subject'] })]), /required argument account is hidden but not forced/);
+        assert.throws(() => buildToolRegistry([route({ omit: ['account'] })]), /required argument account is hidden but not forced/);
+        assert.doesNotThrow(() => buildToolRegistry([route({ omit: ['account'], force: { account: 'pinned' } })]));
     });
 
     await t.test('API validation errors come back as tool errors, not exceptions', async () => {

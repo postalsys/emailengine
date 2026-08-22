@@ -20,7 +20,11 @@
     <div class="bg-primary/10 text-primary mx-auto mb-4 flex size-12 items-center justify-center rounded-full">
         <span class="icon-[tabler--plug-connected] size-6"></span>
     </div>
-    <h1 class="text-base-content text-xl font-semibold">{{clientName}} wants to connect</h1>
+    <h1 class="text-base-content text-xl font-semibold">{{clientName}} wants to connect
+        {{!-- The same Beta label the config page, the side menu and the token form carry. This is
+              the one MCP surface a person can reach without passing one of those first, so it is
+              also the one where the label would otherwise be missing. --}}
+        {{> ui/badge label="Beta" variant="info" soft=true class="badge-sm align-middle"}}</h1>
     <p class="text-base-content/60 mt-2 text-sm">An MCP client is asking for access to the email accounts on this
         EmailEngine instance. Once you decide, the browser returns to <code>{{redirectHost}}</code>.</p>
 </div>

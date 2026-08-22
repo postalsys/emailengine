@@ -6,7 +6,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { messageWebSafeHtml, webSafeTextResponse, collapseThreadHistory } = require('../lib/web-safe-html');
+const { messageWebSafeHtml, webSafeTextResponse, applyWebSafeHtmlOptions, collapseThreadHistory } = require('../lib/web-safe-html');
 const { COLLAPSE_CLASS, COLLAPSE_TOGGLE_CLASS } = require('../lib/consts');
 
 const MARKER = `<details class="${COLLAPSE_CLASS}">`;
@@ -328,5 +328,46 @@ test('webSafeTextResponse', async t => {
         // An empty `html` marked web-safe would claim more than the message says
         assert.deepEqual(await webSafeTextResponse({ hasMore: false }), { hasMore: false });
         assert.equal(await webSafeTextResponse(null), null);
+    });
+});
+
+test('webSafeHtml option expansion', async t => {
+    await t.test('expands the shorthand into the options it stands for', () => {
+        assert.deepEqual(applyWebSafeHtmlOptions({ webSafeHtml: true }), {
+            webSafeHtml: true,
+            textType: '*',
+            preProcessHtml: true,
+            embedAttachedImages: true
+        });
+    });
+
+    await t.test('an explicit embedAttachedImages=false wins over the shorthand', () => {
+        // The point of the override: keep the sanitizing and the single rendering, leave the
+        // `cid:` references alone rather than inlining every referenced attachment as a data URI
+        const options = applyWebSafeHtmlOptions({ webSafeHtml: true, embedAttachedImages: false });
+
+        assert.equal(options.embedAttachedImages, false);
+        assert.equal(options.textType, '*');
+        assert.equal(options.preProcessHtml, true);
+    });
+
+    await t.test('resolves the tri-state to a boolean either way', () => {
+        // The query schema deliberately carries no default so that absent stays distinguishable
+        // from an explicit false. That distinction is spent here, so the four backends that read
+        // the flag never see the undefined.
+        assert.equal(applyWebSafeHtmlOptions({}).embedAttachedImages, false);
+        assert.equal(applyWebSafeHtmlOptions({ textType: 'html' }).embedAttachedImages, false);
+        assert.equal(applyWebSafeHtmlOptions({ embedAttachedImages: true }).embedAttachedImages, true);
+    });
+
+    await t.test('leaves the rendering options alone when the shorthand was not asked for', () => {
+        assert.deepEqual(applyWebSafeHtmlOptions({ textType: 'html' }), { textType: 'html', embedAttachedImages: false });
+    });
+
+    await t.test('is idempotent, so a facade and a backend can both call it', () => {
+        // Account.getMessage expands, and the Gmail and Graph clients expand again on the same
+        // path - the second call has to be a no-op rather than a second policy
+        const once = applyWebSafeHtmlOptions({ webSafeHtml: true, embedAttachedImages: false });
+        assert.deepEqual(applyWebSafeHtmlOptions(Object.assign({}, once)), once);
     });
 });

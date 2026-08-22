@@ -14662,7 +14662,7 @@
               "type": "boolean",
               "description": "Shorthand option to fetch and preprocess HTML and inline images",
               "x-meta": {
-                "usage": "Turn this on when you are rendering the message in your own UI and want EmailEngine to do the sanitising. It is a shorthand that overrides `textType`, `preProcessHtml` and `embedAttachedImages`.\n\nQuoted thread history is folded into one collapsed `<details class=\"ee-collapsed-thread\">` element so you can hide it behind a single control. Its `<summary>` is deliberately empty, so supply your own label."
+                "usage": "Turn this on when you are rendering the message in your own UI and want EmailEngine to do the sanitising. It is a shorthand that overrides `textType`, `preProcessHtml` and `embedAttachedImages`.\n\nSend `embedAttachedImages=false` alongside it when the body is going to be read rather than displayed - see that parameter.\n\nQuoted thread history is folded into one collapsed `<details class=\"ee-collapsed-thread\">` element so you can hide it behind a single control. Its `<summary>` is deliberately empty, so supply your own label."
               },
               "default": false
             },
@@ -14673,10 +14673,12 @@
             "in": "query",
             "schema": {
               "type": "boolean",
-              "description": "If true, then fetches attached images and embeds these in the HTML as data URIs",
-              "default": false
+              "description": "If true, then fetches attached images and embeds these in the HTML as data URIs. Not set means false",
+              "x-meta": {
+                "usage": "Inlining every referenced attachment as a data URI is what makes a rendering self-contained, and it is also what makes it several times larger. Leave it off for a body that is going to be read rather than displayed.\n\nThis is the one part of the `webSafeHtml` shorthand you can keep: an explicit `false` alongside it leaves the `cid:` references as they are and the attachments to be fetched separately, without giving up the sanitising or the single HTML rendering."
+              }
             },
-            "description": "If true, then fetches attached images and embeds these in the HTML as data URIs"
+            "description": "If true, then fetches attached images and embeds these in the HTML as data URIs. Not set means false"
           },
           {
             "name": "preProcessHtml",
@@ -17060,12 +17062,12 @@
             "in": "query",
             "schema": {
               "type": "integer",
-              "description": "Max length of text content. Ignored for Gmail API and MS Graph API accounts (full content is always returned)",
+              "description": "Max length of text content",
               "example": 5242880,
               "minimum": 0,
               "maximum": 1073741824
             },
-            "description": "Max length of text content. Ignored for Gmail API and MS Graph API accounts (full content is always returned)"
+            "description": "Max length of text content"
           },
           {
             "name": "textType",

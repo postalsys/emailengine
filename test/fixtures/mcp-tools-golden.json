@@ -35,14 +35,6 @@
                         "maxLength": 128
                     }
                 },
-                "internalDate": {
-                    "type": "string",
-                    "format": "date-time",
-                    "description": "Sets the internal date for this message",
-                    "examples": [
-                        "2021-07-08T07:06:34.336Z"
-                    ]
-                },
                 "reference": {
                     "type": "object",
                     "description": "Reply to or forward a stored message. EmailEngine fills in the subject, the recipients and the In-Reply-To/References headers from the referenced message, and flags it as answered or forwarded once the new message is sent, so only the new content has to be supplied",
@@ -99,14 +91,6 @@
                             ]
                         }
                     }
-                },
-                "raw": {
-                    "type": "string",
-                    "description": "A Base64-encoded email message in RFC 822 format",
-                    "examples": [
-                        "TUlNRS1WZXJzaW9uOiAxLjANClN1YmplY3Q6IGhlbGxvIHdvcmxkDQoNCkhlbGxvIQ0K"
-                    ],
-                    "maxLength": 5242880
                 },
                 "from": {
                     "type": "object",
@@ -324,39 +308,6 @@
                             "content"
                         ]
                     }
-                },
-                "messageId": {
-                    "type": "string",
-                    "description": "Message ID",
-                    "examples": [
-                        "<test123@example.com>"
-                    ],
-                    "maxLength": 996
-                },
-                "headers": {
-                    "type": "object",
-                    "description": "Custom Headers",
-                    "examples": [
-                        {
-                            "X-My-Custom-Header": "Custom header value"
-                        }
-                    ]
-                },
-                "locale": {
-                    "type": "string",
-                    "description": "Optional locale",
-                    "examples": [
-                        "fr"
-                    ],
-                    "maxLength": 100
-                },
-                "tz": {
-                    "type": "string",
-                    "description": "Optional timezone",
-                    "examples": [
-                        "Europe/Tallinn"
-                    ],
-                    "maxLength": 100
                 }
             },
             "additionalProperties": false,
@@ -487,7 +438,7 @@
     {
         "name": "get_message",
         "title": "Get message",
-        "description": "Get one message: subject, addresses, date, flags, attachment list and the body. The body arrives in text.html as sanitized HTML, generated from the plaintext part when the message carries no HTML one, with no separate plaintext copy. It is capped at 65536 bytes - text.hasMore true means the rest is available from get_message_text. Quoted reply and forward history is wrapped in a <details class=\"ee-collapsed-thread\"> element - what an email client hides behind a \"show more\" control - so everything outside it is what the sender wrote this time.",
+        "description": "Get one message: subject, addresses, date, flags, attachment list and the body. The body arrives in text.html as sanitized HTML, generated from the plaintext part when the message carries no HTML one, with no separate plaintext copy. It is capped at 32768 characters - text.hasMore true means more of it is available from get_message_text. Quoted reply and forward history is wrapped in a <details class=\"ee-collapsed-thread\"> element - what an email client hides behind a \"show more\" control - so everything outside it is what the sender wrote this time.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -529,7 +480,7 @@
     {
         "name": "get_message_text",
         "title": "Get message text",
-        "description": "Fetch the body of a message as sanitized HTML, generated from the plaintext part when the message carries no HTML one. The text id comes from the text.id field of get_message or list_messages. Quoted reply and forward history is wrapped in a <details class=\"ee-collapsed-thread\"> element - what an email client hides behind a \"show more\" control - so everything outside it is what the sender wrote this time.",
+        "description": "Fetch the body of a message as sanitized HTML, generated from the plaintext part when the message carries no HTML one. The text id comes from the text.id field of get_message or list_messages. It is capped at 65536 characters - hasMore true means the body is longer than that. Quoted reply and forward history is wrapped in a <details class=\"ee-collapsed-thread\"> element - what an email client hides behind a \"show more\" control - so everything outside it is what the sender wrote this time.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -548,15 +499,6 @@
                         "AAAAAQAACnAcdfaaN"
                     ],
                     "maxLength": 10240
-                },
-                "maxBytes": {
-                    "type": "integer",
-                    "description": "Max length of text content. Ignored for Gmail API and MS Graph API accounts (full content is always returned)",
-                    "examples": [
-                        5242880
-                    ],
-                    "minimum": 0,
-                    "maximum": 1073741824
                 }
             },
             "additionalProperties": false,
@@ -597,7 +539,7 @@
                     ],
                     "default": 20,
                     "minimum": 1,
-                    "maximum": 1000
+                    "maximum": 100
                 }
             },
             "additionalProperties": false
@@ -634,7 +576,7 @@
                     ],
                     "default": 20,
                     "minimum": 1,
-                    "maximum": 1000
+                    "maximum": 100
                 },
                 "state": {
                     "type": "string",
@@ -752,7 +694,7 @@
                     ],
                     "default": 20,
                     "minimum": 1,
-                    "maximum": 1000
+                    "maximum": 100
                 }
             },
             "additionalProperties": false,
@@ -801,7 +743,7 @@
                     ],
                     "default": 20,
                     "minimum": 1,
-                    "maximum": 1000
+                    "maximum": 100
                 }
             },
             "additionalProperties": false
@@ -906,7 +848,7 @@
                     ],
                     "default": 20,
                     "minimum": 1,
-                    "maximum": 1000
+                    "maximum": 100
                 },
                 "useOutlookSearch": {
                     "type": "boolean",
@@ -1181,11 +1123,6 @@
                     ],
                     "maxLength": 256
                 },
-                "useStructuredFormat": {
-                    "type": "boolean",
-                    "description": "For MS Graph accounts: send as structured JSON instead of raw MIME",
-                    "default": false
-                },
                 "reference": {
                     "type": "object",
                     "description": "Reply to or forward a stored message. EmailEngine fills in the subject, the recipients and the In-Reply-To/References headers from the referenced message, and flags it as answered or forwarded once the new message is sent, so only the new content has to be supplied",
@@ -1333,14 +1270,6 @@
                     ],
                     "maxLength": 5242880
                 },
-                "previewText": {
-                    "type": "string",
-                    "description": "Preview text shown in email clients after the subject line",
-                    "examples": [
-                        "Welcome to our newsletter!"
-                    ],
-                    "maxLength": 1024
-                },
                 "template": {
                     "type": "string",
                     "description": "Stored template ID to load the email content from",
@@ -1348,98 +1277,6 @@
                         "example"
                     ],
                     "maxLength": 256
-                },
-                "mailMerge": {
-                    "type": "array",
-                    "description": "Mail merge options. A separate email is generated for each recipient",
-                    "minItems": 1,
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "to": {
-                                "type": "object",
-                                "description": "Email address with optional display name",
-                                "properties": {
-                                    "name": {
-                                        "type": "string",
-                                        "description": "Display name for the email address",
-                                        "examples": [
-                                            "Some Name"
-                                        ],
-                                        "maxLength": 256
-                                    },
-                                    "address": {
-                                        "type": "string",
-                                        "description": "Email address",
-                                        "examples": [
-                                            "user@example.com"
-                                        ]
-                                    }
-                                },
-                                "required": [
-                                    "address"
-                                ]
-                            },
-                            "messageId": {
-                                "type": "string",
-                                "description": "Message ID",
-                                "examples": [
-                                    "<test123@example.com>"
-                                ],
-                                "maxLength": 996
-                            },
-                            "params": {
-                                "type": "object",
-                                "description": "An object of variables for the template renderer",
-                                "examples": [
-                                    {
-                                        "firstName": "Nyan",
-                                        "orderId": "4815"
-                                    }
-                                ]
-                            },
-                            "sendAt": {
-                                "type": "string",
-                                "format": "date-time",
-                                "description": "Send message at specified time. Overrides message level `sendAt` value.",
-                                "examples": [
-                                    "2021-07-08T07:06:34.336Z"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "to"
-                        ]
-                    }
-                },
-                "envelope": {
-                    "type": "object",
-                    "description": "An optional object specifying the SMTP envelope used during email transmission",
-                    "properties": {
-                        "from": {
-                            "type": "string",
-                            "examples": [
-                                "sender@example.com"
-                            ]
-                        },
-                        "to": {
-                            "type": "array",
-                            "items": {
-                                "type": "string",
-                                "examples": [
-                                    "recipient@example.com"
-                                ]
-                            }
-                        }
-                    }
-                },
-                "raw": {
-                    "type": "string",
-                    "description": "A Base64-encoded email message in RFC 822 format",
-                    "examples": [
-                        "TUlNRS1WZXJzaW9uOiAxLjANClN1YmplY3Q6IGhlbGxvIHdvcmxkDQoNCkhlbGxvIQ0K"
-                    ],
-                    "maxLength": 5242880
                 },
                 "to": {
                     "type": "array",
@@ -1631,71 +1468,6 @@
                         ]
                     }
                 },
-                "messageId": {
-                    "type": "string",
-                    "description": "Message ID",
-                    "examples": [
-                        "<test123@example.com>"
-                    ],
-                    "maxLength": 996
-                },
-                "headers": {
-                    "type": "object",
-                    "description": "Custom Headers",
-                    "examples": [
-                        {
-                            "X-My-Custom-Header": "Custom header value"
-                        }
-                    ]
-                },
-                "trackOpens": {
-                    "type": "boolean",
-                    "description": "Should EmailEngine track opens for this message",
-                    "examples": [
-                        false
-                    ]
-                },
-                "trackClicks": {
-                    "type": "boolean",
-                    "description": "Should EmailEngine track clicks for this message",
-                    "examples": [
-                        false
-                    ]
-                },
-                "copy": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ],
-                    "description": "If set then either copies the message to the Sent Mail folder or not. If not set then uses the account's default setting",
-                    "examples": [
-                        null
-                    ]
-                },
-                "sentMailPath": {
-                    "type": "string",
-                    "description": "Upload sent message to this folder. By default the account's Sent Mail folder is used.",
-                    "examples": [
-                        "Sent Mail"
-                    ],
-                    "maxLength": 1024
-                },
-                "locale": {
-                    "type": "string",
-                    "description": "Optional locale",
-                    "examples": [
-                        "fr"
-                    ],
-                    "maxLength": 100
-                },
-                "tz": {
-                    "type": "string",
-                    "description": "Optional timezone",
-                    "examples": [
-                        "Europe/Tallinn"
-                    ],
-                    "maxLength": 100
-                },
                 "sendAt": {
                     "type": "string",
                     "format": "date-time",
@@ -1703,92 +1475,6 @@
                     "examples": [
                         "2021-07-08T07:06:34.336Z"
                     ]
-                },
-                "deliveryAttempts": {
-                    "type": "integer",
-                    "description": "How many delivery attempts to make until message is considered as failed",
-                    "examples": [
-                        10
-                    ]
-                },
-                "gateway": {
-                    "type": "string",
-                    "description": "Optional SMTP gateway ID for message routing",
-                    "examples": [
-                        "example"
-                    ],
-                    "maxLength": 256
-                },
-                "listId": {
-                    "type": "string",
-                    "description": "List ID for Mail Merge. Must use a subdomain name format. Lists are registered ad-hoc, so a new identifier defines a new list.",
-                    "examples": [
-                        "test-list"
-                    ]
-                },
-                "dsn": {
-                    "type": "object",
-                    "description": "Request DSN notifications",
-                    "properties": {
-                        "id": {
-                            "type": "string",
-                            "description": "The envelope identifier that would be included in the response (ENVID)",
-                            "examples": [
-                                "order-4815-notify"
-                            ],
-                            "maxLength": 256
-                        },
-                        "return": {
-                            "type": "string",
-                            "description": "Specifies if only headers or the entire body of the message should be included in the response (RET)",
-                            "enum": [
-                                "headers",
-                                "full"
-                            ]
-                        },
-                        "notify": {
-                            "type": "array",
-                            "description": "Defines the conditions under which a DSN response should be sent",
-                            "examples": [
-                                [
-                                    "failure",
-                                    "delay"
-                                ]
-                            ],
-                            "items": {
-                                "type": "string",
-                                "enum": [
-                                    "never",
-                                    "success",
-                                    "failure",
-                                    "delay"
-                                ],
-                                "description": "\"never\" - Never send a delivery status notification; \"success\" - Notify when the message is delivered; \"failure\" - Notify when the message cannot be delivered; \"delay\" - Notify when the message is delayed"
-                            }
-                        },
-                        "recipient": {
-                            "type": "string",
-                            "description": "The email address the DSN should be sent (ORCPT)",
-                            "examples": [
-                                "bounces@example.com"
-                            ]
-                        }
-                    },
-                    "required": [
-                        "return"
-                    ]
-                },
-                "baseUrl": {
-                    "type": "string",
-                    "description": "Optional base URL for trackers. This URL must point to your EmailEngine instance.",
-                    "examples": [
-                        "https://customer123.myservice.com"
-                    ]
-                },
-                "dryRun": {
-                    "type": "boolean",
-                    "description": "If true, then EmailEngine does not send the email and returns an RFC822 formatted email file. Tracking information is not added to the email.",
-                    "default": false
                 }
             },
             "additionalProperties": false,
