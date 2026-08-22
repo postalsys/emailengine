@@ -1,5 +1,45 @@
 # Changelog
 
+## [2.79.2](https://github.com/postalsys/emailengine/compare/v2.79.1...v2.79.2) (2026-08-22)
+
+
+### Bug Fixes
+
+* **api:** confine browse-page session tokens and gate the SBOM ([7f3fc6e](https://github.com/postalsys/emailengine/commit/7f3fc6e464a6161286e1fa3ccd3cc933db7cf874))
+* **api:** end browse-page session tokens when every session is logged out ([4040773](https://github.com/postalsys/emailengine/commit/40407733c79c4d65a223cc594b925015e201862a))
+* **attachments:** collect cid references in one pass instead of scanning the HTML per attachment ([9dd6b0c](https://github.com/postalsys/emailengine/commit/9dd6b0c17ab6db174ef6cc6777fdee506e57bc3d))
+* **deps:** refresh dependencies ([6e11a55](https://github.com/postalsys/emailengine/commit/6e11a55cd66e2609efb524e3494ad2ee5bcf0a11))
+* **gmail:** stop a killer history entry from looping forever and apply the text size limit on API accounts ([cb6ca8a](https://github.com/postalsys/emailengine/commit/cb6ca8aab406cefbba3fbb9c973c0de30036fc1f))
+* **imap:** recover addresses when the ENVELOPE reports none ([1e83178](https://github.com/postalsys/emailengine/commit/1e83178de8ba3f00250eb5fc90d0d869d294c3ec))
+* **mcp:** advertise only the tools a credential can actually call ([abeb137](https://github.com/postalsys/emailengine/commit/abeb13749fbd103f4d9ef1cf438c13f789780300))
+* **mcp:** carry the required cache hints on modern-era results ([6dd70b9](https://github.com/postalsys/emailengine/commit/6dd70b99d6158d9e0dabc3c9ea3dc3750c4fbf8a))
+* **mcp:** close the defects a deep review found in the MCP surface ([c3fc7ba](https://github.com/postalsys/emailengine/commit/c3fc7ba2dc8b8f8d4eea379ddbdcc788fbf1a9c6))
+* **mcp:** make connecting an agent a one-step operation ([914dff5](https://github.com/postalsys/emailengine/commit/914dff58d423b8e84a29332e74cf023cfbbabfa8))
+* **mcp:** make token restrictions work over MCP and tighten the OAuth edges ([b1f1dc0](https://github.com/postalsys/emailengine/commit/b1f1dc09902a2a68924fd5cec3dbeed070cd871f))
+* **mcp:** narrow the agent tool schemas, and let webSafeHtml skip inlined images ([e381af0](https://github.com/postalsys/emailengine/commit/e381af01e4494532396879651025193ccd0ab969))
+* **mcp:** offer three access levels when connecting an agent, and make its tokens findable ([15e7bda](https://github.com/postalsys/emailengine/commit/15e7bda7a012096785ca2c87f6b580e2eaab8dac))
+* **mcp:** position MCP support as a labeled beta ([a19a612](https://github.com/postalsys/emailengine/commit/a19a6123c5a4f794325ac96d8bade18d473a68fe))
+* **mcp:** return web-safe bodies and infer the bound account ([923bb25](https://github.com/postalsys/emailengine/commit/923bb25d02471fd9e98a8dc7a2008d794682990f))
+* **mcp:** serve the Model Context Protocol at /mcp as an opt-in beta ([1907015](https://github.com/postalsys/emailengine/commit/190701506978df65d410c3652f09e48bb723dfa0))
+* **mcp:** show the tool count wherever an mcp token is minted ([a85d8f6](https://github.com/postalsys/emailengine/commit/a85d8f67f043a01bebdc969401244d95fbbd116c))
+* **mcp:** tell agents how to reply to and forward a message ([a3f17ad](https://github.com/postalsys/emailengine/commit/a3f17adb0ee5ce276347f5cb883bb984e6eeb0a2))
+* **mcp:** update the consent integration test for the access-level radio ([f4b6b18](https://github.com/postalsys/emailengine/commit/f4b6b1877aa1073c3b3b5cbd9144f7c3fe13d6e1))
+* **submit:** stop a reply borrowing recipients it should not have ([1032605](https://github.com/postalsys/emailengine/commit/10326056db2df7839463789215757c36bf45c34d))
+* **ui:** count the MCP tools a bound token actually receives ([5bbdee3](https://github.com/postalsys/emailengine/commit/5bbdee3beb425887d1cc52846252034bf673da80))
+* **ui:** explain the OAuth connector form on the MCP config page ([b7db99a](https://github.com/postalsys/emailengine/commit/b7db99a03a2b466c7b43b0e324441ad851ece6d1))
+* **ui:** give MCP tokens their own access-level editor on the token form ([308a217](https://github.com/postalsys/emailengine/commit/308a2178e994e656ea88674b1dc0b6372723f51a))
+* **ui:** make the MCP pages vendor-neutral and the consent wording plain ([f0f0e8e](https://github.com/postalsys/emailengine/commit/f0f0e8e5c5a49c2add8688eb746b42e1b51a9e4f))
+* **ui:** nest the MCP OAuth switch under the endpoint switch ([bb619b4](https://github.com/postalsys/emailengine/commit/bb619b4e3329b576a7ccae1787687e3f78922191))
+* **ui:** pick an account in the send-test dialog too ([6dcdbb5](https://github.com/postalsys/emailengine/commit/6dcdbb54918dbfcfc3ff78304d80f45fa64436a4))
+* **ui:** pick an account instead of typing its id ([11be805](https://github.com/postalsys/emailengine/commit/11be8057cd8415ed083349ed40f74c390e1ece3a))
+* **ui:** render the MCP client consent page as an authorization prompt ([4626123](https://github.com/postalsys/emailengine/commit/4626123fc72936ea79d6319010b9f181e6ed06b0))
+* **ui:** separate the collapsible cards on the MCP config page ([691f0d4](https://github.com/postalsys/emailengine/commit/691f0d46eec36927fc128c2f72e785401413b4d7))
+* **ui:** show each app's client id in the OAuth2 apps listing ([0cc36e0](https://github.com/postalsys/emailengine/commit/0cc36e0ee7e067ed54df6c04c3c16e048585d02e))
+* **ui:** split the MCP connect tab into connection-method sub-tabs ([ec632bd](https://github.com/postalsys/emailengine/commit/ec632bd75bc9cbe02403dac98099f47e0b6aa50e))
+* **ui:** split the MCP page into Settings and Connect an agent tabs ([301c7d0](https://github.com/postalsys/emailengine/commit/301c7d0ed5d0108c46732752018860290bc27093))
+* **ui:** stack the agent generator fields in one column ([9a1ab8e](https://github.com/postalsys/emailengine/commit/9a1ab8ec7f890be7707966bc72e1aec4d7dcdf29))
+* **windows:** set CompanyName and ship a multi-size icon in the exe ([33b7842](https://github.com/postalsys/emailengine/commit/33b784211b5d630ae4b716662edc2b5008c75752))
+
 ## [2.79.1](https://github.com/postalsys/emailengine/compare/v2.79.0...v2.79.1) (2026-08-19)
 
 
