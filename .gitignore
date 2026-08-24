@@ -27,6 +27,7 @@ test-results/
 blob-report/
 playwright/.cache/
 *-plan.md
+*-review.md
 
 # Profiling and crash artifacts - never commit these, they capture process memory
 *.heapsnapshot
