@@ -64,29 +64,33 @@ jobs:
             - run: npm publish --provenance --access public
 
     publish_docker:
-        name: Publish Tagged Docker Image
-        runs-on: ubuntu-latest
+        name: Publish Tagged Docker Image (${{ matrix.arch }})
         needs: release_please
         if: needs.release_please.outputs.release_created
-        # Multi-arch builds run the arm64 leg under QEMU emulation, which can
-        # hang indefinitely on a misbehaving step. A normal build finishes in
-        # ~4 minutes, so fail fast instead of burning the 6-hour default limit.
+        # One job per architecture, each on a runner of that architecture. The arm64 leg used to be
+        # emulated through QEMU on an x86 runner, where `npm ci` hit an illegal instruction and then
+        # hung until this timeout - and a release commit is the worst case for it, because the
+        # version bump busts the cached layer and forces the install to run in full. A native runner
+        # takes the emulator out of the picture.
+        runs-on: ${{ matrix.runner }}
         timeout-minutes: 30
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - arch: amd64
+                      platform: linux/amd64
+                      runner: ubuntu-24.04
+                    - arch: arm64
+                      platform: linux/arm64
+                      runner: ubuntu-24.04-arm
         steps:
             - run: echo version v${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}.${{needs.release_please.outputs.patch}}
 
             - uses: actions/checkout@v6
 
-            - name: Set up QEMU
-              uses: docker/setup-qemu-action@v4
-              with:
-                  platforms: "arm64,arm"
-
             - name: Set up Docker Buildx
-              id: buildx
               uses: docker/setup-buildx-action@v4
-              with:
-                  platforms: linux/amd64,linux/arm64/v8
 
             - name: Login to DockerHub
               uses: docker/login-action@v4
@@ -101,37 +105,93 @@ jobs:
                   username: ${{ github.repository_owner }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
-            # Build the amd64 image locally (no push) and smoke test the CLI BEFORE publishing, so a
-            # broken image is never pushed to the tags users pull - the previous version smoke tested
-            # the already-pushed image and could only detect the regression, not prevent shipping it.
-            # This build replays from the same gha cache the multi-arch push below reuses.
-            - name: Build for smoke test (amd64, local)
+            # Build locally and exercise the CLI BEFORE anything is published, so a broken image is
+            # never pushed to the tags users pull. The push below replays from this build's local
+            # layer cache, so paying for the build twice costs almost nothing.
+            - name: Build for smoke test (local)
               uses: docker/build-push-action@v7
               with:
                   context: .
-                  platforms: linux/amd64
+                  platforms: ${{ matrix.platform }}
                   load: true
                   tags: emailengine:smoke-test
-                  cache-from: type=gha
+                  cache-from: type=gha,scope=${{ matrix.arch }}
 
             - name: Smoke test the CLI inside the image
               run: bash .github/docker-smoke-test.sh emailengine:smoke-test
 
-            - name: Build and push
+            # Pushed by digest and left untagged: the release tags can only be attached once both
+            # architectures exist, which is what the manifest job below does. Both registries are
+            # written here so the blobs are already in place and the manifest job never has to copy
+            # them between registries.
+            - name: Build and push by digest
               id: build
               uses: docker/build-push-action@v7
               with:
                   context: .
-                  platforms: ${{ steps.buildx.outputs.platforms }}
-                  push: true
-                  cache-from: type=gha
-                  cache-to: type=gha,mode=max
-                  tags: |
-                      ${{ github.repository }}:latest
-                      ${{ github.repository }}:v${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}.${{needs.release_please.outputs.patch}}
-                      ${{ github.repository }}:v${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}
-                      ${{ github.repository }}:v${{needs.release_please.outputs.major}}
-                      ghcr.io/${{ github.repository }}:latest
-                      ghcr.io/${{ github.repository }}:v${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}.${{needs.release_please.outputs.patch}}
-                      ghcr.io/${{ github.repository }}:v${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}
-                      ghcr.io/${{ github.repository }}:v${{needs.release_please.outputs.major}}
+                  platforms: ${{ matrix.platform }}
+                  outputs: type=image,"name=docker.io/${{ github.repository }},ghcr.io/${{ github.repository }}",push-by-digest=true,name-canonical=true,push=true
+                  cache-from: type=gha,scope=${{ matrix.arch }}
+                  cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+
+            - name: Export digest
+              run: |
+                  mkdir -p /tmp/digests
+                  digest="${{ steps.build.outputs.digest }}"
+                  touch "/tmp/digests/${digest#sha256:}"
+
+            - name: Upload digest
+              uses: actions/upload-artifact@v4
+              with:
+                  name: digests-${{ matrix.arch }}
+                  path: /tmp/digests/*
+                  if-no-files-found: error
+                  retention-days: 1
+
+    publish_docker_manifest:
+        name: Publish Tagged Docker Manifest
+        runs-on: ubuntu-24.04
+        needs: [release_please, publish_docker]
+        # A dependent job is skipped when its needs are, so this is belt and braces - but it keeps
+        # the gate visible in the job itself rather than only in the job it depends on.
+        if: needs.release_please.outputs.release_created
+        timeout-minutes: 15
+        steps:
+            - name: Download digests
+              uses: actions/download-artifact@v4
+              with:
+                  path: /tmp/digests
+                  pattern: digests-*
+                  merge-multiple: true
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v4
+
+            - name: Login to DockerHub
+              uses: docker/login-action@v4
+              with:
+                  username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+            - name: Login to GHCR
+              uses: docker/login-action@v4
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.repository_owner }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Create and push the manifest list
+              working-directory: /tmp/digests
+              env:
+                  MAJOR: ${{ needs.release_please.outputs.major }}
+                  MINOR: ${{ needs.release_please.outputs.minor }}
+                  PATCH: ${{ needs.release_please.outputs.patch }}
+              run: |
+                  for image in "docker.io/${{ github.repository }}" "ghcr.io/${{ github.repository }}"; do
+                      docker buildx imagetools create \
+                          -t "${image}:latest" \
+                          -t "${image}:v${MAJOR}.${MINOR}.${PATCH}" \
+                          -t "${image}:v${MAJOR}.${MINOR}" \
+                          -t "${image}:v${MAJOR}" \
+                          $(printf "${image}@sha256:%s " *)
+                  done
