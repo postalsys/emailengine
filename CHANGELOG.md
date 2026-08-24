@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.79.3](https://github.com/postalsys/emailengine/compare/v2.79.2...v2.79.3) (2026-08-24)
+
+
+### Bug Fixes
+
+* **accounts:** make the auth-failure auto-disable work for OAuth2 accounts ([ad52d95](https://github.com/postalsys/emailengine/commit/ad52d9526142d9c84c024dd1e78926c2055e3ded))
+* **imap:** keep a connection-scoped rejection from silently killing an IMAP worker ([481c181](https://github.com/postalsys/emailengine/commit/481c181b7ab6d59e87d2c2a5b653dedb229340d7))
+* **logger:** keep the late-handler diagnostic when error tracking is on ([8c5def2](https://github.com/postalsys/emailengine/commit/8c5def28cf53238bd43ae413e809ab64ce89fee6))
+
 ## [2.79.2](https://github.com/postalsys/emailengine/compare/v2.79.1...v2.79.2) (2026-08-22)
 
 
