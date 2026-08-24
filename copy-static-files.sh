@@ -33,21 +33,32 @@ cp node_modules/flyonui/flyonui.js static/js/flyonui.js
 # Rebuild the compiled admin UI stylesheet (Tailwind v4 + FlyonUI)
 npm run build:css
 
-wget https://developers.google.com/static/crawling/ipranges/special-crawlers.json -O data/google-crawlers.json
+# Both JSON artifacts below are refreshed from the network and are committed, so a failed fetch
+# must not be allowed to damage the copy already in the tree. A plain `> file` redirect truncates
+# before the command runs, which is how a GitHub 500 once left a zero-byte sbom.json behind - and
+# under `set -e` it also aborts the rest of this script, silently skipping the licence and gettext
+# regeneration that npm run update chains after it. Each fetch therefore lands in a sibling temp
+# file, is checked for being valid JSON, and only then replaces the committed one. The temp file
+# is created next to its target rather than in $TMPDIR so the move is a rename within the same
+# filesystem, never a copy that could be interrupted half-written.
+fetch_json() {
+    local target="$1"
+    shift
+    local tmp
+    tmp=$(mktemp "${target}.XXXXXX")
+    if "$@" > "$tmp" && node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "$tmp"; then
+        mv "$tmp" "$target"
+    else
+        rm -f "$tmp"
+        echo "WARNING: failed to refresh ${target}, keeping the previous copy" >&2
+    fi
+}
+
+fetch_json data/google-crawlers.json wget -q -O - https://developers.google.com/static/crawling/ipranges/special-crawlers.json
 node -e 'console.log("Google crawlers updated: "+require("./data/google-crawlers.json").creationTime);'
 
 # brew install gh
 # gh auth login
 # gh ext install advanced-security/gh-sbom
 # gh sbom -c -l > sbom.json
-#
-# Staged through a temp file: a plain redirect truncates sbom.json before gh runs, so a
-# failing call (the dependency-graph endpoint times out with a 500 often enough) leaves an
-# empty file behind and the refresh looks like it deleted the SBOM.
-sbom_tmp=$(mktemp)
-if gh sbom > "$sbom_tmp" && [ -s "$sbom_tmp" ]; then
-    mv "$sbom_tmp" sbom.json
-else
-    rm -f "$sbom_tmp"
-    echo "WARNING: gh sbom failed, keeping the previous sbom.json" >&2
-fi
+fetch_json sbom.json gh sbom

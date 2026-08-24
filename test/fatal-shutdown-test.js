@@ -20,27 +20,12 @@ const assert = require('node:assert');
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 
-const LOGGER_PATH = path.join(__dirname, '..', 'lib', 'logger.js');
-
-// Reports a rejection nothing handles, and schedules a marker one timer turn out. The marker only
-// reaches the log if the process was still alive by then.
-const PROBE = `
-    const logger = require(${JSON.stringify(LOGGER_PATH)});
-    if (process.env.PROBE_MODE === 'flush') {
-        logger.notifyError = () => {};
-        logger.flushNotifications = () => Promise.resolve();
-    }
-    setTimeout(() => logger.fatal({ msg: 'still-alive-marker' }), 1);
-    Promise.reject(new Error('probe rejection'));
-`;
+const PROBE_PATH = path.join(__dirname, 'helpers', 'fatal-probe.js');
 
 function runProbe(mode) {
-    // The mode travels in the environment rather than in argv: `node -e` puts the first user
-    // argument in process.argv[1], not [2], which is easy to get wrong and silently disables the
-    // branch under test.
-    const result = spawnSync(process.execPath, ['-e', PROBE], {
+    const result = spawnSync(process.execPath, [PROBE_PATH, mode], {
         encoding: 'utf8',
-        env: Object.assign({}, process.env, { EENGINE_LOG_LEVEL: 'trace', PROBE_MODE: mode })
+        env: Object.assign({}, process.env, { EENGINE_LOG_LEVEL: 'trace' })
     });
 
     const messages = (result.stdout || '')
