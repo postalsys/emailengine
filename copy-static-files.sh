@@ -40,4 +40,14 @@ node -e 'console.log("Google crawlers updated: "+require("./data/google-crawlers
 # gh auth login
 # gh ext install advanced-security/gh-sbom
 # gh sbom -c -l > sbom.json
-gh sbom > sbom.json
+#
+# Staged through a temp file: a plain redirect truncates sbom.json before gh runs, so a
+# failing call (the dependency-graph endpoint times out with a 500 often enough) leaves an
+# empty file behind and the refresh looks like it deleted the SBOM.
+sbom_tmp=$(mktemp)
+if gh sbom > "$sbom_tmp" && [ -s "$sbom_tmp" ]; then
+    mv "$sbom_tmp" sbom.json
+else
+    rm -f "$sbom_tmp"
+    echo "WARNING: gh sbom failed, keeping the previous sbom.json" >&2
+fi
