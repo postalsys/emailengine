@@ -1160,11 +1160,21 @@ let spawnWorker = async (type, opts) => {
             onlineWorkers.delete(worker);
             metrics.threadStops.inc();
 
+            // One classification for the whole handler: a suspended worker type and a clean exit
+            // code are both deliberate, anything else is a worker that died.
+            const unexpectedExit = exitCode !== 0 && !suspendedWorkerTypes.has(type);
+
+            // What a worker death cost - dropped API calls and offline accounts - is only ever
+            // stated by the lines below, and they fire on deliberate exits too. The unexpected
+            // case is the one an operator has to see, and most deployments run above info, so
+            // that case logs at warn while a clean or requested stop stays at info.
+            const exitLevel = unexpectedExit && !isClosing ? 'warn' : 'info';
+
             // Fail any in-flight calls routed to this worker right away, so callers
             // get a fast retryable error instead of hanging until their own timeout.
             let rejectedCalls = rejectWorkerCalls(callQueue, worker, WORKER_DIED_RESP_ERR);
             if (rejectedCalls) {
-                logger.info({ msg: 'Rejected in-flight calls for exited worker', type, threadId: worker.threadId, rejectedCalls });
+                logger[exitLevel]({ msg: 'Rejected in-flight calls for exited worker', type, threadId: worker.threadId, rejectedCalls });
             }
 
             workers.get(type).delete(worker);
@@ -1188,7 +1198,7 @@ let spawnWorker = async (type, opts) => {
                         unassigned.add(account);
                     }
 
-                    logger.info({
+                    logger[exitLevel]({
                         msg: 'Worker exited, moving accounts to unassigned',
                         accounts: accountList.size,
                         exitCode
@@ -1204,7 +1214,9 @@ let spawnWorker = async (type, opts) => {
 
                     // Check if all workers have exited (Redis reconnection scenario)
                     if (availableIMAPWorkers.size === 0) {
-                        logger.info({
+                        // Account tracking was lost fleet-wide - the same class of event as the
+                        // warn above, and equally invisible to an operator running above info
+                        logger.warn({
                             msg: 'All IMAP workers exited, reloading accounts from Redis for reassignment'
                         });
 
@@ -1215,7 +1227,7 @@ let spawnWorker = async (type, opts) => {
                             assigned.clear();
                             workerAssigned = new WeakMap();
 
-                            logger.info({
+                            logger.warn({
                                 msg: 'Reloaded accounts from Redis',
                                 accountCount: accounts.length
                             });
@@ -1251,7 +1263,7 @@ let spawnWorker = async (type, opts) => {
                         }
                     }, 10000); // 10 second timeout
 
-                    logger.info({
+                    logger[exitLevel]({
                         msg: 'Worker exited, waiting for restart before reassignment',
                         accounts: unassigned.size,
                         expectedWorkers: config.workers.imap,
@@ -1265,13 +1277,13 @@ let spawnWorker = async (type, opts) => {
             }
 
             // Log worker exit
-            if (suspendedWorkerTypes.has(type)) {
+            if (unexpectedExit) {
+                logger.error({ msg: 'Worker unexpectedly exited', exitCode, type });
+            } else if (suspendedWorkerTypes.has(type)) {
                 logger.info({ msg: 'Worker thread terminated', exitCode, type });
-            } else if (exitCode === 0) {
+            } else {
                 // Clean exit, e.g. the deliberate exit-for-restart after a Redis reconnection
                 logger.info({ msg: 'Worker exited', exitCode, type });
-            } else {
-                logger.error({ msg: 'Worker unexpectedly exited', exitCode, type });
             }
 
             // Respawn worker after delay, preserving any spawn options (e.g. API worker index).
