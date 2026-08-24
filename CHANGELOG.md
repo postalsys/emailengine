@@ -3,11 +3,47 @@
 ## [2.79.3](https://github.com/postalsys/emailengine/compare/v2.79.2...v2.79.3) (2026-08-24)
 
 
+### Upgrade note
+
+The authentication-failure safety net now applies to OAuth2 accounts. It is
+supposed to stop an account retrying after `EENGINE_MAX_IMAP_AUTH_FAILURE_TIME`
+of continuous authentication failures (3 days by default), but it was gated on
+an IMAP configuration block that OAuth2 accounts do not have, so for Gmail and
+Microsoft accounts it never fired and a revoked refresh token was retried
+indefinitely.
+
+On an instance that has accumulated such accounts, every one already past the
+threshold is disabled on its next failed refresh, so expect a burst of
+`authenticationError` webhooks shortly after the restart and a matching drop in
+token-endpoint traffic. A disabled account stops connecting and shows in the
+admin UI as "Connection failed"; re-authorizing it lifts the flag and reconnects
+it, with no manual cleanup. If you would rather stage that, raise
+`EENGINE_MAX_IMAP_AUTH_FAILURE_TIME` before upgrading.
+
 ### Bug Fixes
 
 * **accounts:** make the auth-failure auto-disable work for OAuth2 accounts ([ad52d95](https://github.com/postalsys/emailengine/commit/ad52d9526142d9c84c024dd1e78926c2055e3ded))
 * **imap:** keep a connection-scoped rejection from silently killing an IMAP worker ([481c181](https://github.com/postalsys/emailengine/commit/481c181b7ab6d59e87d2c2a5b653dedb229340d7))
 * **logger:** keep the late-handler diagnostic when error tracking is on ([8c5def2](https://github.com/postalsys/emailengine/commit/8c5def28cf53238bd43ae413e809ab64ce89fee6))
+
+
+### Dependencies
+
+Bundled library updates carrying fixes of their own, which the commit prefixes
+above do not surface:
+
+* **imapflow 1.7.2 -> 1.7.6.** Connection errors now name the connection and the
+  site that rejected them, the guard against an unobserved teardown rejection is
+  structural rather than per-site, and an IDLE-break waiter is no longer reported
+  under the command's marker. Also normalizes search dates so an invalid value
+  cannot throw or emit NaN.
+* **mailparser 3.9.15 -> 3.9.16.** Bounds linkify-it scanning of untrusted text
+  bodies, and handles stream-flush errors.
+* **ioredfour 1.4.2 -> 1.4.3.** Moves to ioredis 6, which removes a second copy
+  of ioredis from the dependency tree.
+* **@postalsys/certs 1.0.18, @postalsys/email-ai-tools 1.13.19,
+  @postalsys/email-text-tools 2.4.14, @bull-board 9.4.0**, plus html-to-text and
+  joi deduplication across the tree.
 
 ## [2.79.2](https://github.com/postalsys/emailengine/compare/v2.79.1...v2.79.2) (2026-08-22)
 
