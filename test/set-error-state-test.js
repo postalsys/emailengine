@@ -28,7 +28,10 @@ const createdKeys = new Set();
 function makeCtx(account) {
     const accountKey = `${REDIS_PREFIX}iad:${account}`;
     createdKeys.add(accountKey);
-    const ctx = {
+    // Inherit the prototype rather than listing the methods under test: setErrorState delegates to
+    // disableAfterAuthFailures(), and a hand-maintained list silently breaks the next time it grows
+    // one more collaborator.
+    const ctx = Object.assign(Object.create(BaseClient.prototype), {
         account,
         redis,
         logger: noopLogger,
@@ -39,11 +42,36 @@ function makeCtx(account) {
         close() {
             this.closeCalls++;
         }
-    };
+    });
     return { ctx, accountKey };
 }
 
-const setErrorState = (ctx, event, data) => BaseClient.prototype.setErrorState.call(ctx, event, data);
+const setErrorState = (ctx, event, data) => ctx.setErrorState(event, data);
+
+// Seeds the account hash a subtest needs. The hash must exist at all for hSetExists to write, and
+// every case here varies only which credential is present and how old/large the error run is.
+async function seed(accountKey, { imap, oauth2, code = 'AUTH', count, ageMs } = {}) {
+    const txn = redis.multi().hset(accountKey, 'account', accountKey);
+    if (imap !== undefined) {
+        txn.hset(accountKey, 'imap', typeof imap === 'string' ? imap : JSON.stringify(imap));
+    }
+    if (oauth2 !== undefined) {
+        txn.hset(accountKey, 'oauth2', JSON.stringify(oauth2));
+    }
+    if (code) {
+        txn.hset(accountKey, 'lastErrorState', JSON.stringify({ serverResponseCode: code }));
+    }
+    if (count !== undefined) {
+        txn.hset(accountKey, 'lastError:errorCount', String(count));
+    }
+    if (ageMs !== undefined) {
+        txn.hset(accountKey, 'lastError:first', new Date(Date.now() - ageMs).toISOString());
+    }
+    await txn.exec();
+}
+
+// close() is scheduled with setImmediate.
+const drainSetImmediate = () => new Promise(resolve => setImmediate(resolve));
 
 registerRedisTeardown(redis, async () => {
     for (const key of createdKeys) {
@@ -53,6 +81,49 @@ registerRedisTeardown(redis, async () => {
             // ignore
         }
     }
+});
+
+test('BaseClient.isSyncDisabled', async t => {
+    // The flag setErrorState() writes is only worth anything if the clients read it. The IMAP
+    // client checks it on already-loaded account data; the Gmail and Graph clients call this,
+    // because they have to know before they spend a token refresh finding out.
+    await t.test('reports a disabled account', async () => {
+        const { ctx, accountKey } = makeCtx('syncdis-on');
+        await seed(accountKey, { imap: { disabled: true }, code: null });
+        assert.strictEqual(await ctx.isSyncDisabled(), true);
+    });
+
+    await t.test('reports an enabled account', async () => {
+        const { ctx, accountKey } = makeCtx('syncdis-off');
+        await seed(accountKey, { imap: { host: 'imap.test', disabled: false }, code: null });
+        assert.strictEqual(await ctx.isSyncDisabled(), false);
+    });
+
+    await t.test('an account with no imap field is not disabled', async () => {
+        const { ctx, accountKey } = makeCtx('syncdis-none');
+        await seed(accountKey, { oauth2: { provider: 'gmail' }, code: null });
+        assert.strictEqual(await ctx.isSyncDisabled(), false);
+    });
+
+    await t.test('an unreadable blob is not treated as a disable', async () => {
+        const { ctx, accountKey } = makeCtx('syncdis-bad');
+        await seed(accountKey, { imap: 'not json', code: null });
+        assert.strictEqual(await ctx.isSyncDisabled(), false, 'a parse failure must not strand the account offline');
+    });
+
+    await t.test('what setErrorState disables, isSyncDisabled reports', async () => {
+        // The two halves have to agree, including for an OAuth2 account that had no imap field
+        // until the disable synthesized one.
+        const { ctx, accountKey } = makeCtx('syncdis-roundtrip');
+        await seed(accountKey, { oauth2: { provider: 'gmail' }, code: 'OauthRenewError', count: 40, ageMs: 4 * DAY });
+
+        assert.strictEqual(await ctx.isSyncDisabled(), false, 'enabled before the threshold trips');
+
+        await setErrorState(ctx, 'authenticationError', { serverResponseCode: 'OauthRenewError', response: 'invalid_grant' });
+
+        assert.strictEqual(await ctx.isSyncDisabled(), true, 'and disabled after');
+        await drainSetImmediate();
+    });
 });
 
 test('BaseClient.setErrorState', async t => {
@@ -98,9 +169,11 @@ test('BaseClient.setErrorState', async t => {
             .hset(accountKey, 'lastError:first', new Date(Date.now() - 4 * DAY).toISOString())
             .exec();
 
-        const isFirst = await setErrorState(ctx, 'authenticationError', { serverResponseCode: 'AUTH', response: 'auth failed' });
+        const shouldNotify = await setErrorState(ctx, 'authenticationError', { serverResponseCode: 'AUTH', response: 'auth failed' });
 
-        assert.strictEqual(isFirst, false);
+        // The error itself is a repeat, which is normally suppressed, but the disable is reported:
+        // an account going offline until someone re-authenticates it has to reach the operator.
+        assert.strictEqual(shouldNotify, true, 'the disable itself is notified');
         const imap = JSON.parse(await redis.hget(accountKey, 'imap'));
         assert.strictEqual(imap.disabled, true, 'IMAP must be disabled past the threshold');
         // The error counters are cleared when IMAP is disabled.
@@ -109,6 +182,95 @@ test('BaseClient.setErrorState', async t => {
         // close() is scheduled with setImmediate.
         await new Promise(resolve => setImmediate(resolve));
         assert.strictEqual(ctx.closeCalls, 1, 'the connection should be closed after disabling IMAP');
+    });
+
+    await t.test('an OAuth2 account past the threshold is disabled even with no imap configuration', async () => {
+        const { ctx, accountKey } = makeCtx('seterr-oauth2');
+        // An OAuth2 account has no `imap` hash field at all - getImapConfig() builds its connection
+        // from the provider table. This is the shape the disable used to skip in silence.
+        await redis
+            .multi()
+            .hset(accountKey, 'oauth2', JSON.stringify({ provider: 'gmail', auth: { user: 'user@example.com' } }))
+            .hset(accountKey, 'lastErrorState', JSON.stringify({ serverResponseCode: 'OauthRenewError' }))
+            .hset(accountKey, 'lastError:errorCount', '120')
+            .hset(accountKey, 'lastError:first', new Date(Date.now() - 4 * DAY).toISOString())
+            .exec();
+
+        const shouldNotify = await setErrorState(ctx, 'authenticationError', { serverResponseCode: 'OauthRenewError', response: 'invalid_grant' });
+
+        const imap = JSON.parse(await redis.hget(accountKey, 'imap'));
+        assert.strictEqual(imap.disabled, true, 'an OAuth2 account must be disabled past the threshold');
+        assert.strictEqual(await redis.hget(accountKey, 'lastError:errorCount'), null, 'the counters are cleared on disable');
+
+        const lastErrorState = JSON.parse(await redis.hget(accountKey, 'lastErrorState'));
+        assert.match(lastErrorState.description, /exceeding the authentication error threshold/);
+
+        // The disable is reported even though the error itself is a repeat, which the caller would
+        // otherwise suppress - an account going offline has to reach the operator.
+        assert.strictEqual(shouldNotify, true, 'the trip itself is notified');
+
+        await new Promise(resolve => setImmediate(resolve));
+        assert.strictEqual(ctx.closeCalls, 1, 'the connection should be closed after disabling');
+    });
+
+    await t.test('an account with neither imap nor oauth2 is left alone', async () => {
+        const { ctx, accountKey } = makeCtx('seterr-nocreds');
+        // Half-created accounts must not be marked disabled on their way in.
+        await redis
+            .multi()
+            .hset(accountKey, 'account', 'seterr-nocreds')
+            .hset(accountKey, 'lastErrorState', JSON.stringify({ serverResponseCode: 'AUTH' }))
+            .hset(accountKey, 'lastError:errorCount', '5')
+            .hset(accountKey, 'lastError:first', new Date(Date.now() - 4 * DAY).toISOString())
+            .exec();
+
+        const shouldNotify = await setErrorState(ctx, 'authenticationError', { serverResponseCode: 'AUTH', response: 'auth failed' });
+
+        assert.strictEqual(await redis.hget(accountKey, 'imap'), null, 'no imap flag is synthesized without a credential to fail against');
+        assert.strictEqual(shouldNotify, false, 'nothing was disabled, so nothing extra is reported');
+        assert.strictEqual(await redis.hget(accountKey, 'lastError:errorCount'), '6', 'the counter keeps running');
+
+        await new Promise(resolve => setImmediate(resolve));
+        assert.strictEqual(ctx.closeCalls, 0);
+    });
+
+    await t.test('an already disabled account is not disabled again', async () => {
+        const { ctx, accountKey } = makeCtx('seterr-already');
+        await redis
+            .multi()
+            .hset(accountKey, 'oauth2', JSON.stringify({ provider: 'gmail' }))
+            .hset(accountKey, 'imap', JSON.stringify({ disabled: true }))
+            .hset(accountKey, 'lastErrorState', JSON.stringify({ serverResponseCode: 'OauthRenewError' }))
+            .hset(accountKey, 'lastError:errorCount', '9')
+            .hset(accountKey, 'lastError:first', new Date(Date.now() - 4 * DAY).toISOString())
+            .exec();
+
+        const shouldNotify = await setErrorState(ctx, 'authenticationError', { serverResponseCode: 'OauthRenewError', response: 'invalid_grant' });
+
+        assert.strictEqual(shouldNotify, false, 'a repeat on an already disabled account stays quiet');
+        assert.strictEqual(await redis.hget(accountKey, 'lastError:errorCount'), '10', 'nothing was reset');
+
+        await new Promise(resolve => setImmediate(resolve));
+        assert.strictEqual(ctx.closeCalls, 0, 'no second close for an account already disabled');
+    });
+
+    await t.test('an unparseable imap blob is left intact rather than replaced with a bare flag', async () => {
+        const { ctx, accountKey } = makeCtx('seterr-badblob');
+        await redis
+            .multi()
+            .hset(accountKey, 'imap', 'not json')
+            .hset(accountKey, 'oauth2', JSON.stringify({ provider: 'gmail' }))
+            .hset(accountKey, 'lastErrorState', JSON.stringify({ serverResponseCode: 'AUTH' }))
+            .hset(accountKey, 'lastError:errorCount', '5')
+            .hset(accountKey, 'lastError:first', new Date(Date.now() - 4 * DAY).toISOString())
+            .exec();
+
+        const shouldNotify = await setErrorState(ctx, 'authenticationError', { serverResponseCode: 'AUTH', response: 'auth failed' });
+
+        assert.strictEqual(await redis.hget(accountKey, 'imap'), 'not json', 'the unreadable configuration is preserved');
+        assert.strictEqual(shouldNotify, false);
+        await new Promise(resolve => setImmediate(resolve));
+        assert.strictEqual(ctx.closeCalls, 0);
     });
 
     await t.test('a different error code is treated as a new first occurrence', async () => {

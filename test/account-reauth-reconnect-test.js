@@ -145,6 +145,64 @@ test('Account.update OAuth re-auth reconnect gate', async t => {
         assert.strictEqual(reconnects[0].account, 'acc1');
     });
 
+    await t.test('re-auth lifts the auth-failure disable so the reconnect it requests can land', async () => {
+        // setErrorState() switches an account off after a run of authentication failures by
+        // setting imap.disabled. A password account is re-enabled when the operator saves new IMAP
+        // settings, but an OAuth2 account has none to save - re-authorization is the fix, and
+        // without lifting the flag here the reconnect below would bail out on it.
+        let { ctx, calls } = createCtx({
+            account: 'acc-disabled',
+            state: 'authenticationError',
+            oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+        });
+
+        let stored = JSON.stringify({ disabled: true });
+        let writes = [];
+        ctx.redis = Object.assign({}, mockRedis, {
+            hget: async (key, field) => (field === 'imap' ? stored : null),
+            hset: async (key, field, value) => {
+                writes.push({ field, value });
+                stored = value;
+            }
+        });
+
+        await Account.prototype.update.call(ctx, { account: 'acc-disabled', oauth2: { accessToken: 'NEW', refreshToken: 'R1' } }, REAUTHORIZED);
+
+        assert.deepEqual(
+            writes.map(w => w.field),
+            ['imap'],
+            'the stored imap field is rewritten once'
+        );
+        assert.strictEqual(JSON.parse(writes[0].value).disabled, false, 'the disable flag is lifted');
+        assert.deepEqual(
+            calls.map(c => c.cmd),
+            ['reconnect'],
+            'and the reconnect is still requested'
+        );
+    });
+
+    await t.test('re-auth on an account that was never disabled writes nothing extra', async () => {
+        let { ctx, calls } = createCtx({
+            account: 'acc-enabled',
+            state: 'authenticationError',
+            oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+        });
+
+        let writes = [];
+        ctx.redis = Object.assign({}, mockRedis, {
+            hget: async (key, field) => (field === 'imap' ? JSON.stringify({ host: 'imap.test', disabled: false }) : null),
+            hset: async (key, field, value) => writes.push({ field, value })
+        });
+
+        await Account.prototype.update.call(ctx, { account: 'acc-enabled', oauth2: { accessToken: 'NEW', refreshToken: 'R1' } }, REAUTHORIZED);
+
+        assert.deepEqual(writes, [], 'an account that is not disabled is left untouched');
+        assert.deepEqual(
+            calls.map(c => c.cmd),
+            ['reconnect']
+        );
+    });
+
     await t.test('re-auth while in connectError requests a full reconnect', async () => {
         let { ctx, calls } = createCtx({
             account: 'acc2',
