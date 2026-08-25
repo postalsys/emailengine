@@ -12,39 +12,22 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { BaseClient } = require('../lib/email-client/base-client');
 const { Account } = require('../lib/account');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
-const { REDIS_PREFIX, AUTH_FAILURE_DISABLED_FIELD } = require('../lib/consts');
-
-const noopLogger = { trace() {}, debug() {}, info() {}, warn() {}, error() {}, fatal() {}, child: () => noopLogger };
+const { createErrorStateClient, accountKeyFor, drainSetImmediate, noopLogger } = require('./helpers/auth-failure');
+const { AUTH_FAILURE_DISABLED_FIELD } = require('../lib/consts');
 
 const HOUR = 3600 * 1000;
 const DAY = 24 * HOUR;
 
 const createdKeys = new Set();
 
-// Build a fake BaseClient receiver bound to a unique account hash.
+// Build a fake BaseClient receiver bound to a unique account hash, registered for cleanup.
 function makeCtx(account) {
-    const accountKey = `${REDIS_PREFIX}iad:${account}`;
+    const accountKey = accountKeyFor(account);
     createdKeys.add(accountKey);
-    // Inherit the prototype rather than listing the methods under test: setErrorState delegates to
-    // disableAfterAuthFailures(), and a hand-maintained list silently breaks the next time it grows
-    // one more collaborator.
-    const ctx = Object.assign(Object.create(BaseClient.prototype), {
-        account,
-        redis,
-        logger: noopLogger,
-        state: 'connected',
-        closeCalls: 0,
-        getAccountKey: () => accountKey,
-        setStateVal: async () => {},
-        close() {
-            this.closeCalls++;
-        }
-    });
-    return { ctx, accountKey };
+    return { ctx: createErrorStateClient({ redis, account }), accountKey };
 }
 
 const setErrorState = (ctx, event, data) => ctx.setErrorState(event, data);
@@ -70,9 +53,6 @@ async function seed(accountKey, { imap, oauth2, code = 'AUTH', count, ageMs } = 
     }
     await txn.exec();
 }
-
-// close() is scheduled with setImmediate.
-const drainSetImmediate = () => new Promise(resolve => setImmediate(resolve));
 
 registerRedisTeardown(redis, async () => {
     for (const key of createdKeys) {

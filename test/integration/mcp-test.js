@@ -26,6 +26,7 @@ const { createAuthorizationCode } = require('../../lib/mcp/oauth');
 const { MCP_READ_ONLY_PERMISSIONS } = require('../../lib/token-permission-view');
 const registerRedisTeardown = require('../helpers/redis-teardown');
 const { pkcePair } = require('../helpers/pkce');
+const { extractCrumbFromHtml } = require('./helpers');
 
 // Force the process to exit once tests finish; lib/db keeps connections open.
 registerRedisTeardown(redis);
@@ -416,7 +417,7 @@ test('MCP endpoint', async t => {
             }
             assert.match(consent.text, /value="read"\s+checked/, 'read-only must be the pre-selected level');
 
-            const crumb = (consent.text.match(/name="crumb"\s+value="([^"]+)"/) || [])[1];
+            const crumb = extractCrumbFromHtml(consent.text);
             assert.ok(crumb, 'the consent form carries a crumb');
 
             // Denying is the one decision that needs no admin session - this tier runs with no

@@ -32,8 +32,13 @@
             <div class="bg-base-content/10 mx-1 hidden h-6 w-px self-center sm:block" aria-hidden="true"></div>
 
             {{!-- Operations: act on this account now --}}
-            {{#> ui/tooltip text="Close and re-open the connection"}}
-            <button type="button" class="btn btn-soft btn-sm" id="request-reconnect">
+            {{!-- Disabled while the account is switched off: a reconnect rebuilds the connection,
+                 but init() checks the disable flag before it dials out and returns without
+                 connecting, so the click would report success and do nothing. --}}
+            {{#> ui/tooltip text=(when accountParked "Syncing is switched off - use Resume syncing instead" "Close and re-open the connection")}}
+            {{!-- pointer-events-none so the tooltip above still explains why: browsers dispatch no
+                 mouse events for a disabled control, so without it the wrapper never sees the hover --}}
+            <button type="button" class="btn btn-soft btn-sm{{#if accountParked}} pointer-events-none{{/if}}" id="request-reconnect"{{#if accountParked}} disabled{{/if}}>
                 <span class="icon-[tabler--refresh] size-4" id="reconnect-icon"></span> Reconnect
             </button>
             {{/ui/tooltip}}

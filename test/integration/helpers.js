@@ -84,6 +84,18 @@ function signBlob(obj) {
     return { data: data.toString('base64url'), sig };
 }
 
+// Find the crumb (CSRF token) a page embeds in its form, so a scripted POST passes the crumb plugin
+// the same way a browser would. Prefer this over extractCrumb(setCookie) for anything past the first
+// request of a run: @hapi/crumb mints the value once and only sets the cookie header when the client
+// is not already carrying it, so a supertest agent sees no set-cookie on later requests.
+//
+// `name` comes before `value` on every crumb input in the tree, but not always adjacently - the
+// admin layout puts an `id` between them (views/layout/app.hbs) - hence the permissive middle.
+function extractCrumbFromHtml(html) {
+    const match = /name="crumb"[^>]*value="([^"]+)"/.exec(html || '');
+    return match ? match[1] : null;
+}
+
 // Find the crumb (CSRF token) value in a response's set-cookie headers, so a scripted POST can pass
 // the crumb plugin the same way a browser would.
 function extractCrumb(setCookie) {
@@ -199,6 +211,7 @@ module.exports = {
     etherealAccountPayload,
     signBlob,
     extractCrumb,
+    extractCrumbFromHtml,
     startMockImapServer,
     SERVICE_SECRET,
     ACCESS_TOKEN

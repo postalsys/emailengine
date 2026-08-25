@@ -31,7 +31,7 @@ const supertest = require('supertest');
 const test = require('node:test');
 const assert = require('node:assert').strict;
 const webhooksServer = require('./webhooks-server');
-const { waitForCondition, signBlob, ACCESS_TOKEN: accessToken } = require('./helpers');
+const { waitForCondition, signBlob, extractCrumbFromHtml, ACCESS_TOKEN: accessToken } = require('./helpers');
 
 const baseUrl = `http://127.0.0.1:${config.api.port}`;
 
@@ -53,13 +53,11 @@ const listIdForm = `unsub-form-${Date.now()}`;
 // covers healthy and mildly-congested runs.
 const WEBHOOK_OBSERVE_TIMEOUT = 20000;
 
-// Find the crumb (CSRF token) the unsubscribe page embeds in its form, so a scripted POST passes
-// the crumb plugin the same way a browser would. Named distinctly from helpers.js extractCrumb(setCookie),
-// which parses the cookie header instead of the rendered HTML - do not conflate the two.
-function extractCrumbFromHtml(html) {
-    const match = html.match(/name="crumb"\s+value="([^"]+)"/);
-    assert.ok(match, 'crumb token was not found in the rendered unsubscribe page');
-    return match[1];
+// Wraps the shared reader with this spec's own failure message.
+function crumbFromPage(html) {
+    const crumb = extractCrumbFromHtml(html);
+    assert.ok(crumb, 'crumb token was not found in the rendered unsubscribe page');
+    return crumb;
 }
 
 // True if `recipient` is currently listed on `listId`. A removed list 404s (deterministic), which
@@ -149,7 +147,7 @@ test('Unsubscribe / resubscribe webhook events', async t => {
 
         // GET the page first to obtain the crumb cookie (agent) + value (form).
         const pageRes = await server.get('/unsubscribe').query({ data, sig }).expect(200);
-        const crumb = extractCrumbFromHtml(pageRes.text);
+        const crumb = crumbFromPage(pageRes.text);
 
         const res = await server.post('/unsubscribe/address').type('form').send({ action: 'unsubscribe', data, sig, crumb }).expect(200);
         assert.match(res.text, /was unsubscribed/, 'the page should confirm the unsubscribe');
@@ -171,7 +169,7 @@ test('Unsubscribe / resubscribe webhook events', async t => {
 
         // Re-read the page (now in the unsubscribed state) to get a current crumb for the subscribe form.
         const pageRes = await server.get('/unsubscribe').query({ data, sig }).expect(200);
-        const crumb = extractCrumbFromHtml(pageRes.text);
+        const crumb = crumbFromPage(pageRes.text);
 
         const res = await server.post('/unsubscribe/address').type('form').send({ action: 'subscribe', data, sig, crumb }).expect(200);
         assert.match(res.text, /re-subscribed|Subscription resumed/, 'the page should confirm the resubscribe');
