@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.79.4](https://github.com/postalsys/emailengine/compare/v2.79.3...v2.79.4) (2026-08-25)
+
+
+### Bug Fixes
+
+* **accounts:** let re-authorization bring back an account the safety net switched off ([b4f04f5](https://github.com/postalsys/emailengine/commit/b4f04f54ce37342c69bbcda65f8b5eb1a331423c))
+* **accounts:** report a switched-off account, and stop pretending to reconnect it ([6c19ea2](https://github.com/postalsys/emailengine/commit/6c19ea2cf05ea49d212b8fdbcd12aa9d8a6e36f5))
+* **admin:** serve the SBOM download from the admin surface ([96aa63e](https://github.com/postalsys/emailengine/commit/96aa63ee1aaa409d1f279b4fffa89e1e04317484))
+
 ## [2.79.3](https://github.com/postalsys/emailengine/compare/v2.79.2...v2.79.3) (2026-08-24)
 
 
