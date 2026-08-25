@@ -13,9 +13,10 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { BaseClient } = require('../lib/email-client/base-client');
+const { Account } = require('../lib/account');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
-const { REDIS_PREFIX } = require('../lib/consts');
+const { REDIS_PREFIX, AUTH_FAILURE_DISABLED_FIELD } = require('../lib/consts');
 
 const noopLogger = { trace() {}, debug() {}, info() {}, warn() {}, error() {}, fatal() {}, child: () => noopLogger };
 
@@ -289,5 +290,71 @@ test('BaseClient.setErrorState', async t => {
         assert.strictEqual(await redis.hget(accountKey, 'lastError:errorCount'), '1');
         const imap = JSON.parse(await redis.hget(accountKey, 'imap'));
         assert.strictEqual(imap.disabled, false, 'a fresh error must not immediately disable IMAP');
+    });
+});
+
+// The other half of the mechanism. `imap.disabled` is both the safety net's park flag and the
+// operator's send-only switch, and AUTH_FAILURE_DISABLED_FIELD is the only thing that tells them
+// apart - so the writer above and the reader below are tested against the same real Redis hash
+// rather than against each other's assumptions.
+test('Auth-failure disable recovery', async t => {
+    // clearAuthFailureDisable() only needs an account key, a client and a logger. Built on the same
+    // key as makeCtx(), so the two halves of the mechanism act on one account hash.
+    function makeAccount(account) {
+        const { accountKey } = makeCtx(account);
+        const accountObject = Object.assign(Object.create(Account.prototype), {
+            account,
+            redis,
+            logger: noopLogger,
+            getAccountKey: () => accountKey
+        });
+        return { accountObject, accountKey };
+    }
+
+    const markerOf = accountKey => redis.hget(accountKey, AUTH_FAILURE_DISABLED_FIELD);
+
+    await t.test('what the safety net parks, clearAuthFailureDisable brings back', async () => {
+        const { ctx, accountKey } = makeCtx('recover-roundtrip');
+        const { accountObject } = makeAccount('recover-roundtrip');
+
+        await seed(accountKey, { oauth2: { provider: 'gmail' }, code: 'OauthRenewError', count: 40, ageMs: 4 * DAY });
+        await setErrorState(ctx, 'authenticationError', { serverResponseCode: 'OauthRenewError', response: 'invalid_grant' });
+        await drainSetImmediate();
+
+        const disabledAt = await markerOf(accountKey);
+        assert.ok(disabledAt, 'the park is marked as ours');
+        assert.ok(!Number.isNaN(Date.parse(disabledAt)), 'and stamped with when it happened');
+
+        assert.strictEqual(await accountObject.clearAuthFailureDisable(), true, 'the disable is lifted');
+        assert.strictEqual(await ctx.isSyncDisabled(), false, 'and the account may connect again');
+        assert.strictEqual(await markerOf(accountKey), null, 'the marker goes with it');
+    });
+
+    await t.test('a disable the operator set is left alone', async () => {
+        // A send-only account. Re-authorization is routine for one, so lifting this would silently
+        // start syncing a mailbox somebody had switched off on purpose.
+        const { accountObject, accountKey } = makeAccount('recover-operator');
+        await seed(accountKey, { imap: { host: 'imap.test', disabled: true }, code: null });
+
+        assert.strictEqual(await accountObject.clearAuthFailureDisable(), false, 'nothing to lift without the marker');
+        assert.strictEqual(JSON.parse(await redis.hget(accountKey, 'imap')).disabled, true, 'the flag survives');
+    });
+
+    await t.test('a marker left behind by a manual re-enable is retired', async () => {
+        const { accountObject, accountKey } = makeAccount('recover-stale');
+        await seed(accountKey, { imap: { host: 'imap.test', disabled: false }, code: null });
+        await redis.hset(accountKey, AUTH_FAILURE_DISABLED_FIELD, new Date().toISOString());
+
+        assert.strictEqual(await accountObject.clearAuthFailureDisable(), false, 'an already-enabled account was not lifted by this call');
+        assert.strictEqual(await markerOf(accountKey), null, 'but the stale marker cannot survive to authorize a later, deliberate disable');
+    });
+
+    await t.test('an unreadable imap blob is not rewritten', async () => {
+        const { accountObject, accountKey } = makeAccount('recover-badblob');
+        await seed(accountKey, { imap: 'not json', code: null });
+        await redis.hset(accountKey, AUTH_FAILURE_DISABLED_FIELD, new Date().toISOString());
+
+        assert.strictEqual(await accountObject.clearAuthFailureDisable(), false);
+        assert.strictEqual(await redis.hget(accountKey, 'imap'), 'not json', 'the stored configuration is preserved');
     });
 });

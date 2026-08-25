@@ -117,6 +117,7 @@ const GOLDEN_ROUTES = [
     'POST /admin/accounts/{account}/logs',
     'POST /admin/accounts/{account}/logs-flush',
     'POST /admin/accounts/{account}/reconnect',
+    'POST /admin/accounts/{account}/resume',
     'POST /admin/accounts/{account}/sync',
     'POST /admin/config/ai',
     'POST /admin/config/ai/reload-models',

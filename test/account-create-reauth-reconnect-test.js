@@ -1,14 +1,18 @@
 'use strict';
 
-// Unit coverage for the re-authorization reconnect gate added to Account.create().
+// Unit coverage for the re-authorization recovery Account.create() performs.
 //
-// When an EXISTING account that is currently in a non-operational error state
-// (authenticationError/connectError) is re-registered - which is what the interactive OAuth re-auth
-// redirect and the IMAP re-credentials form both do - create() must request a FULL reconnect
-// (cmd:'reconnect'), not an in-place cmd:'update'. cmd:'update' only calls reconnect() on the
-// existing client instance, which cannot switch client type (IMAP <-> API) and is a no-op against a
-// torn-down connection, so syncing would not resume without a manual "Reconnect". Healthy accounts
-// keep cmd:'update' and brand-new accounts keep cmd:'new'.
+// When an EXISTING account that is currently non-operational is re-registered - which is what the
+// interactive OAuth re-auth redirect and the IMAP re-credentials form both do - create() must
+// request a FULL reconnect (cmd:'reconnect'), not an in-place cmd:'update'. cmd:'update' only calls
+// reconnect() on the existing client instance, which cannot switch client type (IMAP <-> API) and
+// is a no-op against a torn-down connection, so syncing would not resume without a manual
+// "Reconnect". Healthy accounts keep cmd:'update' and brand-new accounts keep cmd:'new'.
+//
+// Re-registration must also lift a disable the auth-failure safety net applied, because a reconnect
+// cannot resume an account that is switched off, and this is the only path an OAuth2 account has to
+// that flag - create() writes no `imap` field of its own, so the synthesized `{"disabled":true}`
+// blob would otherwise survive every re-authorization.
 //
 // See account-reauth-reconnect-test.js for the sibling Account.update() coverage.
 
@@ -21,6 +25,7 @@ function createMockRedis() {
     return {
         status: 'ready',
         hget: async () => null,
+        hmget: async (key, ...fields) => fields.map(() => null),
         hset: async () => {},
         hdel: async () => {},
         hSetExists: async () => {},
@@ -62,6 +67,7 @@ require.cache[dbPath] = {
 };
 
 const { Account } = require('../lib/account');
+const { createAccountHash, DISABLED_MARKER, DISABLED_AT } = require('./helpers/account-hash');
 
 function createMockLogger() {
     let logger = {};
@@ -72,47 +78,30 @@ function createMockLogger() {
 }
 
 // Builds a mock `this` for Account.prototype.create and records every RPC call() it issues.
-// `execResult` is what the create() Redis pipeline's exec() resolves to (it drives the new vs
-// existing branch and the old state). `throwOnReconnect` makes the reconnect RPC reject, to exercise
-// the try/catch guard around the reconnect dispatch.
-function createCtx(execResult, { throwOnReconnect = false } = {}) {
+//
+// `stored` is the account hash as it stands before the call, which is what drives the new vs
+// existing branch: create() reads it back through the leading hgetall of its own pipeline, so a
+// truthy `account` field means an existing account and an empty hash means a fresh one. It is a
+// live hash rather than a canned pipeline reply because the recovery path writes to it outside
+// that pipeline. `throwOnReconnect` makes the reconnect RPC reject, to exercise the try/catch
+// guard around the reconnect dispatch.
+//
+// The receiver inherits the real prototype: create() delegates to clearAuthFailureDisable() and
+// unserializeAccountData(), and a hand-listed set of methods silently breaks the next time it
+// grows one more collaborator.
+function createCtx(stored, { throwOnReconnect = false } = {}) {
     let calls = [];
+    let { hash, writes, commands } = createAccountHash(stored);
 
-    // Chainable pipeline builder - every command returns the builder, exec() resolves execResult.
-    let builder = {
-        hgetall() {
-            return this;
-        },
-        hmset() {
-            return this;
-        },
-        hsetnx() {
-            return this;
-        },
-        sadd() {
-            return this;
-        },
-        hset() {
-            return this;
-        },
-        srem() {
-            return this;
-        },
-        exec: async () => execResult
-    };
+    let redis = Object.assign(createMockRedis(), commands);
 
-    let redis = Object.assign(createMockRedis(), {
-        multi: () => builder
-    });
-
-    let ctx = {
+    let ctx = Object.assign(Object.create(Account.prototype), {
         account: null,
         timeout: 1000,
         logger: createMockLogger(),
         redis,
         getAccountKey: () => 'iad:test',
         serializeAccountData: () => ({}),
-        unserializeAccountData: data => data,
         genId: async () => 'generated-id',
         loadAccountData: async () => ({}),
         call: async message => {
@@ -126,26 +115,14 @@ function createCtx(execResult, { throwOnReconnect = false } = {}) {
             }
             return true;
         }
-    };
+    });
 
-    return { ctx, calls };
+    return { ctx, calls, hash, writes };
 }
 
-// Pipeline result tail shared by every case: hmset OK, then the hsetnx/sadd ops (values irrelevant).
-const OK_TAIL = [
-    [null, 'OK'], // [1] hmset
-    [null, 0], // [2] hsetnx state
-    [null, 0], // [3] hsetnx runIndex
-    [null, 0], // [4] hsetnx state:count
-    [null, 1] // [5] sadd accounts
-];
-
-// hgetall ([0]) carries the pre-overwrite account hash. A truthy `account` field => existing account.
-function existing(state) {
-    return [[null, { account: 'acc', state }], ...OK_TAIL];
-}
-function freshAccount() {
-    return [[null, {}], ...OK_TAIL];
+// An account that already exists, in the given connection state.
+function existing(state, extraFields) {
+    return Object.assign({ account: 'acc', state }, extraFields);
 }
 
 test('Account.create re-auth reconnect gate', async t => {
@@ -182,7 +159,8 @@ test('Account.create re-auth reconnect gate', async t => {
     });
 
     await t.test('brand-new account uses cmd:new (no reconnect)', async () => {
-        let { ctx, calls } = createCtx(freshAccount());
+        // Nothing stored yet
+        let { ctx, calls } = createCtx({});
 
         let res = await Account.prototype.create.call(ctx, { account: 'acc4', imapIndexer: 'full' });
 
@@ -193,7 +171,9 @@ test('Account.create re-auth reconnect gate', async t => {
     });
 
     await t.test('existing account in unset (sync disabled) keeps cmd:update', async () => {
-        // Regression guard: "unset" means the user disabled syncing - do not force-connect it.
+        // Regression guard: "unset" means the account is not syncing - do not force-connect it.
+        // A parked account also reports `unset`, but carries the marker the recovery cases below
+        // seed, which is what tells the two apart.
         let { ctx, calls } = createCtx(existing('unset'));
 
         await Account.prototype.create.call(ctx, { account: 'acc5', imapIndexer: 'full' });
@@ -223,6 +203,80 @@ test('Account.create re-auth reconnect gate', async t => {
 
         assert.strictEqual(calls.filter(c => c.cmd === 'reconnect').length, 1, 'reconnect was attempted');
         assert.strictEqual(res.state, 'existing', 'create still reports the account as saved');
+    });
+
+    await t.test('re-registering a parked account lifts the disable and reconnects', async () => {
+        // The reported gap. A parked account does not sit in an error state - the connection gate
+        // reports it as `unset`, which the case above deliberately leaves alone - so without
+        // lifting the flag here an OAuth2 account stayed off no matter how many times it was
+        // re-authorized, and the only way back was a hand-written API call.
+        let { ctx, calls, hash } = createCtx(
+            existing('unset', {
+                imap: JSON.stringify({ disabled: true }),
+                [DISABLED_MARKER]: DISABLED_AT
+            })
+        );
+
+        let res = await Account.prototype.create.call(ctx, { account: 'acc-parked', imapIndexer: 'full' });
+
+        assert.strictEqual(res.state, 'existing');
+        assert.strictEqual(JSON.parse(hash.imap).disabled, false, 'the disable flag is lifted');
+        assert.ok(!(DISABLED_MARKER in hash), 'and the marker is retired with it');
+        assert.strictEqual(calls.filter(c => c.cmd === 'reconnect').length, 1, 'cmd:update is a no-op against a parked account');
+        assert.strictEqual(calls.filter(c => c.cmd === 'update').length, 0);
+    });
+
+    await t.test('re-registration does NOT lift a disable the operator set', async () => {
+        // imap.disabled is also the send-only switch, and re-authorization is routine for a
+        // send-only account. Without the marker this would start syncing a mailbox somebody had
+        // deliberately switched off.
+        let { ctx, calls, hash, writes } = createCtx(existing('connected', { imap: JSON.stringify({ disabled: true }) }));
+
+        await Account.prototype.create.call(ctx, { account: 'acc-sendonly', imapIndexer: 'full' });
+
+        assert.strictEqual(JSON.parse(hash.imap).disabled, true, 'a send-only account stays send-only');
+        assert.deepStrictEqual(writes, [], 'and no single-field write touches the flag or the marker');
+        assert.strictEqual(calls.filter(c => c.cmd === 'update').length, 1);
+        assert.strictEqual(calls.filter(c => c.cmd === 'reconnect').length, 0);
+    });
+
+    await t.test('registering an account with imap.disabled turned on retires the marker', async () => {
+        // The payload switches a working account off, so the operator now owns the flag and the
+        // safety net's bookkeeping about an earlier automatic disable no longer describes it.
+        let { ctx, hash } = createCtx(
+            existing('connected', {
+                imap: JSON.stringify({ host: 'imap.test', disabled: false }),
+                [DISABLED_MARKER]: DISABLED_AT
+            })
+        );
+
+        await Account.prototype.create.call(ctx, {
+            account: 'acc-operator-disable',
+            imapIndexer: 'full',
+            imap: { host: 'imap.test', port: 993, disabled: true }
+        });
+
+        assert.ok(!(DISABLED_MARKER in hash), 'the marker cannot outlive an operator decision about the flag');
+    });
+
+    await t.test('re-registering a parked account with imap.disabled still set does not resume it', async () => {
+        // The payload asks for IMAP to stay off. Nothing may lift it - but nothing takes ownership
+        // either, since this write did not turn the flag on, so the park is still recoverable.
+        let { ctx, hash } = createCtx(
+            existing('unset', {
+                imap: JSON.stringify({ host: 'imap.test', disabled: true }),
+                [DISABLED_MARKER]: DISABLED_AT
+            })
+        );
+
+        await Account.prototype.create.call(ctx, {
+            account: 'acc-still-off',
+            imapIndexer: 'full',
+            imap: { host: 'imap.test', port: 993, disabled: true }
+        });
+
+        assert.strictEqual(JSON.parse(hash.imap).disabled, true, 'a write asking for IMAP off must never turn it back on');
+        assert.strictEqual(hash[DISABLED_MARKER], DISABLED_AT, 'and the park stays recoverable');
     });
 
     await t.test('IMAP (non-OAuth) account in error state also reconnects', async () => {

@@ -8,6 +8,9 @@
 {{#if accountAlert.message}}
 <div class="break-words"><small>{{accountAlert.message}}</small></div>
 {{/if}}
+{{#if accountAlert.time}}
+<div><small>{{accountAlert.timeLabel}} <span class="local-date-time" data-time="{{accountAlert.time}}"></span></small></div>
+{{/if}}
 {{/ui/alert-banner}}
 {{/if}}
 
@@ -48,6 +51,14 @@
                 <span class="{{account.type.icon}} size-4 align-text-bottom"></span>
                 {{/if}} Re-authenticate
             </button>
+            {{/ui/tooltip}}
+            {{/if}}
+
+            {{!-- Only for an account the auth-failure safety net switched off. An API account has
+                 no IMAP card, so this is the one control that reaches the flag. --}}
+            {{#if accountParked}}
+            {{#> ui/tooltip text="Turn syncing back on with the stored credentials"}}
+            {{> ui/btn bare=true style="soft" size="sm" id="request-resume" icon="icon-[tabler--player-play]" label="Resume syncing"}}
             {{/ui/tooltip}}
             {{/if}}
 
@@ -960,6 +971,35 @@ submitLabel="Delete account"}}
                 showToast('Request failed\n' + err.message, 'alert-triangle');
             })
         });
+
+        // Only rendered for an account the auth-failure safety net switched off
+        const requestResumeElm = document.getElementById('request-resume');
+        if (requestResumeElm) {
+            requestResumeElm.addEventListener('click', e => {
+                e.preventDefault();
+                // The disabled button is the re-entrancy guard
+                if (requestResumeElm.disabled) {
+                    return
+                }
+
+                uiButtonBusy(requestResumeElm, true);
+                const account = document.getElementById('account-id').value.trim();
+                uiPostJson(`/admin/accounts/${account}/resume`, {}).then(data => {
+                    if (data.success) {
+                        // Both the button and the alert explaining why it was there belong to the
+                        // switched-off state, so reload rather than leave either behind. No toast:
+                        // the navigation would destroy it before it could be read.
+                        window.location.reload();
+                        return;
+                    }
+                    uiButtonBusy(requestResumeElm, false);
+                    uiToastResult(data, 'Syncing resumed', 'Failed to resume syncing');
+                }).catch(err => {
+                    uiButtonBusy(requestResumeElm, false);
+                    showToast('Request failed\n' + err.message, 'alert-triangle');
+                })
+            });
+        }
 
         const syncAccount = async () => {
             const account = document.getElementById('account-id').value.trim();

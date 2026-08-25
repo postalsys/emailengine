@@ -1,8 +1,13 @@
 'use strict';
 
-// Unit coverage for the OAuth re-authorization reconnect gate in Account.update().
-// When an API client saves new OAuth credentials for an account that is currently in an error
-// state, a full reconnect must be requested so syncing resumes without a manual "Reconnect".
+// Unit coverage for the two paths that bring a broken account back: the OAuth re-authorization
+// reconnect gate in Account.update(), and re-registration through Account.create().
+//
+// When an API client saves new OAuth credentials for an account that is not operational, a full
+// reconnect must be requested so syncing resumes without a manual "Reconnect", and any disable the
+// auth-failure safety net applied has to be lifted first - a reconnect cannot resume an account
+// that is switched off. The disable is told apart from the operator's own send-only switch by the
+// marker field below; they share the `imap.disabled` flag.
 //
 // The gate is opt-in: it fires only when the caller passes { reauthorized: true }. Account state
 // cannot be used to infer re-authorization, because unattended writers (renewAccessToken,
@@ -20,6 +25,7 @@ function createMockRedis() {
     return {
         status: 'ready',
         hget: async () => null,
+        hmget: async (key, ...fields) => fields.map(() => null),
         hset: async () => {},
         hdel: async () => {},
         hSetExists: async () => {},
@@ -80,6 +86,7 @@ require.cache[dbPath] = {
 };
 
 const { Account } = require('../lib/account');
+const { createAccountHash, DISABLED_MARKER, DISABLED_AT } = require('./helpers/account-hash');
 
 function createMockLogger() {
     let logger = {};
@@ -92,7 +99,7 @@ function createMockLogger() {
 // Builds a mock `this` for Account.prototype.update and records every RPC call() it issues.
 // `lockEvents` records the update lock's lifecycle interleaved with the RPC dispatches, so a test
 // can assert the lock is released before update() reaches into the IMAP worker.
-function createCtx(oldAccountData, lockOverrides) {
+function createCtx(oldAccountData, { lockOverrides, stored } = {}) {
     let calls = [];
     let lockEvents = [];
     let lock = Object.assign(
@@ -108,24 +115,34 @@ function createCtx(oldAccountData, lockOverrides) {
         lockOverrides || {}
     );
 
+    // The recovery paths read and write account hash fields directly rather than through
+    // serializeAccountData, so those subtests hand in the hash they need instead of the blanket
+    // stubs of mockRedis.
+    let { hash, writes, commands } = createAccountHash(stored);
+
     // Inherit from the real prototype so update() reaches the real persistUpdate() and
     // dispatchPostUpdateCommands(); only the collaborators below are stubbed.
-    let ctx = Object.assign(Object.create(Account.prototype), {
+    let ctx;
+    ctx = Object.assign(Object.create(Account.prototype), {
         account: oldAccountData.account,
         timeout: 1000,
         logger: createMockLogger(),
-        redis: mockRedis,
+        redis: Object.assign({}, mockRedis, stored ? commands : {}),
         getLock: () => lock,
         getAccountKey: () => `iad:${oldAccountData.account}`,
         serializeAccountData: () => ({}),
-        loadAccountData: async () => oldAccountData,
+        // Where a subtest seeds the account hash, the loaded account is derived from it through the
+        // REAL unserializeAccountData - that is what turns the stored `imap` blob into an object and
+        // lifts the auth-failure marker onto `_authFailureDisabledAt`, both of which the dispatch
+        // gate reads. Hand-deriving them here would let the stub drift from what update() sees.
+        loadAccountData: async () => (stored ? Object.assign(Account.prototype.unserializeAccountData.call(ctx, stored), oldAccountData) : oldAccountData),
         call: async message => {
             calls.push(message);
             lockEvents.push({ event: 'call', cmd: message.cmd });
             return true;
         }
     });
-    return { ctx, calls, lockEvents };
+    return { ctx, calls, lockEvents, hash, writes };
 }
 
 const REAUTHORIZED = { reauthorized: true };
@@ -150,30 +167,29 @@ test('Account.update OAuth re-auth reconnect gate', async t => {
         // setting imap.disabled. A password account is re-enabled when the operator saves new IMAP
         // settings, but an OAuth2 account has none to save - re-authorization is the fix, and
         // without lifting the flag here the reconnect below would bail out on it.
-        let { ctx, calls } = createCtx({
-            account: 'acc-disabled',
-            state: 'authenticationError',
-            oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
-        });
-
-        let stored = JSON.stringify({ disabled: true });
-        let writes = [];
-        ctx.redis = Object.assign({}, mockRedis, {
-            hget: async (key, field) => (field === 'imap' ? stored : null),
-            hset: async (key, field, value) => {
-                writes.push({ field, value });
-                stored = value;
+        let { ctx, calls, hash, writes } = createCtx(
+            {
+                account: 'acc-disabled',
+                state: 'authenticationError',
+                oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+            },
+            {
+                stored: {
+                    imap: JSON.stringify({ disabled: true }),
+                    [DISABLED_MARKER]: DISABLED_AT
+                }
             }
-        });
+        );
 
         await Account.prototype.update.call(ctx, { account: 'acc-disabled', oauth2: { accessToken: 'NEW', refreshToken: 'R1' } }, REAUTHORIZED);
 
+        assert.strictEqual(JSON.parse(hash.imap).disabled, false, 'the disable flag is lifted');
+        assert.ok(!(DISABLED_MARKER in hash), 'and the marker is retired with it');
         assert.deepEqual(
-            writes.map(w => w.field),
-            ['imap'],
-            'the stored imap field is rewritten once'
+            writes.map(w => `${w.op}:${w.field}`),
+            ['hset:imap', `hdel:${DISABLED_MARKER}`],
+            'both in one transaction, nothing else touched'
         );
-        assert.strictEqual(JSON.parse(writes[0].value).disabled, false, 'the disable flag is lifted');
         assert.deepEqual(
             calls.map(c => c.cmd),
             ['reconnect'],
@@ -181,18 +197,96 @@ test('Account.update OAuth re-auth reconnect gate', async t => {
         );
     });
 
-    await t.test('re-auth on an account that was never disabled writes nothing extra', async () => {
-        let { ctx, calls } = createCtx({
-            account: 'acc-enabled',
-            state: 'authenticationError',
-            oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
-        });
+    await t.test('re-auth un-parks an account that is no longer in an error state', async () => {
+        // The regression this gate was missing. A parked account does not sit in an error state:
+        // the connection gate reports it as `unset`, and the Gmail API and Outlook clients persist
+        // that on every init. Requiring an error state here meant an API account could never be
+        // recovered by re-authorizing it, only by hand-editing imap.disabled through the API.
+        let { ctx, calls, hash } = createCtx(
+            {
+                account: 'acc-parked',
+                state: 'unset',
+                oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+            },
+            {
+                stored: {
+                    imap: JSON.stringify({ disabled: true }),
+                    [DISABLED_MARKER]: DISABLED_AT
+                }
+            }
+        );
 
-        let writes = [];
-        ctx.redis = Object.assign({}, mockRedis, {
-            hget: async (key, field) => (field === 'imap' ? JSON.stringify({ host: 'imap.test', disabled: false }) : null),
-            hset: async (key, field, value) => writes.push({ field, value })
-        });
+        await Account.prototype.update.call(ctx, { account: 'acc-parked', oauth2: { accessToken: 'NEW', refreshToken: 'R1' } }, REAUTHORIZED);
+
+        assert.strictEqual(JSON.parse(hash.imap).disabled, false, 'the disable flag is lifted');
+        assert.deepEqual(
+            calls.map(c => c.cmd),
+            ['reconnect'],
+            'un-parking an account is itself a reason to reconnect'
+        );
+    });
+
+    await t.test('re-auth does NOT lift a disable the operator set', async () => {
+        // imap.disabled is also the operator's send-only switch. Re-authorization is routine for a
+        // send-only account, so without the marker this would silently start syncing a mailbox
+        // somebody had deliberately switched off.
+        let { ctx, calls, hash, writes } = createCtx(
+            {
+                account: 'acc-sendonly',
+                state: 'authenticationError',
+                oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+            },
+            { stored: { imap: JSON.stringify({ disabled: true }) } }
+        );
+
+        await Account.prototype.update.call(ctx, { account: 'acc-sendonly', oauth2: { accessToken: 'NEW', refreshToken: 'R1' } }, REAUTHORIZED);
+
+        assert.strictEqual(JSON.parse(hash.imap).disabled, true, 'a deliberate disable survives re-authorization');
+        assert.deepEqual(writes, [], 'and nothing is written');
+        assert.deepEqual(
+            calls.map(c => c.cmd),
+            ['reconnect'],
+            'the error state still earns a reconnect on its own'
+        );
+    });
+
+    await t.test('re-auth retires a marker left behind by a manual re-enable', async () => {
+        // The operator un-checked "Disable IMAP" themselves. The stale marker must go, otherwise it
+        // would authorize lifting a later, deliberate disable.
+        let { ctx, calls, hash, writes } = createCtx(
+            {
+                account: 'acc-stale-marker',
+                state: 'connected',
+                oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+            },
+            {
+                stored: {
+                    imap: JSON.stringify({ host: 'imap.test', disabled: false }),
+                    [DISABLED_MARKER]: DISABLED_AT
+                }
+            }
+        );
+
+        await Account.prototype.update.call(ctx, { account: 'acc-stale-marker', oauth2: { accessToken: 'NEW', refreshToken: 'R1' } }, REAUTHORIZED);
+
+        assert.ok(!(DISABLED_MARKER in hash), 'the stale marker is retired');
+        assert.deepEqual(
+            writes.map(w => `${w.op}:${w.field}`),
+            [`hdel:${DISABLED_MARKER}`],
+            'the imap blob itself is left alone'
+        );
+        assert.deepEqual(calls, [], 'and an account that was never parked earns no reconnect');
+    });
+
+    await t.test('re-auth on an account that was never disabled writes nothing extra', async () => {
+        let { ctx, calls, writes } = createCtx(
+            {
+                account: 'acc-enabled',
+                state: 'authenticationError',
+                oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+            },
+            { stored: { imap: JSON.stringify({ host: 'imap.test', disabled: false }) } }
+        );
 
         await Account.prototype.update.call(ctx, { account: 'acc-enabled', oauth2: { accessToken: 'NEW', refreshToken: 'R1' } }, REAUTHORIZED);
 
@@ -201,6 +295,77 @@ test('Account.update OAuth re-auth reconnect gate', async t => {
             calls.map(c => c.cmd),
             ['reconnect']
         );
+    });
+
+    await t.test('turning imap.disabled on retires the marker', async () => {
+        // The operator switching a working account to send-only takes ownership of the flag, so
+        // whatever the safety net recorded about an earlier automatic disable no longer describes it.
+        let { ctx, hash } = createCtx(
+            {
+                account: 'acc-operator-disable',
+                state: 'connected'
+            },
+            {
+                stored: {
+                    imap: JSON.stringify({ host: 'imap.test', disabled: false }),
+                    [DISABLED_MARKER]: DISABLED_AT
+                }
+            }
+        );
+        ctx.serializeAccountData = () => ({ imap: JSON.stringify({ host: 'imap.test', disabled: true }) });
+
+        await Account.prototype.update.call(ctx, { account: 'acc-operator-disable', imap: { partial: true, disabled: true } });
+
+        assert.ok(!(DISABLED_MARKER in hash), 'the marker cannot outlive an operator decision about the flag');
+    });
+
+    await t.test('restating imap.disabled on a parked account keeps the marker', async () => {
+        // The admin edit form submits its "Disable IMAP" checkbox on every save, pre-checked from
+        // the stored flag. Reading that restatement as a decision would let an unrelated save turn
+        // an automatic park into a deliberate one, taking the page alert, the state badge and
+        // "Resume syncing" with it and leaving the account unrecoverable by re-authorization.
+        let { ctx, hash } = createCtx(
+            {
+                account: 'acc-untouched-checkbox',
+                state: 'unset'
+            },
+            {
+                stored: {
+                    imap: JSON.stringify({ host: 'imap.test', disabled: true }),
+                    [DISABLED_MARKER]: DISABLED_AT
+                }
+            }
+        );
+        ctx.serializeAccountData = () => ({ imap: JSON.stringify({ host: 'imap.test', disabled: true }) });
+
+        await Account.prototype.update.call(ctx, { account: 'acc-untouched-checkbox', imap: { partial: true, disabled: true, sentMailPath: 'Sent' } });
+
+        assert.strictEqual(hash[DISABLED_MARKER], DISABLED_AT, 'a save that changes nothing about the flag leaves the park intact');
+        assert.strictEqual(JSON.parse(hash.imap).disabled, true, 'and the account stays switched off');
+    });
+
+    await t.test('a partial update that does not name imap.disabled keeps the marker', async () => {
+        // persistUpdate() merges the stored blob into a `partial` payload, so `disabled` is present
+        // by the time the write happens. Reading the payload after the merge would make every
+        // partial update look explicit and quietly disarm the recovery paths.
+        let { ctx, hash } = createCtx(
+            {
+                account: 'acc-partial',
+                state: 'connected',
+                imap: { host: 'imap.test', disabled: true }
+            },
+            {
+                stored: {
+                    imap: JSON.stringify({ host: 'imap.test', disabled: true }),
+                    [DISABLED_MARKER]: DISABLED_AT
+                }
+            }
+        );
+        ctx.serializeAccountData = () => ({ imap: JSON.stringify({ host: 'imap.test', disabled: true }) });
+
+        await Account.prototype.update.call(ctx, { account: 'acc-partial', imap: { partial: true, resyncDelay: 900 } });
+
+        assert.strictEqual(hash[DISABLED_MARKER], DISABLED_AT, 'the marker survives an update that says nothing about the flag');
     });
 
     await t.test('re-auth while in connectError requests a full reconnect', async () => {
@@ -424,7 +589,7 @@ test('Account.update serialization', async t => {
                 oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
             },
             {
-                waitAcquireLock: async () => ({ success: false })
+                lockOverrides: { waitAcquireLock: async () => ({ success: false }) }
             }
         );
 
@@ -443,8 +608,10 @@ test('Account.update serialization', async t => {
                 oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
             },
             {
-                waitAcquireLock: async () => {
-                    throw new Error('lock backend unavailable');
+                lockOverrides: {
+                    waitAcquireLock: async () => {
+                        throw new Error('lock backend unavailable');
+                    }
                 }
             }
         );
@@ -461,8 +628,10 @@ test('Account.update serialization', async t => {
                 oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
             },
             {
-                releaseLock: async () => {
-                    throw new Error('release failed');
+                lockOverrides: {
+                    releaseLock: async () => {
+                        throw new Error('release failed');
+                    }
                 }
             }
         );
