@@ -5,7 +5,13 @@
 // Covers the pure helpers (tier bucketing, stable serialization, timeout) and the live collector
 // against the test Redis (DB 13). The collector is best-effort and must never throw, so the shape
 // assertions double as a "does not throw on a real but mostly-empty database" check. These tests
-// are read-only: they never mutate settings, so they are safe to run in the parallel unit tier.
+// never mutate settings, so they are safe to run in the parallel unit tier.
+//
+// The digest-stability check is the exception, and runs against a scratch database of its own. Being
+// read-only is not enough for it: the snapshot it hashes counts accounts and OAuth2 apps and reads
+// instance settings, and sibling files in the parallel tier create and delete exactly those in DB 13.
+// Two calls straddling one of those writes disagree, which fails the assertion for a reason that has
+// nothing to do with the collector being deterministic.
 //
 // Requiring lib/license-beacon transitively opens Redis/BullMQ handles (via lib/db), so the test
 // force-exits after cleanup, mirroring test/tokens-test.js and test/ui-routes-table-test.js.
@@ -13,9 +19,16 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
+const Redis = require('ioredis');
+const config = require('@zone-eu/wild-config');
+
 const { redis } = require('../lib/db');
 const logger = require('../lib/logger');
 const { collectBeacon, withTimeout, tier, stableStringify } = require('../lib/license-beacon');
+
+// The database below the tier's own (13 -> 12), which no tier and no tooling in this repo uses,
+// so nothing else in the run writes to it. Read-only either way: collectBeacon never writes.
+const SCRATCH_REDIS_URL = config.dbs.redis.replace(/\/(\d+)$/, (match, db) => `/${Number(db) - 1}`);
 
 test('license beacon', async t => {
     t.after(() => {
@@ -95,8 +108,14 @@ test('license beacon', async t => {
     });
 
     await t.test('collectBeacon() digest is stable across calls when nothing changes', async () => {
-        const first = await collectBeacon({ redis, logger });
-        const second = await collectBeacon({ redis, logger });
-        assert.equal(first.fh, second.fh, 'identical state must produce an identical digest');
+        // Against a database this run does not otherwise touch, so "nothing changes" actually holds
+        const scratch = new Redis(SCRATCH_REDIS_URL);
+        try {
+            const first = await collectBeacon({ redis: scratch, logger });
+            const second = await collectBeacon({ redis: scratch, logger });
+            assert.equal(first.fh, second.fh, 'identical state must produce an identical digest');
+        } finally {
+            await scratch.quit();
+        }
     });
 });
