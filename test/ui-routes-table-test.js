@@ -77,6 +77,7 @@ const GOLDEN_ROUTES = [
     'GET /admin/internals',
     'GET /admin/internals/thread/{threadId}',
     'GET /admin/legal',
+    'GET /admin/legal/sbom.json',
     'GET /admin/login',
     'GET /admin/logout',
     'GET /admin/mcp/authorize',

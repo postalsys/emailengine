@@ -66,6 +66,7 @@ const GET_ROUTES = [
     '/admin/gateways/new',
     '/admin/internals',
     '/admin/legal',
+    '/admin/legal/sbom.json',
     '/admin/login',
     '/admin/reference',
     '/admin/suppression-lists',
