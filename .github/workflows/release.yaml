@@ -146,7 +146,9 @@ jobs:
                   name: digests-${{ matrix.arch }}
                   path: /tmp/digests/*
                   if-no-files-found: error
-                  retention-days: 1
+                  # Long enough for "Re-run failed jobs" on a later working day to still find the
+                  # digest of the leg that passed; the check below refuses to publish without it
+                  retention-days: 7
 
     publish_docker_manifest:
         name: Publish Tagged Docker Manifest
@@ -163,6 +165,20 @@ jobs:
                   path: /tmp/digests
                   pattern: digests-*
                   merge-multiple: true
+
+            # One digest file per platform in the build matrix. With fail-fast off, one leg can
+            # push its digest while the other fails, and a re-run that finds only the surviving
+            # artifact (or none, once they expire) would otherwise publish a single-platform
+            # manifest list under every tag as if it were complete.
+            - name: Check that every platform produced a digest
+              working-directory: /tmp/digests
+              run: |
+                  count=$(ls -1 | wc -l)
+                  if [ "$count" -ne 2 ]; then
+                      echo "Expected 2 digests (linux/amd64, linux/arm64), found $count:"
+                      ls -1
+                      exit 1
+                  fi
 
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v4
