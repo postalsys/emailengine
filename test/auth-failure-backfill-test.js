@@ -90,11 +90,22 @@ test('isLegacyPark', async t => {
         assert.strictEqual(isLegacyPark(row({ imap: { host: 'imap.test', port: 993, disabled: true } })), false);
     });
 
-    await t.test('ignores a disable with no threshold error state beside it', () => {
+    await t.test('ignores a disable with no authentication error beside it', () => {
         // The operator's send-only switch. Reading `imap.disabled` alone here is exactly the
         // conflation 2.79.4 introduced the marker to end.
         assert.strictEqual(isLegacyPark(row({ imap: { disabled: true }, errorState: null })), false);
         assert.strictEqual(isLegacyPark(row({ imap: { disabled: true }, errorState: JSON.stringify({ response: 'timeout' }) })), false);
+    });
+
+    await t.test('matches a park whose error state a later refresh failure overwrote', () => {
+        // A parked account still serves send requests and Gmail push notifications, and each runs
+        // the same failing token refresh through setErrorState(), which replaces the park text with
+        // the refresh failure. Matching only the text would leave every such account unstamped, and
+        // the completion key would make the miss permanent.
+        for (const code of ['TokenGenerationError', 'OauthRenewError']) {
+            const errorState = JSON.stringify({ serverResponseCode: code, response: 'invalid_grant' });
+            assert.strictEqual(isLegacyPark(row({ imap: { disabled: true }, errorState })), true, code);
+        }
     });
 
     await t.test('ignores an account that is not switched off', () => {
@@ -140,6 +151,12 @@ test('backfillAuthFailureDisabled', async t => {
         imap: { disabled: false }
     });
 
+    const overwritten = await seedAccount('overwritten', {
+        oauth2: oauth2Credential,
+        imap: { disabled: true },
+        lastErrorState: { serverResponseCode: 'TokenGenerationError', response: 'invalid_grant' }
+    });
+
     await t.test('the OAuth2 accounts 2.79.3 parked get the marker, and nothing else does', async () => {
         const backfilled = await backfillAuthFailureDisabled({ redis, logger: noopLogger });
         assert.ok(backfilled >= 1, 'at least the seeded park was backfilled');
@@ -148,6 +165,7 @@ test('backfillAuthFailureDisabled', async t => {
         assert.ok(disabledAt, 'the legacy park is now recognisable as ours');
         assert.ok(!Number.isNaN(Date.parse(disabledAt)), 'and carries a readable timestamp');
 
+        assert.ok(await markerOf(overwritten.accountKey), 'a park whose text a later send overwrote is stamped too');
         assert.strictEqual(await markerOf(operator.accountKey), null, "the operator's send-only switch is left alone");
         assert.strictEqual(await markerOf(password.accountKey), null, 'a password account keeps its own recovery path');
         assert.strictEqual(await markerOf(healthy.accountKey), null, 'an account that is not switched off is left alone');

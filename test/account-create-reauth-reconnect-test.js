@@ -226,6 +226,35 @@ test('Account.create re-auth reconnect gate', async t => {
         assert.strictEqual(calls.filter(c => c.cmd === 'update').length, 0);
     });
 
+    await t.test('re-registering a password account with OAuth2 drops its IMAP configuration and reconnects in full', async () => {
+        // A password account the safety net parked (or the operator switched off), re-registered
+        // with OAuth2 under the same id. getImapConfig() never reads `imap` when there is an OAuth2
+        // credential, so the stored configuration is dead - but the Gmail API and Outlook clients
+        // honor its `disabled` flag on the way in, and this account has no marker to lift, no badge,
+        // and no IMAP card to clear the flag from. The park recorded no marker (it predates it), so
+        // the state alone would have kept the in-place update, which cannot switch client types.
+        let { ctx, calls, hash, writes } = createCtx(
+            existing('unset', { imap: JSON.stringify({ host: 'imap.test', port: 993, auth: { user: 'user' }, disabled: true }) })
+        );
+
+        await Account.prototype.create.call(ctx, { account: 'acc-migrated', imapIndexer: 'full', oauth2: { auth: { user: 'user@example.com' } } });
+
+        assert.ok(!('imap' in hash), 'the password configuration does not outlive the credential it belonged to');
+        assert.ok(writes.some(w => w.op === 'hdel' && w.field === 'imap'));
+        assert.strictEqual(calls.filter(c => c.cmd === 'reconnect').length, 1, 'a client of the new type is assigned');
+        assert.strictEqual(calls.filter(c => c.cmd === 'update').length, 0);
+    });
+
+    await t.test('re-registration with OAuth2 leaves a bare disable flag alone', async () => {
+        // The flag without a host is not a password configuration: it is the operator's send-only
+        // switch on an OAuth2 account, or the safety net's park, and each has its own handling
+        let { ctx, hash } = createCtx(existing('connected', { imap: JSON.stringify({ disabled: true }) }));
+
+        await Account.prototype.create.call(ctx, { account: 'acc-bare', imapIndexer: 'full', oauth2: { auth: { user: 'user@example.com' } } });
+
+        assert.strictEqual(JSON.parse(hash.imap).disabled, true);
+    });
+
     await t.test('re-registration does NOT lift a disable the operator set', async () => {
         // imap.disabled is also the send-only switch, and re-authorization is routine for a
         // send-only account. Without the marker this would start syncing a mailbox somebody had

@@ -24,10 +24,10 @@ const DAY = 24 * HOUR;
 const createdKeys = new Set();
 
 // Build a fake BaseClient receiver bound to a unique account hash, registered for cleanup.
-function makeCtx(account) {
+function makeCtx(account, { logger } = {}) {
     const accountKey = accountKeyFor(account);
     createdKeys.add(accountKey);
-    return { ctx: createErrorStateClient({ redis, account }), accountKey };
+    return { ctx: createErrorStateClient({ redis, account, logger }), accountKey };
 }
 
 const setErrorState = (ctx, event, data) => ctx.setErrorState(event, data);
@@ -192,6 +192,81 @@ test('BaseClient.setErrorState', async t => {
 
         await new Promise(resolve => setImmediate(resolve));
         assert.strictEqual(ctx.closeCalls, 1, 'the connection should be closed after disabling');
+    });
+
+    await t.test('an OAuth2 account registered with imap:false is disabled like one with no imap field', async () => {
+        const { ctx, accountKey } = makeCtx('seterr-oauth2-false');
+        // `imap: false` is the documented way to register an OAuth2 account with no IMAP access,
+        // and it is stored as the string "false". It has to count as an absent configuration: read
+        // as an unreadable one it would exempt every such account from the safety net.
+        await seed(accountKey, {
+            imap: 'false',
+            oauth2: { provider: 'gmail', auth: { user: 'user@example.com' } },
+            code: 'TokenGenerationError',
+            count: 120,
+            ageMs: 4 * DAY
+        });
+
+        await setErrorState(ctx, 'authenticationError', { serverResponseCode: 'TokenGenerationError', response: 'invalid_grant' });
+
+        const imap = JSON.parse(await redis.hget(accountKey, 'imap'));
+        assert.strictEqual(imap.disabled, true, 'the bare flag replaces the stored false');
+        assert.ok(await redis.hget(accountKey, AUTH_FAILURE_DISABLED_FIELD), 'and the park is marked as ours');
+        await drainSetImmediate();
+    });
+
+    await t.test('a delegated account is not disabled for failures of the credential it borrows', async () => {
+        const { ctx, accountKey } = makeCtx('seterr-delegated');
+        // An Outlook shared mailbox authenticates with another account's token. The failures it
+        // counts are that account's, and re-authorizing that account would lift nothing here, so a
+        // park would leave the mailbox switched off with nothing of its own to re-authenticate.
+        await seed(accountKey, {
+            oauth2: { auth: { delegatedUser: 'shared@example.com', delegatedAccount: 'owner-account' } },
+            code: 'TokenGenerationError',
+            count: 120,
+            ageMs: 4 * DAY
+        });
+
+        const shouldNotify = await setErrorState(ctx, 'authenticationError', { serverResponseCode: 'TokenGenerationError', response: 'invalid_grant' });
+
+        assert.strictEqual(shouldNotify, false, 'a repeat with no park is not notified');
+        assert.strictEqual(await redis.hget(accountKey, 'imap'), null, 'no flag is synthesized');
+        assert.strictEqual(await redis.hget(accountKey, AUTH_FAILURE_DISABLED_FIELD), null);
+        await drainSetImmediate();
+        assert.strictEqual(ctx.closeCalls, 0, 'and the connection is left up');
+    });
+
+    await t.test('a close() that rejects after the disable does not escape as an unhandled rejection', async () => {
+        const logged = [];
+        const { ctx, accountKey } = makeCtx('seterr-close-rejects', { logger: Object.assign({}, noopLogger, { error: entry => logged.push(entry) }) });
+        // The Gmail API and Graph clients have an async close() that writes the account state.
+        // Nothing awaits the close the park schedules, so a rejection there used to be unhandled,
+        // and an unhandled rejection takes the IMAP worker down with every account on it.
+        await seed(accountKey, { oauth2: { provider: 'gmail', auth: { user: 'user@example.com' } }, code: 'OauthRenewError', count: 120, ageMs: 4 * DAY });
+
+        ctx.close = async () => {
+            ctx.closeCalls++;
+            throw new Error('state write failed');
+        };
+
+        const unhandled = [];
+        const onUnhandled = err => unhandled.push(err);
+        process.on('unhandledRejection', onUnhandled);
+        try {
+            await setErrorState(ctx, 'authenticationError', { serverResponseCode: 'OauthRenewError', response: 'invalid_grant' });
+            await drainSetImmediate();
+            // The rejection surfaces one tick after the close() call itself
+            await drainSetImmediate();
+        } finally {
+            process.off('unhandledRejection', onUnhandled);
+        }
+
+        assert.strictEqual(ctx.closeCalls, 1, 'close() was attempted');
+        assert.deepStrictEqual(unhandled, [], 'and its failure did not reach the global handler');
+        assert.ok(
+            logged.some(entry => entry.err && entry.err.message === 'state write failed'),
+            'it was logged instead'
+        );
     });
 
     await t.test('an account with neither imap nor oauth2 is left alone', async () => {

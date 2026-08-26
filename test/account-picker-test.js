@@ -12,9 +12,9 @@ const assert = require('node:assert').strict;
 
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
-const { REDIS_PREFIX } = require('../lib/consts');
+const { REDIS_PREFIX, AUTH_FAILURE_DISABLED_LEGACY_DESCRIPTION } = require('../lib/consts');
 const { accountSummary } = require('../lib/account');
-const { accountPickerEntry, accountPickerSelection } = require('../lib/ui-routes/route-helpers');
+const { accountPickerEntry, accountPickerSelection, formatAccountData } = require('../lib/ui-routes/route-helpers');
 
 const ACCOUNT = 'picker-test-account';
 const ACCOUNT_KEY = `${REDIS_PREFIX}iad:${ACCOUNT}`;
@@ -95,5 +95,30 @@ test('accountPickerSelection', async t => {
         assert.equal(await accountPickerSelection(''), null);
         assert.equal(await accountPickerSelection(null), null);
         assert.equal(await accountPickerSelection('no-such-account-at-all'), null);
+    });
+});
+
+test('formatAccountData state badge for a switched-off account', async t => {
+    const gt = { gettext: text => text };
+    const legacyPark = () => ({
+        account: 'legacy-park',
+        state: 'unset',
+        imap: { host: 'imap.example.com', disabled: true },
+        lastErrorState: { description: AUTH_FAILURE_DISABLED_LEGACY_DESCRIPTION }
+    });
+
+    await t.test('a park recorded before the marker existed is still badged as switched off', () => {
+        // Password accounts the safety net parked between v2.46.0 and 2.79.3 carry no marker and
+        // are deliberately not backfilled with one. They used to be badged with the threshold text;
+        // keying the badge on the marker alone rendered them as a neutral "Not syncing".
+        const account = formatAccountData(legacyPark(), gt);
+        assert.strictEqual(account.stateLabel.type, 'error');
+        assert.strictEqual(account.stateLabel.name, 'Syncing switched off');
+        assert.strictEqual(account.stateLabel.error, AUTH_FAILURE_DISABLED_LEGACY_DESCRIPTION);
+    });
+
+    await t.test('a send-only account that once failed to connect is not', () => {
+        const account = formatAccountData(Object.assign(legacyPark(), { lastErrorState: { response: 'connection refused' } }), gt);
+        assert.notStrictEqual(account.stateLabel.name, 'Syncing switched off');
     });
 });

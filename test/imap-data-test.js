@@ -61,4 +61,14 @@ test('readImapData', async t => {
         assert.strictEqual(imapData, null);
         assert.strictEqual(invalid, false);
     });
+
+    await t.test('treats a stored false as an absent blob', async () => {
+        // What POST and PUT /v1/account store for the documented `imap: false`, the way an OAuth2
+        // account without IMAP access is registered. Reading it as unreadable would exempt exactly
+        // those accounts from the auth-failure safety net, which is gated on `invalid`, and log an
+        // error on every init of a Gmail API or Outlook account.
+        const { imapData, invalid } = await read('false');
+        assert.strictEqual(imapData, null);
+        assert.strictEqual(invalid, false, 'no IMAP access is a configuration, not a broken one');
+    });
 });

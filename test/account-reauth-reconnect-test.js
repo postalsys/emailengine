@@ -85,7 +85,8 @@ require.cache[dbPath] = {
     }
 };
 
-const { Account } = require('../lib/account');
+const { Account, isAuthFailureDisabled } = require('../lib/account');
+const { AUTH_FAILURE_DISABLED_LEGACY_DESCRIPTION } = require('../lib/consts');
 const { createAccountHash, DISABLED_MARKER, DISABLED_AT } = require('./helpers/account-hash');
 
 function createMockLogger() {
@@ -224,6 +225,102 @@ test('Account.update OAuth re-auth reconnect gate', async t => {
             ['reconnect'],
             'un-parking an account is itself a reason to reconnect'
         );
+    });
+
+    await t.test('re-auth of a parked account lifts the park before any dispatch, and dispatches once', async () => {
+        // A re-authorizing PUT often carries a settings difference as well - any client that echoes
+        // GET output back does, since the stored default path never compares equal to the
+        // normalized one. That used to dispatch cmd:'update' ahead of the lift, so the worker could
+        // read the flag first and leave the account lifted but offline, and then suppress the
+        // reconnect because an update had already been sent.
+        let { ctx, calls, hash } = createCtx(
+            {
+                account: 'acc-parked-diff',
+                state: 'unset',
+                oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+            },
+            {
+                stored: {
+                    imap: JSON.stringify({ disabled: true }),
+                    [DISABLED_MARKER]: DISABLED_AT
+                }
+            }
+        );
+
+        let seenAtDispatch = [];
+        let call = ctx.call;
+        ctx.call = async message => {
+            seenAtDispatch.push({ cmd: message.cmd, disabled: JSON.parse(hash.imap).disabled, marker: DISABLED_MARKER in hash });
+            return call(message);
+        };
+
+        await Account.prototype.update.call(ctx, { account: 'acc-parked-diff', path: ['*'], oauth2: { accessToken: 'NEW', refreshToken: 'R1' } }, REAUTHORIZED);
+
+        assert.deepEqual(
+            calls.map(c => c.cmd),
+            ['reconnect'],
+            'the full reconnect supersedes the settings update rather than being suppressed by it'
+        );
+        assert.deepEqual(seenAtDispatch, [{ cmd: 'reconnect', disabled: false, marker: false }], 'and the account was already lifted when it went out');
+    });
+
+    await t.test('new IMAP credentials from the flagged route lift the park', async () => {
+        // The password-account counterpart of OAuth2 re-authorization, and what the API field's
+        // description promises: "save new IMAP settings - and syncing resumes". The documented way
+        // to save them is a partial write of `imap.auth`, which persistUpdate() merges the stored
+        // `disabled: true` into, so the intent read before the merge says nothing about the flag.
+        let { ctx, calls, hash } = createCtx(
+            {
+                account: 'acc-imap-recred',
+                state: 'unset',
+                imap: { host: 'imap.test', auth: { user: 'user', pass: 'old' }, disabled: true }
+            },
+            {
+                stored: {
+                    imap: JSON.stringify({ host: 'imap.test', auth: { user: 'user', pass: 'old' }, disabled: true }),
+                    [DISABLED_MARKER]: DISABLED_AT
+                }
+            }
+        );
+
+        let markerAtDispatch;
+        let call = ctx.call;
+        ctx.call = async message => {
+            markerAtDispatch = DISABLED_MARKER in hash;
+            return call(message);
+        };
+
+        await Account.prototype.update.call(ctx, { account: 'acc-imap-recred', imap: { partial: true, auth: { user: 'user', pass: 'new' } } }, REAUTHORIZED);
+
+        assert.strictEqual(JSON.parse(hash.imap).disabled, false, 'the disable flag is lifted');
+        assert.ok(!(DISABLED_MARKER in hash), 'and the marker retired');
+        assert.deepEqual(
+            calls.map(c => c.cmd),
+            ['update'],
+            'the changed settings reconnect the existing client'
+        );
+        assert.strictEqual(markerAtDispatch, false, 'after the lift, not before it');
+    });
+
+    await t.test('unchanged IMAP credentials from the flagged route do not lift the park', async () => {
+        let { ctx, hash } = createCtx(
+            {
+                account: 'acc-imap-same',
+                state: 'unset',
+                imap: { host: 'imap.test', auth: { user: 'user', pass: 'old' }, disabled: true }
+            },
+            {
+                stored: {
+                    imap: JSON.stringify({ host: 'imap.test', auth: { user: 'user', pass: 'old' }, disabled: true }),
+                    [DISABLED_MARKER]: DISABLED_AT
+                }
+            }
+        );
+
+        await Account.prototype.update.call(ctx, { account: 'acc-imap-same', imap: { partial: true, auth: { user: 'user', pass: 'old' } } }, REAUTHORIZED);
+
+        assert.strictEqual(JSON.parse(hash.imap).disabled, true, 'restating the stored credentials is not a re-credential');
+        assert.strictEqual(hash[DISABLED_MARKER], DISABLED_AT);
     });
 
     await t.test('re-auth does NOT lift a disable the operator set', async () => {
@@ -718,5 +815,42 @@ test('Account expectedEmail round-trip', async t => {
         // null must survive into the write, otherwise the stored value would simply persist.
         assert.strictEqual(serialize({ expectedEmail: null }).expectedEmail, '');
         assert.ok(!('expectedEmail' in unserialize({ expectedEmail: '' })), 'a cleared pin must not be reported as set');
+    });
+});
+
+test('a park is reported as a fault, not as a send-only configuration', async t => {
+    const ctx = Object.assign(Object.create(Account.prototype), { logger: createMockLogger() });
+
+    await t.test('isSendOnlyAccount ignores the flag the safety net set', () => {
+        // Send-only is a configuration, a park is a fault. Reporting a parked gmailService or
+        // password account as send-only rendered it "API Send-only" and hid its IMAP card, and the
+        // stored error with it.
+        assert.strictEqual(
+            ctx.isSendOnlyAccount({ imap: { disabled: true }, oauth2: { provider: 'gmailService' }, _authFailureDisabledAt: DISABLED_AT }),
+            false
+        );
+        assert.strictEqual(ctx.isSendOnlyAccount({ imap: { host: 'imap.test', disabled: true }, _authFailureDisabledAt: DISABLED_AT }), false);
+    });
+
+    await t.test('isSendOnlyAccount still honors the operator switch', () => {
+        assert.strictEqual(ctx.isSendOnlyAccount({ imap: { disabled: true }, oauth2: { provider: 'gmailService' } }), true);
+        assert.strictEqual(ctx.isSendOnlyAccount({ imap: { host: 'imap.test', disabled: true } }), true);
+        assert.strictEqual(ctx.isSendOnlyAccount({ imap: { host: 'imap.test', disabled: false } }), false);
+    });
+
+    await t.test('isAuthFailureDisabled recognises both generations of the park', () => {
+        // The marker, since 2.79.4
+        assert.strictEqual(isAuthFailureDisabled({ imap: { disabled: true }, _authFailureDisabledAt: DISABLED_AT }), true);
+        // The flag plus the threshold text, which is all a park before the marker left behind on a
+        // password account. Nothing but the park writes that text.
+        assert.strictEqual(
+            isAuthFailureDisabled({ imap: { host: 'imap.test', disabled: true }, lastErrorState: { description: AUTH_FAILURE_DISABLED_LEGACY_DESCRIPTION } }),
+            true
+        );
+        // The operator's switch, with or without an unrelated error beside it
+        assert.strictEqual(isAuthFailureDisabled({ imap: { host: 'imap.test', disabled: true } }), false);
+        assert.strictEqual(isAuthFailureDisabled({ imap: { host: 'imap.test', disabled: true }, lastErrorState: { response: 'timeout' } }), false);
+        // A stale marker on an account the operator re-enabled by hand
+        assert.strictEqual(isAuthFailureDisabled({ imap: { host: 'imap.test', disabled: false }, _authFailureDisabledAt: DISABLED_AT }), false);
     });
 });
