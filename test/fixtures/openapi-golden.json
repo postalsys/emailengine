@@ -11336,7 +11336,7 @@
             "gateway": "Manage SMTP gateways, which hold outbound SMTP credentials",
             "events": "Subscribe to the instance-wide change stream, which covers every account",
             "diagnostics": "Read statistics and service status",
-            "logs": "Read the per-account connection log. Entries are the raw protocol trace, so they include folder names and message subjects"
+            "logs": "Read the per-account connection log. Entries include the protocol or API trace, so they include folder names and message subjects"
           }
         },
         "enum": [
@@ -12659,7 +12659,7 @@
       "get": {
         "summary": "Get account info",
         "operationId": "getV1AccountAccount",
-        "description": "Returns stored information about the account. Credentials are masked: stored passwords, the credentials in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\". A masked value is not the stored one - leave the field out of an update rather than writing it back, otherwise the mask replaces the credential.<br/><br/>Quota reporting is not available for Gmail API or MS Graph accounts; the quota field is omitted for those.",
+        "description": "Returns stored information about the account. Credentials are masked: stored passwords, the credentials in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\". A masked value is not the stored one - leave the field out of an update rather than writing it back, otherwise the mask replaces the credential.<br/><br/>Quota reporting is not available for Gmail API or MS Graph accounts; the quota field is returned as false for those, the same value an IMAP server without QUOTA support produces.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -12775,7 +12775,7 @@
           }
         },
         "x-ee-behavior": [
-          "Quota reporting is not available for Gmail API or MS Graph accounts; the quota field is omitted for those."
+          "Quota reporting is not available for Gmail API or MS Graph accounts; the quota field is returned as false for those, the same value an IMAP server without QUOTA support produces."
         ],
         "x-ee-action": "read",
         "x-ee-group": "account"
@@ -19315,9 +19315,9 @@
     },
     "/v1/logs/{account}": {
       "get": {
-        "summary": "Return IMAP logs for an account",
+        "summary": "Return stored logs for an account",
         "operationId": "getV1LogsAccount",
-        "description": "Output is a downloadable text file<br/><br/>Only available for IMAP accounts. Gmail API and MS Graph accounts have no equivalent.",
+        "description": "Output is a downloadable text file with one JSON log entry per line, or a plain-text notice when nothing is stored<br/><br/>Nothing is stored unless logging is enabled for the account, either with the account logs flag or the global logs.all setting. IMAP accounts record the protocol trace, Gmail API and MS Graph accounts record their API requests, and SMTP transactions are recorded for any account that sends over SMTP.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -19413,7 +19413,7 @@
           }
         },
         "x-ee-behavior": [
-          "Only available for IMAP accounts. Gmail API and MS Graph accounts have no equivalent."
+          "Nothing is stored unless logging is enabled for the account, either with the account logs flag or the global logs.all setting. IMAP accounts record the protocol trace, Gmail API and MS Graph accounts record their API requests, and SMTP transactions are recorded for any account that sends over SMTP."
         ],
         "x-ee-action": "read",
         "x-ee-group": "logs"
