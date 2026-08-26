@@ -125,6 +125,7 @@ const Joi = require('joi');
 const { settingsSchema } = require('./lib/schemas');
 const settings = require('./lib/settings');
 const { oauth2Apps } = require('./lib/oauth2-apps');
+const { backfillAuthFailureDisabled } = require('./lib/account/auth-failure-backfill');
 const { documentStoreFeatureEnabled } = require('./lib/document-store');
 const { attachBeacon, persistBeaconMarkers } = require('./lib/license-beacon');
 const tokens = require('./lib/tokens');
@@ -3252,6 +3253,15 @@ const startApplication = async () => {
         await oauth2Apps.migrateLegacyApps();
     } catch (err) {
         logger.error({ msg: 'Failed to migrate legacy OAuth2 apps', err });
+    }
+
+    // Give accounts that 2.79.3 switched off after repeated authentication failures the provenance
+    // marker 2.79.4 recognises, so re-authorizing one resumes it instead of silently doing nothing.
+    // A failure is not fatal: the completion key is written last, so the next startup re-enters.
+    try {
+        await backfillAuthFailureDisabled();
+    } catch (err) {
+        logger.error({ msg: 'Failed to backfill the auth-failure disable marker', err });
     }
 
     // Apply prepared settings

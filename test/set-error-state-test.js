@@ -254,6 +254,40 @@ test('BaseClient.setErrorState', async t => {
         assert.strictEqual(ctx.closeCalls, 0);
     });
 
+    await t.test('a disable that failed to store is not reported as a park', async () => {
+        // A command-level failure arrives in exec()'s `error`, not as a throw
+        const failure = new Error('NOSCRIPT No matching script');
+        const fakeRedis = {
+            hget: async () => null,
+            hexists: async () => 1,
+            multi() {
+                const builder = {
+                    // hSetExists imap, hSetExists marker, hdel counters, hSetExists lastErrorState
+                    exec: async () => [
+                        [null, 'OK'],
+                        [failure, null],
+                        [null, 1],
+                        [null, 'OK']
+                    ]
+                };
+                builder.hSetExists = builder.hdel = () => builder;
+                return builder;
+            }
+        };
+
+        const ctx = createErrorStateClient({ redis: fakeRedis, account: 'seterr-txnfail' });
+        const disabled = await ctx.disableAfterAuthFailures({
+            event: 'authenticationError',
+            firstError: new Date(Date.now() - 4 * DAY),
+            errorCount: 12,
+            data: { response: 'invalid_grant' }
+        });
+
+        assert.strictEqual(disabled, false, 'a park that was not stored is not reported as one');
+        await drainSetImmediate();
+        assert.strictEqual(ctx.closeCalls, 0, 'and the connection is not torn down for it');
+    });
+
     await t.test('a different error code is treated as a new first occurrence', async () => {
         const { ctx, accountKey } = makeCtx('seterr-changed');
         await redis
