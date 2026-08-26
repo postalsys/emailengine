@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.79.5](https://github.com/postalsys/emailengine/compare/v2.79.4...v2.79.5) (2026-08-26)
+
+
+### Bug Fixes
+
+* **accounts:** bring back the OAuth2 accounts 2.79.3 switched off ([e55520c](https://github.com/postalsys/emailengine/commit/e55520c8a669677a5af3e4ed726ecc0e329ad84a))
+* **accounts:** close the gaps in the auth-failure park for OAuth2 accounts ([6a015b6](https://github.com/postalsys/emailengine/commit/6a015b6ba10a1e6a39575fa96539d311c00aa958))
+
 ## [2.79.4](https://github.com/postalsys/emailengine/compare/v2.79.3...v2.79.4) (2026-08-25)
 
 
