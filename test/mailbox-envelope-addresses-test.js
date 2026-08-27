@@ -137,6 +137,45 @@ test('Mailbox.getMessageInfo() address fields', async t => {
         ]);
     });
 
+    await t.test('falls back when the ENVELOPE address carries whitespace', async () => {
+        // Gmail reports the whole run as the address when the two copies of the recipient
+        // were separated by a non-breaking space. Unquoted whitespace is not addr-spec, so
+        // this list is wreckage too even though the address field is not empty
+        const info = await messageInfo({
+            envelope: {
+                to: [{ name: '', address: 'user@example.com\u00a0user@example.com' }]
+            },
+            headers: 'To: user@example.com user@example.com\r\n'
+        });
+
+        assert.deepEqual(info.to, [{ name: '', address: 'user@example.com' }], 'a whitespace-carrying ENVELOPE address must not block the header fallback');
+    });
+
+    await t.test('keeps an ENVELOPE address whose whitespace sits inside a quoted local part', async () => {
+        // RFC 5321 allows it, so this is a real mailbox and the header must not override it
+        const info = await messageInfo({
+            envelope: {
+                to: [{ name: 'Quoted', address: '"user name"@example.com' }]
+            },
+            headers: 'To: someone.else@example.com\r\n'
+        });
+
+        assert.deepEqual(info.to, [{ name: 'Quoted', address: '"user name"@example.com' }]);
+    });
+
+    await t.test('does not replace one wreck with another', async () => {
+        // The header parses to an address that carries whitespace as well, which is worth no
+        // more than the ENVELOPE entry - keep the ENVELOPE so the display name survives
+        const info = await messageInfo({
+            envelope: {
+                to: [{ name: 'Recipients', address: '' }]
+            },
+            headers: 'To: <foo bar@>\r\n'
+        });
+
+        assert.deepEqual(info.to, [{ name: 'Recipients', address: '' }]);
+    });
+
     await t.test('reports no address list at all when neither source has one', async () => {
         const info = await messageInfo({ envelope: { subject: 'No recipients' } });
 
