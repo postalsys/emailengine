@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.79.6](https://github.com/postalsys/emailengine/compare/v2.79.5...v2.79.6) (2026-08-27)
+
+
+### Bug Fixes
+
+* **deps:** update nodemailer to 9.0.6 and refresh dependencies ([85ce711](https://github.com/postalsys/emailengine/commit/85ce7116d766d3c9b81b77b3d39496ca6119c2d2))
+* **imap:** recover addresses when the ENVELOPE reports an unusable one ([78d5fbd](https://github.com/postalsys/emailengine/commit/78d5fbd62211d79b4c108622e1ad771b34156d06))
+* **reference:** correct three wrong provider claims in the API documentation ([df9fa95](https://github.com/postalsys/emailengine/commit/df9fa95bf542cf086f34d215edd48bb2007e84d6))
+
 ## [2.79.5](https://github.com/postalsys/emailengine/compare/v2.79.4...v2.79.5) (2026-08-26)
 
 
