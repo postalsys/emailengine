@@ -18,7 +18,7 @@
 
 const { test, expect, request } = require('@playwright/test');
 const { createUsableTestAccount } = require('./helpers/ethereal');
-const { ensureAdminSession, ensureTrial, createApiToken, trackConsoleErrors, BASE_URL } = require('./helpers/bootstrap');
+const { ensureAdminSession, ensureTrial, createApiToken, trackConsoleErrors, hostedAuthFormUrl, BASE_URL } = require('./helpers/bootstrap');
 
 const ACCOUNT_ID = 'e2e-hosted-imap';
 
@@ -43,20 +43,12 @@ test('hosted auth form: add an IMAP account (Ethereal) and reach connected', asy
     try {
         let formUrl;
         await test.step('generate the hosted authentication URL', async () => {
-            const res = await api.post('/v1/authentication/form', {
-                data: {
-                    account: ACCOUNT_ID,
-                    name: 'E2E Hosted IMAP',
-                    email: acct.user,
-                    redirectUrl: `${BASE_URL}/admin`
-                }
+            formUrl = await hostedAuthFormUrl(api, {
+                account: ACCOUNT_ID,
+                name: 'E2E Hosted IMAP',
+                email: acct.user,
+                redirectUrl: `${BASE_URL}/admin`
             });
-            expect(res.ok(), `POST /v1/authentication/form -> ${res.status()} ${await res.text()}`).toBeTruthy();
-            const body = await res.json();
-            // The URL is generated against the public serviceUrl (config/e2e.toml), so reuse its
-            // signed query string (data/sig/type) against the local test server - the signed blob
-            // is host-independent.
-            formUrl = `${BASE_URL}/accounts/new${new URL(body.url).search}`;
         });
 
         await test.step('hosted form: choose IMAP and enter email + password', async () => {

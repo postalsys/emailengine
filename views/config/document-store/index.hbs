@@ -135,13 +135,13 @@
             return data;
         }
 
-        document.getElementById('test-payload-btn').addEventListener('click', e => {
+        const testPayloadBtn = document.getElementById('test-payload-btn');
+        testPayloadBtn.addEventListener('click', e => {
             e.preventDefault()
-            sendTestPayload().then(data => {
-                showToast(data.error ? data.error : (data.success ? data.message || 'Connection successful' : 'Failed to establish connection'), data.success ? 'check-circle' : 'alert-triangle');
-            }).catch(err => {
-                showToast('Request failed\n' + err.message, 'alert-triangle');
-            })
+            // Busy until Elasticsearch answers, rather than looking unpressed and being clicked again.
+            uiBusyAction(testPayloadBtn, () =>
+                sendTestPayload().then(data => uiToastResult(data, data.message || 'Connection successful', 'Failed to establish connection'))
+            );
         });
     })
 </script>

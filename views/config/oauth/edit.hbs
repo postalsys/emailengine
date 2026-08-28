@@ -13,7 +13,7 @@ appData.id) midLabel=appData.name current="Edit app" class="mt-6 mb-6"}}
 {{/if}}
 {{/unless}}{{/unless}}{{/unless}}
 
-<form method="post" action="/admin/config/oauth/edit" class="pending-form">
+<form method="post" action="/admin/config/oauth/edit">
     <input type="hidden" name="crumb" value="{{crumb}}" />
     <input type="hidden" name="provider" value="{{appData.provider}}">
     <input type="hidden" name="app" value="{{appData.id}}">

@@ -128,6 +128,26 @@ const setPickedAccount = (page, selector, account) =>
         elm.dispatchEvent(new Event('input', { bubbles: true }));
     }, account);
 
+/**
+ * Generates a signed hosted authentication form URL and points it at the local test server.
+ *
+ * The URL the API returns is built against the public serviceUrl (config/e2e.toml names a host
+ * that is not this process), so only its signed query string is reusable - the blob is
+ * host-independent. Lives here because two specs need the same rewrite, and a spec that
+ * re-derived it would be one signing change away from testing nothing.
+ *
+ * @param {Object} api - Playwright APIRequestContext carrying an API token
+ * @param {Object} payload - POST /v1/authentication/form body (account, name, email, redirectUrl)
+ * @returns {Promise<String>} absolute URL of the form's first step on the test server
+ */
+async function hostedAuthFormUrl(api, payload) {
+    const res = await api.post('/v1/authentication/form', { data: payload });
+    if (!res.ok()) {
+        throw new Error(`POST /v1/authentication/form -> ${res.status()} ${await res.text()}`);
+    }
+    return `${BASE_URL}/accounts/new${new URL((await res.json()).url).search}`;
+}
+
 module.exports = {
     ADMIN_PASSWORD,
     PORT,
@@ -137,5 +157,6 @@ module.exports = {
     createApiToken,
     dismissTokenReveal,
     trackConsoleErrors,
-    setPickedAccount
+    setPickedAccount,
+    hostedAuthFormUrl
 };

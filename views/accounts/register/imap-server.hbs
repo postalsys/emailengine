@@ -295,14 +295,12 @@ focus ring on) the corner close button --}}
         let submitDownElm = document.getElementById('submit-settings-btn-down')
         let errorsListElm = document.getElementById('test-errors-list')
 
-        // Cosmetic only: greys out the real submit <button> while a submit is in flight (the dropdown
-        // toggle is a <summary> and the skip link an <a>, neither has disabled semantics). The actual
-        // duplicate-submit guard is the formSubmitting latch in submitForm(), which every path routes
-        // through.
-        let setSubmitButtonsDisabled = (disabled) => {
-            submitElm.disabled = disabled;
-        };
-
+        // eeButtonBusy() below is feedback only: it greys the real submit <button> out and spins its
+        // icon while a submit is in flight, so the wait for the account to be created is visible (the
+        // dropdown toggle is a <summary> and the skip link an <a>, neither has disabled semantics).
+        // The actual duplicate-submit guard is the formSubmitting latch in submitForm(), which every
+        // path routes through - this form submits through myForm.submit(), which fires no submit
+        // event, so the shared guard in static/js/public.js never sees it.
         let formSubmitting = false;
         let submitRecoveryTimer = null;
         let resetSubmitGuard = () => {
@@ -311,7 +309,7 @@ focus ring on) the corner close button --}}
                 clearTimeout(submitRecoveryTimer);
                 submitRecoveryTimer = null;
             }
-            setSubmitButtonsDisabled(false);
+            eeButtonBusy(submitElm, false);
         };
         let submitForm = () => {
             // The server claims a single-use nonce, so a second POST from a double-click loses the race and
@@ -327,7 +325,7 @@ focus ring on) the corner close button --}}
                 return;
             }
             formSubmitting = true;
-            setSubmitButtonsDisabled(true);
+            eeButtonBusy(submitElm, true);
             // Recovery timer for an aborted submit: a successful submit navigates away (this page and the
             // timer are discarded) and a validation error reloads the page fresh, so this only fires when the
             // navigation never happened - the user cancelled it (Esc / Stop) while the page stayed alive. There

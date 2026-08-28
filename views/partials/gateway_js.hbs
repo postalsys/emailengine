@@ -58,13 +58,14 @@
             return await uiPostJson('/admin/gateways/test', payload);
         }
 
-        document.getElementById('test-verify-btn').addEventListener('click', e => {
+        const testVerifyBtn = document.getElementById('test-verify-btn');
+        testVerifyBtn.addEventListener('click', e => {
             e.preventDefault()
-            sendTestPayload().then(data => {
-                showToast(data.error ? data.error : (data.success ? data.message || 'Connection successful' : 'Failed to establish connection'), data.success ? 'check-circle' : 'alert-triangle');
-            }).catch(err => {
-                showToast('Request failed\n' + err.message, 'alert-triangle');
-            })
+            // Busy for as long as the SMTP server takes to answer - otherwise the button looks
+            // unpressed and gets clicked again, opening another connection to the same server.
+            uiBusyAction(testVerifyBtn, () =>
+                sendTestPayload().then(data => uiToastResult(data, data.message || 'Connection successful', 'Failed to establish connection'))
+            );
         });
     })
 </script>

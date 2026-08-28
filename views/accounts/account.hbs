@@ -39,13 +39,13 @@
             {{!-- pointer-events-none so the tooltip above still explains why: browsers dispatch no
                  mouse events for a disabled control, so without it the wrapper never sees the hover --}}
             <button type="button" class="btn btn-soft btn-sm{{#if accountParked}} pointer-events-none{{/if}}" id="request-reconnect"{{#if accountParked}} disabled{{/if}}>
-                <span class="icon-[tabler--refresh] size-4" id="reconnect-icon"></span> Reconnect
+                <span class="icon-[tabler--refresh] size-4"></span> Reconnect
             </button>
             {{/ui/tooltip}}
 
             {{#> ui/tooltip text="Run periodic folder syncing now"}}
             <button type="button" class="btn btn-soft btn-sm" id="request-sync">
-                <span class="icon-[tabler--rotate-clockwise] size-4" id="sync-icon"></span> Run sync
+                <span class="icon-[tabler--rotate-clockwise] size-4"></span> Run sync
             </button>
             {{/ui/tooltip}}
 
@@ -931,7 +931,7 @@ submitLabel="Delete account"}}
         <span class="icon-[tabler--trash] size-4"></span> Reset
     </button>
     <button type="button" class="btn btn-primary" id="export-start-btn">
-        <span class="icon-[tabler--file-export] size-4" id="export-start-icon"></span> Start Export
+        <span class="icon-[tabler--file-export] size-4"></span> Start Export
     </button>
 </div>
 {{/ui/modal}}
@@ -952,29 +952,14 @@ submitLabel="Delete account"}}
             return data;
         }
 
-        let reconnecting = false;
         const requestReconnectElm = document.getElementById('request-reconnect');
         requestReconnectElm.addEventListener('click', e => {
             e.preventDefault();
-            if (requestReconnectElm.classList.contains('disabled')) {
-                return;
-            }
-
-            if (reconnecting) {
-                return
-            }
-
-            reconnecting = true;
-            document.getElementById('reconnect-icon').classList.add('animate-spin');
-            reconnectAccount().then(data => {
-                document.getElementById('reconnect-icon').classList.remove('animate-spin');
-                reconnecting = false;
-                showToast(data.error ? data.error : (data.success ? 'Account reconnection requested' : 'Failed to request reconnect'), data.success ? 'check-circle' : 'alert-triangle');
-            }).catch(err => {
-                document.getElementById('reconnect-icon').classList.remove('animate-spin');
-                reconnecting = false;
-                showToast('Request failed\n' + err.message, 'alert-triangle');
-            })
+            // Busy for the round trip: the request goes to a worker that has to reach the mail
+            // server, and the busy button is what stops a second one being asked for meanwhile.
+            uiBusyAction(requestReconnectElm, () =>
+                reconnectAccount().then(data => uiToastResult(data, 'Account reconnection requested', 'Failed to request reconnect'))
+            );
         });
 
         // Only rendered for an account the auth-failure safety net switched off
@@ -1016,29 +1001,12 @@ submitLabel="Delete account"}}
             return data;
         }
 
-        let syncing = false;
         const requestSyncElm = document.getElementById('request-sync');
         requestSyncElm.addEventListener('click', e => {
             e.preventDefault();
-            if (requestSyncElm.classList.contains('disabled')) {
-                return;
-            }
-
-            if (syncing) {
-                return
-            }
-
-            syncing = true;
-            document.getElementById('sync-icon').classList.add('animate-spin');
-            syncAccount().then(data => {
-                document.getElementById('sync-icon').classList.remove('animate-spin');
-                syncing = false;
-                showToast(data.error ? data.error : (data.success ? 'Account sync requested' : 'Failed to request syncing'), data.success ? 'check-circle' : 'alert-triangle');
-            }).catch(err => {
-                document.getElementById('sync-icon').classList.remove('animate-spin');
-                syncing = false;
-                showToast('Request failed\n' + err.message, 'alert-triangle');
-            })
+            uiBusyAction(requestSyncElm, () =>
+                syncAccount().then(data => uiToastResult(data, 'Account sync requested', 'Failed to request syncing'))
+            );
         });
 
         const toggleLogs = async () => {
@@ -1062,23 +1030,14 @@ submitLabel="Delete account"}}
             return data;
         }
 
-        let togglingLogs = false;
         // #toggle-logs / #flush-logs only render when the global "log all accounts"
         // setting is off - guard so the rest of this block still gets wired
-        document.getElementById('toggle-logs')?.addEventListener('click', e => {
+        const toggleLogsElm = document.getElementById('toggle-logs');
+        toggleLogsElm?.addEventListener('click', e => {
             e.preventDefault();
-            if (togglingLogs) {
-                return
-            }
-            togglingLogs = true;
-
-            toggleLogs().then(data => {
-                togglingLogs = false;
-                showToast(data.error ? data.error : (data.success ? 'Logging settings updated' : 'Failed to request reconnect'), data.success ? 'check-circle' : 'alert-triangle');
-            }).catch(err => {
-                togglingLogs = false;
-                showToast('Request failed\n' + err.message, 'alert-triangle');
-            })
+            uiBusyAction(toggleLogsElm, () =>
+                toggleLogs().then(data => uiToastResult(data, 'Logging settings updated', 'Failed to update logging settings'))
+            );
         });
 
         const flushLogs = async () => {
@@ -1088,21 +1047,12 @@ submitLabel="Delete account"}}
             return data;
         }
 
-        let flushingLogs = false;
-        document.getElementById('flush-logs')?.addEventListener('click', e => {
+        const flushLogsElm = document.getElementById('flush-logs');
+        flushLogsElm?.addEventListener('click', e => {
             e.preventDefault();
-            if (flushingLogs) {
-                return
-            }
-            flushingLogs = true;
-
-            flushLogs().then(data => {
-                flushingLogs = false;
-                showToast(data.error ? data.error : (data.success ? 'Stored logs were flushed' : 'Failed to flush logs'), data.success ? 'check-circle' : 'alert-triangle');
-            }).catch(err => {
-                flushingLogs = false;
-                showToast('Request failed\n' + err.message, 'alert-triangle');
-            })
+            uiBusyAction(flushLogsElm, () =>
+                flushLogs().then(data => uiToastResult(data, 'Stored logs were flushed', 'Failed to flush logs'))
+            );
         });
 
         // Export status indicator on page load
@@ -1318,7 +1268,8 @@ submitLabel="Delete account"}}
             updateExportIndicator();
         });
 
-        document.getElementById('export-start-btn').addEventListener('click', async function () {
+        const exportStartBtn = document.getElementById('export-start-btn');
+        exportStartBtn.addEventListener('click', () => {
             const account = document.getElementById('account-id').value.trim();
             const startDate = document.getElementById('export-start-date').value;
             const endDate = document.getElementById('export-end-date').value;
@@ -1329,39 +1280,39 @@ submitLabel="Delete account"}}
                 return;
             }
 
-            document.getElementById('export-start-icon').classList.add('animate-spin');
-
-            try {
-                const data = await uiPostJson(`/admin/accounts/${account}/export`, {
-                    startDate: startDate + 'T00:00:00Z',
-                    endDate: endDate + 'T23:59:59Z',
-                    includeAttachments
-                });
-                if (data.exportId) {
-                    currentExportId = data.exportId;
-                    showStatusView();
-                    // Reset progress display state
-                    document.getElementById('export-progress-section').classList.remove('hidden');
-                    document.getElementById('export-error-section').classList.add('hidden');
-                    document.getElementById('export-download-section').classList.add('hidden');
-                    document.getElementById('export-phase-badge').classList.add('hidden');
-                    const progressBar = document.getElementById('export-progress-bar');
-                    progressBar.classList.remove('bg-success');
-                    progressBar.classList.add('bg-info');
-                    progressBar.style.width = '0%';
-                    progressBar.setAttribute('aria-valuenow', 0);
-                    document.getElementById('export-progress-text').textContent = '';
-                    await updateExportStatus();
-                    startPolling();
-                    showToast('Export started', 'check-circle');
-                } else {
-                    showToast(data.error || data.message || 'Failed to start export', 'alert-triangle');
+            // Every call mints its own exportId and starts a full mailbox walk, so a second click
+            // would run two exports and leave the first one with nothing pointing at it.
+            uiBusyAction(exportStartBtn, async () => {
+                try {
+                    const data = await uiPostJson(`/admin/accounts/${account}/export`, {
+                        startDate: startDate + 'T00:00:00Z',
+                        endDate: endDate + 'T23:59:59Z',
+                        includeAttachments
+                    });
+                    if (data.exportId) {
+                        currentExportId = data.exportId;
+                        showStatusView();
+                        // Reset progress display state
+                        document.getElementById('export-progress-section').classList.remove('hidden');
+                        document.getElementById('export-error-section').classList.add('hidden');
+                        document.getElementById('export-download-section').classList.add('hidden');
+                        document.getElementById('export-phase-badge').classList.add('hidden');
+                        const progressBar = document.getElementById('export-progress-bar');
+                        progressBar.classList.remove('bg-success');
+                        progressBar.classList.add('bg-info');
+                        progressBar.style.width = '0%';
+                        progressBar.setAttribute('aria-valuenow', 0);
+                        document.getElementById('export-progress-text').textContent = '';
+                        await updateExportStatus();
+                        startPolling();
+                        showToast('Export started', 'check-circle');
+                    } else {
+                        showToast(data.error || data.message || 'Failed to start export', 'alert-triangle');
+                    }
+                } catch (err) {
+                    showToast('Export failed: ' + err.message, 'alert-triangle');
                 }
-            } catch (err) {
-                showToast('Export failed: ' + err.message, 'alert-triangle');
-            } finally {
-                document.getElementById('export-start-icon').classList.remove('animate-spin');
-            }
+            });
         });
 
         document.getElementById('export-reset-btn').addEventListener('click', async function () {

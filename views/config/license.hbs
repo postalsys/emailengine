@@ -133,7 +133,10 @@ Remove the current license key from this EmailEngine instance?
                     licenseFileTxt = (licenseFileTxt || '').toString().trim().substring(0, 10 * 1024)
                     licenseTextElm.value = licenseFileTxt;
                     if (licenseFileTxt.indexOf('BEGIN LICENSE') >= 0) {
-                        document.getElementById('licenseForm').submit();
+                        // requestSubmit(), not submit(): this posts to the license server like the
+                        // Activate button does, and only requestSubmit fires the submit event the
+                        // busy/double-submit guard in static/js/ui.js listens for.
+                        document.getElementById('licenseForm').requestSubmit();
                     } else {
                         licenseTextElm.focus();
                         licenseTextElm.select();

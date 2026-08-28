@@ -408,38 +408,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    for (let f of document.querySelectorAll('form.pending-form')) {
-        f.addEventListener('submit', () => {
-            for (let b of f.querySelectorAll('button[type="submit"], button:not([type])')) {
-                b.disabled = true;
-                b.classList.add('disabled');
-                let icon = b.querySelector('span[class*="icon-["]');
-                if (icon) {
-                    for (let [, className] of icon.classList.entries()) {
-                        if (/^icon-\[/.test(className)) {
-                            icon.classList.remove(className);
-                            icon.dataset.oldIcon = className;
-                            icon.classList.add('icon-updated');
-                        }
-                    }
-                    icon.classList.add('icon-[tabler--loader-2]', 'animate-spin');
-                }
-            }
-        });
-    }
-});
-
-window.addEventListener('pageshow', () => {
-    for (let icon of document.querySelectorAll('.icon-updated')) {
-        icon.classList.remove('icon-[tabler--loader-2]', 'animate-spin', 'icon-updated');
-        if (icon.dataset.oldIcon) {
-            icon.classList.add(icon.dataset.oldIcon);
-            icon.dataset.oldIcon = '';
-        }
-    }
-
-    for (let b of document.querySelectorAll('.disabled')) {
-        b.classList.remove('disabled');
-        b.disabled = false;
-    }
 });

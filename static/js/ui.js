@@ -514,14 +514,41 @@ window.uiToastResult = (data, okMessage, failMessage) => {
     window.showToast(data.error ? status + data.error : failMessage, 'alert-triangle');
 };
 
-// Toggle an async action button's busy state: disable the button and swap its
-// icon span to a spinner while busy, restoring the original icon after
+// Toggle an async action button's busy state: make the control unclickable and
+// swap its icon span to a spinner while busy, restoring it after. Works on both
+// <button> (disabled) and the action links in dropdown menus (<a> takes no
+// disabled attribute, so it gets aria-disabled plus the pointer-events class).
+// A control rendered without a leading icon gets a spinner span for the
+// duration - the busy state has to be visible on those too.
 window.uiButtonBusy = (btn, busy) => {
-    btn.disabled = !!busy;
-    const icon = btn.querySelector('[class*="icon-["]');
-    if (!icon) {
+    if (btn.tagName === 'A') {
+        btn.classList.toggle('pointer-events-none', !!busy);
+        btn.classList.toggle('opacity-60', !!busy);
+        if (busy) {
+            btn.setAttribute('aria-disabled', 'true');
+        } else {
+            btn.removeAttribute('aria-disabled');
+        }
+    } else {
+        btn.disabled = !!busy;
+    }
+
+    if (btn.tagName === 'INPUT') {
+        // void element - nothing to put a spinner inside
         return;
     }
+
+    let icon = btn.querySelector('[class*="icon-["]');
+    if (!icon) {
+        if (!busy) {
+            return;
+        }
+        icon = document.createElement('span');
+        icon.className = 'size-4 shrink-0';
+        icon.dataset.busySpinner = 'true';
+        btn.prepend(icon);
+    }
+
     if (busy) {
         if (!('idleIcon' in icon.dataset)) {
             icon.dataset.idleIcon = Array.from(icon.classList).find(c => c.startsWith('icon-[')) || '';
@@ -530,12 +557,136 @@ window.uiButtonBusy = (btn, busy) => {
             icon.classList.remove(icon.dataset.idleIcon);
         }
         icon.classList.add('icon-[tabler--loader-2]', 'animate-spin');
+    } else if (icon.dataset.busySpinner) {
+        icon.remove();
     } else {
         icon.classList.remove('icon-[tabler--loader-2]', 'animate-spin');
         if (icon.dataset.idleIcon) {
             icon.classList.add(icon.dataset.idleIcon);
         }
     }
+};
+
+/*
+ * Double-submit guard for the admin POST forms.
+ *
+ * A plain form POST gives no feedback while it is in flight, and the actions
+ * behind these forms are slow in the ways an operator cannot see: they talk to
+ * a mail server, an OAuth provider or the license server, or they rewrite a lot
+ * of Redis. Without feedback the button gets clicked again, and the second
+ * request either duplicates the work (a second account, a second delete) or
+ * loses a race against a single-use nonce and reports an error for an operation
+ * that actually succeeded. So the first submit latches the form: later submits
+ * are cancelled, and the button that was pressed spins until the navigation
+ * lands.
+ *
+ * Global rather than opt-in per form (it replaces a `pending-form` class that
+ * three forms out of forty carried): on this surface a POST that takes a while
+ * is the normal case, and a page that wants to own its submission cancels the
+ * event - which is exactly what the listener skips on.
+ */
+const uiFormBusy = new Map();
+
+// Bubble phase on document, so every listener the form itself installed has
+// already run and event.defaultPrevented tells us whether the page took over.
+// (A page that delegates from `document` instead registers after this file and
+// so is not seen - the API reference's "Try it" forms do that, and stay clear of
+// this guard by not being POST forms.)
+document.addEventListener('submit', event => {
+    const form = event.target;
+    if (event.defaultPrevented || !form || form.method !== 'post') {
+        return;
+    }
+
+    // A form aimed at another browsing context leaves this page in place, so
+    // there is no navigation to end the busy state and nothing to latch.
+    const target = form.target.trim().toLowerCase();
+    if (target && target !== '_self') {
+        return;
+    }
+
+    if (uiFormBusy.has(form)) {
+        // Already submitted once. Covers implicit submission (Enter in a text
+        // field), which a disabled default button does not always stop.
+        event.preventDefault();
+        return;
+    }
+
+    const submitter = event.submitter;
+    // Static NodeList, so it stays usable as the record of what to re-enable.
+    // input[type="submit"] is not used on the admin pages today; it is in the
+    // selector because this guard applies to whatever form a page adds next.
+    const buttons = form.querySelectorAll('button[type="submit"], button:not([type]), input[type="submit"]');
+    let submitterField = null;
+
+    // The form data set is built AFTER this event and skips disabled controls,
+    // the submitter included - so disabling it would stop its name/value from
+    // posting, and that value is what picks the branch the server takes (the
+    // MCP consent page posts its decision that way). Move it into a hidden
+    // input first.
+    if (submitter && submitter.name) {
+        submitterField = document.createElement('input');
+        submitterField.type = 'hidden';
+        submitterField.name = submitter.name;
+        submitterField.value = submitter.value;
+        form.appendChild(submitterField);
+    }
+
+    uiFormBusy.set(form, { buttons, submitter, submitterField });
+
+    for (const btn of buttons) {
+        // A browser that reports no event.submitter leaves us unable to tell which button was
+        // pressed, and disabling one that carries a name would drop the value the server branches
+        // on - so those keep working and the latch alone does the guarding.
+        if (btn === submitter || (!submitter && btn.name)) {
+            continue;
+        }
+        btn.disabled = true;
+    }
+    if (submitter) {
+        window.uiButtonBusy(submitter, true);
+    }
+});
+
+// Back from a submitted form: the bfcache restores the page with the latch
+// still set and the buttons still disabled, which would leave the form dead.
+// (An aborted submit - Esc or Stop while the page stays - is deliberately not
+// recovered: a reload fixes it, and a timer that guessed wrong would re-arm the
+// buttons underneath a request that is still running.)
+window.addEventListener('pageshow', event => {
+    if (!event.persisted) {
+        return;
+    }
+    for (const state of uiFormBusy.values()) {
+        if (state.submitterField) {
+            state.submitterField.remove();
+        }
+        for (const btn of state.buttons) {
+            if (btn === state.submitter) {
+                window.uiButtonBusy(btn, false);
+            } else {
+                btn.disabled = false;
+            }
+        }
+    }
+    uiFormBusy.clear();
+});
+
+// Run an async action from a button, with the button busy for its duration.
+// The busy button is the re-entrancy guard, so the action cannot be started
+// twice, and the reset runs however the action ends - the shape every action
+// button that posts with fetch() needs, and the one that used to be spelled
+// out (and occasionally forgotten) per page. `run` returns a promise; a
+// rejection it does not handle itself is reported as a toast.
+window.uiBusyAction = (btn, run) => {
+    if (btn.disabled || btn.getAttribute('aria-disabled') === 'true') {
+        return;
+    }
+    window.uiButtonBusy(btn, true);
+    Promise.resolve()
+        .then(run)
+        .catch(err => window.showToast('Request failed\n' + err.message, 'alert-triangle'))
+        .finally(() => window.uiButtonBusy(btn, false));
 };
 
 // ACE editor theming: light and dark variants per editor kind, applied on

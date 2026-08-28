@@ -19,11 +19,11 @@
         const testSendBtn = document.getElementById('test-send-btn');
         testSendBtn.addEventListener('click', e => {
             e.preventDefault();
-            sendTestPayload().then(data => {
-                uiToastResult(data, 'Test payload sent', 'Failed to send payload');
-            }).catch(err => {
-                showToast('Request failed\n' + err.message, 'alert-triangle');
-            })
+            // Waits for the target server to answer; clicking again would deliver the preview
+            // payload a second time.
+            uiBusyAction(testSendBtn, () =>
+                sendTestPayload().then(data => uiToastResult(data, 'Test payload sent', 'Failed to send payload'))
+            );
         });
     });
 </script>

@@ -282,13 +282,14 @@ class="mb-1"}}
             return data;
         }
 
-        document.getElementById('test-payload-btn').addEventListener('click', e => {
+        const testPayloadBtn = document.getElementById('test-payload-btn');
+        testPayloadBtn.addEventListener('click', e => {
             e.preventDefault()
-            sendTestPayload().then(data => {
-                uiToastResult(data, 'Test payload sent', 'Failed to send payload');
-            }).catch(err => {
-                showToast('Request failed\n' + err.message, 'alert-triangle');
-            })
+            // The delivery waits for the configured URL to answer; a second click would send a
+            // second payload.
+            uiBusyAction(testPayloadBtn, () =>
+                sendTestPayload().then(data => uiToastResult(data, 'Test payload sent', 'Failed to send payload'))
+            );
         });
 
         const editors = new Map();
