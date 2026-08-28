@@ -121,7 +121,12 @@
                 </button>
                 <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-56" role="menu"
                     aria-orientation="vertical" aria-labelledby="logs-info">
-                    <li><a class="dropdown-item" href="/admin/accounts/{{urlpart account.account}}/logs.txt" download>Download stored logs</a></li>
+                    <li>
+                        {{!-- Nothing to download when no log entries are stored, so the entry
+                        renders inert instead of handing out a placeholder file --}}
+                        <a id="download-logs" class="dropdown-item{{#unless hasStoredLogs}} dropdown-disabled{{/unless}}"
+                            {{#if hasStoredLogs}}href="/admin/accounts/{{urlpart account.account}}/logs.txt" download{{else}}aria-disabled="true" title="No stored logs for this account"{{/if}}>Download stored logs</a>
+                    </li>
                     <li>
                         <div class="divider my-1"></div>
                     </li>
@@ -1044,6 +1049,16 @@ submitLabel="Delete account"}}
             const account = document.getElementById('account-id').value.trim();
 
             const data = await uiPostJson(`/admin/accounts/${account}/logs-flush`);
+
+            if (data.success) {
+                // Nothing left to download until logging fills the list again
+                const downloadLogsElm = document.getElementById('download-logs');
+                downloadLogsElm.classList.add('dropdown-disabled');
+                downloadLogsElm.removeAttribute('href');
+                downloadLogsElm.setAttribute('aria-disabled', 'true');
+                downloadLogsElm.setAttribute('title', 'No stored logs for this account');
+            }
+
             return data;
         }
 

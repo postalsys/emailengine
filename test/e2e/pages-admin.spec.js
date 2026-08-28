@@ -1826,8 +1826,23 @@ test.describe('admin shell', () => {
         await clickLogsItem('#toggle-logs', /\/logs$/);
         await expect(toast('Logging settings updated')).toBeVisible();
 
+        // Enabling logging reconnects the account, which is what fills the log. Reload until the
+        // page has seen the stored entries: the download entry is gated on them, and this is the
+        // only state in which the flush below can be seen to switch it back off.
+        const downloadLogs = page.locator('#download-logs');
+        await expect(async () => {
+            await page.reload();
+            await expect(downloadLogs).toHaveAttribute('href', /\/logs\.txt$/, { timeout: 1000 });
+        }).toPass({ timeout: 30000 });
+
         await clickLogsItem('#flush-logs', /\/logs-flush$/);
         await expect(toast('Stored logs were flushed')).toBeVisible();
+
+        // Downloading an emptied log would only produce a placeholder file, so the entry goes
+        // inert with the entries it would have served - without waiting for a page reload.
+        await expect(downloadLogs).toHaveAttribute('aria-disabled', 'true');
+        await expect(downloadLogs).toHaveCSS('pointer-events', 'none');
+        expect(await downloadLogs.getAttribute('href')).toBeNull();
 
         // restore the original (disabled) logging state
         await clickLogsItem('#toggle-logs', /\/logs$/);
