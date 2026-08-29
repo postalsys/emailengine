@@ -1,0 +1,25 @@
+{{!--
+    ui/empty-state - centered "nothing here yet" placeholder for the inside of a card that
+    brings its own header and primary action (the passkeys card on the account security
+    page). Block form; the block is the explanatory sentence under the title:
+      {{#> ui/empty-state icon="icon-[tabler--fingerprint]" title="No passkeys registered"}}
+      Register this device to sign in without typing a password.
+      {{/ui/empty-state}}
+    ui/list-empty is the sibling for a whole list page: it wraps itself in a card and its
+    copy is search/filter-aware, which is why it cannot be nested inside a card.
+    NB the partial-block pitfall - a block whose content is nothing but a {{#if}} wrapper
+    loses it. Hoist such a condition outside the call and use one block per arm.
+    Params:
+      icon  - full iconify class for the muted glyph (optional; pass the complete class so
+              the Tailwind scanner sees it at the call site)
+      title - bold headline (required)
+      class - extra classes on the wrapper (optional)
+--}}
+<div class="flex flex-col items-center gap-2 py-6 text-center{{#if class}} {{class}}{{/if}}">
+    {{#if icon}}<span class="{{icon}} text-base-content/30 size-10"></span>{{/if}}
+    <p class="mb-0 font-medium">{{title}}</p>
+    {{#if @partial-block}}
+    {{!-- own hash params neutralized against fallthrough into the block --}}
+    <p class="text-base-content/60 mb-0 max-w-md text-sm">{{> @partial-block icon="" title="" class=""}}</p>
+    {{/if}}
+</div>

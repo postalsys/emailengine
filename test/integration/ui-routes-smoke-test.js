@@ -38,6 +38,7 @@ const baseUrl = `http://127.0.0.1:${config.api.port}`;
 const GET_ROUTES = [
     '/accounts/new',
     '/admin',
+    '/admin/account/passkeys',
     '/admin/account/password',
     '/admin/account/security',
     '/admin/accounts',

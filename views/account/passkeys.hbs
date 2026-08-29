@@ -1,0 +1,133 @@
+{{> security_header}}
+
+{{> ui/breadcrumb parentHref="/admin/account/security" parentLabel="Account Security" current="Passkeys" class="mt-6 mb-6"}}
+
+{{!-- A page of its own rather than a block on the security page: that page is an inventory of
+      the ways into the account, one row each, and a credential list that grows to twenty rows
+      would take it over. The row there summarizes and links here. --}}
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="card-header flex flex-wrap items-start justify-between gap-3">
+        <div>
+            <h6 class="card-title text-primary">Passkeys</h6>
+            <p class="text-base-content/60 mb-0 text-sm">Sign in with Touch ID, Windows Hello or a security key. A
+                passkey is a complete sign-in on its own - no password and no verification code.</p>
+        </div>
+        {{!-- ui/tooltip renders bare when the text is empty, so the same call covers both the
+              live button and the one disabled with the reason on it --}}
+        {{#> ui/tooltip text=passkeyBlockReason placement="left"}}
+        {{> ui/btn label="Add passkey" variant="primary" style="outline" size="sm" id="register-passkey-btn"
+        icon="icon-[tabler--plus]" disabled=passkeyBlockReason}}
+        {{/ui/tooltip}}
+    </div>
+
+    {{#if passkeys.length}}
+    <div class="overflow-x-auto">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Passkey</th>
+                    <th>Added</th>
+                    <th>Last used</th>
+                    <th class="w-12"><span class="sr-only">Actions</span></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {{#each passkeys}}
+                <tr class="hover:bg-base-200/60">
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <span
+                                class="bg-base-200 text-base-content/70 flex size-9 shrink-0 items-center justify-center rounded-lg">
+                                <span class="{{deviceIcon}} size-5"></span>
+                            </span>
+                            <div class="min-w-0">
+                                <strong class="block">{{name}}</strong>
+                                <span class="text-base-content/60 text-xs">{{deviceLabel}}</span>
+                            </div>
+                        </div>
+                    </td>
+
+                    <td>
+                        {{#if createdAt}}
+                        <span class="text-base-content/60 relative-time" data-time="{{createdAt}}"
+                            title="{{createdAt}}"></span>
+                        {{else}}
+                        <span class="text-base-content/60">-</span>
+                        {{/if}}
+                    </td>
+
+                    <td>
+                        {{#if lastUsedAt}}
+                        <span class="relative-time" data-time="{{lastUsedAt}}" title="{{lastUsedAt}}"></span>
+                        {{else}}
+                        {{!-- Not "Never": a credential registered before sign-ins were stamped carries
+                              no timestamp either, and calling a passkey in daily use unused would
+                              invite removing the wrong one --}}
+                        <span class="text-base-content/60">-</span>
+                        {{/if}}
+                    </td>
+
+                    <td class="relative text-end">
+                        {{> ui/row-actions label="Passkey actions" deleteLabel="Remove" deleteModal="#deletePasskey"
+                        deleteId=id deleteName=name}}
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+    {{else}}
+    <div class="card-body">
+        {{!-- The condition sits OUTSIDE the ui/empty-state block on purpose: a partial block
+              whose content is nothing but a {{#if}} wrapper loses its content to a Handlebars
+              program-association bug. Keep the block's first content token static. --}}
+        {{#if serviceUrl}}
+        {{#> ui/empty-state icon="icon-[tabler--fingerprint]" title="No passkeys registered"}}
+        Register this device to sign in without typing a password or a verification code.
+        {{/ui/empty-state}}
+        {{else}}
+        {{#> ui/empty-state icon="icon-[tabler--fingerprint]" title="No passkeys registered"}}
+        A passkey is bound to the hostname EmailEngine is served from, so set a <a href="/admin/config/service"
+            class="link link-animated">Service URL</a> before registering one.
+        {{/ui/empty-state}}
+        {{/if}}
+    </div>
+    {{/if}}
+</div>
+
+{{#> ui/confirm-modal id="deletePasskey" title="Remove passkey" action="/admin/account/passkeys/delete" fieldName="credentialId" fieldClass="delete-target-id" submitLabel="Remove passkey"}}
+Are you sure you want to remove <strong class="delete-target-name"></strong>? You will no longer be able to sign in with this passkey.
+{{/ui/confirm-modal}}
+
+{{#> ui/modal id="registerPasskeyModal" title="Register a new passkey" titleId="registerPasskeyModalLabel"}}
+<div class="modal-body space-y-4">
+    <div>
+        {{!-- The route reaching this page requires a configured account password, so the
+              confirmation field is unconditional here - registration verifies it server-side --}}
+        {{#> ui/form-field id="passkey-current-password" label="Current password"}}
+        <input type="password" class="input" id="passkey-current-password" placeholder="Enter your current password"
+            maxlength="256" autocomplete="current-password" />
+        <span class="helper-text">Confirm your identity before registering a new passkey.</span>
+        {{/ui/form-field}}
+    </div>
+    <div>
+        {{#> ui/form-field id="passkey-name" label="Passkey name"}}
+        <input type="text" class="input" id="passkey-name" placeholder="e.g., MacBook Touch ID" maxlength="100" />
+        <span class="helper-text">A friendly name to help you identify this passkey.</span>
+        {{/ui/form-field}}
+    </div>
+    <div id="passkey-register-error" class="text-error text-sm hidden"></div>
+    <div id="passkey-register-success" class="text-success text-sm hidden">
+        Passkey registered successfully.
+    </div>
+</div>
+<div class="modal-footer">
+    <input type="hidden" id="security-crumb" value="{{crumb}}" />
+    {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#registerPasskeyModal"}}
+    {{> ui/btn label="Register passkey" id="passkey-register-confirm-btn"}}
+</div>
+{{/ui/modal}}
+
+<script src="/static/vendor/simplewebauthn/browser.min.js"></script>
+<script src="/static/js/passkey-register.js"></script>

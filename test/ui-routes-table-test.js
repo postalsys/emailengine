@@ -37,6 +37,7 @@ const GOLDEN_ROUTES = [
     'GET /.well-known/acme-challenge/{token}',
     'GET /accounts/new',
     'GET /admin',
+    'GET /admin/account/passkeys',
     'GET /admin/account/password',
     'GET /admin/account/security',
     'GET /admin/accounts',

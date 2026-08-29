@@ -18,9 +18,15 @@
       id       - element id (optional)
       class    - extra classes (optional)
       overlay  - value for data-overlay to open/close a ui/modal (optional)
+      disabled - truthy to render the button disabled. Also adds pointer-events-none,
+                 because a disabled control dispatches no mouse events and a wrapping
+                 {{#> ui/tooltip}} would never see the hover that is meant to explain
+                 why the button is off. Ignored entirely by the href form - a link
+                 cannot be disabled, and half-disabling one (unclickable but still
+                 keyboard-reachable) is worse than not offering it.
 --}}
 {{#*inline "btnClasses"~}}
-btn{{#unless bare}} btn-{{#if variant}}{{variant}}{{else}}primary{{/if}}{{/unless}}{{#if style}} btn-{{style}}{{/if}}{{#if size}} btn-{{size}}{{/if}}{{#if class}} {{class}}{{/if}}
+btn{{#unless bare}} btn-{{#if variant}}{{variant}}{{else}}primary{{/if}}{{/unless}}{{#if style}} btn-{{style}}{{/if}}{{#if size}} btn-{{size}}{{/if}}{{#unless href}}{{#if disabled}} pointer-events-none{{/if}}{{/unless}}{{#if class}} {{class}}{{/if}}
 {{~/inline}}
 {{#*inline "btnContent"~}}
 {{#if icon}}<span class="{{icon}} size-4 shrink-0"></span>{{/if}}{{label}}
@@ -28,5 +34,5 @@ btn{{#unless bare}} btn-{{#if variant}}{{variant}}{{else}}primary{{/if}}{{/unles
 {{#if href}}
 <a href="{{href}}" {{#if id}}id="{{id}}" {{/if}}{{#if external}}target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" {{/if}}class="{{> btnClasses}}">{{> btnContent}}</a>
 {{else}}
-<button type="{{#if type}}{{type}}{{else}}button{{/if}}" {{#if id}}id="{{id}}" {{/if}}{{#if overlay}}data-overlay="{{overlay}}" {{/if}}class="{{> btnClasses}}">{{> btnContent}}</button>
+<button type="{{#if type}}{{type}}{{else}}button{{/if}}" {{#if id}}id="{{id}}" {{/if}}{{#if overlay}}data-overlay="{{overlay}}" {{/if}}{{#if disabled}}disabled {{/if}}class="{{> btnClasses}}">{{> btnContent}}</button>
 {{/if}}
