@@ -121,11 +121,15 @@
                 </button>
                 <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-56" role="menu"
                     aria-orientation="vertical" aria-labelledby="logs-info">
+                    {{!-- Downloading or clearing an empty log is a no-op dressed as work, so both
+                    entries below render inert. This line says why: an inert entry is out of hit
+                    testing, so it cannot carry a tooltip of its own --}}
+                    <li id="no-stored-logs" class="{{#if hasStoredLogs}}hidden{{/if}}"><span
+                            class="text-base-content/60 block px-4 py-2 text-sm">No stored logs for this account</span>
+                    </li>
                     <li>
-                        {{!-- Nothing to download when no log entries are stored, so the entry
-                        renders inert instead of handing out a placeholder file --}}
                         <a id="download-logs" class="dropdown-item{{#unless hasStoredLogs}} dropdown-disabled{{/unless}}"
-                            {{#if hasStoredLogs}}href="/admin/accounts/{{urlpart account.account}}/logs.txt" download{{else}}aria-disabled="true" title="No stored logs for this account"{{/if}}>Download stored logs</a>
+                            {{#if hasStoredLogs}}href="/admin/accounts/{{urlpart account.account}}/logs.txt" download{{else}}aria-disabled="true"{{/if}}>Download stored logs</a>
                     </li>
                     <li>
                         <div class="divider my-1"></div>
@@ -134,7 +138,8 @@
                     <li><span class="text-base-content/60 block px-4 py-2 text-sm">Logging is enabled for all accounts</span></li>
                     {{else}}
                     <li><a class="dropdown-item" href="#" id="toggle-logs">{{#if account.logs}}Disable logging{{else}}Enable logging{{/if}}</a></li>
-                    <li><a class="dropdown-item" href="#" id="flush-logs">Clear stored logs</a></li>
+                    <li><a id="flush-logs" class="dropdown-item{{#unless hasStoredLogs}} dropdown-disabled{{/unless}}"
+                            {{#if hasStoredLogs}}href="#"{{else}}aria-disabled="true"{{/if}}>Clear stored logs</a></li>
                     {{/if}}
                 </ul>
             </div>
@@ -1045,28 +1050,30 @@ submitLabel="Delete account"}}
             );
         });
 
-        const flushLogs = async () => {
-            const account = document.getElementById('account-id').value.trim();
+        const downloadLogsElm = document.getElementById('download-logs');
+        const flushLogsElm = document.getElementById('flush-logs');
 
-            const data = await uiPostJson(`/admin/accounts/${account}/logs-flush`);
-
-            if (data.success) {
-                // Nothing left to download until logging fills the list again
-                const downloadLogsElm = document.getElementById('download-logs');
-                downloadLogsElm.classList.add('dropdown-disabled');
-                downloadLogsElm.removeAttribute('href');
-                downloadLogsElm.setAttribute('aria-disabled', 'true');
-                downloadLogsElm.setAttribute('title', 'No stored logs for this account');
+        // The client-side mirror of hasStoredLogs = false: nothing left to download or to clear,
+        // and the note carries the reason that an entry out of hit testing cannot show itself
+        const markLogsEmpty = () => {
+            for (const elm of [downloadLogsElm, flushLogsElm]) {
+                elm.classList.add('dropdown-disabled');
+                elm.removeAttribute('href');
+                elm.setAttribute('aria-disabled', 'true');
             }
-
-            return data;
+            document.getElementById('no-stored-logs').classList.remove('hidden');
         }
 
-        const flushLogsElm = document.getElementById('flush-logs');
         flushLogsElm?.addEventListener('click', e => {
             e.preventDefault();
+            const account = document.getElementById('account-id').value.trim();
             uiBusyAction(flushLogsElm, () =>
-                flushLogs().then(data => uiToastResult(data, 'Stored logs were flushed', 'Failed to flush logs'))
+                uiPostJson(`/admin/accounts/${account}/logs-flush`).then(data => {
+                    if (data.success) {
+                        markLogsEmpty();
+                    }
+                    uiToastResult(data, 'Stored logs were flushed', 'Failed to flush logs');
+                })
             );
         });
 

@@ -526,7 +526,10 @@ window.uiButtonBusy = (btn, busy) => {
         btn.classList.toggle('opacity-60', !!busy);
         if (busy) {
             btn.setAttribute('aria-disabled', 'true');
-        } else {
+        } else if (!btn.classList.contains('dropdown-disabled')) {
+            // The reset owns the busy window, not the control's own state: an action that
+            // switches its entry off for good (clearing an account's stored logs empties the
+            // download and clear entries) keeps the disabled marker it just set.
             btn.removeAttribute('aria-disabled');
         }
     } else {

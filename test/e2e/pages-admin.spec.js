@@ -1834,15 +1834,21 @@ test.describe('admin shell', () => {
             await page.reload();
             await expect(downloadLogs).toHaveAttribute('href', /\/logs\.txt$/, { timeout: 1000 });
         }).toPass({ timeout: 30000 });
+        // asserted on the class, not on visibility: the whole menu is display:none while closed
+        await expect(page.locator('#no-stored-logs')).toHaveClass(/hidden/);
 
         await clickLogsItem('#flush-logs', /\/logs-flush$/);
         await expect(toast('Stored logs were flushed')).toBeVisible();
 
-        // Downloading an emptied log would only produce a placeholder file, so the entry goes
-        // inert with the entries it would have served - without waiting for a page reload.
-        await expect(downloadLogs).toHaveAttribute('aria-disabled', 'true');
-        await expect(downloadLogs).toHaveCSS('pointer-events', 'none');
-        expect(await downloadLogs.getAttribute('href')).toBeNull();
+        // Downloading or clearing an emptied log is a no-op dressed as work, so both entries go
+        // inert with the entries they would have acted on - without waiting for a page reload.
+        for (const entry of [downloadLogs, page.locator('#flush-logs')]) {
+            await expect(entry).toHaveAttribute('aria-disabled', 'true');
+            await expect(entry).toHaveCSS('pointer-events', 'none');
+            expect(await entry.getAttribute('href')).toBeNull();
+        }
+        // and the menu says why, since an entry out of hit testing cannot show a tooltip
+        await expect(page.locator('#no-stored-logs')).not.toHaveClass(/hidden/);
 
         // restore the original (disabled) logging state
         await clickLogsItem('#toggle-logs', /\/logs$/);
