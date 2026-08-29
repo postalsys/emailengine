@@ -260,30 +260,57 @@ test('Passkeys module tests', async t => {
     // -- storeChallenge / consumeChallenge --
 
     await t.test('storeChallenge() stores challenge and returns challengeId', async () => {
-        let challengeId = await passkeys.storeChallenge('test-challenge-data');
+        let challengeId = await passkeys.storeChallenge('test-challenge-data', passkeys.CHALLENGE_AUTH);
         assert.strictEqual(typeof challengeId, 'string');
         assert.strictEqual(challengeId.length, 64); // 32 bytes hex
     });
 
     await t.test('consumeChallenge() retrieves and deletes challenge', async () => {
-        let challengeId = await passkeys.storeChallenge('my-challenge');
-        let challenge = await passkeys.consumeChallenge(challengeId);
+        let challengeId = await passkeys.storeChallenge('my-challenge', passkeys.CHALLENGE_AUTH);
+        let challenge = await passkeys.consumeChallenge(challengeId, passkeys.CHALLENGE_AUTH);
         assert.strictEqual(challenge, 'my-challenge');
 
         // Second retrieval should return null (consumed)
-        let again = await passkeys.consumeChallenge(challengeId);
+        let again = await passkeys.consumeChallenge(challengeId, passkeys.CHALLENGE_AUTH);
         assert.strictEqual(again, null);
     });
 
+    // The bypass this namespacing closes: sign-in mints challenges without a password (it is the
+    // login endpoint), registration is gated behind one, and while both drew from a single
+    // keyspace a sign-in nonce could be spent completing a registration.
+    await t.test('a sign-in challenge cannot be consumed as a registration challenge', async () => {
+        let challengeId = await passkeys.storeChallenge('auth-nonce', passkeys.CHALLENGE_AUTH);
+
+        assert.strictEqual(await passkeys.consumeChallenge(challengeId, passkeys.CHALLENGE_REGISTER), null);
+
+        // and the rejection did not consume it - sign-in still works
+        assert.strictEqual(await passkeys.consumeChallenge(challengeId, passkeys.CHALLENGE_AUTH), 'auth-nonce');
+    });
+
+    await t.test('a registration challenge cannot be consumed as a sign-in challenge', async () => {
+        let challengeId = await passkeys.storeChallenge('register-nonce', passkeys.CHALLENGE_REGISTER);
+
+        assert.strictEqual(await passkeys.consumeChallenge(challengeId, passkeys.CHALLENGE_AUTH), null);
+        assert.strictEqual(await passkeys.consumeChallenge(challengeId, passkeys.CHALLENGE_REGISTER), 'register-nonce');
+    });
+
+    await t.test('an unknown purpose throws rather than falling back to a shared keyspace', async () => {
+        await assert.rejects(() => passkeys.storeChallenge('nonce', 'sign-in'), /Unknown WebAuthn challenge purpose/);
+        await assert.rejects(() => passkeys.storeChallenge('nonce'), /Unknown WebAuthn challenge purpose/);
+        await assert.rejects(() => passkeys.consumeChallenge('a'.repeat(64)), /Unknown WebAuthn challenge purpose/);
+        // the purpose is checked before the id, so a forgotten argument cannot hide behind one
+        await assert.rejects(() => passkeys.consumeChallenge(null), /Unknown WebAuthn challenge purpose/);
+    });
+
     await t.test('consumeChallenge() returns null for invalid challengeId', async () => {
-        let result = await passkeys.consumeChallenge('nonexistent');
+        let result = await passkeys.consumeChallenge('nonexistent', passkeys.CHALLENGE_AUTH);
         assert.strictEqual(result, null);
     });
 
     await t.test('consumeChallenge() returns null for null/undefined input', async () => {
-        assert.strictEqual(await passkeys.consumeChallenge(null), null);
-        assert.strictEqual(await passkeys.consumeChallenge(undefined), null);
-        assert.strictEqual(await passkeys.consumeChallenge(''), null);
+        assert.strictEqual(await passkeys.consumeChallenge(null, passkeys.CHALLENGE_AUTH), null);
+        assert.strictEqual(await passkeys.consumeChallenge(undefined, passkeys.CHALLENGE_AUTH), null);
+        assert.strictEqual(await passkeys.consumeChallenge('', passkeys.CHALLENGE_AUTH), null);
     });
 
     // -- saveCredential / getCredential --

@@ -27,6 +27,7 @@ const {
     setPickedAccount,
     seedPasskeys,
     removePasskeys,
+    ADMIN_PASSWORD,
     BASE_URL
 } = require('./helpers/bootstrap');
 
@@ -1573,6 +1574,79 @@ test.describe('admin shell', () => {
         }
 
         expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('passkey registration refuses a sign-in challenge and an unconfirmed password', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        // /admin/passkey/auth/options only answers once the instance has a passkey to offer
+        const SEEDED = [{ id: 'e2e-passkey-challenge', name: 'E2E Challenge Probe', transports: ['internal'] }];
+        await seedPasskeys(SEEDED);
+
+        try {
+            await page.goto('/admin/account/passkeys');
+
+            const result = await page.evaluate(async password => {
+                const crumb = document.querySelector('#security-crumb').value;
+                const post = (url, body) =>
+                    fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(Object.assign({ crumb }, body))
+                    }).then(async res => ({ status: res.status, body: await res.json() }));
+
+                // A syntactically valid credential is enough: both requests must be refused before
+                // anything looks at it.
+                const credential = {
+                    id: 'AAAA',
+                    rawId: 'AAAA',
+                    type: 'public-key',
+                    response: { clientDataJSON: 'AAAA', attestationObject: 'AAAA' }
+                };
+
+                // 1. a nonce from the unauthenticated sign-in endpoint, spent on registration
+                const signIn = await post('/admin/passkey/auth/options', {});
+                const borrowed = await post('/admin/account/passkeys/register/verify', {
+                    challengeId: signIn.body.challengeId,
+                    password,
+                    name: 'planted',
+                    credential
+                });
+
+                // 2. a genuine registration nonce, but the password is not resent
+                const issued = await post('/admin/account/passkeys/register/options', { password });
+                const unconfirmed = await post('/admin/account/passkeys/register/verify', {
+                    challengeId: issued.body.challengeId,
+                    name: 'planted',
+                    credential
+                });
+
+                return { signInStatus: signIn.status, borrowed, unconfirmed };
+            }, ADMIN_PASSWORD);
+
+            // the sign-in endpoint really did hand out a challenge, so the refusal below is the
+            // namespacing and not a missing precondition
+            expect(result.signInStatus).toBe(200);
+
+            expect(result.borrowed.status).toBe(400);
+            expect(result.borrowed.body.error).toMatch(/Challenge expired or invalid/);
+
+            expect(result.unconfirmed.status).toBe(403);
+            expect(result.unconfirmed.body.error).toMatch(/Invalid password/);
+
+            // neither attempt stored anything
+            await page.goto('/admin/account/passkeys');
+            await expect(page.locator('tbody tr')).toHaveCount(1);
+            await expect(page.locator('tbody tr')).toContainText('E2E Challenge Probe');
+        } finally {
+            await removePasskeys(SEEDED.map(credential => credential.id));
+        }
+
+        // The two refusals are the point of the test, and Chromium logs every non-2xx fetch as a
+        // console error - their status codes are asserted above, so only anything else is breakage
+        const unexpected = errors.filter(text => !/responded with a status of (400|403)/.test(text));
+        expect(unexpected, unexpected.join('\n')).toHaveLength(0);
     });
 
     test('state badge: connection error shows in the FlyonUI tooltip', async ({ page, request }) => {

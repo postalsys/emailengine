@@ -125,6 +125,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 body: JSON.stringify({
                     crumb: crumbValue,
                     challengeId: optionsData.challengeId,
+                    // resent because the server confirms it again where the credential is
+                    // actually stored, not only when it issued the options
+                    password: password,
                     name: name,
                     credential: regResponse
                 })
