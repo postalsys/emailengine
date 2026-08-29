@@ -322,3 +322,40 @@ test('buildOidcBellProvider', async t => {
         assert.deepEqual(credentials.profile.groups, ['admin']);
     });
 });
+
+test('retryDiscovery', async t => {
+    // minDelay/maxDelay are injected so the schedule runs in milliseconds; the delay
+    // arithmetic itself belongs to exponential-backoff and is not re-asserted here.
+    await t.test('keeps probing until discovery answers and resolves with the document', async () => {
+        const doc = { issuer: 'https://idp.example.com' };
+
+        let attempts = 0;
+        const errors = [];
+
+        const result = await sso.retryDiscovery({
+            fetchDiscovery: async () => {
+                if (++attempts < 3) {
+                    throw new Error(`attempt ${attempts}`);
+                }
+                return doc;
+            },
+            minDelay: 1,
+            maxDelay: 2,
+            onError: (err, attempt) => errors.push([err.message, attempt])
+        });
+
+        assert.equal(attempts, 3);
+        assert.equal(result, doc);
+        // Every failure is reported, numbered, and none is reported for the success.
+        assert.deepEqual(errors, [
+            ['attempt 1', 1],
+            ['attempt 2', 2]
+        ]);
+    });
+
+    await t.test('waits before the first attempt - it continues a fetch that just failed', async () => {
+        const started = Date.now();
+        await sso.retryDiscovery({ fetchDiscovery: async () => ({}), minDelay: 60, maxDelay: 60 });
+        assert.ok(Date.now() - started >= 50, 'expected the first probe to be delayed');
+    });
+});

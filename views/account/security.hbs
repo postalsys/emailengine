@@ -323,7 +323,8 @@ dialogClass="max-w-5xl"}}
                             <code class="inline-block overflow-hidden">{{oidc.OIDC_FORCED}}</code>
                             <br><small class="text-base-content/60">When true, the login page redirects straight to the
                                 identity provider and local password/passkey sign-in is disabled. If discovery fails at
-                                startup the local form is shown as a fallback.</small>
+                                startup the local form is shown as a fallback, and EmailEngine keeps retrying the
+                                provider in the background until it answers.</small>
                         </td>
                     </tr>
 

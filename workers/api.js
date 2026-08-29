@@ -1416,17 +1416,17 @@ const init = async () => {
     if (USE_OIDC_AUTH) {
         let redirectUrl = await getServiceRedirectUrl();
 
-        // Fetch the discovery document once at startup. bell needs static auth/token
-        // URLs at strategy-registration time, so this must precede registration. A
-        // failure here (IdP outage/misconfig) must NOT take EmailEngine down - password
-        // and passkey login plus the REST API have to keep working - so we log a
-        // prominent error, leave the strategy unregistered, and disable the SSO button.
+        // bell needs static auth/token URLs at strategy-registration time, so the
+        // discovery document has to be in hand before the strategy and the callback
+        // route that depends on it can be registered. A failure to fetch it (IdP outage
+        // or misconfig) must NOT take EmailEngine down - password and passkey login plus
+        // the REST API have to keep working - so SSO simply stays switched off until a
+        // later attempt succeeds.
+        //
+        // Assigned from enableOidc()'s return value, so it can only be set once that
+        // strategy and route exist and validateOidcConfig() can never advertise a login
+        // button - or trigger OIDC_FORCED - for a route that is not registered.
         let oidcDiscovery = null;
-        try {
-            oidcDiscovery = await sso.fetchOidcDiscovery();
-        } catch (err) {
-            logger.error({ msg: 'OIDC SSO disabled: discovery failed', issuer: sso.OIDC_ISSUER, err });
-        }
 
         // Registered unconditionally so the login/security views can call it; returns
         // false when discovery failed or the serviceUrl origin drifted from startup.
@@ -1448,9 +1448,9 @@ const init = async () => {
             });
         });
 
-        if (oidcDiscovery) {
+        const enableOidc = async discoveryDoc => {
             server.auth.strategy('oidc', 'bell', {
-                provider: sso.buildOidcBellProvider(oidcDiscovery),
+                provider: sso.buildOidcBellProvider(discoveryDoc),
                 password: await settings.get('cookiePassword'),
                 isSecure: secureCookie,
                 location: redirectUrl.origin,
@@ -1514,6 +1514,32 @@ const init = async () => {
                     }
                 }
             });
+
+            return discoveryDoc;
+        };
+
+        let startupDoc = await sso.fetchOidcDiscovery().catch(err => {
+            logger.error({ msg: 'OIDC SSO disabled for now: discovery failed, retrying in the background', issuer: sso.OIDC_ISSUER, err });
+            return null;
+        });
+
+        if (startupDoc) {
+            // A registration failure here is deliberately fatal: a misconfiguration should
+            // stop the worker at boot rather than come up quietly without SSO. The retry
+            // path below is the opposite on purpose - it must not kill a serving process.
+            oidcDiscovery = await enableOidc(startupDoc);
+        } else {
+            // Deliberately not awaited - this runs for as long as the IdP is unreachable.
+            // hapi accepts both a new auth strategy and a new route after the server has
+            // started, so a later success brings SSO up in place, with no restart.
+            sso.retryDiscovery({
+                onError: (err, attempt) => logger.debug({ msg: 'OIDC discovery retry failed', issuer: sso.OIDC_ISSUER, attempt, err })
+            })
+                .then(async retriedDoc => {
+                    oidcDiscovery = await enableOidc(retriedDoc);
+                    logger.info({ msg: 'OIDC SSO enabled after retrying discovery', issuer: sso.OIDC_ISSUER });
+                })
+                .catch(err => logger.error({ msg: 'OIDC SSO disabled: discovery retry failed', issuer: sso.OIDC_ISSUER, err }));
         }
     }
 
