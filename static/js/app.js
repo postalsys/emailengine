@@ -138,7 +138,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let updateRelativeTimes = () => {
         document.querySelectorAll('.relative-time').forEach(entry => {
             let time = new Date(entry.dataset.time);
-            if (time) {
+            // NaN, not falsy, is what an unparsable stamp yields - a Date object is always
+            // truthy. formatTimeAgo runs off the end of DIVISIONS for one and throws, which
+            // used to take out the .local-time and drop-target wiring set up below it.
+            if (!isNaN(time)) {
                 entry.textContent = formatTimeAgo(time);
             }
         });

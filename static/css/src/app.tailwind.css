@@ -79,6 +79,8 @@
    files are not scanned, so the classes are safelisted here */
 @source inline('icon-[tabler--send] icon-[tabler--arrow-right-circle] icon-[tabler--brand-google] icon-[tabler--brand-windows]');
 @source inline('icon-[tabler--lock-open] icon-[tabler--link] icon-[tabler--key] icon-[tabler--database] icon-[tabler--brand-docker]');
+/* server-driven passkey device icons (describePasskeyDevice in lib/ui-routes/auth-routes.js) */
+@source inline('icon-[tabler--fingerprint] icon-[tabler--device-mobile] icon-[tabler--usb]');
 
 @theme {
     --font-sans: 'PT Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -234,6 +236,59 @@
  * and emailengine.css; colors converted to theme tokens for light+dark)
  * ------------------------------------------------------------------------- */
 @layer components {
+    /* Settings row on the account security page: label / value / action. Three columns from
+     * the sm breakpoint up, stacked below it - the row used a bare grid-cols-3 at every
+     * width, and at 390px each column is ~110px, narrow enough that every multi-word button
+     * label wrapped out of its own fixed-height box. Stacked, the action goes full width the
+     * way a form button does on a phone.
+     *
+     * The action buttons share one width so the right-hand column reads as a column: with
+     * natural widths the labels here run 108px to 174px, and right-aligning them left a
+     * ragged staircase of left edges. A class rather than utilities because the rule is one
+     * definition for every row, and the min-width has to be lifted again for the one row
+     * that carries a pair of buttons. */
+    .ee-setting-row {
+        display: grid;
+        gap: 0.5rem;
+    }
+
+    /* Stacked: a column, so a row carrying two buttons keeps them apart instead of letting
+     * them touch */
+    .ee-setting-action {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .ee-setting-action .btn {
+        width: 100%;
+    }
+
+    @media (width >= 40rem) {
+        .ee-setting-row {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .ee-setting-action {
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .ee-setting-action .btn {
+            width: auto;
+            min-width: 12.5rem;
+        }
+
+        /* A row whose action is a pair of dialogs shares the width between them instead of
+         * claiming the single-action width twice */
+        .ee-setting-action-pair .btn {
+            min-width: 0;
+        }
+    }
+
     /* FlyonUI ships no badge-neutral variant (the base .badge already uses
      * neutral tokens); define it explicitly so the SSE badge updater's
      * class swaps (badge-${type} with type "neutral") stay meaningful */

@@ -8,6 +8,7 @@
 // fresh instance, otherwise log in; activate a trial only when the instance is not yet licensed.
 
 const { expect } = require('@playwright/test');
+const Redis = require('ioredis');
 
 // Shared admin password for the whole e2e suite - every spec authenticates against the same
 // booted instance, so there must be exactly one source for this value.
@@ -17,6 +18,11 @@ const ADMIN_PASSWORD = 'E2e-Test-Password-123!';
 // need an absolute URL (API request contexts, redirect rewrites).
 const PORT = 7099;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
+
+// The isolated database config/e2e.toml points the instance at. Restated here rather than read
+// through wild-config, which resolves the database from NODE_ENV - that is set for the webServer
+// process, not for this one, so reading the config here would target the development database.
+const REDIS_URL = 'redis://127.0.0.1:6379/14';
 
 // Per-test console error collection: browser console.error output and uncaught page errors.
 // Every spec should end with expect(errors).toHaveLength(0) so silent JS breakage (a broken
@@ -148,6 +154,67 @@ async function hostedAuthFormUrl(api, payload) {
     return `${BASE_URL}/accounts/new${new URL((await res.json()).url).search}`;
 }
 
+/**
+ * Write passkey credentials straight into the instance's Redis, and remove them again.
+ *
+ * Registering one for real is not reachable from a test: it needs an authenticator the browser
+ * does not have, and config/e2e.toml's serviceUrl names a different host than the one under test,
+ * so WebAuthn would reject the rpId regardless. The security page's passkey list is only
+ * meaningfully covered with rows in it, so the rows are seeded instead.
+ *
+ * Mirrors the hash lib/passkeys.js writes (unprefixed keys - EENGINE_REDIS_PREFIX is unset for
+ * e2e). `user` is what the security page resolves the session down to: the set-password flow
+ * stores an empty username, which both the page and the delete route fall back to "admin" for.
+ *
+ * @param {Array} credentials - {id, name, transports, createdAt?, lastUsedAt?} entries
+ * @param {String} [user] - owning username
+ */
+async function seedPasskeys(credentials, user = 'admin') {
+    const redis = new Redis(REDIS_URL);
+    try {
+        for (const credential of credentials) {
+            const fields = {
+                id: credential.id,
+                publicKey: 'e2e-seeded-public-key',
+                counter: '0',
+                transports: JSON.stringify(credential.transports || []),
+                name: credential.name,
+                user,
+                createdAt: credential.createdAt || new Date().toISOString()
+            };
+            if (credential.lastUsedAt) {
+                fields.lastUsedAt = credential.lastUsedAt;
+            }
+            await redis.hset(`webauthn:cred:${credential.id}`, fields);
+            await redis.sadd(`webauthn:creds:${user}`, credential.id);
+            await redis.sadd('webauthn:all', credential.id);
+        }
+    } finally {
+        await redis.quit();
+    }
+}
+
+/**
+ * Drop seeded credentials again. Tolerates ids the test already removed through the UI, and must
+ * run even when the test fails: a leftover credential puts a passkey button on the login page for
+ * every later spec.
+ *
+ * @param {Array} ids - credential ids
+ * @param {String} [user] - owning username
+ */
+async function removePasskeys(ids, user = 'admin') {
+    const redis = new Redis(REDIS_URL);
+    try {
+        for (const id of ids) {
+            await redis.del(`webauthn:cred:${id}`);
+            await redis.srem(`webauthn:creds:${user}`, id);
+            await redis.srem('webauthn:all', id);
+        }
+    } finally {
+        await redis.quit();
+    }
+}
+
 module.exports = {
     ADMIN_PASSWORD,
     PORT,
@@ -158,5 +225,7 @@ module.exports = {
     dismissTokenReveal,
     trackConsoleErrors,
     setPickedAccount,
-    hostedAuthFormUrl
+    hostedAuthFormUrl,
+    seedPasskeys,
+    removePasskeys
 };

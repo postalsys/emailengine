@@ -1,4 +1,4 @@
-/* global document, window, navigator, localStorage, fetch, Event, AbortController, HSStaticMethods, HSOverlay */
+/* global document, window, navigator, localStorage, fetch, Event, KeyboardEvent, AbortController, HSStaticMethods, HSOverlay */
 
 'use strict';
 
@@ -78,6 +78,29 @@ window.uiModal = {
         }
     }
 };
+
+// FlyonUI picks the component that handles a keypress from the event target, and a tab strip
+// reports itself as opened while defining no Escape handler - so it swallows the key instead of
+// letting it reach the dialog around it, and a modal containing tabs stops closing on Escape the
+// moment the reader switches tab, while every other modal in the app still closes. Re-aim the key
+// at the dialog rather than closing it here: HSOverlay defers parts of its close to timers and to
+// transitionend, and driving it from outside strands the dialog (see the note on uiConfirm below).
+// Capture phase, so this runs before the strip sees the event. The re-dispatched event targets the
+// modal, which matches no [data-tab], so it cannot come back round.
+document.addEventListener(
+    'keydown',
+    e => {
+        if (e.key !== 'Escape' || !e.target || !e.target.closest) {
+            return;
+        }
+        let tab = e.target.closest('[data-tab]');
+        let modal = tab && tab.closest('.modal.open');
+        if (modal) {
+            modal.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        }
+    },
+    true
+);
 
 // Promise-returning confirmation over a ui/modal. Resolves true only when the element matching
 // `okSelector` was clicked before the dialog closed; every other way out - Cancel, the corner

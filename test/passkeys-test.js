@@ -16,8 +16,11 @@ function createMockRedis() {
             if (!mockRedisData[key]) mockRedisData[key] = {};
             if (args.length === 1 && typeof args[0] === 'object') {
                 Object.assign(mockRedisData[key], args[0]);
-            } else if (args.length === 2) {
-                mockRedisData[key][args[0]] = args[1];
+            } else {
+                // variadic field/value pairs, the way ioredis accepts them
+                for (let i = 0; i + 1 < args.length; i += 2) {
+                    mockRedisData[key][args[i]] = args[i + 1];
+                }
             }
         },
         hgetall: async key => {
@@ -340,9 +343,9 @@ test('Passkeys module tests', async t => {
         assert.strictEqual(await passkeys.getCredential(''), null);
     });
 
-    // -- updateCounter --
+    // -- recordAuthentication --
 
-    await t.test('updateCounter() updates the counter value', async () => {
+    await t.test('recordAuthentication() updates the counter and stamps the sign-in time', async () => {
         await passkeys.saveCredential({
             id: 'cred-counter',
             publicKey: 'pk',
@@ -352,10 +355,13 @@ test('Passkeys module tests', async t => {
             user: 'admin'
         });
 
-        await passkeys.updateCounter('cred-counter', 10);
+        assert.ok(!(await passkeys.getCredential('cred-counter')).lastUsedAt);
+
+        await passkeys.recordAuthentication('cred-counter', 10);
 
         let cred = await passkeys.getCredential('cred-counter');
         assert.strictEqual(cred.counter, 10);
+        assert.ok(!isNaN(new Date(cred.lastUsedAt).getTime()));
     });
 
     // -- listCredentials --

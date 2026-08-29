@@ -19,7 +19,16 @@
 const os = require('os');
 const path = require('path');
 const { test, expect, request } = require('@playwright/test');
-const { ensureAdminSession, createApiToken, dismissTokenReveal, trackConsoleErrors, setPickedAccount, BASE_URL } = require('./helpers/bootstrap');
+const {
+    ensureAdminSession,
+    createApiToken,
+    dismissTokenReveal,
+    trackConsoleErrors,
+    setPickedAccount,
+    seedPasskeys,
+    removePasskeys,
+    BASE_URL
+} = require('./helpers/bootstrap');
 
 // One real login per run: the admin session cookie is captured in beforeAll and
 // reused by every test via storageState. Logging in per test trips the login
@@ -1423,6 +1432,15 @@ test.describe('admin shell', () => {
         // auth is enabled on the e2e instance, so all status rows render
         expect(await page.locator('.card ul > li').count()).toBeGreaterThanOrEqual(4);
 
+        // passkeys are summarized here and managed on their own page, like the password row
+        const passkeySummary = page.locator('#passkeys-summary');
+        await expect(passkeySummary.locator('.badge')).toHaveText('Not configured');
+        await expect(passkeySummary.locator('a[href="/admin/account/passkeys"]')).toBeVisible();
+        // with no passkeys registered the 2FA row makes no claim about them
+        await expect(page.locator('.card ul > li', { hasText: 'Two-Factor Authentication' })).not.toContainText('passkey');
+        // the credential list itself does not live on this page
+        await expect(page.locator('#passkeys')).toHaveCount(0);
+
         // open and close the confirmation modals without submitting
         await page.locator('#logout-all-btn').click();
         await expectModalOpen(page, 'logoutAllModal');
@@ -1435,10 +1453,124 @@ test.describe('admin shell', () => {
         await page.keyboard.press('Escape');
         await expect(page.locator('#enableTfaModal.open')).toHaveCount(0);
 
+        // SSO is documentation, not configuration: one button, one dialog, a tab per provider
+        await page.locator('#sso-instructions').click();
+        await expectModalOpen(page, 'ssoInstructionsModal');
+        await expect(page.locator('#sso-oidc')).toBeVisible();
+        await expect(page.locator('#sso-okta')).toBeHidden();
+        await page.locator('#sso-okta-tab').click();
+        await expect(page.locator('#sso-okta')).toBeVisible();
+        await expect(page.locator('#sso-oidc')).toBeHidden();
+        await expect(page.locator('#sso-okta')).toContainText('OKTA_OAUTH2_ISSUER');
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#ssoInstructionsModal.open')).toHaveCount(0);
+
         // password page renders its form
         await page.goto('/admin/account/password');
         await expect(page.locator('#password')).toBeVisible();
         await expect(page.locator('#password2')).toBeVisible();
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('passkeys page: empty state and the register dialog', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        // reached the way a reader reaches it, through the security page's summary row
+        await page.goto('/admin/account/security');
+        await page.locator('#passkeys-summary a').click();
+        await page.waitForURL(/\/admin\/account\/passkeys$/);
+
+        await expect(page.locator('.breadcrumbs')).toContainText('Account Security');
+        await expect(page.locator('.card-title')).toHaveText('Passkeys');
+        await expect(page.getByText('No passkeys registered')).toBeVisible();
+
+        // registering needs an authenticator the browser does not have, so this only covers the
+        // dialog opening; the button is live because config/e2e.toml sets a serviceUrl
+        const addPasskey = page.locator('#register-passkey-btn');
+        await expect(addPasskey).toBeEnabled();
+        await addPasskey.click();
+        await expectModalOpen(page, 'registerPasskeyModal');
+        // the name field opens pre-filled, so a passkey is identifiable in the list by default
+        await expect(page.locator('#passkey-name')).not.toHaveValue('');
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#registerPasskeyModal.open')).toHaveCount(0);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('passkeys page: the list describes each credential and removes one', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        const DAY = 24 * 3600 * 1000;
+        const SEEDED = [
+            {
+                id: 'e2e-passkey-laptop',
+                name: 'E2E Laptop',
+                transports: ['internal'],
+                createdAt: new Date(Date.now() - 10 * DAY).toISOString(),
+                lastUsedAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString()
+            },
+            {
+                // no lastUsedAt: a credential from before sign-ins were stamped looks the same as
+                // one that has never been used, so the column says neither
+                id: 'e2e-passkey-key',
+                name: 'E2E Security Key',
+                transports: ['usb', 'nfc'],
+                createdAt: new Date(Date.now() - DAY).toISOString()
+            }
+        ];
+        await seedPasskeys(SEEDED);
+
+        try {
+            // the security page counts them, and the 2FA row says what they do to the guarantee
+            // its badge implies - a passkey skips the code whether or not TOTP is on
+            await page.goto('/admin/account/security');
+            await expect(page.locator('#passkeys-summary .badge')).toHaveText('2 registered');
+            await expect(page.locator('.card ul > li', { hasText: 'Two-Factor Authentication' })).toContainText(
+                '2 passkeys sign in without a password or a code'
+            );
+
+            await page.goto('/admin/account/passkeys');
+            const rows = page.locator('tbody tr');
+            await expect(rows).toHaveCount(2);
+
+            const laptop = rows.filter({ hasText: 'E2E Laptop' });
+            await expect(laptop).toContainText('Built-in authenticator');
+            // the client-side .relative-time formatter fills the cell in
+            await expect(laptop.locator('.relative-time').last()).toContainText('hours ago');
+
+            const securityKey = rows.filter({ hasText: 'E2E Security Key' });
+            await expect(securityKey).toContainText('Security key');
+
+            // the actions live in the row's trailing cell, not floating mid-page
+            const actions = laptop.locator('td:last-child .dropdown-toggle');
+            await expect(actions).toBeVisible();
+            await actions.click();
+            await laptop.locator('.list-delete-btn').click();
+
+            // the shared confirm modal names the passkey the kebab belongs to
+            await expectModalOpen(page, 'deletePasskey');
+            await expect(page.locator('#deletePasskey .delete-target-name')).toHaveText('E2E Laptop');
+            await page.locator('#deletePasskey button[type="submit"]').click();
+
+            // removing returns to this page, not to the security page the flow started on
+            await page.waitForURL(/\/admin\/account\/passkeys$/);
+            await expect(page.locator('.flash-alert', { hasText: 'Passkey removed' })).toBeVisible();
+            await expect(page.locator('tbody tr')).toHaveCount(1);
+            await expect(page.locator('tbody tr')).toContainText('E2E Security Key');
+
+            // the summary and the 2FA note count the same list, so they follow the removal
+            await page.goto('/admin/account/security');
+            await expect(page.locator('#passkeys-summary .badge')).toHaveText('1 registered');
+            await expect(page.locator('.card ul > li', { hasText: 'Two-Factor Authentication' })).toContainText(
+                'A passkey signs in without a password or a code'
+            );
+        } finally {
+            await removePasskeys(SEEDED.map(credential => credential.id));
+        }
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });

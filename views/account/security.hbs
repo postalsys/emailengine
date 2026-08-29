@@ -1,44 +1,61 @@
 {{> security_header}}
 
+{{!-- This page is a status board, not a task list: the question it answers is "how is this
+      account protected right now", and the answer is the badge column. So the badges carry the
+      color and the actions stay neutral - a settings row's action is a control, not a call to
+      action, and six primary-colored buttons in a column drew the eye away from the answer.
+      Color is left to mean consequence: error for the one action that weakens the account
+      (disabling 2FA), primary only for creating the first password, which is the single thing
+      the page is telling an unprotected instance to do. With the color gone the leading icon is
+      what tells the buttons apart at a glance. One action per row; anything with entries of its
+      own (the password, the passkeys) is summarized here and managed on its own page. --}}
 <div class="card bg-base-100 shadow-md mb-6">
-
-
+    <div class="card-header">
+        <h6 class="card-title text-primary">Sign-in methods</h6>
+    </div>
 
     <div class="card-body">
 
         <ul class="divide-base-content/10 divide-y">
 
             <li class="py-4">
-                <div class="grid grid-cols-3 items-center gap-4">
+                <div class="ee-setting-row">
                     <div>Username</div>
                     <div>
                         {{username}}
                     </div>
-                    <div class="text-end">
+                    <div class="ee-setting-action">
                         {{#if authData.enabled}}
-                        {{> ui/btn label="Sign out everywhere" variant="primary" style="outline"
-                        id="logout-all-btn" overlay="#logoutAllModal"}}
+                        {{> ui/btn label="Sign out everywhere" variant="neutral" style="soft"
+                        icon="icon-[tabler--logout]" id="logout-all-btn" overlay="#logoutAllModal"}}
                         {{/if}}
                     </div>
                 </div>
             </li>
 
             <li class="py-4">
-                <div class="grid grid-cols-3 items-center gap-4">
+                <div class="ee-setting-row">
                     <div>Password</div>
                     <div>
-                        {{#if authData.enabled}} ******** {{else}}Not configured{{/if}}
+                        {{!-- A badge, not "********": the column is read as status, and a row of
+                              asterisks says the same thing in a different vocabulary --}}
+                        {{#if authData.enabled}}
+                        {{> ui/badge label="Configured" variant="success"}}
+                        {{else}}
+                        {{> ui/badge label="Not configured" variant="neutral" soft=true}}
+                        {{/if}}
                     </div>
-                    <div class="text-end">
-                        {{> ui/btn label=(when authData.enabled "Change password" "Create password") variant="primary"
-                        style="outline" size="sm" href="/admin/account/password"}}
+                    <div class="ee-setting-action">
+                        {{> ui/btn label=(when authData.enabled "Change password" "Create password")
+                        variant=(when authData.enabled "neutral" "primary") style="soft" icon="icon-[tabler--lock]"
+                        href="/admin/account/password"}}
                     </div>
                 </div>
             </li>
 
             {{#if authData.enabled}}
             <li class="py-4">
-                <div class="grid grid-cols-3 items-center gap-4">
+                <div class="ee-setting-row">
                     <div>Two-Factor Authentication (2FA)</div>
                     <div>
                         {{#if totp.enabled}}
@@ -46,62 +63,55 @@
                         {{else}}
                         {{> ui/badge label="Not configured" variant="neutral" soft=true}}
                         {{/if}}
+                        {{!-- Passkey sign-in sets requireTotp false, so this row's badge is only
+                              half the answer while passkeys exist: "Authenticator app" would
+                              promise a code on every sign-in, and "Not configured" would suggest
+                              the password is the only way in. --}}
+                        {{#if passkeyCount}}
+                        <div class="text-base-content/60 mt-1 text-xs">
+                            {{~#equals passkeyCount 1}}A passkey signs in{{else}}{{passkeyCount}} passkeys sign
+                            in{{/equals}} without a password or a code
+                        </div>
+                        {{/if}}
                     </div>
-                    <div class="text-end">
+                    <div class="ee-setting-action">
                         {{#if totp.enabled}}
-                        {{> ui/btn label="Disable 2FA" variant="error" style="outline" id="disable-tfa-btn"
-                        overlay="#disableTfaModal"}}
+                        {{> ui/btn label="Disable 2FA" variant="error" style="soft" icon="icon-[tabler--shield-off]"
+                        id="disable-tfa-btn" overlay="#disableTfaModal"}}
                         {{else}}
-                        {{> ui/btn label="Enable 2FA" variant="primary" style="outline" id="enable-tfa-btn"
-                        overlay="#enableTfaModal"}}
+                        {{!-- qrcode, not a shield: enabling is the QR-scanning ceremony the button
+                              opens, and the shield is the page's own icon --}}
+                        {{> ui/btn label="Enable 2FA" variant="neutral" style="soft" icon="icon-[tabler--qrcode]"
+                        id="enable-tfa-btn" overlay="#enableTfaModal"}}
                         {{/if}}
                     </div>
                 </div>
             </li>
 
-            <li class="py-4">
-                <div class="grid grid-cols-3 items-start gap-4">
-                    <div class="pt-1">Passkeys
-                        <br><small class="text-base-content/60">Sign in with just a passkey - no password or additional
-                            verification needed.</small>
-                    </div>
+            {{!-- A summary, not a control: passkeys are a way into the account, so leaving them
+                  out of this list would answer "what can sign in as me" wrongly. Everything that
+                  acts on an individual passkey lives on /admin/account/passkeys, the same split
+                  the password row above uses. --}}
+            <li class="py-4" id="passkeys-summary">
+                <div class="ee-setting-row">
+                    <div>Passkeys</div>
                     <div>
-                        {{#if passkeys.length}}
-                        <ul class="mb-0 space-y-2">
-                            {{#each passkeys}}
-                            <li class="flex items-start justify-between gap-2">
-                                <div>
-                                    <strong>{{this.name}}</strong><br>
-                                    <small class="text-base-content/60">Added {{this.createdAtFormatted}}</small>
-                                </div>
-                                {{> ui/row-actions label="Passkey actions" deleteModal="#deletePasskey" deleteId=this.id deleteName=this.name}}
-                            </li>
-                            {{/each}}
-                        </ul>
+                        {{#if passkeyCount}}
+                        {{> ui/badge label=(concat passkeyCount " registered") variant="success"}}
                         {{else}}
-                        {{> ui/badge label="None registered" variant="neutral" soft=true}}
+                        {{> ui/badge label="Not configured" variant="neutral" soft=true}}
                         {{/if}}
                     </div>
-                    <div class="text-end">
-                        {{#if serviceUrl}}
-                        {{> ui/btn label="Add passkey" variant="primary" style="outline" id="register-passkey-btn"
-                        icon="icon-[tabler--fingerprint]"}}
-                        {{else}}
-                        {{#> ui/tooltip text="Set a Service URL in configuration before registering passkeys"}}
-                        {{!-- pointer-events-none: disabled buttons swallow hover, which would keep
-                              the wrapping tooltip from ever showing --}}
-                        <button type="button" class="btn btn-outline btn-neutral pointer-events-none" disabled>
-                            Add passkey
-                        </button>
-                        {{/ui/tooltip}}
-                        <br><small class="text-base-content/60">Requires Service URL</small>
-                        {{/if}}
+                    <div class="ee-setting-action">
+                        {{> ui/btn label=(when passkeyCount "Manage passkeys" "Add a passkey") variant="neutral"
+                        style="soft" icon=(when passkeyCount "icon-[tabler--fingerprint]" "icon-[tabler--plus]")
+                        href="/admin/account/passkeys"}}
                     </div>
                 </div>
             </li>
 
             <li class="py-4">
-                <div class="grid grid-cols-3 items-center gap-4">
+                <div class="ee-setting-row">
                     <div>Single Sign-On (SSO)</div>
                     <div>
                         {{#if providers.okta}}
@@ -114,14 +124,13 @@
                         {{> ui/badge label="Not configured" variant="neutral" soft=true}}
                         {{/unless}}
                     </div>
-                    {{!-- flex row, not text-end space-y: with two inline buttons on one
-                          line the space-y margin lands on the second button only and
-                          knocks the pair out of vertical alignment --}}
-                    <div class="flex flex-wrap items-center justify-end gap-2">
-                        {{> ui/btn label="Okta setup" variant="primary" style="outline" id="sso-instructions"
-                        overlay="#ssoInstructionsModal"}}
-                        {{> ui/btn label="OIDC setup" variant="primary" style="outline" id="oidc-instructions"
-                        overlay="#oidcInstructionsModal"}}
+                    {{!-- One button, because neither of these configures anything: SSO is wired
+                          through environment variables and a restart, so what the row can offer
+                          is the instructions. Which provider you use is a choice inside them,
+                          not two peer actions competing with "Enable 2FA" next door. --}}
+                    <div class="ee-setting-action">
+                        {{> ui/btn label="Setup instructions" variant="neutral" style="soft"
+                        icon="icon-[tabler--book]" id="sso-instructions" overlay="#ssoInstructionsModal"}}
                     </div>
                 </div>
             </li>
@@ -129,10 +138,6 @@
         </ul>
     </div>
 </div>
-
-{{#> ui/confirm-modal id="deletePasskey" title="Remove passkey" action="/admin/account/passkeys/delete" fieldName="credentialId" fieldClass="delete-target-id" submitLabel="Remove passkey"}}
-Are you sure you want to remove <strong class="delete-target-name"></strong>? You will no longer be able to sign in with this passkey.
-{{/ui/confirm-modal}}
 
 {{#> ui/modal id="disableTfaModal" title="Disable two-factor authentication" titleId="disableTfaModalLabel"}}
 <div class="modal-body">
@@ -193,67 +198,244 @@ Are you sure you want to remove <strong class="delete-target-name"></strong>? Yo
 </form>
 {{/ui/modal}}
 
-{{#> ui/modal id="ssoInstructionsModal" title="Configure Single Sign-On with Okta" titleId="ssoInstructionsModalLabel"
+{{!-- One dialog with a tab per provider, replacing a pair of modals opened by a pair of
+      buttons. OpenID Connect leads because it covers every standards-compliant provider,
+      Okta included as a special case of it; Okta keeps its own tab because its variables
+      and redirect URI differ. --}}
+{{#> ui/modal id="ssoInstructionsModal" title="Configure Single Sign-On" titleId="ssoInstructionsModalLabel"
 dialogClass="max-w-5xl"}}
 <div class="modal-body">
 
-    <p class="mb-2">Follow these steps to configure Single Sign-On with Okta:</p>
-    <ol class="list-decimal ps-6 mb-4 space-y-1">
-        <li>Create a new web application in your Okta dashboard using the Redirect URI below</li>
-        <li>Configure the required environment variables for EmailEngine</li>
-        <li>Restart EmailEngine to apply the changes</li>
-    </ol>
+    {{#> ui/tabs label="Single Sign-On providers" class="mb-4"}}
+    {{> ui/tab target="sso-oidc" label="OpenID Connect" active=true}}
+    {{> ui/tab target="sso-okta" label="Okta"}}
+    {{/ui/tabs}}
 
-    <p class="mb-4"><strong>Redirect URI for your Okta application:</strong><br>
-        <code>{{serviceUrl}}/admin/login/okta</code>
-    </p>
+    <div id="sso-oidc" role="tabpanel" aria-labelledby="sso-oidc-tab">
 
-    <div class="overflow-x-auto">
-        <table class="table table-sm">
-            <thead>
-                <tr>
-                    <th>Environment variable</th>
-                    <th>Current value</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <th>
-                        <code>OKTA_OAUTH2_ISSUER</code>
-                    </th>
-                    <td>
-                        {{#if okta.OKTA_OAUTH2_ISSUER}}
-                        <code class="inline-block overflow-hidden">{{okta.OKTA_OAUTH2_ISSUER}}</code>
-                        {{else}}
-                        Not configured (enter your Okta issuer URL)
-                        {{/if}}
-                    </td>
-                </tr>
+        <p class="mb-4">EmailEngine works with any standards-compliant OpenID Connect provider - Keycloak, Authentik,
+            Azure AD/Entra, Google Workspace, and others. The provider's endpoints are read automatically from
+            its discovery document (<code>{{oidc.OIDC_ISSUER}}/.well-known/openid-configuration</code>)
+            when EmailEngine starts.</p>
 
-                <tr>
-                    <th><code>OKTA_OAUTH2_CLIENT_ID</code></th>
-                    <td>
-                        {{#if okta.OKTA_OAUTH2_CLIENT_ID}}
-                        <code class="inline-block overflow-hidden">{{okta.OKTA_OAUTH2_CLIENT_ID}}</code>
-                        {{else}}
-                        Not configured
-                        {{/if}}
-                    </td>
-                </tr>
+        <ol class="list-decimal ps-6 mb-4 space-y-1">
+            <li>Register a confidential OIDC client (authorization code flow) in your identity provider using the
+                Redirect URI below</li>
+            <li>Configure the required environment variables for EmailEngine</li>
+            <li>Restart EmailEngine to apply the changes</li>
+        </ol>
 
-                <tr>
-                    <th><code>OKTA_OAUTH2_CLIENT_SECRET</code></th>
-                    <td>
-                        {{#if okta.OKTA_OAUTH2_CLIENT_SECRET}}
-                        <code class="inline-block overflow-hidden">{{okta.OKTA_OAUTH2_CLIENT_SECRET}}</code>
-                        {{else}}
-                        Not configured
-                        {{/if}}
+        <p class="mb-4"><strong>Redirect URI for your OIDC client:</strong><br>
+            <code>{{serviceUrl}}/admin/login/oidc</code>
+        </p>
 
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="overflow-x-auto">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Environment variable</th>
+                        <th>Current value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th><code>OIDC_ISSUER</code></th>
+                        <td>
+                            {{#if oidc.OIDC_ISSUER}}
+                            <code class="inline-block overflow-hidden">{{oidc.OIDC_ISSUER}}</code>
+                            {{else}}
+                            Not configured (enter your OIDC issuer URL)
+                            {{/if}}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th><code>OIDC_CLIENT_ID</code></th>
+                        <td>
+                            {{#if oidc.OIDC_CLIENT_ID}}
+                            <code class="inline-block overflow-hidden">{{oidc.OIDC_CLIENT_ID}}</code>
+                            {{else}}
+                            Not configured
+                            {{/if}}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th><code>OIDC_CLIENT_SECRET</code></th>
+                        <td>
+                            {{#if oidc.OIDC_CLIENT_SECRET}}
+                            <code class="inline-block overflow-hidden">{{oidc.OIDC_CLIENT_SECRET}}</code>
+                            {{else}}
+                            Not configured
+                            {{/if}}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th><code>OIDC_PROVIDER_NAME</code><br><small class="text-base-content/60">optional</small></th>
+                        <td>
+                            <code class="inline-block overflow-hidden">{{oidc.OIDC_PROVIDER_NAME}}</code>
+                            <br><small class="text-base-content/60">Label shown on the sign-in button</small>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th><code>OIDC_ALLOWED_USERS</code><br><small class="text-base-content/60">optional</small></th>
+                        <td>
+                            {{#if oidc.OIDC_ALLOWED_USERS}}
+                            <code class="inline-block overflow-hidden">{{oidc.OIDC_ALLOWED_USERS}}</code>
+                            {{else}}
+                            Not set
+                            {{/if}}
+                            <br><small class="text-base-content/60">Comma-separated allow-list of emails and/or
+                                <code>@domain</code> entries</small>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th><code>OIDC_ALLOWED_GROUPS</code><br><small class="text-base-content/60">optional</small></th>
+                        <td>
+                            {{#if oidc.OIDC_ALLOWED_GROUPS}}
+                            <code class="inline-block overflow-hidden">{{oidc.OIDC_ALLOWED_GROUPS}}</code>
+                            {{else}}
+                            Not set
+                            {{/if}}
+                            <br><small class="text-base-content/60">Comma-separated group names. A user is allowed if their
+                                email matches <code>OIDC_ALLOWED_USERS</code> OR they belong to
+                                one of these groups. When both are empty, anyone the identity provider authenticates
+                                can sign in.</small>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th><code>OIDC_GROUPS_CLAIM</code><br><small class="text-base-content/60">optional</small></th>
+                        <td>
+                            <code class="inline-block overflow-hidden">{{oidc.OIDC_GROUPS_CLAIM}}</code>
+                            <br><small class="text-base-content/60">userinfo claim that carries group membership (default
+                                <code>groups</code>); may be a dotted path such as
+                                <code>realm_access.roles</code></small>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th><code>OIDC_FORCED</code><br><small class="text-base-content/60">optional</small></th>
+                        <td>
+                            <code class="inline-block overflow-hidden">{{oidc.OIDC_FORCED}}</code>
+                            <br><small class="text-base-content/60">When true, the login page redirects straight to the
+                                identity provider and local password/passkey sign-in is disabled. If discovery fails at
+                                startup the local form is shown as a fallback.</small>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th><code>OIDC_LOGOUT</code><br><small class="text-base-content/60">optional</small></th>
+                        <td>
+                            <code class="inline-block overflow-hidden">{{oidc.OIDC_LOGOUT}}</code>
+                            <br><small class="text-base-content/60">When true, signing out also ends the identity-provider
+                                session (RP-initiated logout via the end_session endpoint).</small>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th><code>OIDC_POST_LOGOUT_REDIRECT_URI</code><br><small
+                                class="text-base-content/60">optional</small></th>
+                        <td>
+                            {{#if oidc.OIDC_POST_LOGOUT_REDIRECT_URI}}
+                            <code class="inline-block overflow-hidden">{{oidc.OIDC_POST_LOGOUT_REDIRECT_URI}}</code>
+                            {{else}}
+                            Not set - the identity provider shows its own logged-out page
+                            {{/if}}
+                            <br><small class="text-base-content/60">Where the IdP returns after logout (must be a registered
+                                post logout redirect URI). Point it at
+                                <code>{{serviceUrl}}/admin/login?loggedout=1</code> for an in-app
+                                signed-out screen.</small>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p class="mb-1"><strong>Keycloak example</strong></p>
+        <ul class="list-disc ps-6 mb-4 space-y-1">
+            <li>Issuer: <code>https://&lt;keycloak-host&gt;/realms/&lt;realm&gt;</code></li>
+            <li>Client type: OpenID Connect, confidential (Client authentication on), Standard Flow enabled</li>
+            <li>Valid redirect URI: <code>{{serviceUrl}}/admin/login/oidc</code></li>
+            <li>For group-based access: add a <em>Group Membership</em> mapper to the client (Token Claim Name
+                <code>groups</code>, "Add to userinfo" enabled), then set
+                <code>OIDC_ALLOWED_GROUPS</code></li>
+            <li>For return-to-app after logout (optional): set
+                <code>OIDC_POST_LOGOUT_REDIRECT_URI</code> and add that URL to the client's
+                Valid post logout redirect URIs</li>
+        </ul>
+
+        <p class="text-base-content/60 text-sm mb-0">Note: signing in via SSO is a standalone factor - TOTP is not
+            prompted, and local password/passkey management is disabled for SSO sessions. With
+            <code>OIDC_LOGOUT</code> off, signing out clears only the local EmailEngine
+            session, not the identity-provider session.</p>
+
+    </div>
+
+    <div id="sso-okta" class="hidden" role="tabpanel" aria-labelledby="sso-okta-tab">
+
+        <p class="mb-2">Follow these steps to configure Single Sign-On with Okta:</p>
+        <ol class="list-decimal ps-6 mb-4 space-y-1">
+            <li>Create a new web application in your Okta dashboard using the Redirect URI below</li>
+            <li>Configure the required environment variables for EmailEngine</li>
+            <li>Restart EmailEngine to apply the changes</li>
+        </ol>
+
+        <p class="mb-4"><strong>Redirect URI for your Okta application:</strong><br>
+            <code>{{serviceUrl}}/admin/login/okta</code>
+        </p>
+
+        <div class="overflow-x-auto">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Environment variable</th>
+                        <th>Current value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th>
+                            <code>OKTA_OAUTH2_ISSUER</code>
+                        </th>
+                        <td>
+                            {{#if okta.OKTA_OAUTH2_ISSUER}}
+                            <code class="inline-block overflow-hidden">{{okta.OKTA_OAUTH2_ISSUER}}</code>
+                            {{else}}
+                            Not configured (enter your Okta issuer URL)
+                            {{/if}}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th><code>OKTA_OAUTH2_CLIENT_ID</code></th>
+                        <td>
+                            {{#if okta.OKTA_OAUTH2_CLIENT_ID}}
+                            <code class="inline-block overflow-hidden">{{okta.OKTA_OAUTH2_CLIENT_ID}}</code>
+                            {{else}}
+                            Not configured
+                            {{/if}}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th><code>OKTA_OAUTH2_CLIENT_SECRET</code></th>
+                        <td>
+                            {{#if okta.OKTA_OAUTH2_CLIENT_SECRET}}
+                            <code class="inline-block overflow-hidden">{{okta.OKTA_OAUTH2_CLIENT_SECRET}}</code>
+                            {{else}}
+                            Not configured
+                            {{/if}}
+
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
     </div>
 
 </div>
@@ -261,205 +443,3 @@ dialogClass="max-w-5xl"}}
     {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#ssoInstructionsModal"}}
 </div>
 {{/ui/modal}}
-
-{{#> ui/modal id="oidcInstructionsModal" title="Configure Single Sign-On with OIDC" titleId="oidcInstructionsModalLabel"
-dialogClass="max-w-5xl"}}
-<div class="modal-body">
-
-    <p class="mb-4">EmailEngine works with any standards-compliant OpenID Connect provider - Keycloak, Authentik,
-        Azure AD/Entra, Google Workspace, and others. The provider's endpoints are read automatically from
-        its discovery document (<code>{{oidc.OIDC_ISSUER}}/.well-known/openid-configuration</code>)
-        when EmailEngine starts.</p>
-
-    <ol class="list-decimal ps-6 mb-4 space-y-1">
-        <li>Register a confidential OIDC client (authorization code flow) in your identity provider using the
-            Redirect URI below</li>
-        <li>Configure the required environment variables for EmailEngine</li>
-        <li>Restart EmailEngine to apply the changes</li>
-    </ol>
-
-    <p class="mb-4"><strong>Redirect URI for your OIDC client:</strong><br>
-        <code>{{serviceUrl}}/admin/login/oidc</code>
-    </p>
-
-    <div class="overflow-x-auto">
-        <table class="table table-sm">
-            <thead>
-                <tr>
-                    <th>Environment variable</th>
-                    <th>Current value</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <th><code>OIDC_ISSUER</code></th>
-                    <td>
-                        {{#if oidc.OIDC_ISSUER}}
-                        <code class="inline-block overflow-hidden">{{oidc.OIDC_ISSUER}}</code>
-                        {{else}}
-                        Not configured (enter your OIDC issuer URL)
-                        {{/if}}
-                    </td>
-                </tr>
-
-                <tr>
-                    <th><code>OIDC_CLIENT_ID</code></th>
-                    <td>
-                        {{#if oidc.OIDC_CLIENT_ID}}
-                        <code class="inline-block overflow-hidden">{{oidc.OIDC_CLIENT_ID}}</code>
-                        {{else}}
-                        Not configured
-                        {{/if}}
-                    </td>
-                </tr>
-
-                <tr>
-                    <th><code>OIDC_CLIENT_SECRET</code></th>
-                    <td>
-                        {{#if oidc.OIDC_CLIENT_SECRET}}
-                        <code class="inline-block overflow-hidden">{{oidc.OIDC_CLIENT_SECRET}}</code>
-                        {{else}}
-                        Not configured
-                        {{/if}}
-                    </td>
-                </tr>
-
-                <tr>
-                    <th><code>OIDC_PROVIDER_NAME</code><br><small class="text-base-content/60">optional</small></th>
-                    <td>
-                        <code class="inline-block overflow-hidden">{{oidc.OIDC_PROVIDER_NAME}}</code>
-                        <br><small class="text-base-content/60">Label shown on the sign-in button</small>
-                    </td>
-                </tr>
-
-                <tr>
-                    <th><code>OIDC_ALLOWED_USERS</code><br><small class="text-base-content/60">optional</small></th>
-                    <td>
-                        {{#if oidc.OIDC_ALLOWED_USERS}}
-                        <code class="inline-block overflow-hidden">{{oidc.OIDC_ALLOWED_USERS}}</code>
-                        {{else}}
-                        Not set
-                        {{/if}}
-                        <br><small class="text-base-content/60">Comma-separated allow-list of emails and/or
-                            <code>@domain</code> entries</small>
-                    </td>
-                </tr>
-
-                <tr>
-                    <th><code>OIDC_ALLOWED_GROUPS</code><br><small class="text-base-content/60">optional</small></th>
-                    <td>
-                        {{#if oidc.OIDC_ALLOWED_GROUPS}}
-                        <code class="inline-block overflow-hidden">{{oidc.OIDC_ALLOWED_GROUPS}}</code>
-                        {{else}}
-                        Not set
-                        {{/if}}
-                        <br><small class="text-base-content/60">Comma-separated group names. A user is allowed if their
-                            email matches <code>OIDC_ALLOWED_USERS</code> OR they belong to
-                            one of these groups. When both are empty, anyone the identity provider authenticates
-                            can sign in.</small>
-                    </td>
-                </tr>
-
-                <tr>
-                    <th><code>OIDC_GROUPS_CLAIM</code><br><small class="text-base-content/60">optional</small></th>
-                    <td>
-                        <code class="inline-block overflow-hidden">{{oidc.OIDC_GROUPS_CLAIM}}</code>
-                        <br><small class="text-base-content/60">userinfo claim that carries group membership (default
-                            <code>groups</code>); may be a dotted path such as
-                            <code>realm_access.roles</code></small>
-                    </td>
-                </tr>
-
-                <tr>
-                    <th><code>OIDC_FORCED</code><br><small class="text-base-content/60">optional</small></th>
-                    <td>
-                        <code class="inline-block overflow-hidden">{{oidc.OIDC_FORCED}}</code>
-                        <br><small class="text-base-content/60">When true, the login page redirects straight to the
-                            identity provider and local password/passkey sign-in is disabled. If discovery fails at
-                            startup the local form is shown as a fallback.</small>
-                    </td>
-                </tr>
-
-                <tr>
-                    <th><code>OIDC_LOGOUT</code><br><small class="text-base-content/60">optional</small></th>
-                    <td>
-                        <code class="inline-block overflow-hidden">{{oidc.OIDC_LOGOUT}}</code>
-                        <br><small class="text-base-content/60">When true, signing out also ends the identity-provider
-                            session (RP-initiated logout via the end_session endpoint).</small>
-                    </td>
-                </tr>
-
-                <tr>
-                    <th><code>OIDC_POST_LOGOUT_REDIRECT_URI</code><br><small
-                            class="text-base-content/60">optional</small></th>
-                    <td>
-                        {{#if oidc.OIDC_POST_LOGOUT_REDIRECT_URI}}
-                        <code class="inline-block overflow-hidden">{{oidc.OIDC_POST_LOGOUT_REDIRECT_URI}}</code>
-                        {{else}}
-                        Not set - the identity provider shows its own logged-out page
-                        {{/if}}
-                        <br><small class="text-base-content/60">Where the IdP returns after logout (must be a registered
-                            post logout redirect URI). Point it at
-                            <code>{{serviceUrl}}/admin/login?loggedout=1</code> for an in-app
-                            signed-out screen.</small>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <p class="mb-1"><strong>Keycloak example</strong></p>
-    <ul class="list-disc ps-6 mb-4 space-y-1">
-        <li>Issuer: <code>https://&lt;keycloak-host&gt;/realms/&lt;realm&gt;</code></li>
-        <li>Client type: OpenID Connect, confidential (Client authentication on), Standard Flow enabled</li>
-        <li>Valid redirect URI: <code>{{serviceUrl}}/admin/login/oidc</code></li>
-        <li>For group-based access: add a <em>Group Membership</em> mapper to the client (Token Claim Name
-            <code>groups</code>, "Add to userinfo" enabled), then set
-            <code>OIDC_ALLOWED_GROUPS</code></li>
-        <li>For return-to-app after logout (optional): set
-            <code>OIDC_POST_LOGOUT_REDIRECT_URI</code> and add that URL to the client's
-            Valid post logout redirect URIs</li>
-    </ul>
-
-    <p class="text-base-content/60 text-sm mb-0">Note: signing in via SSO is a standalone factor - TOTP is not
-        prompted, and local password/passkey management is disabled for SSO sessions. With
-        <code>OIDC_LOGOUT</code> off, signing out clears only the local EmailEngine
-        session, not the identity-provider session.</p>
-
-</div>
-<div class="modal-footer">
-    {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#oidcInstructionsModal"}}
-</div>
-{{/ui/modal}}
-
-{{#> ui/modal id="registerPasskeyModal" title="Register a new passkey" titleId="registerPasskeyModalLabel"}}
-<div class="modal-body space-y-4">
-    {{#if authData.enabled}}
-    <div>
-        {{#> ui/form-field id="passkey-current-password" label="Current password"}}
-        <input type="password" class="input" id="passkey-current-password" placeholder="Enter your current password"
-            maxlength="256" autocomplete="current-password" />
-        <span class="helper-text">Confirm your identity before registering a new passkey.</span>
-        {{/ui/form-field}}
-    </div>
-    {{/if}}
-    <div>
-        {{#> ui/form-field id="passkey-name" label="Passkey name"}}
-        <input type="text" class="input" id="passkey-name" placeholder="e.g., MacBook Touch ID" maxlength="100" />
-        <span class="helper-text">A friendly name to help you identify this passkey.</span>
-        {{/ui/form-field}}
-    </div>
-    <div id="passkey-register-error" class="text-error text-sm hidden"></div>
-    <div id="passkey-register-success" class="text-success text-sm hidden">
-        Passkey registered successfully.
-    </div>
-</div>
-<div class="modal-footer">
-    <input type="hidden" id="security-crumb" value="{{crumb}}" />
-    {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#registerPasskeyModal"}}
-    {{> ui/btn label="Register passkey" id="passkey-register-confirm-btn"}}
-</div>
-{{/ui/modal}}
-
-<script src="/static/vendor/simplewebauthn/browser.min.js"></script>
-<script src="/static/js/passkey-register.js"></script>
