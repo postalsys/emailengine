@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.79.7](https://github.com/postalsys/emailengine/compare/v2.79.6...v2.79.7) (2026-08-31)
+
+
+### Bug Fixes
+
+* bind WebAuthn challenges to the ceremony that minted them ([6b2073b](https://github.com/postalsys/emailengine/commit/6b2073b5c8e50ab75a02d2c6a0f54a43d2c295e6))
+* **deps:** collapse encoding-japanese to a single copy for the CP932 areas ([8ae2109](https://github.com/postalsys/emailengine/commit/8ae21099dd86a3dd9467dc0ca4ead9880e147e27))
+* **deps:** update dependencies and collapse nodemailer to a single copy ([cf814e9](https://github.com/postalsys/emailengine/commit/cf814e9e4c91c4430fce01687ead6bdb38bc3879))
+* retry OIDC discovery instead of disabling SSO for the process lifetime ([dbbbf43](https://github.com/postalsys/emailengine/commit/dbbbf432ed6593b7fd5457e8fc6d2f8d03316ea6))
+* **tls:** renew certificates before they expire, not a month after ([fa150e8](https://github.com/postalsys/emailengine/commit/fa150e87bbe7aa317847f3d676053ecc99dc69f1))
+* **ui:** disable the stored-log download when an account has no logs ([5137b71](https://github.com/postalsys/emailengine/commit/5137b71bbaf9a935b91437a53b7b369237a445a2))
+* **ui:** move the passkey list onto a page of its own ([7cb42c4](https://github.com/postalsys/emailengine/commit/7cb42c4dc1a8ece1468f8754f37cd9f763c97130))
+* **ui:** show a busy state on the buttons that start slow work ([6c63479](https://github.com/postalsys/emailengine/commit/6c6347946bed0c06f836826de0425b328740bf81))
+* **ui:** stop offering to clear stored logs an account does not have ([e02f09a](https://github.com/postalsys/emailengine/commit/e02f09a596b5d0a1f40e37297d86aea7a046b813))
+
 ## [2.79.6](https://github.com/postalsys/emailengine/compare/v2.79.5...v2.79.6) (2026-08-27)
 
 
