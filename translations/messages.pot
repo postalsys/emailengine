@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-08-31 13:35+0000\n"
+"POT-Creation-Date: 2026-08-31 16:45+0000\n"
 
 #: views/error.hbs:6
-#: workers/api.js:3159
+#: workers/api.js:3160
 msgid "Something went wrong"
 msgstr ""
 
@@ -26,6 +26,10 @@ msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
 
 #: views/oauth-scope-error.hbs:5
 msgid "Insufficient Permissions"
@@ -94,10 +98,6 @@ msgstr ""
 #: views/unsubscribe.hbs:70
 #: views/accounts/register/imap.hbs:25
 msgid "Email address"
-msgstr ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:13
@@ -283,19 +283,19 @@ msgid ""
 "connect your account."
 msgstr ""
 
-#: lib/tools.js:1329
+#: lib/tools.js:1348
 #: lib/ui-routes/unsubscribe-routes.js:29
 #: lib/ui-routes/unsubscribe-routes.js:93
 msgid "Invalid input"
 msgstr ""
 
-#: lib/tools.js:2179
+#: lib/tools.js:2198
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:2202
-#: lib/tools.js:2208
-#: lib/tools.js:2213
+#: lib/tools.js:2221
+#: lib/tools.js:2227
+#: lib/tools.js:2232
 #: lib/ui-routes/account-routes.js:1100
 msgid "Invalid or expired account setup URL"
 msgstr ""
@@ -307,8 +307,8 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:860
 #: lib/ui-routes/account-routes.js:1213
 #: lib/ui-routes/route-helpers.js:374
-#: workers/api.js:2344
-#: workers/api.js:2414
+#: workers/api.js:2345
+#: workers/api.js:2415
 msgid "Email Account Setup"
 msgstr ""
 
@@ -429,7 +429,7 @@ msgstr ""
 msgid "Couldn't process request. Try again."
 msgstr ""
 
-#: workers/api.js:3158
-#: workers/api.js:3262
+#: workers/api.js:3159
+#: workers/api.js:3263
 msgid "Requested page not found"
 msgstr ""
