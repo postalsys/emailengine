@@ -663,4 +663,50 @@ test('Tools utility tests', async t => {
         assert.strictEqual(tools.isEndedSession(0, undefined), false);
         assert.strictEqual(tools.isEndedSession(1, undefined), true);
     });
+
+    await t.test('reloadTlsServers() reloads both TLS servers', async () => {
+        // The renewal path used to send smtpReload alone, which left the IMAP proxy offering the
+        // previous certificate. Both servers read the certificate once when their worker starts,
+        // so both have to be told.
+        let sent = [];
+        const noopLogger = { error: () => {} };
+
+        await tools.reloadTlsServers(async message => sent.push(message.cmd), noopLogger);
+        assert.deepStrictEqual(sent, ['smtpReload', 'imapProxyReload']);
+    });
+
+    await t.test('reloadTlsServers() still reloads the second server when the first fails', async () => {
+        // A server that fails to come back must not cost the other one its new certificate.
+        let sent = [];
+        let logged = [];
+        const logger = { error: entry => logged.push(entry.cmd) };
+
+        await tools.reloadTlsServers(async message => {
+            sent.push(message.cmd);
+            if (message.cmd === 'smtpReload') {
+                throw new Error('worker is gone');
+            }
+        }, logger);
+
+        assert.deepStrictEqual(sent, ['smtpReload', 'imapProxyReload']);
+        assert.deepStrictEqual(logged, ['smtpReload']);
+    });
+
+    await t.test('reloadTlsServers() merges context into the failure log', async () => {
+        let logged = [];
+        const logger = { error: entry => logged.push(entry) };
+
+        await tools.reloadTlsServers(
+            async () => {
+                throw new Error('nope');
+            },
+            logger,
+            { serviceDomain: 'example.com' }
+        );
+
+        assert.strictEqual(logged.length, 2);
+        assert.strictEqual(logged[0].serviceDomain, 'example.com');
+        assert.strictEqual(logged[0].cmd, 'smtpReload');
+        assert.strictEqual(logged[1].cmd, 'imapProxyReload');
+    });
 });

@@ -42,7 +42,8 @@ const {
     claimFormNonce,
     releaseFormNonce,
     setAdminSession,
-    isEndedSession
+    isEndedSession,
+    reloadTlsServers
 } = require('../lib/tools');
 const { matchIp, resolveClientIp, detectAutomatedRequest } = require('../lib/utils/network');
 
@@ -94,7 +95,7 @@ const { registerOpenApiRoute } = require('../lib/openapi');
 const { getModel: getApiReferenceModel, clearServiceUrlCache } = require('../lib/api-reference');
 
 const { encrypt, decrypt } = require('../lib/encrypt');
-const { Certs } = require('@postalsys/certs');
+const { Certs, isRenewalDue } = require('@postalsys/certs');
 const net = require('net');
 
 const consts = require('../lib/consts');
@@ -102,7 +103,6 @@ const {
     TRACK_OPEN_NOTIFY,
     TRACK_CLICK_NOTIFY,
     REDIS_PREFIX,
-    RENEW_TLS_AFTER,
     BLOCK_TLS_RENEW,
     TLS_RENEW_CHECK_INTERVAL,
     DEFAULT_CORS_MAX_AGE,
@@ -3345,15 +3345,27 @@ const init = async () => {
                 assertPreconditionResult = Boom.boomify(err);
             }
 
+            // isRenewalDue() asks whether the certificate is close enough to expiry to replace,
+            // scaled to the lifetime the CA issued. This used to compare against
+            // Date.now() - RENEW_TLS_AFTER, which is the expiry date thirty days in the past: it
+            // read as "renew with thirty days left" but meant "renew thirty days after it died",
+            // so the automatic path only ever ran once the certificate had been broken for a
+            // month. Let's Encrypt is on the way from 90 day certificates to 45, which would have
+            // left a service unreachable for two thirds of every certificate's life.
             if (
                 IS_PRIMARY_API_WORKER &&
                 currentCert &&
-                currentCert.validTo < new Date(Date.now() - RENEW_TLS_AFTER) &&
+                isRenewalDue(currentCert) &&
                 (!currentCert.lastCheck || currentCert.lastCheck < new Date(Date.now() - BLOCK_TLS_RENEW))
             ) {
                 try {
-                    await certHandler.acquireCert(serviceDomain);
-                    await call({ cmd: 'smtpReload' });
+                    let renewedCert = await certHandler.acquireCert(serviceDomain);
+
+                    // Only when the certificate actually changed, so a renewal that was skipped
+                    // or failed does not restart both servers for nothing.
+                    if (renewedCert && renewedCert.fingerprint && renewedCert.fingerprint !== currentCert.fingerprint) {
+                        await reloadTlsServers(call, logger, { serviceDomain });
+                    }
                 } catch (err) {
                     logger.error({ msg: 'Failed to acquire TLS certificate', serviceDomain, err });
                 } finally {
