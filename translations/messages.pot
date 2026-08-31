@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-08-27 16:58+0000\n"
+"POT-Creation-Date: 2026-08-31 13:35+0000\n"
 
 #: views/error.hbs:6
-#: workers/api.js:3134
+#: workers/api.js:3159
 msgid "Something went wrong"
 msgstr ""
 
@@ -26,10 +26,6 @@ msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
 
 #: views/oauth-scope-error.hbs:5
 msgid "Insufficient Permissions"
@@ -98,6 +94,10 @@ msgstr ""
 #: views/unsubscribe.hbs:70
 #: views/accounts/register/imap.hbs:25
 msgid "Email address"
+msgstr ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:13
@@ -226,28 +226,28 @@ msgstr ""
 msgid "We couldn't connect with these settings. Check the errors below."
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:407
+#: views/accounts/register/imap-server.hbs:405
 msgid "Error"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:409
+#: views/accounts/register/imap-server.hbs:407
 msgid "Invalid settings"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:415
+#: views/accounts/register/imap-server.hbs:413
 msgid "Couldn't connect to IMAP server"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:417
-#: views/accounts/register/imap-server.hbs:426
+#: views/accounts/register/imap-server.hbs:415
+#: views/accounts/register/imap-server.hbs:424
 msgid "Server response:"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:424
+#: views/accounts/register/imap-server.hbs:422
 msgid "Couldn't connect to SMTP server"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:483
+#: views/accounts/register/imap-server.hbs:481
 msgid "Request failed."
 msgstr ""
 
@@ -307,8 +307,8 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:860
 #: lib/ui-routes/account-routes.js:1213
 #: lib/ui-routes/route-helpers.js:374
-#: workers/api.js:2319
-#: workers/api.js:2389
+#: workers/api.js:2344
+#: workers/api.js:2414
 msgid "Email Account Setup"
 msgstr ""
 
@@ -429,7 +429,7 @@ msgstr ""
 msgid "Couldn't process request. Try again."
 msgstr ""
 
-#: workers/api.js:3133
-#: workers/api.js:3237
+#: workers/api.js:3158
+#: workers/api.js:3262
 msgid "Requested page not found"
 msgstr ""
