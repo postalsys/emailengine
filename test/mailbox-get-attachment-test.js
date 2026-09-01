@@ -169,6 +169,25 @@ test('Mailbox.getText() lock handling', async t => {
         assert.deepEqual(events, ['release', 'onTaskCompleted'], 'a failed fetch must still send the connection back to its mailbox');
     });
 
+    await t.test('rejects instead of returning a truncated body when the stream fails mid-transfer', async () => {
+        // A connection lost mid-download reaches getText() as an error on the content stream,
+        // after part of the body has already arrived. Resolving on what arrived would hand back a
+        // truncated message as if it were complete, and store it that way.
+        const failure = Object.assign(new Error('Connection not available'), { code: 'NoConnection' });
+        const { ctx, events } = createMockContext({
+            makeContent: () => {
+                const stream = new PassThrough();
+                stream.write('first half of the body');
+                setImmediate(() => stream.destroy(failure));
+                return stream;
+            }
+        });
+
+        await assert.rejects(() => Mailbox.prototype.getText.call(ctx, { uid: 42 }, ['1'], {}, {}), /Connection not available/);
+
+        assert.deepEqual(events, ['release', 'onTaskCompleted'], 'a stream that fails mid-transfer must still give the mailbox lock back');
+    });
+
     await t.test('groups a prototype-shaped content subtype as plain text', async () => {
         // The subtype comes from the message, so a sender picks it. Keyed straight into the
         // accumulator, "text/__proto__" made the `!result[typeKey]` probe find Object.prototype,
