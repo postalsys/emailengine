@@ -11,6 +11,9 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
+const iconv = require('iconv-lite');
+const MimeNode = require('@zone-eu/mailsplit/lib/mime-node');
+
 const { rewriteTextNodes } = require('../lib/rewrite-text-nodes');
 
 function msg(lines) {
@@ -174,5 +177,38 @@ test('rewriteTextNodes', async t => {
             .trim();
         assert.strictEqual(Buffer.from(b64, 'base64').toString('utf-8'), 'café');
         assert.strictEqual(b64, Buffer.from('café', 'utf-8').toString('base64'));
+    });
+
+    // The node decoder had no error listener, so a decoder failing mid-body was an
+    // uncaughtException that took the worker with it. No decoder used here fails on input
+    // today, so the failure is injected: a Transform whose first chunk errors, in each of the
+    // two positions the decoder slot can hold.
+    const failing = stream => {
+        stream._transform = (chunk, encoding, done) => done(new Error('injected decoder failure'));
+        return stream;
+    };
+
+    await t.test('rejects instead of crashing when the charset decoder fails mid-body', async () => {
+        const realDecodeStream = iconv.decodeStream;
+        iconv.decodeStream = charset => failing(realDecodeStream(charset));
+        try {
+            const source = msg(['Content-Type: text/plain; charset=iso-8859-1', 'Content-Transfer-Encoding: quoted-printable', '', 'body text']);
+            await assert.rejects(() => rewriteTextNodes(source, { textRewriter: tagging }), /injected decoder failure/);
+        } finally {
+            iconv.decodeStream = realDecodeStream;
+        }
+    });
+
+    await t.test('rejects instead of crashing when the transfer-encoding decoder fails mid-body', async () => {
+        const realGetDecoder = MimeNode.prototype.getDecoder;
+        MimeNode.prototype.getDecoder = function () {
+            return failing(realGetDecoder.call(this));
+        };
+        try {
+            const source = msg(['Content-Type: text/plain; charset=utf-8', 'Content-Transfer-Encoding: quoted-printable', '', 'body text']);
+            await assert.rejects(() => rewriteTextNodes(source, { textRewriter: tagging }), /injected decoder failure/);
+        } finally {
+            MimeNode.prototype.getDecoder = realGetDecoder;
+        }
     });
 });
