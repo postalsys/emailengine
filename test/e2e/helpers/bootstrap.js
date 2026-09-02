@@ -7,6 +7,8 @@
 // tolerate an instance another spec has already bootstrapped: set the first admin password on a
 // fresh instance, otherwise log in; activate a trial only when the instance is not yet licensed.
 
+const os = require('os');
+const path = require('path');
 const { expect } = require('@playwright/test');
 const Redis = require('ioredis');
 
@@ -81,6 +83,24 @@ async function ensureAdminSession(page, password = ADMIN_PASSWORD) {
     if (page.url().includes('/admin/login')) {
         await loginAsAdmin(page, password);
     }
+}
+
+// One real login per spec file, reused by every test in it through storageState: logging in
+// per test would be slow and would hammer the login rate limit. Call inside the describe
+// block whose tests need the admin session; `name` keeps the state files of the spec files
+// apart. The plain context (storageState explicitly unset - the file does not exist yet)
+// performs the login.
+function useAdminSession(test, name) {
+    const stateFile = path.join(os.tmpdir(), `ee-e2e-${name}-state.json`);
+
+    test.beforeAll(async ({ browser }) => {
+        const page = await browser.newPage({ storageState: undefined });
+        await ensureAdminSession(page);
+        await page.context().storageState({ path: stateFile });
+        await page.close();
+    });
+
+    test.use({ storageState: stateFile });
 }
 
 // Activate a 14-day trial if the instance is not already licensed. The "Start a 14-day trial"
@@ -233,6 +253,7 @@ module.exports = {
     PORT,
     BASE_URL,
     ensureAdminSession,
+    useAdminSession,
     ensureTrial,
     createApiToken,
     dismissTokenReveal,

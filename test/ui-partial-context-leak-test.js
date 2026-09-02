@@ -35,6 +35,7 @@ const fs = require('fs');
 const pathlib = require('path');
 
 const { listFiles } = require('./helpers/list-files');
+const { stripHandlebarsComments: stripComments } = require('./helpers/hbs-comments');
 
 const ROOT = pathlib.join(__dirname, '..');
 const VIEWS = pathlib.join(ROOT, 'views');
@@ -58,13 +59,6 @@ function partialName(file) {
               .replace(/\.hbs$/, '')
               .split(pathlib.sep)
               .join('/');
-}
-
-// Handlebars comments are stripped before scanning: the ui/* partials document their own
-// usage with example invocations inside {{!-- --}}, which are not real call sites. Newlines
-// are preserved so line numbers stay accurate.
-function stripComments(source) {
-    return source.replace(/\{\{!--[\s\S]*?--\}\}|\{\{![\s\S]*?\}\}/g, comment => comment.replace(/[^\n]/g, ' '));
 }
 
 // {{#each}} nesting depth as of each line of a source file.

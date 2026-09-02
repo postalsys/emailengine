@@ -151,7 +151,7 @@ fieldName="webhook" fieldValue=webhook.id submitLabel="Delete route"}}
 <p>Are you sure you want to delete <strong>{{webhook.name}}</strong>? This action cannot be undone.</p>
 {{/ui/confirm-modal}}
 
-<script src="/static/js/ace/ace.js"></script>
+{{> ace_assets}}
 
 <script nonce="{{cspNonce}}">
     document.addEventListener('DOMContentLoaded', () => {

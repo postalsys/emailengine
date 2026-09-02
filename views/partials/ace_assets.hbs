@@ -1,0 +1,13 @@
+{{!-- ACE editor assets: use this partial rather than a bare ace.js include. ACE runs in
+      strict-CSP mode (uiAceEnsureAssets in static/js/ui.js, which every editor goes through),
+      so it injects none of its own stylesheets; these are the sheets it would have injected -
+      the core one and the four themes uiAceThemes switches between, copied from ace-builds by
+      copy-static-files.sh. Linking them here rather than leaving uiAceEnsureAssets to add them
+      keeps the editor from painting before its stylesheet arrives. Pages that need an extension
+      (ext-language_tools) add it after this partial. --}}
+<link rel="stylesheet" href="/static/js/ace/css/ace.css">
+<link rel="stylesheet" href="/static/js/ace/css/theme/xcode.css">
+<link rel="stylesheet" href="/static/js/ace/css/theme/kuroir.css">
+<link rel="stylesheet" href="/static/js/ace/css/theme/tomorrow_night.css">
+<link rel="stylesheet" href="/static/js/ace/css/theme/tomorrow_night_eighties.css">
+<script src="/static/js/ace/ace.js"></script>

@@ -11,24 +11,11 @@
 // fresh-instance behaviour (it sets the FIRST admin password, so its form has no current-password
 // field). Anything that bootstraps the instance ahead of it breaks that test.
 
-const os = require('os');
-const path = require('path');
 const { test, expect } = require('@playwright/test');
-const { ensureAdminSession, trackConsoleErrors } = require('./helpers/bootstrap');
-
-const STATE_FILE = path.join(os.tmpdir(), 'ee-e2e-bullboard-state.json');
+const { useAdminSession, trackConsoleErrors } = require('./helpers/bootstrap');
 
 test.describe('Queue browser (bull-board)', () => {
-    test.beforeAll(async ({ browser }) => {
-        // plain context (storageState explicitly unset - the file does not exist yet)
-        // performs the single real login
-        const page = await browser.newPage({ storageState: undefined });
-        await ensureAdminSession(page);
-        await page.context().storageState({ path: STATE_FILE });
-        await page.close();
-    });
-
-    test.use({ storageState: STATE_FILE });
+    useAdminSession(test, 'bullboard');
 
     test('renders the board with all three EmailEngine queues', async ({ page }) => {
         const errors = trackConsoleErrors(page);

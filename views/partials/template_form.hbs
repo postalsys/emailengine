@@ -59,7 +59,7 @@
 
 {{!-- Shared by templates/new and templates/edit: both render this exact form
       (ids included), so the ACE editor bootstrap lives here instead of per page. --}}
-<script src="/static/js/ace/ace.js"></script>
+{{> ace_assets}}
 
 <script nonce="{{cspNonce}}">
     document.addEventListener('DOMContentLoaded', () => {

@@ -1,4 +1,4 @@
-/* global document, window, navigator, fetch */
+/* global document, window, navigator, fetch, getComputedStyle */
 'use strict';
 
 // Per-page smoke tests for the admin UI (Tailwind v4 + FlyonUI theme). Each admin page gets at
@@ -16,11 +16,10 @@
 // Run once:  npm run test:e2e:install
 // Run suite: npm run test:e2e
 
-const os = require('os');
-const path = require('path');
 const { test, expect, request } = require('@playwright/test');
 const {
     ensureAdminSession,
+    useAdminSession,
     createApiToken,
     dismissTokenReveal,
     trackConsoleErrors,
@@ -30,11 +29,6 @@ const {
     ADMIN_PASSWORD,
     BASE_URL
 } = require('./helpers/bootstrap');
-
-// One real login per run: the admin session cookie is captured in beforeAll and
-// reused by every test via storageState. Logging in per test trips the login
-// rate limiter once the suite grows past ~10 tests.
-const STATE_FILE = path.join(os.tmpdir(), 'ee-e2e-admin-state.json');
 
 // Resolves --color-primary for the active theme into the rgb() form that
 // getComputedStyle returns, so the tab assertions below stay theme-agnostic.
@@ -163,16 +157,8 @@ async function expectTlsLabelTooltip(page) {
 // (trackConsoleErrors); every test asserts the page stayed clean.
 
 test.describe('admin shell', () => {
-    test.use({ storageState: STATE_FILE });
+    useAdminSession(test, 'admin');
 
-    test.beforeAll(async ({ browser }) => {
-        // plain context (storageState explicitly unset - the file does not
-        // exist yet) performs the single real login
-        const page = await browser.newPage({ storageState: undefined });
-        await ensureAdminSession(page);
-        await page.context().storageState({ path: STATE_FILE });
-        await page.close();
-    });
     test('dashboard shell: sidebar, topbar and footer render', async ({ page }) => {
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
@@ -535,6 +521,16 @@ test.describe('admin shell', () => {
                 { timeout: 20000 }
             )
             .toBeGreaterThan(0);
+
+        // the widget's own stylesheet applied: it arrives as a <style> element the page's
+        // Content-Security-Policy has to accept, and a refused sheet leaves the widget
+        // unstyled without any error the console tracker would see
+        expect(
+            await page
+                .locator('.ee-client')
+                .first()
+                .evaluate(elm => getComputedStyle(elm).getPropertyValue('--ee-font').trim())
+        ).not.toBe('');
 
         // the embed follows the admin theme: its own toggle is hidden and the
         // topbar theme switch flips the client's dark mode live

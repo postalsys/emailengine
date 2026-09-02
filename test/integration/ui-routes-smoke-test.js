@@ -143,6 +143,16 @@ test('Admin UI routes smoke test', async t => {
         assert.equal(res.headers['x-content-type-options'], 'nosniff');
     });
 
+    await t.test('the locale cookie follows the instance scheme like the session cookie', async () => {
+        // The test instance has no https serviceUrl, so the cookie must not be Secure - a
+        // browser would drop it and the chosen locale would never stick
+        const res = await supertest(baseUrl).get('/admin/login?locale=en');
+        const locale = (res.headers['set-cookie'] || []).find(cookie => cookie.startsWith('locale='));
+        assert.ok(locale, 'the locale cookie is set from the query argument');
+        assert.doesNotMatch(locale, /;\s*Secure/i);
+        assert.match(locale, /;\s*HttpOnly/i);
+    });
+
     await t.test('static assets carry no policy', async () => {
         const res = await supertest(baseUrl).get('/static/js/app.js');
         assert.equal(res.status, 200);

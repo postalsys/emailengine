@@ -13,17 +13,31 @@ cp node_modules/ace-builds/src-min/mode-html.js static/js/ace/
 cp node_modules/ace-builds/src-min/mode-json.js static/js/ace/
 cp node_modules/ace-builds/src-min/mode-javascript.js static/js/ace/
 cp node_modules/ace-builds/src-min/mode-markdown.js static/js/ace/
-cp node_modules/ace-builds/src-min/theme-xcode.js static/js/ace/
-cp node_modules/ace-builds/src-min/theme-kuroir.js static/js/ace/
-# dark-theme counterparts applied by uiAceEditor/uiAcePreview (static/js/ui.js)
-cp node_modules/ace-builds/src-min/theme-tomorrow_night.js static/js/ace/
-cp node_modules/ace-builds/src-min/theme-tomorrow_night_eighties.js static/js/ace/
 cp node_modules/ace-builds/src-min/worker-html.js static/js/ace/
 cp node_modules/ace-builds/src-min/worker-json.js static/js/ace/
 cp node_modules/ace-builds/src-min/worker-javascript.js static/js/ace/
 cp node_modules/ace-builds/src-min/snippets/javascript.js static/js/ace/snippets
 cp node_modules/ace-builds/src-min/snippets/markdown.js static/js/ace/snippets
 cp node_modules/ace-builds/src-min/ext-searchbox.js static/js/ace/ext-searchbox.js
+
+# ACE stylesheets, linked by views/partials/ace_assets.hbs. That partial also puts ACE in
+# strict-CSP mode, so it injects no <style> elements of its own and the admin
+# Content-Security-Policy can require a nonce on every stylesheet.
+mkdir -p static/js/ace/css/theme
+cp node_modules/ace-builds/css/ace.css static/js/ace/css/
+
+# The light/dark pairs uiAceEditor and uiAcePreview switch between (static/js/ui.js). Each theme
+# needs its module (for the cssClass and isDark ACE reads from it) and its stylesheet.
+for theme in xcode kuroir tomorrow_night tomorrow_night_eighties; do
+    cp node_modules/ace-builds/src-min/theme-$theme.js static/js/ace/
+    cp node_modules/ace-builds/css/theme/$theme.css static/js/ace/css/theme/
+done
+
+# The images the sheets reference. Both bases land in css/ - ace.css uses ./, a theme uses ../ -
+# so one pass over the copied sheets covers them.
+for image in $(grep -oh 'url("[^"]*")' static/js/ace/css/ace.css static/js/ace/css/theme/*.css | sed 's/^url("//; s/")$//; s/^\.\.\///; s/^\.\///' | sort -u); do
+    cp node_modules/ace-builds/css/$image static/js/ace/css/
+done
 
 cp node_modules/\@postalsys/ee-client/index.js static/js/ee-client.js
 

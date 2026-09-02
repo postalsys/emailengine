@@ -36,6 +36,8 @@
         apiUrl: window.location.origin,
         account: '{{account}}',
         accessToken: '{{sessionToken}}',
+        // the widget appends its own stylesheet element; the admin policy accepts it with this nonce
+        styleNonce: '{{cspNonce}}',
         container: document.getElementById('email-client'),
         darkMode: uiEffectiveTheme() === 'dark',
         showDarkModeToggle: false,

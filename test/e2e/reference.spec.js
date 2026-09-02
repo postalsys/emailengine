@@ -19,14 +19,8 @@
 // Run once:  npm run test:e2e:install
 // Run suite: npm run test:e2e
 
-const os = require('os');
-const path = require('path');
 const { test, expect } = require('@playwright/test');
-const { ensureAdminSession, createApiToken, trackConsoleErrors } = require('./helpers/bootstrap');
-
-// One real login for the whole file, reused via storageState - logging in per test
-// trips the login rate limiter (same pattern as pages-admin.spec.js).
-const STATE_FILE = path.join(os.tmpdir(), 'ee-e2e-reference-state.json');
+const { useAdminSession, createApiToken, trackConsoleErrors } = require('./helpers/bootstrap');
 
 // A GET with no required parameters, so the try-it test can send a real request without
 // inventing an account id.
@@ -34,14 +28,7 @@ const TRY_IT_TAG = 'stats';
 const TRY_IT_OPERATION = 'getV1Stats';
 
 test.describe('API reference', () => {
-    test.use({ storageState: STATE_FILE });
-
-    test.beforeAll(async ({ browser }) => {
-        const page = await browser.newPage({ storageState: undefined });
-        await ensureAdminSession(page);
-        await page.context().storageState({ path: STATE_FILE });
-        await page.close();
-    });
+    useAdminSession(test, 'reference');
 
     test('landing page lists every endpoint group', async ({ page }) => {
         const errors = trackConsoleErrors(page);
@@ -1089,6 +1076,20 @@ test.describe('API reference', () => {
         const editor = page.locator('#try-postV1Account .code-editor');
         await expect(editor).toBeVisible();
         expect(aceRequests.some(url => url.endsWith('/ace.js'))).toBe(true);
+
+        // This page loads ACE from script rather than through views/partials/ace_assets.hbs, so
+        // its stylesheets are the ones uiAceEnsureAssets adds. ACE runs in strict-CSP mode and
+        // injects none of its own: without that pairing the editor is either unstyled or the
+        // page reports a policy violation, and only one of the two shows up as a console error
+        expect(aceRequests.some(url => url.endsWith('/css/ace.css'))).toBe(true);
+        await expect
+            .poll(() =>
+                editor
+                    .locator('.ace_gutter')
+                    .first()
+                    .evaluate(elm => getComputedStyle(elm).backgroundColor)
+            )
+            .not.toBe('rgba(0, 0, 0, 0)');
 
         // The textarea stays in the DOM holding the value, so prepareRequest, "Copy as curl"
         // and the no-JS path are all unaffected by the upgrade

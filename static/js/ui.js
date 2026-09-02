@@ -719,9 +719,39 @@ window.uiBusyAction = (btn, run) => {
 // creation and re-applied whenever the admin theme changes. The theme files
 // must exist under static/js/ace/ - they are copied from ace-builds by
 // copy-static-files.sh and ship in the pkg binary via the static/**/* asset glob.
+// Their stylesheets are linked by views/partials/ace_assets.hbs, which also puts
+// ACE in strict-CSP mode so it injects none of its own.
 const uiAceThemes = {
     editor: { light: 'ace/theme/xcode', dark: 'ace/theme/tomorrow_night' },
     preview: { light: 'ace/theme/kuroir', dark: 'ace/theme/tomorrow_night_eighties' }
+};
+
+// ACE keeps its stylesheets inside its JavaScript and injects them as elements the admin
+// Content-Security-Policy refuses (it accepts a stylesheet only with the request nonce, which
+// ACE cannot set). Strict mode stops the injection and the sheets are linked instead:
+// views/partials/ace_assets.hbs carries them in the markup for the pages that always have an
+// editor, and this adds whatever is missing for the one that loads ACE lazily from script (the
+// try-it panels in static/js/reference.js). Both paths reach ACE through the two helpers below,
+// so this is the one place that has to know. The hrefs come from uiAceThemes, so a theme added
+// there needs no second edit.
+const uiAceEnsureAssets = () => {
+    ace.config.set('useStrictCSP', true);
+
+    let sheets = ['/static/js/ace/css/ace.css'];
+    for (let kind of Object.values(uiAceThemes)) {
+        for (let theme of Object.values(kind)) {
+            sheets.push(`/static/js/ace/css/theme/${theme.split('/').pop()}.css`);
+        }
+    }
+
+    for (let href of sheets) {
+        if (!document.querySelector(`link[href="${href}"]`)) {
+            let link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = href;
+            document.head.appendChild(link);
+        }
+    }
 };
 
 // container element -> { editor, kind }; also the lookup the .copy-btn
@@ -744,6 +774,7 @@ const uiAceRegister = (editor, kind) => {
 // the initial value loaded into the session. Extra ace options pass through
 // via opts.
 window.uiAceEditor = (id, mode, value, opts) => {
+    uiAceEnsureAssets();
     const editor = opts ? ace.edit(id, opts) : ace.edit(id);
     uiAceRegister(editor, 'editor');
     editor.session.setMode(`ace/mode/${mode}`);
@@ -756,6 +787,7 @@ window.uiAceEditor = (id, mode, value, opts) => {
 // Read-only preview pane variant: gutter, no print margin or active-line
 // highlight, with its own theme pair to keep previews visually distinct
 window.uiAcePreview = (id, mode, opts) => {
+    uiAceEnsureAssets();
     const editor = ace.edit(id, Object.assign({ showGutter: true }, opts));
     editor.setReadOnly(true);
     editor.setShowPrintMargin(false);

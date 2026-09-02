@@ -1,6 +1,6 @@
 'use strict';
 
-/* global document */
+/* global document, getComputedStyle */
 
 // The response security headers as a real browser receives them (lib/security-headers.js). The
 // unit and integration tiers assert the header text; what only a browser can show is that the
@@ -13,24 +13,13 @@
 // fresh-instance behaviour (it sets the FIRST admin password). Anything that bootstraps the
 // instance ahead of it breaks that test.
 
-const os = require('os');
-const path = require('path');
 const { test, expect } = require('@playwright/test');
-const { ensureAdminSession, trackConsoleErrors } = require('./helpers/bootstrap');
-
-const STATE_FILE = path.join(os.tmpdir(), 'ee-e2e-security-headers-state.json');
+const { useAdminSession, trackConsoleErrors } = require('./helpers/bootstrap');
 
 const NONCE_RE = /'nonce-([A-Za-z0-9_-]+)'/;
 
 test.describe('Security headers', () => {
-    test.beforeAll(async ({ browser }) => {
-        const page = await browser.newPage({ storageState: undefined });
-        await ensureAdminSession(page);
-        await page.context().storageState({ path: STATE_FILE });
-        await page.close();
-    });
-
-    test.use({ storageState: STATE_FILE });
+    useAdminSession(test, 'security-headers');
 
     test('admin pages run their inline scripts under the nonce the header names', async ({ page }) => {
         const errors = trackConsoleErrors(page);
@@ -60,6 +49,28 @@ test.describe('Security headers', () => {
         // The pre-paint theme script ran, so the inline scripts did execute under the policy
         await expect(page.locator('html')).toHaveAttribute('class', /ee-app-chrome/);
         await expect(page.locator('#layout-sidebar')).toBeAttached();
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('ACE editors are styled from linked sheets rather than injected style elements', async ({ page }) => {
+        // ACE would append <style> elements, which the policy refuses without a nonce; with
+        // useStrictCSP it appends none and views/partials/ace_assets.hbs links the sheets. A
+        // missing sheet leaves the editor unstyled rather than erroring, hence the computed style
+        const errors = trackConsoleErrors(page);
+
+        await page.goto('/admin/config/branding');
+        const editor = page.locator('.ace_editor').first();
+        await expect(editor).toBeVisible();
+        expect(await editor.evaluate(elm => getComputedStyle(elm).position)).toBe('relative');
+        // the theme sheet paints the gutter; without it the gutter is transparent
+        expect(
+            await page
+                .locator('.ace_gutter')
+                .first()
+                .evaluate(elm => getComputedStyle(elm).backgroundColor)
+        ).not.toBe('rgba(0, 0, 0, 0)');
+        expect(await page.evaluate(() => document.querySelectorAll('style').length)).toBe(0);
 
         expect(errors).toHaveLength(0);
     });

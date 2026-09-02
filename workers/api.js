@@ -1190,7 +1190,10 @@ const init = async () => {
         ttl: null,
         encoding: 'base64json',
         clearInvalid: true,
-        path: '/'
+        path: '/',
+        // Same signal as the session and CSRF cookies. hapi's default is Secure, which a browser
+        // drops on a plain-http instance, so the chosen locale never stuck there
+        isSecure: secureCookie
     });
 
     // The version an SSO login stamps into its session, so the checks that end a session later can
@@ -3168,7 +3171,9 @@ const init = async () => {
         const routeTags = (request.route && request.route.settings && request.route.settings.tags) || [];
 
         // `external` covers the MCP endpoint and its OAuth routes: machine-facing surfaces whose
-        // clients expect JSON errors, never the admin HTML error page
+        // clients expect JSON errors, never the admin HTML error page. Narrower than
+        // isMachineRoute() on purpose: that one also covers `static`, and a browser following a
+        // link to a missing asset is better served the themed error page than a JSON body
         const wantsJsonError = routeTags.includes('api') || routeTags.includes('external');
 
         if (request.errorInfo && wantsJsonError) {
@@ -3245,7 +3250,8 @@ const init = async () => {
             return h.response(renderedMetrics).type('text/plain');
         },
         options: {
-            tags: ['scope:metrics'],
+            // external: a Prometheus scraper wants JSON errors and no CSRF or page policy
+            tags: ['scope:metrics', 'external'],
             auth: {
                 strategy: 'api-token',
                 mode: 'required'

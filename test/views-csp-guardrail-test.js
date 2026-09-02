@@ -4,7 +4,8 @@
 // Only scripts carrying the request nonce run there, so every inline <script> in a view has
 // to be written `<script nonce="{{cspNonce}}">`, and nothing may rely on an inline event
 // handler attribute or a javascript: URL - the policy has no 'unsafe-inline' for scripts and
-// a nonce does not rescue either. A page that breaks one of these rules renders, but its
+// a nonce does not rescue either. Stylesheet elements answer to the same nonce, so a view may
+// not carry a <style> block either. A page that breaks one of these rules renders, but its
 // script silently never runs, which no other test would notice.
 //
 // Pure: reads the templates, nothing else.
@@ -16,12 +17,14 @@ const pathlib = require('path');
 
 const { listFiles } = require('./helpers/list-files');
 const { inlineScriptAttrs } = require('./helpers/inline-scripts');
+const { stripHandlebarsComments } = require('./helpers/hbs-comments');
 
 const VIEWS_DIR = pathlib.join(__dirname, '..', 'views');
 
 const NONCE_ATTR = /\bnonce="\{\{cspNonce\}\}"/;
 const INLINE_HANDLER = /<[a-z][^>]*\s+on[a-z]+\s*=/i;
 const JAVASCRIPT_URL = /\b(href|action|src)\s*=\s*["']\s*javascript:/i;
+const STYLE_ELEMENT = /<style\b/i;
 
 test('every view template is compatible with the admin Content-Security-Policy', async t => {
     const templates = listFiles(VIEWS_DIR, '.hbs');
@@ -31,7 +34,8 @@ test('every view template is compatible with the admin Content-Security-Policy',
 
     for (let file of templates) {
         const rel = pathlib.relative(VIEWS_DIR, file);
-        const source = fs.readFileSync(file, 'utf-8');
+        // comments document usage with example markup that is not rendered
+        const source = stripHandlebarsComments(fs.readFileSync(file, 'utf-8'));
 
         await t.test(rel, () => {
             for (const attrs of inlineScriptAttrs(source)) {
@@ -41,6 +45,12 @@ test('every view template is compatible with the admin Content-Security-Policy',
 
             const handler = source.match(INLINE_HANDLER);
             assert.equal(handler, null, `inline event handler attribute: ${handler && handler[0]}`);
+
+            // style-src-elem carries the nonce too, and a template has no reason to inline a
+            // sheet: the admin styles are built into static/css/flyonui.css, the public pages
+            // use static/css/public.css. A style attribute is fine (style-src-attr).
+            const style = source.match(STYLE_ELEMENT);
+            assert.equal(style, null, `inline <style> element: ${style && style[0]}`);
 
             const url = source.match(JAVASCRIPT_URL);
             assert.equal(url, null, `javascript: URL: ${url && url[0]}`);

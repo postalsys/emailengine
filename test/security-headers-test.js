@@ -94,7 +94,7 @@ async function buildServer({ errorPage = true, cspMode = 'enforce', secureOrigin
             throw Boom.badRequest('bad');
         }
     });
-    server.route({ method: 'GET', path: '/metrics', handler: () => 'metrics', options: { tags: ['scope:metrics'] } });
+    server.route({ method: 'GET', path: '/metrics', handler: () => 'metrics', options: { tags: ['scope:metrics', 'external'] } });
     server.route({ method: 'GET', path: '/accounts/new', handler: () => 'hosted form' });
     server.route({ method: 'GET', path: '/static/app.js', handler: () => 'js', options: { tags: ['static'] } });
 
@@ -135,9 +135,10 @@ test('security header helpers', async t => {
     });
 
     await t.test('isMachineRoute recognises every tag the CSRF check skips', () => {
-        for (let tag of ['api', 'external', 'scope:metrics', 'static']) {
+        for (let tag of ['api', 'external', 'static']) {
             assert.equal(isMachineRoute([tag]), true, tag);
         }
+        assert.equal(isMachineRoute(['scope:metrics']), false, 'a scope tag says what a token may reach, not who the route serves');
         assert.equal(isMachineRoute(['health']), false);
         assert.equal(isMachineRoute([]), false);
         assert.equal(isMachineRoute(), false);
@@ -153,8 +154,8 @@ test('security header helpers', async t => {
         assert.equal(profileNameFor('/admin/accounts'), 'admin');
         assert.equal(profileNameFor('/v1/account'), 'api');
         assert.equal(profileNameFor('/v1/nowhere'), 'api', 'a 404 under /v1 is still machine-facing');
-        assert.equal(profileNameFor('/swagger.json'), 'api');
-        assert.equal(profileNameFor('/metrics', ['scope:metrics']), 'api');
+        assert.equal(profileNameFor('/swagger.json', ['external']), 'api');
+        assert.equal(profileNameFor('/metrics', ['scope:metrics', 'external']), 'api');
         assert.equal(profileNameFor('/mcp', ['external']), 'api');
         assert.equal(profileNameFor('/.well-known/oauth-authorization-server', ['external']), 'api');
         assert.equal(profileNameFor('/accounts/new'), 'public');
@@ -191,7 +192,9 @@ test('policyFor resolves the header matrix', async t => {
 
         assert.equal(csp['default-src'], "'self'");
         assert.equal(csp['script-src'], `'self' 'nonce-${nonce}'`);
-        assert.equal(csp['style-src'], "'self' 'unsafe-inline'");
+        assert.equal(csp['style-src'], "'self' 'unsafe-inline'", 'the fallback for browsers without the elem/attr split');
+        assert.equal(csp['style-src-elem'], `'self' 'nonce-${nonce}'`, 'a <style> element needs the nonce like a script');
+        assert.equal(csp['style-src-attr'], "'unsafe-inline'", 'inlined email CSS lives in style attributes');
         assert.equal(csp['img-src'], "'self' data:");
         assert.equal(csp['worker-src'], "'self' blob:");
         assert.equal(csp['object-src'], "'none'");
@@ -206,9 +209,10 @@ test('policyFor resolves the header matrix', async t => {
         assert.equal(cacheControl, 'no-store');
     });
 
-    await t.test('admin without a nonce fails closed: no inline script runs', () => {
+    await t.test('admin without a nonce fails closed: no inline script or style element runs', () => {
         const { headers } = policyFor({ path: '/admin' });
         assert.equal(directives(headers[CSP_HEADER])['script-src'], "'self'");
+        assert.equal(directives(headers[CSP_HEADER])['style-src-elem'], "'self'");
         assert.doesNotMatch(headers[CSP_HEADER], /nonce/);
     });
 
@@ -264,6 +268,15 @@ test('policyFor resolves the header matrix', async t => {
         // the nonce is appended after the override, so overriding script-src cannot drop it
         const scripts = policyFor({ path: '/admin/x', nonce, override: { directives: { 'script-src': "'self' https://cdn.example.com" } } });
         assert.equal(directives(scripts.headers[CSP_HEADER])['script-src'], `'self' https://cdn.example.com 'nonce-${nonce}'`);
+
+        // ...which is why the message browser's stylesheet relaxation removes the directive
+        // and lets style-src apply: a browser ignores 'unsafe-inline' next to a nonce, so
+        // listing it in the override would block the widget's sheet instead of allowing it
+        const styles = policyFor({ path: '/admin/x', nonce, override: { directives: { 'style-src-elem': null } } });
+        const styleCsp = directives(styles.headers[CSP_HEADER]);
+        assert.equal('style-src-elem' in styleCsp, false);
+        assert.equal(styleCsp['style-src'], "'self' 'unsafe-inline'");
+        assert.equal(styleCsp['script-src'], `'self' 'nonce-${nonce}'`);
     });
 
     await t.test('HSTS follows the secure-origin flag on every profile', () => {

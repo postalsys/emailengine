@@ -15,12 +15,8 @@
 // Run once:  npm run test:e2e:install
 // Run suite: npm run test:e2e
 
-const os = require('os');
-const path = require('path');
 const { test, expect } = require('@playwright/test');
-const { ensureAdminSession, createApiToken, dismissTokenReveal, trackConsoleErrors, setPickedAccount, BASE_URL } = require('./helpers/bootstrap');
-
-const STATE_FILE = path.join(os.tmpdir(), 'ee-e2e-tokens-state.json');
+const { useAdminSession, createApiToken, dismissTokenReveal, trackConsoleErrors, setPickedAccount, BASE_URL } = require('./helpers/bootstrap');
 
 // Unique per run so a re-run against the same Redis does not match a previous token's row
 const TOKEN_DESCRIPTION = `e2e restricted ${Date.now()}`;
@@ -34,14 +30,7 @@ const BOUND_ACCOUNT_ID = 'e2e-token-binding';
 const PICKER_ACCOUNT_ID = 'e2e-token-picker';
 
 test.describe('access token pages', () => {
-    test.use({ storageState: STATE_FILE });
-
-    test.beforeAll(async ({ browser }) => {
-        const page = await browser.newPage({ storageState: undefined });
-        await ensureAdminSession(page);
-        await page.context().storageState({ path: STATE_FILE });
-        await page.close();
-    });
+    useAdminSession(test, 'tokens');
 
     test('the permission editor stays out of the way until it is switched on', async ({ page }) => {
         const errors = trackConsoleErrors(page);
