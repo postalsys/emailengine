@@ -280,7 +280,7 @@
 
                 {{#if account.oauth2.generatedStr}}
                 <span class="local-date-time code-link" data-time="{{account.oauth2.generatedStr}}"
-                    title="{{account.oauth2.generatedStr}}"></span> &mdash;
+                    title="{{account.oauth2.generatedStr}}"></span> -
                 {{else}}
                 To
                 {{/if}}
@@ -1449,6 +1449,11 @@ submitLabel="Delete account"}}
             uiModal.open('#testSendModal');
 
             createSmtpTestAccount(testData.account, testData.gateway).then((result) => {
+                if (result.error) {
+                    // the route answers 200 with { error } when the account could not be loaded or
+                    // the probe could not be queued - polling with no user would only report "Not Found"
+                    throw new Error(result.error);
+                }
                 return waitForTestResults(result.user);
             }).then(results => {
                 document.getElementById('test-send-pending-message').classList.add('hidden');

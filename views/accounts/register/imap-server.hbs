@@ -17,6 +17,14 @@ dropdown allows skipping the test. --}}
 
     <input type="hidden" id="tz" name="tz" value="{{values.tz}}">
 
+    {{#if autodetectFailed}}
+    <div class="ee-alert ee-alert-info">
+        <span class="ee-icon ee-icon-alert-circle"></span>
+        <span>{{_ "Server settings could not be detected automatically for %s. Enter them below." templateLocale
+            (escapeHtml autodetectDomain) }}</span>
+    </div>
+    {{/if}}
+
     <div class="ee-form-grid">
         <div class="ee-form-col">
             <h6>{{_ "IMAP" templateLocale }}</h6>
@@ -548,8 +556,8 @@ focus ring on) the corner close button --}}
                         // enable TLS checkbox
                         document.getElementById(`${proto}_secure`).checked = true;
                     }
-                    if (portNr === 110) {
-                        // enable TLS checkbox
+                    if (portNr === 143) {
+                        // plaintext IMAP port (STARTTLS), so clear the TLS checkbox
                         document.getElementById(`${proto}_secure`).checked = false;
                     }
                     break;

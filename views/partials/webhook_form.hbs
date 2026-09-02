@@ -7,7 +7,7 @@
 
         {{> ui/form-field id="inputDescription" name="description" label="Description" value=values.description error=errors.description hint="Description for this routing."}}
 
-        {{> ui/form-field id="inputTargetUrl" name="targetUrl" type="url" label="Target URL" value=values.targetUrl error=errors.targetUrl required=true placeholder='URL like "https://myservice.com/imap/webhooks"' hint="Webhook target URL for this routing."}}
+        {{> ui/form-field id="inputTargetUrl" name="targetUrl" type="url" label="Target URL" value=values.targetUrl error=errors.targetUrl placeholder='URL like "https://myservice.com/imap/webhooks"' hint="Webhook target URL for this routing. Leave empty to deliver to the default webhook URL from the Webhooks settings."}}
 
         {{> ui/checkbox id="enabled" label="Enable this webhook route" checked=values.enabled error=errors.enabled hint="Webhook routes are not enabled by default."}}
 

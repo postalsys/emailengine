@@ -248,7 +248,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
 
                 {{#each azureClouds}}
                 <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}{{#if
-                    description}} &mdash;
+                    description}} -
                     {{description}}{{/if}}</option>
                 {{/each}}
             </select>
@@ -329,7 +329,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
 
                 {{#each azureClouds}}
                 <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}{{#if
-                    description}} &mdash;
+                    description}} -
                     {{description}}{{/if}}</option>
                 {{/each}}
             </select>
@@ -648,12 +648,12 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
         <select class="select w-full{{#if errors.pubSubApp}} is-invalid{{/if}}" id="pubSubApp"
             name="pubSubApp" {{#unless baseScopesApi}}disabled{{/unless}}>
 
-            <option value=""> &mdash; Select the service account for your project &mdash; </option>
+            <option value="">Select the service account for your project</option>
 
             {{#each pubSubApps}}
             <option value="{{id}}" data-project="{{googleProjectId}}" {{#if selected}}selected{{/if}} {{#unless
                 baseScopesApi}}disabled{{/unless}}>{{name}}{{#if
-                description}} &mdash;
+                description}} -
                 {{description}}{{/if}} [{{googleProjectId}}]</option>
             {{/each}}
 
@@ -787,7 +787,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
 
     <div class="card-body">
         <input type="hidden" name="baseScopes" value="api" />
-        <p><strong>MS Graph API</strong> &mdash; This app uses Microsoft Graph API with application permissions
+        <p><strong>MS Graph API</strong> - This app uses Microsoft Graph API with application permissions
             (client credentials). Requires <code>Mail.ReadWrite</code>, <code>Mail.Send</code>, and
             <code>User.Read.All</code> application permissions with admin consent in Entra.</p>
     </div>

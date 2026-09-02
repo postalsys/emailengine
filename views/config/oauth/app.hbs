@@ -88,7 +88,7 @@
 
             {{#if app.cloudData}}
             <dt>Cloud environment</dt>
-            <dd>{{app.cloudData.name}} <em>&mdash;
+            <dd>{{app.cloudData.name}} <em>-
                     {{app.cloudData.description}}</em></dd>
             {{/if}}
 
@@ -170,7 +170,7 @@
                 {{#if app.pubSubAppData}}
                 <a href="/admin/config/oauth/app/{{app.pubSubAppData.id}}"
                     class="link link-animated">{{app.pubSubAppData.name}}{{#if
-                    app.pubSubAppData.description}} &mdash; <em>{{app.pubSubAppData.description}}</em>{{/if}}</a>
+                    app.pubSubAppData.description}} - <em>{{app.pubSubAppData.description}}</em>{{/if}}</a>
                 {{else}}
                 <em>App set but not found</em>
                 {{/if}}

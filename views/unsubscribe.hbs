@@ -59,6 +59,7 @@ focus ring on) the corner close button --}}
 
 <h1>{{_ "Unsubscribe" templateLocale }}</h1>
 
+{{#if values.sig}}
 <div class="ee-narrow">
     <form method="post" action="/unsubscribe/address">
         <input type="hidden" name="crumb" value="{{crumb}}" />
@@ -76,6 +77,11 @@ focus ring on) the corner close button --}}
         </div>
     </form>
 </div>
+{{else}}
+{{!-- A submit whose signed payload did not verify (or a malformed one) leaves nothing
+      trustworthy to put in the form, and an empty form would only fail again --}}
+<p>{{_ "This link is not valid. Use the unsubscribe link from the email you received." templateLocale }}</p>
+{{/if}}
 
 {{/if}}
 

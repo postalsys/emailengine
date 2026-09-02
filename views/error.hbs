@@ -17,9 +17,15 @@ pages, blocked access, failed form submissions without a friendlier page). --}}
             <a href="javascript:history.back()" class="ee-btn ee-btn-neutral ee-btn-soft ee-btn-sm">
                 <span class="ee-icon ee-icon-arrow-left"></span> {{_ "Go back" templateLocale}}
             </a>
+            {{!-- The dashboard is an admin destination. A mailbox owner on the hosted form or a
+                 list recipient on an unsubscribe link has no business there, so the button only
+                 shows for a requester who holds an admin session, or on an instance that has no
+                 admin login at all (showDashboardLink, set by the view context in workers/api.js). --}}
+            {{#if showDashboardLink}}
             <a href="/admin" class="ee-btn ee-btn-primary ee-btn-sm">
                 <span class="ee-icon ee-icon-home"></span> {{_ "Dashboard" templateLocale}}
             </a>
+            {{/if}}
         </div>
     </div>
     <div class="ee-error-card-icon">

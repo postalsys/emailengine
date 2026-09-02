@@ -1,6 +1,8 @@
 'use strict';
 
-// Hermetic unit tests for lib/api-routes/route-helpers.js. Pure functions, no DB or network.
+// Unit tests for lib/api-routes/route-helpers.js and the pure form helpers of
+// lib/ui-routes/route-helpers.js. Pure functions, no network; the ui-routes module pulls in
+// lib/db on require, hence the Redis teardown.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -17,6 +19,11 @@ const {
     assertNoNetworkOverride,
     MASKED
 } = require('../lib/api-routes/route-helpers');
+const { submittedValues } = require('../lib/ui-routes/route-helpers');
+const { redis } = require('../lib/db');
+const registerRedisTeardown = require('./helpers/redis-teardown');
+
+registerRedisTeardown(redis);
 
 // Minimal request stub - handleError logs at warn (4xx) or error (5xx)
 const fakeRequest = { logger: { warn() {}, error() {} } };
@@ -425,5 +432,25 @@ test('write-side mask guards', async t => {
         assert.equal(isMaskedRoundTrip('webhooksCustomHeaders', echo, stored), true);
         assert.equal(isMaskedRoundTrip('webhooksCustomHeaders', [{ key: 'Authorization', value: MASKED }], stored), false);
         assert.equal(isMaskedRoundTrip('webhooksCustomHeaders', [{ key: 'Other', value: MASKED }], []), false);
+    });
+});
+
+test('submittedValues re-renders the submitted form without its secrets', async t => {
+    await t.test('blanks the named fields and leaves the rest as submitted', () => {
+        const request = { payload: { name: 'Gateway', host: 'smtp.example.com', pass: 'hunter2' } };
+
+        assert.deepEqual(submittedValues(request, 'pass'), { name: 'Gateway', host: 'smtp.example.com', pass: '' });
+        // the payload itself is not touched
+        assert.equal(request.payload.pass, 'hunter2');
+    });
+
+    await t.test('blanks every named field, whether or not it was submitted', () => {
+        const request = { payload: { provider: 'gmail', clientSecret: 'secret' } };
+
+        assert.deepEqual(submittedValues(request, 'clientSecret', 'serviceKey'), { provider: 'gmail', clientSecret: '', serviceKey: '' });
+    });
+
+    await t.test('copes with a request that carries no payload', () => {
+        assert.deepEqual(submittedValues({ payload: undefined }, 'pass'), { pass: '' });
     });
 });

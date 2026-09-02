@@ -9,7 +9,7 @@
     <meta name="description" content="EmailEngine Application page; The Ultimate Email API for Developers" />
     <meta name="author" content="Postal Systems OÜ">
 
-    <title>{{#if pageTitleFull}}{{pageTitleFull}}{{else}}{{pageBrandName}}{{#if pageTitle}} &ndash;
+    <title>{{#if pageTitleFull}}{{pageTitleFull}}{{else}}{{pageBrandName}}{{#if pageTitle}} -
         {{pageTitle}}{{/if}}{{/if}}</title>
 
     {{> head_assets}}
@@ -53,7 +53,10 @@
 
         <!-- Topbar -->
         <header class="bg-base-100 border-base-content/20 sticky top-0 z-30 border-b">
-            <nav class="navbar flex items-center gap-2 px-6 py-2">
+            {{!-- flex-wrap: on phones the search form drops to a full-width second row (see its
+                  max-sm classes) instead of disappearing, so the account search and the state
+                  filter stay reachable without a redesign of the bar --}}
+            <nav class="navbar flex flex-wrap items-center gap-2 px-6 py-2">
 
                 <button type="button" class="btn btn-text btn-circle btn-sm lg:hidden" aria-haspopup="dialog"
                     aria-expanded="false" aria-controls="layout-sidebar" data-overlay="#layout-sidebar"
@@ -63,7 +66,7 @@
 
                 {{#if searchTarget}}
                 <!-- Topbar search -->
-                <form class="hidden sm:flex items-center gap-2 grow max-w-xl" method="get" action="{{searchTarget}}">
+                <form class="flex items-center gap-2 grow max-w-xl max-sm:order-last max-sm:w-full max-sm:max-w-none" method="get" action="{{searchTarget}}">
 
                     {{#if stateOptions}}
                     <div class="dropdown relative inline-flex shrink-0">
