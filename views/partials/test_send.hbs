@@ -1,8 +1,10 @@
 {{!--
-    Client-side rendered delivery-test results (SPF/DKIM/DMARC). This template
-    is injected into the page as text and compiled by the browser Handlebars
-    runtime (see accounts/account.hbs), which registers the statusColor and
-    statusIcon helpers it relies on. Native details/summary panels - no JS.
+    Delivery-test results (SPF/DKIM/DMARC). Rendered on the server by
+    POST /admin/smtp/check-test (compiledFragments.testSend in
+    lib/ui-routes/route-helpers.js) and returned as the `html` field the
+    account page drops into the results panel. Relies on the statusColor and
+    statusIcon helpers registered in workers/api.js. Native details/summary
+    panels - no JS.
 --}}
 <div class="space-y-2 mb-4">
     <details class="group card border border-base-content/10">

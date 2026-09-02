@@ -12,8 +12,8 @@
       summaryClass - extra/override padding classes on the summary
                      (default "px-6 py-4")
       bodyClass    - extra classes on the body (optional)
-    Not usable from browser-compiled templates (test_send.hbs) - those cannot
-    resolve server-side partials.
+    Not usable from the fragments compiled outside vision (test_send.hbs,
+    address_list.hbs) - those cannot resolve server-side partials.
 --}}
 <details {{#if id}}id="{{id}}" {{/if}}class="group {{#if class}}{{class}}{{else}}card bg-base-100 shadow-md{{/if}}"
     {{#if open}}open {{/if}}>

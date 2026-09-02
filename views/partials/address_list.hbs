@@ -1,7 +1,7 @@
-{{!-- Rendered server-side on first paint AND re-compiled in the browser after
-      an IP rescan (served via cachedTemplates.addressList, compiled with the
-      Handlebars runtime in config/network.hbs). Keep it self-contained: no
-      server-registered partials or helpers, plain FlyonUI markup only. --}}
+{{!-- Rendered server-side on first paint AND again by POST /admin/config/network/reload
+      after an IP rescan (compiledFragments.addressList in lib/ui-routes/route-helpers.js,
+      which compiles this file outside vision, so no server-registered partials are
+      available here). Plain FlyonUI markup only. --}}
 {{#each addresses}}
 <tr class="hover:bg-base-200/60">
     <td>

@@ -181,10 +181,6 @@ Remove this IP from the list? It will be re-added if found during the next scan.
 {{/ui/confirm-modal}}
 
 
-<script id="address-list-template" type="text/x-handlebars-template">
-{{{addressListTemplate}}}
-</script>
-
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         let reloadBtn = document.getElementById('reload-btn');
@@ -223,11 +219,10 @@ Remove this IP from the list? It will be re-added if found during the next scan.
 
         checkCheckboxes()
 
-        const addressListTemplate = Handlebars.compile(document.getElementById('address-list-template').innerHTML);
-
         let redrawAddressList = data => {
-            let html = addressListTemplate(data);
-            document.getElementById('address-list').innerHTML = html;
+            // rendered server-side by /admin/config/network/reload from the same
+            // address_list partial as the initial page
+            document.getElementById('address-list').innerHTML = data.html;
 
             for (let elm of document.querySelectorAll('#address-list .checkbox-entry')) {
                 elm.addEventListener('click', checkCheckboxes);
@@ -250,7 +245,7 @@ Remove this IP from the list? It will be re-added if found during the next scan.
                     return;
                 }
 
-                if (data.addresses) {
+                if (data.html) {
                     redrawAddressList(data);
                 }
 

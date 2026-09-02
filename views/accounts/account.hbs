@@ -1365,39 +1365,8 @@ submitLabel="Delete account"}}
     });
 </script>
 
-<script id="test-send-template" type="text/x-handlebars-template">{{{testSendTemplate}}}</script>
-
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        Handlebars.registerHelper('equals', function (compareVal, baseVal, options) {
-            if (baseVal == compareVal) {
-                return options.fn(this);
-            }
-            return options.inverse(this);
-        });
-
-        Handlebars.registerHelper('inc', function (nr, inc, options) {
-            return Number(nr) + Number(inc);
-        });
-
-        // status -> FlyonUI color/icon maps for the delivery-test results template
-        const STATUS_COLORS = { pass: 'success', softfail: 'warning', fail: 'error', permerror: 'info', temperror: 'info' };
-        Handlebars.registerHelper('statusColor', result => STATUS_COLORS[result] || 'neutral');
-
-        Handlebars.registerHelper('statusIcon', result => {
-            switch (result) {
-                case 'pass':
-                    return 'icon-[tabler--circle-check]';
-                case 'neutral':
-                case 'none':
-                    return 'icon-[tabler--circle-off]';
-                default:
-                    return 'icon-[tabler--alert-triangle]';
-            }
-        });
-
-        const testSendTemplate = Handlebars.compile(document.getElementById('test-send-template').innerHTML);
-
         let aborted = false;
 
         const createSmtpTestAccount = async (account, gateway) => {
@@ -1470,7 +1439,8 @@ submitLabel="Delete account"}}
                     return false
                 }
                 document.getElementById('test-send-results').classList.remove('hidden');
-                document.getElementById('test-send-results').innerHTML = testSendTemplate(results);
+                // rendered server-side by /admin/smtp/check-test from views/partials/test_send.hbs
+                document.getElementById('test-send-results').innerHTML = results.html;
             }).catch(err => {
                 if (aborted) {
                     return false

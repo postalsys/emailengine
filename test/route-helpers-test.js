@@ -527,3 +527,46 @@ test('formatAccountData reports an invalidated access token', async t => {
         assert.equal(account.oauth2.generatedStr, false);
     });
 });
+
+// The two partials a page renders again after it has loaded are compiled outside vision
+// (compiledFragments), so nothing but these tests proves they still compile and that the
+// helpers they call are the ones workers/api.js registers.
+test('compiled view fragments', async t => {
+    const handlebars = require('handlebars');
+    const { gt } = require('../lib/translations');
+    const { registerHandlebarsHelpers } = require('../lib/handlebars-helpers');
+    const { compiledFragments } = require('../lib/ui-routes/route-helpers');
+
+    registerHandlebarsHelpers(handlebars, { gt });
+
+    await t.test('the delivery-test results render with the status helpers', () => {
+        const html = compiledFragments.testSend({
+            status: 'success',
+            spf: { status: { result: 'pass', comment: 'sender SPF authorized' }, 'envelope-from': 'probe@example.com', 'client-ip': '192.0.2.10' },
+            dkim: { results: [{ status: { result: 'pass', aligned: true }, signingDomain: 'example.com', selector: 's1' }] },
+            mainSig: { status: { result: 'pass' } },
+            dmarc: { status: { result: 'fail' } }
+        });
+
+        assert.match(html, /badge-success/, 'a passing check gets the success color');
+        assert.match(html, /icon-\[tabler--circle-check\]/, 'a passing check gets the check icon');
+        assert.match(html, /badge-error/, 'a failing check gets the error color');
+        assert.match(html, /Signature #1/, 'the inc helper numbers the signatures from one');
+        assert.doesNotMatch(html, /\{\{/, 'no unrendered expression is left in the markup');
+    });
+
+    await t.test('the address list renders a checked row for a selected address', () => {
+        const html = compiledFragments.addressList({
+            addresses: [
+                { localAddress: '10.0.0.1', ip: '198.51.100.7', name: 'host-a', checked: true, defaultInterface: true },
+                { localAddress: '10.0.0.2', ip: '198.51.100.8', name: 'host-b', checked: false, notice: 'Not routable' }
+            ]
+        });
+
+        assert.equal((html.match(/checkbox-entry/g) || []).length, 2);
+        assert.match(html, /value="10\.0\.0\.1" checked>/);
+        assert.doesNotMatch(html, /value="10\.0\.0\.2" checked>/);
+        assert.match(html, /badge-soft">default</);
+        assert.match(html, /Not routable/);
+    });
+});
