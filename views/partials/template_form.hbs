@@ -61,7 +61,7 @@
       (ids included), so the ACE editor bootstrap lives here instead of per page. --}}
 <script src="/static/js/ace/ace.js"></script>
 
-<script>
+<script nonce="{{cspNonce}}">
     document.addEventListener('DOMContentLoaded', () => {
 
         const editors = new Map();

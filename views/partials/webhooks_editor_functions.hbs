@@ -3,7 +3,7 @@
       configured target URL). --}}
 {{> filter_editor_js hasMap=true}}
 
-<script>
+<script nonce="{{cspNonce}}">
     document.addEventListener('DOMContentLoaded', () => {
 
         const sendTestPayload = async () => {

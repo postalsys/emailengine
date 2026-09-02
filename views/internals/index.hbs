@@ -163,7 +163,7 @@ submitLabel="Download Snapshot" submitVariant="info"}}
 Generate a memory snapshot for debugging? This may briefly affect thread performance.
 {{/ui/confirm-modal}}
 
-<script>
+<script nonce="{{cspNonce}}">
     document.addEventListener('DOMContentLoaded', () => {
         for (let elm of document.querySelectorAll('.kill-thread-btn')) {
             elm.addEventListener('click', e => {

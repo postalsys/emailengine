@@ -1,5 +1,5 @@
 <input type="hidden" id="wellKnownServices" value="{{wellKnownServices}}">
-<script>
+<script nonce="{{cspNonce}}">
     document.addEventListener('DOMContentLoaded', () => {
         let wellKnownServices = JSON.parse(document.getElementById('wellKnownServices').value);
 

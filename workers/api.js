@@ -117,7 +117,7 @@ const {
 
 const registerApiRoutes = require('../lib/api-routes');
 const bullBoardRoutes = require('../lib/api-routes/bull-board-routes');
-const { applySecurityHeaders, isAdminPath } = require('../lib/security-headers');
+const { securityHeadersExt, attachSecurityContext, isAdminPath, isMachineRoute, isSecureOrigin, CSP_MODES } = require('../lib/security-headers');
 const { registerHandlebarsHelpers } = require('../lib/handlebars-helpers');
 
 const {
@@ -204,6 +204,16 @@ const API_TLS = hasEnvValue('EENGINE_API_TLS') ? getBoolean(readEnvValue('EENGIN
 
 // Merge TLS settings from config params and environment
 loadTlsConfig(API_TLS, 'EENGINE_API_TLS_');
+
+// How the Content-Security-Policy is delivered: enforce (default), report-only, or off.
+// An unknown value falls back to enforce, and says so once
+const CSP_MODE_CONFIGURED = String(hasEnvValue('EENGINE_CSP_MODE') ? readEnvValue('EENGINE_CSP_MODE') : config.api.cspMode || '')
+    .trim()
+    .toLowerCase();
+const CSP_MODE = CSP_MODES.includes(CSP_MODE_CONFIGURED) ? CSP_MODE_CONFIGURED : 'enforce';
+if (CSP_MODE_CONFIGURED && CSP_MODE_CONFIGURED !== CSP_MODE) {
+    logger.warn({ msg: 'Unknown Content-Security-Policy mode, enforcing the policy', configured: CSP_MODE_CONFIGURED, cspMode: CSP_MODE });
+}
 
 // Per-worker thread metadata. With multiple API workers (EENGINE_WORKERS_API > 1) the
 // main thread assigns each one an index and whether to bind with SO_REUSEPORT. Only
@@ -716,7 +726,11 @@ const init = async () => {
 
         // Both settings are needed on every request and neither depends on the other, so they are
         // read in a single HMGET rather than two serialized round trips
-        let { enableApiProxy, disableTokens } = await settings.getMulti('enableApiProxy', 'disableTokens');
+        let { enableApiProxy, disableTokens, serviceUrl } = await settings.getMulti('enableApiProxy', 'disableTokens', 'serviceUrl');
+
+        // Before anything can render a view (the allowlist refusal below does), so the nonce
+        // the template stamps on its scripts is the one the response header carries
+        attachSecurityContext(request, { secureOrigin: isSecureOrigin(serviceUrl) });
 
         // check if client IP is resolved from X-Forwarded-For or not
         request.app.ip = resolveClientIp({
@@ -1169,16 +1183,8 @@ const init = async () => {
     await server.register(Cookie);
     await server.register(Bell);
 
-    let secureCookie = false;
-    try {
-        let serviceUrl = await settings.get('serviceUrl');
-        if (serviceUrl) {
-            let parsedUrl = new URL(serviceUrl);
-            secureCookie = parsedUrl.protocol === 'https:';
-        }
-    } catch (err) {
-        // skip
-    }
+    // the signal HSTS keys on too, so the cookies and the header agree on what "https" means
+    let secureCookie = isSecureOrigin(await settings.get('serviceUrl'));
 
     server.state('locale', {
         ttl: null,
@@ -2851,7 +2857,7 @@ const init = async () => {
             skip: (request /*, h*/) => {
                 let tags = (request.route && request.route.settings && request.route.settings.tags) || [];
 
-                if (tags.includes('api') || tags.includes('scope:metrics') || tags.includes('static') || tags.includes('external')) {
+                if (isMachineRoute(tags)) {
                     return true;
                 }
 
@@ -3075,6 +3081,8 @@ const init = async () => {
             const isAuthenticated = !!(request.auth && request.auth.isAuthenticated);
 
             return {
+                // the per-request CSP nonce every inline <script> carries (lib/security-headers.js)
+                cspNonce: request.app.cspNonce,
                 pageBrandName: pageBrandName || 'EmailEngine',
                 values: request.payload || {},
                 errors: (request.error && request.error.details) || {},
@@ -3194,7 +3202,7 @@ const init = async () => {
 
     // After preResponse on purpose: it replaces an error response with the rendered error page
     // or a JSON body, and the headers have to land on whatever is actually sent
-    server.ext('onPreResponse', applySecurityHeaders);
+    server.ext('onPreResponse', securityHeadersExt({ cspMode: CSP_MODE }));
 
     server.ext('onPostAuth', async (request, h) => {
         if (request.requireTotp) {

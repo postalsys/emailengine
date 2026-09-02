@@ -14,9 +14,11 @@ pages, blocked access, failed form submissions without a friendlier page). --}}
         </div>
         {{/if}}
         <div class="ee-form-actions">
-            <a href="javascript:history.back()" class="ee-btn ee-btn-neutral ee-btn-soft ee-btn-sm">
+            {{!-- A button rather than a javascript: link: the Content-Security-Policy on the admin
+                 surface allows no javascript: URLs; static/js/public.js wires data-ee-back --}}
+            <button type="button" data-ee-back class="ee-btn ee-btn-neutral ee-btn-soft ee-btn-sm">
                 <span class="ee-icon ee-icon-arrow-left"></span> {{_ "Go back" templateLocale}}
-            </a>
+            </button>
             {{!-- The dashboard is an admin destination. A mailbox owner on the hosted form or a
                  list recipient on an unsubscribe link has no business there, so the button only
                  shows for a requester who holds an admin session, or on an instance that has no

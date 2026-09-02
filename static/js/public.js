@@ -16,6 +16,13 @@
 //   - clicking the backdrop closes the dialog (the dialog element is the
 //     click target only when the click lands outside the dialog panel)
 document.addEventListener('click', e => {
+    // The error page's "Go back" button. A button rather than a javascript: link, which the
+    // Content-Security-Policy of the admin surface (where the error page also renders) forbids
+    if (e.target.closest('[data-ee-back]')) {
+        window.history.back();
+        return;
+    }
+
     let closeBtn = e.target.closest('[data-modal-close]');
     if (closeBtn) {
         let dialog = closeBtn.closest('dialog.ee-modal');

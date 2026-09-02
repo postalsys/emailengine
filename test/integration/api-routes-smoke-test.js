@@ -564,3 +564,26 @@ test('settings credential masking round trip', async t => {
         assert.deepEqual(await settings.get('webhooksCustomHeaders'), headers, 'the stored header credential must survive the round trip');
     });
 });
+
+// The machine-facing header set (lib/security-headers.js) as the live worker sends it: nothing
+// may render or frame an API response, and nothing caches it. Both on a success and on the 401
+// the error extension rebuilds, which is where a header stamped too early would go missing.
+test('security headers on the API', async t => {
+    await t.test('a JSON response carries the machine-facing set', async () => {
+        const res = await authed.get('/v1/settings');
+        assert.equal(res.status, 200);
+        assert.equal(res.headers['content-security-policy'], "default-src 'none'; frame-ancestors 'none'");
+        assert.equal(res.headers['x-frame-options'], 'DENY');
+        assert.equal(res.headers['x-content-type-options'], 'nosniff');
+        assert.equal(res.headers['cache-control'], 'no-store');
+        assert.equal(res.headers['strict-transport-security'], undefined, 'the test instance has no https serviceUrl');
+    });
+
+    await t.test('a rebuilt 401 carries the same set', async () => {
+        const res = await supertest(baseUrl).get('/v1/settings');
+        assert.equal(res.status, 401);
+        assert.equal(res.headers['content-security-policy'], "default-src 'none'; frame-ancestors 'none'");
+        assert.equal(res.headers['x-frame-options'], 'DENY');
+        assert.equal(res.headers['cache-control'], 'no-store');
+    });
+});

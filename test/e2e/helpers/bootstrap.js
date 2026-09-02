@@ -1,6 +1,6 @@
 'use strict';
 
-/* global Event */
+/* global Event, document */
 
 // Idempotent admin-UI bootstrap helpers for the e2e suite. Every spec shares one booted
 // EmailEngine instance and the isolated Redis db 14 (see playwright.config.js), so these must
@@ -24,9 +24,15 @@ const BASE_URL = `http://127.0.0.1:${PORT}`;
 // process, not for this one, so reading the config here would target the development database.
 const REDIS_URL = 'redis://127.0.0.1:6379/14';
 
-// Per-test console error collection: browser console.error output and uncaught page errors.
-// Every spec should end with expect(errors).toHaveLength(0) so silent JS breakage (a broken
-// selector, a missing global) fails the test even when the DOM assertions still pass.
+// Per-test console error collection: browser console.error output, uncaught page errors and
+// Content-Security-Policy violations. Every spec should end with expect(errors).toHaveLength(0)
+// so silent JS breakage (a broken selector, a missing global) fails the test even when the DOM
+// assertions still pass.
+//
+// Chromium already logs an enforced CSP violation as a console error, but a report-only policy
+// (EENGINE_CSP_MODE=report-only) only fires the document event, so the page reports those
+// itself. The init script runs in every document the page navigates to, including the popup a
+// spec may open through the same context.
 function trackConsoleErrors(page) {
     const errors = [];
     page.on('console', msg => {
@@ -35,6 +41,13 @@ function trackConsoleErrors(page) {
         }
     });
     page.on('pageerror', err => errors.push(`pageerror: ${err.message}`));
+    page.addInitScript(() => {
+        document.addEventListener('securitypolicyviolation', e => {
+            console.error(
+                `csp violation: ${e.violatedDirective} blocked ${e.blockedURI || 'inline'} (${e.disposition}) at ${e.sourceFile || document.location.href}:${e.lineNumber}`
+            );
+        });
+    });
     return errors;
 }
 

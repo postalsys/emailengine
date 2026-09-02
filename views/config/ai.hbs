@@ -311,7 +311,7 @@ defaultTestPayload='{"account":"test","path":"INBOX","subject":"test email"}'}}
 
 <input type="hidden" id="defaultPromptJson" value="{{defaultPromptJson}}">
 
-<script>
+<script nonce="{{cspNonce}}">
     document.addEventListener('DOMContentLoaded', () => {
 
         const editorPrompt = uiAceEditor("editor-prompt", "markdown", document.getElementById('openAiPromptElement').value, {

@@ -181,7 +181,7 @@ Remove this IP from the list? It will be re-added if found during the next scan.
 {{/ui/confirm-modal}}
 
 
-<script>
+<script nonce="{{cspNonce}}">
     document.addEventListener('DOMContentLoaded', () => {
         let reloadBtn = document.getElementById('reload-btn');
 
@@ -219,10 +219,10 @@ Remove this IP from the list? It will be re-added if found during the next scan.
 
         checkCheckboxes()
 
-        let redrawAddressList = data => {
+        let redrawAddressList = html => {
             // rendered server-side by /admin/config/network/reload from the same
             // address_list partial as the initial page
-            document.getElementById('address-list').innerHTML = data.html;
+            document.getElementById('address-list').innerHTML = html;
 
             for (let elm of document.querySelectorAll('#address-list .checkbox-entry')) {
                 elm.addEventListener('click', checkCheckboxes);
@@ -246,7 +246,7 @@ Remove this IP from the list? It will be re-added if found during the next scan.
                 }
 
                 if (data.html) {
-                    redrawAddressList(data);
+                    redrawAddressList(data.html);
                 }
 
             }).catch(err => {

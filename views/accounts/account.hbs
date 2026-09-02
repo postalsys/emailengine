@@ -951,7 +951,7 @@ submitLabel="Delete account"}}
 {{!-- no #crumb input: the layout already renders the element the script reads --}}
 <input type="hidden" id="account-id" value="{{account.account}}">
 
-<script>
+<script nonce="{{cspNonce}}">
     document.addEventListener('DOMContentLoaded', () => {
 
         const reconnectAccount = async () => {
@@ -1365,7 +1365,7 @@ submitLabel="Delete account"}}
     });
 </script>
 
-<script>
+<script nonce="{{cspNonce}}">
     document.addEventListener('DOMContentLoaded', () => {
         let aborted = false;
 

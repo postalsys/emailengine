@@ -34,6 +34,10 @@ Two behaviors of the consent page are deliberate and easy to "fix" back into pro
 
 The document is a published surface: the README points at it, emailengine.dev mirrors it, and it feeds Postman and code generators. `.label()` on a joi schema is therefore a public type name, and the endpoint is intentionally unauthenticated. Any change that alters the document has to be acknowledged by re-recording `test/fixtures/openapi-golden.json` (see `.claude/rules/testing.md`).
 
+## Security headers
+
+`lib/security-headers.js` stamps every response from an `onPreResponse` extension registered after the error-page one in `workers/api.js`, so error pages, redirects and JSON errors carry the headers too. The request path (plus route tags) picks a profile - `static`, `api`, `admin`, `bullBoard`, `public` - and with it the framing headers, COOP/CORP, `Cache-Control: no-store` and the Content-Security-Policy preset. A view rendered with the public layout takes the public CSP preset even on an admin path (error pages, the branding preview), because that layout carries operator-injected markup; `frame-ancestors` follows the path regardless. The admin policy is nonce-based: `attachSecurityContext()` mints `request.app.cspNonce` at the top of the `onRequest` extension, the view context exposes it as `cspNonce`, and every inline `<script>` in `views/` carries `nonce="{{cspNonce}}"` (`test/views-csp-guardrail-test.js` enforces it, `.claude/rules/admin-ui.md` has the authoring rules). A route adjusts single directives through `options.plugins.securityHeaders.directives` (the message browser allows remote images, the MCP consent page drops `form-action` because its redirect target is the client's own URI). Public pages stay frameable and get a relaxed policy on purpose. HSTS is sent when `serviceUrl` is https, the same signal that marks the cookies Secure; `Cache-Control` is only filled in where a handler set none. `/static` responses carry no CSP because `static/js/evaluation-worker.js` runs operator code through `new Function` by design.
+
 ## Releases
 
 Releases are drafted, not published, by `release-please` (`release-please-config.json`, manifest mode - the `draft` option has no action input, which is why the config file exists). The binaries are built, signed and notarized outside CI by `upload.sh`, which uploads them to the draft and then publishes it. Nobody can reach a version whose binaries do not exist yet.
@@ -81,6 +85,7 @@ Path-scoped rules in `.claude/rules/` load automatically when you work with the 
 - `EENGINE_SMTP_MAX_CLIENTS` - Maximum concurrent SMTP server connections (default: 100; also `[smtp] maxClients`). Each connection buffers its message in memory up to `EENGINE_MAX_SMTP_MESSAGE_SIZE`, so this bounds the SMTP worker's memory; excess connections are refused with a 421
 - `EENGINE_DOCUMENT_STORE_ENABLED` - Enable the deprecated Document Store feature (default: false; also settable via `--documentStore.enabled` / `[documentStore] enabled`)
 - `EENGINE_MCP_ENABLED` - Register the MCP endpoint routes (default: true; also settable via `--mcp.enabled` / `[mcp] enabled`). Registration alone serves nothing: the `mcpEnabled` setting (default false) is the runtime switch
+- `EENGINE_CSP_MODE` - How the Content-Security-Policy is delivered: `enforce` (default), `report-only` (framing stays enforced, the rest of the policy goes to `Content-Security-Policy-Report-Only` so violations only show in the browser console) or `off` (the framing directive only). Also `[api] cspMode`. The other security headers are not affected by it
 
 **Network trust and egress:**
 - `EENGINE_ADMIN_ACCESS_ADDRESSES` - Comma-separated IPs/CIDRs allowed to reach `/admin` (default: unset, no restriction)

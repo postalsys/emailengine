@@ -13,7 +13,7 @@
     redirectMap is serialized by jsonForScript() in lib/api-reference/index.js, which escapes
     `<` so the literal cannot terminate this script element.
 --}}
-<script>
+<script nonce="{{cspNonce}}">
     (() => {
         const map = {{{redirectMap}}};
         const fallback = '/admin/reference';

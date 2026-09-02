@@ -27,6 +27,7 @@ maxSize = "5M"     # maximum size of an attachment when submitting or uploading 
 #maxBodySize = "50M" # maximum size of an API request body
 #maxPayloadTimeout = "10s" # how long to wait for a request body to arrive
 #proxy = false # trust X-Forwarded-For from a reverse proxy (restrict the peers with EENGINE_API_PROXY_ADDRESSES)
+#cspMode = "enforce" # Content-Security-Policy delivery: "enforce", "report-only" (violations are only reported to the browser console) or "off"
 # Serve the API over HTTPS by pointing at a certificate and key
 #[api.tls]
 #certPath = "/path/to/cert.pem"

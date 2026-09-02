@@ -355,7 +355,7 @@ fieldName="app" fieldValue=app.id submitLabel="Delete app" submitIcon="icon-[tab
 </form>
 {{/ui/modal}}
 
-<script>
+<script nonce="{{cspNonce}}">
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('addServiceAccountModal').addEventListener('open.overlay', () => {
             document.getElementById('service-account-name').focus();
@@ -364,7 +364,7 @@ fieldName="app" fieldValue=app.id submitLabel="Delete app" submitIcon="icon-[tab
 </script>
 {{/if}}
 
-<script>
+<script nonce="{{cspNonce}}">
     document.addEventListener('DOMContentLoaded', () => {
         const appId = "{{app.id}}";
         const stepsElm = document.getElementById('verify-steps');

@@ -137,10 +137,10 @@ server {
     ssl_certificate_key /path/to/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
 
-    # Security headers
-    add_header Strict-Transport-Security "max-age=31536000" always;
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
+    # EmailEngine sends its own security headers (Content-Security-Policy, X-Frame-Options,
+    # X-Content-Type-Options, Referrer-Policy, Permissions-Policy), and Strict-Transport-Security
+    # once the service URL setting is https. Do not add them here as well: a second copy of a
+    # header is at best redundant and, for Content-Security-Policy, the two are both enforced.
 
     location / {
         proxy_pass http://127.0.0.1:3000;
@@ -177,11 +177,10 @@ server {
 ```caddyfile
 emailengine.example.com {
     reverse_proxy localhost:3000
-    header Strict-Transport-Security "max-age=31536000"
-    header X-Frame-Options "SAMEORIGIN"
-    header X-Content-Type-Options "nosniff"
 }
 ```
+
+EmailEngine sets the security headers itself (see the note in the Nginx example), so the Caddyfile needs no `header` lines.
 
 ### Step 3: Firewall Configuration
 

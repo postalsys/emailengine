@@ -3,7 +3,8 @@
     POST /admin/smtp/check-test (compiledFragments.testSend in
     lib/ui-routes/route-helpers.js) and returned as the `html` field the
     account page drops into the results panel. Relies on the statusColor and
-    statusIcon helpers registered in workers/api.js. Native details/summary
+    statusIcon helpers from lib/handlebars-helpers.js. Rendered without the
+    page's view context, so no inline scripts here. Native details/summary
     panels - no JS.
 --}}
 <div class="space-y-2 mb-4">

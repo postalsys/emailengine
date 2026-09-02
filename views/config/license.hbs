@@ -122,7 +122,7 @@ submitLabel="Remove License"}}
 Remove the current license key from this EmailEngine instance?
 {{/ui/confirm-modal}}
 
-<script>
+<script nonce="{{cspNonce}}">
     document.addEventListener('DOMContentLoaded', () => {
         let licenseTextElm = document.getElementById('licenseTextElement')
         let fileSelectElm = document.getElementById('licenseFile');

@@ -352,7 +352,7 @@
         Provisioning a trial license, please wait <span class="loading loading-spinner loading-sm align-middle"></span>
     </div>
     {{/ui/modal}}
-    <script>
+    <script nonce="{{cspNonce}}">
         document.addEventListener('DOMContentLoaded', () => {
             let trialBtn = document.getElementById('start-trial-btn');
             if (!trialBtn) {
@@ -392,7 +392,7 @@
 
     {{#if updateBrowserInfo}}
     <input type="hidden" id="browser-info-crumb" value="{{crumb}}" />
-    <script>
+    <script nonce="{{cspNonce}}">
         document.addEventListener('DOMContentLoaded', () => {
             let sendBrowserInfo = async () => {
                 let timezone = false;

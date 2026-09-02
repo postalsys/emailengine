@@ -290,7 +290,7 @@ focus ring on) the corner close button --}}
 
 <input type="hidden" id="autoTest" value="{{#if autoTest}}true{{/if}}">
 
-<script>
+<script nonce="{{cspNonce}}">
     document.addEventListener('DOMContentLoaded', () => {
 
         let formTested = false;

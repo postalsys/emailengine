@@ -83,6 +83,8 @@ const GET_ROUTES = [
     '/unsubscribe'
 ];
 
+const { inlineScriptAttrs, NONCE_RE } = require('../helpers/inline-scripts');
+
 test('Admin UI routes smoke test', async t => {
     await t.test('every parameterless GET route is registered and does not crash', async () => {
         for (const path of GET_ROUTES) {
@@ -90,5 +92,61 @@ test('Admin UI routes smoke test', async t => {
             assert.notEqual(res.status, 404, `GET ${path} returned 404 - route is not registered (dropped or renamed during extraction)`);
             assert.ok(res.status < 500, `GET ${path} returned ${res.status} - handler crashed (likely a broken require or missing symbol after extraction)`);
         }
+    });
+
+    // The unit test proves the extension on a hand-built server; this proves the real worker
+    // wires it, seeds the nonce before rendering, and that every page's inline scripts carry the
+    // nonce the header names - the one mismatch a browser would answer with a dead page
+    await t.test('every admin page carries a Content-Security-Policy whose nonce its inline scripts use', async () => {
+        const nonces = new Set();
+
+        for (const path of GET_ROUTES.filter(path => path.startsWith('/admin'))) {
+            const res = await supertest(baseUrl).get(path);
+            const csp = res.headers['content-security-policy'];
+            assert.ok(csp, `GET ${path} (${res.status}) has no content-security-policy`);
+            assert.equal(res.headers['x-frame-options'], 'SAMEORIGIN', path);
+            assert.equal(res.headers['cache-control'], 'no-store', path);
+
+            if (res.status !== 200 || !/text\/html/.test(res.headers['content-type'])) {
+                // a redirect to the login page or a JSON body has no inline script to match
+                continue;
+            }
+
+            if (/'unsafe-inline'/.test(csp.match(/script-src ([^;]+)/)[1])) {
+                // a public-layout page on an admin path: relaxed on purpose, keeps admin framing
+                assert.match(csp, /frame-ancestors 'self'/, path);
+                continue;
+            }
+
+            const nonce = csp.match(NONCE_RE);
+            assert.ok(nonce, `GET ${path} policy names no nonce: ${csp}`);
+            nonces.add(nonce[1]);
+
+            for (const attrs of inlineScriptAttrs(res.text)) {
+                assert.match(attrs, new RegExp(`\\bnonce="${nonce[1]}"`), `GET ${path}: inline <script${attrs}> does not carry the header nonce`);
+            }
+        }
+
+        assert.ok(nonces.size > 1, 'every response carries its own nonce');
+    });
+
+    await t.test('a public page gets the relaxed policy and stays frameable', async () => {
+        // No signed form data, so this is the public error page - which is exactly the response
+        // an operator's own application would embed a failure of
+        const res = await supertest(baseUrl).get('/accounts/new');
+        const csp = res.headers['content-security-policy'];
+        assert.ok(csp);
+        assert.match(csp, /script-src 'self' https: 'unsafe-inline'/);
+        assert.doesNotMatch(csp, /nonce|frame-ancestors/);
+        assert.equal(res.headers['x-frame-options'], undefined);
+        assert.notEqual(res.headers['cache-control'], 'no-store');
+        assert.equal(res.headers['x-content-type-options'], 'nosniff');
+    });
+
+    await t.test('static assets carry no policy', async () => {
+        const res = await supertest(baseUrl).get('/static/js/app.js');
+        assert.equal(res.status, 200);
+        assert.equal(res.headers['content-security-policy'], undefined);
+        assert.equal(res.headers['x-content-type-options'], 'nosniff');
     });
 });

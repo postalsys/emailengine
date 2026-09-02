@@ -34,6 +34,8 @@ const assert = require('node:assert').strict;
 const fs = require('fs');
 const pathlib = require('path');
 
+const { listFiles } = require('./helpers/list-files');
+
 const ROOT = pathlib.join(__dirname, '..');
 const VIEWS = pathlib.join(ROOT, 'views');
 const UI_DIR = pathlib.join(VIEWS, 'partials', 'ui');
@@ -45,17 +47,7 @@ const READS_ID = /\{\{#if id\}\}|\{\{id\}\}|\bid=id\b/;
 // Any partial invocation, block or inline, with its hash arguments.
 const INVOCATION = /\{\{#?>\s*([a-z][a-z0-9/-]*)([\s\S]*?)\}\}/g;
 
-function hbsFiles(dir, out = []) {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-        const full = pathlib.join(dir, entry.name);
-        if (entry.isDirectory()) {
-            hbsFiles(full, out);
-        } else if (entry.name.endsWith('.hbs')) {
-            out.push(full);
-        }
-    }
-    return out;
-}
+const hbsFiles = dir => listFiles(dir, '.hbs');
 
 // Partial name as Handlebars resolves it, e.g. views/partials/ui/badge.hbs -> "ui/badge"
 function partialName(file) {
