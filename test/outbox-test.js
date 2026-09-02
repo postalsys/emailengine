@@ -202,4 +202,81 @@ test('Outbox', async t => {
             submitQueue.remove = originalRemove;
         }
     });
+
+    await t.test('del() removes a scheduled message and its content', async () => {
+        const account = 'outbox-del-account';
+        await queueMessage(account, 'outbox-del-id');
+
+        try {
+            assert.deepEqual(await outbox.del({ queueId: 'outbox-del-id', logger }), { deleted: true });
+
+            assert.equal(await submitQueue.getJob('outbox-del-id'), undefined);
+            assert.equal(await redis.hexists(`${REDIS_PREFIX}iaq:${account}`, 'outbox-del-id'), 0);
+        } finally {
+            await submitQueue.remove('outbox-del-id').catch(() => false);
+            await redis.unlink(`${REDIS_PREFIX}iaq:${account}`);
+        }
+    });
+
+    await t.test('del() reports an unknown queue ID as not deleted', async () => {
+        assert.deepEqual(await outbox.del({ queueId: 'outbox-del-missing-id', logger }), { deleted: false });
+    });
+
+    // Stands in for the job a submit worker is delivering: BullMQ reports it as active and refuses
+    // to remove it while the worker holds the lock
+    function stubGetJob(patchJob) {
+        const originalGetJob = submitQueue.getJob;
+        submitQueue.getJob = async queueId => {
+            const job = await originalGetJob.call(submitQueue, queueId);
+            if (job) {
+                patchJob(job);
+            }
+            return job;
+        };
+        return () => {
+            submitQueue.getJob = originalGetJob;
+        };
+    }
+
+    await t.test('del() reports a message that is being delivered as locked and leaves it alone', async () => {
+        const account = 'outbox-del-locked-account';
+        await queueMessage(account, 'outbox-del-locked-id');
+
+        const restore = stubGetJob(job => {
+            job.isActive = async () => true;
+            job.remove = async () => {
+                throw new Error('remove() must not be called for a job in flight');
+            };
+        });
+
+        try {
+            assert.deepEqual(await outbox.del({ queueId: 'outbox-del-locked-id', logger }), { deleted: false, locked: true });
+
+            assert.equal(await redis.hexists(`${REDIS_PREFIX}iaq:${account}`, 'outbox-del-locked-id'), 1, 'the content of a message in flight must stay');
+        } finally {
+            restore();
+            await submitQueue.remove('outbox-del-locked-id').catch(() => false);
+            await redis.unlink(`${REDIS_PREFIX}iaq:${account}`);
+        }
+    });
+
+    await t.test('del() throws when the queue entry cannot be removed for any other reason', async () => {
+        // Anything but the lock is a real failure, and a 200 with deleted:false would hide it
+        const account = 'outbox-del-failing-account';
+        await queueMessage(account, 'outbox-del-failing-id');
+
+        const restore = stubGetJob(job => {
+            job.remove = async () => {
+                throw new Error('Redis is unavailable');
+            };
+        });
+
+        try {
+            await assert.rejects(outbox.del({ queueId: 'outbox-del-failing-id', logger }), /Redis is unavailable/);
+        } finally {
+            restore();
+            await submitQueue.remove('outbox-del-failing-id').catch(() => false);
+            await redis.unlink(`${REDIS_PREFIX}iaq:${account}`);
+        }
+    });
 });

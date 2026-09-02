@@ -57,6 +57,34 @@ test('Settings AI text coupling', async t => {
         assert.strictEqual(await settings.get('generateEmailSummary'), false);
     });
 
+    // The credential-bearing URLs and the custom webhook headers are encrypted at rest without
+    // joining the list the settings API turns into booleans (config/test.toml sets the secret)
+    await t.test('credential-bearing settings are encrypted at rest and read back intact', async () => {
+        const webhooks = 'https://hook:s3cret@example.com/webhooks';
+        const headers = [{ key: 'Authorization', value: 'Bearer abc' }];
+
+        await settings.set('webhooks', webhooks);
+        await settings.setMulti({ webhooksCustomHeaders: headers, proxyUrl: 'socks5://user:pass@127.0.0.1:1080' });
+
+        for (const key of ['webhooks', 'webhooksCustomHeaders', 'proxyUrl']) {
+            const raw = await redis.hget(`${REDIS_PREFIX}settings`, key);
+            assert.ok(raw.startsWith('$wd01$'), `${key} must be stored encrypted, got ${raw.slice(0, 12)}`);
+            assert.ok(!raw.includes('s3cret') && !raw.includes('Bearer') && !raw.includes('pass@'), `${key} must not be stored in the clear`);
+            assert.ok(settings.encryptedKeys.includes(key), `${key} must be on the list a secret rotation re-encrypts`);
+            assert.ok(!settings.secretKeys.includes(key), `${key} must keep being returned by the settings API, not masked to a boolean`);
+        }
+
+        assert.strictEqual(await settings.get('webhooks'), webhooks);
+        assert.deepStrictEqual(await settings.get('webhooksCustomHeaders'), headers);
+        assert.strictEqual(await settings.get('proxyUrl'), 'socks5://user:pass@127.0.0.1:1080');
+    });
+
+    await t.test('a value stored in the clear before encryption still reads', async () => {
+        await redis.hset(`${REDIS_PREFIX}settings`, 'sentryDsn', JSON.stringify('https://key@sentry.example.com/1'));
+
+        assert.strictEqual(await settings.get('sentryDsn'), 'https://key@sentry.example.com/1');
+    });
+
     // serviceSecret is an ENCRYPTED_KEYS member, so these also exercise the encryption round trip.
     await t.test('setIfMissing stores when the key is absent', async () => {
         await redis.hdel(`${REDIS_PREFIX}settings`, 'serviceSecret');

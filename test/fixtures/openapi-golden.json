@@ -791,6 +791,11 @@
             "type": "string",
             "description": "Name of the input field that failed validation",
             "example": "pageSize"
+          },
+          "path": {
+            "type": "string",
+            "description": "Full path of the input field that failed validation. Same as key for a top-level field, dotted for a nested one",
+            "example": "to.0.address"
           }
         }
       },
@@ -822,6 +827,19 @@
           },
           "fields": {
             "$ref": "#/components/schemas/ValidationErrorFields"
+          },
+          "code": {
+            "type": "string",
+            "description": "Machine-readable error code, if available",
+            "example": "MailboxNotFound"
+          },
+          "details": {
+            "type": "string",
+            "description": "Additional error details, if available. The email server response for a refused mailbox operation"
+          },
+          "info": {
+            "type": "string",
+            "description": "Additional error details, if available. The email server response for a refused message operation"
           }
         }
       },
@@ -864,6 +882,21 @@
             "type": "string",
             "description": "Error message",
             "example": "Unauthorized scope"
+          },
+          "requestedScope": {
+            "type": "string",
+            "description": "The scope the operation needed, when the token does not carry it",
+            "example": "api"
+          },
+          "requiredPermission": {
+            "type": "string",
+            "description": "The permission grant the operation needed, when the token permissions do not include it",
+            "example": "messages:write"
+          },
+          "remoteAddress": {
+            "type": "string",
+            "description": "The client IP address, when the token is restricted to other addresses",
+            "example": "203.0.113.1"
           }
         }
       },
@@ -2699,7 +2732,10 @@
           "path": {
             "$ref": "#/components/schemas/CreateMailboxPathInput"
           }
-        }
+        },
+        "required": [
+          "path"
+        ]
       },
       "CreateMailboxResponse": {
         "type": "object",
@@ -8975,6 +9011,11 @@
             "type": "boolean",
             "description": "Was the message deleted",
             "default": true
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "Present when the message was not deleted because a delivery attempt is running for it right now. Retry once the attempt has finished",
+            "example": true
           }
         }
       },
@@ -11070,8 +11111,7 @@
       },
       "TemplateUpdateFormat": {
         "type": "string",
-        "description": "Markup language for HTML (\"html\" or \"markdown\")",
-        "default": "html",
+        "description": "Markup language for HTML (\"html\" or \"markdown\"). Leave out to keep the stored value",
         "enum": [
           "html",
           "markdown"
@@ -12556,12 +12596,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           }
         ],
         "tags": [
@@ -12588,7 +12628,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -12666,12 +12706,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -12714,7 +12754,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -12790,12 +12830,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -12837,7 +12877,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -12913,12 +12953,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -12964,7 +13004,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -13043,12 +13083,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -13093,7 +13133,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -13178,12 +13218,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -13225,7 +13265,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -13303,12 +13343,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -13353,7 +13393,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -13426,12 +13466,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -13476,7 +13516,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -13552,12 +13592,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -13602,7 +13642,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -13687,12 +13727,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -13751,7 +13791,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -13816,12 +13856,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -13863,7 +13903,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -13942,12 +13982,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -13989,7 +14029,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -14072,12 +14112,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -14119,7 +14159,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -14202,12 +14242,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -14251,7 +14291,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -14337,12 +14377,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -14385,7 +14425,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -14470,12 +14510,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -14517,7 +14557,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -14605,12 +14645,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -14730,7 +14770,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -14813,12 +14853,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -14872,7 +14912,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -14958,12 +14998,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -15018,7 +15058,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -15107,12 +15147,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -15166,7 +15206,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -15251,12 +15291,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -15301,7 +15341,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -15386,12 +15426,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "idempotency-key",
@@ -15460,7 +15500,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -15557,12 +15597,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -15649,7 +15689,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -15732,12 +15772,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -15790,7 +15830,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -15878,12 +15918,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -15946,7 +15986,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -16035,12 +16075,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -16093,7 +16133,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -16178,12 +16218,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -16216,7 +16256,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -16291,12 +16331,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -16338,7 +16378,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -16416,12 +16456,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -16528,7 +16568,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -16624,12 +16664,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -16662,7 +16702,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -16737,12 +16777,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "idempotency-key",
@@ -16822,7 +16862,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -16912,12 +16952,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -16959,7 +16999,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -17037,12 +17077,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -17131,7 +17171,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -17216,12 +17256,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "page",
@@ -17309,7 +17349,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -17374,12 +17414,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           }
         ],
         "tags": [
@@ -17406,7 +17446,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -17481,12 +17521,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "email",
@@ -17518,7 +17558,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -17583,12 +17623,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "listId",
@@ -17646,7 +17686,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -17719,12 +17759,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "listId",
@@ -17765,7 +17805,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -17838,12 +17878,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "listId",
@@ -17889,7 +17929,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -17965,12 +18005,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "page",
@@ -18014,7 +18054,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -18079,12 +18119,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           }
         ],
         "tags": [
@@ -18160,12 +18200,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -18207,7 +18247,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -18282,12 +18322,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -18329,7 +18369,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -18408,12 +18448,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "deliveryTest",
@@ -18450,7 +18490,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -18525,12 +18565,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           }
         ],
         "tags": [
@@ -18557,7 +18597,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -18622,12 +18662,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "gateway",
@@ -18657,7 +18697,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -18730,12 +18770,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "gateway",
@@ -18765,7 +18805,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -18841,12 +18881,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "gateway",
@@ -18885,7 +18925,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -18960,12 +19000,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "page",
@@ -19009,7 +19049,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -19074,12 +19114,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           }
         ],
         "tags": [
@@ -19150,12 +19190,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           }
         ],
         "tags": [
@@ -19182,7 +19222,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -19245,12 +19285,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           }
         ],
         "tags": [
@@ -19324,12 +19364,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -19362,7 +19402,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -19387,6 +19427,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - the requested entity (account, message, mailbox, etc.) does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorResponse"
                 }
               }
             }
@@ -19430,12 +19480,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "page",
@@ -19479,7 +19529,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -19542,12 +19592,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           }
         ],
         "tags": [
@@ -19574,7 +19624,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -19639,12 +19689,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "app",
@@ -19674,7 +19724,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -19747,12 +19797,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "app",
@@ -19791,7 +19841,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -19864,12 +19914,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "app",
@@ -19899,7 +19949,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -19975,12 +20025,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "app",
@@ -20019,7 +20069,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -20095,12 +20145,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "page",
@@ -20144,7 +20194,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -20209,12 +20259,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "queueId",
@@ -20244,7 +20294,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -20317,12 +20367,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "queueId",
@@ -20352,7 +20402,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -20418,12 +20468,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "page",
@@ -20467,7 +20517,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -20532,12 +20582,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "eventTypes",
@@ -21275,7 +21325,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -21338,12 +21388,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           }
         ],
         "tags": [
@@ -21370,7 +21420,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -21435,12 +21485,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "queue",
@@ -21477,7 +21527,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -21540,12 +21590,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "queue",
@@ -21591,7 +21641,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -21655,12 +21705,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "seconds",
@@ -21691,7 +21741,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -21756,12 +21806,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -21816,7 +21866,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -21891,12 +21941,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "account",
@@ -21939,7 +21989,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -22015,12 +22065,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           }
         ],
         "tags": [
@@ -22047,7 +22097,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -22122,12 +22172,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "template",
@@ -22157,7 +22207,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -22230,12 +22280,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "template",
@@ -22274,7 +22324,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -22347,12 +22397,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "template",
@@ -22382,7 +22432,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -22448,12 +22498,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "page",
@@ -22525,7 +22575,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -22588,12 +22638,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           }
         ],
         "tags": [
@@ -22620,7 +22670,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -22695,12 +22745,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "token",
@@ -22738,7 +22788,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -22811,12 +22861,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "token",
@@ -22854,7 +22904,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -22920,12 +22970,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "token",
@@ -22989,7 +23039,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -23065,12 +23115,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "page",
@@ -23123,7 +23173,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -23189,12 +23239,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           }
         ],
         "tags": [
@@ -23221,7 +23271,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -23287,12 +23337,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "page",
@@ -23336,7 +23386,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
@@ -23401,12 +23451,12 @@
             "in": "header",
             "schema": {
               "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
               "example": 30000,
               "minimum": 0,
               "maximum": 7200000
             },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
           },
           {
             "name": "webhookRoute",
@@ -23436,7 +23486,7 @@
             }
           },
           "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
             "content": {
               "application/json": {
                 "schema": {
