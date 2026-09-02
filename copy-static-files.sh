@@ -27,6 +27,10 @@ cp node_modules/ace-builds/src-min/ext-searchbox.js static/js/ace/ext-searchbox.
 
 cp node_modules/\@postalsys/ee-client/index.js static/js/ee-client.js
 
+# SimpleWebAuthn browser bundle, kept at the same version as @simplewebauthn/server (the
+# devDependency exists only to be vendored here; login-passkey.js and passkey-register.js load it)
+cp node_modules/\@simplewebauthn/browser/dist/bundle/index.umd.min.js static/vendor/simplewebauthn/browser.min.js
+
 # FlyonUI browser bundle (vendored like ace above; committed and bundled by pkg)
 cp node_modules/flyonui/flyonui.js static/js/flyonui.js
 

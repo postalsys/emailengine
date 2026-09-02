@@ -2265,10 +2265,16 @@ test.describe('admin shell', () => {
         }
 
         // The embed cannot reach a mailbox behind credentials that do not work, so its own
-        // folder-load failures and the 503 the mailbox endpoint answers with are this
-        // fixture's expected state. Only 503 is tolerated, not a blanket "failed to load
-        // resource" - that would swallow any 404 or 500 the page itself produced.
-        const unexpected = errors.filter(text => !/Failed to load folders|Failed to auto-select inbox|503 \(Service Unavailable\)/.test(text));
+        // folder-load failures (ee-client 1.7.1 reports them as a failed initial view) and the
+        // 503 the mailbox endpoint answers with are this fixture's expected state. Only 503 is
+        // tolerated, not a blanket "failed to load resource" - that would swallow any 404 or
+        // 500 the page itself produced.
+        const unexpected = errors.filter(
+            text =>
+                !/Failed to load folders|Failed to auto-select inbox|Failed to load the initial view: .*Service Unavailable|503 \(Service Unavailable\)/.test(
+                    text
+                )
+        );
         expect(unexpected, unexpected.join('\n')).toHaveLength(0);
     });
 

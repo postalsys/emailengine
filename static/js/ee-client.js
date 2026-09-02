@@ -66,22 +66,12 @@ export class EmailEngineClient {
         this._startKeepAliveTimer();
     }
 
-    async apiRequest(method, endpoint, data = null) {
-        // Update activity timestamp for keep-alive
+    // Resolves the platform fetch (native in browsers and modern Node, node-fetch as
+    // an optional fallback on older Node) and normalizes transport failures, so both
+    // HTTP entry points - apiRequest and _fetchBlob - fail in the same shape.
+    async _fetch(url, options) {
+        // Any request counts as activity for the keep-alive timer
         this._updateActivity();
-
-        const url = `${this.apiUrl}${endpoint}`;
-        const options = {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                ...this._authHeaders()
-            }
-        };
-
-        if (data) {
-            options.body = JSON.stringify(data);
-        }
 
         let fetchFn = globalThis.fetch;
         if (!fetchFn) {
@@ -102,26 +92,63 @@ export class EmailEngineClient {
             );
         }
 
-        const response = await fetchFn(url, options);
-        if (!response.ok) {
-            let errorDetails;
-            try {
-                errorDetails = await response.json();
-            } catch (parseError) {
-                // If JSON parsing fails, fall back to status text
-                errorDetails = { message: response.statusText };
-            }
-
-            const error = new Error(`API request failed: ${response.statusText}`);
-            error.statusCode = response.status;
-            error.details = errorDetails;
+        try {
+            return await fetchFn(url, options);
+        } catch (err) {
+            // Mark transport level failures - an unreachable server, DNS/TLS
+            // problems, a blocked CORS preflight - so callers can tell them apart
+            // from an API error that carries a server message.
+            const error = new Error(`Could not reach the EmailEngine server at ${this.apiUrl}`);
+            error.isNetworkError = true;
+            error.cause = err;
             throw error;
+        }
+    }
+
+    // Turns a non-ok response into an Error carrying the server's own explanation.
+    // EmailEngine answers with Boom payloads - { statusCode, error, message, code,
+    // fields } - which _errorMessage() knows how to read.
+    async _responseError(response) {
+        let details;
+        try {
+            details = await response.json();
+        } catch (parseError) {
+            // Not a JSON body - the status line is all there is to go on
+            details = { message: response.statusText };
+        }
+
+        const error = new Error(`API request failed: ${response.statusText}`);
+        error.statusCode = response.status;
+        error.details = details;
+        return error;
+    }
+
+    async apiRequest(method, endpoint, data = null) {
+        const options = {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                ...this._authHeaders()
+            }
+        };
+
+        if (data) {
+            options.body = JSON.stringify(data);
+        }
+
+        const response = await this._fetch(`${this.apiUrl}${endpoint}`, options);
+        if (!response.ok) {
+            throw await this._responseError(response);
         }
 
         return await response.json();
     }
 
     async loadFolders() {
+        // Reset the pane to its loading state so a retry after a failure does not
+        // keep showing the previous error while the new request is in flight.
+        this._setPaneHtml('.ee-folder-tree', '<div class="ee-loading">Loading folders...</div>');
+
         try {
             const data = await this.apiRequest('GET', `/v1/account/${this.account}/mailboxes`);
             this.folders = data.mailboxes || [];
@@ -132,17 +159,13 @@ export class EmailEngineClient {
             return this.folders;
         } catch (error) {
             console.error('Failed to load folders:', error);
+            this._renderPaneError('.ee-folder-tree', 'Folders unavailable', error, () => this._loadInitialView());
             throw error;
         }
     }
 
     async loadMessages(path, cursor = null) {
-        if (this.container) {
-            const messageList = this.container.querySelector('.ee-message-list');
-            if (messageList) {
-                messageList.innerHTML = '<div class="ee-loading">Loading messages...</div>';
-            }
-        }
+        this._setPaneHtml('.ee-message-list', '<div class="ee-loading">Loading messages...</div>');
 
         try {
             const params = new URLSearchParams({ path: path, pageSize: this.pageSize });
@@ -172,23 +195,15 @@ export class EmailEngineClient {
             };
         } catch (error) {
             console.error('Failed to load messages:', error);
-            if (this.container) {
-                const messageList = this.container.querySelector('.ee-message-list');
-                if (messageList) {
-                    messageList.innerHTML = '<div class="ee-error">Failed to load messages</div>';
-                }
-            }
+            this._renderPaneError('.ee-message-list', 'Messages unavailable', error, () =>
+                this._fireAndForget(this.loadMessages(path, cursor))
+            );
             throw error;
         }
     }
 
     async loadMessage(messageId) {
-        if (this.container) {
-            const viewer = this.container.querySelector('.ee-message-viewer');
-            if (viewer) {
-                viewer.innerHTML = '<div class="ee-loading">Loading message...</div>';
-            }
-        }
+        this._setPaneHtml('.ee-message-viewer', '<div class="ee-loading">Loading message...</div>');
 
         try {
             const params = new URLSearchParams({
@@ -224,12 +239,9 @@ export class EmailEngineClient {
             return this.currentMessage;
         } catch (error) {
             console.error('Failed to load message:', error);
-            if (this.container) {
-                const viewer = this.container.querySelector('.ee-message-viewer');
-                if (viewer) {
-                    viewer.innerHTML = '<div class="ee-error">Failed to load message</div>';
-                }
-            }
+            this._renderPaneError('.ee-message-viewer', 'Message unavailable', error, () =>
+                this._fireAndForget(this.loadMessage(messageId))
+            );
             throw error;
         }
     }
@@ -337,8 +349,6 @@ export class EmailEngineClient {
             return response;
         } catch (error) {
             console.error('Failed to send message:', error);
-            // Try to parse detailed error information
-            this._parseApiError(error);
             throw error;
         }
     }
@@ -380,7 +390,6 @@ export class EmailEngineClient {
             return response;
         } catch (error) {
             console.error('Failed to save draft:', error);
-            this._parseApiError(error);
             throw error;
         }
     }
@@ -395,7 +404,6 @@ export class EmailEngineClient {
             return response;
         } catch (error) {
             console.error('Failed to submit draft:', error);
-            this._parseApiError(error);
             throw error;
         }
     }
@@ -414,23 +422,21 @@ export class EmailEngineClient {
         return !!(folder && folder.specialUse === '\\Drafts');
     }
 
-    _parseApiError(error) {
-        try {
-            // If error has response text, try to parse it
-            if (error.message && error.message.includes('API request failed:')) {
-                // This is our custom error from apiRequest, the actual response might have more details
-                error.isDetailedError = false;
-            }
-        } catch (parseError) {
-            // If parsing fails, just use the original error
-            console.error('Failed to parse error details:', parseError);
+    // Best-effort human readable reason for a failed request. EmailEngine returns
+    // Boom style payloads - { statusCode, error, message, code, fields } - so the
+    // `message` field usually carries the actual cause, e.g. "Requested account is
+    // not yet initialized" when the account has not connected yet.
+    _errorMessage(error, fallback = 'Unexpected error') {
+        if (!error) {
+            return fallback;
         }
-    }
 
-    _formatSendError(error) {
-        // If we have detailed error information from the API
-        if (error.details && error.details.fields && Array.isArray(error.details.fields)) {
-            const fieldErrors = error.details.fields
+        const details = error.details;
+        const detailsMessage = details && typeof details.message === 'string' ? details.message : '';
+
+        // Validation failures list the offending fields
+        if (details && Array.isArray(details.fields)) {
+            const fieldErrors = details.fields
                 // Keep only entries that carry a usable message string.
                 .filter(field => field && typeof field.message === 'string')
                 // Map technical field names to user-friendly ones. Each replace
@@ -443,18 +449,100 @@ export class EmailEngineClient {
                         .replace(/"text"/g, 'message')
                 );
 
-            const mainMessage = error.details.message || 'Failed to send email';
+            const mainMessage = detailsMessage || fallback;
             if (fieldErrors.length > 0) {
                 return `${mainMessage}:\n\n• ${fieldErrors.join('\n• ')}`;
             }
             return mainMessage;
         }
 
-        // No field-level details - fall back to the API-provided message, then to a generic one
-        if (error.details && typeof error.details.message === 'string' && error.details.message) {
-            return error.details.message;
+        if (detailsMessage) {
+            return detailsMessage;
         }
-        return 'Failed to send email. Please check your input and try again.';
+
+        if (error.statusCode) {
+            return `The server responded with status ${error.statusCode}`;
+        }
+
+        return error.message || fallback;
+    }
+
+    _formatSendError(error) {
+        return this._errorMessage(error, 'Failed to send email. Please check your input and try again.');
+    }
+
+    // Writes markup into one of the client's panes when the UI exists and is still
+    // alive, and hands the pane back so callers can wire up what they rendered.
+    _setPaneHtml(selector, html) {
+        if (typeof document === 'undefined' || !this.container || this._destroyed) {
+            return null;
+        }
+
+        const pane = this.container.querySelector(selector);
+        if (pane) {
+            pane.innerHTML = html;
+        }
+        return pane;
+    }
+
+    // Replaces a pane's contents with an error panel explaining why its data is
+    // missing, optionally with a Retry button. Without this a failed request
+    // leaves the pane stuck on its "Loading..." placeholder forever, with the
+    // only trace of the failure in the developer console.
+    _renderPaneError(selector, title, error, retry = null) {
+        const detail = this._errorMessage(error, '');
+        const pane = this._setPaneHtml(
+            selector,
+            `
+            <div class="ee-error">
+                <div class="ee-error-title">${this.escapeHtml(title)}</div>
+                ${detail ? `<div class="ee-error-detail">${this.escapeHtml(detail)}</div>` : ''}
+                ${retry ? '<button type="button" class="ee-button ee-error-retry">Retry</button>' : ''}
+            </div>
+        `
+        );
+
+        if (pane && retry) {
+            const retryButton = pane.querySelector('.ee-error-retry');
+            if (retryButton) {
+                retryButton.addEventListener('click', () => {
+                    if (this._destroyed) {
+                        return;
+                    }
+                    // Disable while the request is in flight so an impatient second
+                    // click can not fan out a duplicate round trip. A failed retry
+                    // re-renders the panel with a fresh button.
+                    retryButton.disabled = true;
+                    retry();
+                });
+            }
+        }
+    }
+
+    // Loads started from a DOM handler render their own error panel, so the user
+    // has already been told. Swallow the rejection rather than letting it surface
+    // as an unhandled rejection in hosts with a global error reporter.
+    _fireAndForget(promise) {
+        promise.catch(() => {});
+    }
+
+    // Message actions (flag, delete, move) have no pane of their own to report into:
+    // when one fails the message simply stays put, which is indistinguishable from
+    // nothing having happened. Say so instead.
+    _alertActionFailed(error, fallback) {
+        console.error(`${fallback}:`, error);
+        return this.alertMethod(this._errorMessage(error, fallback), 'Error', null, 'OK');
+    }
+
+    // The message list before any folder is opened. Shared with createLayout so the
+    // pane header markup lives in one place.
+    _messageListPlaceholder() {
+        return `
+            <div class="ee-pane-header">
+                <span class="ee-pane-title">Messages</span>
+            </div>
+            <div class="ee-empty-state">Select a folder</div>
+        `;
     }
 
     formatDate(dateStr) {
@@ -508,15 +596,17 @@ export class EmailEngineClient {
     }
 
     // Authenticated GET for binary payloads (attachments, message source).
-    // apiRequest is not reused here - it always parses the body as JSON.
+    // apiRequest is not reused here - it always parses the body as JSON - but the
+    // same _fetch/_responseError pair is, so a failed download reports the same
+    // reason as any other request.
     async _fetchBlob(endpoint) {
-        const response = await fetch(`${this.apiUrl}${endpoint}`, {
+        const response = await this._fetch(`${this.apiUrl}${endpoint}`, {
             headers: this._authHeaders(),
             credentials: 'include'
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw await this._responseError(response);
         }
 
         return response;
@@ -541,7 +631,12 @@ export class EmailEngineClient {
             this._saveBlob(blob, filename);
         } catch (error) {
             console.error('Failed to download attachment:', error);
-            this.alertMethod('Failed to download attachment. Please try again.', 'Download Error', null, 'OK');
+            this.alertMethod(
+                this._errorMessage(error, 'Failed to download attachment. Please try again.'),
+                'Download Error',
+                null,
+                'OK'
+            );
         }
     }
 
@@ -561,7 +656,12 @@ export class EmailEngineClient {
             this._saveBlob(blob, filename);
         } catch (error) {
             console.error('Failed to download original message:', error);
-            this.alertMethod('Failed to download original message. Please try again.', 'Download Error', null, 'OK');
+            this.alertMethod(
+                this._errorMessage(error, 'Failed to download original message. Please try again.'),
+                'Download Error',
+                null,
+                'OK'
+            );
         }
     }
 
@@ -926,6 +1026,25 @@ export class EmailEngineClient {
                 border: 1px solid #fcc;
                 border-radius: 4px;
                 margin: 16px;
+                /* Panes can be as narrow as the 200px sidebar and server
+                   messages are arbitrary text, so break anywhere rather than
+                   letting a long word push the layout wider. */
+                overflow-wrap: anywhere;
+            }
+
+            .ee-error-title {
+                font-weight: 500;
+            }
+
+            .ee-error-detail {
+                margin-top: 6px;
+                font-size: 12px;
+                /* Field level API errors arrive as a newline separated list */
+                white-space: pre-line;
+            }
+
+            .ee-error-retry {
+                margin-top: 10px;
             }
             
             .ee-flag {
@@ -1362,9 +1481,14 @@ export class EmailEngineClient {
             }
 
             .ee-dark-mode .ee-loading,
-            .ee-dark-mode .ee-empty-state,
-            .ee-dark-mode .ee-error {
+            .ee-dark-mode .ee-empty-state {
                 color: #999;
+            }
+
+            .ee-dark-mode .ee-error {
+                background: #3a2222;
+                border-color: #5c3030;
+                color: #f0a5a5;
             }
 
             .ee-dark-mode .ee-pagination {
@@ -1560,7 +1684,7 @@ export class EmailEngineClient {
         folderTree.querySelectorAll('.ee-folder-item').forEach(item => {
             item.addEventListener('click', () => {
                 const path = item.getAttribute('data-path');
-                this.loadMessages(path);
+                this._fireAndForget(this.loadMessages(path));
             });
         });
     }
@@ -1636,19 +1760,19 @@ export class EmailEngineClient {
         messageList.querySelectorAll('.ee-message-item').forEach(item => {
             item.addEventListener('click', () => {
                 const messageId = item.getAttribute('data-id');
-                this.loadMessage(messageId);
+                this._fireAndForget(this.loadMessage(messageId));
             });
         });
 
         messageList.querySelectorAll('[data-action="prev-page"]').forEach(btn => {
             btn.addEventListener('click', () => {
-                this.loadMessages(this.currentFolder, this.prevPageCursor);
+                this._fireAndForget(this.loadMessages(this.currentFolder, this.prevPageCursor));
             });
         });
 
         messageList.querySelectorAll('[data-action="next-page"]').forEach(btn => {
             btn.addEventListener('click', () => {
-                this.loadMessages(this.currentFolder, this.nextPageCursor);
+                this._fireAndForget(this.loadMessages(this.currentFolder, this.nextPageCursor));
             });
         });
 
@@ -1660,7 +1784,7 @@ export class EmailEngineClient {
                 if (typeof window !== 'undefined' && window.localStorage) {
                     localStorage.setItem('ee-client-page-size', this.pageSize.toString());
                 }
-                this.loadMessages(this.currentFolder);
+                this._fireAndForget(this.loadMessages(this.currentFolder));
             });
         }
     }
@@ -1797,7 +1921,9 @@ export class EmailEngineClient {
 
         viewer.querySelector('[data-action="toggle-read"]').addEventListener('click', () => {
             const currentlyUnseen = msg.unseen;
-            this.markAsRead(msg.id, currentlyUnseen);
+            this.markAsRead(msg.id, currentlyUnseen).catch(error =>
+                this._alertActionFailed(error, 'Failed to update the message flags')
+            );
         });
 
         viewer.querySelector('[data-action="delete"]').addEventListener('click', async () => {
@@ -1808,7 +1934,9 @@ export class EmailEngineClient {
                 'Delete'
             );
             if (result) {
-                this.deleteMessage(msg.id);
+                this.deleteMessage(msg.id).catch(error =>
+                    this._alertActionFailed(error, 'Failed to delete the message')
+                );
             }
         });
 
@@ -1819,7 +1947,12 @@ export class EmailEngineClient {
         viewer.querySelector('[data-action="move"]').addEventListener('change', e => {
             const targetPath = e.target.value;
             if (targetPath) {
-                this.moveMessage(msg.id, targetPath);
+                this.moveMessage(msg.id, targetPath).catch(error => {
+                    // The message did not move, so the select must not keep showing
+                    // the target folder as though it had
+                    e.target.value = '';
+                    this._alertActionFailed(error, 'Failed to move the message');
+                });
             }
         });
 
@@ -1872,16 +2005,9 @@ export class EmailEngineClient {
                     <div class="ee-pane-header">
                         <span class="ee-pane-title">Folders</span>
                     </div>
-                    <div class="ee-folder-tree">
-                        <div class="ee-loading">Loading folders...</div>
-                    </div>
+                    <div class="ee-folder-tree"></div>
                 </div>
-                <div class="ee-message-list">
-                    <div class="ee-pane-header">
-                        <span class="ee-pane-title">Messages</span>
-                    </div>
-                    <div class="ee-empty-state">Select a folder</div>
-                </div>
+                <div class="ee-message-list">${this._messageListPlaceholder()}</div>
                 <div class="ee-message-viewer">
                     <div class="ee-empty-state">Select a message to view</div>
                 </div>
@@ -2182,18 +2308,38 @@ export class EmailEngineClient {
             toggleBtn.addEventListener('click', () => this.toggleDarkMode());
         }
 
-        this.loadFolders()
+        this._loadInitialView();
+    }
+
+    // Load the folder list and open the account's inbox. Used on startup and by
+    // the Retry button that loadFolders renders when the request fails; both
+    // failure paths already put an error panel in the UI, so the rejection is
+    // logged and swallowed here rather than surfacing as an unhandled rejection.
+    _loadInitialView() {
+        // Drop whatever a previous attempt left here; loadFolders and loadMessages
+        // paint their own loading states from this point on.
+        this._setPaneHtml('.ee-message-list', this._messageListPlaceholder());
+
+        return this.loadFolders()
+            .catch(error => {
+                // loadFolders reports into the sidebar, but the message list is the
+                // larger pane and would still read "Select a folder" - a folder the
+                // sidebar can no longer offer. Say what happened there too.
+                this._renderPaneError('.ee-message-list', 'Folders unavailable', error, () => this._loadInitialView());
+                throw error;
+            })
             .then(() => {
                 const inbox =
                     this.folders.find(f => f.specialUse && f.specialUse.includes('\\Inbox')) ||
                     this.folders.find(f => f.name.toLowerCase() === 'inbox') ||
                     this.folders[0];
                 if (inbox) {
-                    this.loadMessages(inbox.path);
+                    return this.loadMessages(inbox.path);
                 }
             })
             .catch(error => {
-                console.error('Failed to auto-select inbox:', error);
+                // Both loadFolders and loadMessages have already rendered a panel
+                console.error('Failed to load the initial view:', error);
             });
     }
 
