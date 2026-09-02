@@ -3,6 +3,9 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 const crypto = require('crypto');
+const fs = require('fs');
+const os = require('os');
+const pathlib = require('path');
 const msgpack = require('../lib/msgpack');
 
 // Mock the db module before any other imports to prevent real Redis/BullMQ
@@ -123,7 +126,7 @@ require.cache[dbPath] = {
 };
 
 // Now safe to import production modules
-const { Export, generateExportId, calculateScore, getExportKey, getExportQueueKey } = require('../lib/export');
+const { Export, generateExportId, calculateScore, getExportKey, getExportQueueKey, isOwnExportFile } = require('../lib/export');
 const { REDIS_PREFIX } = require('../lib/consts');
 
 test('Export functionality tests', async t => {
@@ -752,6 +755,73 @@ test('Export functionality tests', async t => {
         });
 
         assert.ok(!result.error, `Should accept truncated field, got error: ${result.error?.message}`);
+    });
+
+    // File containment: the download and delete paths read `filePath` back from Redis, and only
+    // the export's own file may be served or unlinked through it
+    await t.test('isOwnExportFile() accepts the export file, plain or encrypted, in any directory', () => {
+        const exportId = generateExportId();
+        assert.strictEqual(isOwnExportFile(exportId, `/var/exports/${exportId}.ndjson.gz`), true);
+        assert.strictEqual(isOwnExportFile(exportId, `/tmp/old-location/${exportId}.ndjson.gz.enc`), true);
+    });
+
+    await t.test('isOwnExportFile() refuses anything that is not the export file', () => {
+        const exportId = generateExportId();
+        const other = generateExportId();
+        assert.strictEqual(isOwnExportFile(exportId, `/var/exports/${other}.ndjson.gz`), false, 'another export');
+        assert.strictEqual(isOwnExportFile(exportId, '/etc/passwd'), false);
+        assert.strictEqual(isOwnExportFile(exportId, `/var/exports/${exportId}.ndjson.gz/../../etc/passwd`), false, 'a traversal behind the name');
+        assert.strictEqual(isOwnExportFile(exportId, `/var/exports/${exportId}.ndjson`), false, 'wrong extension');
+        assert.strictEqual(isOwnExportFile(exportId, ''), false);
+        assert.strictEqual(isOwnExportFile(exportId, null), false);
+        assert.strictEqual(isOwnExportFile('', `/var/exports/.ndjson.gz`), false);
+    });
+
+    await t.test('Export.getFile() refuses a stored path that is not the export file', async () => {
+        const account = 'contain-acct';
+        const exportId = generateExportId();
+        mockRedisData[getExportKey(account, exportId)] = { exportId, account, status: 'completed', filePath: '/etc/hosts', isEncrypted: '0' };
+
+        await assert.rejects(Export.getFile(account, exportId), err => err.code === 'FileNotFound' && err.statusCode === 404);
+    });
+
+    await t.test('Export.getFile() serves the export file itself', async () => {
+        const account = 'contain-acct';
+        const exportId = generateExportId();
+        const dir = await fs.promises.mkdtemp(pathlib.join(os.tmpdir(), 'ee-export-'));
+        const filePath = pathlib.join(dir, `${exportId}.ndjson.gz`);
+        await fs.promises.writeFile(filePath, 'data');
+        try {
+            mockRedisData[getExportKey(account, exportId)] = { exportId, account, status: 'completed', filePath, isEncrypted: '0' };
+
+            const info = await Export.getFile(account, exportId);
+            assert.strictEqual(info.filePath, filePath);
+            assert.strictEqual(info.filename, `${exportId}.ndjson.gz`);
+        } finally {
+            await fs.promises.rm(dir, { recursive: true, force: true });
+        }
+    });
+
+    await t.test('Export.delete() unlinks the export file but never a foreign path', async () => {
+        const account = 'contain-acct';
+        const dir = await fs.promises.mkdtemp(pathlib.join(os.tmpdir(), 'ee-export-'));
+        try {
+            const own = generateExportId();
+            const ownPath = pathlib.join(dir, `${own}.ndjson.gz`);
+            await fs.promises.writeFile(ownPath, 'own');
+            mockRedisData[getExportKey(account, own)] = { exportId: own, account, status: 'completed', filePath: ownPath };
+            assert.strictEqual(await Export.delete(account, own), true);
+            await assert.rejects(fs.promises.access(ownPath), 'the export file is removed');
+
+            const foreign = generateExportId();
+            const foreignPath = pathlib.join(dir, 'not-an-export.txt');
+            await fs.promises.writeFile(foreignPath, 'keep');
+            mockRedisData[getExportKey(account, foreign)] = { exportId: foreign, account, status: 'completed', filePath: foreignPath };
+            assert.strictEqual(await Export.delete(account, foreign), true, 'the record is still deleted');
+            assert.strictEqual(await fs.promises.readFile(foreignPath, 'utf8'), 'keep', 'the foreign file is left alone');
+        } finally {
+            await fs.promises.rm(dir, { recursive: true, force: true });
+        }
     });
 });
 

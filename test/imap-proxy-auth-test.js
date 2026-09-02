@@ -10,6 +10,8 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { createImapProxyAuthHandler } = require('../lib/imap-proxy-auth');
+const { AUTH_FAILURE_LIMIT } = require('../lib/auth-token');
+const { trackedWindow, exhaustBudget } = require('./helpers/auth-throttle');
 const { oauth2Apps } = require('../lib/oauth2-apps');
 const tokens = require('../lib/tokens');
 const settings = require('../lib/settings');
@@ -188,5 +190,69 @@ test('IMAP proxy auth handler', async t => {
         } finally {
             await settings.set('imapProxyServerPassword', '');
         }
+    });
+});
+
+test('IMAP proxy auth failure throttle', async t => {
+    // TEST-NET-3 addresses, never a real client; one per case so the counters cannot interfere
+    await t.test('a refused login is recorded against the client address and username', async t => {
+        const ip = '203.0.113.21';
+        const windowKey = await trackedWindow(t, ip, ACCOUNT);
+
+        await assert.rejects(() => authenticate({ username: ACCOUNT, password: 'nope' }, session({ remoteAddress: ip })));
+
+        assert.strictEqual(await redis.get(windowKey), '1');
+    });
+
+    await t.test('an accepted login spends nothing', async t => {
+        const ip = '203.0.113.22';
+        const windowKey = await trackedWindow(t, ip, ACCOUNT);
+
+        const { accountData } = await authenticate({ username: ACCOUNT, password: proxyToken }, session({ remoteAddress: ip }));
+        assert.strictEqual(accountData.account, ACCOUNT);
+
+        assert.strictEqual(await redis.get(windowKey), null);
+    });
+
+    await t.test('a valid credential is refused once the budget is spent', async t => {
+        const ip = '203.0.113.23';
+        const windowKey = await trackedWindow(t, ip, ACCOUNT);
+        await exhaustBudget(windowKey);
+
+        await assert.rejects(
+            () => authenticate({ username: ACCOUNT, password: proxyToken }, session({ remoteAddress: ip })),
+            err => {
+                assert.match(err.message, /Too many failed authentication attempts/);
+                assert.strictEqual(err.serverResponseCode, 'AUTHENTICATIONFAILED');
+                assert.strictEqual(err.responseStatus, 'NO');
+                return true;
+            }
+        );
+
+        assert.strictEqual(await redis.get(windowKey), String(AUTH_FAILURE_LIMIT), 'a throttled attempt is not evaluated and not counted');
+    });
+
+    await t.test('the budget is per address: another address is unaffected', async t => {
+        await exhaustBudget(await trackedWindow(t, '203.0.113.24', ACCOUNT));
+
+        const { accountData } = await authenticate({ username: ACCOUNT, password: proxyToken }, session({ remoteAddress: '203.0.113.25' }));
+        assert.strictEqual(accountData.account, ACCOUNT);
+    });
+
+    await t.test('the API-only refusal is about the account, not the credential, and spends nothing', async t => {
+        const ip = '203.0.113.26';
+        const windowKey = await trackedWindow(t, ip, API_ACCOUNT);
+
+        await settings.set('imapProxyServerPassword', 'global-proxy-pass');
+        try {
+            await assert.rejects(
+                () => authenticate({ username: API_ACCOUNT, password: 'global-proxy-pass' }, session({ remoteAddress: ip })),
+                err => err.serverResponseCode === 'ACCOUNTDISABLED'
+            );
+        } finally {
+            await settings.set('imapProxyServerPassword', '');
+        }
+
+        assert.strictEqual(await redis.get(windowKey), null);
     });
 });

@@ -117,6 +117,7 @@ const {
 
 const registerApiRoutes = require('../lib/api-routes');
 const bullBoardRoutes = require('../lib/api-routes/bull-board-routes');
+const { applySecurityHeaders, isAdminPath } = require('../lib/security-headers');
 
 const {
     imapSchema,
@@ -839,7 +840,7 @@ const init = async () => {
         request.flash = async message => await flash(redis, request, message);
 
         if (ADMIN_ACCESS_ADDRESSES && ADMIN_ACCESS_ADDRESSES.length) {
-            if (request.path.startsWith('/admin') && !matchIp(request.app.ip, ADMIN_ACCESS_ADDRESSES)) {
+            if (isAdminPath(request.path) && !matchIp(request.app.ip, ADMIN_ACCESS_ADDRESSES)) {
                 logger.info({
                     msg: 'Blocked access from unlisted IP address',
                     remoteAddress: request.app.ip,
@@ -3280,6 +3281,10 @@ const init = async () => {
     };
 
     server.ext('onPreResponse', preResponse);
+
+    // After preResponse on purpose: it replaces an error response with the rendered error page
+    // or a JSON body, and the headers have to land on whatever is actually sent
+    server.ext('onPreResponse', applySecurityHeaders);
 
     server.ext('onPostAuth', async (request, h) => {
         if (request.requireTotp) {

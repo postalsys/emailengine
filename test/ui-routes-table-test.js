@@ -28,7 +28,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { redis } = require('../lib/db');
-const { captureRoutes } = require('./helpers/capture-ui-routes');
+const { captureRoutes, captureRouteConfigs } = require('./helpers/capture-ui-routes');
 
 // The complete, sorted set of routes registered by lib/routes-ui.js (including the
 // already-extracted admin-entities-routes.js it wires in). 149 routes.
@@ -204,6 +204,26 @@ test('UI route table is unchanged', async t => {
 
     await t.test('no duplicate route registrations', () => {
         assert.equal(captured.length, unique.length, `expected no duplicate (method, path) registrations, got ${captured.length - unique.length} duplicate(s)`);
+    });
+
+    await t.test('a UI route that mutates outside POST validates the crumb from the header', () => {
+        // Crumb checks the crumb field of POST payloads only. A DELETE, PUT or PATCH passes with no
+        // CSRF check at all unless the route opts into restful mode, which validates the
+        // X-CSRF-Token header instead - the export delete route shipped without it.
+        const MUTATING = new Set(['DELETE', 'PUT', 'PATCH']);
+        for (const cfg of captureRouteConfigs()) {
+            for (const method of [].concat(cfg.method)) {
+                if (!MUTATING.has(String(method).toUpperCase())) {
+                    continue;
+                }
+                const restful = cfg.options && cfg.options.plugins && cfg.options.plugins.crumb && cfg.options.plugins.crumb.restful;
+                assert.equal(
+                    restful,
+                    true,
+                    `${String(method).toUpperCase()} ${cfg.path} must declare plugins.crumb.restful, crumb does not validate its payload`
+                );
+            }
+        }
     });
 
     await t.test('registered routes match the golden snapshot exactly', () => {

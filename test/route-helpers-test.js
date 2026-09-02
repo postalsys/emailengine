@@ -19,7 +19,7 @@ const {
     assertNoNetworkOverride,
     MASKED
 } = require('../lib/api-routes/route-helpers');
-const { submittedValues } = require('../lib/ui-routes/route-helpers');
+const { submittedValues, formatAccountData } = require('../lib/ui-routes/route-helpers');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
@@ -452,5 +452,78 @@ test('submittedValues re-renders the submitted form without its secrets', async 
 
     await t.test('copes with a request that carries no payload', () => {
         assert.deepEqual(submittedValues({ payload: undefined }, 'pass'), { pass: '' });
+    });
+});
+
+test('maskSecrets masks the target recorded in a webhook error flag', async t => {
+    const credentialedHook = 'https://huser:hpass@receiver.example.com/hook';
+
+    await t.test('on a webhook route, an account and the settings alike', () => {
+        // The flag is written by workers/webhooks.js after a failed delivery and read back
+        // through GET /v1/webhookRoutes, which a read-only token can reach. New flags are stored
+        // redacted; one written by an older release still carries the raw URL.
+        for (const entity of [
+            { targetUrl: credentialedHook, webhookErrorFlag: { message: 'boom', url: credentialedHook } },
+            { webhooks: credentialedHook, webhookErrorFlag: { message: 'boom', url: credentialedHook } }
+        ]) {
+            maskSecrets(entity);
+            assert.ok(!JSON.stringify(entity).includes('hpass'), `a webhook password survived: ${JSON.stringify(entity)}`);
+            assert.equal(entity.webhookErrorFlag.message, 'boom', 'the rest of the flag is untouched');
+        }
+    });
+
+    await t.test('leaves a flag without a URL, or an empty one, alone', () => {
+        const entity = { webhookErrorFlag: {} };
+        maskSecrets(entity);
+        assert.deepEqual(entity.webhookErrorFlag, {});
+
+        const nulled = { webhookErrorFlag: null };
+        maskSecrets(nulled);
+        assert.equal(nulled.webhookErrorFlag, null);
+    });
+});
+
+test('formatAccountData reports an invalidated access token', async t => {
+    const gt = { gettext: s => s };
+
+    // Account.invalidateAccessToken() rewinds `expires` a day into the past and leaves `generated`
+    // alone, which is the one way the two can end up inverted
+    const invalidated = () => ({
+        account: 'acct',
+        state: 'connected',
+        oauth2: { provider: 'gmail', generated: new Date('2026-08-28T10:15:21.000Z'), expires: new Date('2026-08-27T10:37:14.000Z') }
+    });
+
+    await t.test('a token whose expiry was rewound behind its issue time is flagged', () => {
+        const account = invalidated();
+        formatAccountData(account, gt);
+
+        assert.equal(account.oauth2.accessTokenInvalidated, true);
+        // the raw values stay available for the view
+        assert.equal(account.oauth2.generatedStr, '2026-08-28T10:15:21.000Z');
+        assert.equal(account.oauth2.expiresStr, '2026-08-27T10:37:14.000Z');
+    });
+
+    await t.test('a live token is not', () => {
+        const account = invalidated();
+        account.oauth2.expires = new Date('2026-08-28T11:15:21.000Z');
+        formatAccountData(account, gt);
+        assert.equal(account.oauth2.accessTokenInvalidated, false);
+    });
+
+    await t.test('an expired token that simply awaits renewal is not', () => {
+        // expired after it was issued: the ordinary state of a paused account, not an invalidation
+        const account = invalidated();
+        account.oauth2.generated = new Date('2026-08-27T09:37:14.000Z');
+        formatAccountData(account, gt);
+        assert.equal(account.oauth2.accessTokenInvalidated, false);
+    });
+
+    await t.test('a token with no recorded issue time is not', () => {
+        const account = invalidated();
+        delete account.oauth2.generated;
+        formatAccountData(account, gt);
+        assert.equal(account.oauth2.accessTokenInvalidated, false);
+        assert.equal(account.oauth2.generatedStr, false);
     });
 });

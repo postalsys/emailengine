@@ -285,8 +285,13 @@
                 To
                 {{/if}}
 
+                {{#if account.oauth2.accessTokenInvalidated}}
+                {{!-- the expiry was rewound to force a renewal, so the stored end is meaningless --}}
+                invalidated, a new token is requested on the next connection
+                {{else}}
                 <span class="local-date-time code-link" data-time="{{account.oauth2.expiresStr}}"
                     title="{{account.oauth2.expiresStr}}"></span>
+                {{/if}}
             </dd>
             {{/if}}
 
@@ -1340,11 +1345,14 @@ submitLabel="Delete account"}}
             const account = document.getElementById('account-id').value.trim();
 
             try {
-                await fetch(`/admin/accounts/${account}/export/${currentExportId}`, {
+                // the crumb travels in the header: the route validates DELETE in restful mode
+                const res = await fetch(`/admin/accounts/${account}/export/${currentExportId}`, {
                     method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ crumb: document.getElementById('crumb').value })
+                    headers: { 'X-CSRF-Token': document.getElementById('crumb').value }
                 });
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
 
                 stopPolling();
                 currentExportId = null;

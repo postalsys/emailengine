@@ -13,18 +13,23 @@
 
 const fs = require('fs');
 
-function captureRoutes() {
-    const captured = [];
+// Registration runs once per process: routes-ui.js is required and invoked a single time, and
+// both accessors below read the same capture.
+let capture = null;
+
+function captureAll() {
+    if (capture) {
+        return capture;
+    }
+
+    const configs = [];
 
     const record = cfg => {
         if (Array.isArray(cfg)) {
             cfg.forEach(record);
             return;
         }
-        const methods = Array.isArray(cfg.method) ? cfg.method : [cfg.method];
-        for (const method of methods) {
-            captured.push(`${String(method).toUpperCase()} ${cfg.path}`);
-        }
+        configs.push(cfg);
     };
 
     const mockServer = new Proxy(
@@ -47,10 +52,23 @@ function captureRoutes() {
     const routesUi = require('../../lib/routes-ui');
     routesUi(mockServer, mockCall);
 
-    return captured;
+    capture = configs;
+    return capture;
 }
 
-module.exports = { captureRoutes };
+// "METHOD path" pairs in registration order, without de-duplication, so callers can detect a
+// route registered twice
+function captureRoutes() {
+    return captureAll().flatMap(cfg => [].concat(cfg.method).map(method => `${String(method).toUpperCase()} ${cfg.path}`));
+}
+
+// The full route configurations, for guardrails that look past method and path (e.g. which
+// routes opt into header-based crumb validation)
+function captureRouteConfigs() {
+    return captureAll();
+}
+
+module.exports = { captureRoutes, captureRouteConfigs };
 
 if (require.main === module) {
     const routes = captureRoutes();

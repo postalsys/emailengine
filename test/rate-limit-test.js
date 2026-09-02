@@ -18,7 +18,7 @@ const assert = require('node:assert').strict;
 const crypto = require('crypto');
 
 const { redis } = require('../lib/db');
-const { checkRateLimit, rateLimitWindowKey } = require('../lib/rate-limit');
+const { checkRateLimit, peekRateLimit, rateLimitWindowKey } = require('../lib/rate-limit');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
 // Every subject is unique per run and every counter carries a TTL of at most its window size,
@@ -208,5 +208,34 @@ test('Rate limiter', async t => {
             Array.from({ length: 20 }, (unused, i) => i + 1),
             'every concurrent request must receive a distinct, contiguous counter value'
         );
+    });
+
+    await t.test('peekRateLimit() reads the counter without spending it', async () => {
+        // The failure-only guards on the submission surfaces look before an attempt and record
+        // only a refusal; a peek that counted would throttle the legitimate client behind it
+        const key = uniqueKey('peek');
+        const ALLOWED = 3;
+
+        const untouched = await peekRateLimit(key, ALLOWED, 60);
+        assert.strictEqual(untouched.success, true);
+        assert.strictEqual(untouched.count, 0);
+        assert.strictEqual(await redis.exists(windowKeyFor(key, 60)), 0, 'a peek must not create the counter');
+
+        for (let i = 0; i < ALLOWED - 1; i++) {
+            await checkRateLimit(key, 1, ALLOWED, 60);
+        }
+        const nearly = await peekRateLimit(key, ALLOWED, 60);
+        assert.strictEqual(nearly.success, true, 'one attempt short of the limit is still allowed');
+        assert.strictEqual(nearly.count, ALLOWED - 1);
+
+        await checkRateLimit(key, 1, ALLOWED, 60);
+        const spent = await peekRateLimit(key, ALLOWED, 60);
+        assert.strictEqual(spent.success, false, 'at the limit the next attempt is refused');
+        assert.strictEqual(spent.count, ALLOWED);
+        assert.strictEqual(spent.allowed, ALLOWED);
+        assert.ok(spent.ttl > 0 && spent.ttl <= 60);
+
+        const again = await peekRateLimit(key, ALLOWED, 60);
+        assert.strictEqual(again.count, ALLOWED, 'peeking twice reads the same value');
     });
 });

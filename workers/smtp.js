@@ -6,8 +6,8 @@ const packageData = require('../package.json');
 const config = require('@zone-eu/wild-config');
 const logger = require('../lib/logger');
 
-const { getDuration, emitChangeEvent, readEnvValue, threadStats, loadTlsConfig, getByteSize } = require('../lib/tools');
-const { createSmtpAuthHandler } = require('../lib/smtp-auth');
+const { getDuration, emitChangeEvent, readEnvValue, threadStats, loadTlsConfig, assertTlsCredentials, getByteSize } = require('../lib/tools');
+const { createSmtpAuthHandler, createSmtpAccountResolver } = require('../lib/smtp-auth');
 
 const { initSentry } = require('../lib/sentry');
 initSentry('smtp');
@@ -15,7 +15,6 @@ initSentry('smtp');
 const { SMTPServer } = require('smtp-server');
 const util = require('util');
 const { redis } = require('../lib/db');
-const { Account } = require('../lib/account');
 const getSecret = require('../lib/get-secret');
 const { collectMessage } = require('../lib/smtp-message-processor');
 const settings = require('../lib/settings');
@@ -113,46 +112,11 @@ for (let level of ['trace', 'debug', 'info', 'warn', 'error', 'fatal']) {
     };
 }
 
-// Authentication logic lives in lib/smtp-auth.js so it can be unit tested
-// without booting this worker. The shared ACCOUNT_CACHE and call() are injected
-// so onAuth caches the Account for later processing steps.
+// Authentication and account resolution live in lib/smtp-auth.js so they can be unit tested
+// without booting this worker. The shared ACCOUNT_CACHE and call() are injected so onAuth
+// caches the Account that the resolver hands to the submission.
 const onAuth = createSmtpAuthHandler({ accountCache: ACCOUNT_CACHE, call });
-
-async function checkAccountData(session, messageMeta) {
-    let accountObject;
-
-    if (!session.eeAuthEnabled && messageMeta.requestedAccount) {
-        // load account data
-        accountObject = new Account({ account: messageMeta.requestedAccount, redis, call, secret: await getSecret() });
-        let accountData;
-        try {
-            // throws if unknown user
-            accountData = await accountObject.loadAccountData();
-            if (accountData) {
-                ACCOUNT_CACHE.set(session, accountObject);
-                logger.debug({ msg: 'Resolved requested account', account: messageMeta.requestedAccount });
-            }
-        } catch (err) {
-            logger.warn({ msg: 'Failed to resolve requested account', account: messageMeta.requestedAccount, err });
-        }
-    } else {
-        accountObject = ACCOUNT_CACHE.get(session);
-    }
-
-    if (!session.eeAuthEnabled && !messageMeta.requestedAccount && !accountObject) {
-        let err = new Error('Sender account ID not provided, can not send mail');
-        err.responseCode = 451;
-        throw err;
-    }
-
-    if (!accountObject) {
-        let err = new Error('Failed to load account');
-        err.responseCode = 451;
-        throw err;
-    }
-
-    return accountObject;
-}
+const resolveAccount = createSmtpAccountResolver({ accountCache: ACCOUNT_CACHE, call });
 
 async function init() {
     let server;
@@ -239,7 +203,7 @@ async function init() {
                     throw err;
                 }
 
-                let accountObject = await checkAccountData(session, messageMeta);
+                let accountObject = await resolveAccount(session, messageMeta);
 
                 let payload = {
                     envelope: {
@@ -309,6 +273,8 @@ async function init() {
                 serverOptions.key = certificateData.privateKey;
             }
         }
+
+        assertTlsCredentials(serverOptions, 'The SMTP server');
     } else {
         serverOptions.disabledCommands = ['STARTTLS'];
         serverOptions.hideSTARTTLS = true;

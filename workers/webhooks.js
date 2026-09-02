@@ -518,7 +518,9 @@ const notifyWorker = new Worker(
                             event: job.name,
                             message: err.message,
                             time: Date.now(),
-                            url: customRoute.targetUrl,
+                            // stored without credentials: the flag is read back through the
+                            // webhook route listing, the account page and the settings API
+                            url: redactUrlCredentials(customRoute.targetUrl),
                             code: err.code,
                             statusCode: err.statusCode
                         })
@@ -531,7 +533,7 @@ const notifyWorker = new Worker(
                             event: job.name,
                             message: err.message,
                             time: Date.now(),
-                            url: webhooks,
+                            url: redactedWebhooks,
                             code: err.code,
                             statusCode: err.statusCode
                         })
@@ -541,7 +543,7 @@ const notifyWorker = new Worker(
                         event: job.name,
                         message: err.message,
                         time: Date.now(),
-                        url: webhooks,
+                        url: redactedWebhooks,
                         code: err.code,
                         statusCode: err.statusCode
                     });

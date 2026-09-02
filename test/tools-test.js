@@ -837,4 +837,28 @@ test('Tools utility tests', async t => {
         };
         await assert.rejects(tools.getLogs(failing, 'tools-logs-account'), /Redis is unavailable/);
     });
+
+    await t.test('assertTlsCredentials() is a no-op for a plaintext listener', () => {
+        assert.doesNotThrow(() => tools.assertTlsCredentials({ secure: false }, 'The SMTP server'));
+        assert.doesNotThrow(() => tools.assertTlsCredentials({}, 'The SMTP server'));
+        assert.doesNotThrow(() => tools.assertTlsCredentials(null, 'The SMTP server'));
+    });
+
+    await t.test('assertTlsCredentials() refuses a TLS listener without its own certificate', () => {
+        // Both server libraries would otherwise fall back to a built-in key that ships in every copy
+        for (const options of [{ secure: true }, { secure: true, key: 'KEY' }, { secure: true, cert: 'CERT' }]) {
+            assert.throws(
+                () => tools.assertTlsCredentials(options, 'The IMAP proxy'),
+                err => {
+                    assert.strictEqual(err.code, 'ETLSNOCERT');
+                    assert.match(err.message, /^The IMAP proxy has TLS enabled but no certificate/);
+                    return true;
+                }
+            );
+        }
+    });
+
+    await t.test('assertTlsCredentials() accepts a TLS listener with key and certificate', () => {
+        assert.doesNotThrow(() => tools.assertTlsCredentials({ secure: true, key: 'KEY', cert: 'CERT' }, 'The SMTP server'));
+    });
 });

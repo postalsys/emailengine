@@ -13,10 +13,11 @@ const http = require('node:http');
  *
  * @param {Function} [responder] - (res, captured) => void; writes the response. Defaults to
  *                                 202 Accepted with an empty body, what Graph returns for sendMail.
- * @returns {Promise<Object>} { server, baseUrl, getCaptured }
+ * @returns {Promise<Object>} { server, baseUrl, getCaptured, getRequests } - getCaptured() is the
+ *                            last request, getRequests() every request in arrival order
  */
 async function startCapturingServer(responder) {
-    let captured = null;
+    const requests = [];
 
     const respond =
         responder ||
@@ -29,12 +30,13 @@ async function startCapturingServer(responder) {
         const chunks = [];
         req.on('data', chunk => chunks.push(chunk));
         req.on('end', () => {
-            captured = {
+            const captured = {
                 method: req.method,
                 path: req.url,
                 headers: req.headers,
                 body: Buffer.concat(chunks)
             };
+            requests.push(captured);
             respond(res, captured);
         });
     });
@@ -45,7 +47,8 @@ async function startCapturingServer(responder) {
     return {
         server,
         baseUrl: `http://127.0.0.1:${port}`,
-        getCaptured: () => captured
+        getCaptured: () => (requests.length ? requests[requests.length - 1] : null),
+        getRequests: () => requests
     };
 }
 
@@ -60,9 +63,9 @@ async function stopServer(server) {
  * @param {Function} fn - async ({ baseUrl, getCaptured }) => void
  */
 async function withCapturingServer(responder, fn) {
-    const { server, baseUrl, getCaptured } = await startCapturingServer(responder);
+    const { server, baseUrl, getCaptured, getRequests } = await startCapturingServer(responder);
     try {
-        await fn({ baseUrl, getCaptured });
+        await fn({ baseUrl, getCaptured, getRequests });
     } finally {
         await stopServer(server);
     }
