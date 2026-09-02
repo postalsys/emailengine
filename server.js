@@ -3176,6 +3176,44 @@ process.on('SIGINT', () => {
 // START APPLICATION
 
 /**
+ * Waits for a fleet of spawned workers and tolerates a partial start: proceeds as long as at
+ * least one worker reached 'ready' (the spawnWorker exit handler respawns any that failed;
+ * letting such a rejection abort startup would exit the process while the respawn is pending).
+ * Only a fleet that failed entirely is fatal - the thrown error rejects startApplication(), which
+ * logs fatal and exits the process, preserving the original single-worker "no worker => exit"
+ * behavior.
+ *
+ * @param {string} label - Worker type as it appears in the log lines ('API', 'IMAP')
+ * @param {Promise[]} promises - spawnWorker() promises of the fleet
+ * @param {Object} logFields - extra fields for the partial-failure log line (requested count etc.)
+ * @returns {Promise<Array>} Thread IDs of the workers that reached 'ready'
+ */
+const settleWorkerFleet = async (label, promises, logFields) => {
+    let results = await Promise.allSettled(promises);
+    let threadIds = results.filter(result => result.status === 'fulfilled').map(result => result.value);
+    let failed = results.length - threadIds.length;
+    if (failed) {
+        logger.error(
+            Object.assign({ msg: `Some ${label} workers failed to start; they will be respawned` }, logFields, {
+                ready: threadIds.length,
+                failed,
+                errors: results
+                    .filter(result => result.status === 'rejected')
+                    .map(result => ({
+                        message: result.reason && result.reason.message,
+                        exitCode: result.reason && result.reason.exitCode,
+                        threadId: result.reason && result.reason.threadId
+                    }))
+            })
+        );
+    }
+    if (results.length && !threadIds.length) {
+        throw new Error(`No ${label} worker thread could be started`);
+    }
+    return threadIds;
+};
+
+/**
  * Main application startup
  * @returns {Promise<void>}
  */
@@ -3271,6 +3309,13 @@ const startApplication = async () => {
         for (let key of Object.keys(preparedSettings)) {
             await settings.set(key, preparedSettings[key]);
         }
+
+        // These keys are re-applied on every boot, so a value saved for one of them in the admin
+        // UI reverts at the next restart. The list is recorded for the settings pages
+        // (lib/ui-routes/settings-page.js) to flag those fields as managed by EENGINE_SETTINGS
+        await settings.set('preparedSettingsKeys', Object.keys(preparedSettings));
+    } else {
+        await settings.clear('preparedSettingsKeys');
     }
 
     // Initialize required settings
@@ -3403,13 +3448,20 @@ const startApplication = async () => {
         try {
             let authData = await settings.get('authData');
 
-            authData = authData || {};
-            authData.user = authData.user || 'admin';
-            authData.password = preparedPassword;
-            authData.passwordVersion = Date.now();
+            // Written only when the stored hash differs: passwordVersion is what every admin
+            // session and message-browser token is checked against, so rewriting the same hash
+            // on each boot would log every operator out at every restart
+            if (!authData || authData.password !== preparedPassword) {
+                authData = authData || {};
+                authData.user = authData.user || 'admin';
+                authData.password = preparedPassword;
+                authData.passwordVersion = Date.now();
 
-            await settings.set('authData', authData);
-            logger.debug({ msg: 'Password imported' });
+                await settings.set('authData', authData);
+                logger.debug({ msg: 'Password imported' });
+            } else {
+                logger.debug({ msg: 'Password already imported' });
+            }
         } catch (err) {
             logger.error({ msg: 'Password import failed', err });
         }
@@ -3481,33 +3533,8 @@ const startApplication = async () => {
         apiPromises.push(spawnWorker('api', workerSpawnOpts('api', i)));
     }
 
-    // Tolerate partial API-worker startup: proceed as long as at least one worker reached 'ready'
-    // (the spawnWorker exit handler respawns any that failed). Only abort startup if EVERY API
-    // worker failed, preserving the original single-worker "no API worker => exit" behavior.
-    let apiResults = await Promise.allSettled(apiPromises);
-    let apiReady = apiResults.filter(result => result.status === 'fulfilled').length;
-    let apiFailed = apiResults.length - apiReady;
-    if (apiFailed) {
-        logger.error({
-            msg: 'Some API workers failed to start; they will be respawned',
-            requested: apiWorkersRequested,
-            attempted: apiResults.length,
-            ready: apiReady,
-            failed: apiFailed,
-            errors: apiResults
-                .filter(result => result.status === 'rejected')
-                .map(result => ({
-                    message: result.reason && result.reason.message,
-                    exitCode: result.reason && result.reason.exitCode,
-                    threadId: result.reason && result.reason.threadId
-                }))
-        });
-    }
-    if (!apiReady) {
-        // No API worker came up at all - fatal, same as the original single-worker behavior. This
-        // rejects startApplication(), which logs fatal and exits the process.
-        throw new Error('No API worker thread could be started');
-    }
+    // `attempted` can be below `requested` after the SO_REUSEPORT fallback above
+    let apiReady = (await settleWorkerFleet('API', apiPromises, { requested: apiWorkersRequested, attempted: apiPromises.length })).length;
     logger.info({ msg: 'API workers started', requested: apiWorkersRequested, ready: apiReady });
 
     // Small delay to allow API to start
@@ -3518,7 +3545,8 @@ const startApplication = async () => {
     for (let i = 0; i < config.workers.imap; i++) {
         workerPromises.push(spawnWorker('imap'));
     }
-    let threadIds = await Promise.all(workerPromises);
+
+    let threadIds = await settleWorkerFleet('IMAP', workerPromises, { requested: config.workers.imap });
     logger.info({ msg: 'IMAP workers started', workers: config.workers.imap, threadIds });
 
     // Mark that initial workers are loaded BEFORE assignment

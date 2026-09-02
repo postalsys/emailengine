@@ -2,6 +2,8 @@
 
 <p class="mb-6">Customize public pages like authentication forms, error pages, and unsubscribe pages.</p>
 
+{{> ui/env-managed-alert}}
+
 <form method="post" id="settings-form" action="/admin/config/branding">
     {{!-- no id: the layout already renders the #crumb element the script reads --}}
     <input type="hidden" name="crumb" value="{{crumb}}" />

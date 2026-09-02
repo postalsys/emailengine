@@ -2,6 +2,8 @@
 
 <p class="mb-6">Control how EmailEngine connects to email servers and routes traffic.</p>
 
+{{> ui/env-managed-alert}}
+
 <form method="post" action="/admin/config/network">
     {{!-- no id: the layout already renders the #crumb element the script reads --}}
     <input type="hidden" name="crumb" value="{{crumb}}" />

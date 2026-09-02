@@ -23,16 +23,25 @@ services:
             - emailengine-network
         environment:
             # Configuration via environment variables
-            # For full list see https://github.com/postalsys/emailengine#config-mapping
+            # For the full list see https://learn.emailengine.app/docs/configuration
 
             # Settings to write to v1/settings on startup
             EENGINE_SETTINGS: ${EENGINE_SETTINGS:-}
 
-            # Encryption secret - REQUIRED for production
-            EENGINE_SECRET: ${EENGINE_SECRET:-default-dev-secret-change-in-production}
+            # Encryption secret for stored credentials - REQUIRED. Generate one with
+            # `openssl rand -hex 32` and put it in .env; compose refuses to start without it,
+            # since a default here would encrypt every account password with a public key
+            EENGINE_SECRET: '${EENGINE_SECRET:?EENGINE_SECRET must be set in .env - generate one with openssl rand -hex 32}'
 
             # Database connection URL
             EENGINE_REDIS: ${EENGINE_REDIS:-redis://redis:6379/2}
+
+            # The image trusts X-Forwarded-For (EENGINE_API_PROXY=true) so the client address
+            # comes from your reverse proxy. Name the proxy here (IPs or CIDRs, comma-separated,
+            # e.g. the Docker bridge gateway or the proxy container's address), otherwise any
+            # client that reaches the port directly can pick its own source address and the
+            # admin IP allowlist and per-token address restrictions cannot be relied on
+            EENGINE_API_PROXY_ADDRESSES: ${EENGINE_API_PROXY_ADDRESSES:-}
 
             # Additional settings
             EENGINE_LOG_LEVEL: ${EENGINE_LOG_LEVEL:-info}

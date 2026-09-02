@@ -78,6 +78,7 @@ Path-scoped rules in `.claude/rules/` load automatically when you work with the 
 - `EENGINE_EXPORT_QC` - Export concurrency per worker (default: 1)
 - `EENGINE_EXPORT_TIMEOUT` - Export operation timeout (default: 5 minutes)
 - `EENGINE_NOTIFY_QC` - Webhook concurrency per worker (default: 1)
+- `EENGINE_SMTP_MAX_CLIENTS` - Maximum concurrent SMTP server connections (default: 100; also `[smtp] maxClients`). Each connection buffers its message in memory up to `EENGINE_MAX_SMTP_MESSAGE_SIZE`, so this bounds the SMTP worker's memory; excess connections are refused with a 421
 - `EENGINE_DOCUMENT_STORE_ENABLED` - Enable the deprecated Document Store feature (default: false; also settable via `--documentStore.enabled` / `[documentStore] enabled`)
 - `EENGINE_MCP_ENABLED` - Register the MCP endpoint routes (default: true; also settable via `--mcp.enabled` / `[mcp] enabled`). Registration alone serves nothing: the `mcpEnabled` setting (default false) is the runtime switch
 
@@ -99,9 +100,9 @@ Path-scoped rules in `.claude/rules/` load automatically when you work with the 
 - `EENGINE_DISABLE_THREAD_COLLAPSE` - Set to `true` to stop web-safe HTML from folding quoted thread history into a collapsed `<details class="ee-collapsed-thread">` block (default: folding enabled). The marker carries class names only - its `<summary>` is empty on purpose, so a renderer that does not know about it shows nothing extra. See `lib/web-safe-html.js`
 
 **Prepared configuration** (applied on startup):
-- `EENGINE_SETTINGS` - JSON settings object
+- `EENGINE_SETTINGS` - JSON settings object, re-applied through `settings.set()` on every boot, so a value saved for one of its keys in the admin UI reverts at the next restart. The key list is recorded as the `preparedSettingsKeys` setting, which `lib/ui-routes/settings-page.js` turns into `envManagedKeys` in every settings-form view context so the page can flag those fields
 - `EENGINE_PREPARED_TOKEN` - Base64url msgpack-encoded API token
-- `EENGINE_PREPARED_PASSWORD` - Base64url PBKDF2 password hash
+- `EENGINE_PREPARED_PASSWORD` - Base64url PBKDF2 password hash. Written only when it differs from the stored hash: the write bumps `passwordVersion`, which ends every admin session and message-browser token
 - `EENGINE_PREPARED_LICENSE` - License key
 
 ## Code Style Rules

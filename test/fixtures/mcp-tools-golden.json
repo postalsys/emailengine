@@ -281,19 +281,22 @@
                                 ]
                             },
                             "reference": {
-                                "type": [
-                                    "string",
-                                    "null"
-                                ],
                                 "description": "References an existing attachment by its ID instead of providing new attachment content",
                                 "examples": [
                                     "AAAAAQAACnAcde"
                                 ],
-                                "enum": [
-                                    false,
-                                    null
-                                ],
-                                "maxLength": 256
+                                "anyOf": [
+                                    {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 256
+                                    },
+                                    {
+                                        "const": false
+                                    }
+                                ]
                             },
                             "content": {
                                 "type": "string",
@@ -1370,32 +1373,36 @@
                     }
                 },
                 "render": {
-                    "type": "object",
                     "description": "Template rendering options. Set to `false` to send the template as-is, without rendering it.",
-                    "enum": [
-                        false
-                    ],
-                    "properties": {
-                        "format": {
-                            "type": "string",
-                            "description": "Markup language the template is written in. \"html\" - The template is already HTML; \"markdown\" - The template is Markdown and is converted to HTML",
-                            "default": "html",
-                            "enum": [
-                                "html",
-                                "markdown"
-                            ]
-                        },
-                        "params": {
+                    "anyOf": [
+                        {
                             "type": "object",
-                            "description": "An object of variables for the template renderer",
-                            "examples": [
-                                {
-                                    "firstName": "Nyan",
-                                    "orderId": "4815"
+                            "properties": {
+                                "format": {
+                                    "type": "string",
+                                    "description": "Markup language the template is written in. \"html\" - The template is already HTML; \"markdown\" - The template is Markdown and is converted to HTML",
+                                    "default": "html",
+                                    "enum": [
+                                        "html",
+                                        "markdown"
+                                    ]
+                                },
+                                "params": {
+                                    "type": "object",
+                                    "description": "An object of variables for the template renderer",
+                                    "examples": [
+                                        {
+                                            "firstName": "Nyan",
+                                            "orderId": "4815"
+                                        }
+                                    ]
                                 }
-                            ]
+                            }
+                        },
+                        {
+                            "const": false
                         }
-                    }
+                    ]
                 },
                 "attachments": {
                     "type": "array",
@@ -1440,19 +1447,22 @@
                                 ]
                             },
                             "reference": {
-                                "type": [
-                                    "string",
-                                    "null"
-                                ],
                                 "description": "References an existing attachment by its ID instead of providing new attachment content",
                                 "examples": [
                                     "AAAAAQAACnAcde"
                                 ],
-                                "enum": [
-                                    false,
-                                    null
-                                ],
-                                "maxLength": 256
+                                "anyOf": [
+                                    {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 256
+                                    },
+                                    {
+                                        "const": false
+                                    }
+                                ]
                             },
                             "content": {
                                 "type": "string",

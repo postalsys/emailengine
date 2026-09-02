@@ -2,6 +2,8 @@
 
 <p class="mb-6">Control API authentication, secrets, and connection security for this EmailEngine instance.</p>
 
+{{> ui/env-managed-alert}}
+
 <form method="post" action="/admin/config/security">
     {{!-- no id: the layout already renders the #crumb element the script reads --}}
     <input type="hidden" name="crumb" value="{{crumb}}" />

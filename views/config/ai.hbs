@@ -4,6 +4,8 @@
     content to OpenAI and adds the AI response to your webhooks.
 </p>
 
+{{> ui/env-managed-alert}}
+
 <form method="post" id="settings-form" action="/admin/config/ai">
     {{!-- no id: the layout already renders the #crumb element the script reads --}}
     <input type="hidden" name="crumb" value="{{crumb}}" />

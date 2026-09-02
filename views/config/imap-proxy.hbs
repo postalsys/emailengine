@@ -15,6 +15,8 @@
 
 <p class="mb-6">Configure your IMAP proxy server below.</p>
 
+{{> ui/env-managed-alert}}
+
 <form method="post" action="/admin/config/imap-proxy">
     {{!-- no id: the layout already renders the #crumb element the script reads --}}
     <input type="hidden" name="crumb" value="{{crumb}}" />

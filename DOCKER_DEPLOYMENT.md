@@ -124,6 +124,8 @@ cd /opt/emailengine
 
 Never expose EmailEngine directly to the internet. Use a reverse proxy with TLS.
 
+The image starts EmailEngine with `EENGINE_API_PROXY=true`, so the client address is read from the `X-Forwarded-For` header. Set `EENGINE_API_PROXY_ADDRESSES` in `.env` to the address of your proxy (IPs or CIDRs, comma-separated; for a proxy on the Docker host this is usually the bridge gateway, e.g. `172.17.0.1`, or the proxy container's address). Without it the header is trusted from any peer, EmailEngine logs a warning on every start, and the admin IP allowlist and per-token address restrictions cannot be relied on.
+
 #### Option A: Nginx
 
 ```nginx

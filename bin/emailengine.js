@@ -95,11 +95,38 @@ const GLOBAL_OPTIONS = [
     { name: '--log.level', description: 'Logging level', type: 'string', default: 'trace', group: 'General' },
     { name: '--log.raw', description: 'Log raw IMAP traffic', type: 'boolean', default: false, group: 'General' },
     { name: '--workers.webhooks', description: 'Number of webhook worker threads', type: 'number', default: 1, group: 'General' },
+    { name: '--workers.submit', description: 'Number of email submission worker threads', type: 'number', default: 1, group: 'General' },
+    { name: '--workers.export', description: 'Number of export worker threads', type: 'number', default: 1, group: 'General' },
+    {
+        name: '--workers.api',
+        description: 'Number of API/HTTP worker threads (values above 1 need SO_REUSEPORT, Linux only, otherwise 1 is used)',
+        type: 'number',
+        default: 1,
+        group: 'General'
+    },
     { name: '--api.host', description: 'API server bind address', type: 'string', default: '127.0.0.1', group: 'API server' },
     { name: '--api.port', description: 'API server port', type: 'number', default: 3000, group: 'API server' },
     { name: '--api.maxSize', description: 'Maximum attachment size', type: 'number/string', default: '5M', group: 'API server' },
+    { name: '--api.maxBodySize', description: 'Maximum API request body size', type: 'number/string', default: '50M', group: 'API server' },
+    {
+        name: '--api.maxPayloadTimeout',
+        description: 'Maximum time to wait for a request body to arrive',
+        type: 'number/string',
+        default: '10s',
+        group: 'API server'
+    },
+    {
+        name: '--api.proxy',
+        description: 'Trust X-Forwarded-For from the reverse proxy in front of the API (restrict the peers with EENGINE_API_PROXY_ADDRESSES)',
+        type: 'boolean',
+        default: false,
+        group: 'API server'
+    },
+    { name: '--api.tls.certPath', description: 'Path to the TLS certificate; setting it serves the API over HTTPS', type: 'string', group: 'API server' },
+    { name: '--api.tls.keyPath', description: 'Path to the TLS private key', type: 'string', group: 'API server' },
     { name: '--queues.notify', description: 'Concurrent webhook deliveries', type: 'number', default: 1, group: 'Background tasks' },
     { name: '--queues.submit', description: 'Concurrent email submissions', type: 'number', default: 1, group: 'Background tasks' },
+    { name: '--queues.export', description: 'Concurrent export operations', type: 'number', default: 1, group: 'Background tasks' },
     { name: '--smtp.enabled', description: 'Enable SMTP submission server', type: 'boolean', default: false, group: 'SMTP server' },
     { name: '--smtp.secret', description: 'Shared SMTP password for all accounts', type: 'string', group: 'SMTP server' },
     { name: '--smtp.host', description: 'SMTP server bind address', type: 'string', default: '127.0.0.1', group: 'SMTP server' },
@@ -220,11 +247,7 @@ function generateHelp() {
 
     lines.push('emailengine [command] [options]');
     lines.push('');
-    lines.push(wrapText(
-        'EmailEngine is the self-hosted service that allows you to access any email account using an easy-to-use REST API.',
-        width,
-        0
-    ));
+    lines.push(wrapText('EmailEngine is the self-hosted service that allows you to access any email account using an easy-to-use REST API.', width, 0));
     lines.push('');
     lines.push('Commands:');
 
@@ -233,14 +256,7 @@ function generateHelp() {
         const cmdName = cmd ? `emailengine ${cmd}` : 'emailengine';
         lines.push(formatLine(cmdName, def.description, null, null, width, nameWidth));
         if (def.subcommands) {
-            lines.push(formatLine(
-                `emailengine ${cmd} [command]`,
-                `${cmd.charAt(0).toUpperCase() + cmd.slice(1)} management`,
-                null,
-                null,
-                width,
-                nameWidth
-            ));
+            lines.push(formatLine(`emailengine ${cmd} [command]`, `${cmd.charAt(0).toUpperCase() + cmd.slice(1)} management`, null, null, width, nameWidth));
         }
     }
 

@@ -5,6 +5,8 @@
     activity (credentials and message content are never logged). Download logs anytime for troubleshooting.
 </p>
 
+{{> ui/env-managed-alert}}
+
 <form method="post" action="/admin/config/logging">
     {{!-- no id: the layout already renders the #crumb element scripts read --}}
     <input type="hidden" name="crumb" value="{{crumb}}" />
@@ -14,7 +16,7 @@
                 {{> ui/setting-ref name="logs.all"}}
                 {{> ui/checkbox id="settingsLogsAll" name="all" label="Enable Logging for All Accounts"
                 checked=values.all error=errors.all}}
-                <span class="helper-text">Turn on logging for every connected account. Use with caution-this can impact
+                <span class="helper-text">Turn on logging for every connected account. Use with caution, this can impact
                     performance with many accounts.<br>
                     <strong>Restart required</strong> after changing this setting.</span>
             </div>

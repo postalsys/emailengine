@@ -9,6 +9,8 @@
     interface supports legacy systems that require traditional email sending.</p>
 <p class="mb-6">Configure your SMTP server settings below.</p>
 
+{{> ui/env-managed-alert}}
+
 <form method="post" action="/admin/config/smtp">
     {{!-- no id: the layout already renders the #crumb element the script reads --}}
     <input type="hidden" name="crumb" value="{{crumb}}" />

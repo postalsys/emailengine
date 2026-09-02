@@ -64,6 +64,58 @@ test('MCP JSON Schema conversion', async t => {
         assert.ok(!('nullable' in converted.properties.either));
     });
 
+    await t.test('an allow(false) sentinel beside an object becomes a const branch, not an exclusive enum', () => {
+        // The converter emits `.allow(false)` as `enum: [false]` beside `type: object`, which in
+        // JSON Schema no object can satisfy - a validating client refused every valid call
+        const converted = joiToJsonSchema(
+            Joi.object({
+                render: Joi.object({ format: Joi.string().valid('html', 'markdown') })
+                    .allow(false)
+                    .description('Rendering options, or false to skip rendering')
+            })
+        );
+
+        const render = converted.properties.render;
+        assert.equal(render.description, 'Rendering options, or false to skip rendering');
+        assert.ok(!('enum' in render));
+        assert.ok(!('type' in render));
+        assert.deepEqual(render.anyOf, [{ type: 'object', properties: { format: { type: 'string', enum: ['html', 'markdown'] } } }, { const: false }]);
+    });
+
+    await t.test('allow(false, null) on a string keeps null in the type array and drops the emptied enum', () => {
+        const converted = joiToJsonSchema(
+            Joi.object({
+                reference: Joi.string().allow(false, null).max(256).example('AAAAAQAACnAcde')
+            })
+        );
+
+        const reference = converted.properties.reference;
+        assert.deepEqual(reference.examples, ['AAAAAQAACnAcde']);
+        assert.deepEqual(reference.anyOf, [{ type: ['string', 'null'], maxLength: 256 }, { const: false }]);
+    });
+
+    await t.test('a valid() list survives beside a sentinel, null included', () => {
+        const converted = joiToJsonSchema(
+            Joi.object({
+                choice: Joi.string().valid('x', 'y').allow(null, false)
+            })
+        );
+
+        assert.deepEqual(converted.properties.choice.anyOf, [{ type: ['string', 'null'], enum: ['x', 'y', null] }, { const: false }]);
+    });
+
+    await t.test('enum members that are instances of the declared type are left alone', () => {
+        const converted = joiToJsonSchema(
+            Joi.object({
+                count: Joi.number().integer().valid(1, 2),
+                flag: Joi.boolean().valid(false)
+            })
+        );
+
+        assert.deepEqual(converted.properties.count, { type: 'integer', enum: [1, 2] });
+        assert.deepEqual(converted.properties.flag, { type: 'boolean', enum: [false] });
+    });
+
     await t.test('moves the singular example into the examples array and drops x- extensions', () => {
         const converted = joiToJsonSchema(
             Joi.object({

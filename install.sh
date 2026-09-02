@@ -229,6 +229,8 @@ Environment=\"EENGINE_REDIS=redis://:${REDIS_PASSWORD}@127.0.0.1:6379/8\"
 Environment=\"EENGINE_PORT=3000\"
 Environment=\"EENGINE_SECRET=${EENGINE_SECRET}\"
 Environment=\"EENGINE_API_PROXY=true\"
+# Caddy on this host is the only proxy allowed to set X-Forwarded-For
+Environment=\"EENGINE_API_PROXY_ADDRESSES=127.0.0.1,::1\"
 Environment=\"EENGINE_WORKERS=8\"
 Environment=\"EENGINE_LOG_LEVEL=info\"
 # Triggers install script specific upgrade instructions

@@ -27,6 +27,8 @@ class="mb-1"}}
 {{/if}}
 {{/if}}
 
+{{> ui/env-managed-alert}}
+
 <form method="post" id="settings-form" action="/admin/config/webhooks">
     {{!-- no id: the layout already renders the #crumb element the script reads --}}
     <input type="hidden" name="crumb" value="{{crumb}}" />
