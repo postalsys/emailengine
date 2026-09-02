@@ -43,6 +43,7 @@ const SUBMIT_QC = (readEnvValue('EENGINE_SUBMIT_QC') && Number(readEnvValue('EEN
 const SUBMIT_DELAY = getDuration(readEnvValue('EENGINE_SUBMIT_DELAY') || config.submitDelay) || null;
 
 const { shouldDiscardJob, willBeFinalAttempt, isFinalFailedAttempt } = require('../lib/delivery-error');
+const { isAlreadySent } = require('../lib/submit-progress');
 const { packRpcError, unpackRpcError } = require('../lib/worker-rpc-error');
 
 let callQueue = new Map();
@@ -142,6 +143,29 @@ const submitWorker = new Worker(
             job.data.queueId = job.data.qId;
         }
 
+        // A job re-run after a stall (heartbeat kill, crash, a shutdown drain that could not cover
+        // a long SMTP transaction plus the Sent-folder upload) comes back with the progress its
+        // previous run stored. Once that says the MTA accepted the message, sending again would
+        // deliver a duplicate under the same queueId: the message is done, only the bookkeeping
+        // after the 250 was cut short. The catch below covers the same state for a run that got
+        // as far as throwing; this covers the run that never got to throw anything.
+        if (isAlreadySent(job.progress)) {
+            logger.info({
+                msg: 'Skipping re-run of an already sent message',
+                action: 'submit',
+                queue: job.queue.name,
+                code: 'result_success',
+                job: job.id,
+                event: job.name,
+                account: job.data.account,
+                queueId: job.data.queueId,
+                messageId: job.data.messageId,
+                progress: job.progress.status,
+                attemptsMade: job.attemptsMade
+            });
+            return;
+        }
+
         let queueEntryBuf = await redis.hgetBuffer(`${REDIS_PREFIX}iaq:${job.data.account}`, job.data.queueId);
         if (!queueEntryBuf) {
             // nothing to do here
@@ -231,7 +255,7 @@ const submitWorker = new Worker(
         } catch (err) {
             try {
                 const submitJobEntry = await submitQueue.getJob(job.id);
-                if (submitJobEntry && submitJobEntry.progress && ['submitted', 'smtp-completed'].includes(submitJobEntry.progress.status)) {
+                if (submitJobEntry && isAlreadySent(submitJobEntry.progress)) {
                     // SMTP transition succeeded, can accept even if the process yielded in error
                     logger.trace({
                         msg: 'Submitted queued message for delivery',
