@@ -161,11 +161,12 @@ test('IMAPClient.deleteMailbox() returns the connection to its mailbox', async t
     await t.test('reports the task even when the server refuses the delete', async () => {
         // mailboxClose() has already run by then, so the connection is sitting on no mailbox
         // whether or not the DELETE succeeded - which is the state that has to be undone.
+        // The refusal itself is no longer swallowed (test/imap-delete-mailbox-test.js covers
+        // how it is reported); what matters here is that the task is still completed.
         const { client, connectionClient, completed } = createDeleteClient({ deleteThrows: true });
 
-        const result = await client.deleteMailbox('Old folder');
+        await assert.rejects(client.deleteMailbox('Old folder'), /DELETE refused/);
 
-        assert.strictEqual(result.deleted, false);
         assert.deepEqual(completed, [connectionClient]);
     });
 });

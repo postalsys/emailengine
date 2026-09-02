@@ -117,6 +117,9 @@ function makeListingClient(options) {
         throw new Error(`Unexpected request URL in test stub: ${url}`);
     };
 
+    // createMailbox() goes through the throttling-aware wrapper; serve it from the same stub
+    client.requestWithRetry = (...args) => client.request(...args);
+
     return client;
 }
 
@@ -270,6 +273,51 @@ test('Outlook mailbox createMailbox/renameMailbox - leaf decode at Graph boundar
         // The returned newPath stays encoded.
         assert.strictEqual(result.newPath, 'New%2FName');
         assert.strictEqual(result.renamed, true);
+    });
+
+    // Moving a folder: the parent of the new path decides the move step. An empty parent used to
+    // skip the move silently (and still answer renamed:true), and a parent that does not exist
+    // did the same.
+    function makeMoveClient() {
+        const redis = makeRedis();
+        const listing = [
+            { id: 'id-parent', pathName: 'Parent', displayName: 'Parent' },
+            { id: 'id-child', pathName: 'Parent/Child', displayName: 'Child' }
+        ];
+        return redis.hset('iac:testaccount', 'outlookMailboxListing', JSON.stringify(listing)).then(() => {
+            const client = makeListingClient({ redis });
+            client.prepare = async () => {};
+            client.listMailboxes = async () => {};
+            client.request = async (url, method, payload) => {
+                client.calls.push({ url, method, payload });
+                if (method === 'post' && url === '/me/mailFolders/id-child/move') {
+                    return { id: 'id-child', displayName: 'Child', parentFolderId: payload.destinationId };
+                }
+                throw new Error(`Unexpected request URL in test stub: ${url}`);
+            };
+            return client;
+        });
+    }
+
+    await t.test('renameMailbox moves a folder to the top level through the msgfolderroot well-known name', async () => {
+        const client = await makeMoveClient();
+
+        const result = await client.renameMailbox('Parent/Child', 'Child');
+
+        assert.ok(!client.calls.some(c => c.method === 'patch'), 'the name did not change, so no PATCH');
+        const move = client.calls.find(c => c.method === 'post');
+        assert.ok(move, 'expected a move request');
+        assert.deepStrictEqual(move.payload, { destinationId: 'msgfolderroot' });
+        assert.strictEqual(result.newPath, 'Child');
+        assert.strictEqual(result.renamed, true);
+    });
+
+    await t.test('renameMailbox refuses a parent that does not exist before touching the folder', async () => {
+        const client = await makeMoveClient();
+
+        await assert.rejects(client.renameMailbox('Parent/Child', 'Nope/Child'), err => err.code === 'NotFound' && err.statusCode === 404);
+
+        assert.ok(!client.calls.some(c => c.method === 'patch' || c.method === 'post'), 'nothing may be renamed or moved');
     });
 });
 

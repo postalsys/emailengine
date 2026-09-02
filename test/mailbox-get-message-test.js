@@ -61,7 +61,8 @@ function createMockContext({ fetchResult, flagsAddResult = true, flagsAddError }
             getImapConnection: async () => connectionClient,
             onTaskCompleted() {},
             packUid: async () => 'AAAAAAAAAAAA',
-            isAutoreply: () => false
+            isAutoreply: () => false,
+            attachBounces: async () => {}
         },
         // Use the real implementations so the returned payload is built the same
         // way as in production

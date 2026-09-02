@@ -12,40 +12,18 @@ const { OUTLOOK_MAX_RETRY_ATTEMPTS, OUTLOOK_RETRY_BASE_DELAY, OUTLOOK_RETRY_MAX_
 const graphApi = require('../lib/email-client/outlook/graph-api');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
+const { createOAuth2Context } = require('./helpers/oauth-context');
 
 registerRedisTeardown(redis);
-
-const noopLogger = { info() {}, warn() {}, error() {}, debug() {}, trace() {} };
-
-// Build a fake OutlookClient context. requestImpl receives the attempt index
-// (0-based) and returns a value to resolve with or throws to simulate failure.
-function makeContext(requestImpl) {
-    let attempt = 0;
-    const context = {
-        account: 'test-account',
-        logger: noopLogger,
-        getToken: async () => 'access-token',
-        oAuth2Client: {
-            apiBase: 'https://graph.microsoft.com',
-            provider: 'outlook',
-            request: async () => {
-                const current = attempt++;
-                return requestImpl(current);
-            }
-        }
-    };
-    return {
-        context,
-        getCalls: () => attempt
-    };
-}
 
 // Run requestWithRetry while neutralizing the real (30-120s) backoff sleeps.
 // We swap global.setTimeout for one that fires immediately but records the
 // requested delay. Retry delays are always >= 1000ms (base 30s), so we filter
 // out any unrelated sub-second timers that other libraries might schedule.
+// requestImpl receives the attempt index (0-based) and returns a value to
+// resolve with or throws to simulate failure.
 async function runRetry(requestImpl, options = {}) {
-    const { context, getCalls } = makeContext(requestImpl);
+    const { context, calls } = createOAuth2Context({ request: requestImpl });
     const realSetTimeout = global.setTimeout;
     const rawDelays = [];
 
@@ -65,7 +43,7 @@ async function runRetry(requestImpl, options = {}) {
     }
 
     const delaysSeconds = rawDelays.filter(ms => ms >= 1000).map(ms => ms / 1000);
-    return { result, error, calls: getCalls(), delaysSeconds };
+    return { result, error, calls: calls.requests, delaysSeconds };
 }
 
 function rateLimitError(retryAfter) {

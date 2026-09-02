@@ -305,9 +305,38 @@ class ConnectionHandler {
         }
 
         // do not wait before returning as it may take forever
-        accountObject.connection.init(initOpts).catch(err => {
-            logger.error({ msg: 'Failed to initialize account connection', account, err });
-        });
+        this.startConnection(account, accountObject, initOpts);
+    }
+
+    /**
+     * Runs init() without waiting for it. A client that retries its own init() (the API
+     * clients, see BaseClient.scheduleInitRetry()) gets another attempt when it fails on
+     * something other than a refused credential; a client that was replaced in the meantime
+     * is left alone when the timer fires
+     * @param {string} account - Account ID
+     * @param {Object} accountObject - Account instance holding the connection
+     * @param {Object} initOpts - Options passed to init()
+     */
+    startConnection(account, accountObject, initOpts) {
+        const connection = accountObject.connection;
+
+        connection
+            .init(initOpts)
+            .then(() => connection.resetInitRetry())
+            .catch(err => {
+                logger.error({ msg: 'Failed to initialize account connection', account, err });
+
+                if (!connection.retriesInit || err.authenticationFailed) {
+                    return;
+                }
+
+                connection.scheduleInitRetry(() => {
+                    if (this.accounts.get(account) !== accountObject) {
+                        return;
+                    }
+                    this.startConnection(account, accountObject, initOpts);
+                });
+            });
     }
 
     async deleteConnection(account) {

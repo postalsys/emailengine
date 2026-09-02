@@ -244,7 +244,6 @@ test('IMAP null guard tests', async t => {
                 serverInfo: {}
             }),
             mailboxes,
-            mailbox: { path: 'INBOX' },
             main: { path: 'INBOX' },
             untaggedExpungeTimer: null,
             resyncTimer: null,
@@ -254,6 +253,8 @@ test('IMAP null guard tests', async t => {
             account: 'test-account',
             subconnections: [],
             refreshFolderList: async () => null,
+            // the sync ends by returning the connection to the main mailbox
+            select: async () => {},
             setStateVal: async () => {},
             getAccountKey: () => 'test:account',
             redis: mockRedis,
@@ -261,6 +262,8 @@ test('IMAP null guard tests', async t => {
         };
 
         await IMAPClient.prototype.syncMailboxes.call(ctx);
+        // a completed sync arms the periodic resync, which has no business firing after the test
+        clearTimeout(ctx.resyncTimer);
 
         assert.deepStrictEqual(syncedMailboxes, ['INBOX', 'Sent'], 'All mailboxes should have been synced');
         assert.strictEqual(ctx.state, 'connected', 'State should be connected after successful sync');

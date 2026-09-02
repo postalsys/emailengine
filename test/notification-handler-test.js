@@ -185,3 +185,65 @@ test('exported constants', async t => {
         assert.strictEqual(DEFAULT_JOB_OPTIONS.backoff.jitter, 0.2);
     });
 });
+
+test('buildPayload specialUse for API clients', async t => {
+    await t.test('reads specialUse off a plain { path, specialUse } mailbox object', () => {
+        // The Gmail API and Graph clients pass this shape instead of an IMAP Mailbox with a
+        // listingEntry, and their webhooks used to lack the top-level specialUse
+        const payload = makeHandler().buildPayload({ path: 'Sent Items', specialUse: '\\Sent' }, MESSAGE_NEW_NOTIFY, { id: 'm1' }, null);
+        assert.strictEqual(payload.path, 'Sent Items');
+        assert.strictEqual(payload.specialUse, '\\Sent');
+    });
+
+    await t.test('the listing entry still wins when both are present', () => {
+        const payload = makeHandler().buildPayload(
+            { path: 'INBOX', specialUse: '\\Sent', listingEntry: { specialUse: '\\Inbox' } },
+            MESSAGE_NEW_NOTIFY,
+            {},
+            null
+        );
+        assert.strictEqual(payload.specialUse, '\\Inbox');
+    });
+});
+
+test('processWithFlow child jobs', async t => {
+    const { webhooks } = require('../lib/webhooks');
+    const savedFormatPayload = Object.prototype.hasOwnProperty.call(webhooks, 'formatPayload') ? webhooks.formatPayload : undefined;
+    const savedPushToQueue = Object.prototype.hasOwnProperty.call(webhooks, 'pushToQueue') ? webhooks.pushToQueue : undefined;
+    t.after(() => {
+        for (const [name, saved] of [
+            ['formatPayload', savedFormatPayload],
+            ['pushToQueue', savedPushToQueue]
+        ]) {
+            if (saved) {
+                webhooks[name] = saved;
+            } else {
+                delete webhooks[name];
+            }
+        }
+    });
+
+    await t.test('a failed document-store or custom-route child does not park the main webhook job', async () => {
+        webhooks.formatPayload = async (event, payload) => payload;
+        // A custom route adds its own delivery to the flow, the way lib/webhooks.js does
+        webhooks.pushToQueue = async (event, payload, opts) => {
+            opts.queueFlow.push({ name: event, data: payload, queueName: 'notify' });
+        };
+        const flows = [];
+        const handler = makeHandler({ flowProducer: { add: async flow => flows.push(flow) } });
+
+        await handler.processWithFlow(MESSAGE_NEW_NOTIFY, { id: 'm1' }, 0);
+
+        assert.strictEqual(flows.length, 1);
+        const children = flows[0].children;
+        assert.deepStrictEqual(
+            children.map(child => child.queueName),
+            ['documents', 'notify']
+        );
+        for (const child of children) {
+            // BullMQ 6 only releases a parent from waiting-children when a child that failed for
+            // good is moved to the failed-dependencies set, which is what this option does
+            assert.strictEqual(child.opts.ignoreDependencyOnFailure, true, `${child.queueName} child`);
+        }
+    });
+});
