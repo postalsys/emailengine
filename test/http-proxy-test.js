@@ -295,7 +295,7 @@ test('HTTP proxy agent management', async t => {
         await reloadHttpProxyAgent();
 
         assert.ok(httpAgent.webhook, 'webhook dispatcher should exist');
-        assert.notStrictEqual(httpAgent.webhook, httpAgent.retry, 'webhook deliveries should not share the general dispatcher');
+        assert.notStrictEqual(httpAgent.webhook, httpAgent.fetch, 'webhook deliveries should not share the general dispatcher');
 
         const proxy = await startProxyServer();
         try {
@@ -303,12 +303,12 @@ test('HTTP proxy agent management', async t => {
             setMockSetting('httpProxyUrl', proxy.url);
             await reloadHttpProxyAgent();
 
-            assert.strictEqual(httpAgent.webhook, httpAgent.retry, 'behind a proxy the webhook dispatcher should fall back to the shared one');
+            assert.strictEqual(httpAgent.webhook, httpAgent.fetch, 'behind a proxy the webhook dispatcher should fall back to the shared one');
 
             setMockSetting('httpProxyEnabled', false);
             await reloadHttpProxyAgent();
 
-            assert.notStrictEqual(httpAgent.webhook, httpAgent.retry, 'dropping the proxy should restore the dedicated dispatcher');
+            assert.notStrictEqual(httpAgent.webhook, httpAgent.fetch, 'dropping the proxy should restore the dedicated dispatcher');
         } finally {
             await stopServer(proxy.server);
         }

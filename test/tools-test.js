@@ -709,4 +709,132 @@ test('Tools utility tests', async t => {
         assert.strictEqual(logged[0].cmd, 'smtpReload');
         assert.strictEqual(logged[1].cmd, 'imapProxyReload');
     });
+
+    // splitUrlCredentials() feeds the Authorization header of webhook deliveries, the webhook test
+    // probe and the auth-server lookup. An earlier version ran he.encode() over the parts, so a
+    // password with "&", "<" or a quote was sent as entity references and rejected on every attempt
+    const basic = (user, pass) => `Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`;
+
+    await t.test('splitUrlCredentials() returns no header for a URL without credentials', () => {
+        const { url, authorization } = tools.splitUrlCredentials('https://example.com/hook?x=1');
+        assert.strictEqual(authorization, null);
+        assert.strictEqual(url.toString(), 'https://example.com/hook?x=1');
+    });
+
+    await t.test('splitUrlCredentials() strips the credentials from the URL', () => {
+        const { url, authorization } = tools.splitUrlCredentials('https://user:secret@example.com/hook');
+        assert.strictEqual(authorization, basic('user', 'secret'));
+        assert.strictEqual(url.toString(), 'https://example.com/hook');
+        assert.strictEqual(url.username, '');
+        assert.strictEqual(url.password, '');
+    });
+
+    await t.test('splitUrlCredentials() sends the typed form of a percent-encoded credential', () => {
+        // "p@ss&w<>rd" as the URL parser stores it
+        const { authorization } = tools.splitUrlCredentials('https://user:p%40ss%26w%3C%3Erd@example.com/');
+        assert.strictEqual(authorization, basic('user', 'p@ss&w<>rd'));
+    });
+
+    await t.test('splitUrlCredentials() leaves HTML-special characters alone', () => {
+        // "&", "<" and quotes survive the URL parser unencoded, and must reach the receiver as such
+        const { authorization } = tools.splitUrlCredentials(`https://user:p&ss"<>@example.com/`);
+        assert.strictEqual(authorization, basic('user', 'p&ss"<>'));
+    });
+
+    await t.test('splitUrlCredentials() keeps a malformed escape as written', () => {
+        const { authorization } = tools.splitUrlCredentials('https://user:100%zz@example.com/');
+        assert.strictEqual(authorization, basic('user', '100%zz'));
+    });
+
+    await t.test('splitUrlCredentials() works with a username or a password alone', () => {
+        assert.strictEqual(tools.splitUrlCredentials('https://token@example.com/').authorization, basic('token', ''));
+        assert.strictEqual(tools.splitUrlCredentials('https://:secret@example.com/').authorization, basic('', 'secret'));
+    });
+
+    // failAction tests
+
+    await t.test('failAction() reports the leaf key and the full path of every failing field', async () => {
+        const Joi = require('joi');
+
+        const schema = Joi.object({
+            to: Joi.array().items(Joi.object({ address: Joi.string().email() })),
+            subject: Joi.string().max(3)
+        });
+        const { error } = schema.validate({ to: [{ address: 'not-an-email' }], subject: 'too long' }, { abortEarly: false });
+
+        const request = {
+            logger: { debug() {}, error() {} },
+            method: 'post',
+            route: { path: '/v1/test' },
+            app: { gt: { gettext: value => value } }
+        };
+
+        await assert.rejects(tools.failAction(request, {}, error), err => {
+            assert.strictEqual(err.output.statusCode, 400);
+            assert.strictEqual(err.output.payload.message, 'Invalid input');
+            // key alone cannot tell to[0].address from a top-level address, path can
+            assert.deepStrictEqual(
+                err.output.payload.fields.map(field => [field.key, field.path]),
+                [
+                    ['address', 'to.0.address'],
+                    ['subject', 'subject']
+                ]
+            );
+            return true;
+        });
+    });
+
+    // getLogs tests
+
+    const { redis } = require('../lib/db');
+    const msgpack = require('../lib/msgpack');
+    const { REDIS_PREFIX } = require('../lib/consts');
+
+    const readStream = async stream => {
+        const chunks = [];
+        for await (const chunk of stream) {
+            chunks.push(chunk);
+        }
+        return Buffer.concat(chunks).toString();
+    };
+
+    await t.test('getLogs() streams the stored entries as JSON lines and reports an undecodable row in place', async () => {
+        const account = 'tools-logs-account';
+        const logKey = `${REDIS_PREFIX}iam:${account}:g`;
+
+        // 0xc1 is the one byte the msgpack format never uses, so the last row cannot decode
+        await redis.rpush(logKey, msgpack.encode({ msg: 'first' }), msgpack.encode({ msg: 'second' }), Buffer.from([0xc1]));
+
+        try {
+            const stream = await tools.getLogs(redis, account);
+            assert.strictEqual(stream.headers['content-type'], 'text/plain');
+
+            const body = await readStream(stream);
+            const lines = body
+                .trim()
+                .split('\n')
+                .map(line => JSON.parse(line));
+
+            assert.deepStrictEqual(lines[0], { msg: 'first' });
+            assert.deepStrictEqual(lines[1], { msg: 'second' });
+            assert.strictEqual(lines[2].error, 'Failed to decode log entry');
+            assert.ok(!body.includes('    at '), 'a stack trace must not reach the download');
+        } finally {
+            await redis.unlink(logKey);
+        }
+    });
+
+    await t.test('getLogs() answers an empty log with a notice', async () => {
+        const stream = await tools.getLogs(redis, 'tools-logs-missing-account');
+        assert.strictEqual(await readStream(stream), 'No logs found for tools-logs-missing-account\n');
+    });
+
+    await t.test('getLogs() rejects when the log cannot be read, rather than ending a 200 stream with the error', async () => {
+        const failing = {
+            lrangeBuffer: async () => {
+                throw new Error('Redis is unavailable');
+            }
+        };
+        await assert.rejects(tools.getLogs(failing, 'tools-logs-account'), /Redis is unavailable/);
+    });
 });

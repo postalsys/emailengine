@@ -73,8 +73,9 @@ The webhooks system (`workers/webhooks.js`, `lib/webhooks.js`) delivers real-tim
 3. Custom routes: Multiple URLs with JavaScript filter/transform functions
 
 **Delivery details:**
-- Retries: 10 attempts with exponential backoff (starting at 5s)
-- Authentication: Basic auth via URL credentials, custom headers, or HMAC-SHA256 signature
+- Retries: 10 attempts with exponential backoff (starting at 5s). Each attempt is exactly one HTTP request: the dispatcher deliveries go through (`httpAgent.webhook`, built in `lib/tools.js`) is deliberately a plain `Agent`, not a `RetryAgent`, so a dropped socket or a 429 fails the attempt and the queue's backoff spaces the retries. The shared `httpAgent.retry` retries POSTs on its own and would silently repeat an event with the same `X-EE-Wh-Id` and `X-EE-Wh-Attempts-Made: 0`, unseen by the worker's logs and metrics. Do not point deliveries back at it
+- Which failures retry: every non-2xx response goes through the full schedule, 4xx included. This is deliberate - a receiver that is temporarily misconfigured (credentials rotated, a path not deployed yet, a 401/403/404 from an auth proxy in front of it) recovers within the ten attempts, and the reason reaches the operator through `webhookErrorFlag` after the first failure either way. Only `EEGRESSBLOCKED` (egress policy refusal) and `EREDIRECTNOTFOLLOWED` (a 3xx answer) end the job early, because neither can change between attempts. Do not add status codes to that final set without an operator-facing reason: failing fast on 401/403/410/413/422 changes a delivery contract operators rely on
+- Authentication: Basic auth via URL credentials (`splitUrlCredentials()` in `lib/tools.js` decodes the percent-encoded userinfo and strips it from the URL), custom headers, or HMAC-SHA256 signature
 - Signature header: `X-EE-Wh-Signature` (HMAC-SHA256 of body using service secret)
 - Concurrency: Configurable via `EENGINE_NOTIFY_QC` (default: 1)
 - Timeout: each delivery attempt is capped at 30s wall-clock (`EENGINE_WEBHOOK_TIMEOUT` to override); a timed-out attempt fails with `ETIMEDOUT` and retries like any other transient error

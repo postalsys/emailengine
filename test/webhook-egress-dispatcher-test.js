@@ -29,6 +29,7 @@ test('webhook dispatcher enforces the egress policy', async t => {
         assert.strictEqual(WEBHOOK_EGRESS_POLICY, 'private');
         assert.strictEqual(typeof validateWebhookTarget, 'function', 'a policy other than off must produce a pre-check');
         assert.notStrictEqual(httpAgent.webhook, httpAgent.retry, 'webhook deliveries must not use the unfiltered dispatcher');
+        assert.notStrictEqual(httpAgent.webhook, httpAgent.fetch, 'webhook deliveries must not use the unfiltered dispatcher');
     });
 
     await t.test('refuses a delivery to a blocked destination and reaches nothing', async () => {

@@ -10,7 +10,16 @@ const { webhooks: Webhooks } = require('../lib/webhooks');
 
 const { GooglePubSub } = require('../lib/oauth/pubsub/google');
 
-const { readEnvValue, threadStats, getDuration, httpAgent, getServiceSecret, maybeReloadHttpProxyAgent, redactUrlCredentials } = require('../lib/tools');
+const {
+    readEnvValue,
+    threadStats,
+    getDuration,
+    httpAgent,
+    getServiceSecret,
+    maybeReloadHttpProxyAgent,
+    redactUrlCredentials,
+    splitUrlCredentials
+} = require('../lib/tools');
 const { sendWebhookRequest } = require('../lib/webhook-request');
 const { willBeFinalAttempt, isFinalFailedAttempt } = require('../lib/delivery-error');
 const { validateWebhookTarget } = require('../lib/webhook-egress');
@@ -24,7 +33,6 @@ const { Worker, UnrecoverableError } = require('bullmq');
 const settings = require('../lib/settings');
 
 const { REDIS_PREFIX, ACCOUNT_DELETED_NOTIFY, MESSAGE_NEW_NOTIFY } = require('../lib/consts');
-const he = require('he');
 
 const { fetch: fetchCmd } = require('undici');
 
@@ -393,21 +401,9 @@ const notifyWorker = new Worker(
             'X-EE-Wh-Queued-Time': Math.round(Math.max(0, (Date.now() - job.timestamp) / 1000)) + 's'
         };
 
-        let parsed = new URL(webhooks);
-        let username, password;
-
-        if (parsed.username) {
-            username = he.decode(parsed.username);
-            parsed.username = '';
-        }
-
-        if (parsed.password) {
-            password = he.decode(parsed.password);
-            parsed.password = '';
-        }
-
-        if (username || password) {
-            headers.Authorization = `Basic ${Buffer.from(he.encode(username || '') + ':' + he.encode(password || '')).toString('base64')}`;
+        let { url: parsed, authorization } = splitUrlCredentials(webhooks);
+        if (authorization) {
+            headers.Authorization = authorization;
         }
 
         if (customRoute) {

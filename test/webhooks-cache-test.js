@@ -69,4 +69,28 @@ test('Webhook handler cache', async t => {
         const storedV = Number(await redis.hget(webhooks.getWebhooksContentKey(), 'v'));
         assert.strictEqual(webhooks.handlerCacheV, storedV, 'the cache marker must track the bumped version');
     });
+
+    await t.test('skips a route whose content vanished between the index and content reads', async () => {
+        const { id } = await webhooks.create({ name: 'Vanishing route', enabled: true, targetUrl: 'http://127.0.0.1:7078/vanishing' }, {});
+
+        // Leave the id in the index but drop its content: the state a concurrent delete leaves
+        // behind for a reader that already holds the index. The counter is bumped by hand since
+        // delete() would remove the id from the index as well
+        await redis.hdel(webhooks.getWebhooksContentKey(), `${id}:meta`, `${id}:content`);
+        await redis.hincrby(webhooks.getWebhooksContentKey(), 'v', 1);
+
+        // Used to throw here: get() returned false, and the compile error handler then assigned
+        // a property on that primitive, which escaped the refresh before the main webhook was queued
+        const handlers = await webhooks.getWebhookHandlers();
+        assert.strictEqual(handlers.length, 1, 'only the intact route may be cached');
+        assert.ok(
+            handlers.every(handler => handler && handler.id !== id),
+            'the vanished route must not be in the cache'
+        );
+
+        const storedV = Number(await redis.hget(webhooks.getWebhooksContentKey(), 'v'));
+        assert.strictEqual(webhooks.handlerCacheV, storedV, 'the refresh must complete and mark the cache current');
+
+        await redis.srem(webhooks.getWebhooksIndexKey(), id);
+    });
 });
