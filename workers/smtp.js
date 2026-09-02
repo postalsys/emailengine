@@ -40,6 +40,12 @@ const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const MAX_SMTP_MESSAGE_SIZE = getByteSize(readEnvValue('EENGINE_MAX_SMTP_MESSAGE_SIZE') || config.smtp.maxMessageSize) || DEFAULT_MAX_SMTP_MESSAGE_SIZE;
 const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 
+// Every connection buffers its message in memory up to MAX_SMTP_MESSAGE_SIZE before it is queued,
+// so the concurrent connection count is what bounds this worker's memory. Excess connections are
+// refused with a 421, which any SMTP client retries. The default matches Postfix's smtpd limit.
+const DEFAULT_SMTP_MAX_CLIENTS = 100;
+const SMTP_MAX_CLIENTS = Number(readEnvValue('EENGINE_SMTP_MAX_CLIENTS') || config.smtp.maxClients) || DEFAULT_SMTP_MAX_CLIENTS;
+
 const ACCOUNT_CACHE = new WeakMap();
 
 let callQueue = new Map();
@@ -158,6 +164,7 @@ async function init() {
         disableReverseLookup: true,
         banner: 'EmailEngine MSA',
         size: MAX_SMTP_MESSAGE_SIZE,
+        maxClients: SMTP_MAX_CLIENTS,
         useProxy: await settings.get('smtpServerProxy')
     };
 

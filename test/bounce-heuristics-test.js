@@ -98,4 +98,59 @@ test('bounce-detect text heuristics', async t => {
         assert.strictEqual(bounce.response.status, '5.7.1');
         assert.match(bounce.response.message, /Message rejected/);
     });
+
+    // A delay notice is not a bounce. mightBeABounce() admits any MAILER-DAEMON sender, and these
+    // notices carry the same recipient block or quoted reply the heuristics read a bounce off, so
+    // the action they set is what keeps a still-retrying message out of the bounce store and the
+    // emailBounce webhook
+    await t.test('does not report a "WARNING MESSAGE ONLY" delay notice as a bounce', async () => {
+        const body = [
+            'Hi. This is the mail delivery program at mail.example.com.',
+            "I'm afraid I wasn't able to deliver your message to the following addresses yet.",
+            'THIS IS A WARNING MESSAGE ONLY.',
+            'YOU DO NOT NEED TO RESEND YOUR MESSAGE.',
+            '',
+            '<frank@example.com>:',
+            "Sorry, I wasn't able to establish an SMTP connection. (#4.4.1)",
+            "I'll keep trying for a while longer.",
+            ''
+        ].join('\r\n');
+        const bounce = await bounceDetect(buildBounce({}, body));
+
+        assert.strictEqual(bounce.recipient, 'frank@example.com');
+        assert.strictEqual(bounce.response.status, '4.4.1');
+        assert.strictEqual(bounce.action, undefined);
+    });
+
+    await t.test('does not report a quoted 4xx "said:" reply as a bounce', async () => {
+        const body = [
+            '<grace@example.com>: host mx.example.com[203.0.113.4] said: 450 4.2.1 Mailbox temporarily unavailable',
+            '(in reply to RCPT TO command)',
+            ''
+        ].join('\r\n');
+        const bounce = await bounceDetect(buildBounce({}, body));
+
+        assert.strictEqual(bounce.recipient, 'grace@example.com');
+        assert.strictEqual(bounce.response.status, '4.2.1');
+        assert.strictEqual(bounce.action, undefined);
+    });
+
+    await t.test('keeps a final bounce that quotes the last temporary reply', async () => {
+        // qmail gives up after the queue lifetime and reports the 4.x.x it kept getting
+        const body = [
+            'Hi. This is the qmail-send program at mail.example.com.',
+            "I'm afraid I wasn't able to deliver your message to the following addresses.",
+            "This is a permanent error; I've given up. Sorry it didn't work out.",
+            '',
+            '<heidi@example.com>:',
+            "Sorry, I wasn't able to establish an SMTP connection. (#4.4.1)",
+            "I'm not going to try again; this message has been in the queue too long.",
+            ''
+        ].join('\r\n');
+        const bounce = await bounceDetect(buildBounce({}, body));
+
+        assert.strictEqual(bounce.recipient, 'heidi@example.com');
+        assert.strictEqual(bounce.response.status, '4.4.1');
+        assert.strictEqual(bounce.action, 'failed');
+    });
 });

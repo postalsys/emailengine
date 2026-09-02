@@ -61,6 +61,35 @@ test('isBlockedAddress', async t => {
         assert.strictEqual(isBlockedAddress('::ffff:169.254.169.254', POLICY_LINK_LOCAL), true);
     });
 
+    await t.test('blocks IPv6 transition forms that embed a blocked address', () => {
+        // NAT64 well-known and local-use prefixes, IPv4-translated, 6to4, and Teredo (where the
+        // client address is stored bit-inverted: a9fe -> 5601)
+        for (let ip of [
+            '64:ff9b::169.254.169.254',
+            '64:ff9b::a9fe:a9fe',
+            '64:ff9b:1::a9fe:a9fe',
+            '::ffff:0:169.254.169.254',
+            '2002:a9fe:a9fe::1',
+            '2001:0:4136:e378:8000:63bf:5601:5601'
+        ]) {
+            assert.strictEqual(isBlockedAddress(ip, POLICY_LINK_LOCAL), true, `expected ${ip} to be blocked`);
+        }
+    });
+
+    await t.test('allows transition forms that embed a public address', () => {
+        // A NAT64-only host resolves every IPv4-only receiver into 64:ff9b::/96, so the range as
+        // such must stay reachable; only the embedded address is judged
+        for (let ip of ['64:ff9b::5db8:d822', '2002:5db8:d822::1']) {
+            assert.strictEqual(isBlockedAddress(ip, POLICY_LINK_LOCAL), false, `expected ${ip} to be allowed`);
+            assert.strictEqual(isBlockedAddress(ip, POLICY_PRIVATE), false, `expected ${ip} to be allowed`);
+        }
+    });
+
+    await t.test('judges the embedded address under the private policy too', () => {
+        assert.strictEqual(isBlockedAddress('64:ff9b::10.0.0.1', POLICY_PRIVATE), true);
+        assert.strictEqual(isBlockedAddress('64:ff9b::10.0.0.1', POLICY_LINK_LOCAL), false);
+    });
+
     await t.test('blocks IPv6 link-local under the default policy', () => {
         assert.strictEqual(isBlockedAddress('fe80::1', POLICY_LINK_LOCAL), true);
     });
