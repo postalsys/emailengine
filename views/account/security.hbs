@@ -140,17 +140,28 @@
 </div>
 
 {{#> ui/modal id="disableTfaModal" title="Disable two-factor authentication" titleId="disableTfaModalLabel"}}
-<div class="modal-body">
-    <p>Disabling two-factor authentication will make your account less secure. Are you sure you want to continue?</p>
-</div>
-<div class="modal-footer">
-    <form method="post" action="/admin/account/tfa/disable" class="flex gap-2">
+<form method="post" action="/admin/account/tfa/disable">
+    <div class="modal-body space-y-4">
+        <p>Disabling two-factor authentication will make your account less secure. Are you sure you want to continue?</p>
+
+        <div>
+            {{!-- The route verifies this server-side: switching the second factor off is a step
+                  down that a live session alone must not be able to take, the same rule the
+                  password change and passkey registration follow --}}
+            {{#> ui/form-field id="tfa-disable-password" label="Current password"}}
+            <input type="password" class="input" id="tfa-disable-password" name="password" maxlength="256"
+                autocomplete="current-password" required />
+            <span class="helper-text">Confirm your identity before switching off two-factor authentication.</span>
+            {{/ui/form-field}}
+        </div>
+    </div>
+    <div class="modal-footer">
         <input type="hidden" name="crumb" value="{{crumb}}" />
         <input type="hidden" name="type" value="totp" />
         {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#disableTfaModal"}}
         {{> ui/btn label="Disable 2FA" variant="error" type="submit"}}
-    </form>
-</div>
+    </div>
+</form>
 {{/ui/modal}}
 
 {{#> ui/modal id="enableTfaModal" title="Enable two-factor authentication" titleId="enableTfaModalLabel"}}

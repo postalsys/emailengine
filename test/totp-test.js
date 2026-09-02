@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { generateTotpSeed, verifyTotp, generateTotpUrl } = require('../lib/totp');
+const { TOTP_WINDOW_SIZE } = require('../lib/consts');
 
 // Regression vectors generated with speakeasy 2.0.0 through the exact call the admin login
 // used (secret: base32(seed bytes), encoding: 'base32'), so seeds stored by earlier releases
@@ -60,6 +61,18 @@ test('TOTP tests', async t => {
         assert.strictEqual(verifyTotp(seed, code, { now: time + 7 * step, window: 6 }), false, 'code from 7 steps ago');
         assert.strictEqual(verifyTotp(seed, code, { now: time - 7 * step, window: 6 }), false, 'code from 7 steps ahead');
         assert.strictEqual(verifyTotp(seed, code, { now: time + step }), false, 'stale code with no window');
+    });
+
+    await t.test('the login window admits one step of clock drift either side, no more', () => {
+        // The admin login and TOTP enrollment verify with TOTP_WINDOW_SIZE. Every extra step
+        // is another valid code for a guess to land on, so the constant is pinned to behavior
+        let { seed, time, code } = SPEAKEASY_VECTORS[0];
+        let step = 30 * 1000;
+
+        assert.strictEqual(verifyTotp(seed, code, { now: time + step, window: TOTP_WINDOW_SIZE }), true, 'code from the previous step');
+        assert.strictEqual(verifyTotp(seed, code, { now: time - step, window: TOTP_WINDOW_SIZE }), true, 'code from the next step');
+        assert.strictEqual(verifyTotp(seed, code, { now: time + 2 * step, window: TOTP_WINDOW_SIZE }), false, 'code from two steps ago');
+        assert.strictEqual(verifyTotp(seed, code, { now: time - 2 * step, window: TOTP_WINDOW_SIZE }), false, 'code from two steps ahead');
     });
 
     await t.test('rejects malformed tokens', () => {

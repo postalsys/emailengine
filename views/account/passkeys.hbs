@@ -11,6 +11,14 @@
             <h6 class="card-title text-primary">Passkeys</h6>
             <p class="text-base-content/60 mb-0 text-sm">Sign in with Touch ID, Windows Hello or a security key. A
                 passkey is a complete sign-in on its own - no password and no verification code.</p>
+            {{#if passkeys.length}}
+            {{!-- The RP ID is read from the Service URL on every ceremony, so a changed hostname
+                  strands every passkey below while the login page still offers the button - this
+                  is where an operator learns why --}}
+            <p class="text-base-content/60 mb-0 mt-1 text-sm">Registered for <strong>{{rpId}}</strong>, the hostname
+                of the Service URL. If that hostname changes, these passkeys stop working and have to be registered
+                again.</p>
+            {{/if}}
         </div>
         {{!-- ui/tooltip renders bare when the text is empty, so the same call covers both the
               live button and the one disabled with the reason on it --}}

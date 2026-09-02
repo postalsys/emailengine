@@ -55,6 +55,14 @@ function authorizeQuery(overrides) {
     return `/admin/mcp/authorize?${params.toString()}`;
 }
 
+// The authorization URL with no code_challenge_method at all - authorizeQuery() cannot express an
+// absent key, since URLSearchParams would spell an undefined override out as the string "undefined"
+function withoutPkceMethod(url) {
+    const parsed = new URL(url, 'http://localhost');
+    parsed.searchParams.delete('code_challenge_method');
+    return parsed.pathname + parsed.search;
+}
+
 function approvalPayload(overrides) {
     return Object.assign(
         {
@@ -137,6 +145,7 @@ test('MCP consent flow', async t => {
             ['unregistered redirect_uri', authorizeQuery({ redirect_uri: 'https://claude.ai/other' })],
             ['unsupported response_type', authorizeQuery({ response_type: 'token' })],
             ['unsupported PKCE method', authorizeQuery({ code_challenge_method: 'plain' })],
+            ['absent PKCE method', withoutPkceMethod(authorizeQuery())],
             ['foreign resource', authorizeQuery({ resource: 'https://elsewhere.example.com/mcp' })],
             ['malformed request', '/admin/mcp/authorize?client_id=nope']
         ]) {
@@ -147,6 +156,16 @@ test('MCP consent flow', async t => {
             assert.equal(res.result.template, 'mcp/authorize', label);
             assert.ok(res.result.context.errorMessage, `${label} must render the error branch`);
         }
+    });
+
+    await t.test('an absent PKCE method is refused as unsupported, not treated as S256', async () => {
+        // RFC 7636 defaults a missing code_challenge_method to "plain", which the token endpoint
+        // refuses. Passing consent on that request would only fail at the exchange, where nobody
+        // is looking - so it has to render the same error the explicit "plain" gets, here.
+        const res = await server.inject({ method: 'GET', url: withoutPkceMethod(authorizeQuery()), headers: { 'x-test-admin': '1' } });
+
+        assert.equal(res.statusCode, 200);
+        assert.match(res.result.context.errorMessage, /unsupported PKCE method/);
     });
 
     await t.test('Deny redirects with access_denied and needs no session', async () => {

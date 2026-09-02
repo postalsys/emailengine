@@ -124,6 +124,7 @@ const {
     oauth2Schema,
     accountIdSchema,
     apiHeadersSchema,
+    headerTimeoutSchema,
     oauth2ProviderSchema: OAuth2ProviderSchema,
     accountTypeSchema: AccountTypeSchema
 } = require('../lib/schemas');
@@ -402,6 +403,11 @@ function publishChangeEvent(data) {
     }
 }
 
+// The Hapi server, published by init() once the session strategy is registered and the boot-time
+// default has been decided, so the authData branch of the settings dispatcher below cannot set a
+// strategy that does not exist yet or race the boot-time server.auth.default() call
+let sessionAuthServer = null;
+
 parentPort.on('message', message => {
     if (message && message.cmd === 'resp' && message.mid && callQueue.has(message.mid)) {
         let { resolve, reject, timer } = callQueue.get(message.mid);
@@ -458,6 +464,17 @@ parentPort.on('message', message => {
         maybeReloadHttpProxyAgent(message.data);
         // ...and the API reference's memoized serviceUrl, which its code samples embed
         clearServiceUrlCache();
+
+        // The first admin password is saved by whichever API worker served the form, and only
+        // that worker's server gets the default strategy in-process (lib/ui-routes/auth-routes.js).
+        // The same handler broadcasts a settings change carrying the authData key, so with
+        // EENGINE_WORKERS_API > 1 the other workers stop serving /admin open here instead of at
+        // the next restart. hapi refuses a second default, hence the guard, which also covers
+        // the sender.
+        if (message.data && message.data.authData && sessionAuthServer && !sessionAuthServer.auth.settings.default) {
+            sessionAuthServer.auth.default('session');
+            logger.info({ msg: 'Admin session authentication enabled after the first password was set' });
+        }
     }
 });
 
@@ -574,7 +591,12 @@ const init = async () => {
                     messages: joiLocales,
                     convert: true,
                     errors: {
-                        language: 'en' // Default language
+                        // Resolved per request from request.app.locale, which onPreAuth sets and
+                        // hapi exposes to joi as the $app.request context. A locale with no
+                        // joi catalog falls through to joi's own English messages. This has to be
+                        // a reference: the route settings are shared by every request on the
+                        // route, so writing the locale into them races concurrent requests
+                        language: Joi.ref('$app.request.locale')
                     }
                 },
                 headers: apiHeadersSchema
@@ -770,21 +792,9 @@ const init = async () => {
             request.app.gt = gt;
         }
 
-        // Make sure validation errors use selected locale
-        if (request.route.settings.validate && request.route.settings.validate.options) {
-            // Get user's locale
-            const locale = request.app.locale || 'en';
-
-            // Create new validation options for this request
-            const validationOptions = Object.assign({}, request.route.settings.validate.options, {
-                errors: {
-                    language: locale
-                }
-            });
-
-            // Apply to this request only
-            request.route.settings.validate.options = validationOptions;
-        }
+        // Validation errors pick their language up from request.app.locale through the
+        // errors.language reference in the server-wide route defaults (see serverOptions), so
+        // nothing per request is written into the shared route settings here
 
         return h.continue;
     });
@@ -817,7 +827,12 @@ const init = async () => {
         // the outer request (lib/mcp/inject.js), so the IPC round trip is not paid twice for
         // one answer that cannot differ within a request.
         if (!request.app.licenseInfo) {
-            request.app.licenseInfo = await call({ cmd: 'license', timeout: request.headers['x-ee-timeout'] });
+            // This runs before route validation, so the header is still the raw string here. The
+            // route schema decides what it accepts (a bad value is that route's 400 later); a value
+            // it would refuse is ignored rather than handed to the timer, where a non-number or an
+            // overflow collapses to a 1 ms timeout and a 500 before validation ever runs.
+            const { error: timeoutError, value: requestTimeout } = headerTimeoutSchema.validate(request.headers['x-ee-timeout']);
+            request.app.licenseInfo = await call({ cmd: 'license', timeout: timeoutError ? undefined : requestTimeout });
         }
 
         // flash notifications
@@ -966,11 +981,16 @@ const init = async () => {
                 // only repeat it
                 tokenData = await tokens.get(token, false, { log: !request.app.mcpInternal, remoteAddress: request.app.ip });
             } catch (err) {
-                return {
-                    isValid: false,
-                    credentials: {},
-                    artifacts: { err: err.message }
-                };
+                // A thrown Boom reaches the client the way the scope and permission refusals
+                // below do (hapi-auth-bearer-token does not catch it), so the reason travels as a
+                // machine-readable code - UnknownToken, ExpiredToken, InvalidToken - while the
+                // message stays the generic one the scheme itself would have sent. The scheme
+                // name keeps the WWW-Authenticate header the plugin's own refusal carries.
+                let error = Boom.unauthorized('Bad token', 'Bearer');
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
 
             // Bind the token hash (id) to the request logger so it is included in the per-request
@@ -1200,7 +1220,10 @@ const init = async () => {
                         error.output.payload.ttl = Math.ceil(rateLimit.ttl);
                         error.output.headers = {
                             'X-RateLimit-Limit': rateLimit.allowed,
-                            'X-RateLimit-Reset': Math.ceil(rateLimit.ttl)
+                            'X-RateLimit-Reset': Math.ceil(rateLimit.ttl),
+                            // The conventional header for a 429, so a generic HTTP client backs
+                            // off without knowing about the ttl field in the body
+                            'Retry-After': Math.ceil(rateLimit.ttl)
                         };
                         throw error;
                     } else {
@@ -1368,12 +1391,20 @@ const init = async () => {
     // break the registered callback URL) disables the SSO button instead of failing mid-flow.
     let getServiceRedirectUrl = async () => new URL((await settings.get('serviceUrl')) || `http://${API_HOST}${API_PORT !== 80 ? `:${API_PORT}` : ''}`);
     let serviceOriginUnchanged = async redirectUrl => (await getServiceRedirectUrl()).origin === redirectUrl.origin;
-    let assertSsoAuthenticated = request => {
-        if (!request.auth.isAuthenticated) {
-            let error = Boom.unauthorized('Failed to authorize user');
-            error.output.payload.details = [request.auth.error.message];
-            throw error;
-        }
+    // A sign-in the IdP denied, or the user cancelled, comes back as an unauthenticated try-mode
+    // request. It gets the same flash-and-redirect the allow-list denial in the OIDC handler
+    // uses, so the user lands on the login form with a way to try again rather than on the
+    // generic error page with bell's raw message. The reason goes to the log only. ?sso_denied=1
+    // stops a forced instance from auto-redirecting straight back into the flow.
+    let ssoFailureRedirect = async (request, h, method) => {
+        request.logger.warn({
+            msg: 'SSO login failed',
+            method,
+            reason: (request.auth.error && request.auth.error.message) || 'unknown',
+            remoteAddress: request.app.ip
+        });
+        await request.flash({ type: 'danger', message: 'Single sign-on failed or was cancelled. Please try again' });
+        return h.redirect('/admin/login?sso_denied=1');
     };
 
     if (USE_OKTA_AUTH) {
@@ -1398,10 +1429,28 @@ const init = async () => {
             method: ['GET', 'POST'],
             path: '/admin/login/okta',
             async handler(request, h) {
-                assertSsoAuthenticated(request);
-                setAdminSession(request, Object.assign({}, request.auth.credentials, { passwordVersion: await sessionPasswordVersion() }));
-                let oktaUser = request.auth.credentials && request.auth.credentials.profile && request.auth.credentials.profile.username;
-                request.logger.info({ msg: 'Admin login successful', user: oktaUser || 'unknown', method: 'okta', remoteAddress: request.app.ip });
+                if (!request.auth.isAuthenticated) {
+                    return ssoFailureRedirect(request, h, 'okta');
+                }
+
+                let profile = (request.auth.credentials && request.auth.credentials.profile) || {};
+
+                // The same minimal shape the OIDC branch below stores, for the same reasons: the
+                // full bell credentials carry the access and refresh tokens, the callback query
+                // and the raw userinfo document, none of which the session validator reads, and
+                // all of which would sit in the browser's cookie for the life of the session.
+                setAdminSession(request, {
+                    provider: 'okta',
+                    profile: {
+                        id: profile.id,
+                        username: profile.username,
+                        displayName: profile.displayName,
+                        email: profile.email
+                    },
+                    passwordVersion: await sessionPasswordVersion()
+                });
+
+                request.logger.info({ msg: 'Admin login successful', user: profile.username || 'unknown', method: 'okta', remoteAddress: request.app.ip });
                 return h.redirect('/admin');
             },
             options: {
@@ -1463,7 +1512,9 @@ const init = async () => {
                 method: ['GET', 'POST'],
                 path: '/admin/login/oidc',
                 async handler(request, h) {
-                    assertSsoAuthenticated(request);
+                    if (!request.auth.isAuthenticated) {
+                        return ssoFailureRedirect(request, h, 'oidc');
+                    }
 
                     let profile = (request.auth.credentials && request.auth.credentials.profile) || {};
 
@@ -1546,6 +1597,10 @@ const init = async () => {
     if (await settings.isInstanceSecured()) {
         server.auth.default('session');
     }
+
+    // From here on a first password set on another API worker switches the session strategy on
+    // through the settings dispatcher (see the authData branch there)
+    sessionAuthServer = server;
 
     await server.register({
         plugin: hapiPino,
@@ -2270,40 +2325,44 @@ const init = async () => {
         method: 'GET',
         path: '/oauth',
         async handler(request, h) {
-            if (request.query.error) {
-                let error = Boom.boomify(new Error(`Oauth failed: ${request.query.error}`), { statusCode: 400 });
+            // The mailbox owner sees these on the public error page, in the same locale as the
+            // rest of the setup flow. The pending setup is still unspent at this point (its state
+            // entry is claimed only below), so opening the setup link again is a valid retry.
+            if (request.query.error === 'access_denied') {
+                let error = Boom.badRequest(
+                    request.app.gt.gettext('The sign-in was cancelled or the requested access was not granted. Open the account setup link again to retry.')
+                );
+                if (request.query.error_description) {
+                    error.output.payload.details = [String(request.query.error_description)];
+                }
                 throw error;
+            }
+
+            if (request.query.error) {
+                throw Boom.badRequest(util.format(request.app.gt.gettext('Sign-in with the email provider failed: %s'), request.query.error));
             }
 
             if (!request.query.code) {
-                // throw
-                let error = Boom.boomify(new Error(`Oauth failed: no code received`), { statusCode: 400 });
-                throw error;
-            }
-
-            if (!/^account:add:/.test(request.query.state)) {
-                let error = Boom.boomify(new Error(`Oauth failed: invalid state received`), { statusCode: 400 });
-                throw error;
+                throw Boom.badRequest(request.app.gt.gettext('Sign-in with the email provider failed: no authorization code was received'));
             }
 
             // Validate nonce format: 16 bytes base64url encoded = 21-22 characters
             // Also accept base64 encoding (+, /, =) for backward compatibility with old cached nonces
-            const stateNonce = request.query.state.slice('account:add:'.length);
-            if (!/^[A-Za-z0-9_\-+/]{21,22}={0,2}$/.test(stateNonce)) {
-                throw Boom.badRequest('Oauth failed: invalid state format');
+            if (!/^account:add:[A-Za-z0-9_\-+/]{21,22}={0,2}$/.test(request.query.state)) {
+                throw Boom.badRequest(request.app.gt.gettext('Sign-in with the email provider failed: the request state is not valid'));
             }
 
             let [[, accountData]] = await redis.multi().get(`${REDIS_PREFIX}${request.query.state}`).del(`${REDIS_PREFIX}${request.query.state}`).exec();
             if (!accountData) {
-                let error = Boom.boomify(new Error(`Oauth failed: session expired`), { statusCode: 400 });
-                throw error;
+                throw Boom.badRequest(
+                    request.app.gt.gettext('The account setup session has expired or was already used. Open the account setup link again to retry.')
+                );
             }
 
             try {
                 accountData = JSON.parse(accountData);
             } catch (E) {
-                let error = Boom.boomify(new Error(`Oauth failed: invalid session`), { statusCode: 400 });
-                throw error;
+                throw Boom.badRequest(request.app.gt.gettext('Sign-in with the email provider failed: the stored setup session is not valid'));
             }
 
             if (!accountData.account) {
@@ -3099,6 +3158,11 @@ const init = async () => {
                 systemAlerts = systemAlerts.filter(alert => alert.level === 'danger');
             }
 
+            // Whether the requester holds a session at all, so a public page (the hosted form's
+            // error page, for one) can tell a mailbox owner from an admin without reading
+            // authData, which describes the instance rather than the requester
+            const isAuthenticated = !!(request.auth && request.auth.isAuthenticated);
+
             return {
                 pageBrandName: pageBrandName || 'EmailEngine',
                 values: request.payload || {},
@@ -3108,6 +3172,10 @@ const init = async () => {
                 licenseDetails,
                 trialPossible: !tract,
                 authData,
+                isAuthenticated,
+                // The dashboard is an admin destination: a link to it belongs on a page only for
+                // a requester who holds an admin session, or on an instance with no admin login
+                showDashboardLink: isAuthenticated || !(authData && authData.enabled),
                 packageData,
                 systemAlerts,
                 embeddedTemplateHeader,
@@ -3139,14 +3207,16 @@ const init = async () => {
             response = assertPreconditionResult;
         }
 
-        if (!response.isBoom) {
-            if (request.app.rateLimitHeaders) {
-                const headers = request.response.output ? request.response.output.headers : request.response.headers;
-                for (let key of Object.keys(request.app.rateLimitHeaders)) {
-                    headers[key] = request.app.rateLimitHeaders[key].toString();
-                }
+        // On error responses too: a client pacing itself by these headers needs them most on
+        // the request that failed, and the JSON error path below copies output.headers over
+        if (request.app.rateLimitHeaders) {
+            const headers = response.isBoom ? response.output.headers : response.headers;
+            for (let key of Object.keys(request.app.rateLimitHeaders)) {
+                headers[key] = request.app.rateLimitHeaders[key].toString();
             }
+        }
 
+        if (!response.isBoom) {
             return h.continue;
         }
 
@@ -3167,11 +3237,13 @@ const init = async () => {
         }
 
         if (error.output && error.output.statusCode === 401 && error.output.headers && /^Bearer/.test(error.output.headers['WWW-Authenticate'])) {
-            // bearer auth failed
-            return h
-                .response({ statusCode: 401, error: 'Unauthorized', message: error.message })
-                .header('WWW-Authenticate', error.output.headers['WWW-Authenticate'])
-                .code(error.output.statusCode);
+            // bearer auth failed. The api-token strategy attaches the refusal reason as a code,
+            // and it is the one field worth carrying into this rebuilt payload
+            let payload = { statusCode: 401, error: 'Unauthorized', message: error.message };
+            if (error.output.payload.code) {
+                payload.code = error.output.payload.code;
+            }
+            return h.response(payload).header('WWW-Authenticate', error.output.headers['WWW-Authenticate']).code(error.output.statusCode);
         }
 
         const routeTags = (request.route && request.route.settings && request.route.settings.tags) || [];
@@ -3211,8 +3283,10 @@ const init = async () => {
 
     server.ext('onPostAuth', async (request, h) => {
         if (request.requireTotp) {
-            // Redirect authenticated pages to login page if TOTP is required
-            let url = new URL(`admin/login`, 'http://localhost');
+            // The password step is done and only the second factor is missing, so the session
+            // goes to the TOTP prompt rather than back to the login form, which would ask for
+            // the password again
+            let url = new URL(`admin/totp`, 'http://localhost');
 
             let nextUrl = (request.query && request.query.next) || (request.payload && request.payload.next) || false;
             if (nextUrl) {

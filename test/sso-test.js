@@ -49,6 +49,14 @@ test('parseAllowList', async t => {
             { type: 'domain', value: 'corp.example.com' }
         ]);
     });
+
+    await t.test('an entry without @ is a domain, not an email rule that can never match', () => {
+        assert.deepEqual(sso.parseAllowList('example.com, @'), [{ type: 'domain', value: 'example.com' }]);
+
+        const allowList = sso.parseAllowList('example.com');
+        assert.equal(sso.isAuthorized({ email: 'bob@example.com' }, allowList, []), true);
+        assert.equal(sso.isAuthorized({ email: 'bob@other.example' }, allowList, []), false);
+    });
 });
 
 test('parseGroupList', async t => {
