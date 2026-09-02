@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.79.8](https://github.com/postalsys/emailengine/compare/v2.79.7...v2.79.8) (2026-09-02)
+
+
+### Bug Fixes
+
+* **admin-ui:** keep form input on a failed save and fix the misrouted webhook form ([e01d8a2](https://github.com/postalsys/emailengine/commit/e01d8a2021fde0e0122b5dc98a8f539128c8a4af))
+* **api:** keep template formats on update and answer malformed ids with 4xx ([3eb9868](https://github.com/postalsys/emailengine/commit/3eb9868fd5f2639e1ad40a26ec2e7a91e308c2e3))
+* **auth:** secure every API worker on the first password and tighten the admin second factor ([0adb3b4](https://github.com/postalsys/emailengine/commit/0adb3b46baf29d7125a81b9ec61a7e091b7826da))
+* **config:** stop prepared configuration from surprising operators on restart ([0f4ab9a](https://github.com/postalsys/emailengine/commit/0f4ab9ab78e4fa4e648c9384c6d0a7fc8b80a937))
+* **delivery:** treat delay notices as delays and unwrap embedded IPv4 in the egress filter ([37ccc5c](https://github.com/postalsys/emailengine/commit/37ccc5c2ccab1c5ca301fec482d2e09cb2c9b352))
+* **deps:** update imapflow to 1.7.8 for the download teardown worker deaths ([18d68b2](https://github.com/postalsys/emailengine/commit/18d68b29893c20a59ccec91526e4e5a420e73c0d))
+* **deps:** update nodemailer to 9.1.1 across the dependency tree ([e67641e](https://github.com/postalsys/emailengine/commit/e67641e54c655a4a71b61919ed4098deb908b2b5))
+* **email-client:** close the gaps between the IMAP, Gmail and Graph clients ([47f4623](https://github.com/postalsys/emailengine/commit/47f4623ac0ef3f483fbebbb33d935e141f17d4b4))
+* **submit:** do not send a message again when a stalled job is re-run ([91c7c00](https://github.com/postalsys/emailengine/commit/91c7c0045d858b987a18a92afd934afdf8b0f3d1))
+* **tracking:** route a text-node decoder failure to the rewrite's rejection path ([13e9f9f](https://github.com/postalsys/emailengine/commit/13e9f9fd71a5933677adb428d17c77af3a0ee691))
+* **webhooks:** send Basic-auth credentials verbatim and deliver each attempt once ([c6d1242](https://github.com/postalsys/emailengine/commit/c6d1242b737bc215d35284f70493afa064b8cde7))
+
 ## [2.79.7](https://github.com/postalsys/emailengine/compare/v2.79.6...v2.79.7) (2026-08-31)
 
 
