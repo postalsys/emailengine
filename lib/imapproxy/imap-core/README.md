@@ -30,7 +30,7 @@ means re-applying these.
 | `e97950e7` | 2026-06-05 | Close leaks and a worker crash found in the connection hardening review |
 | `d51e92d2` | 2026-06-06 | Prevent post-BYE command dispatch during teardown |
 | `31f6a590` | 2026-07-26 | Fix the dead teardown guard in the notification listener |
-| see git log | 2026-09-02 | Drop the built-in self-signed key/certificate pair from `tls-options.js`; a listener with TLS and no certificate is refused at startup instead of served with a key that ships in every copy |
+| `74856cf6` | 2026-09-02 | Drop the built-in self-signed key/certificate pair from `tls-options.js`; a listener with TLS and no certificate is refused at startup instead of served with a key that ships in every copy |
 
 Earlier local changes (`09085d12`, `0a389560`, `7e2e94f3`, `04c2aa90`, `1d6df05e`, `612d9f96`,
 `13edec58`, `2e0bf1ce`, `b9a3e06c`, `b58a827e`, `1813f089`) are maintenance: dependency swaps
