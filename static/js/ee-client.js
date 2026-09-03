@@ -52,6 +52,10 @@ export class EmailEngineClient {
         }
         this.showDarkModeToggle = options.showDarkModeToggle !== false;
 
+        // The nonce a Content-Security-Policy page hands the widget so the <style> element
+        // createStyles() appends passes a style-src-elem directive without 'unsafe-inline'
+        this.styleNonce = typeof options.styleNonce === 'string' && options.styleNonce ? options.styleNonce : null;
+
         // Get page size from localStorage or options or default
         const savedPageSize =
             typeof window !== 'undefined' && window.localStorage ? localStorage.getItem('ee-client-page-size') : null;
@@ -671,6 +675,10 @@ export class EmailEngineClient {
         }
 
         const style = document.createElement('style');
+        if (this.styleNonce) {
+            // the IDL property, which is what the policy check reads on an element a script inserts
+            style.nonce = this.styleNonce;
+        }
         style.textContent = `
             .ee-client {
                 --ee-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;

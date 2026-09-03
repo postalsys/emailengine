@@ -269,14 +269,11 @@ test('policyFor resolves the header matrix', async t => {
         const scripts = policyFor({ path: '/admin/x', nonce, override: { directives: { 'script-src': "'self' https://cdn.example.com" } } });
         assert.equal(directives(scripts.headers[CSP_HEADER])['script-src'], `'self' https://cdn.example.com 'nonce-${nonce}'`);
 
-        // ...which is why the message browser's stylesheet relaxation removes the directive
-        // and lets style-src apply: a browser ignores 'unsafe-inline' next to a nonce, so
-        // listing it in the override would block the widget's sheet instead of allowing it
-        const styles = policyFor({ path: '/admin/x', nonce, override: { directives: { 'style-src-elem': null } } });
-        const styleCsp = directives(styles.headers[CSP_HEADER]);
-        assert.equal('style-src-elem' in styleCsp, false);
-        assert.equal(styleCsp['style-src'], "'self' 'unsafe-inline'");
-        assert.equal(styleCsp['script-src'], `'self' 'nonce-${nonce}'`);
+        // An override that means to widen a nonced directive has to state the full source list:
+        // a browser ignores 'unsafe-inline' in any directive that also carries a nonce, so
+        // adding it beside one blocks what it was meant to allow
+        const styles = policyFor({ path: '/admin/x', nonce, override: { directives: { 'style-src-elem': "'self' https://cdn.example.com" } } });
+        assert.equal(directives(styles.headers[CSP_HEADER])['style-src-elem'], `'self' https://cdn.example.com 'nonce-${nonce}'`);
     });
 
     await t.test('HSTS follows the secure-origin flag on every profile', () => {
