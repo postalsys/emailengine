@@ -33,7 +33,7 @@ jobs:
                 ports:
                     - 6379:6379
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
             - name: Use Node.js 24
               uses: actions/setup-node@v6
               with:

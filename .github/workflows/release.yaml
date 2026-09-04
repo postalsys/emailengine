@@ -55,7 +55,7 @@ jobs:
             contents: read
             id-token: write
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
             - uses: actions/setup-node@v6
               with:
                   node-version: 24
@@ -87,7 +87,7 @@ jobs:
         steps:
             - run: echo version v${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}.${{needs.release_please.outputs.patch}}
 
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
 
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v4
