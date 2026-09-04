@@ -11,7 +11,7 @@
 # here; the runtime stage below copies out only the finished tree, so npm and its dependencies never
 # reach the published image. npm accounted for 38 of the 59 HIGH/CRITICAL findings in the old image
 # (a vendored tar, pacote, sigstore, minimatch) and nothing at runtime ever invokes it.
-FROM node:24-alpine@sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf AS builder
+FROM node:26-alpine@sha256:2d984a15c9b54fd0aeb608b8e0d0d83529eb34d2966db27a1fb4f1edc3d298a3 AS builder
 
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM
@@ -66,7 +66,7 @@ RUN chmod +x ./update-info.sh \
     && rm -rf .git update-info.sh
 
 # Runtime stage.
-FROM node:24-alpine@sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf
+FROM node:26-alpine@sha256:2d984a15c9b54fd0aeb608b8e0d0d83529eb34d2966db27a1fb4f1edc3d298a3
 
 # `apk upgrade` patches the Alpine packages that the base image itself lags on - at the time of
 # writing node:24-alpine still carries an openssl below 3.5.8-r0. dumb-init reaps zombies as PID 1.
