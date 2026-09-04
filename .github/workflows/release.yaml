@@ -27,7 +27,7 @@ jobs:
             # so users never see a version whose binaries do not exist yet, and `force-tag-creation`
             # makes the tag anyway: GitHub withholds the tag for a draft, and upload.sh builds
             # from the tag (falling back to HEAD behind an interactive prompt without it).
-            - uses: googleapis/release-please-action@v4
+            - uses: googleapis/release-please-action@v5
               id: release
 
     publish:
