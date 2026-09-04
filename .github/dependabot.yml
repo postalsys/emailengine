@@ -1,0 +1,22 @@
+version: 2
+
+updates:
+    # The Node base image is the one dependency that goes stale without any diff to review, which is
+    # how it ended up 19 months behind. Dependabot reads both FROM lines in the Dockerfile and moves
+    # the digest; the docker_scan job in test.yml is the backstop if this ever stops matching.
+    - package-ecosystem: docker
+      directory: /
+      schedule:
+          interval: weekly
+      commit-message:
+          # `fix:` rather than `chore:`, so a base image bump reaches users through the release notes
+          # instead of being filtered out of them
+          prefix: fix
+
+    - package-ecosystem: github-actions
+      directory: /
+      schedule:
+          interval: weekly
+      commit-message:
+          # Workflow files change no runtime behavior, so these stay out of the release notes
+          prefix: chore

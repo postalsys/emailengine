@@ -135,6 +135,45 @@ jobs:
     #
     # One target, unsigned, uncompressed. Signing and notarization need Apple credentials and
     # stay on the release machine; neither has any bearing on whether the bundle can be built.
+    # The image ships an OS and a Node runtime we do not build, so its vulnerabilities arrive on
+    # someone else's schedule rather than in a diff. Nothing watched that before, and the base pin
+    # sat unmoved for 19 months while 21 Alpine CVEs accumulated behind it.
+    #
+    # Scoped to fixed HIGH/CRITICAL on purpose. An unfixed upstream CVE is not actionable here and
+    # would block unrelated work at random; once a fix exists, a rebuild picks it up through
+    # `apk upgrade`, or the base pin needs moving - both of which are on us.
+    docker_scan:
+        name: Docker Image Scan
+        if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
+        runs-on: ubuntu-24.04
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v6
+
+            # Single arch: the findings are properties of the base image and the lockfile, neither of
+            # which differs per architecture, so scanning both legs would only double the runtime.
+            - name: Build the image
+              uses: docker/build-push-action@v7
+              with:
+                  context: .
+                  platforms: linux/amd64
+                  load: true
+                  tags: emailengine:scan
+
+            - name: Scan for known vulnerabilities
+              uses: aquasecurity/trivy-action@v0.36.0
+              with:
+                  image-ref: emailengine:scan
+                  scanners: vuln
+                  severity: HIGH,CRITICAL
+                  ignore-unfixed: true
+                  exit-code: '1'
+                  format: table
+              env:
+                  # Trivy pulls its database from ghcr.io and is rate limited unauthenticated
+                  TRIVY_USERNAME: ${{ github.actor }}
+                  TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+
     pkg_build:
         name: Binary Build (linux-x64, unsigned)
         if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
