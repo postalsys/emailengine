@@ -2,8 +2,7 @@ version: 2
 
 updates:
     # The Node base image is the one dependency that goes stale without any diff to review, which is
-    # how it ended up 19 months behind. Dependabot reads both FROM lines in the Dockerfile and moves
-    # the digest; the docker_scan job in test.yml is the backstop if this ever stops matching.
+    # how it ended up 19 months behind. This entry exists to keep the digest current, nothing else.
     - package-ecosystem: docker
       directory: /
       schedule:
@@ -12,11 +11,12 @@ updates:
           # `fix:` rather than `chore:`, so a base image bump reaches users through the release notes
           # instead of being filtered out of them
           prefix: fix
-
-    - package-ecosystem: github-actions
-      directory: /
-      schedule:
-          interval: weekly
-      commit-message:
-          # Workflow files change no runtime behavior, so these stay out of the release notes
-          prefix: chore
+      # Digest updates only. The Node major is a deliberate choice that has to stay in step with the
+      # CI matrix, the pkg targets and the deploy workflow, and it tracks Active LTS rather than
+      # Current - left unignored, the first run proposed 24-alpine to 26-alpine, which is exactly the
+      # drift this entry is meant to prevent. Moving the major is a manual decision.
+      ignore:
+          - dependency-name: node
+            update-types:
+                - version-update:semver-major
+                - version-update:semver-minor
