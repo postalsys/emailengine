@@ -47,7 +47,7 @@ jobs:
               env:
                   NODE_ENV: e2e
             - name: Upload Playwright report
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               if: ${{ !cancelled() }}
               with:
                   name: playwright-report
