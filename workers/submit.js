@@ -19,7 +19,7 @@ const { redis, queueConf, submitQueue } = require('../lib/db');
 const { Worker, UnrecoverableError } = require('bullmq');
 const { Account } = require('../lib/account');
 const getSecret = require('../lib/get-secret');
-const msgpack = require('../lib/msgpack');
+const { decodeQueueEntry } = require('../lib/outbox');
 
 const { EMAIL_FAILED_NOTIFY } = require('../lib/consts');
 
@@ -179,7 +179,10 @@ const submitWorker = new Worker(
 
         let queueEntry;
         try {
-            queueEntry = msgpack.decode(queueEntryBuf);
+            // Rejects a value that decodes to something other than a map as well, otherwise the
+            // job metadata assignment below throws a TypeError against it and the entry is retried
+            // as a failed delivery instead of being dropped as the corrupt entry it is
+            queueEntry = decodeQueueEntry(queueEntryBuf);
         } catch (err) {
             logger.error({ msg: 'Failed to parse queued email entry', job: job.id, account: job.data.account, queueId: job.data.queueId, err });
             try {
@@ -188,11 +191,6 @@ const submitWorker = new Worker(
                 // ignore
             }
             return;
-        }
-
-        if (!queueEntry) {
-            //could be expired?
-            return false;
         }
 
         let accountObject = new Account({ account: job.data.account, redis, call, secret: await getSecret() });

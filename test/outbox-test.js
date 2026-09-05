@@ -6,6 +6,7 @@ const assert = require('node:assert').strict;
 const { redis, submitQueue } = require('../lib/db');
 const { REDIS_PREFIX } = require('../lib/consts');
 const outbox = require('../lib/outbox');
+const msgpack = require('../lib/msgpack');
 const { Account } = require('../lib/account');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
@@ -153,6 +154,23 @@ test('Outbox', async t => {
         } finally {
             await Promise.all(queueIds.map(queueId => submitQueue.remove(queueId).catch(() => false)));
             await redis.unlink(`${REDIS_PREFIX}iaq:${account}`);
+        }
+    });
+
+    await t.test('decodeQueueEntry() rejects a stored value that is not a message', () => {
+        // A real entry survives the guard
+        const entry = { account: 'outbox-decode-account', envelope: { from: 'sender@example.com' } };
+        assert.deepEqual(outbox.decodeQueueEntry(msgpack.encode(entry)), entry);
+
+        // The reported crash: msgpack.decode() reads the first value of a buffer and ignores the
+        // rest, so a foreign value whose first byte is a valid scalar decodes without throwing.
+        // 'encoded-message' starts with 0x65, a positive fixint, and came back as the number 101 -
+        // which reached the submit worker and threw "Cannot create property 'job' on number '101'"
+        assert.throws(() => outbox.decodeQueueEntry(Buffer.from('encoded-message')), /Unexpected outbox entry format/);
+
+        // Every other non-map type is equally unusable
+        for (let value of [null, 101, 'a string', ['an', 'array'], Buffer.from('bin'), new Date()]) {
+            assert.throws(() => outbox.decodeQueueEntry(msgpack.encode(value)), /Unexpected outbox entry format/, `${typeof value} must be rejected`);
         }
     });
 
