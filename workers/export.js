@@ -17,7 +17,7 @@ const {
     DEFAULT_EXPORT_MAX_MESSAGES,
     DEFAULT_EXPORT_MAX_SIZE
 } = require('../lib/consts');
-const { getDuration, readEnvValue, threadStats, maybeReloadHttpProxyAgent } = require('../lib/tools');
+const { getDuration, readEnvValue, threadStats } = require('../lib/tools');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const settings = require('../lib/settings');
 const {
@@ -974,10 +974,6 @@ parentPort.on('message', message => {
         Promise.resolve(onCommand(message.message))
             .then(response => parentPort.postMessage({ cmd: 'resp', mid: message.mid, response }))
             .catch(err => parentPort.postMessage({ cmd: 'resp', mid: message.mid, error: err.message, code: err.code, statusCode: err.statusCode }));
-    }
-
-    if (message && message.cmd === 'settings') {
-        maybeReloadHttpProxyAgent(message.data);
     }
 });
 

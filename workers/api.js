@@ -35,7 +35,7 @@ const {
     hasEnvValue,
     getBoolean,
     loadTlsConfig,
-    maybeReloadHttpProxyAgent,
+    httpAgent,
     resolveOAuthErrorStatus,
     constantTimeEqual,
     verifyServiceSignature,
@@ -472,9 +472,7 @@ parentPort.on('message', message => {
     }
 
     if (message && message.cmd === 'settings') {
-        // Keep this worker's in-memory HTTP proxy agent in sync when proxy settings change
-        maybeReloadHttpProxyAgent(message.data);
-        // ...and the API reference's memoized serviceUrl, which its code samples embed
+        // the API reference memoizes serviceUrl, which its code samples embed
         clearServiceUrlCache();
 
         // The first admin password is saved by whichever API worker served the form, and only
@@ -576,6 +574,9 @@ const init = async () => {
             directoryUrl: 'https://acme-v02.api.letsencrypt.org/directory'
             //directoryUrl: 'https://acme-staging-v02.api.letsencrypt.org/directory',
         },
+
+        // long-lived client, see LiveDispatcher in lib/tools.js
+        dispatcher: httpAgent.live,
 
         logger: logger.child({ sub: 'acme' }),
 

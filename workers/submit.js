@@ -7,7 +7,7 @@ const config = require('@zone-eu/wild-config');
 const logger = require('../lib/logger');
 
 const { REDIS_PREFIX } = require('../lib/consts');
-const { getDuration, readEnvValue, threadStats, maybeReloadHttpProxyAgent } = require('../lib/tools');
+const { getDuration, readEnvValue, threadStats } = require('../lib/tools');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const settings = require('../lib/settings');
 
@@ -505,10 +505,6 @@ parentPort.on('message', message => {
             .catch(err => {
                 parentPort.postMessage(Object.assign({ cmd: 'resp', mid: message.mid }, packRpcError(err)));
             });
-    }
-
-    if (message && message.cmd === 'settings') {
-        maybeReloadHttpProxyAgent(message.data);
     }
 });
 

@@ -9,13 +9,15 @@
     <input type="hidden" name="crumb" value="{{crumb}}" />
 
     {{#> ui/card title="Proxy Settings" bodyClass="space-y-4"}}
-            <p>Route all email server connections through a proxy. Supports HTTP CONNECT, SOCKS4, and SOCKS5.</p>
+            <p>Route all outbound connections through a proxy: IMAP and SMTP sessions, Gmail API and Microsoft
+                Graph requests, OAuth2 token exchange, webhook delivery, and EmailEngine's own requests such as
+                license validation. Supports HTTP CONNECT, SOCKS4, and SOCKS5.</p>
 
             <div>
                 {{> ui/setting-ref name="proxyEnabled"}}
                 {{> ui/checkbox id="proxy_enabled" name="proxyEnabled" label="Enable Global Proxy" class="proxy-status"
                 checked=values.proxyEnabled error=errors.proxyEnabled
-                hint="Routes all connections through the proxy below. Individual accounts can override this setting."}}
+                hint="Routes all outbound connections through the proxy below. Individual accounts can override it for their IMAP and SMTP connections."}}
             </div>
 
             <div>
@@ -43,14 +45,15 @@
     {{/ui/card}}
 
     {{#> ui/card title="HTTP Proxy Settings" bodyClass="space-y-4"}}
-            <p>Route all outbound HTTP/HTTPS requests through a proxy. This applies to webhook delivery, OAuth token
-                exchange, and API calls to Gmail/Outlook. This is separate from the IMAP/SMTP proxy above.</p>
+            <p>Optional. Use a different proxy for HTTP/HTTPS requests only: webhook delivery, OAuth2 token exchange,
+                Gmail API and Microsoft Graph calls, and license validation. When disabled, these requests use the
+                global proxy above.</p>
 
             <div>
                 {{> ui/setting-ref name="httpProxyEnabled"}}
                 {{> ui/checkbox id="http_proxy_enabled" name="httpProxyEnabled" label="Enable HTTP Proxy"
                 class="http-proxy-status" checked=values.httpProxyEnabled error=errors.httpProxyEnabled
-                hint="Routes all outbound HTTP/HTTPS requests through the proxy below."}}
+                hint="Routes outbound HTTP/HTTPS requests through the proxy below instead of the global proxy."}}
             </div>
 
             <div>

@@ -6,7 +6,7 @@ const packageData = require('../package.json');
 const config = require('@zone-eu/wild-config');
 const logger = require('../lib/logger');
 
-const { getDuration, emitChangeEvent, readEnvValue, threadStats, loadTlsConfig, assertTlsCredentials, getByteSize } = require('../lib/tools');
+const { getDuration, emitChangeEvent, readEnvValue, threadStats, loadTlsConfig, assertTlsCredentials, getByteSize, httpAgent } = require('../lib/tools');
 const { createSmtpAuthHandler, createSmtpAccountResolver } = require('../lib/smtp-auth');
 
 const { initSentry } = require('../lib/sentry');
@@ -137,6 +137,9 @@ async function init() {
         namespace: `${REDIS_PREFIX}`,
 
         environment: 'ee',
+
+        // long-lived client, see LiveDispatcher in lib/tools.js
+        dispatcher: httpAgent.live,
 
         logger: logger.child({ sub: 'acme' }),
 

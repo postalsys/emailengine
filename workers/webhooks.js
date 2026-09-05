@@ -10,16 +10,7 @@ const { webhooks: Webhooks } = require('../lib/webhooks');
 
 const { GooglePubSub } = require('../lib/oauth/pubsub/google');
 
-const {
-    readEnvValue,
-    threadStats,
-    getDuration,
-    httpAgent,
-    getServiceSecret,
-    maybeReloadHttpProxyAgent,
-    redactUrlCredentials,
-    splitUrlCredentials
-} = require('../lib/tools');
+const { readEnvValue, threadStats, getDuration, httpAgent, getServiceSecret, redactUrlCredentials, splitUrlCredentials } = require('../lib/tools');
 const { sendWebhookRequest } = require('../lib/webhook-request');
 const { willBeFinalAttempt, isFinalFailedAttempt } = require('../lib/delivery-error');
 const { validateWebhookTarget } = require('../lib/webhook-egress');
@@ -197,10 +188,6 @@ parentPort.on('message', message => {
                     statusCode: err.statusCode
                 });
             });
-    }
-
-    if (message && message.cmd === 'settings') {
-        maybeReloadHttpProxyAgent(message.data);
     }
 });
 

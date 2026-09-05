@@ -1075,7 +1075,8 @@ async function sendWebhook(account, event, data) {
  * Spawn a new worker thread of the specified type
  * @param {string} type - Worker type (imap, api, webhooks, submit, documents, smtp, imapProxy)
  * @param {Object} [opts] - Optional spawn options
- * @param {Object} [opts.workerData] - Data passed to the worker thread (e.g. API worker index)
+ * @param {Object} [opts.workerData] - Data passed to the worker thread (e.g. API worker index). The
+ *                                      proxy in effect is added for every type, see lib/tools.js
  * @returns {Promise<number|void>} Thread ID if successful
  */
 let spawnWorker = async (type, opts) => {
@@ -1113,7 +1114,9 @@ let spawnWorker = async (type, opts) => {
     let worker = new WorkerThread(pathlib.join(__dirname, 'workers', `${type.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}.js`), {
         argv,
         env: SHARE_ENV,
-        workerData: opts && opts.workerData,
+        // every worker builds its HTTP dispatchers from the proxy in effect before its first line of
+        // code runs (lib/tools.js); this thread resolved it from settings before spawning anything
+        workerData: Object.assign({ httpProxyUrl: httpAgent.proxyUrl }, opts && opts.workerData),
         trackUnmanagedFds: true
     });
     metrics.threadStarts.inc();
@@ -1502,18 +1505,19 @@ let spawnWorker = async (type, opts) => {
                         }
                     });
 
-                    // Forward settings changes to API, webhooks, submit, and export workers
-                    for (let type of ['api', 'webhooks', 'submit', 'export']) {
-                        let typeWorkers = workers.get(type);
-                        if (typeWorkers) {
-                            typeWorkers.forEach(worker => {
-                                try {
-                                    postMessage(worker, message);
-                                } catch (err) {
-                                    logger.error({ msg: 'Unable to forward settings to worker', type, worker: worker.threadId, err });
-                                }
-                            });
+                    // Forward settings changes to every other worker type (the IMAP workers were
+                    // handled above); each reloads its HTTP proxy agent from the 'settings' message
+                    for (let [type, typeWorkers] of workers) {
+                        if (type === 'imap') {
+                            continue;
                         }
+                        typeWorkers.forEach(worker => {
+                            try {
+                                postMessage(worker, message);
+                            } catch (err) {
+                                logger.error({ msg: 'Unable to forward settings to worker', type, worker: worker.threadId, err });
+                            }
+                        });
                     }
                     return;
 
@@ -2368,6 +2372,14 @@ async function updateQueueCounters() {
  * @param {Object} message - Command message
  * @returns {Promise<*>} Command result
  */
+// Options shared by every OpenAI call. A function rather than a constant because httpAgent.fetch is
+// swapped when the proxy settings change. The plain agent rather than the retrying one: the library
+// keeps its own 429 retry.
+const openAiRequestOpts = () => ({
+    verbose: getBoolean(process.env.EE_OPENAPI_VERBOSE),
+    dispatcher: httpAgent.fetch
+});
+
 async function onCommand(worker, message) {
     switch (message.cmd) {
         case 'metrics':
@@ -2528,9 +2540,7 @@ async function onCommand(worker, message) {
 
         // OpenAI integration commands - run in main process to avoid memory overhead
         case 'generateSummary': {
-            let requestOpts = {
-                verbose: getBoolean(process.env.EE_OPENAPI_VERBOSE)
-            };
+            let requestOpts = openAiRequestOpts();
 
             let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
 
@@ -2588,9 +2598,7 @@ async function onCommand(worker, message) {
         }
 
         case 'generateEmbeddings': {
-            let requestOpts = {
-                verbose: getBoolean(process.env.EE_OPENAPI_VERBOSE)
-            };
+            let requestOpts = openAiRequestOpts();
 
             let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
 
@@ -2623,9 +2631,7 @@ async function onCommand(worker, message) {
         }
 
         case 'embeddingsQuery': {
-            let requestOpts = {
-                verbose: getBoolean(process.env.EE_OPENAPI_VERBOSE)
-            };
+            let requestOpts = openAiRequestOpts();
 
             let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
 
@@ -2694,9 +2700,7 @@ async function onCommand(worker, message) {
         }
 
         case 'questionQuery': {
-            let requestOpts = {
-                verbose: getBoolean(process.env.EE_OPENAPI_VERBOSE)
-            };
+            let requestOpts = openAiRequestOpts();
 
             let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
 
@@ -2729,9 +2733,7 @@ async function onCommand(worker, message) {
         }
 
         case 'generateChunkEmbeddings': {
-            let requestOpts = {
-                verbose: getBoolean(process.env.EE_OPENAPI_VERBOSE)
-            };
+            let requestOpts = openAiRequestOpts();
 
             let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
 
@@ -2752,9 +2754,7 @@ async function onCommand(worker, message) {
         }
 
         case 'openAiListModels': {
-            let requestOpts = {
-                verbose: getBoolean(process.env.EE_OPENAPI_VERBOSE)
-            };
+            let requestOpts = openAiRequestOpts();
 
             let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
 

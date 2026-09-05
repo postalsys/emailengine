@@ -7,7 +7,7 @@ const logger = require('../lib/logger');
 
 const { REDIS_PREFIX } = require('../lib/consts');
 
-const { getDuration, getBoolean, emitChangeEvent, readEnvValue, hasEnvValue, threadStats, maybeReloadHttpProxyAgent } = require('../lib/tools');
+const { getDuration, getBoolean, emitChangeEvent, readEnvValue, hasEnvValue, threadStats } = require('../lib/tools');
 
 const { initSentry } = require('../lib/sentry');
 initSentry('imap');
@@ -874,8 +874,6 @@ class ConnectionHandler {
 
         switch (message.cmd) {
             case 'settings':
-                maybeReloadHttpProxyAgent(message.data);
-
                 if (message.data && message.data.logs) {
                     for (let [account, accountObject] of this.accounts) {
                         // update log handling

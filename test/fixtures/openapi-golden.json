@@ -9423,7 +9423,7 @@
           },
           "proxyEnabled": {
             "type": "boolean",
-            "description": "Route outbound connections through a proxy server",
+            "description": "Route all outbound connections through a proxy server: IMAP and SMTP sessions as well as HTTP/HTTPS requests (Gmail API, Microsoft Graph, OAuth2 token exchange, webhooks, license validation) unless a dedicated HTTP proxy is configured",
             "nullable": true
           },
           "proxyUrl": {
@@ -9447,12 +9447,12 @@
           },
           "httpProxyEnabled": {
             "type": "boolean",
-            "description": "Route outbound HTTP/HTTPS requests (webhooks, OAuth, API calls) through an HTTP proxy",
+            "description": "Route outbound HTTP/HTTPS requests (webhooks, OAuth2 token exchange, Gmail API and Microsoft Graph calls, license validation) through a dedicated proxy instead of the global proxy",
             "nullable": true
           },
           "httpProxyUrl": {
             "type": "string",
-            "description": "HTTP proxy URL for outbound HTTP/HTTPS requests",
+            "description": "Dedicated proxy URL for outbound HTTP/HTTPS requests. When not set, HTTP/HTTPS requests use the global proxy",
             "example": "http://proxy.example.com:8080",
             "nullable": true,
             "x-format": {
@@ -10125,7 +10125,7 @@
           },
           "proxyEnabled": {
             "type": "boolean",
-            "description": "Route outbound connections through a proxy server"
+            "description": "Route all outbound connections through a proxy server: IMAP and SMTP sessions as well as HTTP/HTTPS requests (Gmail API, Microsoft Graph, OAuth2 token exchange, webhooks, license validation) unless a dedicated HTTP proxy is configured"
           },
           "proxyUrl": {
             "type": "string",
@@ -10147,11 +10147,11 @@
           },
           "httpProxyEnabled": {
             "type": "boolean",
-            "description": "Route outbound HTTP/HTTPS requests (webhooks, OAuth, API calls) through an HTTP proxy"
+            "description": "Route outbound HTTP/HTTPS requests (webhooks, OAuth2 token exchange, Gmail API and Microsoft Graph calls, license validation) through a dedicated proxy instead of the global proxy"
           },
           "httpProxyUrl": {
             "type": "string",
-            "description": "HTTP proxy URL for outbound HTTP/HTTPS requests",
+            "description": "Dedicated proxy URL for outbound HTTP/HTTPS requests. When not set, HTTP/HTTPS requests use the global proxy",
             "example": "http://proxy.example.com:8080",
             "x-format": {
               "uri": {

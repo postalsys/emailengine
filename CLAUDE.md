@@ -67,6 +67,7 @@ Path-scoped rules in `.claude/rules/` load automatically when you work with the 
 ## Environment Variables
 
 **Core:**
+
 - `EENGINE_REDIS` / `REDIS_URL` - Redis connection URI (default: `redis://127.0.0.1:6379/8`)
 - `EENGINE_PORT` / `PORT` - API server port (default: 3000)
 - `EENGINE_HOST` - API server bind address (default: 127.0.0.1)
@@ -75,6 +76,7 @@ Path-scoped rules in `.claude/rules/` load automatically when you work with the 
 - `EENGINE_BEACON_DISABLED` - Set to `true` to opt out of the feature beacon (anonymized feature-usage diagnostics piggybacked on the existing license-validation call). License validation itself is unaffected. See `lib/license-beacon.js`.
 
 **Workers:**
+
 - `EENGINE_WORKERS` - IMAP worker count (default: 4)
 - `EENGINE_WORKERS_API` - API/HTTP worker count (default: 1; values >1 need `SO_REUSEPORT`/Linux, otherwise falls back to 1)
 - `EENGINE_WORKERS_WEBHOOKS` - Webhook worker count (default: 1)
@@ -88,23 +90,29 @@ Path-scoped rules in `.claude/rules/` load automatically when you work with the 
 - `EENGINE_CSP_MODE` - How the Content-Security-Policy is delivered: `enforce` (default), `report-only` (framing stays enforced, the rest of the policy goes to `Content-Security-Policy-Report-Only` so violations only show in the browser console) or `off` (the framing directive only). Also `[api] cspMode`. The other security headers are not affected by it
 
 **Network trust and egress:**
+
+- `EENGINE_HTTP_PROXY_ENABLED` / `EENGINE_HTTP_PROXY_URL` - Override the `httpProxyEnabled` / `httpProxyUrl` settings (the dedicated proxy for outbound HTTP/HTTPS). Every outbound HTTP/HTTPS request goes through the shared dispatchers in `lib/tools.js` (`httpAgent.fetch`, `.retry`, `.webhook`, and `.live` for long-lived clients such as ACME), whose proxy is picked by `resolveHttpProxy()`: the dedicated HTTP proxy when it is enabled and has a URL, otherwise the global `proxyEnabled` / `proxyUrl` proxy that IMAP and SMTP connections use, so one setting covers Gmail API, Microsoft Graph, OAuth2, webhooks, license validation, update checks, ACME, OpenAI and Sentry. `EENGINE_HTTP_PROXY_ENABLED=false` is the one way to keep IMAP/SMTP on a proxy while HTTP goes direct. The main thread resolves the proxy before spawning and passes it to every worker as `workerData.httpProxyUrl`, so `lib/tools.js` builds the dispatchers at module load and refreshes them itself from the `settings` broadcast (`maybeReloadHttpProxyAgent()`, a no-op when the resolved proxy is unchanged); a new worker type or outbound call needs no proxy wiring, only one of the shared dispatchers rather than a bare `fetch()`. The Elasticsearch client of the deprecated Document Store is the deliberate exception (internal infrastructure)
 - `EENGINE_ADMIN_ACCESS_ADDRESSES` - Comma-separated IPs/CIDRs allowed to reach `/admin` (default: unset, no restriction)
 - `EENGINE_API_PROXY_ADDRESSES` - Comma-separated IPs/CIDRs of proxies allowed to set `X-Forwarded-For`. Unset means the header is honored from any peer whenever the API proxy setting is on, which is the historical default. Set this whenever you rely on `EENGINE_ADMIN_ACCESS_ADDRESSES` or per-token `restrictions.addresses`, otherwise a client that can reach the port directly picks its own source address. See `lib/utils/network.js` `resolveClientIp()`
 - `EENGINE_WEBHOOK_EGRESS_POLICY` - Where webhook deliveries and the IMAP/SMTP autodiscovery lookups (`GET /v1/autoconfig`, the hosted setup form) may be sent: `link-local` (default, blocks the cloud instance metadata range), `private` (also blocks RFC1918, loopback, CGNAT, ULA), or `off`. Any policy other than `off` also stops webhook redirects being followed, since a permitted host could otherwise redirect to a blocked one; autodiscovery follows redirects one vetted hop at a time through `lib/egress-fetch.js`. Enforced twice: `assertAllowedUrl()` refuses a bad destination up front, and `createEgressLookup()` re-applies the policy as the connect-time `lookup` of `httpAgent.webhook`, so the addresses vetted are the addresses connected to. Behind a proxy only the up-front check applies. The policy is owned by `lib/webhook-egress.js`; the classification lives in `lib/egress-filter.js`
 
 **Queue retention:**
+
 - `EENGINE_QUEUE_REMOVE_AFTER` - Initial value for the `queueKeep` setting: completed entries to retain (default: 0)
 - `EENGINE_QUEUE_KEEP_FAILED` - Failed entries retained per queue, regardless of `queueKeep` (default: 500). Failures are the only record that a delivery was given up on, so they are never dropped on arrival; raise or lower this against Redis memory, remembering a `messageNew` payload can carry up to `notifyTextSize` of message text
 - `EENGINE_QUEUE_KEEP_FAILED_AGE` - How long failed entries are retained, in seconds (default: 604800, 7 days)
 
 **Token audit log** (only written when the `tokenAuditLog` setting is on, off by default):
+
 - `EENGINE_TOKEN_LOG_ENTRIES` - Requests retained per access token (default: 1000). Every write trims, so this bounds the feature's whole storage cost: a full log of typical entries is roughly 170KB of Redis per token, and it is the token count that scales it, not request volume. Values below 1 fall back to the default rather than being clamped
 - `EENGINE_TOKEN_LOG_AGE` - How long a token's log survives its last use, in seconds (default: 604800, 7 days). Refreshed on every write, so a token nobody uses takes its log with it
 
 **Message rendering:**
+
 - `EENGINE_DISABLE_THREAD_COLLAPSE` - Set to `true` to stop web-safe HTML from folding quoted thread history into a collapsed `<details class="ee-collapsed-thread">` block (default: folding enabled). The marker carries class names only - its `<summary>` is empty on purpose, so a renderer that does not know about it shows nothing extra. See `lib/web-safe-html.js`
 
 **Prepared configuration** (applied on startup):
+
 - `EENGINE_SETTINGS` - JSON settings object, re-applied through `settings.set()` on every boot, so a value saved for one of its keys in the admin UI reverts at the next restart. The key list is recorded as the `preparedSettingsKeys` setting, which `lib/ui-routes/settings-page.js` turns into `envManagedKeys` in every settings-form view context so the page can flag those fields
 - `EENGINE_PREPARED_TOKEN` - Base64url msgpack-encoded API token
 - `EENGINE_PREPARED_PASSWORD` - Base64url PBKDF2 password hash. Written only when it differs from the stored hash: the write bumps `passwordVersion`, which ends every admin session and message-browser token
@@ -118,9 +126,9 @@ Path-scoped rules in `.claude/rules/` load automatically when you work with the 
 - Prefer the `fix:` conventional-commit prefix for changes that alter runtime behavior. `feat:` is reserved for a genuinely new, noticeable capability a user would look for in the changelog - a new endpoint, a new setting, a new provider. Raising a limit, tightening a bound, reworking internals or improving existing behavior is a `fix:` even when the diff is large, because the prefix drives the release notes and a minor bump promises users something new to try.
 - For commits that do not change runtime behavior (docs, comments, CI/workflow tweaks, formatting), append `[skip ci]` to the commit message to avoid triggering the GitHub Actions workflows. Exception: do not add `[skip ci]` to commits using a `fix:` or `feat:` prefix - those must run so the release action is triggered. GitHub reads the marker off the HEAD commit of a push, not off each commit in it, so a `[skip ci]` docs commit pushed on top of a `fix:` commit silences the workflows for both and the release PR is never opened. When a push mixes the two, the release-triggering commit has to be last. Never quote the marker literally in a commit message body either, not even when writing about it - GitHub matches it anywhere in the message, so a commit explaining the rule skips itself. There is no repairing any of it afterwards: `master` is protected against force-pushes, so the only way back is another commit.
 - After making code changes:
-  1. Run `/simplify` to review changed code for reuse, quality, and efficiency
-  2. Run `npm run format` and `npm run lint`
-  3. Run `/security-review` to check for security issues before committing
+    1. Run `/simplify` to review changed code for reuse, quality, and efficiency
+    2. Run `npm run format` and `npm run lint`
+    3. Run `/security-review` to check for security issues before committing
 - After pushing, check the GitHub Actions runs for the push (e.g. `gh run list --branch <branch>`) and report their status. If a run fails for a strange or unrelated reason (for example a checkout step reporting "account suspended", HTTP 403, or other auth/infrastructure errors that have nothing to do with the change), check https://www.githubstatus.com/ for an active GitHub incident before assuming the failure is caused by the code.
 - Avoid the circuit breaker pattern unless absolutely necessary. EmailEngine processes many independent accounts through shared workers, so a single failing account can trip a circuit breaker and block all other accounts. Prefer per-account error handling (retry with backoff, error state tracking) over global circuit breakers.
 - Never suppress or swallow unhandled rejections/exceptions at the global handler level. If an error reaches the global `unhandledRejection` or `uncaughtException` handler, the worker must die -- this is the last line of defense. The correct fix is always to handle the error at the source so it never bubbles up to the global handler. This means adding proper try/catch, .catch(), or error event handlers at the actual call site. If the unhandled rejection originates in a dependency (e.g. ImapFlow), fix it in the dependency itself.
