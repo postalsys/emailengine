@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.79.9](https://github.com/postalsys/emailengine/compare/v2.79.8...v2.79.9) (2026-09-05)
+
+
+### Bug Fixes
+
+* **admin-ui:** remove the unreferenced static landing page ([eea5024](https://github.com/postalsys/emailengine/commit/eea5024e701d9633d1d19e14fc16f9512b73327f))
+* **admin-ui:** render the delivery-test and address-list fragments server-side ([4443c32](https://github.com/postalsys/emailengine/commit/4443c3211c76548ac00041752b22ce52b4e6f479))
+* **deps:** update dependencies ([2f32929](https://github.com/postalsys/emailengine/commit/2f32929fe2624a393516701aad48b41a13b78c8e))
+* **deps:** update dependencies and drop the message browser stylesheet exception ([1933e5d](https://github.com/postalsys/emailengine/commit/1933e5d9952fab26fbd3f4a630adfc0ca341717a))
+* **deps:** update dependencies, picking up the dispatcher options of certs and email-ai-tools ([28ecf49](https://github.com/postalsys/emailengine/commit/28ecf499362d02bcfb7c7811e12757093e856667))
+* **docker:** move the image to Node 24 and drop npm from the runtime layer ([ad190d3](https://github.com/postalsys/emailengine/commit/ad190d34972004216a612d25f32403054bd5639e))
+* **proxy:** route every outbound HTTP request through the global proxy ([2ac1fb6](https://github.com/postalsys/emailengine/commit/2ac1fb65bb2db9143747cb160e4c3dc5e8b89086))
+* **security:** require a nonce on stylesheets and tag the machine-facing routes ([cbcd4cb](https://github.com/postalsys/emailengine/commit/cbcd4cb16896aac91bce0c58feb112d809828cd5))
+* **security:** send a nonce-based Content-Security-Policy and the remaining security headers ([4f2900e](https://github.com/postalsys/emailengine/commit/4f2900e5de6d6aeac2333d774ea3977793f99e22))
+* **security:** vet autodiscovery egress, throttle proxy logins and add response headers ([74856cf](https://github.com/postalsys/emailengine/commit/74856cf64a0231ee7e38bbfb140639e29632aaa9))
+* **submit:** drop an outbox entry that does not decode to a message ([e7e6618](https://github.com/postalsys/emailengine/commit/e7e6618ec31032c3d88c2bec3f89ffa70c13970d))
+
 ## [2.79.8](https://github.com/postalsys/emailengine/compare/v2.79.7...v2.79.8) (2026-09-02)
 
 
