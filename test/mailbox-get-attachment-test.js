@@ -53,10 +53,7 @@ function createMockContext({
         }),
         connection: {
             account: 'test-account',
-            getImapConnection: async () => connectionClient,
-            onTaskCompleted() {
-                events.push('onTaskCompleted');
-            }
+            getImapConnection: async () => connectionClient
         }
     };
 
@@ -78,15 +75,15 @@ test('Mailbox.getAttachment() lock handling', async t => {
         content.destroy();
         await tick();
 
-        assert.deepEqual(events, ['release', 'onTaskCompleted'], 'an aborted download must give the mailbox lock back');
+        assert.deepEqual(events, ['release'], 'an aborted download must give the mailbox lock back');
     });
 
-    await t.test('returns the connection to its main mailbox after a completed download', async () => {
-        // The download SELECTs the attachment's mailbox on this connection. Reporting the task is
-        // what arms the re-select back to the monitored mailbox, and getAttachment was the only
-        // method here that skipped it on success - leaving the connection parked in the
-        // attachment's folder, and so idling on the wrong one, until the next resync 15 minutes
-        // later.
+    await t.test('releases the lock once after a completed download', async () => {
+        // The download SELECTs the attachment's mailbox on this connection. Giving the lock back
+        // is what sends it back to the monitored mailbox (the release reports the task, see
+        // Mailbox.getMailboxLock()), and getAttachment was the only method here that skipped it
+        // on success - leaving the connection parked in the attachment's folder, and so idling
+        // on the wrong one, until the next resync 15 minutes later.
         const { ctx, events } = createMockContext();
 
         const content = await Mailbox.prototype.getAttachment.call(ctx, { uid: 42 }, '2', {}, {});
@@ -96,7 +93,7 @@ test('Mailbox.getAttachment() lock handling', async t => {
         await tick();
         await tick();
 
-        assert.deepEqual(events, ['release', 'onTaskCompleted'], 'a completed download must release the lock once and report the task');
+        assert.deepEqual(events, ['release'], 'a completed download must release the lock exactly once');
     });
 
     await t.test('releases the lock when the download fails without being destroyed', async () => {
@@ -111,7 +108,7 @@ test('Mailbox.getAttachment() lock handling', async t => {
         await tick();
 
         assert.strictEqual(content.destroyed, false, 'a bare emit must not destroy the stream, otherwise this asserts nothing');
-        assert.deepEqual(events, ['release', 'onTaskCompleted'], 'a forwarded error must still give the mailbox lock back');
+        assert.deepEqual(events, ['release'], 'a forwarded error must still give the mailbox lock back');
     });
 
     await t.test('releases the lock exactly once on a failed download', async () => {
@@ -123,7 +120,7 @@ test('Mailbox.getAttachment() lock handling', async t => {
         content.destroy(new Error('IMAP connection dropped mid-download'));
         await tick();
 
-        assert.deepEqual(events, ['release', 'onTaskCompleted'], 'a failed download must not release the lock twice');
+        assert.deepEqual(events, ['release'], 'a failed download must not release the lock twice');
     });
 
     await t.test('releases the lock when the download resolves without a stream', async () => {
@@ -136,7 +133,7 @@ test('Mailbox.getAttachment() lock handling', async t => {
         const content = await Mailbox.prototype.getAttachment.call(ctx, { uid: 42 }, '2', {}, {});
 
         assert.strictEqual(content, false, 'a download with no stream is not an attachment');
-        assert.deepEqual(events, ['release', 'onTaskCompleted'], 'the lock must not outlive a download that produced nothing');
+        assert.deepEqual(events, ['release'], 'the lock must not outlive a download that produced nothing');
     });
 });
 
@@ -152,21 +149,21 @@ function endedStream(text) {
 }
 
 test('Mailbox.getText() lock handling', async t => {
-    await t.test('reports the task after a successful fetch', async () => {
+    await t.test('releases the lock after a successful fetch', async () => {
         const { ctx, events } = createMockContext({ makeContent: () => endedStream('message text') });
 
         await Mailbox.prototype.getText.call(ctx, { uid: 42 }, ['1'], {}, {});
 
-        assert.deepEqual(events, ['release', 'onTaskCompleted']);
+        assert.deepEqual(events, ['release']);
     });
 
-    await t.test('reports the task when the fetch throws', async () => {
+    await t.test('releases the lock when the fetch throws', async () => {
         const downloadError = new Error('IMAP connection dropped mid-fetch');
         const { ctx, events } = createMockContext({ downloadError });
 
         await assert.rejects(() => Mailbox.prototype.getText.call(ctx, { uid: 42 }, ['1'], {}, {}), /dropped mid-fetch/);
 
-        assert.deepEqual(events, ['release', 'onTaskCompleted'], 'a failed fetch must still send the connection back to its mailbox');
+        assert.deepEqual(events, ['release'], 'a failed fetch must still send the connection back to its mailbox');
     });
 
     await t.test('rejects instead of returning a truncated body when the stream fails mid-transfer', async () => {
@@ -185,7 +182,7 @@ test('Mailbox.getText() lock handling', async t => {
 
         await assert.rejects(() => Mailbox.prototype.getText.call(ctx, { uid: 42 }, ['1'], {}, {}), /Connection not available/);
 
-        assert.deepEqual(events, ['release', 'onTaskCompleted'], 'a stream that fails mid-transfer must still give the mailbox lock back');
+        assert.deepEqual(events, ['release'], 'a stream that fails mid-transfer must still give the mailbox lock back');
     });
 
     await t.test('groups a prototype-shaped content subtype as plain text', async () => {
@@ -204,7 +201,7 @@ test('Mailbox.getText() lock handling', async t => {
             assert.strictEqual(result.plain, 'message text', `text/${subtype} must still be returned`);
             assert.strictEqual(Object.getPrototypeOf(result), Object.prototype, `text/${subtype} must not swap the result's prototype`);
             assert.ok(!Object.keys(result).includes(subtype), `text/${subtype} must not become a key of its own`);
-            assert.deepEqual(events, ['release', 'onTaskCompleted']);
+            assert.deepEqual(events, ['release']);
         }
     });
 
@@ -213,6 +210,6 @@ test('Mailbox.getText() lock handling', async t => {
 
         await Mailbox.prototype.getText.call(ctx, { uid: 42 }, ['1'], { skipLock: true }, {});
 
-        assert.deepEqual(events, [], 'skipLock means an outer operation owns the lock and will report the task itself');
+        assert.deepEqual(events, [], 'skipLock means an outer operation owns the lock and gives it back itself');
     });
 });

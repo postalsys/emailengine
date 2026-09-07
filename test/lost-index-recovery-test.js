@@ -89,6 +89,7 @@ require.cache[getSecretPath] = {
 const { Mailbox } = require('../lib/email-client/imap/mailbox');
 const { shouldSeedLostIndex, SyncOperations } = require('../lib/email-client/imap/sync-operations');
 const { MAILBOX_RESET_NOTIFY } = require('../lib/consts');
+const { createSyncOperationsContext } = require('./helpers/sync-operations-context');
 
 // --- shouldSeedLostIndex: the recover-silently decision -------------------------------------
 //
@@ -161,69 +162,6 @@ test('shouldSeedLostIndex is false when any single field survived in the hash', 
 
 // --- SyncOperations.seedMailboxIndex: the silent rebuild action -----------------------------
 
-// Shaped like a SyncOperations instance (this.mailbox / this.connection / this.logger).
-function createSeedCtx(messages, opts = {}) {
-    const calls = {
-        entryListSet: [],
-        updateStoredStatus: [],
-        deletedKeys: [],
-        zadd: [],
-        resetEvents: [],
-        fetchOne: []
-    };
-
-    const redis = {
-        del: async key => {
-            calls.deletedKeys.push(key);
-        },
-        zadd: async (...args) => {
-            // Recording any zadd lets a test fail loudly if a notification is ever queued
-            calls.zadd.push(args);
-        }
-    };
-
-    const ctx = {
-        logger: { warn: () => {}, debug: () => {}, error: () => {} },
-        connection: {
-            syncing: false,
-            redis,
-            imapClient: {
-                fetch: (range, fields, opts) => {
-                    calls.fetch = { range, fields, opts };
-                    return (async function* () {
-                        for (const m of messages) {
-                            yield m;
-                        }
-                    })();
-                },
-                fetchOne: async (range, fields) => {
-                    calls.fetchOne.push({ range, fields });
-                    return 'fetchOneResult' in opts ? opts.fetchOneResult : false;
-                }
-            },
-            notify: async (mailbox, event, payload) => {
-                calls.resetEvents.push({ event, payload });
-            }
-        },
-        mailbox: {
-            path: 'INBOX',
-            syncing: false,
-            imapIndexer: opts.imapIndexer || 'full',
-            listingEntry: { path: 'INBOX', name: 'INBOX', specialUse: '\\Inbox' },
-            getNotificationsKey: () => 'iam:acc:n:KEY',
-            getMailboxLock: async () => ({ release: () => {} }),
-            entryListSet: async data => {
-                calls.entryListSet.push(data.uid);
-            },
-            updateStoredStatus: async data => {
-                calls.updateStoredStatus.push(data);
-            }
-        }
-    };
-
-    return { ctx, calls };
-}
-
 test('seedMailboxIndex records every message without queuing any notification', async () => {
     const mailboxStatus = { uidValidity: 123n, uidNext: 51, highestModseq: 10n, messages: 3, path: 'INBOX' };
     const messages = [
@@ -233,7 +171,7 @@ test('seedMailboxIndex records every message without queuing any notification', 
         { uid: 30, flags: new Set() }
     ];
 
-    const { ctx, calls } = createSeedCtx(messages);
+    const { ctx, calls } = createSyncOperationsContext({ messages });
     const indexed = await SyncOperations.prototype.seedMailboxIndex.call(ctx, mailboxStatus, { reason: 'syncStateLost' });
 
     // Every valid message is recorded in the index...
@@ -251,6 +189,9 @@ test('seedMailboxIndex records every message without queuing any notification', 
     // The \\Recent flag is stripped before indexing
     assert.equal(messages[1].flags.has('\\Recent'), false);
 
+    // The lock is given back (its release is what reports the task to the connection)
+    assert.equal(calls.released, 1);
+
     // A single mailboxReset is emitted with the reason, and no prevUidValidity for a lost index
     assert.equal(calls.resetEvents.length, 1);
     assert.equal(calls.resetEvents[0].event, MAILBOX_RESET_NOTIFY);
@@ -261,7 +202,7 @@ test('seedMailboxIndex records every message without queuing any notification', 
 
 test('seedMailboxIndex includes prevUidValidity when reseeding after a UIDVALIDITY change', async () => {
     const mailboxStatus = { uidValidity: 200n, uidNext: 2, highestModseq: 1n, messages: 1, path: 'INBOX' };
-    const { ctx, calls } = createSeedCtx([{ uid: 1, flags: new Set() }]);
+    const { ctx, calls } = createSyncOperationsContext({ messages: [{ uid: 1, flags: new Set() }] });
 
     await SyncOperations.prototype.seedMailboxIndex.call(ctx, mailboxStatus, { reason: 'uidValidityChange', prevUidValidity: '123' });
 
@@ -277,7 +218,7 @@ test('seedMailboxIndex in fast mode skips message enumeration when the server re
     // Fast mode never maintains the message index; runFastSync only needs the stored
     // uidNext baseline, which updateStoredStatus persists from the reported value.
     const mailboxStatus = { uidValidity: 123n, uidNext: 51, highestModseq: 10n, messages: 50000, path: 'INBOX' };
-    const { ctx, calls } = createSeedCtx([{ uid: 1, flags: new Set() }], { imapIndexer: 'fast' });
+    const { ctx, calls } = createSyncOperationsContext({ messages: [{ uid: 1, flags: new Set() }], imapIndexer: 'fast' });
 
     const indexed = await SyncOperations.prototype.seedMailboxIndex.call(ctx, mailboxStatus, { reason: 'syncStateLost' });
 
@@ -296,7 +237,7 @@ test('seedMailboxIndex in fast mode skips message enumeration when the server re
 test('seedMailboxIndex in fast mode derives the uidNext baseline when the server omits UIDNEXT', async () => {
     // Without a stored uidNext, runFastSync would replay every message as messageNew.
     const mailboxStatus = { uidValidity: 123n, uidNext: false, highestModseq: 10n, messages: 3, path: 'INBOX' };
-    const { ctx, calls } = createSeedCtx([], { imapIndexer: 'fast', fetchOneResult: { uid: 30 } });
+    const { ctx, calls } = createSyncOperationsContext({ imapIndexer: 'fast', fetchOneResult: { uid: 30 } });
 
     await SyncOperations.prototype.seedMailboxIndex.call(ctx, mailboxStatus, { reason: 'syncStateLost' });
 
@@ -315,7 +256,7 @@ test('seedMailboxIndex in fast mode derives the uidNext baseline when the server
 test('seedMailboxIndex in fast mode completes without a baseline if fetchOne yields nothing', async () => {
     // A raced expunge can leave fetchOne empty-handed; the seed must still finish cleanly.
     const mailboxStatus = { uidValidity: 123n, uidNext: false, highestModseq: 10n, messages: 3, path: 'INBOX' };
-    const { ctx, calls } = createSeedCtx([], { imapIndexer: 'fast', fetchOneResult: false });
+    const { ctx, calls } = createSyncOperationsContext({ imapIndexer: 'fast', fetchOneResult: false });
 
     await SyncOperations.prototype.seedMailboxIndex.call(ctx, mailboxStatus, { reason: 'syncStateLost' });
 
@@ -327,11 +268,12 @@ test('seedMailboxIndex in fast mode completes without a baseline if fetchOne yie
 
 // --- onOpen wiring: which branch runs when state is missing ---------------------------------
 
-function createOnOpenCtx({ stored, mailbox, previouslyConnected }) {
-    const calls = { seed: [], fullSync: 0, partialSync: 0, select: 0 };
+function createOnOpenCtx({ stored, mailbox, previouslyConnected, syncDisabled = false, queuedNotifications = 0 }) {
+    const calls = { seed: [], fullSync: 0, partialSync: 0, select: 0, updateStoredStatus: [], notify: [] };
 
     const ctx = {
         selected: false,
+        syncDisabled,
         runPartialSyncTimer: null,
         listingEntry: { path: 'INBOX', name: 'INBOX', specialUse: '\\Inbox', isNew: false },
         logger: { info: () => {}, debug: () => {}, warn: () => {}, error: () => {} },
@@ -342,11 +284,25 @@ function createOnOpenCtx({ stored, mailbox, previouslyConnected }) {
             redis: {
                 hget: async () => (previouslyConnected === null ? null : String(previouslyConnected)),
                 hSetNew: async () => {},
-                exists: async () => 0
+                exists: async () => queuedNotifications,
+                multi() {
+                    const chain = {
+                        zcard: () => chain,
+                        del: () => chain,
+                        exec: async () => [[null, 0]]
+                    };
+                    return chain;
+                }
+            },
+            notify: async (mailboxObject, event, data) => {
+                calls.notify.push({ event, data });
             }
         },
         getMailboxStatus: () => mailbox,
         getStoredStatus: async () => stored,
+        updateStoredStatus: async status => {
+            calls.updateStoredStatus.push(status);
+        },
         getNotificationsKey: () => 'iam:acc:n:KEY',
         getMailboxKey: () => 'iam:acc:h:KEY',
         getMessagesKey: () => 'iam:acc:l:KEY',
@@ -370,6 +326,13 @@ function createOnOpenCtx({ stored, mailbox, previouslyConnected }) {
     return { ctx, calls };
 }
 
+// Shaped like the real getStoredStatus() answer for a folder that was never synced: every
+// field present and false. A stored status built without the uidValidity key hid that the
+// UIDVALIDITY check used to fire on it and reseed silently instead of running a full sync
+function neverSyncedStatus() {
+    return { hasStoredState: false, uidValidity: false, uidNext: false, messages: false, highestModseq: false, initialUidNext: false, lastFullSync: false };
+}
+
 test('onOpen recovers silently when folder state is lost after a prior session', async () => {
     const { ctx, calls } = createOnOpenCtx({
         stored: { hasStoredState: false, uidNext: false }, // mailbox hash evicted: no stored state
@@ -389,7 +352,7 @@ test('onOpen recovers silently when folder state is lost after a prior session',
 
 test('onOpen does NOT seed on a genuine first sync (normal sync path runs)', async () => {
     const { ctx, calls } = createOnOpenCtx({
-        stored: { hasStoredState: false, uidNext: false, messages: false, highestModseq: false },
+        stored: neverSyncedStatus(),
         mailbox: { uidValidity: 123n, uidNext: 6, highestModseq: 10n, messages: 5 },
         previouslyConnected: 1
     });
@@ -398,7 +361,8 @@ test('onOpen does NOT seed on a genuine first sync (normal sync path runs)', asy
 
     // First sync must fall through to the normal (notifyFrom-bounded) sync, not the silent reseed
     assert.equal(calls.seed.length, 0);
-    assert.ok(calls.fullSync + calls.partialSync >= 1);
+    assert.equal(calls.fullSync, 1, 'the existing messages are advertised through a full sync');
+    assert.equal(calls.partialSync, 0);
 });
 
 test('onOpen does NOT reseed on a server that omits UIDNEXT once state is persisted (no loop)', async () => {
@@ -433,4 +397,81 @@ test('onOpen syncs new mail in a previously-empty mailbox instead of silently re
 
     assert.equal(calls.seed.length, 0, 'stored messages: 0 is state, not a lost index');
     assert.ok(calls.fullSync + calls.partialSync >= 1, 'new mail must run a normal sync');
+});
+
+test('onOpen reseeds on a UIDVALIDITY change ahead of any queued notifications', async () => {
+    // The queued entries reference UIDs of the previous incarnation of the folder. Replaying
+    // them through a full sync against the old index used to fire messageDeleted for every
+    // indexed message and messageNew for every message on the server
+    const { ctx, calls } = createOnOpenCtx({
+        stored: { hasStoredState: true, uidValidity: 123n, uidNext: 51, highestModseq: 10n, messages: 3, initialUidNext: 1, lastFullSync: false },
+        mailbox: { uidValidity: 124n, uidNext: 4, highestModseq: 2n, messages: 3 },
+        previouslyConnected: 3,
+        queuedNotifications: 1
+    });
+
+    const result = await Mailbox.prototype.onOpen.call(ctx);
+
+    assert.equal(result, false);
+    assert.equal(calls.seed.length, 1);
+    assert.equal(calls.seed[0][1].reason, 'uidValidityChange');
+    assert.equal(calls.seed[0][1].prevUidValidity, '123');
+    assert.equal(calls.fullSync, 0, 'the stale queue must not be replayed');
+    // The folder was recreated, not created: mailboxReset (sent by the seed) is the event
+    // for that, and no mailboxNew may accompany it
+    assert.equal(ctx.listingEntry.isNew, false);
+    assert.equal(calls.notify.length, 0);
+});
+
+test('onOpen replays queued notifications through a full sync when UIDVALIDITY is unchanged', async () => {
+    const { ctx, calls } = createOnOpenCtx({
+        stored: { hasStoredState: true, uidValidity: 123n, uidNext: 51, highestModseq: 10n, messages: 3, initialUidNext: 1, lastFullSync: false },
+        mailbox: { uidValidity: 123n, uidNext: 51, highestModseq: 10n, messages: 3 },
+        previouslyConnected: 3,
+        queuedNotifications: 1
+    });
+
+    await Mailbox.prototype.onOpen.call(ctx);
+
+    assert.equal(calls.seed.length, 0);
+    assert.equal(calls.fullSync, 1, 'an interrupted publish is finished by a full sync');
+});
+
+test('onOpen only refreshes the counters of a folder excluded from syncing', async () => {
+    // A Gmail label or a folder outside the account path list is opened by an API command
+    // on the primary connection. sync() never selects such a folder; the open handler must
+    // not index it or advertise its messages either
+    const mailbox = { uidValidity: 123n, uidNext: 6, highestModseq: 10n, messages: 5 };
+    const { ctx, calls } = createOnOpenCtx({
+        stored: neverSyncedStatus(),
+        mailbox,
+        previouslyConnected: 3,
+        syncDisabled: true
+    });
+
+    const result = await Mailbox.prototype.onOpen.call(ctx);
+
+    assert.equal(result, false);
+    assert.deepEqual(calls.updateStoredStatus, [mailbox], 'the listing counters are kept current');
+    assert.equal(calls.seed.length, 0);
+    assert.equal(calls.fullSync, 0);
+    assert.equal(calls.partialSync, 0);
+    assert.equal(ctx.processingOpen, false, 'the latch must be released');
+});
+
+test('onOpen does not select the mailbox again once the sync is done', async () => {
+    // The primary connection runs with auto-IDLE, so there is nothing to restart. The
+    // extra select took a lock on the open mailbox, and that lock cancelled the
+    // return-to-main-mailbox timer armed by the API command whose SELECT triggered
+    // this open - the connection then stayed parked on the folder
+    const { ctx, calls } = createOnOpenCtx({
+        stored: neverSyncedStatus(),
+        mailbox: { uidValidity: 123n, uidNext: 6, highestModseq: 10n, messages: 5 },
+        previouslyConnected: 1
+    });
+
+    await Mailbox.prototype.onOpen.call(ctx);
+
+    assert.equal(calls.fullSync, 1);
+    assert.equal(calls.select, 0, 'no lock may be taken after the sync');
 });

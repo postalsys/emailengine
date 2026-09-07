@@ -124,9 +124,15 @@ function mailboxStatus(overrides = {}) {
 }
 
 test('hasUidValidityChanged returns false when stored has no uidValidity (first sync)', () => {
-    const stored = storedStatus();
-    delete stored.uidValidity;
-    assert.equal(hasUidValidityChanged(stored, mailboxStatus({ uidValidity: 123n })), false);
+    // getStoredStatus() always carries the key and reports a missing value as false.
+    // Keyed on the presence of the key, every first sync counted as a UIDVALIDITY
+    // change and was reseeded silently instead of running the full sync that
+    // advertises the existing messages
+    assert.equal(hasUidValidityChanged(storedStatus(), mailboxStatus({ uidValidity: 123n })), false);
+});
+
+test('hasUidValidityChanged returns true when the server stops reporting a valid UIDVALIDITY', () => {
+    assert.equal(hasUidValidityChanged(storedStatus({ uidValidity: 123n }), mailboxStatus({ uidValidity: false })), true);
 });
 
 test('hasUidValidityChanged returns false when values match', () => {

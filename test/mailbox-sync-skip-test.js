@@ -58,6 +58,8 @@ function createMockContext({ selectError, statusResult, statusError, listingErro
         getMailboxKey: () => 'iam:test-account:h:KEY',
         connection: {
             account: 'test-account',
+            // Reported by the lock wrapper getMailboxLock() returns when the lock is released
+            onTaskCompleted: () => {},
             getCurrentListing: async () => {
                 listingCalls++;
                 if (listingError) {
@@ -110,6 +112,10 @@ function createMockContext({ selectError, statusResult, statusError, listingErro
         },
         // Use the real select/getMailboxLock implementations so the rejection
         // travels the same path as in production
+        syncChain: null,
+        syncOnce: Mailbox.prototype.syncOnce,
+        isSelected: Mailbox.prototype.isSelected,
+        mailboxStatusFromInfo: Mailbox.prototype.mailboxStatusFromInfo,
         select: Mailbox.prototype.select,
         getMailboxLock: Mailbox.prototype.getMailboxLock,
         getPhantomState: Mailbox.prototype.getPhantomState,
@@ -506,4 +512,195 @@ test('Mailbox.onOpen() pre-sync failures', async t => {
         assert.equal(ctx.listingEntry.isNew, false, 'isNew must be consumed by a successful open');
         assert.equal(syncedCalls(), 1, 'the sync promise must be settled');
     });
+});
+
+// --- overlapping sync() calls: one resolver slot, so the passes have to run in turn ---
+//
+// The resync loop awaits sync() for every folder in turn, and a subconnection
+// change or a listing refresh can call sync() on the same folder in the
+// meantime. Both used to arm this.synced; the second one took the slot over
+// and the first caller was never settled - when that caller was the resync
+// loop, its timer was never re-armed and the account stayed in syncing.
+
+test('Mailbox.sync() overlapping calls', async t => {
+    await t.test('runs the passes one after another and settles both callers', { timeout: 5000 }, async () => {
+        const { ctx } = createMockContext();
+
+        let locks = 0;
+        const order = [];
+        // Stands in for the SELECT: the lock is granted a tick later, and the
+        // mailboxOpen handler that follows settles the resolver armed for it
+        ctx.connection.imapClient.getMailboxLock = async () => {
+            locks++;
+            order.push(`lock:${locks}`);
+            await new Promise(resolve => setTimeout(resolve, 20));
+            order.push(`open:${locks}`);
+            ctx.synced();
+            return { release: () => {} };
+        };
+
+        await Promise.all([Mailbox.prototype.sync.call(ctx, true), Mailbox.prototype.sync.call(ctx, true)]);
+
+        assert.equal(locks, 2, 'each call must run its own pass');
+        assert.deepEqual(order, ['lock:1', 'open:1', 'lock:2', 'open:2'], 'the second pass must wait for the first to settle');
+        assert.equal(ctx.synced, false, 'no resolver may stay armed once the passes are done');
+    });
+
+    await t.test('a failed pass does not block the next one', { timeout: 5000 }, async () => {
+        const selectError = Object.assign(new Error('Connection not available'), { code: 'NoConnection' });
+        const { ctx, lockCalls } = createMockContext({ selectError });
+
+        const [first, second] = await Promise.allSettled([Mailbox.prototype.sync.call(ctx, true), Mailbox.prototype.sync.call(ctx, true)]);
+
+        assert.equal(first.status, 'rejected');
+        assert.equal(second.status, 'rejected', 'the second pass runs on its own and sees the same failure');
+        assert.equal(lockCalls(), 2);
+    });
+});
+
+// --- getMailboxStatus(): the counters describe whatever folder the connection has open ---
+
+test('Mailbox.getMailboxStatus() selected mailbox guard', async t => {
+    const createStatusCtx = selectedPath => {
+        const { ctx } = createMockContext();
+        Object.assign(ctx.connection.imapClient, {
+            state: 'selected',
+            usable: true,
+            idling: false,
+            mailbox: { path: selectedPath, uidValidity: 5n, uidNext: 10, exists: 3, highestModseq: 7n }
+        });
+        return ctx;
+    };
+
+    await t.test('reports the counters when the folder is the selected one', () => {
+        const status = Mailbox.prototype.getMailboxStatus.call(createStatusCtx('Shared Folders'));
+        assert.deepEqual(status, { path: 'Shared Folders', highestModseq: 7n, uidValidity: 5n, uidNext: 10, messages: 3 });
+    });
+
+    await t.test('throws instead of reporting another folder', () => {
+        // Persisted as this folder's state, another folder's counters make the next
+        // open look like a UIDVALIDITY change and rebuild the index
+        assert.throws(
+            () => Mailbox.prototype.getMailboxStatus.call(createStatusCtx('INBOX')),
+            err => err.code === 'MailboxNotSelected' && err.statusCode === 503
+        );
+    });
+});
+
+// --- untagged responses of a folder excluded from syncing --------------------------------
+//
+// sync() never selects a folder with syncDisabled (a Gmail label other than
+// All Mail, Junk and Trash, or a folder outside the account path list), but
+// an API command can open one on the primary connection, and its untagged
+// responses then arrive like any other folder's.
+
+test('Mailbox untagged handlers on a folder excluded from syncing', async t => {
+    const createHandlerCtx = () => {
+        const calls = { entryListGet: 0, entryListExpunge: 0 };
+        const ctx = {
+            path: 'Shared Folders',
+            syncDisabled: true,
+            imapIndexer: 'full',
+            runPartialSyncTimer: null,
+            logger: {
+                trace() {},
+                debug() {},
+                info() {},
+                warn() {},
+                error() {}
+            },
+            logEvent() {},
+            entryListGet: async () => {
+                calls.entryListGet++;
+                return null;
+            },
+            entryListExpunge: async () => {
+                calls.entryListExpunge++;
+                return null;
+            },
+            shouldRunPartialSyncAfterExists: async () => {
+                throw new Error('must not be reached');
+            }
+        };
+        return { ctx, calls };
+    };
+
+    await t.test('onExists does not schedule a partial sync', async () => {
+        const { ctx } = createHandlerCtx();
+
+        await Mailbox.prototype.onExists.call(ctx, { path: 'Shared Folders', count: 5, prevCount: 4 });
+
+        assert.equal(ctx.runPartialSyncTimer, null, 'no partial sync may be scheduled');
+    });
+
+    await t.test('onFlags and onExpunge leave the index alone', async () => {
+        const { ctx, calls } = createHandlerCtx();
+
+        assert.equal(await Mailbox.prototype.onFlags.call(ctx, { path: 'Shared Folders', seq: 1, flags: new Set(['\\Seen']) }), null);
+        assert.equal(await Mailbox.prototype.onExpunge.call(ctx, { path: 'Shared Folders', seq: 1 }), null);
+
+        assert.equal(calls.entryListGet, 0);
+        assert.equal(calls.entryListExpunge, 0);
+    });
+});
+
+// --- getMailboxLock(): the grant cancels the return to the main mailbox, the release re-arms it ---
+
+test('Mailbox.getMailboxLock() task reporting', async t => {
+    const createLockCtx = () => {
+        const calls = { tasks: [], released: 0, fired: 0 };
+        const primary = { getMailboxLock: async () => ({ path: 'Shared Folders', release: () => calls.released++ }) };
+        const ctx = {
+            path: 'Shared Folders',
+            connection: {
+                imapClient: primary,
+                completedTimer: setTimeout(() => calls.fired++, 10),
+                onTaskCompleted: client => calls.tasks.push(client)
+            }
+        };
+        return { ctx, calls, primary };
+    };
+
+    await t.test('cancels the pending return and reports the task once when the lock is released', async () => {
+        const { ctx, calls, primary } = createLockCtx();
+
+        const lock = await Mailbox.prototype.getMailboxLock.call(ctx, null, { description: 'test' });
+        await new Promise(resolve => setTimeout(resolve, 30));
+
+        assert.equal(calls.fired, 0, 'the pending return to the main mailbox must be cancelled');
+        assert.equal(calls.tasks.length, 0, 'nothing is reported while the lock is held');
+
+        lock.release();
+        lock.release();
+
+        assert.equal(calls.released, 1);
+        assert.deepEqual(calls.tasks, [primary], 'a repeated release must not report again');
+    });
+
+    await t.test('a lock on a secondary connection reports nothing', async () => {
+        const { ctx, calls } = createLockCtx();
+        clearTimeout(ctx.connection.completedTimer);
+        const secondary = { getMailboxLock: async () => ({ path: 'Shared Folders', release: () => calls.released++ }) };
+
+        const lock = await Mailbox.prototype.getMailboxLock.call(ctx, secondary, {});
+        lock.release();
+
+        assert.equal(calls.released, 1);
+        assert.equal(calls.tasks.length, 0, 'a pooled secondary never moved the primary');
+    });
+});
+
+// --- select(): already watching the mailbox means no lock at all ---
+
+test('Mailbox.select() returns without a lock when the mailbox is already selected', async () => {
+    const { ctx, lockCalls } = createMockContext();
+    ctx.selected = true;
+    ctx.connection.imapClient.mailbox = { path: 'Shared Folders' };
+    let settled = 0;
+    ctx.synced = () => settled++;
+
+    await Mailbox.prototype.select.call(ctx);
+
+    assert.equal(lockCalls(), 0, 'no lock may be taken');
+    assert.equal(settled, 1, 'an armed sync resolver is settled');
 });
