@@ -157,7 +157,6 @@
             "static/**/*",
             "views/**/*",
             "lib/lua/**/*",
-            "node_modules/bull/lib/commands/**/*",
             "translations/**/*",
             "node_modules/@postalsys/joi-messages/translations/*",
             "node_modules/@postalsys/bounce-classifier/model/**/*",
