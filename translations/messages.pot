@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-09-08 09:20+0000\n"
+"POT-Creation-Date: 2026-09-08 11:59+0000\n"
 
 #: views/error.hbs:6
-#: workers/api.js:3154
+#: workers/api.js:3127
 msgid "Something went wrong"
 msgstr ""
 
@@ -26,6 +26,35 @@ msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
+
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:28
+#: views/account-identity-error.hbs:32
+msgid "Try Again"
+msgstr ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
 
 #: views/unsubscribe.hbs:7
 #: views/unsubscribe.hbs:60
@@ -77,65 +106,6 @@ msgid ""
 "received."
 msgstr ""
 
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:28
-#: views/account-identity-error.hbs:32
-msgid "Try Again"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:13
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:19
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:35
-msgid "This setup link is restricted to this email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:43
-#: views/accounts/register/imap-server.hbs:47
-#: views/accounts/register/imap-server.hbs:154
-msgid "Password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:49
-msgid "Enter your account password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:55
-msgid "Continue"
-msgstr ""
-
 #: views/accounts/register/index.hbs:6
 msgid "Choose your email account provider"
 msgstr ""
@@ -157,6 +127,12 @@ msgstr ""
 #: views/accounts/register/imap-server.hbs:33
 #: views/accounts/register/imap-server.hbs:140
 msgid "Username"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:47
+#: views/accounts/register/imap-server.hbs:154
+#: views/accounts/register/imap.hbs:43
+msgid "Password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:59
@@ -263,6 +239,30 @@ msgstr ""
 msgid "Request failed."
 msgstr ""
 
+#: views/accounts/register/imap.hbs:13
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:19
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:35
+msgid "This setup link is restricted to this email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:49
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:55
+msgid "Continue"
+msgstr ""
+
 #: views/account-identity-error.hbs:7
 msgid "Wrong Email Account"
 msgstr ""
@@ -319,8 +319,8 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:875
 #: lib/ui-routes/account-routes.js:1262
 #: lib/ui-routes/route-helpers.js:403
-#: workers/api.js:2326
-#: workers/api.js:2396
+#: workers/api.js:2299
+#: workers/api.js:2369
 msgid "Email Account Setup"
 msgstr ""
 
@@ -445,37 +445,37 @@ msgstr ""
 msgid "Couldn't process request. Try again."
 msgstr ""
 
-#: workers/api.js:2255
+#: workers/api.js:2228
 msgid ""
 "The sign-in was cancelled or the requested access was not granted. Open the "
 "account setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2264
+#: workers/api.js:2237
 msgid "Sign-in with the email provider failed: %s"
 msgstr ""
 
-#: workers/api.js:2268
+#: workers/api.js:2241
 msgid "Sign-in with the email provider failed: no authorization code was received"
 msgstr ""
 
-#: workers/api.js:2274
+#: workers/api.js:2247
 msgid "Sign-in with the email provider failed: the request state is not valid"
 msgstr ""
 
-#: workers/api.js:2280
+#: workers/api.js:2253
 msgid ""
 "The account setup session has expired or was already used. Open the account "
 "setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2287
+#: workers/api.js:2260
 msgid ""
 "Sign-in with the email provider failed: the stored setup session is not "
 "valid"
 msgstr ""
 
-#: workers/api.js:3153
-#: workers/api.js:3268
+#: workers/api.js:3126
+#: workers/api.js:3241
 msgid "Requested page not found"
 msgstr ""
