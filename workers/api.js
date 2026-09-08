@@ -35,7 +35,6 @@ const {
     hasEnvValue,
     getBoolean,
     loadTlsConfig,
-    httpAgent,
     resolveOAuthErrorStatus,
     constantTimeEqual,
     verifyServiceSignature,
@@ -94,8 +93,7 @@ const specOptions = require('../lib/swagger-options');
 const { registerOpenApiRoute } = require('../lib/openapi');
 const { getModel: getApiReferenceModel, clearServiceUrlCache } = require('../lib/api-reference');
 
-const { encrypt, decrypt } = require('../lib/encrypt');
-const { Certs, isRenewalDue } = require('@postalsys/certs');
+const { createCertHandler } = require('../lib/cert-handler');
 const net = require('net');
 
 const consts = require('../lib/consts');
@@ -565,31 +563,7 @@ const init = async () => {
         return hostname;
     };
 
-    let certHandler = new Certs({
-        redis,
-        namespace: `${REDIS_PREFIX}`,
-
-        acme: {
-            environment: 'emailengine',
-            directoryUrl: 'https://acme-v02.api.letsencrypt.org/directory'
-            //directoryUrl: 'https://acme-staging-v02.api.letsencrypt.org/directory',
-        },
-
-        // long-lived client, see LiveDispatcher in lib/tools.js
-        dispatcher: httpAgent.live,
-
-        logger: logger.child({ sub: 'acme' }),
-
-        encryptFn: async value => {
-            const encryptSecret = await getSecret();
-            return encrypt(value, encryptSecret);
-        },
-
-        decryptFn: async value => {
-            const encryptSecret = await getSecret();
-            return decrypt(value, encryptSecret);
-        }
-    });
+    let certHandler = createCertHandler(logger);
 
     server.decorate('toolkit', 'serviceDomain', getServiceDomain);
     server.decorate('toolkit', 'certs', certHandler);
@@ -3349,18 +3323,25 @@ const init = async () => {
                 assertPreconditionResult = Boom.boomify(err);
             }
 
-            // isRenewalDue() asks whether the certificate is close enough to expiry to replace,
-            // scaled to the lifetime the CA issued. This used to compare against
-            // Date.now() - RENEW_TLS_AFTER, which is the expiry date thirty days in the past: it
-            // read as "renew with thirty days left" but meant "renew thirty days after it died",
-            // so the automatic path only ever ran once the certificate had been broken for a
-            // month. Let's Encrypt is on the way from 90 day certificates to 45, which would have
-            // left a service unreachable for two thirds of every certificate's life.
+            // checkRenewalDue() asks Let's Encrypt whether the certificate should be replaced yet,
+            // through ACME Renewal Information, and falls back to a threshold scaled to the
+            // lifetime the CA issued. Asking matters because a mass revocation is the one case
+            // where the CA needs a certificate replaced long before its own schedule would. How
+            // often it actually reaches the CA is bounded inside the library, which re-fetches at
+            // the interval the CA asked for and every six hours otherwise; the lastCheck gate in
+            // front of it is what stops a domain being retried for eight hours after a failure.
+            //
+            // The earlier form compared against Date.now() - RENEW_TLS_AFTER, which is the expiry
+            // date thirty days in the past: it read as "renew with thirty days left" but meant
+            // "renew thirty days after it died", so the automatic path only ever ran once the
+            // certificate had been broken for a month. Let's Encrypt is on the way from 90 day
+            // certificates to 45, which would have left a service unreachable for two thirds of
+            // every certificate's life.
             if (
                 IS_PRIMARY_API_WORKER &&
                 currentCert &&
-                isRenewalDue(currentCert) &&
-                (!currentCert.lastCheck || currentCert.lastCheck < new Date(Date.now() - BLOCK_TLS_RENEW))
+                (!currentCert.lastCheck || currentCert.lastCheck < new Date(Date.now() - BLOCK_TLS_RENEW)) &&
+                (await certHandler.checkRenewalDue(serviceDomain, currentCert))
             ) {
                 try {
                     let renewedCert = await certHandler.acquireCert(serviceDomain);

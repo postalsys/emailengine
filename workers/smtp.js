@@ -6,7 +6,7 @@ const packageData = require('../package.json');
 const config = require('@zone-eu/wild-config');
 const logger = require('../lib/logger');
 
-const { getDuration, emitChangeEvent, readEnvValue, threadStats, loadTlsConfig, assertTlsCredentials, getByteSize, httpAgent } = require('../lib/tools');
+const { getDuration, emitChangeEvent, readEnvValue, threadStats, loadTlsConfig, assertTlsCredentials, getByteSize } = require('../lib/tools');
 const { createSmtpAuthHandler, createSmtpAccountResolver } = require('../lib/smtp-auth');
 
 const { initSentry } = require('../lib/sentry');
@@ -14,13 +14,10 @@ initSentry('smtp');
 
 const { SMTPServer } = require('smtp-server');
 const util = require('util');
-const { redis } = require('../lib/db');
-const getSecret = require('../lib/get-secret');
 const { collectMessage } = require('../lib/smtp-message-processor');
 const settings = require('../lib/settings');
 
-const { encrypt, decrypt } = require('../lib/encrypt');
-const { Certs } = require('@postalsys/certs');
+const { createCertHandler } = require('../lib/cert-handler');
 
 config.smtp = config.smtp || {
     enabled: false,
@@ -32,7 +29,7 @@ config.smtp = config.smtp || {
 
 config.service = config.service || {};
 
-const { REDIS_PREFIX, DEFAULT_MAX_SMTP_MESSAGE_SIZE } = require('../lib/consts');
+const { DEFAULT_MAX_SMTP_MESSAGE_SIZE } = require('../lib/consts');
 
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 
@@ -132,27 +129,8 @@ async function init() {
         useProxy: await settings.get('smtpServerProxy')
     };
 
-    let certs = new Certs({
-        redis,
-        namespace: `${REDIS_PREFIX}`,
-
-        environment: 'ee',
-
-        // long-lived client, see LiveDispatcher in lib/tools.js
-        dispatcher: httpAgent.live,
-
-        logger: logger.child({ sub: 'acme' }),
-
-        encryptFn: async value => {
-            const encryptSecret = await getSecret();
-            return encrypt(value, encryptSecret);
-        },
-
-        decryptFn: async value => {
-            const encryptSecret = await getSecret();
-            return decrypt(value, encryptSecret);
-        }
-    });
+    // Reads what the API worker provisioned; this one never orders a certificate itself.
+    let certs = createCertHandler(logger);
 
     // check and update authentication settings on connection
     serverOptions.onConnect = (session, callback) => {
