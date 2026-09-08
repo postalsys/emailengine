@@ -18,8 +18,9 @@ const assert = require('node:assert').strict;
 const fs = require('fs');
 const pathlib = require('path');
 
+const { execFileSync } = require('child_process');
+
 const { listFiles } = require('./helpers/list-files');
-const { ACME_DIRECTORY_URL } = require('../lib/consts');
 
 const ROOT = pathlib.join(__dirname, '..');
 const FACTORY = 'lib/cert-handler.js';
@@ -59,11 +60,21 @@ test('every caller goes through the factory', () => {
     }
 });
 
-test('the shared ACME directory is the production one', () => {
-    // The staging directory is the one to point at while testing issuance, and it is easy to leave
-    // behind. Staging certificates are signed by an untrusted root, so shipping one means every
-    // client that reaches this instance over TLS refuses the certificate.
-    assert.equal(ACME_DIRECTORY_URL, 'https://acme-v02.api.letsencrypt.org/directory');
+test('the ACME directory defaults to the production CA', () => {
+    // Staging is the directory to point at while testing issuance, and it is easy to leave behind.
+    // Its certificates are signed by an untrusted root, so a build that defaulted to staging would
+    // hand every client that reaches this instance over TLS a certificate it refuses.
+    //
+    // Read from a child process with the override cleared, because EENGINE_ACME_DIRECTORY_URL is
+    // the supported way to point an instance at staging: asserting the resolved value would fail
+    // the suite for the operator who is using the override as intended. The default is what ships,
+    // and the default is what this guards.
+    const resolved = execFileSync(process.execPath, ['-e', "process.stdout.write(require('./lib/consts').ACME_DIRECTORY_URL)"], {
+        cwd: ROOT,
+        env: { ...process.env, EENGINE_ACME_DIRECTORY_URL: '' }
+    }).toString();
+
+    assert.equal(resolved, 'https://acme-v02.api.letsencrypt.org/directory');
 });
 
 test('the renewal check asks the CA rather than deciding on its own', () => {

@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-09-07 13:17+0000\n"
+"POT-Creation-Date: 2026-09-08 09:20+0000\n"
 
 #: views/error.hbs:6
-#: workers/api.js:3153
+#: workers/api.js:3154
 msgid "Something went wrong"
 msgstr ""
 
@@ -26,35 +26,6 @@ msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:28
-#: views/account-identity-error.hbs:32
-msgid "Try Again"
-msgstr ""
 
 #: views/unsubscribe.hbs:7
 #: views/unsubscribe.hbs:60
@@ -104,6 +75,35 @@ msgstr ""
 msgid ""
 "This link is not valid. Use the unsubscribe link from the email you "
 "received."
+msgstr ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:28
+#: views/account-identity-error.hbs:32
+msgid "Try Again"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:13
@@ -295,19 +295,19 @@ msgid ""
 "connect your account."
 msgstr ""
 
-#: lib/tools.js:1480
+#: lib/tools.js:1473
 #: lib/ui-routes/unsubscribe-routes.js:31
 #: lib/ui-routes/unsubscribe-routes.js:99
 msgid "Invalid input"
 msgstr ""
 
-#: lib/tools.js:2345
+#: lib/tools.js:2338
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:2368
-#: lib/tools.js:2374
-#: lib/tools.js:2379
+#: lib/tools.js:2361
+#: lib/tools.js:2367
+#: lib/tools.js:2372
 #: lib/ui-routes/account-routes.js:1149
 msgid "Invalid or expired account setup URL"
 msgstr ""
@@ -319,8 +319,8 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:875
 #: lib/ui-routes/account-routes.js:1262
 #: lib/ui-routes/route-helpers.js:403
-#: workers/api.js:2325
-#: workers/api.js:2395
+#: workers/api.js:2326
+#: workers/api.js:2396
 msgid "Email Account Setup"
 msgstr ""
 
@@ -445,37 +445,37 @@ msgstr ""
 msgid "Couldn't process request. Try again."
 msgstr ""
 
-#: workers/api.js:2254
+#: workers/api.js:2255
 msgid ""
 "The sign-in was cancelled or the requested access was not granted. Open the "
 "account setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2263
+#: workers/api.js:2264
 msgid "Sign-in with the email provider failed: %s"
 msgstr ""
 
-#: workers/api.js:2267
+#: workers/api.js:2268
 msgid "Sign-in with the email provider failed: no authorization code was received"
 msgstr ""
 
-#: workers/api.js:2273
+#: workers/api.js:2274
 msgid "Sign-in with the email provider failed: the request state is not valid"
 msgstr ""
 
-#: workers/api.js:2279
+#: workers/api.js:2280
 msgid ""
 "The account setup session has expired or was already used. Open the account "
 "setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2286
+#: workers/api.js:2287
 msgid ""
 "Sign-in with the email provider failed: the stored setup session is not "
 "valid"
 msgstr ""
 
-#: workers/api.js:3152
-#: workers/api.js:3267
+#: workers/api.js:3153
+#: workers/api.js:3268
 msgid "Requested page not found"
 msgstr ""

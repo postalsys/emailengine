@@ -23,7 +23,7 @@ const pathlib = require('path');
 // for the extracted modules, so a NEW module costs it a require, a comment and a call.
 // That is the pattern this ratchet exists to encourage, not the handler-code growth it
 // exists to block.
-const BUDGET = 103;
+const BUDGET = 102;
 
 test('routes-ui.js stays within the size budget', () => {
     const filePath = pathlib.join(__dirname, '..', 'lib', 'routes-ui.js');
