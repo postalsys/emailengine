@@ -140,7 +140,6 @@
 
 </form>
 
-{{> tls_security_modal}}
 
 <input type="hidden" id="availableAddresses" value="{{availableAddresses}}">
 
@@ -214,7 +213,5 @@ $mail->addCustomHeader('X-EE-Account', 'USERNAME');
 `}
             }
         });
-
-        {{> tls_security_js field="smtpServerTLSEnabled"}}
     });
 </script>

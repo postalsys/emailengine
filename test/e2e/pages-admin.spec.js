@@ -139,9 +139,9 @@ async function deleteViaModal(page, listUrlRe, opts) {
     await page.waitForURL(listUrlRe);
 }
 
-// Asserts the TLS certificate label's FlyonUI tooltip: the cert status text
-// shows on hover, and the structure paintCertData() repaints through (the
-// badge's .tooltip ancestor > .tooltip-body) is present with the title text.
+// Asserts the TLS certificate label's FlyonUI tooltip: the summary badge on the
+// SMTP/IMAP-proxy pages carries the certificate's status text on hover (the
+// badge's .tooltip ancestor > .tooltip-body).
 async function expectTlsLabelTooltip(page) {
     const tlsTooltipText = await page.evaluate(() => {
         const label = document.getElementById('tls-label');
@@ -1032,42 +1032,40 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
-    test('config smtp: TLS provisioning is gated on a usable service domain', async ({ page, request }) => {
+    test('config smtp: the TLS toggle configures the listener, not the certificate', async ({ page, request }) => {
+        // Ticking this box used to order a Let's Encrypt certificate in the foreground, before the
+        // setting had been saved, and untick itself when the order failed - so it was disabled
+        // whenever no public domain was configured. It decides whether the listener speaks TLS
+        // now, which is always a valid thing to decide, and the certificate lives on its own page.
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
         const token = await createApiToken(page, 'e2e tls-gate token');
         const auth = { Authorization: `Bearer ${token}` };
 
         const orig = await (await request.get('/v1/settings?serviceUrl=true', { headers: auth })).json();
-        // the TLS card is duplicated on both server config pages; gate both
+        // the TLS summary card is on both server config pages
         const pages = [
             { path: '/admin/config/smtp', box: '#smtpServerTLSEnabled' },
             { path: '/admin/config/imap-proxy', box: '#imapProxyServerTLSEnabled' }
         ];
 
         try {
-            // without a usable domain the TLS checkbox must not be operable
-            // and must carry no domain for the cert-provisioning flow (it
-            // once rendered data-domain="false" - the string is truthy, so
-            // the flow tried to provision a certificate for "false")
             const cleared = await request.post('/v1/settings', { headers: auth, data: { serviceUrl: '' } });
             expect(cleared.ok(), `POST /v1/settings -> ${cleared.status()}`).toBeTruthy();
 
             for (const { path: pagePath, box } of pages) {
                 await page.goto(pagePath);
-                await expect(page.locator(box)).toBeDisabled();
-                expect(await page.locator(box).getAttribute('data-domain')).toBe(null);
+                await expect(page.locator(box)).toBeEnabled();
+                await expect(page.locator('a[href="/admin/config/tls"]').first()).toBeVisible();
             }
         } finally {
             const restored = await request.post('/v1/settings', { headers: auth, data: { serviceUrl: orig.serviceUrl || '' } });
             expect(restored.ok(), `restore serviceUrl -> ${restored.status()}`).toBeTruthy();
         }
 
-        // with the domain back the checkboxes are operable and carry it again
         for (const { path: pagePath, box } of pages) {
             await page.goto(pagePath);
             await expect(page.locator(box)).toBeEnabled();
-            expect(await page.locator(box).getAttribute('data-domain')).toBeTruthy();
         }
 
         expect(errors, errors.join('\n')).toHaveLength(0);

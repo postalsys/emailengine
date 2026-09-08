@@ -136,7 +136,6 @@
 
 </form>
 
-{{> tls_security_modal}}
 
 <input type="hidden" id="availableAddresses" value="{{availableAddresses}}">
 
@@ -185,7 +184,5 @@ $client = $cm->make([
 ]);`}
             }
         });
-
-        {{> tls_security_js field="imapProxyServerTLSEnabled"}}
     });
 </script>

@@ -28,7 +28,11 @@ maxSize = "5M"     # maximum size of an attachment when submitting or uploading 
 #maxPayloadTimeout = "10s" # how long to wait for a request body to arrive
 #proxy = false # trust X-Forwarded-For from a reverse proxy (restrict the peers with EENGINE_API_PROXY_ADDRESSES)
 #cspMode = "enforce" # Content-Security-Policy delivery: "enforce", "report-only" (violations are only reported to the browser console) or "off"
-# Serve the API over HTTPS by pointing at a certificate and key
+# Serve the API over HTTPS by pointing at a certificate and key. Anything left unset falls back to
+# what EmailEngine manages itself (an uploaded certificate, a Let's Encrypt one, or a self-signed
+# certificate), so this section is only needed to pin a specific certificate here.
+# The SMTP server and the IMAP proxy take the same values through EENGINE_SMTP_TLS_* and
+# EENGINE_IMAPPROXY_TLS_* (use the _FILE suffix to read one from a file).
 #[api.tls]
 #certPath = "/path/to/cert.pem"
 #keyPath = "/path/to/key.pem"

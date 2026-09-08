@@ -20,6 +20,7 @@ const msgpack = require('./lib/msgpack');
 
 const { REDIS_PREFIX, ENCRYPTED_APP_KEYS } = require('./lib/consts');
 const { Settings: CertSettings } = require('@postalsys/certs/lib/settings');
+const { TLS_KEY } = require('./lib/tls/store');
 
 const DECRYPT_PASSWORDS = [].concat(config.decrypt || []);
 
@@ -310,6 +311,48 @@ async function main() {
     }
 
     console.log(`Updated ${updatedCerts} TLS private keys`);
+
+    // TLS material EmailEngine manages itself: the certificate an operator uploaded through the
+    // admin UI, and the self-signed certificate a listener falls back to. Both live in the `tls`
+    // hash as JSON with an encrypted `privateKey` field, and both need the same pass - an uploaded
+    // certificate that could not be decrypted after a rotation would take the listener down at the
+    // next restart, and there is no way to regenerate one.
+    let updatedTlsRecords = 0;
+    let tlsKey = TLS_KEY;
+    let tlsEntries = await redis.hgetall(tlsKey);
+    for (let field of Object.keys(tlsEntries || {})) {
+        let record;
+        try {
+            record = JSON.parse(tlsEntries[field]);
+        } catch (err) {
+            console.log(`TLS entry ${field}: failed to parse`);
+            continue;
+        }
+
+        if (!record || !record.privateKey) {
+            continue;
+        }
+
+        try {
+            let updated = await processSecret(record.privateKey, encryptSecret);
+            if (updated === record.privateKey) {
+                continue;
+            }
+            record.privateKey = updated;
+
+            let result = await redis.hmset(tlsKey, { [field]: JSON.stringify(record) });
+            if (result === 'OK') {
+                console.log(`TLS entry ${field}: updated`);
+            } else {
+                console.log(`TLS entry ${field}: Unexpected response from DB: ${result}`);
+            }
+            updatedTlsRecords++;
+        } catch (err) {
+            console.error(`Could not process "${field}". Check decryption secrets.`);
+        }
+    }
+
+    console.log(`Updated ${updatedTlsRecords} stored TLS certificates`);
 }
 
 main()

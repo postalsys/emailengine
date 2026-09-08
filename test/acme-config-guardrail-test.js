@@ -24,6 +24,7 @@ const { listFiles } = require('./helpers/list-files');
 
 const ROOT = pathlib.join(__dirname, '..');
 const FACTORY = 'lib/cert-handler.js';
+const PROVISIONER = 'lib/tls/provision.js';
 
 // Where production code lives. node_modules and the test tree are not ours to police.
 const SOURCE_DIRS = ['lib', 'workers'];
@@ -82,8 +83,44 @@ test('the renewal check asks the CA rather than deciding on its own', () => {
     // exported isRenewalDue() answers from the stored record alone, so it never learns that Let's
     // Encrypt has asked for an early renewal, which is what a mass revocation produces. Asserted on
     // the import rather than on the call, because a function that is not imported cannot be called.
+    //
+    // The decision moved out of the API worker's timer and into the reconciler, which owns every
+    // reason a certificate might be ordered - renewal is one of them.
+    const source = fs.readFileSync(pathlib.join(ROOT, 'lib', 'tls', 'provision.js'), 'utf-8');
+
+    assert.match(source, /certs\.checkRenewalDue\(/, 'the reconciler asks the CA');
+    assert.doesNotMatch(source, /require\(['"]@postalsys\/certs['"]\)/, 'nothing is imported from the library directly');
+});
+
+test('the API worker runs the reconciler rather than its own renewal logic', () => {
+    // The timer used to renew a certificate inline, and only ever a certificate that already
+    // existed: a hostname with no record was never provisioned by it at all.
     const source = fs.readFileSync(pathlib.join(ROOT, 'workers', 'api.js'), 'utf-8');
 
-    assert.match(source, /certHandler\.checkRenewalDue\(/, 'the renewal timer asks the CA');
-    assert.doesNotMatch(source, /require\(['"]@postalsys\/certs['"]\)/, 'nothing is imported from the library directly');
+    assert.match(source, /reconcileCertificates\(/, 'the timer delegates to the reconciler');
+    assert.doesNotMatch(source, /certHandler\.acquireCert\(/, 'ordering happens in one place, not in the worker');
+});
+
+test('only the reconciler can order a certificate', () => {
+    // Reading the store and ordering from the CA differ by one argument
+    // (`getCertificate(host, false)`), which is not a difference a route or a worker should be able
+    // to make by accident: an order takes minutes, is rate limited by the CA, and owns the state a
+    // page follows. Routes are handed a read-only view of the handler; this keeps the rest honest.
+    const offenders = [];
+
+    for (const dir of SOURCE_DIRS) {
+        for (const file of listFiles(pathlib.join(ROOT, dir), '.js')) {
+            const rel = pathlib.relative(ROOT, file);
+            if (rel === PROVISIONER) {
+                continue;
+            }
+
+            const source = fs.readFileSync(file, 'utf-8');
+            if (/\.acquireCert\(/.test(source) || /\.getCertificate\([^)]*,\s*(false|!provision)\s*\)/.test(source)) {
+                offenders.push(rel);
+            }
+        }
+    }
+
+    assert.deepEqual(offenders, [], `these files can order a certificate; go through ${PROVISIONER} instead`);
 });

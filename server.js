@@ -2920,6 +2920,22 @@ async function onCommand(worker, message) {
             }
             break;
 
+        case 'apiReloadCertificates':
+        case 'smtpReloadCertificates':
+        case 'imapProxyReloadCertificates':
+            {
+                // A renewed certificate, handed to a running listener. Forwarded to the worker
+                // rather than terminating it: a restart would cut every session in flight, and
+                // every listener can swap its secure context between handshakes. Sent to every
+                // worker of the type, not just the one that ordered the certificate: the
+                // reconciler is a singleton but the listeners are not.
+                let type = message.cmd.replace(/ReloadCertificates$/, '');
+                for (let worker of (workers.get(type) || new Set()).values()) {
+                    call(worker, message).catch(err => logger.error({ msg: 'Failed to reload certificates', type, worker: worker.threadId, err }));
+                }
+            }
+            break;
+
         // IMAP operations - forward to assigned worker
         case 'submitMessage':
         case 'queueMessage':

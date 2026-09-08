@@ -9210,6 +9210,34 @@
           }
         }
       },
+      "tlsProvisioningResponse": {
+        "type": "string",
+        "description": "Where the TLS certificate for the built-in listeners comes from: \"acme\" orders one from Let's Encrypt, \"manual\" uses the certificate uploaded through the admin UI, \"self-signed\" stops trying to get a real one",
+        "example": "acme",
+        "enum": [
+          "acme",
+          "manual",
+          "self-signed"
+        ],
+        "nullable": true
+      },
+      "tlsHostnamesResponse": {
+        "type": "array",
+        "description": "Additional hostnames to hold certificates for, beyond the Service URL hostname. Each one is ordered separately and served over SNI, so a mail client connecting to smtp.example.com is offered a certificate for that name",
+        "nullable": true,
+        "x-constraint": {
+          "single": true
+        },
+        "items": {
+          "type": "string",
+          "example": "smtp.example.com",
+          "maxLength": 255,
+          "pattern": "^[a-z0-9._:-]+$",
+          "x-convert": {
+            "case": "lower"
+          }
+        }
+      },
       "localeResponse": {
         "type": "string",
         "description": "Default language/locale for the user interface",
@@ -9612,6 +9640,12 @@
             "description": "Enable TLS/STARTTLS support for the SMTP server",
             "nullable": true
           },
+          "tlsProvisioning": {
+            "$ref": "#/components/schemas/tlsProvisioningResponse"
+          },
+          "tlsHostnames": {
+            "$ref": "#/components/schemas/tlsHostnamesResponse"
+          },
           "imapProxyServerEnabled": {
             "type": "boolean",
             "description": "Enable the IMAP proxy server",
@@ -9938,6 +9972,32 @@
                 "ipv6"
               ]
             }
+          }
+        }
+      },
+      "TlsProvisioning": {
+        "type": "string",
+        "description": "Where the TLS certificate for the built-in listeners comes from: \"acme\" orders one from Let's Encrypt, \"manual\" uses the certificate uploaded through the admin UI, \"self-signed\" stops trying to get a real one",
+        "example": "acme",
+        "enum": [
+          "acme",
+          "manual",
+          "self-signed"
+        ]
+      },
+      "TlsHostnames": {
+        "type": "array",
+        "description": "Additional hostnames to hold certificates for, beyond the Service URL hostname. Each one is ordered separately and served over SNI, so a mail client connecting to smtp.example.com is offered a certificate for that name",
+        "x-constraint": {
+          "single": true
+        },
+        "items": {
+          "type": "string",
+          "example": "smtp.example.com",
+          "maxLength": 255,
+          "pattern": "^[a-z0-9._:-]+$",
+          "x-convert": {
+            "case": "lower"
           }
         }
       },
@@ -10289,6 +10349,12 @@
           "smtpServerTLSEnabled": {
             "type": "boolean",
             "description": "Enable TLS/STARTTLS support for the SMTP server"
+          },
+          "tlsProvisioning": {
+            "$ref": "#/components/schemas/TlsProvisioning"
+          },
+          "tlsHostnames": {
+            "$ref": "#/components/schemas/TlsHostnames"
           },
           "imapProxyServerEnabled": {
             "type": "boolean",
@@ -21087,6 +21153,22 @@
           },
           {
             "name": "smtpServerTLSEnabled",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "tlsProvisioning",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "tlsHostnames",
             "in": "query",
             "schema": {
               "type": "boolean",

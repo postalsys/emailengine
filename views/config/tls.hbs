@@ -1,0 +1,411 @@
+{{> ui/page-header title="TLS Certificates" icon="icon-[tabler--certificate]" class="mb-1"}}
+
+<p class="mb-6">Certificates for the built-in listeners: the SMTP server, the IMAP proxy, and the
+    admin interface when it serves HTTPS directly. EmailEngine can order them from Let's Encrypt,
+    serve one you upload, or fall back to a self-signed certificate so a listener always starts.</p>
+
+{{#if acme.staging}}
+{{#> ui/alert-banner variant="warning" icon="icon-[tabler--flask]" title="Staging certificate authority"}}
+<div>This instance is pointed at the Let's Encrypt staging directory (<code>{{acme.directoryUrl}}</code>). Certificates
+    it issues are signed by a root nobody trusts, so every client will refuse them. Clear
+    <code>EENGINE_ACME_DIRECTORY_URL</code> to go back to production.</div>
+{{/ui/alert-banner}}
+{{/if}}
+
+{{!-- Certificate cards come first: what is installed is what an operator opens this page to see.
+      The buttons here post with fetch (uiPostJson) and must not sit inside the settings form. --}}
+{{#if hostnames}}
+
+{{#each certificates}}
+<div class="card bg-base-100 shadow-md mb-6" data-hostname-card="{{this.hostname}}">
+    <div class="card-header flex items-center justify-between gap-4">
+        <h6 class="card-title text-primary font-mono">{{this.hostname}}</h6>
+        <span class="badge badge-{{eeColor this.label.type}}" data-cert-badge="{{this.hostname}}"
+            title="{{this.label.title}}">{{this.label.text}}</span>
+    </div>
+
+    <div class="card-body">
+        {{#if this.certificate}}
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 mb-4">
+            <div>
+                <dt class="text-base-content/60 text-sm">Source</dt>
+                <dd>{{this.certificate.sourceLabel}}</dd>
+            </div>
+            <div>
+                <dt class="text-base-content/60 text-sm">Issuer</dt>
+                <dd class="break-all">{{this.certificate.issuer}}</dd>
+            </div>
+            <div>
+                <dt class="text-base-content/60 text-sm">Valid until</dt>
+                <dd>
+                    <span data-utc-date="{{this.certificate.validToIso}}">{{this.certificate.validToIso}}</span>
+                    {{#if this.certificate.daysRemaining}}
+                    <span class="text-base-content/60">({{this.certificate.daysRemaining}} days left)</span>
+                    {{/if}}
+                </dd>
+            </div>
+            <div>
+                <dt class="text-base-content/60 text-sm">Covers</dt>
+                <dd class="break-all font-mono text-sm">{{#each this.certificate.altNames}}{{this}} {{/each}}</dd>
+            </div>
+            <div class="sm:col-span-2">
+                <dt class="text-base-content/60 text-sm">SHA-1 fingerprint</dt>
+                <dd class="break-all font-mono text-sm">{{this.certificate.fingerprint}}</dd>
+            </div>
+        </dl>
+        {{else}}
+        {{#> ui/alert-banner variant="error" class="mb-4"}}
+        <div>No certificate is installed for this hostname yet.</div>
+        {{/ui/alert-banner}}
+        {{/if}}
+
+        {{!-- hand-rolled on purpose: the page script rewrites this element's whole text content and
+              swaps its alert-* class, which the partial's icon-plus-body structure would not survive --}}
+        <div class="alert alert-soft alert-info mb-4 hidden" data-cert-message="{{this.hostname}}"></div>
+
+        {{#if this.status.message}}
+        {{#> ui/alert-banner variant=this.statusVariant icon="icon-[tabler--info-circle]" class="mb-4"}}
+        <div>{{this.status.message}}</div>
+        {{/ui/alert-banner}}
+        {{/if}}
+
+        {{!-- The buttons only exist while an order is something this instance would actually make.
+              A button whose only possible outcome is an explanation is not a button. --}}
+        <div class="flex flex-wrap gap-2">
+            {{#if this.canRequest}}
+            {{!-- the hostname is read from the enclosing card's data-hostname-card, so the shared
+                  ui/btn partial needs no data-attribute parameters of its own --}}
+            {{> ui/btn label="Check reachability" variant="neutral" style="soft" size="sm" icon="icon-[tabler--radar]"
+            class="tls-preflight-btn" id=""}}
+            {{> ui/btn label="Request certificate" variant="primary" style="soft" size="sm"
+            icon="icon-[tabler--refresh]" class="tls-request-btn" id=""}}
+            {{else if this.acmeEligible}}
+            <span class="helper-text">Automatic certificates are switched off for this instance. Change the certificate
+                source below to have one ordered for this name.</span>
+            {{else}}
+            <span class="helper-text">Let's Encrypt can not validate this name, so it is served with an uploaded or
+                self-signed certificate. Automatic certificates need a public domain name, not an address literal or a
+                private-use suffix.</span>
+            {{/if}}
+        </div>
+    </div>
+
+    {{!-- Only the issued certificate is stored under this hostname. An uploaded one is removed from
+          its own section, and the self-signed fallback is regenerated rather than deleted. --}}
+    {{#equals this.certificate.source "acme"}}
+    <div class="card-footer border-base-content/10 border-t px-6 py-4">
+        <form method="post" action="/admin/config/tls/delete">
+            <input type="hidden" name="crumb" value="{{../crumb}}" />
+            <input type="hidden" name="certificate" value="{{this.hostname}}" />
+            {{> ui/btn label="Remove stored certificate" type="submit" variant="error" style="text" size="sm"
+            icon="icon-[tabler--trash]" id=""}}
+        </form>
+    </div>
+    {{/equals}}
+</div>
+{{/each}}
+
+{{else}}
+
+{{#> ui/alert-banner variant="warning" title="No hostname is configured"}}
+<div>Set the <a href="/admin/config/service#settingsServiceUrl" class="link link-animated">Service URL</a> or add
+    hostnames below. Until then a TLS listener serves a self-signed certificate for <code>localhost</code>.</div>
+{{/ui/alert-banner}}
+
+{{/if}}
+
+{{> ui/env-managed-alert}}
+
+<form method="post" action="/admin/config/tls">
+    {{!-- no id: the layout already renders the #crumb element the scripts read --}}
+    <input type="hidden" name="crumb" value="{{crumb}}" />
+
+    {{#> ui/card title="Certificate Source" bodyClass="space-y-4"}}
+    <div>
+        {{> ui/setting-ref name="tlsProvisioning"}}
+        {{> ui/radio id="tlsProvisioningAcme" name="tlsProvisioning" value="acme" label="Automatic (Let's Encrypt)"
+        selected=values.tlsProvisioning hint="Orders a certificate for every eligible hostname and renews it before it
+        expires. The name has to resolve to this server and port 80 has to reach EmailEngine."}}
+    </div>
+    <div>
+        {{> ui/radio id="tlsProvisioningManual" name="tlsProvisioning" value="manual" label="Uploaded certificate"
+        selected=values.tlsProvisioning hint="Serves the certificate uploaded below and never contacts a certificate
+        authority. Any certificate already issued by Let's Encrypt stops being served. Renewal is yours to do."}}
+    </div>
+    <div>
+        {{> ui/radio id="tlsProvisioningSelfSigned" name="tlsProvisioning" value="self-signed" label="Self-signed only"
+        selected=values.tlsProvisioning hint="For an instance that is not reachable from the internet. Neither an
+        uploaded nor an issued certificate is served. Clients can not verify a self-signed certificate; they have to
+        pin its fingerprint or be told to accept it."}}
+    </div>
+    <p class="helper-text mb-6">A certificate supplied through the TLS environment variables is served whichever option
+        is selected here. Those are an explicit instruction from whoever runs this instance, and EmailEngine does not
+        overrule them.</p>
+    {{/ui/card}}
+
+    {{#> ui/card title="Hostnames"}}
+    <div>
+        {{> ui/setting-ref name="tlsHostnames"}}
+        {{#> ui/form-field id="tlsHostnames" label="Additional hostnames" error=errors.tlsHostnames}}
+        <textarea class="textarea{{#if errors.tlsHostnames}} is-invalid{{/if}}" id="tlsHostnames" name="tlsHostnames"
+            rows="4" data-lpignore="true" autocomplete="off"
+            placeholder="smtp.example.com">{{values.tlsHostnames}}</textarea>
+        <span class="helper-text">One per line. The Service URL hostname{{#if serviceUrl}}
+            (<code>{{serviceUrl}}</code>){{/if}} is always included, so list only the extra names your mail clients
+            connect to. Each name gets its own certificate, served by hostname (SNI).</span>
+        {{/ui/form-field}}
+    </div>
+    {{/ui/card}}
+
+    <div class="mb-6">
+        {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
+    </div>
+</form>
+
+{{#> ui/card title="Listeners"}}
+<div class="overflow-x-auto">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Listener</th>
+                <th>TLS</th>
+                <th>Serving</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each listeners}}
+            <tr>
+                <td>
+                    <div class="font-medium">{{this.name}}</div>
+                    {{#if this.configuredAt}}
+                    <a href="{{this.configuredAt}}" class="link link-animated text-sm">Configure</a>
+                    {{/if}}
+                </td>
+                <td>
+                    {{#if this.tlsEnabled}}
+                    {{> ui/badge label="Enabled" variant="success"}}
+                    {{else}}
+                    {{> ui/badge label="Off" variant="neutral"}}
+                    {{/if}}
+                </td>
+                <td>
+                    {{#if this.active}}
+                    <div>{{this.active.source}}</div>
+                    <div class="text-base-content/60 font-mono text-xs break-all">{{this.active.fingerprint}}</div>
+                    {{else}}
+                    <span class="text-base-content/60">{{#if this.hint}}{{this.hint}}{{else}}Not serving TLS{{/if}}</span>
+                    {{/if}}
+                </td>
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+</div>
+{{/ui/card}}
+
+{{#> ui/details summary="Upload a certificate" class="card bg-base-100 shadow-md mb-6"}}
+<p class="mb-4">Paste a PEM encoded certificate and its private key. An uploaded certificate takes precedence over
+    anything EmailEngine would obtain on its own, for every hostname it covers, and is never renewed automatically.</p>
+
+<form method="post" action="/admin/config/tls/upload">
+    <input type="hidden" name="crumb" value="{{crumb}}" />
+
+    <div class="space-y-4">
+        <div>
+            {{#> ui/form-field id="uploadCert" label="Certificate"}}
+            <textarea class="textarea font-mono text-xs" id="uploadCert" name="cert" rows="6" required
+                placeholder="-----BEGIN CERTIFICATE-----"></textarea>
+            <span class="helper-text">The leaf certificate. Intermediates may be appended here or pasted below.</span>
+            {{/ui/form-field}}
+        </div>
+
+        <div>
+            {{#> ui/form-field id="uploadCa" label="Chain"}}
+            <textarea class="textarea font-mono text-xs" id="uploadCa" name="ca" rows="4"
+                placeholder="-----BEGIN CERTIFICATE-----"></textarea>
+            <span class="helper-text">Optional. Intermediate certificates, if they are not already in the field
+                above.</span>
+            {{/ui/form-field}}
+        </div>
+
+        <div>
+            {{#> ui/form-field id="uploadKey" label="Private key"}}
+            <textarea class="textarea font-mono text-xs" id="uploadKey" name="privateKey" rows="6" required
+                placeholder="-----BEGIN PRIVATE KEY-----"></textarea>
+            <span class="helper-text">Stored encrypted with the instance secret and never shown again.</span>
+            {{/ui/form-field}}
+        </div>
+
+        <div>
+            {{#> ui/form-field id="uploadPassphrase" label="Key passphrase"}}
+            <input type="password" class="input" id="uploadPassphrase" name="passphrase" autocomplete="new-password"
+                data-lpignore="true" />
+            <span class="helper-text">Only if the private key is encrypted. The passphrase is used to read the key and
+                is not stored.</span>
+            {{/ui/form-field}}
+        </div>
+    </div>
+
+    <div class="mt-4 flex flex-wrap gap-2">
+        {{> ui/btn label="Install certificate" type="submit" icon="icon-[tabler--upload]"}}
+    </div>
+</form>
+
+{{#if manual}}
+<div class="mt-6 border-base-content/10 border-t pt-4">
+    <p class="mb-2">Currently installed: <span class="font-mono">{{manual.subject}}</span>, valid until <span
+            data-utc-date="{{manual.validToIso}}">{{manual.validToIso}}</span>.</p>
+    <form method="post" action="/admin/config/tls/delete">
+        <input type="hidden" name="crumb" value="{{crumb}}" />
+        <input type="hidden" name="certificate" value="manual" />
+        {{> ui/btn label="Remove uploaded certificate" type="submit" variant="error" style="soft" size="sm"
+        icon="icon-[tabler--trash]"}}
+    </form>
+</div>
+{{/if}}
+{{/ui/details}}
+
+{{#> ui/details summary="Self-signed fallback" class="card bg-base-100 shadow-md mb-6"}}
+<p class="mb-4">Generated on this instance the first time a TLS listener needs a certificate and nothing better is
+    available, so a listener that has TLS switched on always starts. The key is unique to this installation and stored
+    encrypted; no other copy of EmailEngine has it. Clients still can not verify a self-signed certificate, so pin the
+    fingerprint below or configure the client to accept it.</p>
+
+{{#if selfSigned}}
+<dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 mb-4">
+    <div>
+        <dt class="text-base-content/60 text-sm">Covers</dt>
+        <dd class="break-all font-mono text-sm">{{#each selfSigned.altNames}}{{this}} {{/each}}</dd>
+    </div>
+    <div>
+        <dt class="text-base-content/60 text-sm">Valid until</dt>
+        <dd><span data-utc-date="{{selfSigned.validToIso}}">{{selfSigned.validToIso}}</span></dd>
+    </div>
+    <div class="sm:col-span-2">
+        <dt class="text-base-content/60 text-sm">SHA-256 fingerprint</dt>
+        <dd class="break-all font-mono text-sm">{{selfSigned.fingerprint256}}</dd>
+    </div>
+</dl>
+
+<form method="post" action="/admin/config/tls/delete">
+    <input type="hidden" name="crumb" value="{{crumb}}" />
+    <input type="hidden" name="certificate" value="self-signed" />
+    {{> ui/btn label="Generate a new one" type="submit" variant="neutral" style="soft" size="sm"
+    icon="icon-[tabler--refresh]"}}
+</form>
+{{else}}
+<p class="text-base-content/60">No self-signed certificate has been generated yet.</p>
+{{/if}}
+{{/ui/details}}
+
+{{#> ui/details summary="How automatic certificates work" class="card bg-base-100 shadow-md mb-6"}}
+<p class="mb-2">EmailEngine answers the Let's Encrypt <code>http-01</code> challenge itself, at
+    <code>/.well-known/acme-challenge/</code>. For that to work, the hostname has to resolve to this machine and a
+    request to <strong>port 80</strong> for that name has to reach EmailEngine, directly or through a reverse proxy.
+    Nothing else is needed; the certificate is renewed on its own well before it expires.</p>
+<p class="mb-2">The <em>Check reachability</em> button makes exactly that request against this instance's own public
+    name, so a missing DNS record or a port 80 that goes somewhere else is reported here instead of as an opaque ACME
+    error minutes later.</p>
+<p>Certificate authority: <code>{{acme.directoryUrl}}</code> (account <code>{{acme.environment}}</code>).</p>
+{{/ui/details}}
+
+<script nonce="{{cspNonce}}">
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // Timestamps are rendered as ISO strings so the markup stays machine readable and correct
+        // without a browser; this swaps in the reader's own locale where there is one.
+        for (let elm of document.querySelectorAll('[data-utc-date]')) {
+            let value = elm.dataset.utcDate;
+            if (!value) {
+                continue;
+            }
+            let parsed = new Date(value);
+            if (!isNaN(parsed)) {
+                elm.textContent = parsed.toLocaleString();
+                elm.title = value;
+            }
+        }
+
+        const showMessage = (hostname, type, text) => {
+            let elm = document.querySelector(`[data-cert-message="${hostname}"]`);
+            if (!elm) {
+                return;
+            }
+            elm.classList.remove('hidden', 'alert-info', 'alert-success', 'alert-error');
+            elm.classList.add(`alert-${type}`);
+            elm.textContent = text;
+        };
+
+        const cardHostname = elm => {
+            let card = elm.closest('[data-hostname-card]');
+            return card && card.dataset.hostnameCard;
+        };
+
+        for (let btn of document.querySelectorAll('.tls-preflight-btn')) {
+            btn.addEventListener('click', () => {
+                let hostname = cardHostname(btn);
+                showMessage(hostname, 'info', `Checking whether ${hostname} reaches this server...`);
+
+                uiBusyAction(btn, uiPostJson('/admin/config/tls/preflight', { hostname }).then(data => {
+                    showMessage(hostname, data && data.success ? 'success' : 'error', (data && (data.message || data.error)) || 'The check failed');
+                }).catch(err => {
+                    showMessage(hostname, 'error', err.message);
+                }));
+            });
+        }
+
+        for (let btn of document.querySelectorAll('.tls-request-btn')) {
+            btn.addEventListener('click', () => {
+                let hostname = cardHostname(btn);
+                showMessage(hostname, 'info', `Requesting a certificate for ${hostname}...`);
+
+                uiBusyAction(btn, uiPostJson('/admin/config/tls/request', { hostname }).then(data => {
+                    if (!data || !data.success) {
+                        showMessage(hostname, 'error', (data && data.error) || 'The request failed');
+                    }
+                }).catch(err => {
+                    showMessage(hostname, 'error', err.message);
+                }));
+            });
+        }
+
+        // One table for both the message and the badge, so a state cannot be coloured one way in
+        // the alert and another on the badge.
+        const STATES = {
+            valid: { variant: 'success', badge: 'Valid' },
+            failed: { variant: 'error', badge: 'Failed' }
+        };
+
+        // Provisioning runs in the background, so progress arrives over the change feed the rest
+        // of the admin UI already listens on rather than by holding this request open.
+        document.addEventListener('ee:change', e => {
+            let data = e.detail;
+            if (!data || data.type !== 'tlsCertificateState' || !data.payload || !data.payload.hostname) {
+                return;
+            }
+
+            let hostname = data.payload.hostname;
+            let state = data.payload.state;
+            let paint = STATES[state] || { variant: 'info', badge: 'Requesting' };
+
+            showMessage(hostname, paint.variant, data.payload.message || state);
+
+            if (state === 'valid') {
+                // The card shows issuer, validity and fingerprint, none of which this event
+                // carries, so repainting the badge here would only be undone a moment later.
+                // Reloading is both simpler and more honest than patching three fields.
+                setTimeout(() => window.location.reload(), 1500);
+                return;
+            }
+
+            let badge = document.querySelector(`[data-cert-badge="${hostname}"]`);
+            if (badge) {
+                badge.className = `badge badge-${paint.variant}`;
+                badge.textContent = paint.badge;
+                // The title carries the reason; leaving the old one behind is how a badge ends up
+                // saying one thing and explaining another.
+                badge.title = data.payload.message || paint.badge;
+            }
+        });
+    });
+</script>

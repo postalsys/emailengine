@@ -41,8 +41,7 @@ const {
     claimFormNonce,
     releaseFormNonce,
     setAdminSession,
-    isEndedSession,
-    reloadTlsServers
+    isEndedSession
 } = require('../lib/tools');
 const { matchIp, resolveClientIp, detectAutomatedRequest } = require('../lib/utils/network');
 
@@ -94,14 +93,15 @@ const { registerOpenApiRoute } = require('../lib/openapi');
 const { getModel: getApiReferenceModel, clearServiceUrlCache } = require('../lib/api-reference');
 
 const { createCertHandler } = require('../lib/cert-handler');
-const net = require('net');
+const { createTlsContext, applyTlsContext } = require('../lib/tls/context');
+const { reconcileCertificates, requestProvisioning } = require('../lib/tls/provision');
+const { buildCertificateStatus } = require('../lib/tls/status');
 
 const consts = require('../lib/consts');
 const {
     TRACK_OPEN_NOTIFY,
     TRACK_CLICK_NOTIFY,
     REDIS_PREFIX,
-    BLOCK_TLS_RENEW,
     TLS_RENEW_CHECK_INTERVAL,
     DEFAULT_CORS_MAX_AGE,
     LIST_UNSUBSCRIBE_NOTIFY,
@@ -376,6 +376,12 @@ async function onCommand(command) {
     switch (command.cmd) {
         case 'resource-usage':
             return threadStats.usage();
+
+        case 'apiReloadCertificates':
+            // Every API worker gets this, not just the one that ordered the certificate: the
+            // reconciler is a singleton but the HTTPS listeners are not, and a sibling worker that
+            // kept its old context would go on serving the certificate that was just replaced.
+            return refreshApiTls ? await refreshApiTls() : { updated: false };
         default:
             logger.debug({ msg: 'Unhandled command', command });
             return 999;
@@ -417,6 +423,10 @@ function publishChangeEvent(data) {
 // default has been decided, so the authData branch of the settings dispatcher below cannot set a
 // strategy that does not exist yet or race the boot-time server.auth.default() call
 let sessionAuthServer = null;
+
+// Installs a renewed certificate on this worker's own HTTPS listener. Published by init() when the
+// API is serving TLS, and called through the apiReloadCertificates command.
+let refreshApiTls = null;
 
 parentPort.on('message', message => {
     if (message && message.cmd === 'resp' && message.mid && callQueue.has(message.mid)) {
@@ -521,6 +531,22 @@ const init = async () => {
         }
     };
 
+    let certHandler = createCertHandler(logger);
+
+    // The admin UI and REST API over HTTPS. EENGINE_API_TLS_* and [api.tls] supply the certificate
+    // when the operator has one; everything they leave out comes from the same sources every other
+    // listener uses, so an instance that already holds a Let's Encrypt certificate for its own
+    // service domain no longer needs a second, external pipeline to serve it here.
+    let apiTlsContext = null;
+    if (API_TLS) {
+        apiTlsContext = await createTlsContext({
+            certs: certHandler,
+            logger,
+            envMaterial: { cert: API_TLS.cert, key: API_TLS.key, ca: API_TLS.ca }
+        });
+        Object.assign(API_TLS, apiTlsContext.options);
+    }
+
     // With multiple API workers we provide our own listener and bind it ourselves with
     // SO_REUSEPORT so the kernel load-balances connections. Hapi forbids port/host when
     // autoListen is false and needs a truthy `tls` flag to treat a provided HTTPS
@@ -541,84 +567,50 @@ const init = async () => {
 
     const server = Hapi.server(serverOptions);
 
+    if (apiTlsContext && typeof server.listener.setSecureContext === 'function') {
+        // Connections already established keep the context they negotiated with; the next handshake
+        // gets the new one, which is why this does not restart anything.
+        refreshApiTls = async () =>
+            await applyTlsContext({
+                context: apiTlsContext,
+                apply: options => server.listener.setSecureContext({ cert: options.cert, key: options.key }),
+                logger
+            });
+    }
+
     let assertPreconditionResult;
     server.decorate('toolkit', 'getESClient', async (...args) => await getESClient(...args));
 
-    let getServiceDomain = async () => {
-        let serviceUrl = await settings.get('serviceUrl');
-        let parsedUrl;
-
-        try {
-            parsedUrl = new URL(serviceUrl);
-        } catch (err) {
-            parsedUrl = {};
-        }
-
-        let hostname = (parsedUrl.hostname || '').toString().toLowerCase().trim();
-        if (!hostname || net.isIP(hostname) || ['localhost'].includes(hostname) || /(\.local|\.lan)$/i.test(hostname)) {
-            // empty string, not false: the value is interpolated into
-            // templates, where a boolean would render as the text "false"
-            return '';
-        }
-        return hostname;
+    // A read-only view of the certificate store for routes. Ordering a certificate is the
+    // reconciler's job - it owns the state a page follows, the retry pacing and the listener
+    // reload - and the difference between reading and ordering is one argument
+    // (`getCertificate(host, false)`), which is not a difference a route should be able to make by
+    // accident. Routes that need one ask through requestCertificates() below.
+    const readOnlyCerts = {
+        getCertificate: async hostname => await certHandler.getCertificate(hostname, true),
+        deleteCertificateData: async hostname => await certHandler.deleteCertificateData(hostname),
+        routeHandler: async (...args) => await certHandler.routeHandler(...args)
     };
 
-    let certHandler = createCertHandler(logger);
+    server.decorate('toolkit', 'certs', readOnlyCerts);
 
-    server.decorate('toolkit', 'serviceDomain', getServiceDomain);
-    server.decorate('toolkit', 'certs', certHandler);
+    server.decorate(
+        'toolkit',
+        'requestCertificates',
+        async (hostnames, requestLogger) => await requestProvisioning({ certs: certHandler, logger: requestLogger || logger, call, hostnames })
+    );
 
     server.decorate('toolkit', 'checkRateLimit', checkRateLimit);
 
-    server.decorate('toolkit', 'getCertificate', async provision => {
-        let hostname = await getServiceDomain();
-        let certificateData;
+    // The certificate model the admin UI renders. Reading it never provisions anything: ordering a
+    // certificate is the reconciler's job, and a page render that could start an ACME order was
+    // exactly how a checkbox came to hold an HTTP request open for the length of one.
+    server.decorate('toolkit', 'tlsStatus', async () => await buildCertificateStatus({ certs: readOnlyCerts }));
 
-        if (hostname) {
-            certificateData = await certHandler.getCertificate(hostname, !provision);
-        }
-
-        if (!certificateData) {
-            certificateData = {
-                domain: hostname,
-                status: 'self_signed',
-                label: { type: 'warning', text: 'Self-signed', title: 'Using a self-signed certificate' }
-            };
-        } else if (certificateData.status !== 'valid') {
-            switch (certificateData.status) {
-                case 'pending':
-                    certificateData.label = { type: 'info', text: 'Provisioning...', title: 'Currently provisioning a certificate' };
-                    break;
-                case 'failed':
-                    certificateData.label = {
-                        type: 'error',
-                        text: 'Failed',
-                        title: (certificateData.lastError && certificateData.lastError.err) || 'Failed to generate a certificate'
-                    };
-                    break;
-            }
-        } else if (certificateData.validFrom > new Date()) {
-            certificateData.label = {
-                type: 'warning',
-                text: 'Future certificate',
-                title: 'Certificate is not yet valid'
-            };
-        } else if (certificateData.validTo < new Date()) {
-            certificateData.label = {
-                type: 'warning',
-                text: 'Expired certificate',
-                title: (certificateData.lastError && certificateData.lastError.err) || 'Certificate has been expired'
-            };
-        } else {
-            certificateData.label = {
-                type: 'success',
-                text: 'Valid certificate',
-                title: certificateData.fingerprint
-            };
-        }
-
-        return certificateData;
-    });
+    server.decorate('toolkit', 'apiTlsInfo', () => ({
+        enabled: !!API_TLS,
+        active: apiTlsContext ? apiTlsContext.active : null
+    }));
 
     server.ext('onPreAuth', async (request, h) => {
         const tags = (request.route && request.route.settings && request.route.settings.tags) || [];
@@ -3310,12 +3302,20 @@ const init = async () => {
             });
     });
 
-    // renew TLS certificates if needed
+    // Keep the configured hostnames supplied with certificates.
+    //
+    // This used to be a renewal timer and nothing else: it read the certificate for the service
+    // domain and, if one existed, asked whether it was due for replacement. A hostname with no
+    // certificate at all was therefore never provisioned by it - not on a fresh install, not after
+    // a flushed Redis, not after a restored backup - and the only way to get a first certificate
+    // was a checkbox in the admin UI that ordered one in the foreground. An instance whose record
+    // was lost stayed down until somebody noticed and clicked it twice.
+    //
+    // The reconciler in lib/tls/provision.js owns the whole decision now, including the renewal
+    // one, and it is the only thing that orders certificates. The admin UI's button asks it to run
+    // immediately rather than doing the work itself.
     setInterval(() => {
         async function handler() {
-            let serviceDomain = await getServiceDomain();
-            let currentCert = await certHandler.getCertificate(serviceDomain, true);
-
             try {
                 await runPrechecks(redis);
                 assertPreconditionResult = false;
@@ -3323,44 +3323,11 @@ const init = async () => {
                 assertPreconditionResult = Boom.boomify(err);
             }
 
-            // checkRenewalDue() asks Let's Encrypt whether the certificate should be replaced yet,
-            // through ACME Renewal Information, and falls back to a threshold scaled to the
-            // lifetime the CA issued. Asking matters because a mass revocation is the one case
-            // where the CA needs a certificate replaced long before its own schedule would. How
-            // often it actually reaches the CA is bounded inside the library, which re-fetches at
-            // the interval the CA asked for and every six hours otherwise; the lastCheck gate in
-            // front of it is what stops a domain being retried for eight hours after a failure.
-            //
-            // The earlier form compared against Date.now() - RENEW_TLS_AFTER, which is the expiry
-            // date thirty days in the past: it read as "renew with thirty days left" but meant
-            // "renew thirty days after it died", so the automatic path only ever ran once the
-            // certificate had been broken for a month. Let's Encrypt is on the way from 90 day
-            // certificates to 45, which would have left a service unreachable for two thirds of
-            // every certificate's life.
-            if (
-                IS_PRIMARY_API_WORKER &&
-                currentCert &&
-                (!currentCert.lastCheck || currentCert.lastCheck < new Date(Date.now() - BLOCK_TLS_RENEW)) &&
-                (await certHandler.checkRenewalDue(serviceDomain, currentCert))
-            ) {
-                try {
-                    let renewedCert = await certHandler.acquireCert(serviceDomain);
-
-                    // Only when the certificate actually changed, so a renewal that was skipped
-                    // or failed does not restart both servers for nothing.
-                    if (renewedCert && renewedCert.fingerprint && renewedCert.fingerprint !== currentCert.fingerprint) {
-                        await reloadTlsServers(call, logger, { serviceDomain });
-                    }
-                } catch (err) {
-                    logger.error({ msg: 'Failed to acquire TLS certificate', serviceDomain, err });
-                } finally {
-                    try {
-                        await certHandler.setCertificateData(serviceDomain, { lastCheck: new Date() });
-                    } catch (err) {
-                        logger.error({ msg: 'Failed to set certificate data', serviceDomain, err });
-                    }
-                }
+            if (!IS_PRIMARY_API_WORKER) {
+                return;
             }
+
+            await reconcileCertificates({ certs: certHandler, logger, call });
         }
 
         handler().catch(err => logger.error({ msg: 'Failed to run certificate handler', err }));

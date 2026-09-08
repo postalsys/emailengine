@@ -23,7 +23,10 @@ const pathlib = require('path');
 // for the extracted modules, so a NEW module costs it a require, a comment and a call.
 // That is the pattern this ratchet exists to encourage, not the handler-code growth it
 // exists to block.
-const BUDGET = 102;
+//
+// Lowered to 74 when lib/ui-routes/tls-config-routes.js took the ACME challenge route with
+// it - the last handler body the monolith still carried.
+const BUDGET = 74;
 
 test('routes-ui.js stays within the size budget', () => {
     const filePath = pathlib.join(__dirname, '..', 'lib', 'routes-ui.js');

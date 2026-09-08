@@ -7,6 +7,7 @@ const config = require('@zone-eu/wild-config');
 const logger = require('../lib/logger');
 
 const { getDuration, emitChangeEvent, readEnvValue, threadStats, loadTlsConfig, assertTlsCredentials, getByteSize } = require('../lib/tools');
+const { createTlsContext, applyTlsContext } = require('../lib/tls/context');
 const { createSmtpAuthHandler, createSmtpAccountResolver } = require('../lib/smtp-auth');
 
 const { initSentry } = require('../lib/sentry');
@@ -43,6 +44,12 @@ const DEFAULT_SMTP_MAX_CLIENTS = 100;
 const SMTP_MAX_CLIENTS = Number(readEnvValue('EENGINE_SMTP_MAX_CLIENTS') || config.smtp.maxClients) || DEFAULT_SMTP_MAX_CLIENTS;
 
 const ACCOUNT_CACHE = new WeakMap();
+
+// The running listener and the TLS material it serves, kept at module level so the certificate
+// reload command can reach both. A renewal used to terminate this worker, which cut every
+// submission in flight; the listener can be handed a new secure context instead.
+let smtpServer = null;
+let tlsContext = null;
 
 let callQueue = new Map();
 let mids = 0;
@@ -236,25 +243,22 @@ async function init() {
         serverOptions.secure = true;
         serverOptions.allowInsecureAuth = false;
 
+        // Environment and config-file material first. It used to be loaded here and then
+        // overwritten by whatever Let's Encrypt had provisioned, so an operator who pinned a
+        // certificate through EENGINE_SMTP_TLS_CERT was silently served a different one.
+        // lib/tls/context.js keeps it ahead of every automatic source instead.
         loadTlsConfig(serverOptions, 'EENGINE_SMTP_TLS_');
 
-        // load certificates
-        let serviceUrl = await settings.get('serviceUrl');
-        let hostname = (new URL(serviceUrl).hostname || '').toString().toLowerCase().trim();
-        if (hostname) {
-            let certificateData = await certs.getCertificate(hostname, true);
-            if (certificateData && certificateData.status === 'valid') {
-                serverOptions.cert =
-                    certificateData.cert +
-                    '\n' +
-                    []
-                        .concat(certificateData.ca || [])
-                        .flatMap(entry => entry)
-                        .join('\n');
-                serverOptions.key = certificateData.privateKey;
-            }
-        }
+        // Snapshot before merging. The resolved material is written back into serverOptions, so
+        // handing the same object to a later refresh would make every refresh believe the operator
+        // had supplied the certificate through the environment.
+        const envMaterial = { cert: serverOptions.cert, key: serverOptions.key, ca: serverOptions.ca };
 
+        tlsContext = await createTlsContext({ certs, logger, envMaterial });
+        Object.assign(serverOptions, tlsContext.options);
+
+        // Reached only when there is no material at all, which now means the self-signed fallback
+        // could not be generated either - a broken instance rather than a missing certificate.
         assertTlsCredentials(serverOptions, 'The SMTP server');
     } else {
         serverOptions.disabledCommands = ['STARTTLS'];
@@ -262,6 +266,7 @@ async function init() {
     }
 
     server = new SMTPServer(serverOptions);
+    smtpServer = server;
 
     let port = await settings.get('smtpServerPort');
     let host = await settings.get('smtpServerHost');
@@ -282,7 +287,7 @@ async function init() {
                 resolve();
             });
         });
-        await emitChangeEvent(logger, null, 'smtpServerState', 'listening');
+        await emitChangeEvent(logger, null, 'smtpServerState', 'listening', { tls: tlsContext ? tlsContext.active : null });
     } catch (err) {
         await emitChangeEvent(logger, null, 'smtpServerState', 'failed', {
             error: { message: err.message, code: err.code || null }
@@ -293,10 +298,36 @@ async function init() {
     return server;
 }
 
+/**
+ * Re-resolves the TLS material and hands it to the running listener.
+ *
+ * Connections already established keep the context they negotiated with; the next handshake gets
+ * the new one. Nothing here restarts the server, which is the whole point: a renewal is not a
+ * reason to drop a submission that is halfway through DATA.
+ *
+ * @returns {Promise<Object>} What the listener is serving after the reload
+ */
+async function reloadCertificates() {
+    const result = await applyTlsContext({
+        context: smtpServer ? tlsContext : null,
+        apply: options => smtpServer.updateSecureContext(options),
+        logger
+    });
+
+    if (result.updated) {
+        await emitChangeEvent(logger, null, 'smtpServerState', 'listening', { tls: result.tls });
+    }
+
+    return result;
+}
+
 async function onCommand(command) {
     switch (command.cmd) {
         case 'resource-usage':
             return threadStats.usage();
+
+        case 'smtpReloadCertificates':
+            return await reloadCertificates();
         default:
             logger.debug({ msg: 'Unhandled command', command });
             return 999;

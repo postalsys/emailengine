@@ -11,13 +11,14 @@
       variant - error|warning|info|success (default error); sets alert-<variant>
       title   - bold heading text (optional)
       icon    - override the leading icon (default icon-[tabler--alert-triangle])
+      class   - extra classes, e.g. "mb-4" to override the default page-level spacing (optional)
 --}}
-<div class="alert alert-soft alert-{{#if variant}}{{variant}}{{else}}error{{/if}} mb-6 flex items-start gap-3"
+<div class="alert alert-soft alert-{{#if variant}}{{variant}}{{else}}error{{/if}}{{#unless class}} mb-6{{/unless}} flex items-start gap-3{{#if class}} {{class}}{{/if}}"
     role="alert">
     <span class="{{#if icon}}{{icon}}{{else}}icon-[tabler--alert-triangle]{{/if}} size-5 shrink-0"></span>
     <div class="min-w-0">
         {{#if title}}<div class="font-semibold">{{title}}</div>{{/if}}
         {{!-- body content; own hash params neutralized so they do not fall through into nested ui/* calls --}}
-        {{> @partial-block variant="" title="" icon=""}}
+        {{> @partial-block variant="" title="" icon="" class=""}}
     </div>
 </div>

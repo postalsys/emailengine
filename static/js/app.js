@@ -379,6 +379,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateServerStateIndicators('imapProxy', data);
                     break;
             }
+
+            // Page-scoped listeners (the TLS page follows certificate provisioning this way) get
+            // every event, including the ones this switch does not paint a badge for. One stream
+            // per page: a second EventSource would be a second authenticated connection for the
+            // same feed.
+            if (data) {
+                document.dispatchEvent(new CustomEvent('ee:change', { detail: data }));
+            }
         };
 
         evtSource.onerror = function (e) {

@@ -153,11 +153,15 @@ window.eeButtonBusy = (btn, busy) => {
 // the event by the time this sees it.
 document.addEventListener('submit', e => {
     let form = e.target;
-    if (e.defaultPrevented || !form || form.method !== 'post') {
+    // Attributes rather than properties: a control named `method` or `target` shadows the
+    // same-named property on HTMLFormElement
+    if (e.defaultPrevented || !form || (form.getAttribute('method') || 'get').toLowerCase() !== 'post') {
         return;
     }
 
-    let target = form.target.trim().toLowerCase();
+    // The attribute, not the property: a form control named `target` shadows
+    // HTMLFormElement.target, and reading the property would throw on such a form
+    let target = (form.getAttribute('target') || '').trim().toLowerCase();
     if (target && target !== '_self') {
         return;
     }

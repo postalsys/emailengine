@@ -7,7 +7,7 @@ const logger = require('../lib/logger');
 
 const { threadStats } = require('../lib/tools');
 
-const { run } = require('../lib/imapproxy/imap-server');
+const { run, reloadCertificates } = require('../lib/imapproxy/imap-server');
 
 const { initSentry } = require('../lib/sentry');
 initSentry('imapProxy');
@@ -16,6 +16,9 @@ async function onCommand(command) {
     switch (command.cmd) {
         case 'resource-usage':
             return threadStats.usage();
+
+        case 'imapProxyReloadCertificates':
+            return await reloadCertificates();
         default:
             logger.debug({ msg: 'Unhandled command', command });
             return 999;

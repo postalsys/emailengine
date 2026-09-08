@@ -293,29 +293,6 @@ window.uiEditorFullscreen = editors => {
     }
 };
 
-// Repaint the #tls-label certificate badge (config/smtp and config/imap-proxy
-// pages) from a certificate-check response: badge color, label text and the
-// FlyonUI tooltip body that carries the status details
-window.paintCertData = certData => {
-    let tlsLabelElm = document.getElementById('tls-label');
-
-    if (!certData || !certData.label || !tlsLabelElm) {
-        return;
-    }
-
-    tlsLabelElm.classList.remove(`badge-${tlsLabelElm.dataset.labeltype}`);
-    tlsLabelElm.classList.add(`badge-${certData.label.type}`);
-    tlsLabelElm.dataset.labeltype = certData.label.type;
-
-    tlsLabelElm.textContent = certData.label.text;
-
-    let tooltipBodyElm = tlsLabelElm.closest('.tooltip');
-    tooltipBodyElm = tooltipBodyElm && tooltipBodyElm.querySelector('.tooltip-body');
-    if (tooltipBodyElm) {
-        tooltipBodyElm.textContent = certData.label.title;
-    }
-};
-
 // Keyboard hints that spell a modifier differently on macOS (ui/search-input
 // renders `shortcut` with an optional `shortcutMac`). The server cannot know
 // the platform, so it emits the Ctrl form and the Mac spelling rides along in
@@ -620,13 +597,19 @@ const uiFormBusy = new Map();
 // this guard by not being POST forms.)
 document.addEventListener('submit', event => {
     const form = event.target;
-    if (event.defaultPrevented || !form || form.method !== 'post') {
+    // Attributes rather than properties throughout: a form control named `method` or `target`
+    // shadows the same-named property on HTMLFormElement, and this handler runs on every form.
+    if (event.defaultPrevented || !form || (form.getAttribute('method') || 'get').toLowerCase() !== 'post') {
         return;
     }
 
     // A form aimed at another browsing context leaves this page in place, so
     // there is no navigation to end the busy state and nothing to latch.
-    const target = form.target.trim().toLowerCase();
+    //
+    // Read the attribute, not the property: a form control named `target` shadows
+    // HTMLFormElement.target, so form.target can be an <input> element. That threw here and took
+    // every busy button on the page down with it.
+    const target = (form.getAttribute('target') || '').trim().toLowerCase();
     if (target && target !== '_self') {
         return;
     }
