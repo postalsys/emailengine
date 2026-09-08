@@ -41,7 +41,7 @@ function createMockContext({ selectError, statusResult, statusError, listingErro
     // In-memory stand-in for the mailbox state hash (phantom marker storage)
     const mailboxHash = new Map();
 
-    const ctx = {
+    const ctx = Object.assign(Object.create(Mailbox.prototype), {
         path: 'Shared Folders',
         selected: false,
         syncDisabled: false,
@@ -123,7 +123,7 @@ function createMockContext({ selectError, statusResult, statusError, listingErro
         getPhantomState: Mailbox.prototype.getPhantomState,
         setPhantomState: Mailbox.prototype.setPhantomState,
         clearPhantomState: Mailbox.prototype.clearPhantomState
-    };
+    });
 
     return { ctx, warnCalls, lockCalls: () => lockCalls, listingCalls: () => listingCalls, processedListings, mockListing, mailboxHash };
 }
@@ -678,14 +678,16 @@ test('Mailbox.getMailboxLock() task reporting', async t => {
     const createLockCtx = () => {
         const calls = { tasks: [], released: 0, fired: 0 };
         const primary = { getMailboxLock: async () => ({ path: 'Shared Folders', release: () => calls.released++ }) };
-        const ctx = {
+        // Inherits the prototype: getMailboxLock() resolves its default client through
+        // requireImapClient(), so a receiver that only lists collaborators goes stale
+        const ctx = Object.assign(Object.create(Mailbox.prototype), {
             path: 'Shared Folders',
             connection: {
                 imapClient: primary,
                 completedTimer: setTimeout(() => calls.fired++, 10),
                 onTaskCompleted: client => calls.tasks.push(client)
             }
-        };
+        });
         return { ctx, calls, primary };
     };
 

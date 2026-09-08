@@ -2,6 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const { Readable } = require('node:stream');
 
 // Must run before the module under test is required: it pulls in lib/db, which opens real Redis
 // connections at load time. The exercised paths never reach Redis.
@@ -50,11 +51,12 @@ test('Mailbox.requireImapClient()', async t => {
 
     await t.test('fails as a connection error when the client is gone', () => {
         // The code is what publishSyncedEvents() reads to decide the message is still worth
-        // keeping. A bare TypeError told it the opposite.
+        // keeping. A bare TypeError told it the opposite. It is the same code every other
+        // "there is no connection to use" site raises, from lib/email-client/imap/connection-errors.
         assert.throws(
             () => Mailbox.prototype.requireImapClient.call(makeCtx(null)),
             err => {
-                assert.equal(err.code, 'NoConnection');
+                assert.equal(err.code, 'IMAPConnectionClosing');
                 assert.ok(!(err instanceof TypeError), 'must not surface as a null dereference');
                 return true;
             }
@@ -75,6 +77,70 @@ test('Mailbox.requireImapClient()', async t => {
     });
 });
 
+test('Mailbox.loadAttachmentContent()', async t => {
+    // The three enrichment passes that need an attachment body (notifyAttachments, the inline
+    // images, calendar parts) each carried their own copy of this. Only the calendar copy declined
+    // to store a zero-length body; the extraction keeps that, because an empty string reaches the
+    // webhook payload as a content field that is there but says nothing.
+    const attachmentFor = () => ({ id: 'AAAAAQAAAAIx', contentType: 'image/png' });
+
+    function makeCtx(download) {
+        const logged = [];
+        const ctx = Object.assign(Object.create(Mailbox.prototype), {
+            path: 'INBOX',
+            logger: {
+                trace() {},
+                debug() {},
+                info() {},
+                warn() {},
+                error: entry => logged.push(entry)
+            },
+            connection: { account: 'test-account', imapClient: { download } }
+        });
+        return { ctx, logged };
+    }
+
+    await t.test('stores the downloaded body as base64', async () => {
+        const { ctx } = makeCtx(async () => ({ content: Readable.from([Buffer.from('hello')]) }));
+        const attachment = attachmentFor();
+
+        await ctx.loadAttachmentContent({ uid: 42 }, attachment, {});
+
+        assert.equal(attachment.content, Buffer.from('hello').toString('base64'));
+    });
+
+    await t.test('leaves a zero-length body unset rather than storing an empty string', async () => {
+        const { ctx } = makeCtx(async () => ({ content: Readable.from([]) }));
+        const attachment = attachmentFor();
+
+        await ctx.loadAttachmentContent({ uid: 42 }, attachment, {});
+
+        assert.equal('content' in attachment, false);
+    });
+
+    await t.test('logs a download failure and leaves the rest of the message alone', async () => {
+        const { ctx, logged } = makeCtx(async () => {
+            throw Object.assign(new Error('Server refused the part'), { serverResponseCode: 'CANNOT' });
+        });
+        const attachment = attachmentFor();
+
+        await ctx.loadAttachmentContent({ uid: 42 }, attachment, {});
+
+        assert.equal('content' in attachment, false);
+        assert.equal(logged.length, 1);
+        assert.equal(logged[0].msg, 'Failed to load attachment content');
+    });
+
+    await t.test('lets a gone connection through so the message is re-queued', async () => {
+        const { ctx, logged } = makeCtx(async () => {
+            throw Object.assign(new Error('Connection not available'), { code: 'NoConnection' });
+        });
+
+        await assert.rejects(() => ctx.loadAttachmentContent({ uid: 42 }, attachmentFor(), {}), /Connection not available/);
+        assert.deepEqual(logged, [], 'a teardown is not this attachment failing');
+    });
+});
+
 test('Mailbox.processNew() when the connection goes away mid-enrichment', async t => {
     // processNew() reaches its download paths only for a message that needs enriching, so each case
     // below supplies the smallest message shape that gets there.
@@ -82,7 +148,10 @@ test('Mailbox.processNew() when the connection goes away mid-enrichment', async 
         const notifications = [];
         const logged = [];
 
-        const ctx = {
+        // Inherits the prototype rather than listing the methods it needs: processNew() delegates to
+        // several of them, and a receiver that enumerates today's set goes stale the moment one
+        // more is extracted.
+        const ctx = Object.assign(Object.create(Mailbox.prototype), {
             path: 'INBOX',
             listingEntry: { path: 'INBOX', specialUse: '\\Inbox' },
             logger: {
@@ -107,14 +176,13 @@ test('Mailbox.processNew() when the connection goes away mid-enrichment', async 
                     notifications.push({ event, data });
                 }
             },
-            requireImapClient: Mailbox.prototype.requireImapClient,
             // The fetch itself is not what is under test - the enrichment that follows it is
             getMessage: async () => messageInfo,
             mightBeDSNResponse: () => false,
             mightBeABounce: () => false,
             mightBeAComplaint: () => false,
             getSeenMessagesKey: () => 'seen:test-account:INBOX'
-        };
+        });
 
         return { ctx, notifications, logged };
     }
@@ -132,9 +200,9 @@ test('Mailbox.processNew() when the connection goes away mid-enrichment', async 
         const { ctx } = makeProcessNewCtx({ imapClient: null, messageInfo });
 
         await assert.rejects(
-            () => Mailbox.prototype.processNew.call(ctx, { uid: messageInfo.uid, flags: new Set() }, {}, false, {}),
+            () => ctx.processNew({ uid: messageInfo.uid, flags: new Set() }, {}, false, {}),
             err => {
-                assert.equal(err.code, 'NoConnection', 'the failure has to reach the caller as a connection error');
+                assert.equal(err.code, 'IMAPConnectionClosing', 'the failure has to reach the caller as a connection error');
                 return true;
             }
         );
@@ -162,9 +230,9 @@ test('Mailbox.processNew() when the connection goes away mid-enrichment', async 
         const { ctx } = makeProcessNewCtx({ imapClient, messageInfo });
 
         await assert.rejects(
-            () => Mailbox.prototype.processNew.call(ctx, { uid: messageInfo.uid, flags: new Set() }, {}, false, {}),
+            () => ctx.processNew({ uid: messageInfo.uid, flags: new Set() }, {}, false, {}),
             err => {
-                assert.equal(err.code, 'NoConnection');
+                assert.equal(err.code, 'NoConnection', "ImapFlow's own code is passed on, not re-wrapped");
                 return true;
             }
         );
@@ -189,7 +257,7 @@ test('Mailbox.processNew() when the connection goes away mid-enrichment', async 
         const imapClient = { download: failing, downloadMany: failing };
         const { ctx, notifications, logged } = makeProcessNewCtx({ imapClient, messageInfo });
 
-        await Mailbox.prototype.processNew.call(ctx, { uid: messageInfo.uid, flags: new Set() }, {}, false, {});
+        await ctx.processNew({ uid: messageInfo.uid, flags: new Set() }, {}, false, {});
 
         assert.equal(notifications.length, 1, 'the message is still announced');
         assert.equal(notifications[0].event, 'messageNew');
