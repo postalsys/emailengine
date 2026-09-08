@@ -26,9 +26,12 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const fs = require('node:fs');
+const path = require('node:path');
 
 const { redis } = require('../lib/db');
 const { captureRoutes, captureRouteConfigs } = require('./helpers/capture-ui-routes');
+const { OAUTH_REDIRECT_FORM_DIRECTIVES } = require('../lib/security-headers');
 
 // The complete, sorted set of routes registered by lib/routes-ui.js (including the
 // already-extracted admin-entities-routes.js it wires in). 154 routes.
@@ -228,6 +231,65 @@ test('UI route table is unchanged', async t => {
                     `${String(method).toUpperCase()} ${cfg.path} must declare plugins.crumb.restful, crumb does not validate its payload`
                 );
             }
+        }
+    });
+
+    await t.test('every admin page carrying an OAuth setup form relaxes form-action', () => {
+        // The setup form's POST is answered with a redirect to the provider's authorization page,
+        // and Chrome checks a form submission's redirect target against the SUBMITTING page's
+        // form-action - so the admin preset's `form-action 'self'` blocks it even though the form
+        // posts to this instance. The hosted form gets the same relaxation from the public preset;
+        // an admin page has to ask for it, and the account page's "Re-authenticate" button shipped
+        // without it. Views are the input rather than a hand-kept list, so a second admin page
+        // growing one of these forms fails here instead of in a browser. The detector only sees a
+        // literal action attribute - a form whose action came from a helper, or one submitted from
+        // JS, would slip past it, so this bounds the regression rather than the whole defect class.
+        const viewsDir = path.join(__dirname, '..', 'views');
+
+        const viewsWithSetupForm = [];
+        const walk = dir => {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                const full = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                    walk(full);
+                } else if (entry.name.endsWith('.hbs') && /<form[^>]*action="\/accounts\/new"/.test(fs.readFileSync(full, 'utf8'))) {
+                    viewsWithSetupForm.push(path.relative(viewsDir, full));
+                }
+            }
+        };
+        walk(viewsDir);
+
+        // The hosted setup form itself is rendered with the public layout, which already allows it
+        const PUBLIC_VIEWS = new Set(['accounts/register/index.hbs']);
+        // Admin views carrying the form, and the route that renders each one
+        const ADMIN_VIEWS = new Map([['accounts/account.hbs', 'GET /admin/accounts/{account}']]);
+
+        const unaccounted = viewsWithSetupForm.filter(view => !PUBLIC_VIEWS.has(view) && !ADMIN_VIEWS.has(view));
+        assert.deepEqual(
+            unaccounted,
+            [],
+            'these views post to /accounts/new but are not accounted for: name the rendering route in ADMIN_VIEWS and give it OAUTH_REDIRECT_FORM_DIRECTIVES, or add it to PUBLIC_VIEWS if it renders with the public layout'
+        );
+
+        const configs = new Map();
+        for (const cfg of captureRouteConfigs()) {
+            for (const method of [].concat(cfg.method)) {
+                configs.set(`${String(method).toUpperCase()} ${cfg.path}`, cfg);
+            }
+        }
+
+        for (const [view, route] of ADMIN_VIEWS) {
+            assert.ok(viewsWithSetupForm.includes(view), `${view} no longer carries the setup form - drop it from ADMIN_VIEWS`);
+
+            const cfg = configs.get(route);
+            assert.ok(cfg, `${route} is not registered, but ${view} says it renders there`);
+
+            const directives = cfg.options && cfg.options.plugins && cfg.options.plugins.securityHeaders && cfg.options.plugins.securityHeaders.directives;
+            assert.deepEqual(
+                directives,
+                OAUTH_REDIRECT_FORM_DIRECTIVES,
+                `${route} renders ${view}, whose form redirects to the OAuth provider, so it must declare OAUTH_REDIRECT_FORM_DIRECTIVES`
+            );
         }
     });
 

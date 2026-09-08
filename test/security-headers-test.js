@@ -25,6 +25,7 @@ const {
     isAdminPath,
     isMachineRoute,
     isSecureOrigin,
+    OAUTH_REDIRECT_FORM_DIRECTIVES,
     CSP_HEADER,
     CSP_REPORT_ONLY_HEADER
 } = require('../lib/security-headers');
@@ -207,6 +208,21 @@ test('policyFor resolves the header matrix', async t => {
         assert.equal(headers['cross-origin-opener-policy'], 'same-origin');
         assert.equal(headers['cross-origin-resource-policy'], 'same-origin');
         assert.equal(cacheControl, 'no-store');
+    });
+
+    await t.test('an admin page hosting the OAuth setup form may follow the provider redirect', () => {
+        // Chrome checks a form submission's redirect target against the SUBMITTING page's
+        // form-action, and the account page's "Re-authenticate" form posts to /accounts/new, which
+        // answers with a redirect to the provider's authorization page. Nothing else about the
+        // admin policy moves.
+        const { headers } = policyFor({ path: '/admin/accounts/user-1', nonce, override: { directives: OAUTH_REDIRECT_FORM_DIRECTIVES } });
+        const csp = directives(headers[CSP_HEADER]);
+
+        assert.equal(csp['form-action'], "'self' https:");
+        assert.equal(csp['script-src'], `'self' 'nonce-${nonce}'`, 'the nonce survives a directive override');
+        assert.equal(csp['default-src'], "'self'");
+        assert.equal(csp['base-uri'], "'none'");
+        assert.equal(csp['frame-ancestors'], "'self'", 'framing follows the path, not the override');
     });
 
     await t.test('admin without a nonce fails closed: no inline script or style element runs', () => {
