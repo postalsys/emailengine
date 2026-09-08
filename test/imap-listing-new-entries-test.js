@@ -66,7 +66,7 @@ test('a failed background processing is logged, not thrown at the caller', async
 
 // --- processListing(): the account load is skipped when there is nothing to register ---
 
-function createProcessCtx(trackedPaths) {
+function createProcessCtx(trackedPaths, accountPath = '*') {
     const calls = { loads: 0 };
 
     return {
@@ -83,7 +83,7 @@ function createProcessCtx(trackedPaths) {
             accountObject: {
                 loadAccountData: async () => {
                     calls.loads++;
-                    return { path: '*' };
+                    return { path: accountPath };
                 }
             }
         }
@@ -125,4 +125,34 @@ test('processListing registers an untracked folder even when it is not flagged a
     assert.equal(calls.loads, 1);
     assert.equal(syncNeeded.size, 1, 'the untracked folder must be registered');
     assert.equal(ctx.mailboxes.has('Archive'), true);
+});
+
+// --- processListing(): the configured path list is matched against the server's spelling ---
+
+test('an account restricted to INBOX still syncs it when the server answers "Inbox"', async () => {
+    // account.path is stored exactly as the API received it while the listing carries whatever
+    // the server chose to answer with. Compared raw, an account configured "INBOX" against a
+    // server that lists "Inbox" matched nothing at all: every folder including the inbox was
+    // flagged syncDisabled, so the account indexed nothing and never emitted messageNew.
+    const { ctx } = createProcessCtx([], ['INBOX']);
+
+    await IMAPClient.prototype.processListing.call(ctx, [
+        { path: 'Inbox', specialUse: '\\Inbox' },
+        { path: 'Sent', specialUse: '\\Sent' }
+    ]);
+
+    assert.equal(!!ctx.mailboxes.get('INBOX').syncDisabled, false, 'the configured folder must be monitored');
+    assert.equal(!!ctx.mailboxes.get('Sent').syncDisabled, true, 'a folder outside the configured list stays excluded');
+});
+
+test('a configured special-use token still selects its folder', async () => {
+    const { ctx } = createProcessCtx([], ['\\Sent']);
+
+    await IMAPClient.prototype.processListing.call(ctx, [
+        { path: 'Inbox', specialUse: '\\Inbox' },
+        { path: 'Sent', specialUse: '\\Sent' }
+    ]);
+
+    assert.equal(!!ctx.mailboxes.get('Sent').syncDisabled, false);
+    assert.equal(!!ctx.mailboxes.get('INBOX').syncDisabled, true);
 });

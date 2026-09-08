@@ -211,7 +211,14 @@ require.cache[getSecretPath] = {
 const registerRedisTeardown = require('./helpers/redis-teardown');
 const { getMailboxStatusKey, normalizePath } = require('../lib/tools');
 const { REDIS_PREFIX, MAILBOX_DELETED_NOTIFY } = require('../lib/consts');
-const { decodeStoredListing, diffMailboxListing, buildStoredListingObject } = require('../lib/email-client/imap/listing-diff');
+const {
+    decodeStoredListing,
+    diffMailboxListing,
+    buildStoredListingObject,
+    matchesListingEntry,
+    configuredPathIndex
+} = require('../lib/email-client/imap/listing-diff');
+const { samePath } = require('../lib/utils/mailbox-path');
 const { Account } = require('../lib/account');
 const { IMAPClient } = require('../lib/email-client/imap-client');
 const { Mailbox } = require('../lib/email-client/imap/mailbox');
@@ -426,6 +433,52 @@ test('Mailbox listing comparison (listing-diff)', async t => {
             ['BrandNew']
         );
         assert.ok(elapsedMs < 1000, `comparing 5000 folders took ${elapsedMs.toFixed(1)}ms, expected well under 1s`);
+    });
+});
+
+// The comparisons that decide which listed folders an account watches. Account `path` and
+// `subconnections` entries are stored exactly as the API received them, while the listing keeps
+// whatever spelling the server answered with, so every one of these matches config against a
+// server string and every one of them used to do it with a raw ===.
+test('Configured path matching (listing-diff)', async t => {
+    const inbox = { path: 'Inbox', specialUse: '\\Inbox' };
+    const sent = { path: 'Sent', specialUse: '\\Sent' };
+
+    await t.test('samePath folds the case of INBOX and nothing else', () => {
+        assert.equal(samePath('INBOX', 'Inbox'), true);
+        assert.equal(samePath('inbox', 'INBOX'), true);
+        assert.equal(samePath('Sent', 'sent'), false, 'every other folder name is case sensitive on IMAP');
+        assert.equal(samePath('INBOX/Sub', 'inbox/Sub'), false, 'only the bare name is folded, matching how the listing is keyed');
+    });
+
+    await t.test('samePath refuses to match a missing path against another missing path', () => {
+        // normalizePath() hands back what it was given, so without the type guard two absent
+        // paths would compare equal and every folder would look like every other one
+        assert.equal(samePath(undefined, undefined), false);
+        assert.equal(samePath('INBOX', undefined), false);
+    });
+
+    await t.test('a configured path selects the folder whatever case the server reports it in', () => {
+        assert.equal(matchesListingEntry('INBOX', inbox), true, 'the operator typed INBOX, the server answered Inbox');
+        assert.equal(matchesListingEntry('INBOX', sent), false);
+    });
+
+    await t.test('a special-use token is matched literally', () => {
+        // Tokens are a fixed vocabulary, never a server spelling, so they must not be normalized
+        assert.equal(matchesListingEntry('\\Sent', sent), true);
+        assert.equal(matchesListingEntry('\\sent', sent), false);
+        assert.equal(matchesListingEntry('\\Inbox', inbox), true);
+    });
+
+    await t.test('a folder with no special use can not be selected by an absent configuration entry', () => {
+        assert.equal(matchesListingEntry('INBOX', { path: 'Archive' }), false);
+        assert.equal(matchesListingEntry(undefined, { path: 'Archive' }), false, 'two absent values must not read as a token match');
+    });
+
+    await t.test('configuredPathIndex reports the position that orders the main folder', () => {
+        assert.equal(configuredPathIndex(['Archive', 'INBOX'], inbox), 1);
+        assert.equal(configuredPathIndex(['Archive'], inbox), -1, 'a folder nothing selects is not monitored');
+        assert.equal(configuredPathIndex(['\\Sent'], sent), 0, 'a token selects by position too');
     });
 });
 

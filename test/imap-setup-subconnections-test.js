@@ -41,7 +41,7 @@ const MISSING_PLACEHOLDER = {
     mailboxMissing: true
 };
 
-function makeClient({ listing, subconnections }) {
+function makeClient({ listing, subconnections, configured = ['Reports'], path = '*' }) {
     const client = new IMAPClient('test-account', {
         logger: noopLogger,
         accountLogger: { enabled: false, log() {} },
@@ -49,7 +49,7 @@ function makeClient({ listing, subconnections }) {
     });
 
     client.accountObject = {
-        loadAccountData: async () => ({ subconnections: ['Reports'], path: '*' })
+        loadAccountData: async () => ({ subconnections: configured, path })
     };
     client.getCurrentListing = async () => listing;
     client.commandClient = null;
@@ -133,6 +133,40 @@ test('IMAPClient.setupSubConnections() reconciliation', async t => {
         assert.equal(client.subconnections.length, 1);
         assert.equal(client.subconnections[0], fakeLive, 'the live subconnection must be kept');
         assert.equal(calls.close, 0, 'a healthy subconnection must not be closed');
+    });
+
+    await t.test('a subconnection configured as INBOX is found when the server answers "Inbox"', async () => {
+        // The configured path is stored as the API received it while the listing carries the
+        // server's spelling. Compared raw, this folder was marked mailboxMissing forever, and
+        // because the revival trigger in syncMailboxes() resolves the same path through
+        // hasListedMailbox() - which does normalize - it kept finding the folder and rerunning
+        // the reconciler on every sync pass. The two halves have to agree.
+        const client = makeClient({
+            listing: [{ path: 'Inbox', specialUse: '\\Inbox' }, { path: 'Reports' }],
+            subconnections: [],
+            configured: ['INBOX']
+        });
+
+        await client.setupSubConnections();
+
+        assert.equal(client.subconnections.length, 1);
+        assert.equal(client.subconnections[0].mailboxMissing, undefined, 'the folder is listed, so it is not missing');
+        assert.equal(client.subconnections[0].disabledReason, 'Can not use the default folder', 'it is the folder the primary connection already watches');
+    });
+
+    await t.test('a subconnection covered by the primary connection is recognised across spellings', async () => {
+        // accountPaths[0] is operator-typed, entry.path is the server's answer
+        const client = makeClient({
+            listing: [{ path: 'Inbox', specialUse: '\\Inbox' }],
+            subconnections: [],
+            configured: ['INBOX'],
+            path: ['INBOX']
+        });
+
+        await client.setupSubConnections();
+
+        assert.equal(client.subconnections.length, 1);
+        assert.equal(client.subconnections[0].disabledReason, 'Covered by the primary connection');
     });
 
     await t.test('replaces a disabled live instance with a fresh subconnection when the folder is re-created', async () => {
