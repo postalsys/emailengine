@@ -249,6 +249,55 @@ test('TLS material store', async t => {
         assert.equal(new Set(results.map(entry => entry.fingerprint)).size, 1);
     });
 
+    await t.test('two workers replacing a stale certificate at once agree on one', async () => {
+        // HSETNX converged concurrent first creation, and replacement looked like the same thing:
+        // delete the stale record, then create. It is not. Between the delete and the create every
+        // other worker sees an empty field and wins its own create, so a hostname change - which
+        // fans a certificate reload out to the API, SMTP and IMAP proxy workers at once - could
+        // leave each of them serving a certificate of its own while the admin page showed whichever
+        // one wrote last, and a client pinning that fingerprint reached a worker with another.
+        await store.getSelfSignedCertificate(['old.example.com']);
+
+        const names = ['mail.example.com'];
+
+        // The interleaving that produced two live certificates: both workers read the same stale
+        // record, and the second is suspended between its read and its write for as long as the
+        // first takes to finish. Modelled on the read, so it holds whatever the write is.
+        let firstDone;
+        const firstFinished = new Promise(resolve => (firstDone = resolve));
+        let reads = 0;
+
+        const originalHget = redis.hget.bind(redis);
+        redis.hget = async (key, field) => {
+            const index = key === store.TLS_KEY && field === store.SELF_SIGNED_FIELD ? reads++ : -1;
+            const value = await originalHget(key, field);
+            if (index === 1) {
+                await firstFinished;
+            }
+            return value;
+        };
+
+        let results;
+        try {
+            const first = store.getSelfSignedCertificate(names).then(result => {
+                firstDone();
+                return result;
+            });
+            const second = store.getSelfSignedCertificate(names);
+
+            results = await Promise.all([first, second]);
+        } finally {
+            redis.hget = originalHget;
+        }
+
+        assert.equal(new Set(results.map(entry => entry.fingerprint)).size, 1, 'both workers serve the same certificate');
+
+        // And it is the one that was stored, not one the loser kept to itself
+        const stored = await store.peekSelfSignedCertificate();
+        assert.equal(stored.fingerprint, results[0].fingerprint);
+        assert.ok(store.certificateCovers(stored.cert, 'mail.example.com'));
+    });
+
     await t.test('coversHostname() does not throw on the SNI path', async () => {
         // checkIP() throws on anything that is not an address, and this is called for every servername
         // a client sends. An exception here fails the handshake rather than falling through to the

@@ -373,7 +373,10 @@
         // the alert and another on the badge.
         const STATES = {
             valid: { variant: 'success', badge: 'Valid' },
-            failed: { variant: 'error', badge: 'Failed' }
+            failed: { variant: 'error', badge: 'Failed' },
+            // The certificate is still usable and still being served; it is the renewal that did
+            // not happen, so this is a warning rather than a failure
+            renewalFailed: { variant: 'warning', badge: 'Renewal failed' }
         };
 
         // Provisioning runs in the background, so progress arrives over the change feed the rest

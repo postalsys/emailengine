@@ -15,10 +15,24 @@ const registerRedisTeardown = require('./helpers/redis-teardown');
 
 const logger = { warn() {}, error() {}, debug() {} };
 
-async function captureSettingsPost(notify) {
+async function captureSettingsPost(notify, call) {
     const routes = [];
-    await settingsRoutes(buildMockArgs({ route: cfg => routes.push(cfg) }, { notify }));
+    await settingsRoutes(buildMockArgs({ route: cfg => routes.push(cfg) }, call ? { notify, call } : { notify }));
     return routes.find(route => route.method === 'POST' && route.path === '/v1/settings');
+}
+
+// The route with its worker commands recorded, for the settings that decide what the TLS listeners
+// serve
+async function captureWithCommands() {
+    const commands = [];
+    const route = await captureSettingsPost(
+        async () => {},
+        async message => {
+            commands.push(message.cmd);
+            return {};
+        }
+    );
+    return { route, commands };
 }
 
 test('POST /v1/settings', async t => {
@@ -51,6 +65,41 @@ test('POST /v1/settings', async t => {
 
         assert.deepEqual(response, { updated: ['serviceUrl', 'notifyText'] });
         assert.deepEqual(broadcasts, [{ cmd: 'settings', data: { serviceUrl: 'https://ee.example.com', notifyText: true } }]);
+    });
+
+    await t.test('a changed certificate source reloads every TLS listener', async () => {
+        // Which certificate a listener serves is resolved from the source mode and the hostname
+        // list, and the `settings` broadcast carries neither to anything that acts on it. Nothing
+        // else made up for it: the reconciler returns immediately for every mode but `acme`, and
+        // even there it only reloads when an order produced new material. So an instance switched
+        // to "self-signed only" through the API went on offering its Let's Encrypt certificate
+        // until a worker restarted, and the certificate page described material nothing served.
+        const { route, commands } = await captureWithCommands();
+
+        const response = await route.handler({ payload: { tlsProvisioning: 'self-signed' }, logger });
+
+        assert.deepEqual(response, { updated: ['tlsProvisioning'] });
+        // All three: the SMTP server and the IMAP proxy resolve their material from the same
+        // settings and are separate workers from the one that served this request
+        assert.deepEqual(commands.sort(), ['apiReloadCertificates', 'imapProxyReloadCertificates', 'smtpReloadCertificates']);
+    });
+
+    await t.test('a changed hostname list or service URL reloads every TLS listener', async () => {
+        // The service URL names the first hostname served, and the self-signed fallback is
+        // regenerated when it no longer covers the configured names.
+        for (const payload of [{ tlsHostnames: ['smtp.example.com'] }, { serviceUrl: 'https://mail.example.com' }]) {
+            const { route, commands } = await captureWithCommands();
+            await route.handler({ payload, logger });
+            assert.equal(commands.length, 3, `${Object.keys(payload)[0]} reloads the listeners`);
+        }
+    });
+
+    await t.test('an unrelated setting reloads nothing', async () => {
+        const { route, commands } = await captureWithCommands();
+
+        await route.handler({ payload: { notifyText: true }, logger });
+
+        assert.deepEqual(commands, [], 'a listener is not disturbed for a setting it does not read');
     });
 
     await t.test('still broadcasts the keys written before a later key failed', async () => {

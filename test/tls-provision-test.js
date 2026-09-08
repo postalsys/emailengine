@@ -166,6 +166,73 @@ test('certificate provisioning', async t => {
         assert.equal(result.changed, false);
     });
 
+    await t.test('a failed renewal keeps the certificate and says the renewal did not happen', async () => {
+        // acquireCert() answers a failed order that had a usable certificate stored by returning
+        // that certificate, still `valid` so the listener keeps serving it, with the reason
+        // attached. Reading only the status told an operator whose challenge routing had broken
+        // that the certificate was up to date, and went on telling them that on every pass while
+        // the certificate walked towards its expiry date.
+        const record = await issued('mail.example.com');
+        const retained = Object.assign({}, record, { lastError: { err: 'ACME validation failed for mail.example.com', time: new Date() } });
+        const certs = stubCerts({ records: { 'mail.example.com': record }, onAcquire: () => retained });
+
+        const result = await provision.provisionHostname({ certs, logger, hostname: 'mail.example.com' });
+
+        assert.equal(result.success, false);
+        assert.match(result.message, /ACME validation failed/);
+
+        const status = (await provision.getProvisioningStatus())['mail.example.com'];
+        assert.equal(status.state, 'renewalFailed');
+        assert.match(status.message, /still serving the current one/);
+        // The material is kept, and the page has to describe the certificate that is actually
+        // being served rather than the order that did not replace it
+        assert.equal(status.fingerprint, record.fingerprint);
+        assert.ok(status.failedAt, 'the failure carries its own time, not only the time of this pass');
+    });
+
+    await t.test('a failure older than the certificate being served is not reported again', async () => {
+        // acquireCert() can answer from the stored record without attempting anything - the domain
+        // is blocked after an earlier failure, another worker holds the lock, the CA's renewal
+        // advice moved the window out - and it hands back whatever error the record still carries.
+        // The order that issued the certificate now being served already settled that one.
+        const record = Object.assign(await issued('mail.example.com'), {
+            validFrom: new Date(),
+            lastError: { err: 'ACME validation failed a week ago', time: new Date(Date.now() - 7 * 24 * 3600 * 1000) }
+        });
+        const certs = stubCerts({ records: { 'mail.example.com': record }, onAcquire: () => record });
+
+        const result = await provision.provisionHostname({ certs, logger, hostname: 'mail.example.com' });
+
+        assert.equal(result.success, true);
+        assert.equal((await provision.getProvisioningStatus())['mail.example.com'].state, 'valid');
+    });
+
+    await t.test('a renewal that succeeds afterwards takes the failure back', async () => {
+        const record = await issued('mail.example.com');
+        const retained = Object.assign({}, record, { lastError: { err: 'ACME validation failed', time: new Date() } });
+
+        await provision.provisionHostname({
+            certs: stubCerts({ records: { 'mail.example.com': record }, onAcquire: () => retained }),
+            logger,
+            hostname: 'mail.example.com'
+        });
+        assert.equal((await provision.getProvisioningStatus())['mail.example.com'].state, 'renewalFailed');
+
+        const renewed = await issued('mail.example.com');
+        const result = await provision.provisionHostname({
+            certs: stubCerts({ records: { 'mail.example.com': retained }, onAcquire: () => renewed }),
+            logger,
+            hostname: 'mail.example.com'
+        });
+
+        assert.equal(result.success, true);
+        assert.equal(result.changed, true, 'a replaced certificate still reaches the listeners');
+
+        const status = (await provision.getProvisioningStatus())['mail.example.com'];
+        assert.equal(status.state, 'valid');
+        assert.equal(status.fingerprint, renewed.fingerprint);
+    });
+
     await t.test('a thrown failure keeps its message', async () => {
         const certs = stubCerts({
             onAcquire() {

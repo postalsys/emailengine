@@ -861,4 +861,46 @@ test('Tools utility tests', async t => {
     await t.test('assertTlsCredentials() accepts a TLS listener with key and certificate', () => {
         assert.doesNotThrow(() => tools.assertTlsCredentials({ secure: true, key: 'KEY', cert: 'CERT' }, 'The SMTP server'));
     });
+
+    await t.test('maybeReloadTlsCertificates() reloads only for the settings a listener resolves from', async () => {
+        // The list is the whole contract: a setting that decides what is served but is missing from
+        // it leaves that setting silently diverging from what the listeners actually offer.
+        assert.deepEqual(tools.TLS_MATERIAL_SETTINGS.slice().sort(), ['serviceUrl', 'tlsHostnames', 'tlsProvisioning']);
+
+        const logger = { error() {} };
+        const commands = [];
+        const call = async message => {
+            commands.push(message.cmd);
+            return {};
+        };
+
+        assert.equal(await tools.maybeReloadTlsCertificates(call, logger, ['locale', 'tlsHostnames']), true);
+        assert.deepEqual(commands.sort(), ['apiReloadCertificates', 'imapProxyReloadCertificates', 'smtpReloadCertificates']);
+
+        commands.length = 0;
+        assert.equal(await tools.maybeReloadTlsCertificates(call, logger, ['locale']), false);
+        assert.equal(await tools.maybeReloadTlsCertificates(call, logger, []), false);
+        assert.equal(await tools.maybeReloadTlsCertificates(call, logger), false);
+        assert.deepEqual(commands, []);
+    });
+
+    await t.test('reloadTlsCertificates() reports a command that failed and still sends the rest', async () => {
+        // One listener that cannot come back must not cost the other two their new certificate
+        const logged = [];
+        const commands = [];
+        const call = async message => {
+            commands.push(message.cmd);
+            if (message.cmd === 'smtpReloadCertificates') {
+                throw new Error('no such worker');
+            }
+            return {};
+        };
+
+        await tools.reloadTlsCertificates(call, { error: entry => logged.push(entry) }, { action: 'test' });
+
+        assert.equal(commands.length, 3);
+        assert.equal(logged.length, 1);
+        assert.equal(logged[0].cmd, 'smtpReloadCertificates');
+        assert.equal(logged[0].action, 'test');
+    });
 });

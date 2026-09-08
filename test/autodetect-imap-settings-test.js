@@ -564,7 +564,8 @@ test('runAutodiscovery', async t => {
             const path = new URL(url).pathname;
             calls.push({ url, path, headers: opts.headers });
             const handler = handlers[path];
-            const answer = (typeof handler === 'function' ? handler(calls.length) : handler) || { status: 404 };
+            // Awaited, so a test can hand back a promise and hold an endpoint open
+            const answer = (await (typeof handler === 'function' ? handler(calls.length) : handler)) || { status: 404 };
             // A 401 carries the Basic challenge a real Exchange sends, unless a test says otherwise
             const wwwAuthenticate = 'wwwAuthenticate' in answer ? answer.wwwAuthenticate : answer.status === 401 ? 'Basic realm="test", Negotiate, NTLM' : null;
             return {
@@ -674,6 +675,40 @@ test('runAutodiscovery', async t => {
 
         assert.deepStrictEqual(res.imap.auth, { user: 'real-login' });
         assert.strictEqual(calls.filter(call => call.path === SOAP).length, 1, 'both are asked at once rather than one after the other');
+    });
+
+    await t.test('answers from the endpoint that replied, without waiting for the other one', async () => {
+        // Both requests are in flight together, but collecting them - `[await pox, await soap]` -
+        // awaited both before either was looked at. The resolver runs against a five second budget
+        // shared with four other lookups, so a stalled endpoint could spend it while the settings
+        // sat in a promise that had already resolved.
+        let releaseSoap;
+        const { fetchResource } = stubFetch({
+            [POX]: callNr => (callNr === 1 ? { status: 401 } : { status: 200, body: poxWithImap }),
+            [SOAP]: () => new Promise(resolve => (releaseSoap = resolve))
+        });
+
+        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, fetchResource);
+
+        assert.deepStrictEqual(res.imap, { host: 'imap.example.com', port: 993, secure: true, auth: { user: 'real-login' } });
+        assert.ok(releaseSoap, 'the SOAP endpoint was asked, and had still not answered');
+        releaseSoap({ status: 500 });
+    });
+
+    await t.test('answers from SOAP while the legacy endpoint is still stalled', async () => {
+        // The same the other way round: hosted Exchange keeps its IMAP settings in the SOAP
+        // response, so POX is as able to be the slow one as it is to be the useful one.
+        let releasePox;
+        const { fetchResource } = stubFetch({
+            [POX]: callNr => (callNr === 1 ? { status: 401 } : new Promise(resolve => (releasePox = resolve))),
+            [SOAP]: { status: 200, body: soapResponse(ovhStyleSettings) }
+        });
+
+        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, fetchResource);
+
+        assert.deepStrictEqual(res.imap, { host: 'pro2.mail.ovh.net', port: 993, secure: true });
+        assert.ok(releasePox, 'the legacy endpoint was asked, and had still not answered');
+        releasePox({ status: 500 });
     });
 
     await t.test('gives up without credentials rather than guessing', async () => {

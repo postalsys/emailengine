@@ -76,6 +76,23 @@ test('certificateLabel()', async t => {
         assert.equal(label.title, 'DNS problem: NXDOMAIN');
     });
 
+    await t.test('warns about a failed renewal without calling the certificate broken', () => {
+        // The certificate is still usable and still being served, so every other check would call
+        // it Valid - which is the failure mode: a green badge until the day it expires.
+        const label = status.certificateLabel(certificate(), { state: 'renewalFailed', message: 'Could not renew, still serving the current one' });
+
+        assert.equal(label.type, 'warning');
+        assert.equal(label.text, 'Renewal failed');
+        assert.match(label.title, /still serving the current one/);
+    });
+
+    await t.test('an expired certificate outranks the failed renewal that explains it', () => {
+        const label = status.certificateLabel(certificate({ validTo: new Date(Date.now() - DAY) }), { state: 'renewalFailed', message: 'Could not renew' });
+
+        assert.equal(label.type, 'error');
+        assert.equal(label.text, 'Expired');
+    });
+
     await t.test('shows an order in flight', () => {
         assert.equal(status.certificateLabel(false, { state: 'ordering', message: 'Requesting' }).text, 'Requesting');
     });
@@ -214,6 +231,23 @@ test('buildCertificateStatus()', async t => {
 
         assert.equal(model.certificates[0].status.state, 'failed');
         assert.equal(model.certificates[0].label.title, 'Connection refused');
+        assert.equal(model.certificates[0].statusVariant, 'error');
+    });
+
+    await t.test('renders a failed renewal as a warning, not as a failure', async () => {
+        // The alert and the badge come from the same state, so a renewal that failed under a
+        // certificate that still works must not be painted the way a missing certificate is.
+        await provision.setProvisioningStatus(logger, 'mail.example.com', { state: 'renewalFailed', message: 'Could not renew the certificate' });
+
+        const model = await status.buildCertificateStatus({
+            certs: {
+                async getCertificate() {
+                    return false;
+                }
+            }
+        });
+
+        assert.equal(model.certificates[0].statusVariant, 'warning');
     });
 
     await t.test('names the certificate authority it is pointed at', async () => {
