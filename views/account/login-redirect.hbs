@@ -1,0 +1,22 @@
+{{!-- Forced-SSO hand-off. This page exists instead of an HTTP redirect because Chrome checks a
+form submission's redirect target against the SUBMITTING page's form-action: when a session expires
+mid-form, the browser follows POST /admin/x -> /admin/login -> the provider as one submission, and
+the admin policy's `form-action 'self'` kills that last hop, so the form silently does nothing. A
+navigation this page starts is not part of that submission, so the policy no longer applies to it.
+
+The per-route relaxation that lets the account page's Re-authenticate button redirect to a provider
+(OAUTH_REDIRECT_FORM_DIRECTIVES) cannot help here: the policy being enforced belongs to whichever
+admin page held the form, which is any of them.
+
+location.replace() rather than a meta refresh: it leaves no history entry, so Back does not land
+here and bounce the user straight out again, which is how the HTTP redirect behaved. The link is
+what a browser that did not run the script gets. --}}
+<h1 class="text-base-content mb-2 text-xl font-semibold">Signing in&mldr;</h1>
+
+<p class="text-base-content/60 mb-6 text-sm">Taking you to {{providers.oidc.name}} to sign in.</p>
+
+{{> ui/btn label="Continue" href=ssoRedirectUrl id="sso-continue" icon="icon-[tabler--login-2]" class="btn-block"}}
+
+<script nonce="{{cspNonce}}">
+    window.location.replace(document.getElementById('sso-continue').href);
+</script>
