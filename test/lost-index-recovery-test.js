@@ -298,6 +298,7 @@ function createOnOpenCtx({ stored, mailbox, previouslyConnected, syncDisabled = 
                 calls.notify.push({ event, data });
             }
         },
+        settleSyncPass: Mailbox.prototype.settleSyncPass,
         getMailboxStatus: () => mailbox,
         getStoredStatus: async () => stored,
         updateStoredStatus: async status => {

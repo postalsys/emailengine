@@ -55,6 +55,12 @@ function makeClient({ listing, subconnections }) {
     client.commandClient = null;
     client.subconnections = subconnections;
 
+    // The reconciler runs after connect() has registered every listed folder, so the
+    // listing it reads carries nothing for processListing() to register
+    for (let entry of listing) {
+        client.mailboxes.set(entry.path, { path: entry.path, listingEntry: entry });
+    }
+
     return client;
 }
 

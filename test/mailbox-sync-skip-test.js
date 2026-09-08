@@ -25,11 +25,12 @@ const { MAILBOX_NEW_NOTIFY, PHANTOM_SELECT_FAIL_THRESHOLD, PHANTOM_REPROBE_INTER
 // errors so reconnect logic keeps working.
 //
 // Settlement background: sync() arms this.synced as the resolver of the
-// promise it awaits. The primary resolver is onOpen()'s finally, with
-// select()'s two SELECT-less early returns settling it when no mailboxOpen
-// event will ever fire. Every path that skips the SELECT or fails before
-// onOpen()'s try block must settle the promise one way or the other,
-// otherwise the account wedges in the syncing state forever.
+// promise it awaits. The primary resolver is onOpen()'s finally, which runs
+// once the sync work is done; select() settles it itself when its lock grant
+// fired no mailboxOpen event (the mailbox was open already). Every path that
+// skips the SELECT or fails before onOpen()'s try block must settle the
+// promise one way or the other, otherwise the account wedges in the syncing
+// state forever.
 
 function createMockContext({ selectError, statusResult, statusError, listingError, lockResult } = {}) {
     const warnCalls = [];
@@ -115,6 +116,7 @@ function createMockContext({ selectError, statusResult, statusError, listingErro
         syncChain: null,
         syncOnce: Mailbox.prototype.syncOnce,
         isSelected: Mailbox.prototype.isSelected,
+        settleSyncPass: Mailbox.prototype.settleSyncPass,
         mailboxStatusFromInfo: Mailbox.prototype.mailboxStatusFromInfo,
         select: Mailbox.prototype.select,
         getMailboxLock: Mailbox.prototype.getMailboxLock,
@@ -295,10 +297,6 @@ test('Mailbox.sync() phantom folder marker', async t => {
 
         seedMarker(mailboxHash, { time: Date.now() - PHANTOM_REPROBE_INTERVAL - 1000 });
 
-        // the re-probe succeeds: the granted lock finds the mailbox already
-        // selected, which settles the armed sync resolver
-        ctx.connection.imapClient.mailbox = { path: 'Shared Folders' };
-
         await Mailbox.prototype.sync.call(ctx, true);
 
         assert.equal(lockCalls(), 1, 'the re-probe SELECT must be attempted');
@@ -325,28 +323,57 @@ test('Mailbox.sync() concurrent select handling', async t => {
         assert.equal(lockCalls(), 0, 'no SELECT must be attempted');
     });
 
-    await t.test('resolves instead of hanging when the path is already locked-active', { timeout: 5000 }, async () => {
+    await t.test('settles instead of hanging when another operation selects the mailbox first', { timeout: 5000 }, async () => {
         const { ctx, lockCalls } = createMockContext();
 
-        // A concurrent command holds the lock on this same path; select()
-        // must settle the armed resolver because no mailboxOpen event will
-        // fire for an already-open mailbox. Before the fix this test hung.
-        ctx.connection.imapClient.currentLock = { path: 'Shared Folders', lockId: 1, options: {} };
+        // A concurrent command SELECTed this mailbox after sync() re-checked and
+        // before select() ran, and its open handler already finished. No further
+        // mailboxOpen event is coming, so select() has to settle the armed
+        // resolver itself. Before the fix this test hung.
+        ctx.getPhantomState = async () => {
+            ctx.connection.imapClient.mailbox = { path: 'Shared Folders' };
+            ctx.selected = true;
+            return false;
+        };
 
         await Mailbox.prototype.sync.call(ctx, true);
 
         assert.equal(lockCalls(), 0, 'the active lock must not be re-acquired');
     });
 
-    await t.test('resolves when the mailbox is found selected after the lock is acquired', { timeout: 5000 }, async () => {
+    await t.test('waits for the open handler to finish its sync work when the lock SELECTed the mailbox', { timeout: 5000 }, async () => {
+        const { ctx } = createMockContext();
+        const order = [];
+
+        // The grant SELECTs the mailbox, and ImapFlow fires mailboxOpen before it
+        // resolves the lock: the open handler takes its latch synchronously and
+        // settles the resolver only once its sync work is done. sync() has to wait
+        // for that, not resolve as soon as the SELECT completed
+        ctx.connection.imapClient.getMailboxLock = async () => {
+            ctx.processingOpen = true;
+            ctx.processingOpenClient = ctx.connection.imapClient;
+            setTimeout(() => {
+                order.push('work done');
+                ctx.processingOpen = false;
+                ctx.processingOpenClient = null;
+                ctx.synced();
+            }, 20);
+            return { release: () => order.push('release') };
+        };
+
+        await Mailbox.prototype.sync.call(ctx, true);
+        order.push('sync resolved');
+
+        assert.deepEqual(order, ['release', 'work done', 'sync resolved'], 'the lock is given back at once, the pass waits for the sync work');
+    });
+
+    await t.test('settles the pass when the lock grant fired no open event', { timeout: 5000 }, async () => {
         let released = 0;
         const { ctx, lockCalls } = createMockContext({ lockResult: { release: () => released++ } });
 
-        // Another operation selected the mailbox while select() was waiting
-        // for the lock: the granted lock skips the SELECT, so the armed
-        // resolver must be settled before the lock is released
-        ctx.connection.imapClient.mailbox = { path: 'Shared Folders' };
-
+        // The grant fired no mailboxOpen event (ImapFlow's fast path: the mailbox
+        // was already open), so no open handler runs and select() settles the
+        // armed resolver itself once it has given the lock back
         await Mailbox.prototype.sync.call(ctx, true);
 
         assert.equal(lockCalls(), 1, 'the lock must be acquired once');
@@ -372,6 +399,7 @@ function createOnOpenCtx({ stored, mailbox, hgetError, statusThrows } = {}) {
             error() {}
         },
         synced: () => syncedCalls++,
+        settleSyncPass: Mailbox.prototype.settleSyncPass,
         connection: {
             getAccountKey: () => 'iad:test-account',
             imapClient: { enabled: new Set() },
