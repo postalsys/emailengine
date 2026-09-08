@@ -1311,6 +1311,39 @@
           }
         }
       },
+      "AccountGmailWatchState": {
+        "type": "string",
+        "description": "Whether the Pub/Sub watch is armed, lapsed, or failed to renew",
+        "example": "active",
+        "enum": [
+          "active",
+          "expired",
+          "error"
+        ]
+      },
+      "AccountGmailWatch": {
+        "type": "object",
+        "description": "State of the Gmail Pub/Sub watch (Gmail API accounts only). A watch that is not active does not stop the account syncing - the client falls back to polling, so new mail is delayed rather than lost. Why a renewal failed is shown on the account page rather than here, because that text is written by the provider",
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/AccountGmailWatchState"
+          },
+          "lastCheck": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the watch was last renewed or attempted",
+            "example": "2021-07-08T07:06:34.336Z",
+            "nullable": true
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the current watch lapses",
+            "example": "2021-07-15T07:06:34.336Z",
+            "nullable": true
+          }
+        }
+      },
       "AccountSyncError": {
         "type": "object",
         "description": "Information about the last mailbox sync error (IMAP accounts only)",
@@ -1775,6 +1808,9 @@
           },
           "smtpStatus": {
             "$ref": "#/components/schemas/SMTPInfoStatus"
+          },
+          "gmailWatch": {
+            "$ref": "#/components/schemas/AccountGmailWatch"
           },
           "syncError": {
             "$ref": "#/components/schemas/AccountSyncError"

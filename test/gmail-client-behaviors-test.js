@@ -77,6 +77,44 @@ test('GmailClient.getToken() after an authentication error', async t => {
 // worker retrying init() - and the next attempt then contradicted it with authenticationSuccess.
 testTokenRefreshClassification('GmailClient.getTokenData() classifies a failed token refresh', makeClient);
 
+test('GmailClient.getTokenData() recovery', async t => {
+    // The Graph client had the same broad condition and it is what hid a nine-month outage there:
+    // a valid token was read as recovery from ANY non-connected state. It is not. A token says
+    // nothing about `unset` (an account the auth-failure safety net parked) or `disconnected` (one
+    // that was closed), and flipping either to `connected` for having fetched one un-parks an
+    // account nobody re-authorized.
+    function makeTokenClient(state) {
+        const gmail = makeClient();
+        gmail.state = state;
+        gmail.accountObject = { getActiveAccessTokenData: async () => ({ accessToken: 'tok', user: 'user@example.com', cached: true }) };
+        gmail.notifyAuthenticationSuccess = async () => {};
+        return gmail;
+    }
+
+    await t.test('a valid token clears an authentication error', async () => {
+        const gmail = makeTokenClient('authenticationError');
+
+        assert.equal(await gmail.getToken(), 'tok');
+        assert.equal(gmail.state, 'connected');
+    });
+
+    await t.test('a valid token does not un-park an account the safety net switched off', async () => {
+        const gmail = makeTokenClient('unset');
+
+        await gmail.getToken();
+
+        assert.equal(gmail.state, 'unset', 'only a re-authorization lifts a park');
+    });
+
+    await t.test('a valid token does not revive a closed connection', async () => {
+        const gmail = makeTokenClient('disconnected');
+
+        await gmail.getToken();
+
+        assert.equal(gmail.state, 'disconnected');
+    });
+});
+
 test('GmailClient.moveMessage()', async t => {
     function makeMoveClient(labelIds) {
         const gmail = makeClient();
