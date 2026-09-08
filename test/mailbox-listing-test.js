@@ -12,6 +12,8 @@
 //     prototype with the LIST call and the per-folder clear stubbed
 //   * Account.getMailboxListing()            - the batched Redis read that backs
 //     GET /v1/account/{account}/mailboxes and the admin folder pickers
+//   * Mailbox.clear()                        - the folder teardown, whose removal of the stored
+//     listing entry is also the claim to announce the deletion exactly once
 //   * GmailClient.listMailboxes()            - the 60 second detailed-label cache that spares
 //     one API call per label
 //
@@ -67,11 +69,14 @@ function createMockRedis() {
                 hset() {
                     return this;
                 },
-                hdel() {
+                hdel(key, field) {
+                    ops.push({ cmd: 'hdel', key, field });
                     return this;
                 },
-                del(key) {
-                    ops.push({ cmd: 'del', key });
+                del(...keys) {
+                    for (const key of keys) {
+                        ops.push({ cmd: 'del', key });
+                    }
                     return this;
                 },
                 expire() {
@@ -95,15 +100,28 @@ function createMockRedis() {
                         throw new Error('EXECABORT Transaction discarded because of previous errors.');
                     }
 
+                    // Replies come back as ioredis reports them, one [err, result] pair per
+                    // queued command in order. Mailbox.clear() reads the HDEL count out of
+                    // position 0 as its claim to announce the deletion, so a stub returning
+                    // an empty array would suppress every mailboxDeleted notification here.
+                    const replies = [];
                     for (const op of ops) {
                         if (op.cmd === 'hmset') {
                             if (!mockRedisData[op.key]) mockRedisData[op.key] = {};
                             assignHashFields(mockRedisData[op.key], op.data);
+                            replies.push([null, 'OK']);
                         } else if (op.cmd === 'del') {
+                            replies.push([null, op.key in mockRedisData ? 1 : 0]);
                             delete mockRedisData[op.key];
+                        } else if (op.cmd === 'hdel') {
+                            const existed = !!mockRedisData[op.key] && op.field in mockRedisData[op.key];
+                            if (existed) {
+                                delete mockRedisData[op.key][op.field];
+                            }
+                            replies.push([null, existed ? 1 : 0]);
                         }
                     }
-                    return [];
+                    return replies;
                 }
             };
         },
@@ -191,11 +209,12 @@ require.cache[getSecretPath] = {
 };
 
 const registerRedisTeardown = require('./helpers/redis-teardown');
-const { getMailboxStatusKey } = require('../lib/tools');
-const { REDIS_PREFIX } = require('../lib/consts');
+const { getMailboxStatusKey, normalizePath } = require('../lib/tools');
+const { REDIS_PREFIX, MAILBOX_DELETED_NOTIFY } = require('../lib/consts');
 const { decodeStoredListing, diffMailboxListing, buildStoredListingObject } = require('../lib/email-client/imap/listing-diff');
 const { Account } = require('../lib/account');
 const { IMAPClient } = require('../lib/email-client/imap-client');
+const { Mailbox } = require('../lib/email-client/imap/mailbox');
 
 // One ROOT after-hook for the whole file. Registering the force-exit on the first suite instead
 // would arm a 1s process.exit() timer while the later suites are still running, so on a loaded
@@ -704,6 +723,23 @@ test('Account.getMailboxListing', async t => {
         assert.strictEqual(inbox.name, 'INBOX');
     });
 
+    await t.test('status counters survive a server that spells the inbox in mixed case', async () => {
+        // The stored listing is keyed through normalizePath(), which case-folds INBOX so that a
+        // server alternating "Inbox" and "INBOX" between passes does not read as a delete plus an
+        // add. The live LIST result keeps the server spelling, so matching the two by raw path
+        // dropped the counters for the one folder every account has.
+        seedAccount('connected');
+        seedStoredListing([{ path: 'Inbox', name: 'Inbox', delimiter: '/', specialUse: '\\Inbox', noInferiors: false }]);
+
+        const accountObject = createAccountObject(async () => [{ path: 'Inbox', status: { path: 'Inbox', messages: 120, unseen: 4 } }]);
+
+        const mailboxes = await accountObject.getMailboxListing({ counters: true });
+
+        assert.strictEqual(mailboxes.length, 1);
+        assert.deepStrictEqual(mailboxes[0].status, { messages: 120, unseen: 4 }, 'the live counters must be matched through the normalized path');
+        assert.strictEqual(mailboxes[0].path, 'Inbox', 'the response keeps the spelling the server reported');
+    });
+
     await t.test('a LIST failure surfaces as an error rather than a silently empty listing', async () => {
         seedAccount('connected');
         seedStoredListing([{ path: 'INBOX', delimiter: '/', noInferiors: false }]);
@@ -879,6 +915,108 @@ test('IMAPClient.getCurrentListing', async t => {
             [],
             'a known folder must not be reported as new again'
         );
+    });
+});
+
+// Drives the REAL Mailbox.clear() through the prototype. Constructing a Mailbox would pull in a
+// whole connection and a SyncOperations instance for a method that only touches Redis, the
+// in-memory folder map and the notifier, so the receiver carries exactly those.
+function createClearableMailbox(path) {
+    const notifications = [];
+
+    const receiver = {
+        path,
+        listingEntry: { path, name: path, specialUse: '\\Junk' },
+        runPartialSyncTimer: false,
+        logger: { debug: () => {}, error: () => {} },
+        getMailboxKey: () => `${REDIS_PREFIX}iam:${ACCOUNT}:h:${path}`,
+        getMessagesKey: () => `${REDIS_PREFIX}iam:${ACCOUNT}:l:${path}`,
+        getNotificationsKey: () => `${REDIS_PREFIX}iam:${ACCOUNT}:n:${path}`,
+        connection: {
+            redis: mockRedis,
+            mailboxes: new Map(),
+            getMailboxListKey: () => mailboxListKey,
+            notify: async (mailbox, event, data) => {
+                notifications.push({ event, path: data.path });
+            }
+        },
+        clear: Mailbox.prototype.clear
+    };
+
+    // Keyed the way IMAPClient keys it, so the map cleanup in clear() is actually covered for a
+    // path that normalizes to something else
+    receiver.connection.mailboxes.set(normalizePath(path), receiver);
+
+    return { receiver, notifications };
+}
+
+test('Mailbox.clear() deletion announcement', async t => {
+    t.beforeEach(() => {
+        mockRedisData = {};
+    });
+
+    await t.test('drops the folder from the stored listing and announces it once', async () => {
+        seedStoredListing([serverFolder('INBOX'), serverFolder('Spam')]);
+        const { receiver, notifications } = createClearableMailbox('Spam');
+
+        await receiver.clear();
+
+        assert.deepStrictEqual(Object.keys(mockRedisData[mailboxListKey]), ['INBOX'], 'the cleared folder must leave the stored listing');
+        assert.deepStrictEqual(notifications, [{ event: MAILBOX_DELETED_NOTIFY, path: 'Spam' }]);
+        assert.strictEqual(receiver.connection.mailboxes.size, 0, 'and the in-memory folder map');
+    });
+
+    await t.test('a second clear of the same folder announces nothing', async () => {
+        // Two listing passes overlap whenever an API request lands during the resync walk, and
+        // both read the stored listing before either writes it back. Without the HDEL claim both
+        // find the folder missing from the server and both send mailboxDeleted.
+        seedStoredListing([serverFolder('INBOX'), serverFolder('Spam')]);
+        const { receiver, notifications } = createClearableMailbox('Spam');
+        const second = createClearableMailbox('Spam');
+
+        await receiver.clear();
+        await second.receiver.clear();
+
+        assert.strictEqual(notifications.length, 1);
+        assert.deepStrictEqual(second.notifications, [], 'the pass that did not remove the entry must stay quiet');
+    });
+
+    await t.test('skipNotify clears the folder without announcing it', async () => {
+        // The account teardown path: every folder is cleared and the listing key deleted right
+        // after, and no webhook may be sent for any of it.
+        seedStoredListing([serverFolder('INBOX'), serverFolder('Spam')]);
+        const { receiver, notifications } = createClearableMailbox('Spam');
+
+        await receiver.clear({ skipNotify: true });
+
+        assert.deepStrictEqual(Object.keys(mockRedisData[mailboxListKey]), ['INBOX']);
+        assert.deepStrictEqual(notifications, []);
+    });
+
+    await t.test('the folder is matched through the normalized path', async () => {
+        seedStoredListing([serverFolder('Inbox')]);
+        const { receiver } = createClearableMailbox('Inbox');
+
+        await receiver.clear();
+
+        assert.deepStrictEqual(Object.keys(mockRedisData[mailboxListKey]), [], 'the stored key is "INBOX" while the mailbox knows itself as "Inbox"');
+        assert.strictEqual(receiver.connection.mailboxes.size, 0);
+    });
+
+    await t.test('a folder deleted through the API is not re-announced by the next listing pass', async () => {
+        // deleteMailbox() clears the folder itself. The listing pass that follows sees the server
+        // without it and used to announce the same deletion a second time, because nothing had
+        // removed it from the stored listing. The same pass against an un-cleared listing does
+        // still report the folder - that is the 'a folder the server no longer lists is cleared
+        // and dropped from the hash' case in the getCurrentListing suite above.
+        seedStoredListing([serverFolder('INBOX'), serverFolder('Spam')]);
+        const { receiver } = createClearableMailbox('Spam');
+        await receiver.clear();
+
+        const { client, cleared } = createListingClient([serverFolder('INBOX')]);
+        await client.getCurrentListing({}, {});
+
+        assert.deepStrictEqual(cleared, [], 'the pass has nothing left to announce');
     });
 });
 
