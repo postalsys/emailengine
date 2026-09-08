@@ -8,7 +8,8 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { BaseClient, isTransientNetworkError, markRejectedAccessToken } = require('../lib/email-client/base-client');
+const { BaseClient, markRejectedAccessToken } = require('../lib/email-client/base-client');
+const { isTransientNetworkError } = require('../lib/email-client/credential-errors');
 const { EMAIL_DELIVERY_ERROR_NOTIFY } = require('../lib/consts');
 const msgpack = require('../lib/msgpack');
 const { redis } = require('../lib/db');

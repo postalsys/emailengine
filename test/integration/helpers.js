@@ -110,9 +110,10 @@ function extractCrumb(setCookie) {
 
 // Scripted mock IMAP server for hermetic connection tests - just enough protocol for ImapFlow
 // to get through the connection setup. Default handlers cover CAPABILITY/ID/LOGIN/LOGOUT and
-// answer everything else with a tagged OK; `onCommand({ tag, cmd, args, send, session })` runs
-// first and takes over a command by returning true (per-connection state can be stashed on
-// `session`; the default LOGIN handler stores the login user in `session.user`). Resolves to
+// answer everything else with a tagged OK; `onCommand({ tag, cmd, args, send, drop, session })`
+// runs first and takes over a command by returning true (per-connection state can be stashed on
+// `session`; the default LOGIN handler stores the login user in `session.user`). `drop()` destroys
+// this connection without a reply, for tests that need a server which hangs up. Resolves to
 // `{ port, close }`; `close()` destroys lingering client sockets first, because server.close()
 // fires its callback only after every socket has ended, and accounts keep retrying against the
 // mock until they are deleted. phantom-folder-test.js keeps its own richer inline mock on
@@ -133,6 +134,10 @@ function startMockImapServer({ capabilities = 'IMAP4rev1 IDLE ID UIDPLUS', onCom
             }
         };
 
+        // Hang up mid-session, with no reply at all - what a server dropping a connection looks
+        // like from the client side
+        const drop = () => socket.destroy();
+
         send(`* OK [CAPABILITY ${capabilities}] Mock IMAP ready.`);
 
         const handle = line => {
@@ -143,7 +148,7 @@ function startMockImapServer({ capabilities = 'IMAP4rev1 IDLE ID UIDPLUS', onCom
             const [, tag, cmdRaw, args] = m;
             const cmd = cmdRaw.toUpperCase();
 
-            if (onCommand && onCommand({ tag, cmd, args, send, session }) === true) {
+            if (onCommand && onCommand({ tag, cmd, args, send, drop, session }) === true) {
                 return;
             }
 

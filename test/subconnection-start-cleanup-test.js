@@ -47,6 +47,8 @@ function makeSubconnection({ getImapConfig } = {}) {
     const hSetExistsCalls = [];
     const stopError = new Error('stop after cleanup');
 
+    const configCalls = [];
+
     const parent = {
         connections: new Set(),
         redis: {
@@ -62,6 +64,15 @@ function makeSubconnection({ getImapConfig } = {}) {
             if (parent.connections.delete(imapClient)) {
                 await parent.redis.hSetExists(parent.getAccountKey(), 'connections', parent.connections.size.toString());
             }
+        },
+        // The subconnection builds its config through the parent. The default throws to abort
+        // start() right after the previous-client cleanup
+        getImapConfig: async (accountData, ctx) => {
+            configCalls.push({ accountData, ctx });
+            if (getImapConfig) {
+                return await getImapConfig(accountData, ctx);
+            }
+            throw stopError;
         }
     };
 
@@ -69,17 +80,28 @@ function makeSubconnection({ getImapConfig } = {}) {
         parent,
         account: 'test-account',
         mailbox: { path: 'INBOX' },
-        logger: noopLogger,
-        // The default throws to abort start() right after the previous-client cleanup
-        getImapConfig:
-            getImapConfig ||
-            (async () => {
-                throw stopError;
-            })
+        logger: noopLogger
     });
 
-    return { subconnection, parent, hSetExistsCalls, stopError };
+    return { subconnection, parent, hSetExistsCalls, stopError, configCalls };
 }
+
+test('Subconnection.start() builds its config as itself', async () => {
+    // A subconnection passes itself as the context so a credential failure of its own does not
+    // notify or park the account - its notify() is a no-op for exactly that reason. The parent used
+    // to be reached through an injected zero-argument arrow that silently dropped the context, so
+    // getImapConfig() fell back to the primary connection and reported on it instead.
+    const { subconnection, configCalls, stopError } = makeSubconnection();
+
+    await assert.rejects(
+        () => subconnection.start(),
+        err => err === stopError
+    );
+
+    assert.equal(configCalls.length, 1);
+    assert.equal(configCalls[0].ctx, subconnection, 'the subconnection must be the reporting context');
+    assert.equal(configCalls[0].accountData, null, 'the subconnection loads no account data of its own');
+});
 
 test('Subconnection.start() previous client cleanup', async t => {
     await t.test('removes the replaced client from parent connection tracking', async () => {

@@ -16,16 +16,24 @@ const { MESSAGE_MISSING_NOTIFY } = require('../lib/consts');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 const { noopLogger } = require('./helpers/auth-failure');
+const { testTokenRefreshClassification } = require('./helpers/token-refresh');
 
 registerRedisTeardown(redis);
 
 function makeClient() {
-    const outlook = new OutlookClient('test-account', {});
+    // The real test Redis: the account hash does not exist, which is what the client sees for
+    // a fixture account - enough for the shared bookkeeping in BaseClient to run for real
+    const outlook = new OutlookClient('test-account', { redis });
     outlook.logger = noopLogger;
     outlook.oauth2UserPath = 'me';
     outlook.prepare = async () => {};
     return outlook;
 }
+
+// A token endpoint that throttles or 5xxs has not refused the refresh token. Reporting that as
+// an authentication failure webhooked authenticationError, parked the account and stopped the
+// worker retrying init() - and the next attempt then contradicted it with authenticationSuccess.
+testTokenRefreshClassification('OutlookClient.getTokenData() classifies a failed token refresh', makeClient);
 
 test('OutlookClient.updateMessages() with label add/delete', async t => {
     function makeUpdateClient(fetchResponses) {

@@ -65,9 +65,37 @@ const noopLogger = {
     }
 };
 
+// What the credential paths report a failure on: a logger, a notify() and a state field. The
+// subconnection shape in production is the same three.
+function makeCtx() {
+    const notifications = [];
+    return {
+        notifications,
+        ctx: {
+            logger: noopLogger,
+            state: null,
+            async notify(mailbox, event, data) {
+                notifications.push({ event, data });
+            }
+        }
+    };
+}
+
+// A transient failure has to leave no trace: no flag for the caller to park on, no webhook, and the
+// account state untouched.
+async function assertLeftForRetry(fixture, run) {
+    await assert.rejects(run, err => {
+        assert.strictEqual(err.authenticationFailed, undefined, 'must not be marked as an authentication failure');
+        return true;
+    });
+
+    assert.strictEqual(fixture.notifications.length, 0, 'a transient failure must not send an authenticationError webhook');
+    assert.strictEqual(fixture.ctx.state, null, 'the account state must be left alone');
+}
+
 function makeFixture(oauth2Overrides) {
     const renewCalls = [];
-    const notifications = [];
+    const { ctx, notifications } = makeCtx();
 
     const accountData = {
         account: 'auth-server-account',
@@ -86,14 +114,6 @@ function makeFixture(oauth2Overrides) {
             renewCalls.push(true);
             accountData.oauth2.accessToken = 'TOKEN-RENEWED-BY-EMAILENGINE';
             return accountData;
-        }
-    };
-
-    const ctx = {
-        logger: noopLogger,
-        state: null,
-        async notify(mailbox, event, data) {
-            notifications.push({ event, data });
         }
     };
 
@@ -254,7 +274,7 @@ test('OAuth2 accounts honor useAuthServer on the IMAP and SMTP paths', async t =
 
     await t.test('an auth server failure is reported as an authentication error', async () => {
         const fixture = makeFixture({ useAuthServer: true });
-        authServerError = new Error('Invalid response: 500 Internal Server Error');
+        authServerError = Object.assign(new Error('Invalid response: 403 Forbidden'), { code: 'HTTPRequestError', statusCode: 403 });
 
         await assert.rejects(
             () => load(fixture, 'imap'),
@@ -276,15 +296,115 @@ test('OAuth2 accounts honor useAuthServer on the IMAP and SMTP paths', async t =
         const fixture = makeFixture({ useAuthServer: true });
         authServerError = Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' });
 
+        await assertLeftForRetry(fixture, () => load(fixture, 'imap'));
+    });
+
+    await t.test('an auth server answering 5xx is a connection error too', async () => {
+        // It answered, so it is reachable - but it has not refused the credential either, and the
+        // whole instance shares one auth server. resolveCredentials() puts the status on the error
+        // for exactly this test.
+        const fixture = makeFixture({ useAuthServer: true });
+        authServerError = Object.assign(new Error('Invalid response: 503 Service Unavailable'), { code: 'HTTPRequestError', statusCode: 503 });
+
+        await assertLeftForRetry(fixture, () => load(fixture, 'imap'));
+    });
+
+    await t.test('a throttled token endpoint is a connection error, not an authentication failure', async () => {
+        // The renewal path, not the auth server one: Microsoft and Google both throttle and 5xx
+        // their token endpoints, and reporting that as a refused refresh token webhooked
+        // authenticationError and parked the account until the next attempt contradicted it.
+        const fixture = makeFixture({});
+        configuredAuthServer = null;
+        fixture.accountObject.renewAccessToken = async () => {
+            throw Object.assign(new Error('Token request failed'), { code: 'ETokenRefresh', statusCode: 429 });
+        };
+
+        await assertLeftForRetry(fixture, () => load(fixture, 'imap'));
+    });
+
+    await t.test('a rejected refresh token is still an authentication failure', async () => {
+        // 400 invalid_grant is the expired or revoked refresh token this event exists to report.
+        const fixture = makeFixture({});
+        configuredAuthServer = null;
+        fixture.accountObject.renewAccessToken = async () => {
+            throw Object.assign(new Error('Token request failed'), { code: 'ETokenRefresh', statusCode: 400 });
+        };
+
         await assert.rejects(
             () => load(fixture, 'imap'),
             err => {
-                assert.strictEqual(err.authenticationFailed, undefined, 'must not be marked as an authentication failure');
+                assert.strictEqual(err.authenticationFailed, true);
                 return true;
             }
         );
 
-        assert.strictEqual(fixture.notifications.length, 0, 'no authenticationError webhook for a transient failure');
-        assert.strictEqual(fixture.ctx.state, null, 'the account state is left alone');
+        assert.strictEqual(fixture.notifications.length, 1);
+        assert.strictEqual(fixture.notifications[0].event, 'authenticationError');
+        assert.strictEqual(fixture.notifications[0].data.serverResponseCode, 'OauthRenewError');
+        assert.strictEqual(fixture.ctx.state, 'authenticationError');
+    });
+});
+
+// The IMAP client has its own copy of the auth-server branch, for password accounts. It had no
+// transient guard at all, so an auth-server blip webhooked authenticationError for every account.
+test('IMAPClient.getImapConfig resolves credentials from the auth server', async t => {
+    const { IMAPClient } = require('../lib/email-client/imap-client');
+
+    function makeImapFixture() {
+        const { ctx, notifications } = makeCtx();
+
+        const accountData = {
+            account: 'auth-server-account',
+            imap: { host: 'imap.example.com', port: 993, secure: true, useAuthServer: true }
+        };
+
+        const client = Object.assign(Object.create(IMAPClient.prototype), {
+            account: 'auth-server-account',
+            logger: noopLogger
+        });
+
+        return { client, ctx, accountData, notifications };
+    }
+
+    const buildConfig = fixture => IMAPClient.prototype.getImapConfig.call(fixture.client, fixture.accountData, fixture.ctx);
+
+    t.beforeEach(() => {
+        authServerCalls.length = 0;
+        authServerError = null;
+        configuredAuthServer = 'https://auth.example.com/creds';
+    });
+
+    await t.test('an unreachable auth server is not an authentication failure', async () => {
+        const fixture = makeImapFixture();
+        authServerError = Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' });
+
+        await assertLeftForRetry(fixture, () => buildConfig(fixture));
+
+        assert.deepStrictEqual(authServerCalls, [{ account: 'auth-server-account', proto: 'imap' }]);
+    });
+
+    await t.test('an auth server answering 5xx is not an authentication failure', async () => {
+        const fixture = makeImapFixture();
+        authServerError = Object.assign(new Error('Invalid response: 502 Bad Gateway'), { code: 'HTTPRequestError', statusCode: 502 });
+
+        await assertLeftForRetry(fixture, () => buildConfig(fixture));
+    });
+
+    await t.test('a refused account is still an authentication failure', async () => {
+        const fixture = makeImapFixture();
+        authServerError = Object.assign(new Error('Invalid response: 403 Forbidden'), { code: 'HTTPRequestError', statusCode: 403 });
+
+        await assert.rejects(
+            () => buildConfig(fixture),
+            err => {
+                assert.strictEqual(err.authenticationFailed, true);
+                return true;
+            }
+        );
+
+        assert.strictEqual(fixture.notifications.length, 1);
+        assert.strictEqual(fixture.notifications[0].event, 'authenticationError');
+        assert.strictEqual(fixture.notifications[0].data.serverResponseCode, 'HTTPRequestError');
+        assert.strictEqual(fixture.ctx.state, 'authenticationError');
     });
 });

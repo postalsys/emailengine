@@ -16,11 +16,14 @@ const { MESSAGE_MISSING_NOTIFY } = require('../lib/consts');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 const { noopLogger } = require('./helpers/auth-failure');
+const { testTokenRefreshClassification } = require('./helpers/token-refresh');
 
 registerRedisTeardown(redis);
 
 function makeClient() {
-    const gmail = new GmailClient('test-account', {});
+    // The real test Redis: the account hash does not exist, which is what the client sees for
+    // a fixture account - enough for the shared bookkeeping in BaseClient to run for real
+    const gmail = new GmailClient('test-account', { redis });
     gmail.logger = noopLogger;
     gmail.prepare = async () => {};
     gmail.setStateVal = async () => {};
@@ -68,6 +71,11 @@ test('GmailClient.getToken() after an authentication error', async t => {
         assert.ok(!gmail.fallbackPollingTimer);
     });
 });
+
+// A token endpoint that throttles or 5xxs has not refused the refresh token. Reporting that as
+// an authentication failure webhooked authenticationError, parked the account and stopped the
+// worker retrying init() - and the next attempt then contradicted it with authenticationSuccess.
+testTokenRefreshClassification('GmailClient.getTokenData() classifies a failed token refresh', makeClient);
 
 test('GmailClient.moveMessage()', async t => {
     function makeMoveClient(labelIds) {
