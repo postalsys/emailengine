@@ -137,6 +137,33 @@ test('fetchWithVettedRedirects', async t => {
         assert.equal(res.status, 304);
     });
 
+    await t.test('drops credential headers when a redirect crosses to another origin', async t => {
+        // Autodiscovery carries the mailbox password to a host named by the address domain's own
+        // DNS. A redirect must not be able to pass that password on to a host of its choosing.
+        const elsewhere = await serverFor(t, res => ok(res, 'elsewhere'));
+        const start = await serverFor(t, (res, req) => (req.path === '/a' ? redirect(res, 302, `${elsewhere.baseUrl}/b`) : ok(res, 'unexpected')));
+
+        const res = await fetchWithVettedRedirects(fetchCmd, `${start.baseUrl}/a`, {
+            method: 'GET',
+            headers: { Authorization: 'Basic c2VjcmV0', Cookie: 'session=1', 'X-Trace': 'kept' }
+        });
+
+        assert.equal(await res.text(), 'elsewhere');
+        const received = elsewhere.getCaptured().headers;
+        assert.ok(!('authorization' in received), 'Authorization must not survive the hop');
+        assert.ok(!('cookie' in received), 'Cookie must not survive the hop either');
+        assert.equal(received['x-trace'], 'kept', 'headers that are not credentials are left alone');
+    });
+
+    await t.test('keeps credential headers on a same-origin redirect', async t => {
+        const { baseUrl, getCaptured } = await serverFor(t, (res, req) => (req.path === '/a' ? redirect(res, 302, '/b') : ok(res, 'same origin')));
+
+        const res = await fetchWithVettedRedirects(fetchCmd, `${baseUrl}/a`, { method: 'GET', headers: { Authorization: 'Basic c2VjcmV0' } });
+
+        assert.equal(await res.text(), 'same origin');
+        assert.equal(getCaptured().headers.authorization, 'Basic c2VjcmV0', 'the origin that was authenticated to is still the one being asked');
+    });
+
     await t.test('works without a validator, for the policy-off case', async t => {
         const { baseUrl } = await serverFor(t, (res, req) => (req.path === '/a' ? redirect(res, 302, '/b') : ok(res, 'b')));
 
