@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-09-08 12:16+0000\n"
+"POT-Creation-Date: 2026-09-08 15:55+0000\n"
 
 #: views/error.hbs:6
-#: workers/api.js:3127
+#: workers/api.js:3119
 msgid "Something went wrong"
 msgstr ""
 
@@ -106,44 +106,6 @@ msgid ""
 "received."
 msgstr ""
 
-#: views/accounts/register/imap.hbs:13
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:19
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:35
-msgid "This setup link is restricted to this email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:43
-#: views/accounts/register/imap-server.hbs:47
-#: views/accounts/register/imap-server.hbs:154
-msgid "Password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:49
-msgid "Enter your account password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:55
-msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/index.hbs:6
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:19
-msgid "Standard IMAP"
-msgstr ""
-
 #: views/accounts/register/imap-server.hbs:23
 msgid ""
 "Server settings could not be detected automatically for %s. Enter them "
@@ -157,6 +119,12 @@ msgstr ""
 #: views/accounts/register/imap-server.hbs:33
 #: views/accounts/register/imap-server.hbs:140
 msgid "Username"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:47
+#: views/accounts/register/imap-server.hbs:154
+#: views/accounts/register/imap.hbs:43
+msgid "Password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:59
@@ -263,6 +231,38 @@ msgstr ""
 msgid "Request failed."
 msgstr ""
 
+#: views/accounts/register/index.hbs:6
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:19
+msgid "Standard IMAP"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:13
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:19
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:35
+msgid "This setup link is restricted to this email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:49
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:55
+msgid "Continue"
+msgstr ""
+
 #: views/account-identity-error.hbs:7
 msgid "Wrong Email Account"
 msgstr ""
@@ -287,7 +287,7 @@ msgid ""
 "contact the service that sent you this link."
 msgstr ""
 
-#: lib/autodetect-imap-settings.js:111
+#: lib/autodetect-imap-settings.js:134
 msgid ""
 "Microsoft has disabled password-based sign-ins (including app passwords) "
 "for Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To "
@@ -295,32 +295,32 @@ msgid ""
 "connect your account."
 msgstr ""
 
-#: lib/tools.js:1473
+#: lib/tools.js:1495
 #: lib/ui-routes/unsubscribe-routes.js:31
 #: lib/ui-routes/unsubscribe-routes.js:99
 msgid "Invalid input"
 msgstr ""
 
-#: lib/tools.js:2338
+#: lib/tools.js:2360
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:2361
-#: lib/tools.js:2367
-#: lib/tools.js:2372
-#: lib/ui-routes/account-routes.js:1149
+#: lib/tools.js:2383
+#: lib/tools.js:2389
+#: lib/tools.js:2394
+#: lib/ui-routes/account-routes.js:1155
 msgid "Invalid or expired account setup URL"
 msgstr ""
 
 #: lib/ui-routes/account-routes.js:479
 #: lib/ui-routes/account-routes.js:523
 #: lib/ui-routes/account-routes.js:767
-#: lib/ui-routes/account-routes.js:818
-#: lib/ui-routes/account-routes.js:875
-#: lib/ui-routes/account-routes.js:1262
+#: lib/ui-routes/account-routes.js:824
+#: lib/ui-routes/account-routes.js:881
+#: lib/ui-routes/account-routes.js:1268
 #: lib/ui-routes/route-helpers.js:403
-#: workers/api.js:2299
-#: workers/api.js:2369
+#: workers/api.js:2291
+#: workers/api.js:2361
 msgid "Email Account Setup"
 msgstr ""
 
@@ -334,60 +334,60 @@ msgstr ""
 msgid "Too many attempts for this setup link. Request a new setup link to continue."
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:862
-#: lib/ui-routes/account-routes.js:1199
+#: lib/ui-routes/account-routes.js:868
+#: lib/ui-routes/account-routes.js:1205
 msgid "Couldn't set up account. Try again."
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:950
-#: lib/ui-routes/account-routes.js:990
+#: lib/ui-routes/account-routes.js:956
+#: lib/ui-routes/account-routes.js:996
 #: lib/ui-routes/admin-entities-routes.js:2077
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:953
-#: lib/ui-routes/account-routes.js:993
+#: lib/ui-routes/account-routes.js:959
+#: lib/ui-routes/account-routes.js:999
 #: lib/ui-routes/admin-entities-routes.js:2080
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:958
-#: lib/ui-routes/account-routes.js:1010
+#: lib/ui-routes/account-routes.js:964
+#: lib/ui-routes/account-routes.js:1016
 #: lib/ui-routes/admin-entities-routes.js:2097
 msgid "Connection timed out"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:964
-#: lib/ui-routes/account-routes.js:1013
+#: lib/ui-routes/account-routes.js:970
+#: lib/ui-routes/account-routes.js:1019
 #: lib/ui-routes/admin-entities-routes.js:2100
 msgid "Could not connect to server"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:977
-#: lib/ui-routes/account-routes.js:981
-#: lib/ui-routes/account-routes.js:1002
-#: lib/ui-routes/account-routes.js:1006
+#: lib/ui-routes/account-routes.js:983
+#: lib/ui-routes/account-routes.js:987
+#: lib/ui-routes/account-routes.js:1008
+#: lib/ui-routes/account-routes.js:1012
 #: lib/ui-routes/admin-entities-routes.js:2089
 #: lib/ui-routes/admin-entities-routes.js:2093
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:996
+#: lib/ui-routes/account-routes.js:1002
 #: lib/ui-routes/admin-entities-routes.js:2083
 msgid "Authentication credentials were not provided"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:999
+#: lib/ui-routes/account-routes.js:1005
 #: lib/ui-routes/admin-entities-routes.js:2086
 msgid "OAuth2 authentication failed"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1016
+#: lib/ui-routes/account-routes.js:1022
 #: lib/ui-routes/admin-entities-routes.js:2103
 msgid "Unexpected server response"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1137
+#: lib/ui-routes/account-routes.js:1143
 msgid "Temporary error, please try again"
 msgstr ""
 
@@ -445,37 +445,37 @@ msgstr ""
 msgid "Couldn't process request. Try again."
 msgstr ""
 
-#: workers/api.js:2228
+#: workers/api.js:2220
 msgid ""
 "The sign-in was cancelled or the requested access was not granted. Open the "
 "account setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2237
+#: workers/api.js:2229
 msgid "Sign-in with the email provider failed: %s"
 msgstr ""
 
-#: workers/api.js:2241
+#: workers/api.js:2233
 msgid "Sign-in with the email provider failed: no authorization code was received"
 msgstr ""
 
-#: workers/api.js:2247
+#: workers/api.js:2239
 msgid "Sign-in with the email provider failed: the request state is not valid"
 msgstr ""
 
-#: workers/api.js:2253
+#: workers/api.js:2245
 msgid ""
 "The account setup session has expired or was already used. Open the account "
 "setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2260
+#: workers/api.js:2252
 msgid ""
 "Sign-in with the email provider failed: the stored setup session is not "
 "valid"
 msgstr ""
 
-#: workers/api.js:3126
-#: workers/api.js:3241
+#: workers/api.js:3118
+#: workers/api.js:3233
 msgid "Requested page not found"
 msgstr ""
