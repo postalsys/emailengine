@@ -1,5 +1,54 @@
 # Changelog
 
+## [2.80.0](https://github.com/postalsys/emailengine/compare/v2.79.9...v2.80.0) (2026-09-09)
+
+
+### Features
+
+* **tls:** manage certificates on their own page, with a real self-signed fallback ([42a1546](https://github.com/postalsys/emailengine/commit/42a154616fdb63b7c3c38de89cffd73110a45526))
+
+
+### Bug Fixes
+
+* **accounts:** keep the authentication server's status out of API and IMAP proxy answers ([79264b0](https://github.com/postalsys/emailengine/commit/79264b0ce471b0dcbc6764e7b1b51b637d2b49f7))
+* **accounts:** stop a credential-service blip from flooding auth webhooks ([51f4f35](https://github.com/postalsys/emailengine/commit/51f4f35c95b6527a9c93ef30eda8b55c629369fc))
+* **admin:** let the account page re-authenticate an OAuth2 account again ([56245f7](https://github.com/postalsys/emailengine/commit/56245f7224eaa998143773a6847d83a9cb39b108))
+* **admin:** stop forced SSO from silently swallowing admin form submissions ([9653c2d](https://github.com/postalsys/emailengine/commit/9653c2db2c1ed6ef0557396b673b2b8a32c94af0))
+* **api:** reload the TLS listeners only when a settings write changed a value ([b2052ac](https://github.com/postalsys/emailengine/commit/b2052acb52cec2063b66af00dab94246edcfffeb))
+* **autodiscovery:** keep a usable server entry when a hostless sibling follows it ([3796668](https://github.com/postalsys/emailengine/commit/37966686762ce7435314e8da25d7ba26add42c6f))
+* **autodiscovery:** make Exchange autodiscovery work at all ([271d85c](https://github.com/postalsys/emailengine/commit/271d85c76349c5ee7259dd18da9d4a132caee0c1))
+* **autodiscovery:** stop a result that names no server from ending a lookup ([e698c3c](https://github.com/postalsys/emailengine/commit/e698c3c2737f464e1d10be2099fb18a8640c7708))
+* **deps:** update @bull-board/api and @bull-board/hapi to 9.9.0 ([14720fb](https://github.com/postalsys/emailengine/commit/14720fbd84a58d405119f865715a672f9b319091))
+* **deps:** update @postalsys/certs to 1.2.1 ([eb2c958](https://github.com/postalsys/emailengine/commit/eb2c9580e2437a317eeea8742ddf9af5c88434e5))
+* **deps:** update @postalsys/certs to 1.3.0 ([08c2d1b](https://github.com/postalsys/emailengine/commit/08c2d1b27ed4aa13bb8130a611dfa73ab164d82b))
+* **gmail:** clear a stale watch failure once push is no longer configured ([b5884fe](https://github.com/postalsys/emailengine/commit/b5884fe886260cb6578db91a7425a37be7261f34))
+* **gmail:** report no watch for an account whose application has no Pub/Sub app ([7e53a20](https://github.com/postalsys/emailengine/commit/7e53a20c45017e8a6484910507ecfd72c0ef75c6))
+* **gmail:** stop a dead Pub/Sub watch from being invisible and self-perpetuating ([206e17d](https://github.com/postalsys/emailengine/commit/206e17da9c74ce10146df51ba40db7dab94aa273))
+* **imap:** announce a folder that appeared while the primary was down ([2afd207](https://github.com/postalsys/emailengine/commit/2afd2070d69e6bb3b791a06a8a14b40ea0696641))
+* **imap:** announce the deletion of a tracked folder missing from the stored listing ([2ead02f](https://github.com/postalsys/emailengine/commit/2ead02f858ac3472f1e86a2984d6fdaf0163a33f))
+* **imap:** answer a malformed message identifier instead of throwing at it ([9be0c9c](https://github.com/postalsys/emailengine/commit/9be0c9ca12a2e7c960b25eb971e405756a766ab6))
+* **imap:** collect the connection-closed error and the attachment download ([8d0e589](https://github.com/postalsys/emailengine/commit/8d0e58946b47054aaac626ec72b0a59ad0f0682a))
+* **imap:** keep a folder found by a pass that could not register it ([0971a4d](https://github.com/postalsys/emailengine/commit/0971a4dee15c7d10dc31f02b5e01e67bb8192e3d))
+* **imap:** match configured folder paths against the spelling the server reports ([328e56a](https://github.com/postalsys/emailengine/commit/328e56a3684530b94b056abbf25d7881417cd470))
+* **imap:** restore the first-sync backfill and the return to the main mailbox ([b0b229c](https://github.com/postalsys/emailengine/commit/b0b229c12f41a0a8313462bafc638e22020673f0))
+* **imap:** stop a disconnect mid-sync from announcing a message without its images ([fab2c15](https://github.com/postalsys/emailengine/commit/fab2c1560a1782e708967afb8bf916bd5e634574))
+* **imap:** stop a read-only folder listing from swallowing the mailboxNew event ([ab76f0d](https://github.com/postalsys/emailengine/commit/ab76f0ddc77bbcc321d1cb207695a2d4e145ecba))
+* **imap:** stop the duplicate mailboxDeleted and the dropped inbox counters ([edd0b0c](https://github.com/postalsys/emailengine/commit/edd0b0cf9e7d2073ab7623bcd6e7fe60bf5dc4c1))
+* **outlook:** keep retrying a subscription the fast retries gave up on ([9583780](https://github.com/postalsys/emailengine/commit/9583780427310e9acdbdbf8351edfc7d5e97bf3d))
+* **outlook:** report an account that can no longer subscribe to changes ([9da07ad](https://github.com/postalsys/emailengine/commit/9da07adc5f9b21aab827f609c6ae1cb98120cdbe))
+* **outlook:** stop a subscription recovery from dropping a newer failure ([bd613fe](https://github.com/postalsys/emailengine/commit/bd613fe829bfa0dd51875752d584947ed623956f))
+* **outlook:** take a subscription report back when the subscription is healthy, keep it across a login ([9bccba8](https://github.com/postalsys/emailengine/commit/9bccba8537c3da969588a0b720b8f5fa2413b3d5))
+* **tls:** let an operator point ACME at a different CA without editing source ([13b382f](https://github.com/postalsys/emailengine/commit/13b382f6e501a3ec34985b3dd3f0c4c542d8716f))
+* **tls:** order a first certificate only for a listener that would serve it ([950185f](https://github.com/postalsys/emailengine/commit/950185fbaed09f050020f136d6673f4e4cf83fc8))
+* **tls:** read the failed renewal from the certificate library instead of inferring it ([c0e4bfd](https://github.com/postalsys/emailengine/commit/c0e4bfd167b3783dcb9d25db9b83a15208779d53))
+* **tls:** redesign the certificates page around what each listener serves ([7dc42ba](https://github.com/postalsys/emailengine/commit/7dc42ba524f91310a36d991d7535e8a0837d6537))
+* **tls:** replace the abandoned ACME stack and ask the CA when to renew ([9364eeb](https://github.com/postalsys/emailengine/commit/9364eebb30921675f3b3f95a03de66504e9ef342))
+* **tls:** report a failed renewal, converge concurrent self-signed replacement ([b1ac9e3](https://github.com/postalsys/emailengine/commit/b1ac9e3102827036a717de695f5c24697f51c5b3))
+* **tls:** report a half-set ACME override, drop the unused listener restart ([fe7771e](https://github.com/postalsys/emailengine/commit/fe7771eb38e2d8cdfb62353d1375d0b52df90eac))
+* **tls:** say plainly that the API listener serves HTTP by default ([31e75ae](https://github.com/postalsys/emailengine/commit/31e75ae8f0a124890b6727e733cdaa17ddda5ec4))
+* **tls:** serve an encrypted operator key, keep the listener settings on reload ([75d16d9](https://github.com/postalsys/emailengine/commit/75d16d93527606708cf0b19ba89288f54382b4e6))
+* **tls:** stop a repeated request from starting a second order, report the listener's own state ([845d4e7](https://github.com/postalsys/emailengine/commit/845d4e7729ff05c8e042607c4639b2c808f88d10))
+
 ## [2.79.9](https://github.com/postalsys/emailengine/compare/v2.79.8...v2.79.9) (2026-09-07)
 
 
