@@ -57,6 +57,19 @@ test('formatGmailWatch()', async t => {
         assert.equal(watch.state, 'error', 'a live expiration does not make a failing renewal fine');
     });
 
+    await t.test('an account whose application has no Pub/Sub app has no watch to report', () => {
+        // The Gmail client clears a leftover record when it next arms a watch, but a send-only or
+        // parked account never arms one, so its months-old failure would read as the current state
+        const leftover = {
+            lastWatch: new Date(Date.now() - 90 * 24 * HOUR),
+            watchFailure: { err: 'OAuth2 request failed', time: new Date(Date.now() - 90 * 24 * HOUR).toISOString() }
+        };
+
+        assert.equal(formatGmailWatch(Object.assign({ _app: { id: 'gmail', provider: 'gmail' } }, leftover)), null);
+        assert.equal(formatGmailWatch(Object.assign({ _app: { id: 'gmail', provider: 'gmail', pubSubApp: 'pubsub-app' } }, leftover)).state, 'error');
+        assert.equal(formatGmailWatch(leftover).state, 'error', 'with no application loaded the record is all there is');
+    });
+
     await t.test('the reported time is the attempt, not the last success', () => {
         // The whole point of the failure record carrying its own timestamp: lastWatch stops moving
         // once renewals start failing, so reporting it would hide how stale the answer is.
