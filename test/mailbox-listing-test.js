@@ -814,7 +814,9 @@ test('Account.getMailboxListing', async t => {
 // trip, the per-folder clear, the logger). Everything under test - the \Noselect filter, the
 // empty-listing guard, the corrupt-entry purge and the Redis write - is the production method
 // itself, reached through IMAPClient.prototype rather than a copy of its logic.
-function createListingClient(list) {
+// `primaryDown` is the state a listing read over a pooled secondary connection can be in: the
+// LIST answers, but there is no primary client, so processListing() registers nothing.
+function createListingClient(list, { primaryDown = false } = {}) {
     const cleared = [];
     let closed = false;
 
@@ -826,11 +828,13 @@ function createListingClient(list) {
             redis: mockRedis,
             logger: { error: () => {}, info: () => {}, debug: () => {}, trace: () => {} },
             accountObject: { loadAccountData: async () => ({ account: ACCOUNT }) },
-            imapClient: {
-                close: () => {
-                    closed = true;
-                }
-            },
+            imapClient: primaryDown
+                ? false
+                : {
+                      close: () => {
+                          closed = true;
+                      }
+                  },
             checkIMAPConnection: () => true,
             getImapConnection: async () => ({ list: async () => list }),
             clearMailboxEntry: async entry => {
@@ -941,6 +945,52 @@ test('IMAPClient.getCurrentListing', async t => {
             ['INBOX'],
             'a folder the sync can not SELECT must not enter the listing'
         );
+        assert.deepStrictEqual(Object.keys(mockRedisData[mailboxListKey]), ['INBOX']);
+    });
+
+    await t.test('a folder found while the primary is down is not recorded as seen', async () => {
+        // listMailboxes() and the subconnection reconciler both list over a pooled secondary,
+        // which is allowed to answer while the primary connection is down - and processListing()
+        // registers nothing in that state, so recording the folder here would be the last time
+        // anything noticed it.
+        seedStoredListing([{ path: 'INBOX', name: 'INBOX', delimiter: '/', noInferiors: false, listed: true, subscribed: true }]);
+        const before = mockRedisData[mailboxListKey].INBOX;
+
+        const { client } = createListingClient([serverFolder('INBOX'), serverFolder('Created Offline')], { primaryDown: true });
+        const listing = await client.getCurrentListing({}, { allowSecondary: true });
+
+        assert.deepStrictEqual(
+            listing.filter(entry => entry.isNew).map(entry => entry.path),
+            ['Created Offline'],
+            'the caller still gets the folder'
+        );
+        assert.deepStrictEqual(Object.keys(mockRedisData[mailboxListKey]), ['INBOX'], 'but it is not stored as a folder that has been seen');
+        assert.strictEqual(before, mockRedisData[mailboxListKey].INBOX, 'and with nothing else changed there is nothing to write at all');
+
+        // The pass that can announce it is the one that records it
+        const { client: reconnected } = createListingClient([serverFolder('INBOX'), serverFolder('Created Offline')]);
+        const again = await reconnected.getCurrentListing({}, {});
+
+        assert.deepStrictEqual(
+            again.filter(entry => entry.isNew).map(entry => entry.path),
+            ['Created Offline'],
+            'the reconnected pass is what discovers it'
+        );
+        assert.deepStrictEqual(Object.keys(mockRedisData[mailboxListKey]).sort(), ['Created Offline', 'INBOX']);
+    });
+
+    await t.test('a folder that disappeared while the primary is down is still cleared', async () => {
+        // A deletion is complete on its own - the folder is gone, its index is cleared and the
+        // announcement is claimed by the same pass - so it is not deferred.
+        seedStoredListing([
+            { path: 'INBOX', name: 'INBOX', delimiter: '/', noInferiors: false, listed: true, subscribed: true },
+            { path: 'Old', name: 'Old', delimiter: '/', noInferiors: false, listed: true, subscribed: true }
+        ]);
+
+        const { client, cleared } = createListingClient([serverFolder('INBOX')], { primaryDown: true });
+        await client.getCurrentListing({}, { allowSecondary: true });
+
+        assert.deepStrictEqual(cleared, ['Old']);
         assert.deepStrictEqual(Object.keys(mockRedisData[mailboxListKey]), ['INBOX']);
     });
 
