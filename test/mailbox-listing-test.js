@@ -1021,11 +1021,34 @@ test('IMAPClient.getCurrentListing', async t => {
     });
 });
 
+// The connection half of the Mailbox.clear() fixture: the folder map and the notifier that two
+// holders of the same listing snapshot share, because in production they live on one IMAPClient.
+function createClearableConnection() {
+    const notifications = [];
+
+    // The notifier's record hangs on the connection because that is what the reuse call sites
+    // share: one IMAPClient, one folder map, one notification stream
+    return {
+        redis: mockRedis,
+        mailboxes: new Map(),
+        notifications,
+        getMailboxListKey: () => mailboxListKey,
+        notify: async (mailbox, event, data) => {
+            notifications.push({ event, path: data.path });
+        }
+    };
+}
+
 // Drives the REAL Mailbox.clear() through the prototype. Constructing a Mailbox would pull in a
 // whole connection and a SyncOperations instance for a method that only touches Redis, the
 // in-memory folder map and the notifier, so the receiver carries exactly those.
-function createClearableMailbox(path) {
-    const notifications = [];
+// `tracked: false` is the instance clearMailboxEntry() builds when the connection no longer
+// tracks the folder; `connection` reuses another fixture's connection so the two clears race
+// over the same map and notifier, which is why the notifications ride on the connection.
+function createClearableMailbox(path, opts) {
+    opts = opts || {};
+
+    const connection = opts.connection || createClearableConnection();
 
     const receiver = {
         path,
@@ -1035,22 +1058,17 @@ function createClearableMailbox(path) {
         getMailboxKey: () => `${REDIS_PREFIX}iam:${ACCOUNT}:h:${path}`,
         getMessagesKey: () => `${REDIS_PREFIX}iam:${ACCOUNT}:l:${path}`,
         getNotificationsKey: () => `${REDIS_PREFIX}iam:${ACCOUNT}:n:${path}`,
-        connection: {
-            redis: mockRedis,
-            mailboxes: new Map(),
-            getMailboxListKey: () => mailboxListKey,
-            notify: async (mailbox, event, data) => {
-                notifications.push({ event, path: data.path });
-            }
-        },
+        connection,
         clear: Mailbox.prototype.clear
     };
 
-    // Keyed the way IMAPClient keys it, so the map cleanup in clear() is actually covered for a
-    // path that normalizes to something else
-    receiver.connection.mailboxes.set(normalizePath(path), receiver);
+    if (opts.tracked !== false) {
+        // Keyed the way IMAPClient keys it, so the map cleanup in clear() is actually covered
+        // for a path that normalizes to something else
+        connection.mailboxes.set(normalizePath(path), receiver);
+    }
 
-    return { receiver, notifications };
+    return { receiver, notifications: connection.notifications, connection };
 }
 
 test('Mailbox.clear() deletion announcement', async t => {
@@ -1072,16 +1090,48 @@ test('Mailbox.clear() deletion announcement', async t => {
     await t.test('a second clear of the same folder announces nothing', async () => {
         // Two listing passes overlap whenever an API request lands during the resync walk, and
         // both read the stored listing before either writes it back. Without the HDEL claim both
-        // find the folder missing from the server and both send mailboxDeleted.
+        // find the folder missing from the server and both send mailboxDeleted. The second pass
+        // reaches clearMailboxEntry() with the folder already gone from the connection's map, so
+        // it clears through an instance that tracks nothing.
         seedStoredListing([serverFolder('INBOX'), serverFolder('Spam')]);
-        const { receiver, notifications } = createClearableMailbox('Spam');
-        const second = createClearableMailbox('Spam');
+        const { receiver, notifications, connection } = createClearableMailbox('Spam');
 
         await receiver.clear();
+
+        const second = createClearableMailbox('Spam', { connection, tracked: false });
+        await second.receiver.clear();
+
+        assert.deepStrictEqual(notifications, [{ event: MAILBOX_DELETED_NOTIFY, path: 'Spam' }], 'the pass that claimed neither must stay quiet');
+    });
+
+    await t.test('a tracked folder missing from the stored listing is still announced once', async () => {
+        // The listing hash is not the only record of a folder: processListing() registers a
+        // Mailbox without writing the hash, and a pass that could not register the folder (no
+        // primary connection) or purged a corrupt value writes the hash back without it. Gating
+        // on the HDEL alone tore such a folder down in silence, and no later pass could announce
+        // it either - the deletions a pass reports come from the very hash it is missing from.
+        seedStoredListing([serverFolder('INBOX')]);
+        const { receiver, notifications, connection } = createClearableMailbox('Spam');
+
+        await receiver.clear();
+
+        assert.deepStrictEqual(notifications, [{ event: MAILBOX_DELETED_NOTIFY, path: 'Spam' }]);
+        assert.strictEqual(connection.mailboxes.size, 0);
+
+        // and the claim is spent: an overlapping pass over the same connection stays quiet
+        const second = createClearableMailbox('Spam', { connection, tracked: false });
         await second.receiver.clear();
 
         assert.strictEqual(notifications.length, 1);
-        assert.deepStrictEqual(second.notifications, [], 'the pass that did not remove the entry must stay quiet');
+    });
+
+    await t.test('a folder that is neither tracked nor listed announces nothing', async () => {
+        seedStoredListing([serverFolder('INBOX')]);
+        const { receiver, notifications } = createClearableMailbox('Spam', { tracked: false });
+
+        await receiver.clear();
+
+        assert.deepStrictEqual(notifications, [], 'nothing was claimed, so there is nothing to announce');
     });
 
     await t.test('skipNotify clears the folder without announcing it', async () => {

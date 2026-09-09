@@ -54,6 +54,31 @@ test('runFastSync reads its snapshots under the lock', async () => {
     assertLockReleased(calls);
 });
 
+// A caller-supplied snapshot is not a shortcut: onOpen() reads the stored state before the
+// lock to pick a strategy from, and a sync ahead of this one in the lock queue (the EXISTS
+// debounce, or a previous connection's open still unwinding after a reconnect) has moved
+// uidNext on by the time the lock is granted. Trusting that copy re-FETCHes a range that was
+// already handled, up to the whole folder when it reports no uidNext at all.
+const STALE_STORED_STATUS = { hasStoredState: true, uidValidity: 123n, uidNext: 1, highestModseq: 2n, messages: 0, initialUidNext: 1, lastFullSync: false };
+
+test('runPartialSync ignores a stored snapshot handed to it', async () => {
+    const { ctx, calls, counters } = createSyncOperationsContext();
+
+    await SyncOperations.prototype.runPartialSync.call(ctx, STALE_STORED_STATUS);
+
+    assertReadUnderLock(calls, counters);
+    assert.equal(calls.fetch.range, '4:*', 'the range must come from the state read under the lock');
+});
+
+test('runFastSync ignores a stored snapshot handed to it', async () => {
+    const { ctx, calls, counters } = createSyncOperationsContext({ imapIndexer: 'fast' });
+
+    await SyncOperations.prototype.runFastSync.call(ctx, STALE_STORED_STATUS);
+
+    assertReadUnderLock(calls, counters);
+    assert.equal(calls.fetch.range, '4:*', 'the range must come from the state read under the lock');
+});
+
 test('runFullSync reads its snapshots under the lock', async () => {
     const { ctx, calls, counters } = createSyncOperationsContext();
 

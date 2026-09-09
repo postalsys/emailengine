@@ -85,7 +85,8 @@ function createProcessCtx(trackedPaths, accountPath = '*') {
                     calls.loads++;
                     return { path: accountPath };
                 }
-            }
+            },
+            registerMailbox: IMAPClient.prototype.registerMailbox
         }
     };
 }
@@ -155,4 +156,47 @@ test('a configured special-use token still selects its folder', async () => {
 
     assert.equal(!!ctx.mailboxes.get('Sent').syncDisabled, false);
     assert.equal(!!ctx.mailboxes.get('INBOX').syncDisabled, true);
+});
+
+// --- registerMailbox(): the pending mailboxNew survives a reconnect ---
+
+test('re-registering a folder carries over a mailboxNew that was never sent', async () => {
+    // The initial sync of a new folder can take minutes, and a disconnect in that window
+    // leaves the flag set on the instance. The reconnect registers the folder from a listing
+    // that no longer reports it as new - it has been in the stored listing since the pass that
+    // discovered it - so without the carry-over the folder is silently never announced.
+    const { ctx } = createProcessCtx([]);
+
+    const first = IMAPClient.prototype.registerMailbox.call(ctx, { path: 'Archive', isNew: true });
+    assert.equal(first.listingEntry.isNew, true);
+
+    const second = IMAPClient.prototype.registerMailbox.call(ctx, { path: 'Archive' });
+
+    assert.notEqual(second, first, 'the folder is tracked by the new instance');
+    assert.equal(ctx.mailboxes.get('Archive'), second);
+    assert.equal(second.listingEntry.isNew, true, 'the next successful open must announce it');
+});
+
+test('a folder whose first sync completed is not announced again', async () => {
+    const { ctx } = createProcessCtx([]);
+
+    const first = IMAPClient.prototype.registerMailbox.call(ctx, { path: 'Archive', isNew: true });
+    // What onOpen() does once it has emitted the mailboxNew
+    first.listingEntry.isNew = false;
+
+    const second = IMAPClient.prototype.registerMailbox.call(ctx, { path: 'Archive' });
+
+    assert.equal(!!second.listingEntry.isNew, false);
+});
+
+test('the pending flag is carried over through the normalized path', async () => {
+    // The map is keyed through normalizePath(), so a server that lists "Inbox" one pass and
+    // "INBOX" the next must still be recognised as the same folder
+    const { ctx } = createProcessCtx([]);
+
+    IMAPClient.prototype.registerMailbox.call(ctx, { path: 'Inbox', isNew: true });
+    const second = IMAPClient.prototype.registerMailbox.call(ctx, { path: 'INBOX' });
+
+    assert.equal(ctx.mailboxes.size, 1);
+    assert.equal(second.listingEntry.isNew, true);
 });
