@@ -64,6 +64,25 @@ function stubCerts(opts) {
     };
 }
 
+/**
+ * Waits for a background order to reach a state, so a test never asserts on a half-finished one.
+ *
+ * @param {Function} check Called until it returns something truthy
+ * @param {string} message What was being waited for
+ * @returns {Promise<*>} Whatever the check returned
+ */
+async function waitFor(check, message) {
+    for (let i = 0; i < 200; i++) {
+        const result = await check();
+        if (result) {
+            return result;
+        }
+        await new Promise(resolve => setTimeout(resolve, 20));
+    }
+
+    throw new Error(`Timed out waiting for ${message}`);
+}
+
 async function issued(hostname) {
     const material = await createSelfSignedCertificate({ hostnames: [hostname] });
     return {
@@ -398,6 +417,50 @@ test('certificate provisioning', async t => {
 
         // The state is written before the order starts, so the page has something to follow.
         assert.ok(['queued', 'ordering', 'valid'].includes((await provision.getProvisioningStatus())['mail.example.com'].state));
+    });
+
+    await t.test('a second request does not start a second order for the same hostname', async () => {
+        // Clicking "Request certificate" twice used to schedule the running name a second time:
+        // the in-flight check reported it as accepted, and the list that was scheduled was then
+        // re-derived from the accepted names. The second order overwrites the state the first one
+        // is reporting through, waits out the certificate library's per-domain lock and records a
+        // failure of its own, and its completion releases the name while the first order is still
+        // running - so a third click stacks another one on top.
+        let release;
+        const gate = new Promise(resolve => {
+            release = resolve;
+        });
+
+        const certs = stubCerts({
+            async onAcquire(hostname) {
+                await gate;
+                return await issued(hostname);
+            }
+        });
+
+        const commands = [];
+        const call = async message => commands.push(message.cmd);
+
+        // A name of its own: the in-flight set outlives a test, and an order another test left
+        // running would look exactly like the second click this one is about.
+        const hostname = 'twice.example.com';
+
+        const first = await provision.requestProvisioning({ certs, logger, call, hostnames: [hostname] });
+        const second = await provision.requestProvisioning({ certs, logger, call, hostnames: [hostname] });
+
+        assert.deepEqual(first.accepted, [hostname]);
+        assert.deepEqual(second.accepted, [hostname], 'an order already running is still an accepted answer');
+        assert.deepEqual(second.declined, []);
+
+        release();
+
+        await waitFor(async () => {
+            const record = (await provision.getProvisioningStatus())[hostname];
+            return record && record.state === 'valid' && commands.length === 3 ? record : false;
+        }, 'the background order to finish');
+
+        assert.equal(certs.calls.filter(entry => entry.skipAcquire === false).length, 1, 'one order reached the certificate authority, not two');
+        assert.equal((await provision.getProvisioningStatus())[hostname].state, 'valid', 'and nothing overwrote it with a failure');
     });
 
     await t.test('provisioning state can be cleared for a hostname that is no longer served', async () => {

@@ -116,6 +116,60 @@ test('publicView()', async t => {
     });
 });
 
+test('listenerCertificateSummary()', async t => {
+    // What the SMTP and IMAP proxy pages show next to their own TLS checkbox. They read the
+    // listener's own report, which is JSON out of a Redis hash: every date in it is a string.
+    const reported = source => ({
+        source,
+        fingerprint: 'AA:BB',
+        validFrom: new Date(Date.now() - DAY).toISOString(),
+        validTo: new Date(Date.now() + 60 * DAY).toISOString()
+    });
+
+    await t.test('carries the provisioning state the report cannot know about', () => {
+        // Without it these pages could only ever say "Valid", including under a renewal that had
+        // been failing for weeks - which is exactly the failure the badge exists to show.
+        assert.equal(status.listenerCertificateSummary({ reported: reported('acme'), hostname: 'mail.example.com' }).label.text, 'Valid');
+
+        const summary = status.listenerCertificateSummary({
+            reported: reported('acme'),
+            hostname: 'mail.example.com',
+            status: { state: 'renewalFailed', message: 'Could not renew, still serving the current one' }
+        });
+
+        assert.equal(summary.label.type, 'warning');
+        assert.equal(summary.label.text, 'Renewal failed');
+        assert.equal(summary.hostname, 'mail.example.com');
+        assert.equal(summary.certificate.sourceLabel, "Let's Encrypt");
+    });
+
+    await t.test('reports an order in flight rather than the certificate it will replace', () => {
+        const summary = status.listenerCertificateSummary({
+            reported: reported('self-signed'),
+            hostname: 'mail.example.com',
+            status: { state: 'ordering', message: 'Requesting a certificate for mail.example.com' }
+        });
+
+        assert.equal(summary.label.text, 'Requesting');
+    });
+
+    await t.test('rehydrates both dates, so a clock problem is still visible', () => {
+        const notYet = Object.assign(reported('env'), { validFrom: new Date(Date.now() + DAY).toISOString() });
+
+        assert.equal(status.listenerCertificateSummary({ reported: notYet, hostname: 'mail.example.com' }).label.text, 'Not yet valid');
+    });
+
+    await t.test('has nothing to say about a listener that has not reported', () => {
+        // The empty shape rather than nothing at all, so the page has one thing to render and one
+        // field to test for when it falls back to the stored model.
+        assert.deepEqual(status.listenerCertificateSummary({ reported: null, hostname: 'mail.example.com' }), {
+            hostname: 'mail.example.com',
+            certificate: null,
+            label: null
+        });
+    });
+});
+
 test('buildCertificateStatus()', async t => {
     t.after(async () => {
         const keys = await redis.keys(`${REDIS_PREFIX}*`);
@@ -248,6 +302,82 @@ test('buildCertificateStatus()', async t => {
         });
 
         assert.equal(model.certificates[0].statusVariant, 'warning');
+    });
+
+    await t.test('a hostname served from the environment is not reported as missing', async () => {
+        // Material from EENGINE_*_TLS_CERT is per listener and per process, so nothing this model
+        // reads knows about it. An instance configured only that way had every hostname painted
+        // red as "Missing" while every listener was serving it perfectly well.
+        const certs = {
+            async getCertificate() {
+                return false;
+            }
+        };
+
+        const model = await status.buildCertificateStatus({
+            certs,
+            // A promise, the way the page hands it over: its listener reads and these reads overlap
+            reported: Promise.resolve([
+                null,
+                {
+                    source: 'env',
+                    subject: 'CN=mail.example.com',
+                    issuer: 'CN=Example CA',
+                    fingerprint: 'AA:BB',
+                    // Which configured names the listener resolved to that material. Only the
+                    // listener knows, which is the whole reason it reports them.
+                    envHostnames: ['mail.example.com'],
+                    validFrom: new Date(Date.now() - DAY).toISOString(),
+                    validTo: new Date(Date.now() + 60 * DAY).toISOString()
+                }
+            ])
+        });
+
+        assert.equal(model.certificates[0].certificate.source, 'env');
+        assert.equal(model.certificates[0].certificate.sourceLabel, 'Environment');
+        assert.equal(model.certificates[0].label.text, 'From environment');
+        assert.equal(typeof model.certificates[0].certificate.validToIso, 'string', 'the dates survive the trip through Redis as strings');
+
+        // And reading a listener's report still mints nothing.
+        assert.equal(await redis.hget(store.TLS_KEY, store.SELF_SIGNED_FIELD), null);
+    });
+
+    await t.test('a listener report only answers for the names it says it serves', async () => {
+        await settings.set('tlsHostnames', ['smtp.example.com', 'deep.sub.example.com']);
+
+        const certs = {
+            async getCertificate() {
+                return false;
+            }
+        };
+
+        const model = await status.buildCertificateStatus({
+            certs,
+            reported: [
+                {
+                    source: 'env',
+                    // The listener resolved this material for two of the three configured names.
+                    // What the certificate covers is not the question: it is the listener that
+                    // decided, name by name, and a name it did not resolve to it is served
+                    // something else.
+                    envHostnames: ['mail.example.com', 'smtp.example.com'],
+                    altNames: ['*.example.com'],
+                    validTo: new Date(Date.now() + 60 * DAY).toISOString()
+                },
+                // Everything but env material is stored, so it is resolved rather than believed
+                {
+                    source: 'acme',
+                    envHostnames: ['deep.sub.example.com'],
+                    altNames: ['deep.sub.example.com'],
+                    validTo: new Date(Date.now() + 60 * DAY).toISOString()
+                }
+            ]
+        });
+
+        assert.equal(model.certificates[0].label.text, 'From environment');
+        assert.equal(model.certificates[1].label.text, 'From environment');
+        assert.equal(model.certificates[2].certificate, false, 'a name the listener did not resolve to it, however the wildcard reads');
+        assert.equal(model.certificates[2].label.text, 'Missing');
     });
 
     await t.test('names the certificate authority it is pointed at', async () => {

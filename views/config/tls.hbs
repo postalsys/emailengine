@@ -20,8 +20,8 @@
 <div class="card bg-base-100 shadow-md mb-6" data-hostname-card="{{this.hostname}}">
     <div class="card-header flex items-center justify-between gap-4">
         <h6 class="card-title text-primary font-mono">{{this.hostname}}</h6>
-        <span class="badge badge-{{eeColor this.label.type}}" data-cert-badge="{{this.hostname}}"
-            title="{{this.label.title}}">{{this.label.text}}</span>
+        {{> ui/badge label=this.label.text variant=this.label.type title=this.label.title dataName="cert-badge"
+        dataValue=this.hostname}}
     </div>
 
     <div class="card-body">
@@ -190,7 +190,7 @@
                 </td>
                 <td>
                     {{#if this.active}}
-                    <div>{{this.active.source}}</div>
+                    <div>{{this.active.sourceLabel}}</div>
                     <div class="text-base-content/60 font-mono text-xs break-all">{{this.active.fingerprint}}</div>
                     {{else}}
                     <span class="text-base-content/60">{{#if this.hint}}{{this.hint}}{{else}}Not serving TLS{{/if}}</span>

@@ -9,9 +9,13 @@
       elId    - element id (optional). NOT named `id`: Handlebars merges hash params
                 into the caller's context, so a partial reading `id` also inherits one
                 that merely happens to be in scope - a row's id inside {{#each}}
+      title   - native tooltip text, for a badge whose one word needs a sentence
+                behind it (optional)
+      dataName/dataValue - one data-* attribute, e.g. dataName="cert-badge", for a
+                page script that repaints this badge later (optional)
       class   - extra classes, e.g. "state-info" hooks (optional)
 --}}
-<span {{#if elId}}id="{{elId}}" {{/if}}class="badge badge-{{eeColor variant}}{{#if soft}} badge-soft{{/if}}{{#if class}} {{class}}{{/if}}">
+<span {{#if elId}}id="{{elId}}" {{/if}}{{#if title}}title="{{title}}" {{/if}}{{#if dataName}}data-{{dataName}}="{{dataValue}}" {{/if}}class="badge badge-{{eeColor variant}}{{#if soft}} badge-soft{{/if}}{{#if class}} {{class}}{{/if}}">
     {{~#if icon}}<span class="{{icon}} size-3.5 shrink-0"></span>{{/if~}}
-    {{~#if label includeZero=true}}{{label}}{{else if @partial-block}}{{> @partial-block label="" variant="" soft="" icon="" id="" class=""}}{{/if~}}
+    {{~#if label includeZero=true}}{{label}}{{else if @partial-block}}{{> @partial-block label="" variant="" soft="" icon="" id="" elId="" title="" dataName="" dataValue="" class=""}}{{/if~}}
 </span>
