@@ -249,12 +249,10 @@ async function init() {
         // lib/tls/context.js keeps it ahead of every automatic source instead.
         loadTlsConfig(serverOptions, 'EENGINE_SMTP_TLS_');
 
-        // Snapshot before merging. The resolved material is written back into serverOptions, so
-        // handing the same object to a later refresh would make every refresh believe the operator
-        // had supplied the certificate through the environment.
-        const envMaterial = { cert: serverOptions.cert, key: serverOptions.key, ca: serverOptions.ca };
-
-        tlsContext = await createTlsContext({ certs, logger, envMaterial });
+        // The material loaded above is snapshotted inside, at entry. The resolved material is
+        // written back into serverOptions below, so a later refresh reading this object again would
+        // believe the operator had supplied whatever it resolved through the environment.
+        tlsContext = await createTlsContext({ certs, logger, listenerOptions: serverOptions });
         Object.assign(serverOptions, tlsContext.options);
 
         // Reached only when there is no material at all, which now means the self-signed fallback

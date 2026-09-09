@@ -14,12 +14,13 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const crypto = require('crypto');
 const tls = require('tls');
 
 process.env.EENGINE_REDIS_PREFIX = 'test_tls_context';
 process.env.EENGINE_SECRET = 'tls-context-test-secret';
 
-const { createTlsContext } = require('../lib/tls/context');
+const { createTlsContext, applyTlsContext } = require('../lib/tls/context');
 const store = require('../lib/tls/store');
 const settings = require('../lib/settings');
 const { redis } = require('../lib/db');
@@ -54,7 +55,9 @@ async function servedSubject(context, servername) {
     // The SNI callback hands back a SecureContext, which has no readable certificate, so serve it
     // for real and read what the client received. That also proves the context is usable.
     const options = context.options;
-    const server = tls.createServer({ cert: options.cert, key: options.key, SNICallback: options.SNICallback }, socket => socket.end('ok'));
+    const server = tls.createServer({ cert: options.cert, key: options.key, passphrase: options.passphrase, SNICallback: options.SNICallback }, socket =>
+        socket.end('ok')
+    );
 
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 
@@ -70,6 +73,17 @@ async function servedSubject(context, servername) {
     } finally {
         server.close();
     }
+}
+
+/**
+ * The same key, encrypted the way an operator's key file is.
+ *
+ * @param {string} privateKey PEM private key
+ * @param {string} passphrase Passphrase to protect it with
+ * @returns {string} Encrypted PEM private key
+ */
+function encryptKey(privateKey, passphrase) {
+    return crypto.createPrivateKey(privateKey).export({ type: 'pkcs8', format: 'pem', cipher: 'aes-256-cbc', passphrase }).toString();
 }
 
 test('TLS context resolution', async t => {
@@ -127,6 +141,183 @@ test('TLS context resolution', async t => {
 
         assert.equal(await servedSubject(context, 'smtp.example.com'), 'smtp.example.com');
         assert.equal(await servedSubject(context, undefined), 'env.example.com');
+    });
+
+    await t.test('environment material does not hide an uploaded certificate for another name', async () => {
+        // The uploaded certificate used to be skipped for the whole listener as soon as the
+        // environment supplied one, so a second configured hostname was served the fallback while
+        // the configuration page listed its certificate as installed.
+        await settings.set('tlsHostnames', ['smtp.example.com']);
+
+        const env = await createSelfSignedCertificate({ hostnames: ['mail.example.com'] });
+        const manual = await createSelfSignedCertificate({ hostnames: ['smtp.example.com'] });
+        await store.setManualCertificate({ cert: manual.cert, privateKey: manual.privateKey });
+
+        const context = await createTlsContext({
+            certs: fakeCerts({}),
+            logger,
+            envMaterial: { cert: env.cert, key: env.privateKey }
+        });
+
+        assert.equal(context.source, 'env');
+        assert.equal(await servedSubject(context, 'smtp.example.com'), 'smtp.example.com');
+    });
+
+    await t.test('the listener options are where the environment material is read from', async () => {
+        // The caller merges the resolved options back into the same object, so the material is
+        // picked off it here, at entry, rather than being copied out by every listener in turn.
+        const env = await createSelfSignedCertificate({ hostnames: ['mail.example.com'] });
+        const listenerOptions = { cert: env.cert, key: env.privateKey, minVersion: 'TLSv1.2' };
+
+        const context = await createTlsContext({ certs: fakeCerts({}), logger, listenerOptions });
+
+        assert.equal(context.source, 'env');
+        assert.equal(context.active.fingerprint, env.fingerprint);
+
+        // And it is read once, at entry: a listener with no material of its own merges the resolved
+        // options into the same object, which a second reading would take for the operator's own.
+        const issued = await createSelfSignedCertificate({ hostnames: ['mail.example.com'] });
+        const bare = { minVersion: 'TLSv1.2' };
+        const resolvedContext = await createTlsContext({ certs: fakeCerts({ 'mail.example.com': issued }), logger, listenerOptions: bare });
+        Object.assign(bare, resolvedContext.options);
+
+        await resolvedContext.refresh();
+        assert.equal(resolvedContext.source, 'acme');
+    });
+
+    await t.test('an encrypted environment key is served with its passphrase', async () => {
+        // Without the passphrase the context fails to build, and the listener quietly served the
+        // self-signed fallback instead of the certificate it was configured with.
+        const env = await createSelfSignedCertificate({ hostnames: ['mail.example.com'] });
+
+        const context = await createTlsContext({
+            certs: fakeCerts({}),
+            logger,
+            envMaterial: { cert: env.cert, key: encryptKey(env.privateKey, 'hunter2'), passphrase: 'hunter2' }
+        });
+
+        assert.equal(context.source, 'env');
+        assert.equal(await servedSubject(context, 'mail.example.com'), 'mail.example.com');
+    });
+
+    await t.test('an encrypted environment key with no passphrase is reported, not served as something else', async () => {
+        const env = await createSelfSignedCertificate({ hostnames: ['mail.example.com'] });
+
+        const errors = [];
+        const failLogger = Object.assign({}, logger, {
+            error(entry) {
+                errors.push(entry);
+            }
+        });
+
+        const context = await createTlsContext({
+            certs: fakeCerts({}),
+            logger: failLogger,
+            envMaterial: { cert: env.cert, key: encryptKey(env.privateKey, 'hunter2') }
+        });
+
+        assert.equal(context.source, 'self-signed');
+        assert.ok(
+            errors.some(entry => entry.source === 'env'),
+            'and the operator is told which certificate could not be loaded'
+        );
+    });
+
+    await t.test('the handshake settings travel with the options a listener installs', async () => {
+        // What the listener installs and what the SNI callback hands back are built from one set,
+        // so a reload cannot quietly install a context that has lost the operator's settings.
+        await settings.set('tlsHostnames', ['smtp.example.com']);
+
+        const smtp = await createSelfSignedCertificate({ hostnames: ['smtp.example.com'] });
+        const mail = await createSelfSignedCertificate({ hostnames: ['mail.example.com'] });
+
+        const context = await createTlsContext({
+            certs: fakeCerts({ 'mail.example.com': mail, 'smtp.example.com': smtp }),
+            logger,
+            listenerOptions: { minVersion: 'TLSv1.2', ciphers: 'ECDHE-RSA-AES128-GCM-SHA256', requestCert: true }
+        });
+
+        assert.equal(context.options.minVersion, 'TLSv1.2');
+        assert.equal(context.options.ciphers, 'ECDHE-RSA-AES128-GCM-SHA256');
+
+        // A listener option, not a context option, and nothing here has any business changing it.
+        assert.equal(typeof context.options.requestCert, 'undefined');
+
+        // And the per-name contexts still build and serve with them applied.
+        assert.equal(await servedSubject(context, 'smtp.example.com'), 'smtp.example.com');
+    });
+
+    await t.test('a reload hands the listener the operator settings along with the certificate', async () => {
+        // tls.Server.setSecureContext() replaces the whole context, so a reload that sent only the
+        // certificate and key dropped an mTLS `ca` and the configured version bounds at the first
+        // renewal - months after the listener had started, with nothing to connect it to.
+        const issued = await createSelfSignedCertificate({ hostnames: ['mail.example.com'] });
+        const clientCa = await createSelfSignedCertificate({ hostnames: ['client.example.com'] });
+
+        const context = await createTlsContext({
+            certs: fakeCerts({ 'mail.example.com': issued }),
+            logger,
+            listenerOptions: { minVersion: 'TLSv1.3', ciphers: 'TLS_AES_256_GCM_SHA384', ca: clientCa.cert }
+        });
+
+        let applied = null;
+        const result = await applyTlsContext({ context, apply: options => (applied = options), logger });
+
+        assert.equal(result.updated, true);
+        assert.equal(applied.minVersion, 'TLSv1.3');
+        assert.equal(applied.ciphers, 'TLS_AES_256_GCM_SHA384');
+        assert.equal(applied.ca, clientCa.cert);
+        assert.ok(applied.cert.includes('BEGIN CERTIFICATE'));
+        assert.ok(applied.key);
+        assert.equal(typeof applied.SNICallback, 'function');
+
+        // Present even though this material has none: the listener merges these into the options it
+        // holds, so a passphrase belonging to material it no longer serves has to be cleared.
+        assert.ok('passphrase' in applied);
+        assert.equal(applied.passphrase, undefined);
+    });
+
+    await t.test('active describes the certificate the way the store does', async () => {
+        // The listener state feeds the configuration page, which reports a certificate that is not
+        // valid yet and lists the names it covers. Both fields were missing from this shape.
+        const issued = await createSelfSignedCertificate({ hostnames: ['mail.example.com', 'smtp.example.com'] });
+
+        const context = await createTlsContext({ certs: fakeCerts({ 'mail.example.com': issued }), logger });
+        const active = context.active;
+
+        assert.equal(active.source, 'acme');
+        assert.equal(active.fingerprint, issued.fingerprint);
+        assert.deepEqual(active.altNames, ['mail.example.com', 'smtp.example.com']);
+        assert.ok(active.validFrom instanceof Date);
+        assert.ok(active.validTo instanceof Date);
+        assert.equal(active.selfSigned, true);
+        assert.ok(active.serialNumber);
+        assert.ok(active.fingerprint256);
+        assert.ok(active.subject);
+        assert.ok(active.issuer);
+
+        // Nothing here came from the environment, and the certificate page reads that off this list
+        assert.deepEqual(active.envHostnames, []);
+    });
+
+    await t.test('active names the configured hostnames served from environment material', async () => {
+        // The page has no way of knowing: that material is per listener and per process, so a name
+        // served only through EENGINE_SMTP_TLS_CERT was painted red as "Missing" while the listener
+        // served it perfectly well. The listener is what reports which names it resolved to it.
+        await settings.set('tlsHostnames', ['smtp.example.com']);
+
+        const env = await createSelfSignedCertificate({ hostnames: ['mail.example.com'] });
+        const smtp = await createSelfSignedCertificate({ hostnames: ['smtp.example.com'] });
+
+        const context = await createTlsContext({
+            certs: fakeCerts({ 'smtp.example.com': smtp }),
+            logger,
+            envMaterial: { cert: env.cert, key: env.privateKey }
+        });
+
+        // Only the name the environment material answered for; the other one is stored, and the
+        // page resolves that for itself.
+        assert.deepEqual(context.active.envHostnames, ['mail.example.com']);
     });
 
     await t.test('an uploaded certificate outranks the automatic one', async () => {

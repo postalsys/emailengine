@@ -34,6 +34,18 @@ async function pair(hostnames) {
     return await createSelfSignedCertificate({ hostnames });
 }
 
+/**
+ * Does this PEM cover this name? The store answers for a parsed certificate, because every caller
+ * on the accept path already holds one.
+ *
+ * @param {string} cert PEM certificate
+ * @param {string} hostname Name to check
+ * @returns {boolean} True when the certificate may be served for that name
+ */
+function covers(cert, hostname) {
+    return store.coversHostname(store.parseCertificate(cert), hostname);
+}
+
 test('TLS material store', async t => {
     t.after(async () => {
         const keys = await redis.keys(`${REDIS_PREFIX}*`);
@@ -64,14 +76,14 @@ test('TLS material store', async t => {
         assert.deepEqual(store.splitPemChain(null), []);
     });
 
-    await t.test('certificateCovers() answers for names, addresses and nothing else', async () => {
+    await t.test('coversHostname() answers for names, addresses and nothing else', async () => {
         const material = await pair(['mail.example.com', '192.0.2.10']);
 
-        assert.equal(store.certificateCovers(material.cert, 'mail.example.com'), true);
-        assert.equal(store.certificateCovers(material.cert, '192.0.2.10'), true);
-        assert.equal(store.certificateCovers(material.cert, 'other.example.com'), false);
-        assert.equal(store.certificateCovers('garbage', 'mail.example.com'), false);
-        assert.equal(store.certificateCovers(material.cert, ''), false);
+        assert.equal(covers(material.cert, 'mail.example.com'), true);
+        assert.equal(covers(material.cert, '192.0.2.10'), true);
+        assert.equal(covers(material.cert, 'other.example.com'), false);
+        assert.equal(covers('garbage', 'mail.example.com'), false);
+        assert.equal(covers(material.cert, ''), false);
     });
 
     await t.test('describeCertificate() reports the fields the UI renders', async () => {
@@ -83,6 +95,11 @@ test('TLS material store', async t => {
         assert.equal(described.fingerprint, material.fingerprint);
         assert.ok(described.validTo instanceof Date);
         assert.equal(store.describeCertificate('garbage'), false);
+
+        // The same description from an already parsed certificate, for the callers that hold one
+        // and would otherwise parse the same bytes twice.
+        assert.deepEqual(store.describeX509(store.parseCertificate(material.cert)), described);
+        assert.equal(store.describeX509(false), false);
     });
 
     await t.test('getCertificateHostnames() puts the service hostname first', async () => {
@@ -212,7 +229,7 @@ test('TLS material store', async t => {
         // Regenerating on every call would break whoever pinned the fingerprint.
         assert.equal(second.fingerprint, first.fingerprint);
         assert.equal(first.source, 'self-signed');
-        assert.ok(store.certificateCovers(first.cert, 'mail.example.com'));
+        assert.ok(covers(first.cert, 'mail.example.com'));
     });
 
     await t.test('getSelfSignedCertificate() replaces one that no longer covers the configured names', async () => {
@@ -220,14 +237,17 @@ test('TLS material store', async t => {
         const second = await store.getSelfSignedCertificate(['mail.example.com', 'smtp.example.com']);
 
         assert.notEqual(second.fingerprint, first.fingerprint);
-        assert.ok(store.certificateCovers(second.cert, 'smtp.example.com'));
+        assert.ok(covers(second.cert, 'smtp.example.com'));
     });
 
     await t.test('getSelfSignedCertificate() falls back to localhost when nothing is configured', async () => {
         const material = await store.getSelfSignedCertificate([]);
 
         // A listener with TLS switched on and no service URL still has to start.
-        assert.ok(store.certificateCovers(material.cert, store.FALLBACK_HOSTNAME));
+        assert.ok(covers(material.cert, store.FALLBACK_HOSTNAME));
+
+        // A list of nothing but empty entries is the same case.
+        assert.ok(covers((await store.getSelfSignedCertificate(['', null])).cert, store.FALLBACK_HOSTNAME));
     });
 
     await t.test('the self-signed private key is encrypted at rest', async () => {
@@ -295,7 +315,7 @@ test('TLS material store', async t => {
         // And it is the one that was stored, not one the loser kept to itself
         const stored = await store.peekSelfSignedCertificate();
         assert.equal(stored.fingerprint, results[0].fingerprint);
-        assert.ok(store.certificateCovers(stored.cert, 'mail.example.com'));
+        assert.ok(covers(stored.cert, 'mail.example.com'));
     });
 
     await t.test('coversHostname() does not throw on the SNI path', async () => {
@@ -352,5 +372,28 @@ test('TLS material store', async t => {
         assert.equal(await store.getAcmeCertificate(failing, 'mail.example.com'), false);
         assert.equal(await store.getAcmeCertificate(missing, 'mail.example.com'), false);
         assert.equal(await store.getAcmeCertificate(null, 'mail.example.com'), false);
+    });
+
+    await t.test('getAcmeCertificate() says so when the store could not be read', async () => {
+        // A rotated EENGINE_SECRET fails the key decrypt and Redis can be down, and both used to
+        // look exactly like "no certificate for this name" - the listener downgraded to the
+        // self-signed fallback with nothing in the log to say a real certificate was stored.
+        const errors = [];
+        const logger = {
+            error(entry) {
+                errors.push(entry);
+            }
+        };
+
+        const failing = {
+            async getCertificate() {
+                throw new Error('Failed to decrypt data');
+            }
+        };
+
+        assert.equal(await store.getAcmeCertificate(failing, 'mail.example.com', logger), false, 'the listener still starts');
+        assert.equal(errors.length, 1);
+        assert.equal(errors[0].hostname, 'mail.example.com');
+        assert.match(errors[0].err.message, /decrypt/);
     });
 });

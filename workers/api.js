@@ -542,7 +542,9 @@ const init = async () => {
         apiTlsContext = await createTlsContext({
             certs: certHandler,
             logger,
-            envMaterial: { cert: API_TLS.cert, key: API_TLS.key, ca: API_TLS.ca }
+            // The operator's material and handshake settings are snapshotted inside, at entry,
+            // before the resolved options are merged back into this same object below
+            listenerOptions: API_TLS
         });
         Object.assign(API_TLS, apiTlsContext.options);
     }
@@ -573,7 +575,15 @@ const init = async () => {
         refreshApiTls = async () =>
             await applyTlsContext({
                 context: apiTlsContext,
-                apply: options => server.listener.setSecureContext({ cert: options.cert, key: options.key }),
+                // setSecureContext() replaces the context rather than merging into it: anything
+                // left out reverts to Node's default, so a reload that sent only the certificate
+                // and key dropped the operator's ca, ciphers and version bounds at the first
+                // renewal. SNICallback is a listener option and is not one of them.
+                apply: options => {
+                    const secureContext = Object.assign({}, options);
+                    delete secureContext.SNICallback;
+                    server.listener.setSecureContext(secureContext);
+                },
                 logger
             });
     }
