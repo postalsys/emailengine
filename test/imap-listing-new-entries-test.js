@@ -67,7 +67,7 @@ test('a failed background processing is logged, not thrown at the caller', async
 // --- processListing(): the account load is skipped when there is nothing to register ---
 
 function createProcessCtx(trackedPaths, accountPath = '*') {
-    const calls = { loads: 0 };
+    const calls = { loads: 0, hdel: [], errors: [] };
 
     return {
         calls,
@@ -80,13 +80,26 @@ function createProcessCtx(trackedPaths, accountPath = '*') {
             // A registered folder is synced right away; an empty STATUS ends that at once
             imapClient: { status: async () => false },
             mainLogger: { child: () => ({}) },
+            logger: {
+                error(entry) {
+                    calls.errors.push(entry);
+                }
+            },
+            redis: {
+                async hdel(key, ...fields) {
+                    calls.hdel.push([key, ...fields]);
+                    return fields.length;
+                }
+            },
+            getMailboxListKey: () => 'mailbox-list-key',
             accountObject: {
                 loadAccountData: async () => {
                     calls.loads++;
                     return { path: accountPath };
                 }
             },
-            registerMailbox: IMAPClient.prototype.registerMailbox
+            registerMailbox: IMAPClient.prototype.registerMailbox,
+            releaseUnregisteredEntries: IMAPClient.prototype.releaseUnregisteredEntries
         }
     };
 }
@@ -107,11 +120,34 @@ test('processListing registers nothing while the primary connection is down', as
     const { ctx, calls } = createProcessCtx([]);
     ctx.imapClient = null;
 
-    const syncNeeded = await IMAPClient.prototype.processListing.call(ctx, [{ path: 'INBOX', isNew: true }]);
+    const syncNeeded = await IMAPClient.prototype.processListing.call(ctx, [{ path: 'INBOX' }, { path: 'Projects', isNew: true }]);
 
     assert.equal(calls.loads, 0);
     assert.equal(syncNeeded.size, 0, 'connect() registers the whole listing once it is done');
     assert.equal(ctx.mailboxes.size, 0);
+
+    // The listing was already written while the primary looked up, so the folder it found would
+    // otherwise be absorbed into the stored listing with its mailboxNew never sent. Only the new
+    // entry is taken back out: the rest of the listing is known and stays.
+    assert.deepEqual(calls.hdel, [['mailbox-list-key', 'Projects']], 'the folder found is left for the next pass to find again');
+
+    // A pass that found nothing new has nothing to take back, and does not touch Redis for it
+    await IMAPClient.prototype.processListing.call(ctx, [{ path: 'INBOX' }, { path: 'Archive' }]);
+    assert.equal(calls.hdel.length, 1);
+});
+
+test('a failed deferral is logged, not thrown at the caller', async () => {
+    const { ctx, calls } = createProcessCtx([]);
+    ctx.imapClient = null;
+    ctx.redis.hdel = async () => {
+        throw new Error('Connection is closed');
+    };
+
+    const syncNeeded = await IMAPClient.prototype.processListing.call(ctx, [{ path: 'Projects', isNew: true }]);
+
+    assert.equal(syncNeeded.size, 0);
+    assert.equal(calls.errors.length, 1);
+    assert.deepEqual(calls.errors[0].paths, ['Projects']);
 });
 
 test('processListing registers an untracked folder even when it is not flagged as new', async () => {
