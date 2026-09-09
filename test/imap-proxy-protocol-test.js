@@ -20,6 +20,11 @@ const assert = require('node:assert');
 const net = require('node:net');
 
 const { IMAPServer } = require('../lib/imapproxy/imap-core/index.js');
+const { classifyCredentialFailure, toImapResponseError } = require('../lib/imap-proxy-auth');
+// The proxy auth module pulls in lib/db, whose Redis and queue handles keep the process alive.
+const registerRedisTeardown = require('./helpers/redis-teardown');
+
+registerRedisTeardown();
 
 // silent logger for the server
 const silentLogger = false;
@@ -187,6 +192,28 @@ test('F2: proxied connection is removed from server.connections after its socket
         });
 
         assert.strictEqual(server.connections.size, 0, 'proxied connection must be removed after close');
+    } finally {
+        await closeServer(server);
+    }
+});
+
+// F3: a bad minute at the operator's authentication server must reach the client as a temporary
+// failure, not as a rejected password. The proxy answers with the same two helpers the worker uses.
+test('F3: a transient credential failure is answered NO [UNAVAILABLE], not a rejected password', async () => {
+    const { server, port } = await startServer((login, session, callback) => {
+        const failure = Object.assign(new Error('Invalid response: 503 Service Unavailable'), { code: 'HTTPRequestError', authRequest: { status: 503 } });
+        return callback(toImapResponseError(classifyCredentialFailure(failure)));
+    });
+
+    try {
+        const resp = await runRawClient({
+            port,
+            lines: ['A1 LOGIN testuser testpass'],
+            untilMarker: 'A1 '
+        });
+
+        assert.match(resp, /^A1 NO \[UNAVAILABLE\] /m, 'the client must be told to retry');
+        assert.doesNotMatch(resp, /AUTHENTICATIONFAILED/, 'nothing refused the credential');
     } finally {
         await closeServer(server);
     }

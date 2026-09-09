@@ -274,7 +274,7 @@ test('OAuth2 accounts honor useAuthServer on the IMAP and SMTP paths', async t =
 
     await t.test('an auth server failure is reported as an authentication error', async () => {
         const fixture = makeFixture({ useAuthServer: true });
-        authServerError = Object.assign(new Error('Invalid response: 403 Forbidden'), { code: 'HTTPRequestError', statusCode: 403 });
+        authServerError = Object.assign(new Error('Invalid response: 403 Forbidden'), { code: 'HTTPRequestError', authRequest: { status: 403 } });
 
         await assert.rejects(
             () => load(fixture, 'imap'),
@@ -304,7 +304,7 @@ test('OAuth2 accounts honor useAuthServer on the IMAP and SMTP paths', async t =
         // whole instance shares one auth server. resolveCredentials() puts the status on the error
         // for exactly this test.
         const fixture = makeFixture({ useAuthServer: true });
-        authServerError = Object.assign(new Error('Invalid response: 503 Service Unavailable'), { code: 'HTTPRequestError', statusCode: 503 });
+        authServerError = Object.assign(new Error('Invalid response: 503 Service Unavailable'), { code: 'HTTPRequestError', authRequest: { status: 503 } });
 
         await assertLeftForRetry(fixture, () => load(fixture, 'imap'));
     });
@@ -385,14 +385,14 @@ test('IMAPClient.getImapConfig resolves credentials from the auth server', async
 
     await t.test('an auth server answering 5xx is not an authentication failure', async () => {
         const fixture = makeImapFixture();
-        authServerError = Object.assign(new Error('Invalid response: 502 Bad Gateway'), { code: 'HTTPRequestError', statusCode: 502 });
+        authServerError = Object.assign(new Error('Invalid response: 502 Bad Gateway'), { code: 'HTTPRequestError', authRequest: { status: 502 } });
 
         await assertLeftForRetry(fixture, () => buildConfig(fixture));
     });
 
     await t.test('a refused account is still an authentication failure', async () => {
         const fixture = makeImapFixture();
-        authServerError = Object.assign(new Error('Invalid response: 403 Forbidden'), { code: 'HTTPRequestError', statusCode: 403 });
+        authServerError = Object.assign(new Error('Invalid response: 403 Forbidden'), { code: 'HTTPRequestError', authRequest: { status: 403 } });
 
         await assert.rejects(
             () => buildConfig(fixture),
@@ -406,5 +406,88 @@ test('IMAPClient.getImapConfig resolves credentials from the auth server', async
         assert.strictEqual(fixture.notifications[0].event, 'authenticationError');
         assert.strictEqual(fixture.notifications[0].data.serverResponseCode, 'HTTPRequestError');
         assert.strictEqual(fixture.ctx.state, 'authenticationError');
+    });
+});
+
+// The API surface. resolveCredentials() carries the authentication server's HTTP status for
+// classification, and getActiveAccessTokenData() used to let it through untouched: a 401 from the
+// operator's own auth server reached an SDK holding a valid EmailEngine token as "your token is
+// bad", and a 404 as "no such account".
+test('Account.getActiveAccessTokenData translates auth server failures', async t => {
+    const { Account } = require('../lib/account');
+
+    function makeAccount() {
+        return {
+            account: 'auth-server-account',
+            logger: noopLogger,
+            async loadAccountData() {
+                return {
+                    account: 'auth-server-account',
+                    oauth2: {
+                        provider: 'app-1',
+                        useAuthServer: true,
+                        auth: { user: 'stored-user@example.com' }
+                    }
+                };
+            }
+        };
+    }
+
+    const getToken = () => Account.prototype.getActiveAccessTokenData.call(makeAccount());
+
+    t.beforeEach(() => {
+        authServerCalls.length = 0;
+        authServerError = null;
+        configuredAuthServer = 'https://auth.example.com/creds';
+    });
+
+    await t.test('a refused account is a 403, not the auth server 401', async () => {
+        authServerError = Object.assign(new Error('Invalid response: 401 Unauthorized'), { code: 'HTTPRequestError', authRequest: { status: 401 } });
+
+        await assert.rejects(getToken, err => {
+            assert.strictEqual(err.output.statusCode, 403);
+            assert.strictEqual(err.output.payload.code, 'AuthServerError');
+            assert.strictEqual(err.output.payload.authenticationFailed, true);
+            return true;
+        });
+    });
+
+    await t.test('an auth server 404 does not become a missing account', async () => {
+        authServerError = Object.assign(new Error('Invalid response: 404 Not Found'), { code: 'HTTPRequestError', authRequest: { status: 404 } });
+
+        await assert.rejects(getToken, err => {
+            assert.strictEqual(err.output.statusCode, 403);
+            assert.strictEqual(err.output.payload.code, 'AuthServerError');
+            return true;
+        });
+    });
+
+    await t.test('a transient failure is a 503 the client can retry', async () => {
+        authServerError = Object.assign(new Error('Invalid response: 503 Service Unavailable'), { code: 'HTTPRequestError', authRequest: { status: 503 } });
+
+        await assert.rejects(getToken, err => {
+            assert.strictEqual(err.output.statusCode, 503);
+            assert.strictEqual(err.output.payload.code, 'AuthServerUnavailable');
+            assert.strictEqual(err.output.payload.authenticationFailed, undefined, 'a bad minute is not a refused credential');
+            return true;
+        });
+    });
+
+    await t.test('a throttled auth server is transient as well', async () => {
+        authServerError = Object.assign(new Error('Invalid response: 429 Too Many Requests'), { code: 'HTTPRequestError', authRequest: { status: 429 } });
+
+        await assert.rejects(getToken, err => {
+            assert.strictEqual(err.output.statusCode, 503);
+            return true;
+        });
+    });
+
+    await t.test('resolved credentials are returned unchanged', async () => {
+        const tokenData = await getToken();
+
+        assert.deepStrictEqual(authServerCalls, [{ account: 'auth-server-account', proto: 'api' }]);
+        assert.strictEqual(tokenData.accessToken, 'ACCESS-TOKEN-FROM-AUTH-SERVER');
+        assert.strictEqual(tokenData.user, 'from-auth-server@example.com');
+        assert.strictEqual(tokenData.cached, false);
     });
 });

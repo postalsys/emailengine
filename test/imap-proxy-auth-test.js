@@ -9,7 +9,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { createImapProxyAuthHandler } = require('../lib/imap-proxy-auth');
+const { createImapProxyAuthHandler, classifyCredentialFailure, isImapResponseError, toImapResponseError } = require('../lib/imap-proxy-auth');
 const { AUTH_FAILURE_LIMIT } = require('../lib/auth-token');
 const { trackedWindow, exhaustBudget } = require('./helpers/auth-throttle');
 const { oauth2Apps } = require('../lib/oauth2-apps');
@@ -254,5 +254,68 @@ test('IMAP proxy auth failure throttle', async t => {
         }
 
         assert.strictEqual(await redis.get(windowKey), null);
+    });
+});
+
+// One authentication server serves every account on the instance, so its 429 or 503 must not reach
+// a desktop mail client as a rejected password - the user retypes a working credential and the
+// client keeps the login it was told was wrong. The status arrives in the `authRequest` record
+// resolveCredentials() attaches, never on err.statusCode, which is read further up as the status
+// of the request EmailEngine is itself serving.
+test('IMAP proxy credential failure classification', async t => {
+    await t.test('a throttled authentication server is a temporary failure', () => {
+        const err = classifyCredentialFailure(
+            Object.assign(new Error('Invalid response: 429 Too Many Requests'), { code: 'HTTPRequestError', authRequest: { status: 429 } })
+        );
+
+        assert.strictEqual(err.authenticationFailed, undefined, 'nothing refused the credential');
+        assert.strictEqual(err.serverResponseCode, 'UNAVAILABLE');
+        assert.strictEqual(err.responseStatus, 'NO');
+    });
+
+    await t.test('an authentication server 5xx is a temporary failure too', () => {
+        const err = classifyCredentialFailure(
+            Object.assign(new Error('Invalid response: 503 Service Unavailable'), { code: 'HTTPRequestError', authRequest: { status: 503 } })
+        );
+
+        assert.strictEqual(err.authenticationFailed, undefined);
+        assert.strictEqual(err.serverResponseCode, 'UNAVAILABLE');
+    });
+
+    await t.test('an unreachable authentication server is a temporary failure', () => {
+        const err = classifyCredentialFailure(Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' }));
+
+        assert.strictEqual(err.serverResponseCode, 'UNAVAILABLE');
+        assert.strictEqual(err.responseStatus, 'NO');
+    });
+
+    await t.test('a refused account is still an authentication failure', () => {
+        const err = classifyCredentialFailure(
+            Object.assign(new Error('Invalid response: 401 Unauthorized'), { code: 'HTTPRequestError', authRequest: { status: 401 } })
+        );
+
+        assert.strictEqual(err.authenticationFailed, true);
+        assert.strictEqual(err.serverResponseCode, 'AUTHENTICATIONFAILED');
+        assert.strictEqual(err.responseStatus, 'NO');
+    });
+
+    await t.test('both failures are answered on the wire, neither as BAD', () => {
+        // imap-core renders an error with no `response` as BAD, which counts against the
+        // connection's bad-command budget instead of telling the client anything.
+        for (let failure of [
+            Object.assign(new Error('Invalid response: 503 Service Unavailable'), { statusCode: 503 }),
+            Object.assign(new Error('Invalid response: 403 Forbidden'), { statusCode: 403 })
+        ]) {
+            const tagged = classifyCredentialFailure(failure);
+            assert.ok(isImapResponseError(tagged), 'the proxy must answer this itself');
+
+            const response = toImapResponseError(tagged);
+            assert.strictEqual(response.response, 'NO');
+            assert.ok(response.message.startsWith(`[${tagged.serverResponseCode}] `), 'the response code rides in brackets');
+        }
+    });
+
+    await t.test('an internal fault is not answered as an IMAP response', () => {
+        assert.strictEqual(isImapResponseError(new Error('Missing or disabled OAuth2 app')), false);
     });
 });

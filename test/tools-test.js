@@ -4,8 +4,76 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 const os = require('os');
 const crypto = require('crypto');
+const http = require('http');
 
 const tools = require('../lib/tools');
+const settings = require('../lib/settings');
+const { credentialErrorStatus, isTransientCredentialError } = require('../lib/email-client/credential-errors');
+
+// The operator's authentication server answers for every account on the instance, and its status
+// decides two different things: whether the failure is the service's or the credential's, and -
+// if the status were left on err.statusCode - what EmailEngine answers the caller it is serving.
+// The second one is not the auth server's to decide, so the status rides in a request record.
+test('resolveCredentials() reports an authentication server failure', async t => {
+    let responseStatus = 503;
+    const requestPaths = [];
+
+    const server = http.createServer((req, res) => {
+        requestPaths.push(req.url);
+        res.writeHead(responseStatus, { 'Content-Type': 'application/json' });
+        res.end('{}');
+    });
+
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+
+    const authServerUrl = `http://127.0.0.1:${server.address().port}/creds`;
+    const realSettingsGet = settings.get;
+    settings.get = async key => (key === 'authServer' ? authServerUrl : realSettingsGet.call(settings, key));
+
+    t.after(async () => {
+        settings.get = realSettingsGet;
+        await new Promise(resolve => server.close(resolve));
+    });
+
+    const failure = async () => {
+        try {
+            await tools.resolveCredentials('test-account', 'imap');
+        } catch (err) {
+            return err;
+        }
+        throw new Error('resolveCredentials() resolved a failed response');
+    };
+
+    await t.test('keeps the status off err.statusCode', async () => {
+        responseStatus = 404;
+        const err = await failure();
+
+        assert.strictEqual(err.code, 'HTTPRequestError');
+        assert.strictEqual(err.statusCode, undefined, 'the auth server does not get to answer for the request being served');
+        assert.strictEqual(err.authRequest.status, 404);
+    });
+
+    await t.test('names the server it asked, without the account it asked about', async () => {
+        responseStatus = 500;
+        const err = await failure();
+
+        assert.strictEqual(err.authRequest.url, `http://127.0.0.1:${server.address().port}`);
+        assert.ok(/account=test-account/.test(requestPaths[requestPaths.length - 1]), 'the account rides in the query');
+        assert.ok(!/account=/.test(err.authRequest.url), 'and stays out of the record');
+    });
+
+    await t.test('and the record is what the credential classifier reads', async () => {
+        responseStatus = 503;
+        const unavailable = await failure();
+        assert.strictEqual(credentialErrorStatus(unavailable), 503);
+        assert.strictEqual(isTransientCredentialError(unavailable), true, 'a bad minute must not park every account on the instance');
+
+        responseStatus = 401;
+        const refused = await failure();
+        assert.strictEqual(credentialErrorStatus(refused), 401);
+        assert.strictEqual(isTransientCredentialError(refused), false, 'a refused account is still an authentication failure');
+    });
+});
 
 test('Tools utility tests', async t => {
     t.after(() => {
