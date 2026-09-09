@@ -234,6 +234,40 @@ test('processAutoconfigFile', async t => {
         assert.strictEqual(hasResolvedHost(res), true);
     });
 
+    await t.test('a hostless server element does not shadow a later one that names a host', async () => {
+        // The selection took the first element of the matching type and only then checked for a
+        // hostname, so a leading empty one hid a usable sibling and the lookup resolved nothing.
+        const text = xml(
+            `<incomingServer type="imap">
+        <hostname></hostname>
+        <port>143</port>
+        <socketType>plain</socketType>
+      </incomingServer>
+      <incomingServer type="imap">
+        <hostname>imap.example.com</hostname>
+        <port>993</port>
+        <socketType>SSL</socketType>
+      </incomingServer>`,
+            `<outgoingServer type="smtp">
+        <hostname></hostname>
+        <port>25</port>
+        <socketType>plain</socketType>
+      </outgoingServer>
+      <outgoingServer type="smtp">
+        <hostname>smtp.example.com</hostname>
+        <port>587</port>
+        <socketType>STARTTLS</socketType>
+      </outgoingServer>`
+        );
+
+        const res = await processAutoconfigFile('john@example.com', null, text, 'autoconfig');
+
+        assert.strictEqual(res.imap.host, 'imap.example.com');
+        assert.strictEqual(res.imap.port, 993);
+        assert.strictEqual(res.smtp.host, 'smtp.example.com');
+        assert.strictEqual(hasResolvedHost(res), true);
+    });
+
     await t.test('rejects a malformed document (HTML error page)', async () => {
         await assert.rejects(processAutoconfigFile('john@example.com', null, '<html><body><p>Not found<br></body></html>', 'autoconfig'));
     });
@@ -310,6 +344,36 @@ test('processAutodiscoverResponse', async t => {
 
     await t.test('rejects a malformed document', () => {
         assert.throws(() => processAutodiscoverResponse('<Autodiscover><Response>', 'autodiscover'));
+    });
+
+    await t.test('a hostless block of the same type does not discard the one that names a host', () => {
+        // Exchange emits several <Protocol> blocks per type (internal and external variants, and
+        // Type-only blocks). The parser overwrote on every match, so a hostless sibling further
+        // down demoted a perfectly good entry to false and the whole answer was dropped.
+        const res = processAutodiscoverResponse(
+            pox(`<Account>
+              <AccountType>email</AccountType>
+              <Protocol>
+                <Type>IMAP</Type>
+                <Server>imap.example.com</Server>
+                <Port>993</Port>
+                <SSL>on</SSL>
+              </Protocol>
+              <Protocol><Type>IMAP</Type></Protocol>
+              <Protocol>
+                <Type>SMTP</Type>
+                <Server>smtp.example.com</Server>
+                <Port>587</Port>
+                <SSL>off</SSL>
+              </Protocol>
+              <Protocol><Type>SMTP</Type><Port>25</Port></Protocol>
+            </Account>`),
+            'autodiscover'
+        );
+
+        assert.strictEqual(res.imap.host, 'imap.example.com');
+        assert.strictEqual(res.smtp.host, 'smtp.example.com');
+        assert.strictEqual(hasResolvedHost(res), true);
     });
 
     await t.test('a protocol block with no Server names nothing, so it is not an entry', () => {
