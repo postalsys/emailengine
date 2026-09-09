@@ -47,9 +47,10 @@ badgeVariant=pageLabel.type class="mb-1"}}
     {{else}}
     <div class="text-base-content/70">
         {{#if this.tlsEnabled}}
-        HTTPS is on through <code>EENGINE_API_TLS</code>; the listener has not reported a certificate yet.
+        Serving HTTPS (<code>EENGINE_API_TLS</code> is set); the listener has not reported a certificate yet.
         {{else}}
-        HTTPS is your reverse proxy's job. EmailEngine serves it directly with <code>EENGINE_API_TLS</code>.
+        Serving plain HTTP, the default. Put a reverse proxy in front for HTTPS, or set
+        <code>EENGINE_API_TLS=true</code> to have EmailEngine serve it with the certificates on this page.
         {{/if}}
     </div>
     {{/if}}
