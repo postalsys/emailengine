@@ -40,10 +40,16 @@ test('POST /v1/settings', async t => {
     registerRedisTeardown(redis);
 
     const originalSet = settings.set;
+    const originalGet = settings.get;
     const written = [];
+    // What Redis is pretending to hold, for the handler's read-before-write comparison
+    const stored = {};
 
     t.beforeEach(() => {
         written.length = 0;
+        for (let key of Object.keys(stored)) {
+            delete stored[key];
+        }
         settings.set = async (key, value) => {
             if (key === 'pageBrandName') {
                 throw new Error('Redis is unavailable');
@@ -51,10 +57,12 @@ test('POST /v1/settings', async t => {
             written.push(key);
             return 1;
         };
+        settings.get = async key => (key in stored ? stored[key] : originalGet.call(settings, key));
     });
 
     t.afterEach(() => {
         settings.set = originalSet;
+        settings.get = originalGet;
     });
 
     await t.test('broadcasts every written key once and reports them', async () => {
@@ -92,6 +100,51 @@ test('POST /v1/settings', async t => {
             await route.handler({ payload, logger });
             assert.equal(commands.length, 3, `${Object.keys(payload)[0]} reloads the listeners`);
         }
+    });
+
+    await t.test('posting back the value already stored reloads nothing', async () => {
+        // A write is not a change: settings.set() is an unconditional hset, and a read-modify-write
+        // client posts the whole settings object on every call. Reloading on the write alone handed
+        // three listeners a new certificate every time somebody changed the timezone.
+        stored.serviceUrl = 'https://ee.example.com';
+        stored.tlsProvisioning = 'acme';
+        const { route, commands } = await captureWithCommands();
+
+        const response = await route.handler({ payload: { serviceUrl: 'https://ee.example.com', tlsProvisioning: 'acme' }, logger });
+
+        assert.deepEqual(commands, [], 'nothing about what the listeners serve changed');
+        assert.deepEqual(response, { updated: ['serviceUrl', 'tlsProvisioning'] }, 'the keys are still written and reported');
+    });
+
+    await t.test('the stored service URL posted back in another spelling reloads nothing', async () => {
+        // settings.set() stores the origin, so the trailing slash a URL parser adds on the client
+        // side is not a change to anything a listener serves - but comparing the payload against
+        // the stored value made it look like one.
+        stored.serviceUrl = 'https://ee.example.com';
+        const { route, commands } = await captureWithCommands();
+
+        await route.handler({ payload: { serviceUrl: 'https://ee.example.com/' }, logger });
+
+        assert.deepEqual(commands, [], 'the same origin is stored either way');
+    });
+
+    await t.test('a reordered hostname list is the same list', async () => {
+        stored.tlsHostnames = ['smtp.example.com', 'imap.example.com'];
+        const { route, commands } = await captureWithCommands();
+
+        await route.handler({ payload: { tlsHostnames: ['imap.example.com', 'smtp.example.com'] }, logger });
+
+        assert.deepEqual(commands, [], 'the same names are served, in whatever order they arrived');
+    });
+
+    await t.test('a changed value still reloads, even next to unchanged ones', async () => {
+        stored.serviceUrl = 'https://ee.example.com';
+        stored.tlsHostnames = ['smtp.example.com'];
+        const { route, commands } = await captureWithCommands();
+
+        await route.handler({ payload: { serviceUrl: 'https://ee.example.com', tlsHostnames: ['smtp.example.com', 'imap.example.com'] }, logger });
+
+        assert.equal(commands.length, 3, 'a name was added to the list');
     });
 
     await t.test('an unrelated setting reloads nothing', async () => {
