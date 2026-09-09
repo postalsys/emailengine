@@ -31,6 +31,7 @@ const {
     buildAutodiscoverRequest,
     buildAutodiscoverSoapRequest,
     runAutodiscovery,
+    hasResolvedHost,
     getAppPassword,
     escapeXml
 } = require('../lib/autodetect-imap-settings');
@@ -210,6 +211,29 @@ test('processAutoconfigFile', async t => {
         assert.strictEqual(res.imap.auth, undefined);
     });
 
+    await t.test('a server element with an empty hostname is not a server', async () => {
+        // The entry used to be built anyway, with `host: undefined` - truthy, naming nothing, and
+        // read as an answer by the resolver race and by GET /v1/autoconfig alike.
+        const text = xml(
+            `<incomingServer type="imap">
+        <hostname></hostname>
+        <port>993</port>
+        <socketType>SSL</socketType>
+      </incomingServer>`,
+            `<outgoingServer type="smtp">
+        <hostname>smtp.example.com</hostname>
+        <port>587</port>
+        <socketType>STARTTLS</socketType>
+      </outgoingServer>`
+        );
+
+        const res = await processAutoconfigFile('john@example.com', null, text, 'autoconfig');
+
+        assert.strictEqual(res.imap, false);
+        assert.strictEqual(res.smtp.host, 'smtp.example.com', 'the half that does name a server stands');
+        assert.strictEqual(hasResolvedHost(res), true);
+    });
+
     await t.test('rejects a malformed document (HTML error page)', async () => {
         await assert.rejects(processAutoconfigFile('john@example.com', null, '<html><body><p>Not found<br></body></html>', 'autoconfig'));
     });
@@ -286,6 +310,50 @@ test('processAutodiscoverResponse', async t => {
 
     await t.test('rejects a malformed document', () => {
         assert.throws(() => processAutodiscoverResponse('<Autodiscover><Response>', 'autodiscover'));
+    });
+
+    await t.test('a protocol block with no Server names nothing, so it is not an entry', () => {
+        // The parser used to build the entry out of whatever elements were present, which made
+        // this one an object that was truthy and named no server at all.
+        const res = processAutodiscoverResponse(
+            pox(`<Account>
+              <AccountType>email</AccountType>
+              <Protocol><Type>IMAP</Type><Port>993</Port><SSL>on</SSL></Protocol>
+            </Account>`),
+            'autodiscover'
+        );
+        assert.strictEqual(res.imap, false);
+        assert.strictEqual(hasResolvedHost(res), false, 'and it is not an answer');
+    });
+});
+
+test('hasResolvedHost', async t => {
+    // The predicate every resolver result is judged by. A truthy `imap`/`smtp` entry is not the
+    // same thing as a resolved server: an autoconfig file with an empty <hostname> and an
+    // autodiscover <Protocol> without a <Server> both build one that names nothing, and treating
+    // that as an answer both won the resolver race against the branch that had the real settings
+    // and rendered the hosted setup form with empty server fields.
+    await t.test('accepts a result that names an IMAP host', () => {
+        assert.strictEqual(hasResolvedHost({ imap: { host: 'imap.example.com' }, smtp: false }), true);
+    });
+
+    await t.test('accepts a result that names only an SMTP host', () => {
+        assert.strictEqual(hasResolvedHost({ imap: false, smtp: { host: 'smtp.example.com' } }), true);
+    });
+
+    await t.test('rejects entries that carry everything but a host', () => {
+        assert.strictEqual(hasResolvedHost({ imap: { port: 993, secure: true }, smtp: {} }), false);
+    });
+
+    await t.test('rejects an undefined host', () => {
+        // What processAutoconfigFile() builds from an empty <hostname> element
+        assert.strictEqual(hasResolvedHost({ imap: { host: undefined, port: 993, secure: true }, smtp: false }), false);
+    });
+
+    await t.test('rejects a result with no entries at all', () => {
+        assert.strictEqual(hasResolvedHost({ imap: false, smtp: false }), false);
+        assert.strictEqual(hasResolvedHost(false), false);
+        assert.strictEqual(hasResolvedHost(undefined), false);
     });
 });
 
@@ -627,6 +695,19 @@ test('runAutodiscovery', async t => {
         assert.ok(!calls[0].headers.Authorization, 'the first request is anonymous');
         const authorization = calls.find(call => call.headers.Authorization).headers.Authorization;
         assert.strictEqual(authorization, `Basic ${Buffer.from('user@example.com:secret').toString('base64')}`);
+    });
+
+    await t.test('a protocol block without a Server is not a usable answer', async () => {
+        // The parser builds an entry from whatever elements were there, so this one is truthy and
+        // names no host. Answering the caller with it produced a form with empty server fields.
+        const poxNoServer = pox(`<Account>
+          <AccountType>email</AccountType>
+          <Protocol><Type>IMAP</Type><Port>993</Port><SSL>on</SSL></Protocol>
+        </Account>`);
+        const { calls, fetchResource } = stubFetch({ [POX]: { status: 200, body: poxNoServer }, [SOAP]: { status: 401 } });
+
+        await assert.rejects(() => runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, fetchResource), /Invalid response/);
+        assert.strictEqual(calls.length, 1, 'and it still counts as an anonymous answer, so no password is offered');
     });
 
     await t.test('does not offer the password to a host that answered anonymously with nothing usable', async () => {
