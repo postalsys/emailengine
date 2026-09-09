@@ -11,7 +11,8 @@
 //
 // lib/cert-handler.js is now the one place that builds it. This keeps it that way.
 //
-// Pure: reads the sources, nothing else.
+// Pure: reads the sources, and resolves lib/consts in a child process so the environment can be
+// varied without disturbing this one.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -123,4 +124,39 @@ test('only the reconciler can order a certificate', () => {
     }
 
     assert.deepEqual(offenders, [], `these files can order a certificate; go through ${PROVISIONER} instead`);
+});
+
+test('a half-set ACME override is reported', async t => {
+    // The environment names the stored account record and the directory names the CA that issued
+    // it, so overriding one alone presents an account key the other CA has never seen. Every order
+    // is then rejected, and nothing in the rejection says why - which is what the warning is for.
+    const isPartial = env =>
+        execFileSync(process.execPath, ['-e', "process.stdout.write(String(require('./lib/consts').ACME_OVERRIDE_PARTIAL))"], {
+            cwd: ROOT,
+            env: { ...process.env, EENGINE_ACME_ENVIRONMENT: '', EENGINE_ACME_DIRECTORY_URL: '', ...env }
+        }).toString();
+
+    await t.test('flags the environment set on its own', () => {
+        assert.equal(isPartial({ EENGINE_ACME_ENVIRONMENT: 'staging' }), 'true');
+    });
+
+    await t.test('flags the directory set on its own', () => {
+        assert.equal(isPartial({ EENGINE_ACME_DIRECTORY_URL: 'https://acme-staging-v02.api.letsencrypt.org/directory' }), 'true');
+    });
+
+    await t.test('says nothing when both are set, or neither', () => {
+        assert.equal(
+            isPartial({ EENGINE_ACME_ENVIRONMENT: 'staging', EENGINE_ACME_DIRECTORY_URL: 'https://acme-staging-v02.api.letsencrypt.org/directory' }),
+            'false'
+        );
+        assert.equal(isPartial({}), 'false');
+    });
+
+    await t.test('the factory is what reports it', () => {
+        // Asserted on the source: reaching the log line means constructing a real handler, which
+        // costs this suite its purity for one line of output.
+        const source = fs.readFileSync(pathlib.join(ROOT, FACTORY), 'utf-8');
+        assert.match(source, /ACME_OVERRIDE_PARTIAL/);
+        assert.match(source, /logger\.warn\(/);
+    });
 });
