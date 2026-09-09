@@ -24,7 +24,7 @@ after(() => {
 });
 
 const { OutlookClient } = require('../lib/email-client/outlook-client');
-const { LAST_ERROR_EVENT_FIELD } = require('../lib/consts');
+const { LAST_ERROR_EVENT_FIELD, OUTLOOK_MAX_RETRY_ATTEMPTS } = require('../lib/consts');
 
 // AADSTS500014 as Graph reports it, which is the text an operator has to be shown.
 const SP_DISABLED = 'The service principal for resource https://outlook.office365.com is disabled.';
@@ -325,5 +325,110 @@ test('OutlookClient.getTokenData() recovery', async t => {
 
         assert.equal(outlook.state, 'connected');
         assert.deepEqual(notifications, [], 'nothing to announce for an account that never failed');
+    });
+});
+
+test('OutlookClient.renewOrCreateSubscription()', async t => {
+    // The hourly pass behind setupRenewWatchTimer(), extracted so it can be run without waiting an
+    // hour. It is the account's only slow retry: the fast ones ensureSubscription() schedules are
+    // capped, and there is no poller behind a Graph account, so an account that stops recreating
+    // its subscription stops syncing entirely until something reconnects it.
+    function makeTicker({ renewalResult = { success: true }, storedSubscription = {}, ensureError } = {}) {
+        const calls = [];
+        const errors = [];
+        const { outlook } = makeClient();
+
+        let stored = JSON.parse(JSON.stringify(storedSubscription));
+
+        outlook.logger.error = entry => errors.push(entry);
+        outlook.getStoredSubscription = async () => stored;
+        outlook.saveStoredSubscription = async value => {
+            calls.push('save');
+            stored = value;
+        };
+        outlook.renewSubscription = async opts => {
+            calls.push(`renew:${opts.force}`);
+            return renewalResult;
+        };
+        outlook.ensureSubscription = async () => {
+            calls.push('ensure');
+            if (ensureError) {
+                throw ensureError;
+            }
+        };
+
+        return { outlook, calls, errors, stored: () => stored };
+    }
+
+    await t.test('renews a subscription that is still there, and creates nothing', async () => {
+        const { outlook, calls } = makeTicker({ renewalResult: { success: true } });
+
+        await outlook.renewOrCreateSubscription();
+
+        assert.deepEqual(calls, ['renew:false']);
+    });
+
+    await t.test('recreates a subscription there is nothing left to renew', async () => {
+        for (const reason of ['expired', 'no_subscription']) {
+            const { outlook, calls } = makeTicker({ renewalResult: { success: false, reason } });
+
+            await outlook.renewOrCreateSubscription();
+
+            assert.deepEqual(calls, ['renew:false', 'ensure'], `a ${reason} subscription is recreated`);
+        }
+    });
+
+    await t.test('leaves a renewal that failed for some other reason alone', async () => {
+        const { outlook, calls } = makeTicker({ renewalResult: { success: false, reason: 'request_failed' } });
+
+        await outlook.renewOrCreateSubscription();
+
+        assert.deepEqual(calls, ['renew:false'], 'a subscription that still exists is not replaced');
+    });
+
+    await t.test('keeps trying once the fast retries are exhausted, with the ladder reset', async () => {
+        // The end state this pass used to accept: it read the creation retry count, found it at the
+        // cap and logged "waiting for reconnect", which only a worker restart, an account update or
+        // a re-authorization brings. A tenant that re-enabled the service principal an hour later
+        // was never noticed, and the account had no subscription to sync from in the meantime.
+        //
+        // Clearing the counters is what makes it a retry rather than one attempt an hour forever:
+        // left at the cap, ensureSubscription() never schedules a fast one again, so an hour that
+        // could have recovered in thirty seconds costs the full hour.
+        const { outlook, calls, stored } = makeTicker({
+            renewalResult: { success: false, reason: 'no_subscription' },
+            storedSubscription: { state: { state: 'error', error: 'Subscription failed', createRetryCount: OUTLOOK_MAX_RETRY_ATTEMPTS, retryCount: 2 } }
+        });
+
+        await outlook.renewOrCreateSubscription();
+
+        assert.deepEqual(calls, ['renew:false', 'save', 'ensure'], 'the hourly pass is the slow retry, so it does not give up');
+        assert.deepEqual(stored().state, { state: 'error', error: null, createRetryCount: 0, retryCount: 0 });
+    });
+
+    await t.test('does not rewrite a stored record that has nothing to reset', async () => {
+        const { outlook, calls } = makeTicker({
+            renewalResult: { success: false, reason: 'expired' },
+            storedSubscription: { state: { state: 'error', createRetryCount: 0, retryCount: 0 } }
+        });
+
+        await outlook.renewOrCreateSubscription();
+
+        assert.deepEqual(calls, ['renew:false', 'ensure'], 'a subscription whose counters are already clear is left alone');
+    });
+
+    await t.test('reports a failed pass rather than rejecting', async () => {
+        // setupRenewWatchTimer() reschedules off this promise settling, so a rejection would be an
+        // unhandled one and would take the worker with it
+        const { outlook, calls, errors } = makeTicker({
+            renewalResult: { success: false, reason: 'expired' },
+            ensureError: new Error('Graph is unavailable')
+        });
+
+        await outlook.renewOrCreateSubscription();
+
+        assert.deepEqual(calls, ['renew:false', 'ensure']);
+        assert.equal(errors.length, 1);
+        assert.match(errors[0].msg, /Failed to renew/);
     });
 });

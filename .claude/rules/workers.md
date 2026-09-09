@@ -43,7 +43,7 @@ The IMAP worker (`workers/imap.js`) manages all email account connections and sy
 **Connection types:**
 - **IMAP**: Native IMAP via ImapFlow library with IDLE for real-time sync
 - **Gmail API**: OAuth2-based, uses Pub/Sub for notifications (10-min polling fallback)
-- **Outlook API**: Microsoft Graph with subscription webhooks (3-day auto-renewal)
+- **Outlook API**: Microsoft Graph with subscription webhooks (3-day auto-renewal). The hourly `renewOrCreateSubscription()` recreates a missing subscription even after the capped fast retries are spent, clearing their counters first - it is the account's only slow retry and there is no polling fallback, so an account left unsubscribed syncs nothing at all
 
 **Synchronization:**
 - IMAP: Persistent IDLE connection for real-time change detection
