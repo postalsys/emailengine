@@ -63,6 +63,7 @@ const GET_ROUTES = [
     '/admin/config/service',
     '/admin/config/smtp',
     '/admin/config/tls',
+    '/admin/config/tls/upload',
     '/admin/config/webhooks',
     '/admin/gateways',
     '/admin/gateways/new',

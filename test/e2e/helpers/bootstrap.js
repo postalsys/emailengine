@@ -248,6 +248,21 @@ async function removePasskeys(ids, user = 'admin') {
     }
 }
 
+// Opens a ui/row-actions kebab menu in a table row and waits for it.
+//
+// Choosing an item closes the menu with a fade, and the FlyonUI dropdown drops (rather than queues)
+// a toggle click that lands while that fade is still running - so a spec that reopens a menu right
+// after acting from it waits for the previous one to be gone first. Whether the race is hit depends
+// on how fast the action answered, which is what made row-menu specs flaky before it was understood.
+// The row is centered in the viewport so the menu opens below it with room to spare.
+async function openRowMenu(row, label = 'Row actions') {
+    const menu = row.locator('.dropdown-menu');
+    await expect(menu).toBeHidden();
+    await row.evaluate(el => el.scrollIntoView({ block: 'center' }));
+    await row.locator(`button[aria-label="${label}"]`).click();
+    await expect(menu).toBeVisible();
+}
+
 module.exports = {
     ADMIN_PASSWORD,
     PORT,
@@ -258,6 +273,7 @@ module.exports = {
     createApiToken,
     dismissTokenReveal,
     trackConsoleErrors,
+    openRowMenu,
     setPickedAccount,
     hostedAuthFormUrl,
     seedPasskeys,

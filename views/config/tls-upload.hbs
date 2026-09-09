@@ -1,0 +1,81 @@
+{{> ui/page-header title="Upload a certificate" icon="icon-[tabler--upload]" class="mb-1"}}
+
+{{> ui/breadcrumb parentHref="/admin/config/tls" parentLabel="TLS Certificates" current="Upload a certificate" class="mb-6"}}
+
+<p class="mb-6">An uploaded certificate is served for every name it covers, ahead of anything EmailEngine obtains on its
+    own. It is never renewed automatically, so replace it here before it expires.</p>
+
+{{#if manual}}
+{{#> ui/alert-banner variant="info" icon="icon-[tabler--info-circle]"}}
+<div>A certificate for <span class="font-mono">{{manual.subject}}</span> is installed and valid until <span
+        class="local-date-time" data-time="{{manual.validToIso}}">{{manual.validToIso}}</span>. Installing another one
+    replaces it.</div>
+{{/ui/alert-banner}}
+{{/if}}
+
+{{!-- The "Choose file" buttons and drag-and-drop onto a field are wired by static/js/app.js
+      (.file-picker-btn with data-file-target, and .droptxt), so this page carries no script. --}}
+<form method="post" action="/admin/config/tls/upload">
+    {{!-- no id: the layout already renders the #crumb element the scripts read --}}
+    <input type="hidden" name="crumb" value="{{crumb}}" />
+
+    <div class="card bg-base-100 shadow-md mb-6">
+        <div class="card-header">
+            <h6 class="card-title text-primary">Certificate and key</h6>
+        </div>
+
+        <div class="card-body space-y-4">
+            <div>
+                {{#> ui/form-field id="uploadCert" label="Certificate"}}
+                <div class="flex items-start gap-2">
+                    <textarea class="textarea font-mono text-xs grow droptxt" id="uploadCert" name="cert" rows="6" required
+                        spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----"></textarea>
+                    {{> ui/btn label="Choose file" variant="neutral" style="soft" size="sm" icon="icon-[tabler--file-import]"
+                    class="file-picker-btn shrink-0" dataName="file-target" dataValue="#uploadCert" id="uploadCertFile"}}
+                </div>
+                <span class="helper-text">PEM encoded, pasted or dropped onto the field. The server certificate first;
+                    intermediates may follow it here or go in the chain field below.</span>
+                {{/ui/form-field}}
+            </div>
+
+            <div>
+                {{#> ui/form-field id="uploadKey" label="Private key"}}
+                <div class="flex items-start gap-2">
+                    <textarea class="textarea font-mono text-xs grow droptxt" id="uploadKey" name="privateKey" rows="6" required
+                        spellcheck="false" placeholder="-----BEGIN PRIVATE KEY-----"></textarea>
+                    {{> ui/btn label="Choose file" variant="neutral" style="soft" size="sm" icon="icon-[tabler--file-import]"
+                    class="file-picker-btn shrink-0" dataName="file-target" dataValue="#uploadKey" id="uploadKeyFile"}}
+                </div>
+                <span class="helper-text">Stored encrypted with the instance secret and never shown again.</span>
+                {{/ui/form-field}}
+            </div>
+
+            <div>
+                {{#> ui/form-field id="uploadPassphrase" label="Key passphrase"}}
+                <input type="password" class="input" id="uploadPassphrase" name="passphrase" autocomplete="new-password"
+                    data-lpignore="true" />
+                <span class="helper-text">Only if the private key is encrypted. It is used to read the key and is not
+                    stored.</span>
+                {{/ui/form-field}}
+            </div>
+
+            <div>
+                {{#> ui/form-field id="uploadCa" label="Chain"}}
+                <div class="flex items-start gap-2">
+                    <textarea class="textarea font-mono text-xs grow droptxt" id="uploadCa" name="ca" rows="4" spellcheck="false"
+                        placeholder="-----BEGIN CERTIFICATE-----"></textarea>
+                    {{> ui/btn label="Choose file" variant="neutral" style="soft" size="sm" icon="icon-[tabler--file-import]"
+                    class="file-picker-btn shrink-0" dataName="file-target" dataValue="#uploadCa" id="uploadCaFile"}}
+                </div>
+                <span class="helper-text">Optional. Intermediate certificates, if they are not already in the certificate
+                    field.</span>
+                {{/ui/form-field}}
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-6 flex flex-wrap gap-2">
+        {{> ui/btn label=(when manual "Replace certificate" "Install certificate") type="submit" icon="icon-[tabler--upload]"}}
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" href="/admin/config/tls"}}
+    </div>
+</form>

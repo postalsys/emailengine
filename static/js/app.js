@@ -420,3 +420,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 });
+
+// "Choose file" buttons: a .file-picker-btn with data-file-target="#selector" reads the picked
+// file as text into that control (a PEM certificate into its textarea). Delegated, so a page
+// needs no script of its own for it; the .droptxt class on the same control adds drag and drop.
+document.addEventListener('click', e => {
+    let btn = e.target.closest('.file-picker-btn');
+    if (!btn) {
+        return;
+    }
+    e.preventDefault();
+
+    let target = btn.dataset.fileTarget ? document.querySelector(btn.dataset.fileTarget) : null;
+    if (!target) {
+        return;
+    }
+
+    window
+        .browseFileContents('text')
+        .then(contents => {
+            if (contents) {
+                target.value = contents.toString().trim();
+                target.focus();
+            }
+        })
+        .catch(err => window.showToast('Could not read the file\n' + err.message, 'alert-triangle'));
+});

@@ -764,3 +764,14 @@
         background-color: var(--color-base-200);
     }
 }
+
+/* A table whose cells hold sentences. FlyonUI's .table sets every cell nowrap from the
+ * utilities layer, which is right for ids and badges and wrong for a status line under a
+ * hostname. A utility of our own is the only thing that can outrank it: same layer, and
+ * :is() carries the element's specificity where the library's :where() carries none. A cell
+ * that must stay on one line puts whitespace-nowrap on a wrapper inside the cell. */
+@utility ee-table-wrap {
+    & :is(th, td) {
+        white-space: normal;
+    }
+}

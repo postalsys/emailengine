@@ -56,11 +56,24 @@ test('certificateLabel()', async t => {
         assert.match(label.title, /can not verify/);
     });
 
+    await t.test('a self-signed certificate nothing serves is a note, not a warning', () => {
+        // Severity follows consequence: until a listener presents it to a client, the fallback
+        // is a fact about the instance rather than something to fix.
+        const label = status.certificateLabel(certificate({ source: 'self-signed' }), null, { served: false });
+
+        assert.equal(label.type, 'neutral');
+        assert.equal(label.text, 'Self-signed');
+        assert.match(label.title, /no listener is serving it/);
+    });
+
     await t.test('counts down the last two weeks', () => {
         const label = status.certificateLabel(certificate({ validTo: new Date(Date.now() + 3 * DAY) }));
 
         assert.equal(label.type, 'warning');
-        assert.equal(label.text, '3d left');
+        assert.equal(label.text, 'Expires in 3 days');
+
+        assert.equal(status.certificateLabel(certificate({ validTo: new Date(Date.now() + DAY + 3600 * 1000) })).text, 'Expires in 1 day');
+        assert.equal(status.certificateLabel(certificate({ validTo: new Date(Date.now() + 3600 * 1000) })).text, 'Expires today');
     });
 
     await t.test('reports an expired or not-yet-valid certificate', () => {
@@ -97,8 +110,34 @@ test('certificateLabel()', async t => {
         assert.equal(status.certificateLabel(false, { state: 'ordering', message: 'Requesting' }).text, 'Requesting');
     });
 
-    await t.test('says a hostname has nothing rather than inventing a state for it', () => {
-        assert.equal(status.certificateLabel(false).text, 'Missing');
+    await t.test('a name without a certificate is not an error', () => {
+        // A listener with TLS on always has the self-signed fallback, so "missing" is not a
+        // state a name can be in. What it is depends on what asking for one would do.
+        const requestable = status.certificateLabel(false, null, { canRequest: true });
+        assert.equal(requestable.type, 'neutral');
+        assert.equal(requestable.text, 'Not requested');
+
+        const fallback = status.certificateLabel(false, null, { canRequest: false });
+        assert.equal(fallback.type, 'neutral');
+        assert.equal(fallback.text, 'Self-signed');
+        assert.match(fallback.title, /first time a listener needs one/);
+    });
+});
+
+test('summarizeLabels()', async t => {
+    await t.test('is "TLS off" when no listener reports a certificate', () => {
+        assert.equal(status.summarizeLabels([]).text, 'TLS off');
+        assert.equal(status.summarizeLabels([null, null, null]).type, 'neutral');
+    });
+
+    await t.test('picks the worst of what the listeners serve', () => {
+        const valid = status.certificateLabel(certificate());
+        const selfSigned = status.certificateLabel(certificate({ source: 'self-signed' }));
+        const failed = status.certificateLabel(false, { state: 'failed', message: 'NXDOMAIN' });
+
+        assert.equal(status.summarizeLabels([valid, null]).text, 'Valid');
+        assert.equal(status.summarizeLabels([valid, selfSigned]).text, 'Self-signed');
+        assert.equal(status.summarizeLabels([selfSigned, failed, valid]).text, 'Failed');
     });
 });
 
@@ -213,6 +252,47 @@ test('buildCertificateStatus()', async t => {
         // offering a button that will always fail.
         assert.equal(model.certificates[0].acmeEligible, true);
         assert.equal(model.certificates[2].acmeEligible, false);
+
+        // The Service URL's name is marked, because it is the one row the page cannot remove
+        assert.equal(model.certificates[0].isServiceHostname, true);
+        assert.equal(model.certificates[1].isServiceHostname, false);
+
+        // Nothing is serving TLS, so nothing on this page is red: the names without a
+        // certificate read as not requested (public) or as the fallback (an address literal)
+        assert.equal(model.served, false);
+        assert.equal(model.certificates[1].label.type, 'neutral');
+        assert.equal(model.certificates[1].label.text, 'Not requested');
+        assert.equal(model.certificates[2].label.text, 'Self-signed');
+        assert.equal(model.certificates[2].label.type, 'neutral');
+
+        // And the one action worth offering is offered for the one name it would help
+        assert.equal(model.certificates[0].wanted, false, 'a valid certificate is left to the reconciler');
+        assert.equal(model.certificates[1].wanted, true);
+        assert.equal(model.certificates[2].wanted, false);
+        assert.equal(model.anyWanted, true);
+    });
+
+    await t.test('a listener report is what turns the fallback into a warning', async () => {
+        await store.getSelfSignedCertificate(['mail.example.com'], logger);
+
+        const certs = {
+            async getCertificate() {
+                return false;
+            }
+        };
+
+        const quiet = await status.buildCertificateStatus({ certs });
+        assert.equal(quiet.certificates[0].certificate.source, 'self-signed');
+        assert.equal(quiet.certificates[0].label.type, 'neutral');
+
+        // The same instance with the SMTP server presenting that certificate to clients
+        const serving = await status.buildCertificateStatus({
+            certs,
+            reported: [{ source: 'self-signed', validTo: new Date(Date.now() + 60 * DAY).toISOString() }]
+        });
+        assert.equal(serving.served, true);
+        assert.equal(serving.certificates[0].label.type, 'warning');
+        assert.equal(serving.certificates[0].wanted, true, "and asking Let's Encrypt is the thing to do");
     });
 
     await t.test('does not provision anything', async () => {
@@ -285,7 +365,39 @@ test('buildCertificateStatus()', async t => {
 
         assert.equal(model.certificates[0].status.state, 'failed');
         assert.equal(model.certificates[0].label.title, 'Connection refused');
-        assert.equal(model.certificates[0].statusVariant, 'error');
+        // The line the page shows under the name, coloured the way the badge is
+        assert.deepEqual(model.certificates[0].reason, { variant: 'error', message: 'Connection refused' });
+    });
+
+    await t.test('a successful order leaves no line under the name', async () => {
+        // The row already says everything the recorded message would
+        await provision.setProvisioningStatus(logger, 'mail.example.com', { state: 'valid', message: 'Certificate issued' });
+
+        const model = await status.buildCertificateStatus({
+            certs: {
+                async getCertificate() {
+                    return false;
+                }
+            }
+        });
+
+        assert.equal(model.certificates[0].reason, null);
+    });
+
+    await t.test('an order in flight is not offered a second request', async () => {
+        await provision.setProvisioningStatus(logger, 'mail.example.com', { state: 'ordering', message: 'Requesting a certificate' });
+
+        const model = await status.buildCertificateStatus({
+            certs: {
+                async getCertificate() {
+                    return false;
+                }
+            }
+        });
+
+        assert.equal(model.certificates[0].label.text, 'Requesting');
+        assert.equal(model.certificates[0].wanted, false);
+        assert.equal(model.certificates[0].reason.variant, 'info');
     });
 
     await t.test('renders a failed renewal as a warning, not as a failure', async () => {
@@ -301,7 +413,7 @@ test('buildCertificateStatus()', async t => {
             }
         });
 
-        assert.equal(model.certificates[0].statusVariant, 'warning');
+        assert.equal(model.certificates[0].reason.variant, 'warning');
     });
 
     await t.test('a hostname served from the environment is not reported as missing', async () => {
@@ -377,7 +489,7 @@ test('buildCertificateStatus()', async t => {
         assert.equal(model.certificates[0].label.text, 'From environment');
         assert.equal(model.certificates[1].label.text, 'From environment');
         assert.equal(model.certificates[2].certificate, false, 'a name the listener did not resolve to it, however the wildcard reads');
-        assert.equal(model.certificates[2].label.text, 'Missing');
+        assert.equal(model.certificates[2].label.text, 'Not requested');
     });
 
     await t.test('names the certificate authority it is pointed at', async () => {

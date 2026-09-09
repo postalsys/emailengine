@@ -27,7 +27,8 @@ const {
     seedPasskeys,
     removePasskeys,
     ADMIN_PASSWORD,
-    BASE_URL
+    BASE_URL,
+    openRowMenu
 } = require('./helpers/bootstrap');
 
 // Resolves --color-primary for the active theme into the rgb() form that
@@ -1342,18 +1343,12 @@ test.describe('admin shell', () => {
         await expect(page.locator('h1', { hasText: 'Workers' })).toBeVisible();
         expect(await page.locator('tbody tr').count()).toBeGreaterThan(3);
 
-        // row actions live in a per-row kebab (ui/row-actions) now: open the row's
-        // menu, then the item fills the hidden thread input and opens the modal. Retry
-        // the open-then-click since the dropdown can close on its own (animations).
+        // row actions live in a per-row kebab (ui/row-actions): open the row's menu, then the
+        // item fills the hidden thread input and opens the modal. openRowMenu waits out the close
+        // fade of a previous menu, which is what used to make this look like a random close.
         const openRowActionAndClick = async itemLocator => {
-            const toggle = itemLocator.locator('xpath=ancestor::tr[1]').locator('button[aria-label="Worker actions"]');
-            await expect(async () => {
-                if (!(await itemLocator.isVisible())) {
-                    await toggle.click();
-                    await expect(itemLocator).toBeVisible({ timeout: 2000 });
-                }
-                await itemLocator.click({ timeout: 2000 });
-            }).toPass({ timeout: 15000 });
+            await openRowMenu(itemLocator.locator('xpath=ancestor::tr[1]'), 'Worker actions');
+            await itemLocator.click();
         };
 
         await openRowActionAndClick(page.locator('.snapshot-thread-btn').first());

@@ -18,6 +18,9 @@
       id       - element id (optional)
       class    - extra classes (optional)
       overlay  - value for data-overlay to open/close a ui/modal (optional)
+      dataName/dataValue - one data-* attribute, e.g. dataName="file-target", for a
+                 delegated handler that reads it (optional). Pass literals only: the
+                 attribute name is interpolated unescaped, so it must never come from data
       disabled - truthy to render the button disabled. Also adds pointer-events-none,
                  because a disabled control dispatches no mouse events and a wrapping
                  {{#> ui/tooltip}} would never see the hover that is meant to explain
@@ -32,7 +35,7 @@ btn{{#unless bare}} btn-{{#if variant}}{{variant}}{{else}}primary{{/if}}{{/unles
 {{#if icon}}<span class="{{icon}} size-4 shrink-0"></span>{{/if}}{{label}}
 {{~/inline}}
 {{#if href}}
-<a href="{{href}}" {{#if id}}id="{{id}}" {{/if}}{{#if external}}target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" {{/if}}class="{{> btnClasses}}">{{> btnContent}}</a>
+<a href="{{href}}" {{#if id}}id="{{id}}" {{/if}}{{#if dataName}}data-{{dataName}}="{{dataValue}}" {{/if}}{{#if external}}target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" {{/if}}class="{{> btnClasses}}">{{> btnContent}}</a>
 {{else}}
-<button type="{{#if type}}{{type}}{{else}}button{{/if}}" {{#if id}}id="{{id}}" {{/if}}{{#if overlay}}data-overlay="{{overlay}}" {{/if}}{{#if disabled}}disabled {{/if}}class="{{> btnClasses}}">{{> btnContent}}</button>
+<button type="{{#if type}}{{type}}{{else}}button{{/if}}" {{#if id}}id="{{id}}" {{/if}}{{#if overlay}}data-overlay="{{overlay}}" {{/if}}{{#if dataName}}data-{{dataName}}="{{dataValue}}" {{/if}}{{#if disabled}}disabled {{/if}}class="{{> btnClasses}}">{{> btnContent}}</button>
 {{/if}}
