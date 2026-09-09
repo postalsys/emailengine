@@ -2860,7 +2860,13 @@ async function onCommand(worker, message) {
 
         case 'delete':
             // Handle account deletion
-            unassigned.delete(message.account); // if set
+            //
+            // Guarded for the same reason as the `new` branch above, and here the throw was
+            // answered with a 500 for a deletion that had in fact succeeded: the account was
+            // already gone from Redis by the time this message was sent.
+            if (unassigned) {
+                unassigned.delete(message.account);
+            }
             if (assigned.has(message.account)) {
                 let assignedWorker = assigned.get(message.account);
                 if (workerAssigned.has(assignedWorker)) {
