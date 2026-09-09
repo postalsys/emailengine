@@ -363,6 +363,45 @@ test('BaseClient.setErrorState', async t => {
         assert.strictEqual(ctx.closeCalls, 0, 'and the connection is not torn down for it');
     });
 
+    await t.test('an error state that could not be stored rejects instead of being reported', async () => {
+        // The write is what everything downstream reads: the next login announces a recovery from
+        // an error it cannot see, the repeat check cannot suppress a failure that was never
+        // recorded, and the auth-failure park never counts three days of an error run it lost. A
+        // command-level failure arrives in exec()'s `error` rather than as a throw, so it went
+        // unnoticed while the webhook went out anyway.
+        const failure = new Error('READONLY You can not write against a read only replica');
+        const transactions = [];
+        const fakeRedis = {
+            hget: async () => null,
+            multi() {
+                const queued = [];
+                const builder = new Proxy(
+                    {},
+                    {
+                        get: (target, prop) => {
+                            if (prop === 'exec') {
+                                return async () => {
+                                    transactions.push(queued.slice());
+                                    return queued.map(() => [failure, null]);
+                                };
+                            }
+                            return (...args) => {
+                                queued.push({ command: String(prop), args });
+                                return builder;
+                            };
+                        }
+                    }
+                );
+                return builder;
+            }
+        };
+
+        const ctx = createErrorStateClient({ redis: fakeRedis, account: 'seterr-statefail' });
+
+        await assert.rejects(() => setErrorState(ctx, 'connectError', { serverResponseCode: 'SubscriptionSetupError' }), /read only replica/);
+        assert.strictEqual(transactions.length, 1, 'and nothing past the failed write is attempted');
+    });
+
     await t.test('a different error code is treated as a new first occurrence', async () => {
         const { ctx, accountKey } = makeCtx('seterr-changed');
         await redis

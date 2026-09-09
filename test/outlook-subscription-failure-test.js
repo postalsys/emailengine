@@ -50,8 +50,8 @@ function makeClient({ state = 'connected', storedError } = {}) {
     }
 
     const outlook = new OutlookClient('test-account', {
-        // Enough of an account hash for the two paths under test: the direct reads, and the one
-        // MULTI notifyAuthenticationSuccess() uses to read and clear the stored error run
+        // Enough of an account hash for the two paths under test: the direct reads, and the
+        // conditional delete both recovery routes clear the stored error run through
         redis: {
             hget: async (key, field) => hash.get(field) ?? null,
             hdel: async (key, ...fields) => {
@@ -124,12 +124,13 @@ test('OutlookClient.reportSubscriptionFailure()', async t => {
     });
 });
 
-test('a reported subscription failure and its recovery, through the real notify path', async t => {
-    // The suites above stub notify(), which is where setErrorState() lives - so on their own they
-    // verify the report and the clear as two halves that never meet. If reportSubscriptionFailure()
-    // were switched to the notification handler directly, it would stop setting the account state,
-    // clearSubscriptionFailure()'s gate would never be true again, and every assertion above would
-    // still pass while the nine-month outage came back. This case runs the pair for real.
+// A client whose notify() runs the real BaseClient path, setErrorState and the state write
+// included, against one account hash. The makeClient() above stubs notify(), so on its own it
+// verifies the report and the clear as two halves that never meet: if reportSubscriptionFailure()
+// were switched to the notification handler directly it would stop setting the account state,
+// clearSubscriptionFailure()'s gate would never be true again, and every assertion there would
+// still pass while the nine-month outage came back.
+function makeLiveClient() {
     const hash = new Map([['account', 'test-account']]);
     const delivered = [];
 
@@ -207,6 +208,12 @@ test('a reported subscription failure and its recovery, through the real notify 
         }
     };
 
+    return { outlook, delivered, hash };
+}
+
+test('a reported subscription failure and its recovery, through the real notify path', async t => {
+    const { outlook, delivered, hash } = makeLiveClient();
+
     await t.test('the report sets the account state and stores the error', async () => {
         await outlook.reportSubscriptionFailure('creation', { error: `Subscription failed: ${SP_DISABLED}` }, 3);
 
@@ -228,6 +235,47 @@ test('a reported subscription failure and its recovery, through the real notify 
         assert.equal(outlook.state, 'connected');
         assert.equal(hash.has('lastErrorState'), false, 'the error must not outlive the condition');
         assert.equal(delivered.length, 1, 'recovering from a connection error is not an authentication success');
+    });
+});
+
+test('a reported subscription failure across a worker restart', async t => {
+    // The report is written while the credential is perfectly healthy, so everything a restart does
+    // on the way back up - a token refresh, a login, a state flip to `connected` - happens while the
+    // account still cannot subscribe. Clearing the error run on the way past made the account report
+    // healthy with no lastError, and then announced the same failure again as if it were new.
+    const { outlook, delivered, hash } = makeLiveClient();
+
+    await t.test('survives the login init() performs on the way back up', async () => {
+        await outlook.reportSubscriptionFailure('creation', { error: `Subscription failed: ${SP_DISABLED}` }, 3);
+        assert.equal(delivered.length, 1);
+
+        assert.equal(await outlook.notifyAuthenticationSuccess('user@example.com'), false, 'a login is not a recovery from this');
+
+        assert.match(hash.get('lastErrorState'), /service principal/, 'the failure is still live, so it is still on record');
+        assert.equal(hash.get(LAST_ERROR_EVENT_FIELD), 'connectError');
+        assert.equal(delivered.length, 1);
+    });
+
+    await t.test('and is not announced a second time', async () => {
+        // init() flips the state before it reaches ensureSubscription(), which then fails again
+        outlook.state = 'connected';
+
+        await outlook.reportSubscriptionFailure('creation', { error: `Subscription failed: ${SP_DISABLED}` }, 3);
+
+        assert.equal(delivered.length, 1, 'the same failure is heard once, not once per restart');
+        assert.equal(outlook.state, 'connectError');
+    });
+
+    await t.test('is still lifted by a subscription that works', async () => {
+        // A restart whose ensureSubscription() succeeds reaches this with the state already back at
+        // `connected`, which used to be read as "nothing of ours to clear"
+        outlook.state = 'connected';
+
+        await outlook.clearSubscriptionFailure();
+
+        assert.equal(hash.has('lastErrorState'), false, 'the error must not outlive the condition');
+        assert.equal(hash.has(LAST_ERROR_EVENT_FIELD), false);
+        assert.equal(outlook.state, 'connected');
     });
 });
 
@@ -269,6 +317,33 @@ test('OutlookClient.clearSubscriptionFailure()', async t => {
         assert.equal(outlook.state, 'connected');
     });
 
+    await t.test('reads the stored state once per healthy account, not once an hour', async () => {
+        // Every path that concludes a subscription is working calls this, so a healthy account
+        // reaches it on every hourly pass. The only reason to look at Redis while the state is not
+        // `connectError` is a report written before this process started, which cannot become true
+        // again while the process runs.
+        const { outlook } = makeClient({ state: 'connected' });
+
+        let reads = 0;
+        const readErrorState = outlook.redis.hget;
+        outlook.redis.hget = async (key, field) => {
+            reads++;
+            return readErrorState(key, field);
+        };
+
+        await outlook.clearSubscriptionFailure();
+        assert.equal(reads, 1, 'a worker that restarted since a report has to find it');
+
+        await outlook.clearSubscriptionFailure();
+        await outlook.clearSubscriptionFailure();
+        assert.equal(reads, 1, 'and every pass after that is free');
+
+        // A failure reported since is this client's own, and it is in the state to prove it
+        outlook.state = 'connectError';
+        await outlook.clearSubscriptionFailure();
+        assert.equal(reads, 2, 'a reported account is always read');
+    });
+
     await t.test('leaves a failure written while it was deciding', async () => {
         // The race lib/lua/h-del-if-equals.lua exists for: anything else in the worker - a refused
         // token refresh, say - can replace the error between the read and the delete.
@@ -290,6 +365,77 @@ test('OutlookClient.clearSubscriptionFailure()', async t => {
 
         assert.equal(hash.get('lastErrorState'), newFailure, 'the newer failure is left for whoever wrote it');
         assert.equal(outlook.state, 'connectError', 'and the account is not reported as recovered');
+    });
+});
+
+test('OutlookClient.renewSubscription() and the report it takes back', async t => {
+    // Driving the real renewal, because that is where the clear is called from: it sits inside the
+    // try whose catch reads any throw as a Graph failure, and the healthy paths through it are the
+    // ones an account reported while it still had a subscription has to come back through.
+    function makeRenewClient({ expiresInMs, patchResult } = {}) {
+        const { outlook, notifications, hash } = makeClient({
+            state: 'connectError',
+            storedError: { response: SP_DISABLED, serverResponseCode: 'SubscriptionSetupError' }
+        });
+        hash.set(LAST_ERROR_EVENT_FIELD, 'connectError');
+
+        let stored = {
+            id: 'sub-1',
+            expirationDateTime: new Date(Date.now() + expiresInMs).toISOString(),
+            state: { state: 'created', time: Date.now(), retryCount: 0, createRetryCount: 0 }
+        };
+        const requests = [];
+
+        outlook.accountObject = {
+            getLock: () => ({ acquireLock: async () => ({ success: true }), releaseLock: async () => {} })
+        };
+        outlook.getStoredSubscription = async () => JSON.parse(JSON.stringify(stored));
+        outlook.saveStoredSubscription = async value => {
+            stored = value;
+        };
+        outlook.request = async (...args) => {
+            requests.push(args);
+            return patchResult;
+        };
+
+        return { outlook, notifications, hash, requests, stored: () => stored };
+    }
+
+    await t.test('a subscription that is still good takes the report back too', async () => {
+        // Reported while the subscription had two days left on it: every hourly pass answers
+        // `not_needed` without making a request, so nothing used to lift the report until the
+        // renewal window opened - up to 46 hours of 503s while notifications kept arriving.
+        const { outlook, hash, requests } = makeRenewClient({ expiresInMs: 60 * 3600 * 1000 });
+
+        const result = await outlook.renewSubscription({ force: false });
+
+        assert.deepEqual(result, { success: true, reason: 'not_needed' });
+        assert.deepEqual(requests, [], 'and it did so without asking Graph anything');
+        assert.equal(outlook.state, 'connected');
+        assert.equal(hash.has('lastErrorState'), false, 'the error must not outlive the condition');
+    });
+
+    await t.test('a renewal is not failed by a clear that could not be stored', async () => {
+        // The clear is Redis work inside the renewal's own try: a hiccup used to be caught by the
+        // catch below it, counted as a failed renewal, and at the cap announced to the operator as
+        // a Graph failure whose text was a Redis error.
+        const expirationDateTime = new Date(Date.now() + 70 * 3600 * 1000).toISOString();
+        const { outlook, notifications, stored } = makeRenewClient({
+            expiresInMs: 12 * 3600 * 1000,
+            patchResult: { expirationDateTime }
+        });
+
+        outlook.redis.hDelIfEquals = async () => {
+            throw new Error('READONLY You can not write against a read only replica');
+        };
+
+        const result = await outlook.renewSubscription({ force: false });
+
+        assert.deepEqual(result, { success: true, expirationDateTime }, 'the renewal succeeded, and says so');
+        assert.equal(stored().state.state, 'created', 'the renewed subscription is recorded as renewed');
+        assert.equal(stored().state.retryCount, 0, 'and nothing is counted against the retry budget');
+        assert.deepEqual(notifications, [], 'nothing is announced for it');
+        assert.equal(outlook.state, 'connectError', 'the report stands until a later pass manages to clear it');
     });
 });
 
@@ -402,8 +548,23 @@ test('OutlookClient.renewOrCreateSubscription()', async t => {
 
         await outlook.renewOrCreateSubscription();
 
-        assert.deepEqual(calls, ['renew:false', 'save', 'ensure'], 'the hourly pass is the slow retry, so it does not give up');
+        assert.deepEqual(calls, ['save', 'renew:false', 'ensure'], 'the hourly pass is the slow retry, so it does not give up');
         assert.deepEqual(stored().state, { state: 'error', error: null, createRetryCount: 0, retryCount: 0 });
+    });
+
+    await t.test('gives a spent renewal ladder a fresh one as well', async () => {
+        // A subscription inside the renew window is never recreated by this pass, so the reset is
+        // the only thing it gets: left at the cap, its renewal is one PATCH an hour forever, with
+        // no backoff ladder between the attempts and no report that it is still failing.
+        const { outlook, calls, stored } = makeTicker({
+            renewalResult: { success: false, reason: 'renewal_failed' },
+            storedSubscription: { state: { state: 'error', error: 'Subscription renewal failed', retryCount: OUTLOOK_MAX_RETRY_ATTEMPTS, createRetryCount: 0 } }
+        });
+
+        await outlook.renewOrCreateSubscription();
+
+        assert.deepEqual(calls, ['save', 'renew:false'], 'the counters are cleared before the attempt, and nothing is recreated');
+        assert.equal(stored().state.retryCount, 0);
     });
 
     await t.test('does not rewrite a stored record that has nothing to reset', async () => {

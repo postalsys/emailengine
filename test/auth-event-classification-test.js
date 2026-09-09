@@ -14,7 +14,7 @@
 // And `lastErrorState` is written by BOTH error events, so the recovery path could not tell an
 // authentication failure from a name-resolution blip and announced every recovery as
 // `authenticationSuccess`. setErrorState() now records which event wrote it, and
-// notifyAuthenticationSuccess() reads it back in the same step that clears it.
+// notifyAuthenticationSuccess() reads it back to decide both what to announce and what to clear.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -187,6 +187,44 @@ test('BaseClient.notifyAuthenticationSuccess', async t => {
         assert.equal(await client.notifyAuthenticationSuccess('user@example.com'), false);
         assert.deepEqual(client.notifications, []);
         assert.equal(await redis.hget(accountKey, 'lastErrorState'), null, 'the error state is still cleared');
+    });
+
+    await t.test('leaves a failure a login says nothing about for its owner', async () => {
+        // A login clears every failure that stood between the account and a session, which is what
+        // BaseClient assumes of all of them - a client that reports one a login does not answer
+        // overrides isSelfClearedErrorState() to keep it. The Graph client's change subscription is
+        // that case: the tenants that hit it refresh tokens and log in perfectly throughout, so
+        // every reconnect used to erase a live failure, leaving the account reporting healthy with
+        // no lastError while it synced nothing, and re-announcing it once the state was rewritten.
+        const { client, accountKey } = makeClient('authok-subscription');
+        client.isSelfClearedErrorState = parsed => parsed?.serverResponseCode === 'SubscriptionSetupError';
+        await seedAccount(accountKey, {
+            'state:count:connected': '7',
+            lastErrorState: JSON.stringify({ response: 'The service principal is disabled.', serverResponseCode: 'SubscriptionSetupError' }),
+            [LAST_ERROR_EVENT_FIELD]: 'connectError',
+            'lastError:errorCount': '2'
+        });
+
+        assert.equal(await client.notifyAuthenticationSuccess('user@example.com'), false);
+        assert.deepEqual(client.notifications, []);
+
+        const left = await redis.hmget(accountKey, 'lastErrorState', LAST_ERROR_EVENT_FIELD, 'lastError:errorCount');
+        assert.equal(JSON.parse(left[0]).serverResponseCode, 'SubscriptionSetupError', 'the report stands until a subscription works');
+        assert.deepEqual(left.slice(1), ['connectError', '2'], 'and so does the run it belongs to');
+    });
+
+    await t.test('clears a failure nothing claimed, whatever reported it', async () => {
+        // The hook defaults to false, so a client that says nothing keeps nothing: a run only its
+        // reporter can lift has to be declared by the reporter, not listed here.
+        const { client, accountKey } = makeClient('authok-subscription-base');
+        await seedAccount(accountKey, {
+            'state:count:connected': '7',
+            lastErrorState: JSON.stringify({ response: 'The service principal is disabled.', serverResponseCode: 'SubscriptionSetupError' }),
+            [LAST_ERROR_EVENT_FIELD]: 'connectError'
+        });
+
+        assert.equal(await client.notifyAuthenticationSuccess('user@example.com'), false);
+        assert.equal(await redis.hget(accountKey, 'lastErrorState'), null, 'the error state is cleared like any other');
     });
 
     await t.test('clears the whole error run it recovered from', async () => {
