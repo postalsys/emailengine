@@ -307,6 +307,10 @@ test('certificate provisioning', async t => {
     await t.test('the reconciler orders for every eligible hostname and reloads the listeners once', async () => {
         await settings.set('tlsHostnames', ['smtp.example.com', '192.0.2.10', 'mail.local']);
 
+        // A listener serves TLS, which is what a first order waits for
+        await settings.set('smtpServerEnabled', true);
+        await settings.set('smtpServerTLSEnabled', true);
+
         const certs = stubCerts({ onAcquire: hostname => issued(hostname) });
         const commands = [];
 
@@ -324,6 +328,58 @@ test('certificate provisioning', async t => {
 
         // Every listener, once, and without restarting any of them.
         assert.deepEqual(commands, ['apiReloadCertificates', 'smtpReloadCertificates', 'imapProxyReloadCertificates']);
+    });
+
+    await t.test('a first order waits for a listener that would serve the certificate', async () => {
+        // The upgrade case: a public https Service URL behind a reverse proxy that terminates TLS,
+        // with every built-in listener on plain TCP. Nothing here would serve a certificate, and an
+        // order for one fails every retry interval for good, so none is placed - which is what the
+        // TLS checkbox, the only thing that used to order a first certificate, did by construction.
+        const certs = stubCerts({ onAcquire: hostname => issued(hostname) });
+
+        const result = await provision.reconcileCertificates({ certs, logger, call: async () => {} });
+
+        assert.deepEqual(result.results, []);
+        assert.equal(certs.calls.filter(call => call.skipAcquire === false).length, 0, 'the CA is not asked');
+        assert.deepEqual(await provision.getProvisioningStatus(), {}, 'and nothing is recorded as failed or pending');
+    });
+
+    await t.test('a listener with TLS on is what asks for the first order', async () => {
+        await settings.set('smtpServerEnabled', true);
+        await settings.set('smtpServerTLSEnabled', true);
+
+        const certs = stubCerts({ onAcquire: hostname => issued(hostname) });
+        const result = await provision.reconcileCertificates({ certs, logger, call: async () => {} });
+
+        assert.deepEqual(
+            result.results.map(entry => entry.hostname),
+            ['mail.example.com']
+        );
+    });
+
+    await t.test('a listener that is switched off does not count, whatever its TLS setting says', () => {
+        // Decided from the settings the reconciler already holds, and from the API listener's own
+        // environment - which is off in this process, so the server listeners are all there is.
+        assert.equal(provision.listenersServeTls({ imapProxyServerEnabled: false, imapProxyServerTLSEnabled: true }), false);
+        assert.equal(provision.listenersServeTls({ imapProxyServerEnabled: true, imapProxyServerTLSEnabled: true }), true);
+        assert.equal(provision.listenersServeTls({ smtpServerEnabled: true, smtpServerTLSEnabled: false }), false);
+        assert.equal(provision.listenersServeTls({}), false);
+    });
+
+    await t.test('a renewal is not gated on a listener', async () => {
+        // A certificate that exists is kept valid, as the renewal timer always did: a listener
+        // switched on later finds a current certificate rather than one that lapsed in the meantime.
+        const record = Object.assign(await issued('mail.example.com'), { lastCheck: new Date(Date.now() - BLOCK_TLS_RENEW - 1000) });
+        const renewed = await issued('mail.example.com');
+        const certs = stubCerts({ records: { 'mail.example.com': record }, onAcquire: () => renewed, renewalDue: true });
+
+        const result = await provision.reconcileCertificates({ certs, logger, call: async () => {} });
+
+        assert.deepEqual(
+            result.results.map(entry => entry.hostname),
+            ['mail.example.com']
+        );
+        assert.equal(result.changed, true);
     });
 
     await t.test('the reconciler does nothing when automatic certificates are switched off', async () => {

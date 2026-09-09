@@ -51,7 +51,7 @@ function fakeCerts(records) {
  * @param {string} servername SNI name
  * @returns {Promise<string>} The subject of the certificate that would be served
  */
-async function servedSubject(context, servername) {
+async function servedCertificate(context, servername) {
     // The SNI callback hands back a SecureContext, which has no readable certificate, so serve it
     // for real and read what the client received. That also proves the context is usable.
     const options = context.options;
@@ -66,13 +66,17 @@ async function servedSubject(context, servername) {
             const socket = tls.connect({ port: server.address().port, host: '127.0.0.1', servername, rejectUnauthorized: false }, () => {
                 const cert = socket.getPeerCertificate();
                 socket.end();
-                resolve(cert.subject.CN);
+                resolve(cert);
             });
             socket.on('error', reject);
         });
     } finally {
         server.close();
     }
+}
+
+async function servedSubject(context, servername) {
+    return (await servedCertificate(context, servername)).subject.CN;
 }
 
 /**
@@ -392,14 +396,47 @@ test('TLS context resolution', async t => {
         assert.equal(await servedSubject(context, undefined), 'mail.example.com');
     });
 
-    await t.test('a name with no certificate of its own falls back rather than failing', async () => {
+    await t.test('a name with no certificate of its own is served the self-signed one, which covers it', async () => {
         await settings.set('tlsHostnames', ['smtp.example.com']);
 
         const mail = await createSelfSignedCertificate({ hostnames: ['mail.example.com'] });
         const context = await createTlsContext({ certs: fakeCerts({ 'mail.example.com': mail }), logger });
 
-        // Wrong name, but a completed handshake the operator can diagnose beats a reset connection.
-        assert.equal(await servedSubject(context, 'smtp.example.com'), 'mail.example.com');
+        // Not the primary name's certificate: that fails the client's name check just the same,
+        // and it is not what the certificates page says the name has. The self-signed fallback
+        // covers every configured name, so a client that pinned its fingerprint completes.
+        const served = await servedCertificate(context, 'smtp.example.com');
+        const stored = await store.peekSelfSignedCertificate();
+
+        assert.equal(served.fingerprint256, stored.fingerprint256, 'the self-signed certificate the page shows');
+        assert.ok(store.coversHostname(new crypto.X509Certificate(served.raw), 'smtp.example.com'), 'and it covers the name asked for');
+
+        // The primary name keeps its own certificate, and so does a client that sent no name.
+        assert.equal(await servedSubject(context, 'mail.example.com'), 'mail.example.com');
+        assert.equal((await servedCertificate(context, undefined)).fingerprint, mail.fingerprint);
+    });
+
+    await t.test('no self-signed certificate is generated while every name has one of its own', async () => {
+        await settings.set('tlsHostnames', ['smtp.example.com']);
+
+        const mail = await createSelfSignedCertificate({ hostnames: ['mail.example.com'] });
+        const smtp = await createSelfSignedCertificate({ hostnames: ['smtp.example.com'] });
+        await createTlsContext({ certs: fakeCerts({ 'mail.example.com': mail, 'smtp.example.com': smtp }), logger });
+
+        assert.equal(await store.peekSelfSignedCertificate(), false, 'nothing for the page to show that no listener serves');
+    });
+
+    await t.test('an internationalized name is matched however the listener spells it', async () => {
+        // The IMAP proxy's server library decodes the ClientHello name to Unicode before asking for
+        // a context; certificates carry the A-label. Both spellings have to find the certificate.
+        await settings.set('tlsHostnames', ['xn--pdra-0qa.example.com']);
+
+        const mail = await createSelfSignedCertificate({ hostnames: ['mail.example.com'] });
+        const idn = await createSelfSignedCertificate({ hostnames: ['xn--pdra-0qa.example.com'] });
+        const context = await createTlsContext({ certs: fakeCerts({ 'mail.example.com': mail, 'xn--pdra-0qa.example.com': idn }), logger });
+
+        assert.equal(context.options.SNICallback('xn--pdra-0qa.example.com'), context.options.SNICallback('põdra.example.com'));
+        assert.equal(await servedSubject(context, 'xn--pdra-0qa.example.com'), 'xn--pdra-0qa.example.com');
     });
 
     await t.test('the source setting decides which stored sources are served', async () => {

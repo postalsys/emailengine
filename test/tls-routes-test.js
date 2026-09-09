@@ -49,4 +49,17 @@ test('TLS hostname input', async t => {
         assert.throws(() => validateHostname('<script>'), /Not a valid hostname/, 'and neither is markup');
         assert.throws(() => validateHostname(''), /Enter a hostname/, 'an empty field is asked for, not refused as invalid');
     });
+
+    await t.test('refuses a port, which the colon allowed for IPv6 used to let through', () => {
+        // A host:port copied out of a mail client's settings is not a name a certificate can be
+        // issued for; stored as one it was a permanently failing order and a reachability check
+        // made against the IMAPS port in plain HTTP.
+        assert.throws(() => validateHostname('mail.example.com:993'), /must not include a port/);
+        assert.throws(() => validateHostname('[2001:db8::1]:993'), /Not a valid hostname/);
+        assert.throws(() => validateHostname('192.0.2.10:443'), /must not include a port/);
+
+        // The IPv6 literal the colon is for still passes, bracketed or bare.
+        assert.equal(validateHostname('2001:db8::1'), '2001:db8::1');
+        assert.equal(validateHostname('[2001:db8::1]'), '2001:db8::1');
+    });
 });

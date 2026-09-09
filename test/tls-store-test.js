@@ -318,6 +318,60 @@ test('TLS material store', async t => {
         assert.ok(covers(stored.cert, 'mail.example.com'));
     });
 
+    /**
+     * Replaces a stale self-signed record and makes the first `lost` conditional writes lose to a
+     * deletion of the field, the way a removal from the page between the read and the write does.
+     *
+     * @param {number} lost How many writes lose before one is allowed through
+     * @param {Object} [logger] Logger handed to the store
+     * @returns {Promise<Object>} `{ material, writes }`
+     */
+    async function replaceWithLostWrites(lost, logger) {
+        await store.getSelfSignedCertificate(['old.example.com']);
+
+        const originalCas = redis.hSetIfEquals.bind(redis);
+        let writes = 0;
+        redis.hSetIfEquals = async (key, field, value, expected) => {
+            if (key === store.TLS_KEY && field === store.SELF_SIGNED_FIELD && writes++ < lost) {
+                await redis.hdel(key, field);
+                return 0;
+            }
+            return await originalCas(key, field, value, expected);
+        };
+
+        try {
+            return { material: await store.getSelfSignedCertificate(['mail.example.com'], logger), writes };
+        } finally {
+            redis.hSetIfEquals = originalCas;
+        }
+    }
+
+    await t.test('a worker that loses the write to a deletion contends again rather than serving what it lost', async () => {
+        // The conditional write can lose to something other than a winner's certificate: the
+        // record removed from the page between the read and the write, so there is nothing to read
+        // back. Returning the generated material then served a certificate stored nowhere, which
+        // the page never shows - the very divergence the conditional write exists to prevent.
+        const { material, writes } = await replaceWithLostWrites(1);
+
+        assert.equal(writes, 2, 'read again and written against the now-empty field');
+
+        const stored = await store.peekSelfSignedCertificate();
+        assert.equal(stored.fingerprint, material.fingerprint, 'what is served is what is stored');
+        assert.ok(covers(stored.cert, 'mail.example.com'));
+    });
+
+    await t.test('a worker that keeps losing the write still starts, on unstored material', async () => {
+        // A listener that has been switched on has to start. Losing every round takes Redis being
+        // rewritten faster than it can be read, and that is logged rather than left to fail the bind.
+        const errors = [];
+        const { material, writes } = await replaceWithLostWrites(Infinity, { warn() {}, error: entry => errors.push(entry) });
+
+        assert.equal(writes, 3);
+        assert.equal(errors.length, 1);
+        assert.equal(errors[0].fingerprint, material.fingerprint);
+        assert.ok(covers(material.cert, 'mail.example.com'));
+    });
+
     await t.test('coversHostname() does not throw on the SNI path', async () => {
         // checkIP() throws on anything that is not an address, and this is called for every servername
         // a client sends. An exception here fails the handshake rather than falling through to the
@@ -372,6 +426,23 @@ test('TLS material store', async t => {
         assert.equal(await store.getAcmeCertificate(failing, 'mail.example.com'), false);
         assert.equal(await store.getAcmeCertificate(missing, 'mail.example.com'), false);
         assert.equal(await store.getAcmeCertificate(null, 'mail.example.com'), false);
+    });
+
+    await t.test('getAcmeCertificate() refuses a record whose certificate does not parse', async () => {
+        // A truncated or hand-edited record used to come back as material with no dates behind it:
+        // the page called it Valid while the listener, unable to build a context from it, served
+        // the self-signed fallback for the name.
+        const material = await pair(['mail.example.com']);
+        const errors = [];
+        const garbage = {
+            async getCertificate() {
+                return { status: 'valid', cert: material.cert.slice(0, 120), privateKey: material.privateKey };
+            }
+        };
+
+        assert.equal(await store.getAcmeCertificate(garbage, 'mail.example.com', { error: entry => errors.push(entry) }), false);
+        assert.equal(errors.length, 1);
+        assert.equal(errors[0].hostname, 'mail.example.com');
     });
 
     await t.test('getAcmeCertificate() says so when the store could not be read', async () => {

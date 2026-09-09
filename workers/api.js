@@ -93,7 +93,7 @@ const { registerOpenApiRoute } = require('../lib/openapi');
 const { getModel: getApiReferenceModel, clearServiceUrlCache } = require('../lib/api-reference');
 
 const { createCertHandler } = require('../lib/cert-handler');
-const { createTlsContext, applyTlsContext } = require('../lib/tls/context');
+const { createTlsContext, applyTlsContext, apiTlsConfig } = require('../lib/tls/context');
 const { reconcileCertificates, requestProvisioning } = require('../lib/tls/provision');
 const { buildCertificateStatus } = require('../lib/tls/status');
 
@@ -198,7 +198,7 @@ const API_PORT =
 const API_HOST = readEnvValue('EENGINE_HOST') || config.api.host;
 
 // Either an object (TLS enabled) or `false` (TLS disabled)
-const API_TLS = hasEnvValue('EENGINE_API_TLS') ? getBoolean(readEnvValue('EENGINE_API_TLS')) && (config.api.tls || {}) : config.api.tls || false;
+const API_TLS = apiTlsConfig();
 
 // Merge TLS settings from config params and environment
 loadTlsConfig(API_TLS, 'EENGINE_API_TLS_');
@@ -3323,7 +3323,8 @@ const init = async () => {
     //
     // The reconciler in lib/tls/provision.js owns the whole decision now, including the renewal
     // one, and it is the only thing that orders certificates. The admin UI's button asks it to run
-    // immediately rather than doing the work itself.
+    // immediately rather than doing the work itself. A first order still needs a listener with TLS
+    // switched on, which is what the checkbox used to be; see listenersServeTls() there.
     setInterval(() => {
         async function handler() {
             try {

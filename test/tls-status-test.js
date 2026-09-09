@@ -207,6 +207,22 @@ test('listenerCertificateSummary()', async t => {
             label: null
         });
     });
+
+    await t.test('a listener report only counts while the listener is listening', () => {
+        // The state record keeps the payload of the last transition that carried one, and a crash
+        // carries none: a dead listener kept reporting the certificate it served before it died.
+        const tls = reported('acme');
+
+        assert.deepEqual(status.reportedListenerTls({ state: 'listening', payload: { tls } }), tls);
+
+        for (const state of ['exited', 'spawning', 'initializing', 'failed', 'disabled', 'suspended']) {
+            assert.equal(status.reportedListenerTls({ state, payload: { tls } }), null, state);
+        }
+
+        assert.equal(status.reportedListenerTls({ state: 'listening', payload: {} }), null, 'listening without TLS');
+        assert.equal(status.reportedListenerTls({ state: 'listening' }), null, 'no payload at all');
+        assert.equal(status.reportedListenerTls(null), null);
+    });
 });
 
 test('buildCertificateStatus()', async t => {
