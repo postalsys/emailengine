@@ -68,6 +68,12 @@ Refer to the [configuration documentation](https://learn.emailengine.app/docs/co
 
 By default, EmailEngine only allows connections from localhost. To enable external access, either edit the config file or use the CLI option `--api.host="0.0.0.0"`. Ensure to secure external access with a firewall or proxy to allow only trusted sources.
 
+### Content-Security-Policy
+
+Since v2.79.9 the admin interface is served with a nonce-based Content-Security-Policy, so only the scripts EmailEngine rendered will run. A CDN or proxy that rewrites the HTML on its way to the browser breaks that, because the scripts it re-creates do not carry the nonce. Cloudflare's Rocket Loader is the common case: the admin pages still render, but nothing on them works, and the browser console reports blocked inline scripts. Turn such an optimizer off for the hostname EmailEngine is served from.
+
+Set `EENGINE_CSP_MODE=report-only` to keep the policy out of the way while still logging violations to the browser console, or `EENGINE_CSP_MODE=off` to send only the framing protection. See the [configuration documentation](https://learn.emailengine.app/docs/configuration/environment-variables).
+
 ## Deployment
 
 ### Ubuntu or Debian

@@ -97,7 +97,7 @@ test('forced SSO hands off to the provider without an HTTP redirect', async t =>
         const source = fs.readFileSync(path.join(__dirname, '..', 'views', 'account', 'login-redirect.hbs'), 'utf-8');
 
         assert.match(source, /window\.location\.replace\(/, 'the hand-off has to start the navigation itself');
-        assert.match(source, /<script nonce="\{\{cspNonce\}\}"/, 'and the admin CSP only runs a script carrying the nonce');
+        assert.match(source, /nonce="\{\{cspNonce\}\}"/, 'and the admin CSP only runs a script carrying the nonce');
         assert.match(source, /id="sso-continue"/, 'the fallback link the script reads, and a browser without JS follows');
     });
 

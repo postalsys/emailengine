@@ -8,6 +8,10 @@
 // not carry a <style> block either. A page that breaks one of these rules renders, but its
 // script silently never runs, which no other test would notice.
 //
+// Every script tag also carries data-cfasync="false" - see `.claude/rules/admin-ui.md` for the
+// rule and the reasoning. Found on an instance behind a Cloudflare zone with Rocket Loader on,
+// where the admin UI came up looking entirely normal with nothing on it working.
+//
 // Pure: reads the templates, nothing else.
 
 const test = require('node:test');
@@ -16,12 +20,13 @@ const fs = require('fs');
 const pathlib = require('path');
 
 const { listFiles } = require('./helpers/list-files');
-const { inlineScriptAttrs } = require('./helpers/inline-scripts');
+const { scriptTagAttrs, inlineScriptAttrs } = require('./helpers/inline-scripts');
 const { stripHandlebarsComments } = require('./helpers/hbs-comments');
 
 const VIEWS_DIR = pathlib.join(__dirname, '..', 'views');
 
 const NONCE_ATTR = /\bnonce="\{\{cspNonce\}\}"/;
+const CFASYNC_ATTR = /\bdata-cfasync="false"/;
 const INLINE_HANDLER = /<[a-z][^>]*\s+on[a-z]+\s*=/i;
 const JAVASCRIPT_URL = /\b(href|action|src)\s*=\s*["']\s*javascript:/i;
 const STYLE_ELEMENT = /<style\b/i;
@@ -41,6 +46,10 @@ test('every view template is compatible with the admin Content-Security-Policy',
             for (const attrs of inlineScriptAttrs(source)) {
                 inlineScripts++;
                 assert.match(attrs, NONCE_ATTR, `inline <script${attrs}> must carry nonce="{{cspNonce}}"`);
+            }
+
+            for (const attrs of scriptTagAttrs(source)) {
+                assert.match(attrs, CFASYNC_ATTR, `<script${attrs}> must carry data-cfasync="false"`);
             }
 
             const handler = source.match(INLINE_HANDLER);

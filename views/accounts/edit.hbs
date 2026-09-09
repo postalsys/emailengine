@@ -140,7 +140,7 @@
 
 <input type="hidden" id="availablePaths" value="{{availablePaths}}">
 
-<script nonce="{{cspNonce}}">
+<script data-cfasync="false" nonce="{{cspNonce}}">
     document.addEventListener('DOMContentLoaded', () => {
         let availablePaths = JSON.parse(document.getElementById('availablePaths').value);
         // native datalist suggestions for the Sent Mail folder input (the

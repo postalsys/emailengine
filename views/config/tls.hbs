@@ -372,7 +372,7 @@ Generate a self-signed certificate for every configured name now, instead of the
 {{/if}}
 {{/ui/confirm-modal}}
 
-<script nonce="{{cspNonce}}">
+<script data-cfasync="false" nonce="{{cspNonce}}">
     document.addEventListener('DOMContentLoaded', () => {
 
         // The one line under a hostname row. Every message about a name lands here, so a name

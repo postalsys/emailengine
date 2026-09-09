@@ -2,10 +2,11 @@
 
 // Helper (not named *-test.js, so the Node test runner ignores it).
 //
-// Finds the inline <script> elements a browser would execute, for the tests that prove every
-// one of them carries the Content-Security-Policy nonce (lib/security-headers.js): the template
-// guardrail in the unit tier scans the .hbs sources, the smoke test in the integration tier
-// scans rendered pages. One definition, so the two cannot drift on what counts as executable.
+// Finds the <script> elements in a page or template, for the tests that prove every inline one
+// carries the Content-Security-Policy nonce and every one of them the data-cfasync opt-out
+// (lib/security-headers.js): the template guardrail in the unit tier scans the .hbs sources, the
+// smoke test in the integration tier scans rendered pages. One definition, so the two cannot
+// drift on what counts as a script tag or on which of them a browser executes.
 
 const SCRIPT_TAG = /<script\b([^>]*)>/gi;
 
@@ -18,11 +19,18 @@ const NONCE_RE = /'nonce-([A-Za-z0-9_-]+)'/;
 
 /**
  * @param {string} source - HTML or template source
+ * @returns {string[]} The attribute strings of every script tag, inline or external
+ */
+function scriptTagAttrs(source) {
+    return [...source.matchAll(SCRIPT_TAG)].map(match => match[1]);
+}
+
+/**
+ * @param {string} source - HTML or template source
  * @returns {string[]} The attribute strings of the executable inline script tags
  */
 function inlineScriptAttrs(source) {
-    return [...source.matchAll(SCRIPT_TAG)]
-        .map(match => match[1])
+    return scriptTagAttrs(source)
         .filter(attrs => !/\ssrc\s*=/i.test(attrs))
         .filter(attrs => {
             const type = attrs.match(/\btype\s*=\s*["']([^"']*)["']/i);
@@ -30,4 +38,4 @@ function inlineScriptAttrs(source) {
         });
 }
 
-module.exports = { inlineScriptAttrs, NONCE_RE };
+module.exports = { scriptTagAttrs, inlineScriptAttrs, NONCE_RE };

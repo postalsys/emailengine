@@ -334,12 +334,12 @@
     </div>
     <!-- End of content column -->
 
-    <script src="/static/js/flyonui.js"></script>
-    <script src="/static/js/ui.js"></script>
+    <script data-cfasync="false" src="/static/js/flyonui.js"></script>
+    <script data-cfasync="false" src="/static/js/ui.js"></script>
 
-    <script src="/static/js/highlight.min.js"></script>
+    <script data-cfasync="false" src="/static/js/highlight.min.js"></script>
 
-    <script src="/static/js/app.js"></script>
+    <script data-cfasync="false" src="/static/js/app.js"></script>
 
     {{!-- global #crumb element for page scripts that post with fetch();
           must render unconditionally - converted pages rely on it instead of
@@ -352,7 +352,7 @@
         Provisioning a trial license, please wait <span class="loading loading-spinner loading-sm align-middle"></span>
     </div>
     {{/ui/modal}}
-    <script nonce="{{cspNonce}}">
+    <script data-cfasync="false" nonce="{{cspNonce}}">
         document.addEventListener('DOMContentLoaded', () => {
             let trialBtn = document.getElementById('start-trial-btn');
             if (!trialBtn) {
@@ -392,7 +392,7 @@
 
     {{#if updateBrowserInfo}}
     <input type="hidden" id="browser-info-crumb" value="{{crumb}}" />
-    <script nonce="{{cspNonce}}">
+    <script data-cfasync="false" nonce="{{cspNonce}}">
         document.addEventListener('DOMContentLoaded', () => {
             let sendBrowserInfo = async () => {
                 let timezone = false;

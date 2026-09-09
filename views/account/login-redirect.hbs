@@ -17,6 +17,6 @@ what a browser that did not run the script gets. --}}
 
 {{> ui/btn label="Continue" href=ssoRedirectUrl id="sso-continue" icon="icon-[tabler--login-2]" class="btn-block"}}
 
-<script nonce="{{cspNonce}}">
+<script data-cfasync="false" nonce="{{cspNonce}}">
     window.location.replace(document.getElementById('sso-continue').href);
 </script>

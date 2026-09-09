@@ -85,7 +85,7 @@ const GET_ROUTES = [
     '/unsubscribe'
 ];
 
-const { inlineScriptAttrs, NONCE_RE } = require('../helpers/inline-scripts');
+const { scriptTagAttrs, inlineScriptAttrs, NONCE_RE } = require('../helpers/inline-scripts');
 
 test('Admin UI routes smoke test', async t => {
     await t.test('every parameterless GET route is registered and does not crash', async () => {
@@ -126,6 +126,12 @@ test('Admin UI routes smoke test', async t => {
 
             for (const attrs of inlineScriptAttrs(res.text)) {
                 assert.match(attrs, new RegExp(`\\bnonce="${nonce[1]}"`), `GET ${path}: inline <script${attrs}> does not carry the header nonce`);
+            }
+
+            // The rendered page is where a missing opt-out actually reaches a browser: without it
+            // an HTML-rewriting CDN re-creates the element and the nonce above buys nothing
+            for (const attrs of scriptTagAttrs(res.text)) {
+                assert.match(attrs, /\bdata-cfasync="false"/, `GET ${path}: <script${attrs}> does not carry the data-cfasync opt-out`);
             }
         }
 
