@@ -198,3 +198,67 @@ test('Gmail renewWatch failure bookkeeping', async t => {
         assert.ok(logs.error.some(entry => /Failed to record the missing watch markers/.test(entry.msg)));
     });
 });
+
+test('Gmail renewWatch clears the record when push is no longer configured', async t => {
+    const savedGet = oauth2Apps.get;
+    t.after(() => {
+        oauth2Apps.get = savedGet;
+    });
+    oauth2Apps.get = async () => ({ id: 'test-pubsub-app' });
+
+    const staleFailure = { err: 'Pub/Sub topic and IAM markers are not recorded on the linked application', time: new Date().toISOString() };
+
+    await t.test('unlinking the Pub/Sub app clears a recorded failure', async () => {
+        // The record is only ever cleared by a successful arm, and an account with no Pub/Sub app
+        // never reaches one - so it reported state 'error' with a frozen lastCheck for good.
+        const { gmail, updates } = makeClient();
+
+        await gmail.renewWatch({ _app: {}, lastWatch: new Date(), watchFailure: staleFailure }, {});
+
+        assert.equal(updates.length, 1);
+        assert.equal(updates[0].watchFailure, null);
+        assert.equal(updates[0].watchResponse, null);
+        assert.equal(updates[0].lastWatch, null);
+    });
+
+    await t.test('a stored watch response is cleared as well', async () => {
+        const { gmail, updates } = makeClient();
+
+        await gmail.renewWatch({ _app: {}, watchResponse: { historyId: '1', expiration: '0' } }, {});
+
+        assert.equal(updates.length, 1);
+        assert.equal(updates[0].watchResponse, null);
+    });
+
+    await t.test('an account that never had a watch is left alone', async () => {
+        const { gmail, updates, watchCalls } = makeClient();
+
+        await gmail.renewWatch({ _app: {} }, {});
+
+        assert.equal(updates.length, 0, 'nothing to clear, nothing to write');
+        assert.equal(watchCalls.length, 0);
+    });
+
+    await t.test('a still-linked account inside MIN_WATCH_TTL keeps its failure', async () => {
+        // The renewal gate short-circuits on the lastWatch term, not on the link - so the clearing
+        // branch must key on the pubSubApp term alone or a live failure would be erased hourly.
+        const { gmail, updates, watchCalls } = makeClient();
+
+        await gmail.renewWatch({ _app: { pubSubApp: 'test-pubsub-app' }, lastWatch: new Date(), watchFailure: staleFailure }, {});
+
+        assert.equal(updates.length, 0, 'the failure must survive until an arm succeeds');
+        assert.equal(watchCalls.length, 0);
+    });
+
+    await t.test('a Redis failure while clearing does not fail the renewal', async () => {
+        // renewWatch() is awaited by init(); an escaping error here would abort account setup.
+        const { gmail, logs } = makeClient();
+        gmail.accountObject.update = async () => {
+            throw new Error('Redis is unavailable');
+        };
+
+        await gmail.renewWatch({ _app: {}, watchFailure: staleFailure }, {});
+
+        assert.ok(logs.error.some(entry => /Failed to clear the stored Gmail watch record/.test(entry.msg)));
+    });
+});
