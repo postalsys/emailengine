@@ -29,6 +29,19 @@ const { LAST_ERROR_EVENT_FIELD } = require('../lib/consts');
 // AADSTS500014 as Graph reports it, which is the text an operator has to be shown.
 const SP_DISABLED = 'The service principal for resource https://outlook.office365.com is disabled.';
 
+// lib/lua/h-del-if-equals.lua against a Map: the delete applies only while the guard field still
+// holds the value the caller judged. Shared by both hand-rolled clients below, so they cannot
+// prove different things about the same script.
+const hDelIfEqualsOn =
+    hash =>
+    async (key, guardKey, expected, ...fields) => {
+        if ((hash.get(guardKey) ?? '') !== expected) {
+            return 0;
+        }
+        fields.forEach(field => hash.delete(field));
+        return 1;
+    };
+
 function makeClient({ state = 'connected', storedError } = {}) {
     const notifications = [];
     const hash = new Map();
@@ -45,6 +58,7 @@ function makeClient({ state = 'connected', storedError } = {}) {
                 fields.forEach(field => hash.delete(field));
                 return 1;
             },
+            hDelIfEquals: hDelIfEqualsOn(hash),
             multi() {
                 const queued = [];
                 const chain = {
@@ -135,6 +149,7 @@ test('a reported subscription failure and its recovery, through the real notify 
                 fields.forEach(field => hash.delete(field));
                 return 1;
             },
+            hDelIfEquals: hDelIfEqualsOn(hash),
             multi() {
                 const queued = [];
                 const chain = new Proxy(
@@ -252,6 +267,29 @@ test('OutlookClient.clearSubscriptionFailure()', async t => {
         await outlook.clearSubscriptionFailure();
 
         assert.equal(outlook.state, 'connected');
+    });
+
+    await t.test('leaves a failure written while it was deciding', async () => {
+        // The race lib/lua/h-del-if-equals.lua exists for: anything else in the worker - a refused
+        // token refresh, say - can replace the error between the read and the delete.
+        const { outlook, hash } = makeClient({
+            state: 'connectError',
+            storedError: { response: SP_DISABLED, serverResponseCode: 'SubscriptionSetupError' }
+        });
+
+        const newFailure = JSON.stringify({ response: 'invalid_grant', serverResponseCode: 'TokenGenerationError' });
+        const readErrorState = outlook.redis.hget;
+        outlook.redis.hget = async (key, field) => {
+            const value = await readErrorState(key, field);
+            // The report lands while this call is still holding the value it read
+            hash.set('lastErrorState', newFailure);
+            return value;
+        };
+
+        await outlook.clearSubscriptionFailure();
+
+        assert.equal(hash.get('lastErrorState'), newFailure, 'the newer failure is left for whoever wrote it');
+        assert.equal(outlook.state, 'connectError', 'and the account is not reported as recovered');
     });
 });
 
