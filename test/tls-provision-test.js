@@ -13,7 +13,8 @@
 //   - ordering was done in the foreground of an HTTP request that a reverse proxy would time out.
 //
 // The certificate handler is a stub: what is under test is when EmailEngine decides to order, and
-// what it records about the outcome.
+// what it records about the outcome. That the stub still describes what @postalsys/certs actually
+// returns is test/tls-renewal-contract-test.js's job - it runs the real handler.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -168,12 +169,13 @@ test('certificate provisioning', async t => {
 
     await t.test('a failed renewal keeps the certificate and says the renewal did not happen', async () => {
         // acquireCert() answers a failed order that had a usable certificate stored by returning
-        // that certificate, still `valid` so the listener keeps serving it, with the reason
-        // attached. Reading only the status told an operator whose challenge routing had broken
+        // that certificate, still `valid` so the listener keeps serving it, with `renewalError`
+        // saying why. Reading only the status told an operator whose challenge routing had broken
         // that the certificate was up to date, and went on telling them that on every pass while
         // the certificate walked towards its expiry date.
         const record = await issued('mail.example.com');
-        const retained = Object.assign({}, record, { lastError: { err: 'ACME validation failed for mail.example.com', time: new Date() } });
+        const failure = { err: 'ACME validation failed for mail.example.com', time: new Date() };
+        const retained = Object.assign({}, record, { lastError: failure, renewalError: failure });
         const certs = stubCerts({ records: { 'mail.example.com': record }, onAcquire: () => retained });
 
         const result = await provision.provisionHostname({ certs, logger, hostname: 'mail.example.com' });
@@ -190,13 +192,12 @@ test('certificate provisioning', async t => {
         assert.ok(status.failedAt, 'the failure carries its own time, not only the time of this pass');
     });
 
-    await t.test('a failure older than the certificate being served is not reported again', async () => {
-        // acquireCert() can answer from the stored record without attempting anything - the domain
-        // is blocked after an earlier failure, another worker holds the lock, the CA's renewal
-        // advice moved the window out - and it hands back whatever error the record still carries.
-        // The order that issued the certificate now being served already settled that one.
+    await t.test('a stored failure that this call did not repeat is not reported again', async () => {
+        // The whole reason @postalsys/certs reports `renewalError` separately. acquireCert()
+        // answers from the stored record without attempting anything whenever renewal is not due
+        // or another worker holds the lock, and `lastError` comes back with it long after the
+        // order that settled it - so reading `lastError` announces failures that are history.
         const record = Object.assign(await issued('mail.example.com'), {
-            validFrom: new Date(),
             lastError: { err: 'ACME validation failed a week ago', time: new Date(Date.now() - 7 * 24 * 3600 * 1000) }
         });
         const certs = stubCerts({ records: { 'mail.example.com': record }, onAcquire: () => record });
@@ -209,7 +210,8 @@ test('certificate provisioning', async t => {
 
     await t.test('a renewal that succeeds afterwards takes the failure back', async () => {
         const record = await issued('mail.example.com');
-        const retained = Object.assign({}, record, { lastError: { err: 'ACME validation failed', time: new Date() } });
+        const failure = { err: 'ACME validation failed', time: new Date() };
+        const retained = Object.assign({}, record, { lastError: failure, renewalError: failure });
 
         await provision.provisionHostname({
             certs: stubCerts({ records: { 'mail.example.com': record }, onAcquire: () => retained }),
@@ -218,6 +220,8 @@ test('certificate provisioning', async t => {
         });
         assert.equal((await provision.getProvisioningStatus())['mail.example.com'].state, 'renewalFailed');
 
+        // The record keeps its lastError until the next successful order clears it, and the
+        // successful order does not carry a renewalError
         const renewed = await issued('mail.example.com');
         const result = await provision.provisionHostname({
             certs: stubCerts({ records: { 'mail.example.com': retained }, onAcquire: () => renewed }),
