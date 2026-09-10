@@ -17,7 +17,7 @@
 // Run suite: npm run test:e2e
 
 const { test, expect } = require('@playwright/test');
-const { useAdminSession, createApiToken, trackConsoleErrors, BASE_URL } = require('./helpers/bootstrap');
+const { useAdminSession, createApiToken, trackConsoleErrors, setPickedAccount, BASE_URL } = require('./helpers/bootstrap');
 
 const REDIRECT_URI = 'https://claude.ai/api/mcp/auth_callback';
 
@@ -132,6 +132,49 @@ test.describe('MCP consent and generator pages', () => {
         expect(url.searchParams.get('code')).toMatch(/^[A-Za-z0-9_-]{20,}$/);
         expect(url.searchParams.get('state')).toBe('e2e-state');
         expect(url.searchParams.get('iss')).toBe(BASE_URL);
+    });
+
+    test('the generator says how many tools the chosen sections leave', async ({ page }) => {
+        // The count is uiMcpToolCount(), shared with the access-token form and the consent prompt,
+        // auto-wired here from both section radio groups and the account field. What it predicts
+        // is asserted against the real tools/list rule in test/mcp-tools-test.js; this covers the
+        // other half - that the wiring on the page actually follows every control.
+        const errors = trackConsoleErrors(page);
+        await page.goto(`${BASE_URL}/admin/config/mcp`);
+        await page.locator('#mcp-connect-tab').click();
+
+        const count = page.locator('#mcpGenToolCount');
+        const counted = async () => {
+            await expect(count).toContainText('MCP tools available');
+            const match = (await count.textContent()).match(/(\d+) of (\d+) MCP tools available/);
+            expect(match).not.toBeNull();
+            return { available: Number(match[1]), offered: Number(match[2]) };
+        };
+
+        // Observe-only management with mail declined is the starting position, so the count is
+        // there before anything is touched, and it is a strict subset of the catalog
+        const observe = await counted();
+        expect(observe.available).toBeGreaterThan(0);
+        expect(observe.available).toBeLessThan(observe.offered);
+
+        // Adding read-only mail brings the mailbox tools in
+        await page.locator('#mcpGen_mail_read').check();
+        const withMail = await counted();
+        expect(withMail.available).toBeGreaterThan(observe.available);
+
+        // The widest choice of both sections still leaves out nothing but the tools no MCP
+        // surface offers; every tool on the page survives
+        await page.locator('#mcpGen_manage_administer').check();
+        await page.locator('#mcpGen_mail_full').check();
+        const everything = await counted();
+        expect(everything.available).toBe(everything.offered);
+
+        // And limiting the client to one account takes the instance-wide tools away from it
+        await setPickedAccount(page, '#mcpGenAccount', 'some-account');
+        await expect(count).toContainText('the instance-wide tools are not offered');
+        await expect(count).toContainText('list_accounts');
+
+        expect(errors).toEqual([]);
     });
 
     test('the generator mints a token for the sections chosen, management first', async ({ page, request }) => {
