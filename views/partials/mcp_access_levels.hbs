@@ -5,15 +5,16 @@
     (lib/token-permission-view.js), which also carries the pair list each level mints.
     Params:
       section     - the section object from MCP_SECTIONS (required)
-      name        - input name shared by the radio group (required)
+      name        - input name shared by the radio group (required; the pages name it
+                    <prefix><section key>, which is what static/js/ui.js reads back)
       idPrefix    - per-page prefix for the input ids; ids are <idPrefix>_<level> (required)
       selected    - the selected level (required)
-      includeNone - true to offer the section's "decline" option last (the consent prompt and the
+      includeNone - true to offer the section's decline option first (the consent prompt and the
                     generator; the token form declines a section by leaving its scope unticked)
 --}}
-{{#each section.options}}
+{{#if includeNone}}
+{{> ui/radio id=(concat idPrefix "_none") name=name value="none" label=section.none.label selected=selected hint=section.none.hint}}
+{{/if}}
+{{#each section.levels}}
 {{> ui/radio id=(concat ../idPrefix "_" value) name=../name value=value label=label selected=../selected hint=hint}}
 {{/each}}
-{{#if includeNone}}
-{{> ui/radio id=(concat idPrefix "_" section.noneOption.value) name=name value=section.noneOption.value label=section.noneOption.label selected=selected hint=section.noneOption.hint}}
-{{/if}}

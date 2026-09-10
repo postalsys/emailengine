@@ -67,15 +67,13 @@ test.describe('MCP consent and generator pages', () => {
         return `${BASE_URL}/admin/mcp/authorize?${params.toString()}`;
     };
 
-    test('the consent prompt starts with management at Observe and no mail access', async ({ page }) => {
+    test('the consent prompt starts with management at Observe and mail declined', async ({ page }) => {
         const errors = trackConsoleErrors(page);
         await page.goto(authorizeUrl());
 
         await expect(page.getByRole('heading', { name: /e2e consent client wants to connect/ })).toBeVisible();
         await expect(page.locator('#manage_observe')).toBeChecked();
-        await expect(page.locator('#mailEnabled')).not.toBeChecked();
-        // The mail levels stay out of the way until the box is ticked
-        await expect(page.locator('#mailEnabledLevels')).toBeHidden();
+        await expect(page.locator('#mail_none')).toBeChecked();
 
         // One grant sentence per selected level, and only that one
         await expect(page.locator('[data-section="manage"][data-level="observe"]')).toBeVisible();
@@ -89,10 +87,8 @@ test.describe('MCP consent and generator pages', () => {
         await expect(count).not.toContainText('list_messages');
         const observeOnly = (await count.textContent()).match(/(\d+) of (\d+) MCP tools available/);
 
-        // Switching mail on brings the levels, the mail sentence and the mail tools in
-        await page.locator('#mailEnabled').check();
-        await expect(page.locator('#mailEnabledLevels')).toBeVisible();
-        await expect(page.locator('#mailLevel_read')).toBeChecked();
+        // Picking a mail level brings the mail sentence and the mail tools in
+        await page.locator('#mail_read').check();
         await expect(page.locator('[data-section="mail"][data-level="read"]')).toBeVisible();
         await expect(count).toContainText('list_messages');
         const withMail = (await count.textContent()).match(/(\d+) of (\d+) MCP tools available/);
@@ -110,8 +106,7 @@ test.describe('MCP consent and generator pages', () => {
     test('a client asking for the mail scope starts with mail on and no management', async ({ page }) => {
         await page.goto(authorizeUrl({ scope: 'mcp' }));
 
-        await expect(page.locator('#mailEnabled')).toBeChecked();
-        await expect(page.locator('#mailEnabledLevels')).toBeVisible();
+        await expect(page.locator('#mail_read')).toBeChecked();
         await expect(page.locator('#manage_none')).toBeChecked();
     });
 
@@ -129,7 +124,7 @@ test.describe('MCP consent and generator pages', () => {
         expect(page.url()).toContain('/admin/mcp/authorize');
 
         await page.locator('#manage_operate').check();
-        await page.locator('#mailEnabled').check();
+        await page.locator('#mail_read').check();
         const callback = page.waitForRequest(request => request.url().startsWith(REDIRECT_URI));
         await page.getByRole('button', { name: 'Approve' }).click();
 
@@ -144,9 +139,8 @@ test.describe('MCP consent and generator pages', () => {
         await page.goto(`${BASE_URL}/admin/config/mcp`);
         await page.locator('#mcp-connect-tab').click();
 
-        await expect(page.locator('#mcpGenManage_observe')).toBeChecked();
-        await expect(page.locator('#mcpGenMailEnabled')).not.toBeChecked();
-        await expect(page.locator('#mcpGenMailEnabledLevels')).toBeHidden();
+        await expect(page.locator('#mcpGen_manage_observe')).toBeChecked();
+        await expect(page.locator('#mcpGen_mail_none')).toBeChecked();
 
         const count = page.locator('#mcpGenToolCount');
         await expect(count).toContainText('MCP tools available');
@@ -154,9 +148,8 @@ test.describe('MCP consent and generator pages', () => {
 
         const description = `e2e generator ${Date.now()}`;
         await page.locator('#mcpGenLabel').fill(description);
-        await page.locator('#mcpGenMailEnabled').check();
-        await expect(page.locator('#mcpGenMailEnabledLevels')).toBeVisible();
-        await page.locator('#mcpGenManage_operate').check();
+        await page.locator('#mcpGen_mail_read').check();
+        await page.locator('#mcpGen_manage_operate').check();
 
         await page.locator('#mcpGenSubmit').click();
         await expect(page.locator('#mcpGenResult')).toBeVisible({ timeout: 15000 });

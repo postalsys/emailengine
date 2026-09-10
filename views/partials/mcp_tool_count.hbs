@@ -5,18 +5,16 @@
     test/mcp-tools-test.js. Reads mcpTools (and mcpSections, when auto-wired) from the page
     context.
 
-    Pass manageName (and the mail controls) to have ui.js drive the count from the section
-    radios (the MCP config generator and the consent prompt); leave them out and the page
-    repaints the element itself, which is what the access-token form does.
+    Pass levelPrefix to have ui.js drive the count from the section radio groups named
+    <levelPrefix><section key> (the MCP config generator and the consent prompt); leave it out
+    and the page repaints the element itself, which is what the access-token form does.
     Params:
-      id         - element id (required; the page's own script needs it, and so does nothing else)
-      manageName - the management level radio group name, for the auto-wired pages (optional)
-      mailName   - the mail level radio group name (optional, with manageName)
-      mailToggle - id of the checkbox that switches the mail section on (optional, with mailName)
-      accountId  - id of the "limit to one account" field to follow (optional, with manageName)
-      class      - extra classes on the wrapper (optional)
+      id          - element id (required; the page's own script needs it, and so does nothing else)
+      autoWire    - true to let ui.js drive the count (optional)
+      levelPrefix - the radio group name prefix, with autoWire; may be empty (optional)
+      accountId   - id of the "limit to one account" field to follow, with autoWire (optional)
+      class       - extra classes on the wrapper (optional)
 --}}
 <div id="{{id}}" class="text-sm space-y-1{{#if class}} {{class}}{{/if}}" data-mcp-tools="{{json mcpTools}}"
-    {{#if manageName}}data-mcp-manage-name="{{manageName}}" data-mcp-mail-name="{{mailName}}"
-    data-mcp-mail-toggle="{{mailToggle}}" data-mcp-account-id="{{accountId}}"
+    {{#if autoWire}}data-mcp-auto-wire="1" data-mcp-level-prefix="{{levelPrefix}}" data-mcp-account-id="{{accountId}}"
     data-mcp-sections="{{json mcpSections}}"{{/if}}></div>

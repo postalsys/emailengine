@@ -118,38 +118,33 @@
 </div>
 {{/unless}}
 
-<div id="mcpTokenGen" data-sections="{{json mcpSections}}" data-mcp-url="{{mcpUrl}}" class="space-y-4">
+<div id="mcpTokenGen" data-mcp-url="{{mcpUrl}}" class="space-y-4">
     {{!-- One column on purpose: two-up put the account field a full screen away from its
           label-mate on wide displays, and the form reads as one top-to-bottom flow --}}
     {{> ui/form-field id="mcpGenLabel" label="What is this token for?" placeholder="for example Cursor or Claude"
         hint="Shows up as the token description, so you can tell agents apart on the Access Tokens page."}}
 
-    {{!-- Management first, mail behind a checkbox: the same two sections, in the same order and
-          from the same table, as the OAuth consent prompt --}}
+    {{!-- The same two sections, in the same order and from the same table, as the OAuth consent
+          prompt: management first, mail declined unless picked. The radio group of a section is
+          named mcpGen_<key>, which is what ui.js reads the selection back from. --}}
+    {{#each mcpSections}}
     <fieldset class="space-y-2">
-        <legend class="label-text mb-1">{{mcpSections.manage.label}}</legend>
-        {{> mcp_access_levels section=mcpSections.manage name="mcpGenManage" idPrefix="mcpGenManage" selected="observe" includeNone=true}}
+        <legend class="label-text mb-1">{{label}}</legend>
+        {{> mcp_access_levels section=this name=(concat "mcpGen_" @key) idPrefix=(concat "mcpGen_" @key) selected=defaultLevel includeNone=true}}
     </fieldset>
+    {{/each}}
 
-    <fieldset class="space-y-2">
-        <legend class="label-text mb-1">{{mcpSections.mail.label}}</legend>
-        {{> ui/checkbox id="mcpGenMailEnabled" label=mcpSections.mail.toggle.label noName=true hint=mcpSections.mail.toggle.hint}}
-        <div id="mcpGenMailEnabledLevels" class="ps-6 space-y-2 hidden">
-            {{> mcp_access_levels section=mcpSections.mail name="mcpGenMail" idPrefix="mcpGenMail" selected="read"}}
-        </div>
-
-        {{!-- At the decision point rather than only in the collapsed manual-config block: the
-              level chosen here is what decides whether injected instructions can act --}}
-        <p class="text-base-content/60 text-sm">Email content flows into whatever model the connected client runs, and
-            instructions inside received mail can steer it - grant sending and deleting rights deliberately.</p>
-    </fieldset>
+    {{!-- At the decision point rather than only in the collapsed manual-config block: the
+          level chosen here is what decides whether injected instructions can act --}}
+    <p class="text-base-content/60 text-sm">Email content flows into whatever model the connected client runs, and
+        instructions inside received mail can steer it - grant sending and deleting rights deliberately.</p>
 
     {{> mcp_account_limit id="mcpGenAccount"}}
 
     {{!-- What the selected levels actually leave the client able to call, which the level names
           alone cannot say: the count follows both sections and the account limit, exactly as
           tools/list will --}}
-    {{> mcp_tool_count id="mcpGenToolCount" manageName="mcpGenManage" mailName="mcpGenMail" mailToggle="mcpGenMailEnabled" accountId="mcpGenAccount" class="pt-1"}}
+    {{> mcp_tool_count id="mcpGenToolCount" autoWire=true levelPrefix="mcpGen_" accountId="mcpGenAccount" class="pt-1"}}
 
     <div class="flex items-center gap-3">
         {{#if canProvision}}
@@ -286,37 +281,40 @@
 </div>
 
 {{!-- Outside the method panels: what a connected agent receives is the same either way --}}
-{{#> ui/details summary="Exposed tools" summarySmall=(concat toolCatalog.length " tools") class="card bg-base-100 shadow-md mb-6"}}
+{{#> ui/details summary="Exposed tools" summarySmall=(concat toolCatalog.total " tools") class="card bg-base-100 shadow-md mb-6"}}
 <div class="space-y-6">
     <p class="text-sm text-base-content/60">This is exactly what a connected agent receives from
-        <code>tools/list</code>: the management tools for a token with the <code>mcp-manage</code> scope, the mail
-        tools for one with the <code>mcp</code> scope. Whether a given token can call a tool also depends on its access
-        level and account binding.</p>
+        <code>tools/list</code>, grouped by the scope that reaches each tool. Whether a given token can call a tool
+        also depends on its access level and account binding.</p>
+    {{#each toolCatalog.sections}}
     <div>
-        <h6 class="mb-2 font-bold">Instance management <span class="text-base-content/60 font-normal">({{toolCatalog.manage.length}} tools, <code>mcp-manage</code>)</span></h6>
+        <h6 class="mb-2 font-bold">{{label}} <span class="text-base-content/60 font-normal">({{tools.length}} tools,
+                <code>{{scope}}</code>)</span></h6>
         <div class="space-y-3">
-            {{#each toolCatalog.manage}}
+            {{#each tools}}
             <div class="flex flex-wrap items-baseline gap-2">
                 <code>{{name}}</code>
                 {{> ui/badge label=badge.label variant=badge.variant soft=true}}
-                {{#if shared}}{{> ui/badge label="also mail" variant="neutral" soft=true}}{{/if}}
+                {{#if shared}}{{> ui/badge label="both scopes" variant="neutral" soft=true}}{{/if}}
                 <span class="text-sm text-base-content/60 basis-full sm:basis-auto sm:grow">{{description}}</span>
             </div>
             {{/each}}
         </div>
     </div>
+    {{/each}}
+    {{#if toolCatalog.unreached.length}}
     <div>
-        <h6 class="mb-2 font-bold">Mail <span class="text-base-content/60 font-normal">({{toolCatalog.mail.length}} tools, <code>mcp</code>)</span></h6>
+        <h6 class="mb-2 font-bold">Not offered by any MCP scope</h6>
         <div class="space-y-3">
-            {{#each toolCatalog.mail}}
+            {{#each toolCatalog.unreached}}
             <div class="flex flex-wrap items-baseline gap-2">
                 <code>{{name}}</code>
-                {{> ui/badge label=badge.label variant=badge.variant soft=true}}
                 <span class="text-sm text-base-content/60 basis-full sm:basis-auto sm:grow">{{description}}</span>
             </div>
             {{/each}}
         </div>
     </div>
+    {{/if}}
 </div>
 {{/ui/details}}
 
@@ -325,7 +323,8 @@
 <script data-cfasync="false" nonce="{{cspNonce}}">
     (() => {
         let container = document.getElementById('mcpTokenGen');
-        let sections = JSON.parse(container.dataset.sections || '{}');
+        // The section table is embedded once, on the tool count element ui.js wires
+        let sections = JSON.parse(document.getElementById('mcpGenToolCount').dataset.mcpSections || '{}');
         let mcpUrl = container.dataset.mcpUrl;
 
         // The one place each artifact is written; the manual block shows them with a
@@ -354,12 +353,7 @@
 
             let label = (document.getElementById('mcpGenLabel').value || '').trim() || 'MCP agent';
             let account = (document.getElementById('mcpGenAccount').value || '').trim();
-            let manageElm = document.querySelector('input[name="mcpGenManage"]:checked');
-            let mailElm = document.querySelector('input[name="mcpGenMail"]:checked');
-            let choice = {
-                manage: (manageElm && manageElm.value) || 'none',
-                mail: document.getElementById('mcpGenMailEnabled').checked ? (mailElm && mailElm.value) || 'none' : 'none'
-            };
+            let choice = uiMcpLevelChoice(sections, 'mcpGen_');
 
             try {
                 if (!sections.manage || !sections.mail) {
@@ -383,9 +377,7 @@
                     // The empty string, not null: accountIdSchema is `Joi.string().empty('')`,
                     // which converts '' to the schema default and refuses an explicit null
                     account: account,
-                    permissions: {
-                        grants: record.grants.map(key => ({ action: key.split(':')[0], group: key.split(':')[1] }))
-                    }
+                    permissions: { grants: record.grants }
                 });
 
                 if (!data.success) {

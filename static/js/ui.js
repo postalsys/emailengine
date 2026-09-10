@@ -852,11 +852,25 @@ window.uiCodeExamples = config => {
 // that rule, and test/mcp-tools-test.js asserts the two agree over the whole catalog.
 //
 // `record` is { surfaces, grants | actions + groups, unrestricted, account }. `surfaces` lists the
-// MCP scopes the token holds (absent: no scope bound). `grants` is a list of "action:group" keys,
+// MCP scopes the token holds (absent: no scope bound). `grants` is a list of {action, group} pairs,
 // the pair-list form; `actions` and `groups` are the two-axis form. `unrestricted` is the absence
 // of a permissions record, which is a different answer from an empty one: the scopes are the only
 // bound. A null record clears the element - the question does not apply to this credential at
 // all, which is not the same as it having no tools.
+
+// Whether a record allows one (action, group) pair, in whichever form it is written. The one
+// reading of the record shape in the browser: the count and the token form's scope warning both
+// ask this.
+window.uiMcpRecordAllows = (record, action, group) => {
+    if (record.unrestricted) {
+        return true;
+    }
+    if (record.grants) {
+        return record.grants.some(grant => grant.action === action && grant.group === group);
+    }
+    return record.actions.includes(action) && record.groups.includes(group);
+};
+
 window.uiMcpToolCount = (elm, record) => {
     let tools = JSON.parse(elm.dataset.mcpTools || '[]');
 
@@ -868,17 +882,7 @@ window.uiMcpToolCount = (elm, record) => {
     let bound = !!(record.account || '').trim();
     let reachable = record.surfaces ? tools.filter(tool => (tool.surfaces || []).some(scope => record.surfaces.includes(scope))) : tools;
     let offered = bound ? reachable.filter(tool => tool.accountScoped) : reachable;
-
-    let allowed = tool => {
-        if (record.unrestricted) {
-            return true;
-        }
-        if (record.grants) {
-            return record.grants.includes(tool.action + ':' + tool.group);
-        }
-        return record.actions.includes(tool.action) && record.groups.includes(tool.group);
-    };
-    let available = offered.filter(allowed);
+    let available = offered.filter(tool => window.uiMcpRecordAllows(record, tool.action, tool.group));
 
     let count = document.createElement('div');
     let countLabel = document.createElement('strong');
@@ -902,27 +906,36 @@ window.uiMcpToolCount = (elm, record) => {
     }
 };
 
-// The record a choice of section levels mints, as the count reads it: the scopes of the sections
-// that were not declined and the union of their grant keys. The browser's copy of mcpGrantsFor()
-// in lib/token-permission-view.js, over the same table.
+// The level a page has selected per section, read off the radio groups. Every page renders one
+// radio group per section, named `<prefix><section key>` by the mcp_access_levels partial; a
+// section with no radio checked (the token form leaves a section out entirely while its scope is
+// unticked) is declined.
+window.uiMcpLevelChoice = (sections, prefix) => {
+    let choice = {};
+    for (let key of Object.keys(sections)) {
+        let radio = document.querySelector('input[name="' + (prefix || '') + key + '"]:checked');
+        choice[key] = radio ? radio.value : 'none';
+    }
+    return choice;
+};
+
+// The record a choice of section levels mints, as the count reads it and as the mint posts it:
+// the scopes of the sections that were not declined and the union of their pairs. The browser's
+// copy of mcpGrantsFor() in lib/token-permission-view.js, over the same table.
 window.uiMcpLevelRecord = (sections, choice) => {
     let surfaces = [];
     let grants = [];
     for (let key of Object.keys(sections)) {
-        let level = choice[key];
-        if (!level || level === 'none') {
-            continue;
-        }
-        let option = sections[key].options.find(entry => entry.value === level);
-        if (!option) {
-            // A level the table does not know counts as nothing rather than as everything - the
-            // same direction every other reader of this table fails in
+        let level = sections[key].levels.find(entry => entry.value === choice[key]);
+        if (!level) {
+            // Declined, or a level the table does not know - which counts as nothing rather than
+            // as everything, the same direction every other reader of this table fails in
             continue;
         }
         surfaces.push(sections[key].scope);
-        for (let grant of option.grants) {
-            if (!grants.includes(grant)) {
-                grants.push(grant);
+        for (let pair of level.pairs) {
+            if (!grants.some(grant => grant.action === pair.action && grant.group === pair.group)) {
+                grants.push({ action: pair.action, group: pair.group });
             }
         }
     }
@@ -930,41 +943,25 @@ window.uiMcpLevelRecord = (sections, choice) => {
 };
 
 // Auto-wiring for the pages whose whole answer is a level per section (the MCP config generator
-// and the consent prompt). The access-token form drives its own count instead, because its
-// custom option is a hand-built record rather than a level, and it carries no data-mcp-manage-name.
-//
-// The mail section sits behind a checkbox: its radios live in an element whose id is the
-// checkbox id plus "Levels", shown while the box is ticked, and count for nothing while it is not.
+// and the consent prompt): the count element carries the section table and the radio name prefix,
+// and repaints whenever a level or the account binding changes. The access-token form drives its
+// own count instead, because its custom option is a hand-built record rather than a level.
 document.addEventListener('DOMContentLoaded', () => {
-    for (let elm of document.querySelectorAll('[data-mcp-manage-name]')) {
+    for (let elm of document.querySelectorAll('[data-mcp-auto-wire]')) {
         let sections = JSON.parse(elm.dataset.mcpSections || '{}');
+        let prefix = elm.dataset.mcpLevelPrefix || '';
         let accountElm = elm.dataset.mcpAccountId ? document.getElementById(elm.dataset.mcpAccountId) : null;
-        let manageRadios = Array.from(document.querySelectorAll('input[name="' + elm.dataset.mcpManageName + '"]'));
-        let mailRadios = elm.dataset.mcpMailName ? Array.from(document.querySelectorAll('input[name="' + elm.dataset.mcpMailName + '"]')) : [];
-        let mailToggle = elm.dataset.mcpMailToggle ? document.getElementById(elm.dataset.mcpMailToggle) : null;
-        let mailLevels = mailToggle ? document.getElementById(mailToggle.id + 'Levels') : null;
-
-        let selected = radios => {
-            let radio = radios.find(entry => entry.checked);
-            return radio ? radio.value : null;
-        };
 
         let paint = () => {
-            if (mailLevels) {
-                mailLevels.classList.toggle('hidden', !mailToggle.checked);
-            }
-            let choice = {
-                manage: selected(manageRadios) || 'none',
-                mail: mailToggle && !mailToggle.checked ? 'none' : selected(mailRadios) || 'none'
-            };
-            let record = window.uiMcpLevelRecord(sections, choice);
+            let record = window.uiMcpLevelRecord(sections, window.uiMcpLevelChoice(sections, prefix));
             record.account = accountElm ? accountElm.value : '';
             window.uiMcpToolCount(elm, record);
         };
 
-        manageRadios.concat(mailRadios).forEach(radio => radio.addEventListener('change', paint));
-        if (mailToggle) {
-            mailToggle.addEventListener('change', paint);
+        for (let key of Object.keys(sections)) {
+            for (let radio of document.querySelectorAll('input[name="' + prefix + key + '"]')) {
+                radio.addEventListener('change', paint);
+            }
         }
         if (accountElm) {
             // Per keystroke, so what the binding costs is visible while the field is being filled

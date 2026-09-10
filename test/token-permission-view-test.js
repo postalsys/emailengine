@@ -9,7 +9,7 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert').strict;
 
-const { formModel, summarize, ACTION_LABELS, GROUP_LABELS, MCP_SECTIONS, mcpGrantsFor } = require('../lib/token-permission-view');
+const { formModel, summarize, ACTION_LABELS, GROUP_LABELS, MCP_SECTIONS, mcpLevel, mcpLevelNames, mcpGrantsFor } = require('../lib/token-permission-view');
 const { ACTION, GRANTABLE_GROUPS, GROUP, SURFACE_GRANTS } = require('../lib/api-routes/permission-map');
 const tokenPermissions = require('../lib/token-permissions');
 
@@ -81,59 +81,52 @@ describe('token permission view', () => {
     describe('MCP access sections', () => {
         const key = grant => `${grant.action}:${grant.group}`;
 
-        it('offers the two sections, management first, each bound to its scope', () => {
+        it('offers the two sections, management first, each bound to its scope and declinable', () => {
             assert.deepEqual(Object.keys(MCP_SECTIONS), ['manage', 'mail']);
             assert.equal(MCP_SECTIONS.manage.scope, 'mcp-manage');
             assert.equal(MCP_SECTIONS.mail.scope, 'mcp');
             // The defaults the pages start from: observe the instance, no mail
             assert.equal(MCP_SECTIONS.manage.defaultLevel, 'observe');
-            assert.ok(MCP_SECTIONS.mail.toggle, 'the mail section is behind a toggle');
+            assert.equal(MCP_SECTIONS.mail.defaultLevel, 'none');
+            for (const section of Object.values(MCP_SECTIONS)) {
+                assert.ok(section.none && section.none.label, `${section.scope} has no decline option`);
+                assert.deepEqual(mcpLevelNames(section), ['none'].concat(section.levels.map(level => level.value)));
+                assert.equal(mcpLevel(section, 'none'), null, 'declining is not a level');
+                assert.equal(mcpLevel(section, 'root'), null);
+            }
         });
 
-        it('derives every level from the surface table of its scope, and nothing else', () => {
+        it('derives every level from the surface table of its scope, narrowest first, widest last', () => {
             // A grant added to a surface must reach the level it belongs to without anyone
             // copying it here, and a level must never name a pair its scope does not admit
             for (const section of Object.values(MCP_SECTIONS)) {
                 const table = new Set(SURFACE_GRANTS[section.scope].map(key));
-                assert.deepEqual(section.levels.none, []);
-                for (const [level, pairs] of Object.entries(section.levels)) {
-                    for (const grant of pairs) {
-                        assert.ok(table.has(key(grant)), `${section.scope} level ${level} names ${key(grant)}, which the surface does not admit`);
+                for (const level of section.levels) {
+                    for (const grant of level.pairs) {
+                        assert.ok(table.has(key(grant)), `${section.scope} level ${level.value} names ${key(grant)}, which the surface does not admit`);
                     }
                 }
-                // and the widest level is the whole table
-                const widest = section.levels[Object.keys(section.levels).at(-1)];
-                assert.deepEqual(widest.map(key).sort(), [...table].sort());
+                assert.ok(section.levels[0].pairs.every(grant => grant.action === ACTION.READ) && section.levels[0].pairs.length, 'the first level reads only');
+                assert.deepEqual(section.levels.at(-1).pairs.map(key).sort(), [...table].sort(), 'the last level is the whole table');
             }
 
-            const reads = pairs => pairs.every(grant => grant.action === ACTION.READ);
-            assert.ok(reads(MCP_SECTIONS.manage.levels.observe) && MCP_SECTIONS.manage.levels.observe.length);
-            assert.ok(reads(MCP_SECTIONS.mail.levels.read) && MCP_SECTIONS.mail.levels.read.length);
-            assert.ok(!MCP_SECTIONS.manage.levels.operate.some(grant => grant.action === ACTION.DESTRUCTIVE));
-            assert.ok(!MCP_SECTIONS.mail.levels.mail.some(grant => grant.action === ACTION.DESTRUCTIVE));
+            assert.ok(!mcpLevel(MCP_SECTIONS.manage, 'operate').pairs.some(grant => grant.action === ACTION.DESTRUCTIVE));
+            assert.ok(!mcpLevel(MCP_SECTIONS.mail, 'mail').pairs.some(grant => grant.action === ACTION.DESTRUCTIVE));
             assert.ok(
-                MCP_SECTIONS.mail.levels.mail.some(grant => grant.action === ACTION.SEND),
+                mcpLevel(MCP_SECTIONS.mail, 'mail').pairs.some(grant => grant.action === ACTION.SEND),
                 'the mail agent level sends'
             );
         });
 
-        it('offers every level with wording and the pair keys the pages count against', () => {
+        it('gives every level wording and a severity the consent prompt can render from', () => {
             for (const section of Object.values(MCP_SECTIONS)) {
-                const offered = section.options.map(option => option.value);
-                assert.deepEqual(
-                    offered.sort(),
-                    Object.keys(section.levels)
-                        .filter(level => level !== 'none')
-                        .sort(),
-                    `${section.scope} offers levels its table does not have, or hides some`
-                );
-                for (const option of section.options) {
-                    assert.ok(option.label && option.hint && option.caveat, `${option.value} lacks wording`);
-                    assert.ok(option.actions && option.groups, `${option.value} lacks grant wording`);
-                    assert.deepEqual(option.grants, section.levels[option.value].map(key));
-                }
+                assert.ok(section.lead, `${section.scope} has no lead-in`);
+                section.levels.forEach((level, index) => {
+                    assert.ok(level.label && level.hint && level.caveat, `${level.value} lacks wording`);
+                    assert.ok(level.actions && level.groups, `${level.value} lacks grant wording`);
+                    assert.equal(level.variant, index ? 'warning' : 'info');
+                });
             }
-            assert.equal(MCP_SECTIONS.manage.noneOption.value, 'none');
         });
     });
 

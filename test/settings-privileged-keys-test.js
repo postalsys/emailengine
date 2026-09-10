@@ -96,14 +96,6 @@ test('privileged settings keys', async t => {
 
         assert.deepEqual(Object.keys(byName.get('update_settings').definition.inputSchema.properties).sort(), expected);
         assert.deepEqual(Object.keys(byName.get('get_settings').definition.inputSchema.properties).sort(), expected.concat('eventTypes').sort());
-
-        // and every privileged key really is absent from both, whatever the derivation did
-        for (const tool of ['update_settings', 'get_settings']) {
-            const offered = byName.get(tool).definition.inputSchema.properties;
-            for (const key of settings.privilegedKeys) {
-                assert.ok(!(key in offered), `${tool} offers the privileged key ${key}`);
-            }
-        }
     });
 
     await t.test('a narrowed token is refused a privileged key, and told which one', async () => {

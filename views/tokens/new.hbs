@@ -174,17 +174,15 @@
         {{!-- Labelled by the card heading rather than carrying a legend of its own, which would
               repeat "Access level" directly under itself --}}
         <fieldset id="mcpLevelBlock" class="hidden space-y-4" aria-labelledby="accessCardTitle">
-            <div id="mcpManageBlock" class="space-y-2">
-                <div class="label-text font-medium">{{mcpSections.manage.label}}
-                    <span class="text-base-content/60 code-link font-normal">["mcp-manage"]</span></div>
-                {{> mcp_access_levels section=mcpSections.manage name="mcpManage" idPrefix="mcpManage" selected="observe"}}
+            {{!-- One block per section, shown while that section's scope is ticked above; the radio
+                  group is named mcpLevel_<key>, which is what the script and ui.js read back --}}
+            {{#each mcpSections}}
+            <div class="space-y-2 mcp-section-block" data-mcp-scope="{{scope}}">
+                <div class="label-text font-medium">{{label}}
+                    <span class="text-base-content/60 code-link font-normal">["{{scope}}"]</span></div>
+                {{> mcp_access_levels section=this name=(concat "mcpLevel_" @key) idPrefix=(concat "mcpLevel_" @key) selected=levels.[0].value}}
             </div>
-
-            <div id="mcpMailBlock" class="space-y-2">
-                <div class="label-text font-medium">{{mcpSections.mail.label}}
-                    <span class="text-base-content/60 code-link font-normal">["mcp"]</span></div>
-                {{> mcp_access_levels section=mcpSections.mail name="mcpMail" idPrefix="mcpMail" selected="read"}}
-            </div>
+            {{/each}}
 
             {{> ui/checkbox id="mcpCustom" label="Custom permissions" noName=true
                 hint="Choose the exact actions and sections yourself, starting from the levels selected above."}}
@@ -369,15 +367,17 @@
         let mcpSections = JSON.parse(accessCardElm.dataset.mcpSections || '{}');
         let mcpCustomElm = document.getElementById('mcpCustom');
 
+        let mcpScopes = Object.values(mcpSections).map(section => section.scope);
+
         let scopeElms = Array.from(document.querySelectorAll('.scope-entry'));
         let selectedScopes = () => scopeElms.filter(elm => elm.checked && !elm.disabled).map(elm => elm.dataset.scope);
-        let selectedMcpScopes = () => selectedScopes().filter(scope => ['mcp-manage', 'mcp'].includes(scope));
+        let selectedMcpScopes = () => selectedScopes().filter(scope => mcpScopes.includes(scope));
 
         // What the ticked MCP scopes can reach at all: the union of their surface tables. Read per
         // call because it follows the scopes - a token holding only the management scope has no
         // business ticking Messages in the custom editor.
         let mcpCeilingFor = scopes => {
-            let ceiling = { actions: [], groups: [], grants: [] };
+            let ceiling = { actions: [], groups: [] };
             for (let scope of scopes) {
                 let need = surfaceRequirements[scope];
                 if (!need) {
@@ -385,7 +385,6 @@
                 }
                 ceiling.actions = ceiling.actions.concat(need.actions.filter(value => !ceiling.actions.includes(value)));
                 ceiling.groups = ceiling.groups.concat(need.groups.filter(value => !ceiling.groups.includes(value)));
-                ceiling.grants = ceiling.grants.concat(need.grants);
             }
             return ceiling;
         };
@@ -401,7 +400,7 @@
         // be greyed while this is open. That reads correctly: API access is granted by "All", and
         // this is how to narrow it.
         let hasApiScope = () => selectedScopes().some(scope => ['*', 'api'].includes(scope));
-        let hasMcpScope = () => selectedScopes().some(scope => ['*', 'mcp', 'mcp-manage'].includes(scope));
+        let hasMcpScope = () => selectedScopes().some(scope => scope === '*' || mcpScopes.includes(scope));
         let narrowableScope = () => hasApiScope() || hasMcpScope();
 
         // The two editor modes. A token that reaches the MCP endpoint and not the REST API is a
@@ -411,18 +410,18 @@
         // permissions record covers both surfaces and the API side needs all thirteen sections.
         let mcpLevelMode = () => hasMcpScope() && !hasApiScope();
 
-        // The level per section, with a section whose scope is not ticked declined outright - the
-        // scope checkbox is this form's way of switching a section off
+        // The level per section, read through the shared helper: a section whose scope is not
+        // ticked has no radio group on screen and so comes back declined - the scope checkbox is
+        // this form's way of switching a section off
         let selectedMcpLevels = () => {
-            let scopes = selectedMcpScopes();
-            let pick = name => {
-                let elm = document.querySelector('input[name="' + name + '"]:checked');
-                return elm ? elm.value : null;
-            };
-            return {
-                manage: scopes.includes('mcp-manage') ? pick('mcpManage') || 'observe' : 'none',
-                mail: scopes.includes('mcp') ? pick('mcpMail') || 'read' : 'none'
-            };
+            let ticked = selectedMcpScopes();
+            let choice = uiMcpLevelChoice(mcpSections, 'mcpLevel_');
+            for (let key of Object.keys(mcpSections)) {
+                if (!ticked.includes(mcpSections[key].scope)) {
+                    choice[key] = 'none';
+                }
+            }
+            return choice;
         };
 
         // Sections the MCP surface can never reach are disabled while the level editor is showing,
@@ -454,19 +453,9 @@
         let effectiveRecord = () => {
             if (mcpLevelMode()) {
                 if (!mcpCustomElm.checked) {
-                    if (!mcpSections.manage || !mcpSections.mail) {
-                        // The table did not load. A missing table must not quietly mint a wider
-                        // credential than the levels on screen promise - the MCP config page's
-                        // generator refuses the same way, and the consent route defaults the same
-                        // direction.
-                        return { grants: [], surfaces: [], unrestricted: false, unknownLevel: true };
-                    }
                     // The pair list the selected levels mint, through the shared helper, so a level
                     // mints here exactly what it mints on the consent prompt
-                    let levels = selectedMcpLevels();
-                    let record = uiMcpLevelRecord(mcpSections, levels);
-                    record.levels = levels;
-                    return record;
+                    return uiMcpLevelRecord(mcpSections, selectedMcpLevels());
                 }
             } else if (!permissionsEnabledElm.checked) {
                 return { actions: allActions, groups: Object.keys(axisLabels.group), unrestricted: true };
@@ -554,16 +543,16 @@
                     permissionOutcomeTextElm.append(line);
                     return;
                 }
+                let levels = selectedMcpLevels();
                 for (let key of Object.keys(mcpSections)) {
-                    let level = record.levels && record.levels[key];
-                    let option = level && mcpSections[key].options.find(entry => entry.value === level);
-                    if (!option) {
+                    let level = mcpSections[key].levels.find(entry => entry.value === levels[key]);
+                    if (!level) {
                         continue;
                     }
                     let line = document.createElement('div');
                     let label = document.createElement('strong');
-                    label.textContent = mcpSections[key].label + ' (' + option.label + '): ';
-                    line.append(label, document.createTextNode('can ' + option.actions + ' across ' + option.groups + '.'));
+                    label.textContent = mcpSections[key].label + ' (' + level.label + '): ';
+                    line.append(label, document.createTextNode('can ' + level.actions + ' across ' + level.groups + '.'));
                     permissionOutcomeTextElm.append(line);
                 }
                 permissionOutcomeTextElm.append(rest);
@@ -613,9 +602,7 @@
                 scopes = Object.keys(surfaceRequirements);
             }
 
-            // Whether the record allows one (action, group) pair, in whichever form it is written
-            let covers = ([action, group]) =>
-                record.grants ? record.grants.includes(action + ':' + group) : record.actions.includes(action) && record.groups.includes(group);
+            let covers = ([action, group]) => uiMcpRecordAllows(record, action, group);
 
             let blocked = scopes
                 .filter(scope => surfaceRequirements[scope])
@@ -677,9 +664,10 @@
 
             // A section is shown while its scope is ticked: the scope checkbox is how this form
             // declines a section, so an unticked scope must not leave a level on screen
-            let mcpScopes = selectedMcpScopes();
-            document.getElementById('mcpManageBlock').classList.toggle('hidden', !mcpScopes.includes('mcp-manage'));
-            document.getElementById('mcpMailBlock').classList.toggle('hidden', !mcpScopes.includes('mcp'));
+            let ticked = selectedMcpScopes();
+            for (let block of document.querySelectorAll('.mcp-section-block')) {
+                block.classList.toggle('hidden', !ticked.includes(block.dataset.mcpScope));
+            }
 
             // The matrix is the detail view behind either mode: the "Custom permissions" opt-in on
             // one side, the restriction toggle on the other. The API presets are shapes for the
@@ -724,13 +712,12 @@
                 let record = uiMcpLevelRecord(mcpSections, selectedMcpLevels());
                 let actions = [];
                 let groups = [];
-                for (let key of record.grants) {
-                    let [action, group] = key.split(':');
-                    if (!actions.includes(action)) {
-                        actions.push(action);
+                for (let grant of record.grants) {
+                    if (!actions.includes(grant.action)) {
+                        actions.push(grant.action);
                     }
-                    if (!groups.includes(group)) {
-                        groups.push(group);
+                    if (!groups.includes(grant.group)) {
+                        groups.push(grant.group);
                     }
                 }
                 applyRecord(actions, groups);
@@ -738,7 +725,7 @@
             syncAll();
         });
 
-        for (let elm of document.querySelectorAll('input[name="mcpManage"], input[name="mcpMail"]')) {
+        for (let elm of document.querySelectorAll('input[name^="mcpLevel_"]')) {
             elm.addEventListener('change', syncAll);
         }
 
@@ -803,11 +790,7 @@
             // MCP token minted by level always carries its pair list explicitly, so what the operator
             // saw is exactly what the credential holds.
             let record = effectiveRecord();
-            let permissions = record.unrestricted
-                ? null
-                : record.grants
-                  ? { grants: record.grants.map(key => ({ action: key.split(':')[0], group: key.split(':')[1] })) }
-                  : { actions: record.actions, groups: record.groups };
+            let permissions = record.unrestricted ? null : record.grants ? { grants: record.grants } : { actions: record.actions, groups: record.groups };
 
             let refuse = message => {
                 document.getElementById('showTokenLoader').classList.add('hidden');
@@ -817,10 +800,11 @@
                 uiModal.open('#showToken');
             };
 
-            // The access table failed to load, so the level on screen cannot be resolved to the
-            // record it promises. Refused rather than posted: what would go out is the absence of a
-            // narrowing, which is the widest answer there is.
-            if (record.unknownLevel) {
+            // The section table failed to load, so the levels on screen cannot be resolved to the
+            // record they promise. Refused rather than posted, as the MCP config page's generator
+            // refuses: what would go out is a record that grants nothing, which the API refuses
+            // too, but with an answer that names the wrong cause.
+            if (mcpLevelMode() && !mcpCustomElm.checked && !Object.keys(mcpSections).length) {
                 refuse('The access levels failed to load, so the selected level cannot be applied. Reload the page and try again.');
                 return;
             }

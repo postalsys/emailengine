@@ -12,7 +12,7 @@ const registerRedisTeardown = require('./helpers/redis-teardown');
 const { pkcePair } = require('./helpers/pkce');
 const tokens = require('../lib/tokens');
 const tokenPermissions = require('../lib/token-permissions');
-const { MCP_SECTIONS } = require('../lib/token-permission-view');
+const { MCP_SECTIONS, mcpLevel } = require('../lib/token-permission-view');
 const {
     registerClient,
     getClient,
@@ -93,6 +93,7 @@ test('MCP OAuth', async t => {
                 codeChallenge: challenge,
                 resource: `${ORIGIN}/mcp`,
                 account: null,
+                scopes: ['mcp'],
                 description: 'MCP: Redeemer'
             });
 
@@ -128,8 +129,6 @@ test('MCP OAuth', async t => {
         const code = await mint();
         const response = await redeemAuthorizationCode(Object.assign({}, base, { code }));
         assert.equal(response.token_type, 'Bearer');
-        // a code minted without naming its scopes is the mail-only code the flow issued before
-        // the management scope existed
         assert.equal(response.scope, 'mcp');
 
         const tokenData = await tokens.get(response.access_token, false);
@@ -184,7 +183,18 @@ test('MCP OAuth', async t => {
         assert.deepEqual(normalizeScopes(''), []);
         assert.deepEqual(normalizeScopes(undefined), []);
 
-        // A code for no surface at all is refused at mint time, not discovered at exchange time
+        // A code for no surface at all - or for a caller that forgot the argument - is refused at
+        // mint time, not discovered at exchange time
+        await assert.rejects(
+            createAuthorizationCode({
+                clientId: client.client_id,
+                redirectUri: 'https://claude.ai/cb',
+                codeChallenge: 'a'.repeat(43),
+                resource: `${ORIGIN}/mcp`,
+                description: 'MCP: Scoped'
+            }),
+            err => err.oauthError === 'invalid_scope'
+        );
         await assert.rejects(
             createAuthorizationCode({
                 clientId: client.client_id,
@@ -211,7 +221,8 @@ test('MCP OAuth', async t => {
             codeChallenge: challenge,
             resource: `${ORIGIN}/mcp`,
             account: null,
-            permissions: { grants: MCP_SECTIONS.mail.levels.read },
+            scopes: ['mcp'],
+            permissions: { grants: mcpLevel(MCP_SECTIONS.mail, 'read').pairs },
             description: 'MCP: Narrowed'
         });
 
@@ -226,7 +237,7 @@ test('MCP OAuth', async t => {
         });
 
         const tokenData = await tokens.get(response.access_token, false);
-        assert.deepEqual(tokenData.permissions, { grants: MCP_SECTIONS.mail.levels.read });
+        assert.deepEqual(tokenData.permissions, { grants: mcpLevel(MCP_SECTIONS.mail, 'read').pairs });
 
         // and the narrowing is the one the enforcement would apply: a send is refused
         assert.equal(tokenPermissions.check({ tokenData, operation: { action: 'send', group: 'submit' } }).allowed, false);

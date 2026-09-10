@@ -25,7 +25,7 @@ const { pkcePair } = require('./helpers/pkce');
 const settings = require('../lib/settings');
 const tokens = require('../lib/tokens');
 const tokenPermissions = require('../lib/token-permissions');
-const { MCP_SECTIONS, mcpGrantsFor } = require('../lib/token-permission-view');
+const { mcpGrantsFor } = require('../lib/token-permission-view');
 const { registerClient, redeemAuthorizationCode } = require('../lib/mcp/oauth');
 const mcpConsentRoutes = require('../lib/ui-routes/mcp-consent-routes');
 
@@ -120,8 +120,7 @@ test('MCP consent flow', async t => {
         assert.equal(res.result.template, 'mcp/authorize');
         assert.equal(res.result.context.clientName, 'Consent flow test');
         assert.equal(res.result.context.canProvision, true);
-        assert.equal(res.result.context.manageLevel, 'observe', 'observing the instance must be the default management level');
-        assert.equal(res.result.context.mailEnabled, false, 'mail access must be off unless asked for');
+        assert.deepEqual(res.result.context.selectedLevels, { manage: 'observe', mail: 'none' }, 'observe the instance, no mail, unless asked for');
         assert.equal(res.result.context.values.client_id, client.client_id);
         assert.ok(!res.result.context.errorMessage);
 
@@ -222,32 +221,22 @@ test('MCP consent flow', async t => {
     });
 
     await t.test('the scope hint sets where the form starts, and only that', async () => {
-        // A client asking for the mail scope is asking for mail access, so the box starts ticked;
-        // one asking only for mail starts with no management access, since it asked for none. It
-        // is a starting position: the person still decides, and the POST reads the controls.
+        // A client asking for the mail scope is asking for mail access, so the mail section starts
+        // at its narrowest level; one asking only for mail starts with no management access, since
+        // it asked for none. It is a starting position: the person still decides, and the POST
+        // reads the controls.
         const context = async scope => {
             const res = await server.inject({ method: 'GET', url: authorizeQuery(scope === undefined ? {} : { scope }), headers: { 'x-test-admin': '1' } });
             assert.equal(res.statusCode, 200);
             return res.result.context;
         };
 
-        const mailOnly = await context('mcp');
-        assert.equal(mailOnly.manageLevel, 'none');
-        assert.equal(mailOnly.mailEnabled, true);
-        assert.equal(mailOnly.mailLevel, 'read');
-
-        const both = await context('mcp-manage mcp');
-        assert.equal(both.manageLevel, 'observe');
-        assert.equal(both.mailEnabled, true);
-
-        const manageOnly = await context('mcp-manage');
-        assert.equal(manageOnly.manageLevel, 'observe');
-        assert.equal(manageOnly.mailEnabled, false);
-
+        assert.deepEqual((await context('mcp')).selectedLevels, { manage: 'none', mail: 'read' });
+        assert.deepEqual((await context('mcp-manage mcp')).selectedLevels, { manage: 'observe', mail: 'read' });
+        assert.deepEqual((await context('mcp-manage')).selectedLevels, { manage: 'observe', mail: 'none' });
         // Unknown scope values are noise, not a request for anything
-        const unknown = await context('offline_access openid');
-        assert.equal(unknown.manageLevel, 'observe');
-        assert.equal(unknown.mailEnabled, false);
+        assert.deepEqual((await context('offline_access openid')).selectedLevels, { manage: 'observe', mail: 'none' });
+        assert.deepEqual((await context()).selectedLevels, { manage: 'observe', mail: 'none' });
     });
 
     // Approval and the client's half of the exchange, exactly as the token endpoint runs it.
@@ -311,7 +300,7 @@ test('MCP consent flow', async t => {
     });
 
     await t.test('management plus read-only mail mints one token holding both scopes, without crossing them', async () => {
-        const { tokenResponse } = await approveAndRedeem({ manage: 'operate', mailEnabled: 'on', mailLevel: 'read' });
+        const { tokenResponse } = await approveAndRedeem({ manage: 'operate', mail: 'read' });
 
         assert.equal(tokenResponse.scope, 'mcp-manage mcp');
 
@@ -332,7 +321,7 @@ test('MCP consent flow', async t => {
     });
 
     await t.test('full mail access with no management mints a mail-only token with an explicit grant list', async () => {
-        const { tokenResponse } = await approveAndRedeem({ manage: 'none', mailEnabled: 'on', mailLevel: 'full' });
+        const { tokenResponse } = await approveAndRedeem({ manage: 'none', mail: 'full' });
 
         assert.equal(tokenResponse.scope, 'mcp');
 
@@ -341,23 +330,10 @@ test('MCP consent flow', async t => {
             assert.deepEqual(tokenData.scopes, ['mcp']);
             // never an absent record: the widest choice still lists what it grants, so a tool
             // shipped later is not silently included
-            assert.deepEqual(tokenData.permissions, { grants: MCP_SECTIONS.mail.levels.full });
+            assert.deepEqual(tokenData.permissions, mcpGrantsFor({ mail: 'full' }).permissions);
             assert.ok(allowed(tokenData, 'send', 'submit'));
             assert.ok(allowed(tokenData, 'destructive', 'message'));
             assert.ok(!allowed(tokenData, 'read', 'settings'));
-        } finally {
-            await tokens.delete(tokenResponse.access_token);
-        }
-    });
-
-    await t.test('a mail level posted without the mail checkbox grants no mail access', async () => {
-        // The radios are hidden while the box is unticked, but a stale form still posts them
-        const { tokenResponse } = await approveAndRedeem({ manage: 'observe', mailLevel: 'full' });
-
-        const tokenData = await tokens.get(tokenResponse.access_token, false);
-        try {
-            assert.deepEqual(tokenData.scopes, ['mcp-manage']);
-            assert.ok(!allowed(tokenData, 'read', 'message'));
         } finally {
             await tokens.delete(tokenResponse.access_token);
         }
@@ -390,7 +366,7 @@ test('MCP consent flow', async t => {
         assert.equal(res.result.template, 'mcp/authorize');
         assert.match(res.result.context.errors.access, /at least one kind of access/);
         // and the form comes back the way it was posted
-        assert.equal(res.result.context.manageLevel, 'none');
+        assert.deepEqual(res.result.context.selectedLevels, { manage: 'none', mail: 'none' });
     });
 
     await t.test('a management token bound to one account is minted with the binding', async () => {

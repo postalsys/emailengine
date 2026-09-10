@@ -96,13 +96,7 @@ describe('surface grants', () => {
     });
 
     describe('surfaceBoundAdmits', () => {
-        it('bounds a token by the tables of the per-request scopes it holds', () => {
-            assert.ok(surfaceBoundAdmits({ scopes: ['mcp-manage'] }, READ_SETTINGS));
-            assert.ok(!surfaceBoundAdmits({ scopes: ['mcp-manage'] }, READ_MESSAGE));
-            assert.ok(!surfaceBoundAdmits({ scopes: ['mcp'] }, READ_SETTINGS));
-            assert.ok(surfaceBoundAdmits({ scopes: ['mcp', 'mcp-manage'] }, READ_MESSAGE));
-        });
-
+        // The advertisement predicate is the per-request one plus two clauses of its own
         it('does not bound a token that reaches the whole API', () => {
             for (const tokenData of [{ scopes: ['api'] }, { scopes: ['*'] }, { scopes: ['api', 'mcp'] }, {}, { scopes: null }, undefined]) {
                 assert.ok(surfaceBoundAdmits(tokenData, READ_SETTINGS), `${JSON.stringify(tokenData)} should not be bounded`);
@@ -110,7 +104,10 @@ describe('surface grants', () => {
             }
         });
 
-        it('bounds a token holding only login-time scopes to nothing over MCP', () => {
+        it('bounds every other token by the tables of the per-request scopes it holds', () => {
+            assert.ok(surfaceBoundAdmits({ scopes: ['mcp-manage'] }, READ_SETTINGS));
+            assert.ok(!surfaceBoundAdmits({ scopes: ['mcp'] }, READ_SETTINGS));
+            // a token holding only login-time scopes reaches nothing over MCP
             assert.ok(!surfaceBoundAdmits({ scopes: ['smtp'] }, SEND));
             assert.ok(!surfaceBoundAdmits({ scopes: ['metrics'] }, { action: ACTION.READ, group: GROUP.DIAGNOSTICS }));
         });

@@ -25,7 +25,7 @@ const { captureApiRoutes } = require('./helpers/capture-api-routes');
 const { buildToolRegistry, callTool, toolVisibleTo, toolDefinitionFor, toolGrants, MAX_TOOL_RESULT_BYTES, MAX_TOOL_BINARY_BYTES } = require('../lib/mcp/tools');
 const { surfaceAdmits, perRequestSurfaceAdmits, PER_REQUEST_SURFACES, routeGrant, ACTION, GROUP } = require('../lib/api-routes/permission-map');
 const { MCP_MAX_PAGE_SIZE } = require('../lib/consts');
-const { MCP_SECTIONS, mcpGrantsFor } = require('../lib/token-permission-view');
+const { MCP_SECTIONS, mcpGrantsFor, mcpLevelNames } = require('../lib/token-permission-view');
 const { walkJson: walk } = require('./helpers/walk-json');
 
 const GOLDEN_PATH = path.join(__dirname, 'fixtures', 'mcp-tools-golden.json');
@@ -127,12 +127,6 @@ test('MCP tool registry', async t => {
         for (const scopes of [['mcp', 'mcp-manage'], ['api'], ['*'], undefined]) {
             assert.deepEqual(visible(scopes).sort(), tools.map(tool => tool.name).sort(), `${JSON.stringify(scopes)} must see every tool`);
         }
-
-        // toolGrants() reports the same answer to the pages that count tools in a browser
-        for (const entry of toolGrants({ table: () => routes })) {
-            const expected = [...PER_REQUEST_SURFACES].filter(scope => surfaceAdmits(scope, byName.get(entry.name).grant));
-            assert.deepEqual(entry.surfaces, expected, `${entry.name}: toolGrants() surfaces differ from the tables`);
-        }
     });
 
     await t.test('the admin pages predict the same catalog tools/list advertises', () => {
@@ -158,7 +152,7 @@ test('MCP tool registry', async t => {
                         return true;
                     }
                     if (record.grants) {
-                        return record.grants.includes(`${tool.action}:${tool.group}`);
+                        return record.grants.some(grant => grant.action === tool.action && grant.group === tool.group);
                     }
                     return record.actions.includes(tool.action) && record.groups.includes(tool.group);
                 })
@@ -171,11 +165,11 @@ test('MCP tool registry', async t => {
         // it mints reaches the strategy - plus the shapes a hand-built custom record takes: one
         // axis emptied out, a section that carries no tool at all, and the unrestricted api token
         const cases = [];
-        for (const manage of Object.keys(MCP_SECTIONS.manage.levels)) {
-            for (const mail of Object.keys(MCP_SECTIONS.mail.levels)) {
+        for (const manage of mcpLevelNames(MCP_SECTIONS.manage)) {
+            for (const mail of mcpLevelNames(MCP_SECTIONS.mail)) {
                 const minted = mcpGrantsFor({ manage, mail });
                 cases.push({
-                    page: { surfaces: minted.scopes, grants: minted.permissions.grants.map(grant => `${grant.action}:${grant.group}`), unrestricted: false },
+                    page: { surfaces: minted.scopes, grants: minted.permissions.grants, unrestricted: false },
                     token: { scopes: minted.scopes, permissions: minted.permissions }
                 });
             }

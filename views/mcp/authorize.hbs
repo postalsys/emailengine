@@ -49,46 +49,28 @@
 
     <div class="space-y-5">
 
-        {{!-- Management first: it is what the endpoint is for by default, and the section a
-              client that asked for nothing in particular gets. --}}
+        {{!-- One block per section, in table order: management first, because it is what the
+              endpoint is for by default, then mail, declined unless the person or the client's
+              scope request said otherwise. The radio group of a section is named after its key,
+              which is the field the route reads and what ui.js reads the selection back from.
+              Under each group, one grant sentence per level, generated from the table rather than
+              written per level: the grant word lists come from the surface tables the enforcement
+              reads (never written out here), so this screen cannot promise less than the token
+              grants after the tool set changes, and the caveat travels with the level it
+              describes. One is visible at a time - the one describing the selected level. --}}
+        {{#each mcpSections}}
         <fieldset class="space-y-2">
-            <legend class="label-text mb-1">{{mcpSections.manage.label}}</legend>
-            {{> mcp_access_levels section=mcpSections.manage name="manage" idPrefix="manage" selected=manageLevel includeNone=true}}
+            <legend class="label-text mb-1">{{label}}</legend>
+            {{> mcp_access_levels section=this name=@key idPrefix=@key selected=(lookup ../selectedLevels @key) includeNone=true}}
         </fieldset>
 
-        {{!-- One alert per level, generated from the table rather than written per level: the
-              grant word lists come from the surface tables the enforcement reads (never written
-              out here), so this screen cannot promise less than the token grants after the tool
-              set changes, and the caveat travels with the level it describes. One is visible at
-              a time - the one describing the selected level. --}}
-        {{#each mcpSections.manage.options}}
-        <div data-section="manage" data-level="{{value}}"
-            class="consent-grant alert alert-soft {{#equals value 'observe'}}alert-info{{else}}alert-warning{{/equals}} text-sm{{#equals ../manageLevel value}}{{else}} hidden{{/equals}}">
-            <span class="{{#equals value 'observe'}}icon-[tabler--info-circle]{{else}}icon-[tabler--alert-triangle]{{/equals}} size-5 shrink-0"></span>
-            <span>Through the management tools the client will be able to <strong>{{actions}}</strong> across
-                {{groups}}. {{caveat}}</span>
+        {{#each levels}}
+        <div data-section="{{@../key}}" data-level="{{value}}"
+            class="consent-grant alert alert-soft alert-{{variant}} text-sm{{#equals (lookup ../../selectedLevels @../key) value}}{{else}} hidden{{/equals}}">
+            <span class="{{#equals variant 'info'}}icon-[tabler--info-circle]{{else}}icon-[tabler--alert-triangle]{{/equals}} size-5 shrink-0"></span>
+            <span>{{../lead}} <strong>{{actions}}</strong> across {{groups}}. {{caveat}}</span>
         </div>
         {{/each}}
-
-        {{!-- Mail is the opt-in half: off unless the person ticks it, or the client asked for the
-              mail scope (which only pre-ticks the box). The levels sit in an element named after
-              the checkbox with "Levels" appended - the convention static/js/ui.js shows and hides
-              them by. --}}
-        <fieldset class="space-y-2">
-            <legend class="label-text mb-1">{{mcpSections.mail.label}}</legend>
-            {{> ui/checkbox id="mailEnabled" label=mcpSections.mail.toggle.label checked=mailEnabled hint=mcpSections.mail.toggle.hint}}
-            <div id="mailEnabledLevels" class="ps-6 space-y-2{{#unless mailEnabled}} hidden{{/unless}}">
-                {{> mcp_access_levels section=mcpSections.mail name="mailLevel" idPrefix="mailLevel" selected=mailLevel}}
-            </div>
-        </fieldset>
-
-        {{#each mcpSections.mail.options}}
-        <div data-section="mail" data-level="{{value}}"
-            class="consent-grant alert alert-soft {{#equals value 'read'}}alert-info{{else}}alert-warning{{/equals}} text-sm{{#if ../mailEnabled}}{{#equals ../mailLevel value}}{{else}} hidden{{/equals}}{{else}} hidden{{/if}}">
-            <span class="{{#equals value 'read'}}icon-[tabler--info-circle]{{else}}icon-[tabler--alert-triangle]{{/equals}} size-5 shrink-0"></span>
-            <span>Through the mail tools the client will be able to <strong>{{actions}}</strong> across {{groups}} on
-                the accounts its token can reach. {{caveat}}</span>
-        </div>
         {{/each}}
 
         {{#if errors.access}}
@@ -107,7 +89,7 @@
               approved. Follows the account field too, because limiting the client to one account
               takes the instance-wide tools away from it - what is left of a management grant is
               then the tools that operate that one account. --}}
-        {{> mcp_tool_count id="consentToolCount" manageName="manage" mailName="mailLevel" mailToggle="mailEnabled" accountId="account"}}
+        {{> mcp_tool_count id="consentToolCount" autoWire=true levelPrefix="" accountId="account"}}
 
         <div class="flex gap-3 pt-2">
             <button type="submit" name="decision" value="deny" class="btn btn-neutral btn-outline grow">
@@ -135,28 +117,22 @@
 </form>
 
 <script data-cfasync="false" nonce="{{cspNonce}}">
-    (() => {
-        // The grant sentences describe the same token under each setting of the controls, so
-        // whichever are showing are the ones the operator is about to approve. The tool count and
-        // the mail levels' visibility are wired by ui.js off the count element's data attributes.
-        let manageRadios = Array.from(document.querySelectorAll('input[name="manage"]'));
-        let mailRadios = Array.from(document.querySelectorAll('input[name="mailLevel"]'));
-        let mailToggle = document.getElementById('mailEnabled');
+    // The grant sentences describe the same token under each setting of the radios, so whichever
+    // are showing are the ones the operator is about to approve. The tool count is wired by ui.js
+    // off the count element's data attributes; this only follows the alerts. On DOMContentLoaded
+    // because the prompt layout loads ui.js after the page body, and the helper lives there.
+    document.addEventListener('DOMContentLoaded', () => {
+        let sections = JSON.parse(document.getElementById('consentToolCount').dataset.mcpSections || '{}');
         let grants = Array.from(document.querySelectorAll('.consent-grant'));
 
         let sync = () => {
-            let manage = (manageRadios.find(radio => radio.checked) || {}).value || 'none';
-            let mail = mailToggle.checked ? (mailRadios.find(radio => radio.checked) || {}).value || 'none' : 'none';
-            grants.forEach(grant => {
-                let level = grant.dataset.section === 'manage' ? manage : mail;
-                grant.classList.toggle('hidden', grant.dataset.level !== level);
-            });
+            let choice = uiMcpLevelChoice(sections, '');
+            grants.forEach(grant => grant.classList.toggle('hidden', grant.dataset.level !== choice[grant.dataset.section]));
         };
 
-        manageRadios.concat(mailRadios).forEach(radio => radio.addEventListener('change', sync));
-        mailToggle.addEventListener('change', sync);
+        document.querySelectorAll('input[type="radio"]').forEach(radio => radio.addEventListener('change', sync));
         sync();
-    })();
+    });
 </script>
 
 {{/if}}

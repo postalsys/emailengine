@@ -19,7 +19,6 @@ const {
     SUPPORTED_PROTOCOL_VERSIONS,
     META_PROTOCOL_VERSION,
     SERVER_INFO,
-    SERVER_INSTRUCTIONS,
     serverInstructions
 } = require('../lib/mcp/protocol');
 const { COLLAPSE_CLASS } = require('../lib/consts');
@@ -33,6 +32,8 @@ function ctx(overrides) {
             callTool: async name => ({ content: [{ type: 'text', text: `called ${name}` }] }),
             listResources: async () => [],
             readResource: async () => [],
+            // The route always supplies per-credential instructions; the stub does the same
+            instructions: serverInstructions({ surfaces: ['mcp-manage', 'mcp'] }),
             acceptsEventStream: false
         },
         overrides || {}
@@ -187,9 +188,10 @@ test('MCP protocol', async t => {
         // The generic set opens by telling the agent to list the accounts and pass an id, and a
         // bound credential can do neither - it is refused the listing tools and its tools carry no
         // account argument at all
+        const SERVER_INSTRUCTIONS = serverInstructions({ surfaces: ['mcp-manage', 'mcp'] });
         assert.match(SERVER_INSTRUCTIONS, /list_accounts/);
 
-        const bound = serverInstructions({ account: 'acct-1', mail: true });
+        const bound = serverInstructions({ account: 'acct-1', surfaces: ['mcp'] });
         assert.doesNotMatch(bound, /list_accounts/);
         assert.match(bound, /acct-1/);
         assert.match(bound, /no account argument/);
@@ -204,7 +206,7 @@ test('MCP protocol', async t => {
     await t.test('the instructions cover the tool sets the credential holds, and no other', () => {
         // A management credential is told where to start and what to confirm; the mail lines
         // (message shape, the collapse marker, the send warning) describe tools it does not have
-        const manage = serverInstructions({ manage: true });
+        const manage = serverInstructions({ surfaces: ['mcp-manage'] });
         assert.match(manage, /get_instance_stats/);
         assert.match(manage, /before anything destructive/);
         assert.match(manage, /create_account_setup_link/);
@@ -212,26 +214,28 @@ test('MCP protocol', async t => {
         assert.doesNotMatch(manage, /send_message/);
 
         // and the other way round
-        const mail = serverInstructions({ mail: true });
+        const mail = serverInstructions({ surfaces: ['mcp'] });
         assert.match(mail, /list_accounts/);
         assert.match(mail, new RegExp(COLLAPSE_CLASS));
         assert.doesNotMatch(mail, /get_instance_stats/);
         assert.doesNotMatch(mail, /before anything destructive/);
 
         // both hear both, once each
-        const both = serverInstructions({ manage: true, mail: true });
+        const both = serverInstructions({ surfaces: ['mcp', 'mcp-manage'] });
         assert.match(both, /get_instance_stats/);
         assert.match(both, new RegExp(COLLAPSE_CLASS));
         assert.equal(both.split('list_accounts').length, 3, 'list_accounts is named as the start and as the source of ids, not more');
 
         // a bound management credential is told it operates that one account
-        const boundManage = serverInstructions({ account: 'acct-1', manage: true });
+        const boundManage = serverInstructions({ account: 'acct-1', surfaces: ['mcp-manage'] });
         assert.match(boundManage, /acct-1/);
         assert.match(boundManage, /reconnect or sync it/);
         assert.doesNotMatch(boundManage, /list_accounts/);
 
         // and a credential offered nothing is told so rather than handed a workflow
         assert.match(serverInstructions({}), /offered no tools/);
+        // and the management lines come before the mail lines whatever order the surfaces arrive in
+        assert.ok(both.indexOf('take effect immediately') < both.indexOf('send_message'));
     });
 
     await t.test('modern: cache hints follow the declared policy for every result-bearing method', async () => {

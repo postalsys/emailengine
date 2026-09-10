@@ -395,10 +395,10 @@ test.describe('access token pages', () => {
         // No "restrict?" toggle in this mode: an agent credential starts read-only rather than
         // unrestricted, which is the wrong way round for something a model drives
         await expect(page.locator('#apiLimitBlock')).toBeHidden();
-        await expect(page.locator('#mcpMail_read')).toBeChecked();
+        await expect(page.locator('#mcpLevel_mail_read')).toBeChecked();
         // Only the mail scope is ticked, so only the mail section is offered
-        await expect(page.locator('#mcpMailBlock')).toBeVisible();
-        await expect(page.locator('#mcpManageBlock')).toBeHidden();
+        await expect(page.locator('[data-mcp-scope="mcp"]')).toBeVisible();
+        await expect(page.locator('[data-mcp-scope="mcp-manage"]')).toBeHidden();
 
         // The matrix is the detail view behind the levels, not the way in
         await expect(page.locator('#permissionSection')).toBeHidden();
@@ -411,7 +411,7 @@ test.describe('access token pages', () => {
         await expect(outcome).toContainText('Email access (Read-only)');
         const readOnlyCount = await outcome.textContent();
 
-        await page.locator('#mcpMail_full').check();
+        await page.locator('#mcpLevel_mail_full').check();
         // Full access grants every pair of the mail surface, so every mail tool survives
         await expect(outcome).toContainText(/(\d+) of \1 MCP tools available/);
         expect(await outcome.textContent()).not.toBe(readOnlyCount);
@@ -426,9 +426,9 @@ test.describe('access token pages', () => {
         await page.locator('#scopesAll').uncheck();
         await page.locator('#scopesMcpManage').check();
 
-        await expect(page.locator('#mcpManageBlock')).toBeVisible();
-        await expect(page.locator('#mcpMailBlock')).toBeHidden();
-        await expect(page.locator('#mcpManage_observe')).toBeChecked();
+        await expect(page.locator('[data-mcp-scope="mcp-manage"]')).toBeVisible();
+        await expect(page.locator('[data-mcp-scope="mcp"]')).toBeHidden();
+        await expect(page.locator('#mcpLevel_manage_observe')).toBeChecked();
 
         const outcome = page.locator('#permissionOutcome');
         await expect(outcome).toContainText('Instance management (Observe)');
@@ -439,7 +439,7 @@ test.describe('access token pages', () => {
 
         // Ticking the mail scope too brings the mail section and its tools in
         await page.locator('#scopesMcp').check();
-        await expect(page.locator('#mcpMailBlock')).toBeVisible();
+        await expect(page.locator('[data-mcp-scope="mcp"]')).toBeVisible();
         await expect(outcome).toContainText('Email access (Read-only)');
         await expect(outcome).toContainText('list_messages');
 
@@ -527,7 +527,7 @@ test.describe('access token pages', () => {
         await page.locator('#description').fill(description);
         await page.locator('#scopesAll').uncheck();
         await page.locator('#scopesMcp').check();
-        await page.locator('#mcpMail_mail').check();
+        await page.locator('#mcpLevel_mail_mail').check();
 
         await page.getByRole('button', { name: 'Generate a token' }).click();
         await expect(page.locator('#showTokenValue')).toHaveValue(/^[0-9a-f]{64}$/, { timeout: 15000 });
