@@ -402,6 +402,26 @@ test('BaseClient.setErrorState', async t => {
         assert.strictEqual(transactions.length, 1, 'and nothing past the failed write is attempted');
     });
 
+    await t.test('a repeat carrying no response code is not announced again', async () => {
+        // Exchange Online puts no bracketed code on its NO, so the payload's serverResponseCode is
+        // undefined: JSON dropped the key on store, deepEqual counted it on compare, and the same
+        // failure read as new on every retry - eight webhooks for one 17 minute outage, each one
+        // restarting the run the auth-failure safety net measures
+        const { ctx, accountKey } = makeCtx('seterr-codeless');
+        await seed(accountKey, { imap: { host: 'imap.test', disabled: false }, code: null });
+        const payload = () => ({ response: '3 NO User is authenticated but not connected.', serverResponseCode: undefined });
+
+        assert.strictEqual(await setErrorState(ctx, 'authenticationError', payload()), true, 'the first occurrence is announced');
+        const first = await redis.hget(accountKey, 'lastError:first');
+
+        assert.strictEqual(await setErrorState(ctx, 'authenticationError', payload()), false, 'an identical repeat is not');
+        assert.strictEqual(await redis.hget(accountKey, 'lastError:errorCount'), '2', 'and it counts towards the run');
+        assert.strictEqual(await redis.hget(accountKey, 'lastError:first'), first, 'which keeps its start');
+
+        const changed = await setErrorState(ctx, 'authenticationError', { response: '3 NO AUTHENTICATE failed.', serverResponseCode: undefined });
+        assert.strictEqual(changed, true, 'a different answer is a new error');
+    });
+
     await t.test('a different error code is treated as a new first occurrence', async () => {
         const { ctx, accountKey } = makeCtx('seterr-changed');
         await redis

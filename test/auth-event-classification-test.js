@@ -15,6 +15,9 @@
 // authentication failure from a name-resolution blip and announced every recovery as
 // `authenticationSuccess`. setErrorState() now records which event wrote it, and
 // notifyAuthenticationSuccess() reads it back to decide both what to announce and what to clear.
+//
+// The IMAP server's own answer to a login is the third decision, drawn by isRefusedImapLogin() in
+// lib/email-client/imap/login-failure.js and covered by test/imap-login-failure-test.js.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
