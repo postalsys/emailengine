@@ -11808,19 +11808,21 @@
             "api": "Call the REST API",
             "smtp": "Authenticate against the built-in SMTP submission server",
             "imap-proxy": "Authenticate against the built-in IMAP proxy",
-            "mcp": "Connect AI agents through the MCP endpoint. Admits only the operations the MCP tool set wraps, and is not valid for plain REST calls"
+            "mcp-manage": "Let an AI agent manage this instance through the MCP endpoint: accounts, settings, OAuth2 applications, gateways, tokens, the license. Admits only the operations the management tools wrap, and is not valid for plain REST calls",
+            "mcp": "Let an AI agent work with mailbox contents through the MCP endpoint. Admits only the operations the mail tools wrap, and is not valid for plain REST calls"
           }
         },
         "enum": [
           "api",
           "smtp",
           "imap-proxy",
-          "mcp"
+          "mcp",
+          "mcp-manage"
         ]
       },
       "Scopes": {
         "type": "array",
-        "description": "Token permission scopes: \"api\" for REST API access, \"smtp\" for SMTP submission, \"imap-proxy\" for IMAP proxy authentication, \"mcp\" for the MCP endpoint only",
+        "description": "Token permission scopes: \"api\" for REST API access, \"smtp\" for SMTP submission, \"imap-proxy\" for IMAP proxy authentication, \"mcp-manage\" for the instance management tools of the MCP endpoint, \"mcp\" for its mail tools",
         "default": [
           "api"
         ],

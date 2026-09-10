@@ -75,7 +75,7 @@ const tokenPermissions = require('../lib/token-permissions');
 const { mcpFeatureEnabled } = require('../lib/mcp');
 const mcpListen = require('../lib/mcp/listen');
 const tokenAuditLog = require('../lib/token-audit-log');
-const { routeGrant, surfaceAdmits, sessionTokenAdmits } = require('../lib/api-routes/permission-map');
+const { routeGrant, perRequestSurfaceAdmits, sessionTokenAdmits } = require('../lib/api-routes/permission-map');
 const { mcpOptions } = require('../lib/api-routes/route-metadata');
 
 const { redis, documentsQueue } = require('../lib/db');
@@ -932,13 +932,13 @@ const init = async () => {
                 account: (request.params && request.params.account) || queryAccount || tokenData.account || null
             };
 
-            // `mcp` is a surface scope like `smtp`: it admits exactly the API operations the MCP
-            // tool set wraps (surfaceAdmits over SURFACE_GRANTS.mcp), and only on requests the
-            // MCP endpoint dispatched itself - request.app.mcpInternal is set by
-            // lib/mcp/inject.js and cannot be set from the network, so an mcp-scoped token
-            // presented to plain REST is refused here like any other missing scope.
-            const mcpSurfaceAdmits =
-                scopes.includes('api') && tokenData.scopes && tokenData.scopes.includes('mcp') && !!request.app.mcpInternal && surfaceAdmits('mcp', grant);
+            // `mcp` and `mcp-manage` are surface scopes like `smtp`: each admits exactly the API
+            // operations its half of the MCP tool set wraps (perRequestSurfaceAdmits over
+            // SURFACE_GRANTS), and only on requests the MCP endpoint dispatched itself -
+            // request.app.mcpInternal is set by lib/mcp/inject.js and cannot be set from the
+            // network, so an mcp-scoped token presented to plain REST is refused here like any
+            // other missing scope.
+            const mcpSurfaceAdmits = scopes.includes('api') && !!request.app.mcpInternal && perRequestSurfaceAdmits(tokenData.scopes, grant);
 
             const hasRequiredScope =
                 !scopes.length ||

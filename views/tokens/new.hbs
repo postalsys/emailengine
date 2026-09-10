@@ -100,16 +100,33 @@
                         <p class="helper-text ms-7">Read the Prometheus metrics endpoint and nothing else.</p>
                     </li>
 
+                    {{!-- Two MCP scopes, management first: the endpoint is one door with two tool
+                          sets behind it, and each scope opens one of them. Both rows carry the Beta
+                          badge the MCP config page carries. --}}
+                    <li class="p-4">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" class="checkbox checkbox-sm scope-entry scope-list" id="scopesMcpManage"
+                                name="scopesMcpManage" data-scope="mcp-manage" {{#if values.scopesMcpManage}}checked{{/if}} />
+                            <label class="label-text grow p-0" for="scopesMcpManage">MCP management
+                                {{> ui/badge label="Beta" variant="info" soft=true class="badge-sm align-middle" icon="" elId=""}}</label>
+                            <div class="text-base-content/60 code-link">["mcp-manage"]</div>
+                        </div>
+                        <p class="helper-text ms-7">Let an AI agent manage this instance through the MCP tools at
+                            <code>/mcp</code>: accounts, settings, OAuth2 applications, gateways, tokens and the license.
+                            This is not REST API access - the same token is refused by <code>/v1</code>.</p>
+                    </li>
+
                     <li class="p-4">
                         <div class="flex items-center gap-2">
                             <input type="checkbox" class="checkbox checkbox-sm scope-entry scope-list" id="scopesMcp"
                                 name="scopesMcp" data-scope="mcp" {{#if values.scopesMcp}}checked{{/if}} />
-                            <label class="label-text grow p-0" for="scopesMcp">MCP
+                            <label class="label-text grow p-0" for="scopesMcp">MCP mail
                                 {{> ui/badge label="Beta" variant="info" soft=true class="badge-sm align-middle" icon="" elId=""}}</label>
                             <div class="text-base-content/60 code-link">["mcp"]</div>
                         </div>
-                        <p class="helper-text ms-7">Let an AI agent call MCP tools at <code>/mcp</code>. This is not REST
-                            API access - the same token is refused by <code>/v1</code>.</p>
+                        <p class="helper-text ms-7">Let an AI agent work with mailbox contents through the MCP tools at
+                            <code>/mcp</code>: list, read, organize and send mail. This is not REST API access - the same
+                            token is refused by <code>/v1</code>.</p>
                         {{!-- The endpoint is off by default, so an operator can otherwise mint a
                               credential for something that is not serving and only find out in the
                               client. Both halves of the gate are folded into mcpReady. Revealed by
@@ -336,9 +353,19 @@
         }
 
         let mcpAccessPresets = JSON.parse(accessCardElm.dataset.mcpPresets || '{}');
-        // What the mcp scope can reach at all, which is also what the "Full access" level means:
-        // that level stores no record, so the surface grant list is its own description.
-        let mcpCeiling = surfaceRequirements.mcp || { actions: [], groups: [], grants: [] };
+        // What the MCP scopes can reach at all, which is also what the "Full access" level means:
+        // that level stores no record, so the surface grant lists are their own description. The
+        // union of both MCP surfaces, because a token may hold either or both.
+        let mcpCeiling = { actions: [], groups: [], grants: [] };
+        for (let scope of ['mcp-manage', 'mcp']) {
+            let need = surfaceRequirements[scope];
+            if (!need) {
+                continue;
+            }
+            mcpCeiling.actions = mcpCeiling.actions.concat(need.actions.filter(value => !mcpCeiling.actions.includes(value)));
+            mcpCeiling.groups = mcpCeiling.groups.concat(need.groups.filter(value => !mcpCeiling.groups.includes(value)));
+            mcpCeiling.grants = mcpCeiling.grants.concat(need.grants);
+        }
 
         let scopeElms = Array.from(document.querySelectorAll('.scope-entry'));
         let selectedScopes = () => scopeElms.filter(elm => elm.checked && !elm.disabled).map(elm => elm.dataset.scope);
@@ -354,7 +381,7 @@
         // be greyed while this is open. That reads correctly: API access is granted by "All", and
         // this is how to narrow it.
         let hasApiScope = () => selectedScopes().some(scope => ['*', 'api'].includes(scope));
-        let hasMcpScope = () => selectedScopes().some(scope => ['*', 'mcp'].includes(scope));
+        let hasMcpScope = () => selectedScopes().some(scope => ['*', 'mcp', 'mcp-manage'].includes(scope));
         let narrowableScope = () => hasApiScope() || hasMcpScope();
 
         // The two editor modes. A token that reaches the MCP endpoint and not the REST API is a
@@ -595,7 +622,7 @@
         // ticked - the default selection carries the mcp scope with everything else, and warning
         // about a disabled endpoint on a page nobody opened for MCP is noise.
         let mcpDisabledHintElm = document.getElementById('mcpDisabledHint');
-        let scopesMcpElm = document.getElementById('scopesMcp');
+        let scopesMcpElms = [document.getElementById('scopesMcpManage'), document.getElementById('scopesMcp')];
 
         let syncAll = () => {
             syncAccessCard();
@@ -603,7 +630,7 @@
             syncPermissionOutcome();
 
             if (mcpDisabledHintElm) {
-                mcpDisabledHintElm.classList.toggle('hidden', !scopesMcpElm.checked || scopesMcpElm.disabled);
+                mcpDisabledHintElm.classList.toggle('hidden', !scopesMcpElms.some(elm => elm.checked && !elm.disabled));
             }
         };
 

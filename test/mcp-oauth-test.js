@@ -20,7 +20,8 @@ const {
     isAcceptableResource,
     createAuthorizationCode,
     redeemAuthorizationCode,
-    verifyPkce
+    verifyPkce,
+    normalizeScopes
 } = require('../lib/mcp/oauth');
 
 registerRedisTeardown(redis);
@@ -127,6 +128,8 @@ test('MCP OAuth', async t => {
         const code = await mint();
         const response = await redeemAuthorizationCode(Object.assign({}, base, { code }));
         assert.equal(response.token_type, 'Bearer');
+        // a code minted without naming its scopes is the mail-only code the flow issued before
+        // the management scope existed
         assert.equal(response.scope, 'mcp');
 
         const tokenData = await tokens.get(response.access_token, false);
@@ -137,6 +140,62 @@ test('MCP OAuth', async t => {
         await assert.rejects(redeemAuthorizationCode(Object.assign({}, base, { code })), /expired/);
 
         await tokens.delete(response.access_token);
+    });
+
+    await t.test('the scopes the operator approved reach the minted token, in canonical order', async () => {
+        const client = await registerClient({ redirectUris: ['https://claude.ai/cb'], clientName: 'Scoped' });
+
+        const mintFor = async scopes => {
+            const { verifier, challenge } = pkcePair();
+            const code = await createAuthorizationCode({
+                clientId: client.client_id,
+                redirectUri: 'https://claude.ai/cb',
+                codeChallenge: challenge,
+                resource: `${ORIGIN}/mcp`,
+                account: null,
+                scopes,
+                description: 'MCP: Scoped'
+            });
+            return redeemAuthorizationCode({
+                code,
+                clientId: client.client_id,
+                redirectUri: 'https://claude.ai/cb',
+                codeVerifier: verifier,
+                resource: `${ORIGIN}/mcp`,
+                origin: ORIGIN,
+                ip: '198.51.100.7'
+            });
+        };
+
+        // Both, listed mail-first: stored and reported management-first, space separated per
+        // RFC 6749, and only the scopes this server issues survive
+        const both = await mintFor(['mcp', 'mcp-manage', 'bogus']);
+        assert.equal(both.scope, 'mcp-manage mcp');
+        assert.deepEqual((await tokens.get(both.access_token, false)).scopes, ['mcp-manage', 'mcp']);
+        await tokens.delete(both.access_token);
+
+        const manage = await mintFor(['mcp-manage']);
+        assert.equal(manage.scope, 'mcp-manage');
+        assert.deepEqual((await tokens.get(manage.access_token, false)).scopes, ['mcp-manage']);
+        await tokens.delete(manage.access_token);
+
+        // The wire form is accepted too
+        assert.deepEqual(normalizeScopes('mcp offline_access mcp-manage'), ['mcp-manage', 'mcp']);
+        assert.deepEqual(normalizeScopes(''), []);
+        assert.deepEqual(normalizeScopes(undefined), []);
+
+        // A code for no surface at all is refused at mint time, not discovered at exchange time
+        await assert.rejects(
+            createAuthorizationCode({
+                clientId: client.client_id,
+                redirectUri: 'https://claude.ai/cb',
+                codeChallenge: 'a'.repeat(43),
+                resource: `${ORIGIN}/mcp`,
+                scopes: ['bogus'],
+                description: 'MCP: Scoped'
+            }),
+            err => err.oauthError === 'invalid_scope'
+        );
     });
 
     await t.test('the narrowing the operator approved reaches the minted token', async () => {

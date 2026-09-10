@@ -361,6 +361,18 @@ test('Token management tests', async t => {
         assert.strictEqual(result.tokens.length, 1);
         assert.strictEqual(result.tokens[0].description, 'Scoped agent');
         assert.deepStrictEqual(result.tokens[0].scopes, ['mcp']);
+
+        // A list of scopes matches a token naming any of them - the MCP pages ask for both MCP
+        // scopes at once
+        const manageToken = await tokens.provision({ account, description: 'Management agent', scopes: ['mcp-manage'], nolog: true });
+        createdTokens.push(manageToken);
+
+        const either = await tokens.list(account, 0, 10, null, { scope: ['mcp-manage', 'mcp'] });
+        assert.strictEqual(either.total, 2);
+        assert.deepStrictEqual(either.tokens.map(entry => entry.description).sort(), ['Management agent', 'Scoped agent']);
+
+        // and an empty list is no filter at all
+        assert.strictEqual((await tokens.list(account, 0, 10, null, { scope: [] })).total, 4);
     });
 
     await t.test('getRawData() returns token data', async () => {

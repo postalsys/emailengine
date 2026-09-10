@@ -22,8 +22,8 @@ const Joi = require('joi');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 const { captureApiRoutes } = require('./helpers/capture-api-routes');
-const { buildToolRegistry, callTool, toolVisibleTo, toolDefinitionFor, MAX_TOOL_RESULT_BYTES, MAX_TOOL_BINARY_BYTES } = require('../lib/mcp/tools');
-const { surfaceAdmits, routeGrant, ACTION, GROUP } = require('../lib/api-routes/permission-map');
+const { buildToolRegistry, callTool, toolVisibleTo, toolDefinitionFor, toolGrants, MAX_TOOL_RESULT_BYTES, MAX_TOOL_BINARY_BYTES } = require('../lib/mcp/tools');
+const { surfaceAdmits, perRequestSurfaceAdmits, PER_REQUEST_SURFACES, routeGrant, ACTION, GROUP } = require('../lib/api-routes/permission-map');
 const { MCP_MAX_PAGE_SIZE } = require('../lib/consts');
 const { MCP_READ_ONLY_PERMISSIONS, MCP_MAIL_AGENT_PERMISSIONS } = require('../lib/token-permission-view');
 const { walkJson: walk } = require('./helpers/walk-json');
@@ -66,17 +66,17 @@ test('MCP tool registry', async t => {
         );
     });
 
-    await t.test('every tool stays inside the mcp surface grants', () => {
-        // The `mcp` token scope admits an injected request only when surfaceAdmits() says so -
-        // the same predicate the api-token strategy calls - so a tool wrapping a route outside
-        // that list would exist in the manifest but be uncallable by the very tokens minted for
-        // it.
+    await t.test('every tool stays inside the grants of some MCP surface scope', () => {
+        // An MCP token scope admits an injected request only when perRequestSurfaceAdmits() says
+        // so - the same predicate the api-token strategy calls - so a tool wrapping a route
+        // outside every surface table would exist in the manifest but be uncallable by the very
+        // tokens minted for it.
         const outside = [];
 
         for (const [name, tool] of byName) {
             const route = routes.find(entry => entry.path === tool.path && entry.method === tool.method);
             const grant = routeGrant(route);
-            if (!surfaceAdmits('mcp', grant)) {
+            if (!perRequestSurfaceAdmits([...PER_REQUEST_SURFACES], grant)) {
                 outside.push(`${name} (${tool.method.toUpperCase()} ${tool.path} -> ${grant.action}/${grant.group})`);
             }
 
@@ -86,7 +86,53 @@ test('MCP tool registry', async t => {
             assert.deepEqual(tool.grant, grant, `${name}: stored grant differs from routeGrant()`);
         }
 
-        assert.deepEqual(outside, [], `tools outside SURFACE_GRANTS.mcp: ${JSON.stringify(outside)}`);
+        assert.deepEqual(outside, [], `tools outside every MCP surface: ${JSON.stringify(outside)}`);
+    });
+
+    await t.test('a credential is offered only the tools its MCP scopes reach', () => {
+        // The scope bound of tools/list. A mail-scoped token must not be shown the management
+        // tools however wide its permissions record, and the other way round; the tools both
+        // tables cover (the account reads) are shown to either.
+        const visible = scopes =>
+            tools.filter(tool => toolVisibleTo(byName.get(tool.name), { tokenData: { scopes }, boundAccount: null })).map(tool => tool.name);
+
+        const mailOnly = tools.filter(tool => surfaceAdmits('mcp', byName.get(tool.name).grant) && !surfaceAdmits('mcp-manage', byName.get(tool.name).grant));
+        const manageOnly = tools.filter(tool => surfaceAdmits('mcp-manage', byName.get(tool.name).grant) && !surfaceAdmits('mcp', byName.get(tool.name).grant));
+        const shared = tools.filter(tool => surfaceAdmits('mcp', byName.get(tool.name).grant) && surfaceAdmits('mcp-manage', byName.get(tool.name).grant));
+
+        // The catalog has both kinds, or the assertions below say nothing
+        assert.ok(mailOnly.length > 0, 'no mail-only tool in the catalog');
+        assert.ok(
+            shared.some(tool => tool.name === 'list_accounts'),
+            'list_accounts must be reachable from both scopes'
+        );
+
+        const mail = visible(['mcp']);
+        for (const tool of mailOnly.concat(shared)) {
+            assert.ok(mail.includes(tool.name), `a mail token must see ${tool.name}`);
+        }
+        for (const tool of manageOnly) {
+            assert.ok(!mail.includes(tool.name), `a mail token must not see ${tool.name}`);
+        }
+
+        const manage = visible(['mcp-manage']);
+        for (const tool of manageOnly.concat(shared)) {
+            assert.ok(manage.includes(tool.name), `a management token must see ${tool.name}`);
+        }
+        for (const tool of mailOnly) {
+            assert.ok(!manage.includes(tool.name), `a management token must not see ${tool.name}`);
+        }
+
+        // Both scopes, the api scope, every scope and no scope list at all see the whole catalog
+        for (const scopes of [['mcp', 'mcp-manage'], ['api'], ['*'], undefined]) {
+            assert.deepEqual(visible(scopes).sort(), tools.map(tool => tool.name).sort(), `${JSON.stringify(scopes)} must see every tool`);
+        }
+
+        // toolGrants() reports the same answer to the pages that count tools in a browser
+        for (const entry of toolGrants({ table: () => routes })) {
+            const expected = [...PER_REQUEST_SURFACES].filter(scope => surfaceAdmits(scope, byName.get(entry.name).grant));
+            assert.deepEqual(entry.surfaces, expected, `${entry.name}: toolGrants() surfaces differ from the tables`);
+        }
     });
 
     await t.test('the admin pages predict the same catalog tools/list advertises', () => {
