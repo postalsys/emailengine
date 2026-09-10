@@ -25,7 +25,7 @@ const { captureApiRoutes } = require('./helpers/capture-api-routes');
 const { buildToolRegistry, callTool, toolVisibleTo, toolDefinitionFor, toolGrants, MAX_TOOL_RESULT_BYTES, MAX_TOOL_BINARY_BYTES } = require('../lib/mcp/tools');
 const { surfaceAdmits, perRequestSurfaceAdmits, PER_REQUEST_SURFACES, routeGrant, ACTION, GROUP } = require('../lib/api-routes/permission-map');
 const { MCP_MAX_PAGE_SIZE } = require('../lib/consts');
-const { MCP_READ_ONLY_PERMISSIONS, MCP_MAIL_AGENT_PERMISSIONS } = require('../lib/token-permission-view');
+const { MCP_SECTIONS, mcpGrantsFor } = require('../lib/token-permission-view');
 const { walkJson: walk } = require('./helpers/walk-json');
 
 const GOLDEN_PATH = path.join(__dirname, 'fixtures', 'mcp-tools-golden.json');
@@ -146,37 +146,59 @@ test('MCP tool registry', async t => {
         // Not a re-implementation of the rule under test - it is the browser's simplified model,
         // written out once here so its equivalence is checked rather than assumed. The page-side
         // copy lives in uiMcpToolCount() in static/js/ui.js.
-        const grants = tools.map(tool => {
-            const entry = byName.get(tool.name);
-            return { name: tool.name, accountScoped: entry.sources.has('account'), ...entry.grant };
-        });
+        const grants = toolGrants({ table: () => routes });
 
+        // { surfaces, grants | actions + groups, unrestricted, account }, as the page passes it
         const browserModel = (record, boundAccount) =>
             grants
+                .filter(tool => !record.surfaces || tool.surfaces.some(scope => record.surfaces.includes(scope)))
                 .filter(tool => !boundAccount || tool.accountScoped)
-                .filter(tool => !record || (record.actions.includes(tool.action) && record.groups.includes(tool.group)))
+                .filter(tool => {
+                    if (record.unrestricted) {
+                        return true;
+                    }
+                    if (record.grants) {
+                        return record.grants.includes(`${tool.action}:${tool.group}`);
+                    }
+                    return record.actions.includes(tool.action) && record.groups.includes(tool.group);
+                })
                 .map(tool => tool.name);
 
-        const enforced = (record, boundAccount) =>
-            tools.filter(tool => toolVisibleTo(byName.get(tool.name), { tokenData: { permissions: record }, boundAccount })).map(tool => tool.name);
+        const enforced = (tokenData, boundAccount) =>
+            tools.filter(tool => toolVisibleTo(byName.get(tool.name), { tokenData, boundAccount })).map(tool => tool.name);
 
-        // Every level the pages offer, plus the shapes a hand-built custom record takes: one axis
-        // emptied out, and one section that carries no tool at all
-        const records = [
-            null,
-            MCP_READ_ONLY_PERMISSIONS,
-            MCP_MAIL_AGENT_PERMISSIONS,
-            { actions: [ACTION.DESTRUCTIVE], groups: [GROUP.MESSAGE] },
-            { actions: [ACTION.READ], groups: [GROUP.WEBHOOK] },
-            { actions: [], groups: [] }
-        ];
+        // Every level combination the pages offer, as the pages build the record and as the token
+        // it mints reaches the strategy - plus the shapes a hand-built custom record takes: one
+        // axis emptied out, a section that carries no tool at all, and the unrestricted api token
+        const cases = [];
+        for (const manage of Object.keys(MCP_SECTIONS.manage.levels)) {
+            for (const mail of Object.keys(MCP_SECTIONS.mail.levels)) {
+                const minted = mcpGrantsFor({ manage, mail });
+                cases.push({
+                    page: { surfaces: minted.scopes, grants: minted.permissions.grants.map(grant => `${grant.action}:${grant.group}`), unrestricted: false },
+                    token: { scopes: minted.scopes, permissions: minted.permissions }
+                });
+            }
+        }
+        for (const [scopes, permissions] of [
+            [['mcp', 'mcp-manage'], { actions: [ACTION.DESTRUCTIVE], groups: [GROUP.MESSAGE] }],
+            [['mcp'], { actions: [ACTION.READ], groups: [GROUP.SETTINGS] }],
+            [['mcp-manage'], { actions: [ACTION.READ], groups: [GROUP.WEBHOOK] }],
+            [['mcp-manage'], { actions: [], groups: [] }]
+        ]) {
+            cases.push({
+                page: { surfaces: scopes, actions: permissions.actions, groups: permissions.groups, unrestricted: false },
+                token: { scopes, permissions }
+            });
+        }
+        cases.push({ page: { actions: [], groups: [], unrestricted: true }, token: { scopes: ['api'] } });
 
-        for (const record of records) {
+        for (const { page, token } of cases) {
             for (const boundAccount of [null, 'acct-1']) {
                 assert.deepEqual(
-                    browserModel(record, boundAccount),
-                    enforced(record, boundAccount),
-                    `the browser tool count disagrees with tools/list for ${JSON.stringify(record)} (bound: ${boundAccount})`
+                    browserModel(page, boundAccount),
+                    enforced(token, boundAccount),
+                    `the browser tool count disagrees with tools/list for ${JSON.stringify(token)} (bound: ${boundAccount})`
                 );
             }
         }

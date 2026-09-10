@@ -155,7 +155,7 @@
           The record itself stays single: one `permissions` object narrows whatever surface the
           request arrives on. That is why this is one editor with two modes rather than a tab per
           scope - separate panes would promise two records that cannot exist. --}}
-    <div id="accessCard" class="hidden" data-surfaces="{{permissionSurfacesJson}}" data-mcp-presets="{{json mcpAccessPresets}}">
+    <div id="accessCard" class="hidden" data-surfaces="{{permissionSurfacesJson}}" data-mcp-sections="{{json mcpSections}}">
         {{#> ui/card bodyClass="space-y-4"}}
 
         <div>
@@ -163,19 +163,31 @@
             <p id="accessAppliesTo" class="text-base-content/60 text-sm"></p>
         </div>
 
-        {{!-- MCP-only mode. The three levels are the ones the OAuth consent prompt and the MCP config
-              page already offer, from the same table through the same partial, because the same
-              credential minted from three places must not mean three different things. A 52-cell
-              matrix is not how anyone provisions an agent, so it is the fourth option rather than
-              the only one - and unlike the API editor there is no "restrict?" toggle: read-only is
+        {{!-- MCP-only mode. One level per MCP scope, shown while that scope is ticked above: the
+              same sections and levels the OAuth consent prompt and the MCP config page offer, from
+              the same table through the same partial, because the same credential minted from
+              three places must not mean three different things. A 72-cell matrix is not how
+              anyone provisions an agent, so it is the opt-in behind the levels rather than the way
+              in - and unlike the API editor there is no "restrict?" toggle: the narrowest level is
               the default, because an agent credential that starts unrestricted is the wrong way
               round. --}}
         {{!-- Labelled by the card heading rather than carrying a legend of its own, which would
               repeat "Access level" directly under itself --}}
-        <fieldset id="mcpLevelBlock" class="hidden space-y-2" aria-labelledby="accessCardTitle">
-            {{> mcp_access_levels name="mcpAccess" idPrefix="mcpAccess_" selected="read"}}
-            {{> ui/radio id="mcpAccess_custom" name="mcpAccess" value="custom" label="Custom permissions"
-                hint="Choose the exact actions and sections yourself, starting from the level selected above."}}
+        <fieldset id="mcpLevelBlock" class="hidden space-y-4" aria-labelledby="accessCardTitle">
+            <div id="mcpManageBlock" class="space-y-2">
+                <div class="label-text font-medium">{{mcpSections.manage.label}}
+                    <span class="text-base-content/60 code-link font-normal">["mcp-manage"]</span></div>
+                {{> mcp_access_levels section=mcpSections.manage name="mcpManage" idPrefix="mcpManage" selected="observe"}}
+            </div>
+
+            <div id="mcpMailBlock" class="space-y-2">
+                <div class="label-text font-medium">{{mcpSections.mail.label}}
+                    <span class="text-base-content/60 code-link font-normal">["mcp"]</span></div>
+                {{> mcp_access_levels section=mcpSections.mail name="mcpMail" idPrefix="mcpMail" selected="read"}}
+            </div>
+
+            {{> ui/checkbox id="mcpCustom" label="Custom permissions" noName=true
+                hint="Choose the exact actions and sections yourself, starting from the levels selected above."}}
 
             {{!-- At the decision point, as on the MCP config page: the level chosen here is what
                   decides whether instructions hidden inside received mail can act --}}
@@ -352,23 +364,31 @@
             };
         }
 
-        let mcpAccessPresets = JSON.parse(accessCardElm.dataset.mcpPresets || '{}');
-        // What the MCP scopes can reach at all, which is also what the "Full access" level means:
-        // that level stores no record, so the surface grant lists are their own description. The
-        // union of both MCP surfaces, because a token may hold either or both.
-        let mcpCeiling = { actions: [], groups: [], grants: [] };
-        for (let scope of ['mcp-manage', 'mcp']) {
-            let need = surfaceRequirements[scope];
-            if (!need) {
-                continue;
-            }
-            mcpCeiling.actions = mcpCeiling.actions.concat(need.actions.filter(value => !mcpCeiling.actions.includes(value)));
-            mcpCeiling.groups = mcpCeiling.groups.concat(need.groups.filter(value => !mcpCeiling.groups.includes(value)));
-            mcpCeiling.grants = mcpCeiling.grants.concat(need.grants);
-        }
+        // The two MCP access sections and what each level mints, from the same table the consent
+        // prompt and the MCP config page mint from
+        let mcpSections = JSON.parse(accessCardElm.dataset.mcpSections || '{}');
+        let mcpCustomElm = document.getElementById('mcpCustom');
 
         let scopeElms = Array.from(document.querySelectorAll('.scope-entry'));
         let selectedScopes = () => scopeElms.filter(elm => elm.checked && !elm.disabled).map(elm => elm.dataset.scope);
+        let selectedMcpScopes = () => selectedScopes().filter(scope => ['mcp-manage', 'mcp'].includes(scope));
+
+        // What the ticked MCP scopes can reach at all: the union of their surface tables. Read per
+        // call because it follows the scopes - a token holding only the management scope has no
+        // business ticking Messages in the custom editor.
+        let mcpCeilingFor = scopes => {
+            let ceiling = { actions: [], groups: [], grants: [] };
+            for (let scope of scopes) {
+                let need = surfaceRequirements[scope];
+                if (!need) {
+                    continue;
+                }
+                ceiling.actions = ceiling.actions.concat(need.actions.filter(value => !ceiling.actions.includes(value)));
+                ceiling.groups = ceiling.groups.concat(need.groups.filter(value => !ceiling.groups.includes(value)));
+                ceiling.grants = ceiling.grants.concat(need.grants);
+            }
+            return ceiling;
+        };
 
         // Permissions are resolved per endpoint on the REST API and per tool call on the MCP
         // endpoint, so both of those scopes can carry a narrowing. The login-time scopes (SMTP,
@@ -391,9 +411,18 @@
         // permissions record covers both surfaces and the API side needs all thirteen sections.
         let mcpLevelMode = () => hasMcpScope() && !hasApiScope();
 
-        let selectedMcpLevel = () => {
-            let elm = document.querySelector('input[name="mcpAccess"]:checked');
-            return (elm && elm.value) || 'read';
+        // The level per section, with a section whose scope is not ticked declined outright - the
+        // scope checkbox is this form's way of switching a section off
+        let selectedMcpLevels = () => {
+            let scopes = selectedMcpScopes();
+            let pick = name => {
+                let elm = document.querySelector('input[name="' + name + '"]:checked');
+                return elm ? elm.value : null;
+            };
+            return {
+                manage: scopes.includes('mcp-manage') ? pick('mcpManage') || 'observe' : 'none',
+                mail: scopes.includes('mcp') ? pick('mcpMail') || 'read' : 'none'
+            };
         };
 
         // Sections the MCP surface can never reach are disabled while the level editor is showing,
@@ -424,29 +453,33 @@
         // an empty one: it means the scopes are the only bound.
         let effectiveRecord = () => {
             if (mcpLevelMode()) {
-                let level = selectedMcpLevel();
-                if (level !== 'custom') {
-                    let record = mcpAccessPresets[level];
-                    if (record) {
-                        return { actions: record.actions, groups: record.groups, unrestricted: false };
+                if (!mcpCustomElm.checked) {
+                    if (!mcpSections.manage || !mcpSections.mail) {
+                        // The table did not load. A missing table must not quietly mint a wider
+                        // credential than the levels on screen promise - the MCP config page's
+                        // generator refuses the same way, and the consent route defaults the same
+                        // direction.
+                        return { grants: [], surfaces: [], unrestricted: false, unknownLevel: true };
                     }
-                    // The full level is the one that legitimately stores no record. Any other level
-                    // missing from the table means the table did not load, and a missing preset must
-                    // not quietly mint a wider credential than the level on screen promises - the
-                    // MCP config page's generator refuses the same way, and the consent route
-                    // defaults the same direction.
-                    return {
-                        actions: mcpCeiling.actions,
-                        groups: mcpCeiling.groups,
-                        unrestricted: true,
-                        unknownLevel: !Object.prototype.hasOwnProperty.call(mcpAccessPresets, level)
-                    };
+                    // The pair list the selected levels mint, through the shared helper, so a level
+                    // mints here exactly what it mints on the consent prompt
+                    let levels = selectedMcpLevels();
+                    let record = uiMcpLevelRecord(mcpSections, levels);
+                    record.levels = levels;
+                    return record;
                 }
             } else if (!permissionsEnabledElm.checked) {
                 return { actions: allActions, groups: Object.keys(axisLabels.group), unrestricted: true };
             }
 
-            return { actions: tickedValues('.permission-action'), groups: tickedValues('.permission-group'), unrestricted: false };
+            return {
+                actions: tickedValues('.permission-action'),
+                groups: tickedValues('.permission-group'),
+                // The scope bound applies to a custom record too: the count must not promise a
+                // management tool to a token that only holds the mail scope
+                surfaces: mcpLevelMode() ? selectedMcpScopes() : undefined,
+                unrestricted: false
+            };
         };
 
         // Applies a permission record to the axes. Shared by the API presets and by the switch into
@@ -462,10 +495,11 @@
 
         let syncAxisAvailability = () => {
             let restrictToMcp = mcpLevelMode();
+            let ceiling = mcpCeilingFor(selectedMcpScopes());
 
             for (let elm of document.querySelectorAll('.permission-axis')) {
                 let axis = elm.classList.contains('permission-action') ? 'actions' : 'groups';
-                let reachable = !restrictToMcp || mcpCeiling[axis].includes(elm.dataset.value);
+                let reachable = !restrictToMcp || ceiling[axis].includes(elm.dataset.value);
 
                 // Disabled rather than unticked: flipping the scopes back has to restore the
                 // selection rather than quietly lose it, and a disabled box is skipped by every
@@ -507,6 +541,35 @@
             // stale count cannot survive a scope change.
             window.uiMcpToolCount(mcpToolCountElm, hasMcpScope() ? Object.assign({ account: accountElm.value }, record) : null);
 
+            let rest = document.createElement('div');
+            rest.className = 'text-base-content/60';
+            rest.textContent = 'It cannot reach anything else, create tokens or read stored credentials.';
+
+            if (record.grants) {
+                // A level per section, each read out in the words of the table it came from
+                if (!record.grants.length) {
+                    let line = document.createElement('div');
+                    line.className = 'text-warning';
+                    line.textContent = 'No access level is selected, so this token would not be able to do anything.';
+                    permissionOutcomeTextElm.append(line);
+                    return;
+                }
+                for (let key of Object.keys(mcpSections)) {
+                    let level = record.levels && record.levels[key];
+                    let option = level && mcpSections[key].options.find(entry => entry.value === level);
+                    if (!option) {
+                        continue;
+                    }
+                    let line = document.createElement('div');
+                    let label = document.createElement('strong');
+                    label.textContent = mcpSections[key].label + ' (' + option.label + '): ';
+                    line.append(label, document.createTextNode('can ' + option.actions + ' across ' + option.groups + '.'));
+                    permissionOutcomeTextElm.append(line);
+                }
+                permissionOutcomeTextElm.append(rest);
+                return;
+            }
+
             if (!record.unrestricted && (!record.actions.length || !record.groups.length)) {
                 let line = document.createElement('div');
                 line.className = 'text-warning';
@@ -532,9 +595,6 @@
                 permissionOutcomeTextElm.append(cannot);
             }
 
-            let rest = document.createElement('div');
-            rest.className = 'text-base-content/60';
-            rest.textContent = 'It cannot reach anything else, create tokens or read stored credentials.';
             permissionOutcomeTextElm.append(rest);
         };
 
@@ -553,15 +613,20 @@
                 scopes = Object.keys(surfaceRequirements);
             }
 
+            // Whether the record allows one (action, group) pair, in whichever form it is written
+            let covers = ([action, group]) =>
+                record.grants ? record.grants.includes(action + ':' + group) : record.actions.includes(action) && record.groups.includes(group);
+
             let blocked = scopes
                 .filter(scope => surfaceRequirements[scope])
                 .filter(scope => {
                     let need = surfaceRequirements[scope];
                     if (need.mode === 'any') {
                         // Per-request surface: usable while any one (action, group) pair survives
-                        return !need.grants.some(([action, group]) => record.actions.includes(action) && record.groups.includes(group));
+                        return !need.grants.some(covers);
                     }
-                    return !need.actions.every(value => record.actions.includes(value)) || !need.groups.every(value => record.groups.includes(value));
+                    // Login-time surface: every pair it exercises has to survive
+                    return !need.grants.every(covers);
                 })
                 .map(scope => surfaceRequirements[scope].label);
 
@@ -610,11 +675,17 @@
             apiLimitBlockElm.classList.toggle('hidden', levelMode);
             syncAxisAvailability();
 
-            // The matrix is the detail view behind either mode: the "Custom permissions" level on
+            // A section is shown while its scope is ticked: the scope checkbox is how this form
+            // declines a section, so an unticked scope must not leave a level on screen
+            let mcpScopes = selectedMcpScopes();
+            document.getElementById('mcpManageBlock').classList.toggle('hidden', !mcpScopes.includes('mcp-manage'));
+            document.getElementById('mcpMailBlock').classList.toggle('hidden', !mcpScopes.includes('mcp'));
+
+            // The matrix is the detail view behind either mode: the "Custom permissions" opt-in on
             // one side, the restriction toggle on the other. The API presets are shapes for the
             // REST API, so they stay out of the way in level mode, where the named levels above
             // are the presets.
-            permissionSectionElm.classList.toggle('hidden', levelMode ? selectedMcpLevel() !== 'custom' : !permissionsEnabledElm.checked);
+            permissionSectionElm.classList.toggle('hidden', levelMode ? !mcpCustomElm.checked : !permissionsEnabledElm.checked);
             permissionPresetRowElm.classList.toggle('hidden', levelMode);
         };
 
@@ -646,19 +717,29 @@
             syncAll();
         });
 
-        // The level the axes are seeded from when "Custom permissions" is picked, which is what its
-        // hint promises. Starts at the default selection rather than empty.
-        let lastNamedLevel = selectedMcpLevel();
-        for (let elm of document.querySelectorAll('input[name="mcpAccess"]')) {
-            elm.addEventListener('change', () => {
-                if (elm.value === 'custom') {
-                    let record = mcpAccessPresets[lastNamedLevel];
-                    applyRecord(record ? record.actions : mcpCeiling.actions, record ? record.groups : mcpCeiling.groups);
-                } else {
-                    lastNamedLevel = elm.value;
+        // Custom starts from the levels selected above, which is what its hint promises: the axes
+        // are seeded from the pairs those levels mint, which is the two-axis record closest to them
+        mcpCustomElm.addEventListener('change', () => {
+            if (mcpCustomElm.checked) {
+                let record = uiMcpLevelRecord(mcpSections, selectedMcpLevels());
+                let actions = [];
+                let groups = [];
+                for (let key of record.grants) {
+                    let [action, group] = key.split(':');
+                    if (!actions.includes(action)) {
+                        actions.push(action);
+                    }
+                    if (!groups.includes(group)) {
+                        groups.push(group);
+                    }
                 }
-                syncAll();
-            });
+                applyRecord(actions, groups);
+            }
+            syncAll();
+        });
+
+        for (let elm of document.querySelectorAll('input[name="mcpManage"], input[name="mcpMail"]')) {
+            elm.addEventListener('change', syncAll);
         }
 
         for (let elm of document.querySelectorAll('.permission-axis, .scope-entry')) {
@@ -717,12 +798,16 @@
             document.getElementById('showTokenError').classList.add('hidden');
             uiModal.open('#showToken');
 
-            // Omitting the field is what "not narrowed" means on the record, so an unchecked toggle -
-            // and the MCP "Full access" level, which the access table stores as null for exactly that
-            // reason - must not post an empty object. That is a different answer, and the API refuses
-            // it.
+            // Omitting the field is what "not narrowed" means on the record, so an unchecked toggle
+            // must not post an empty object. That is a different answer, and the API refuses it. An
+            // MCP token minted by level always carries its pair list explicitly, so what the operator
+            // saw is exactly what the credential holds.
             let record = effectiveRecord();
-            let permissions = record.unrestricted ? null : { actions: record.actions, groups: record.groups };
+            let permissions = record.unrestricted
+                ? null
+                : record.grants
+                  ? { grants: record.grants.map(key => ({ action: key.split(':')[0], group: key.split(':')[1] })) }
+                  : { actions: record.actions, groups: record.groups };
 
             let refuse = message => {
                 document.getElementById('showTokenLoader').classList.add('hidden');
@@ -743,7 +828,11 @@
             // Said here rather than left to the schema. tokenPermissionsSchema refuses an empty axis
             // too, but a joi rejection reaches this page as a bare "HTTP error! status: 400", which
             // tells the reader nothing about the box they left unticked.
-            if (permissions && (!permissions.actions.length || !permissions.groups.length)) {
+            if (permissions && permissions.grants && !permissions.grants.length) {
+                refuse('Select an access level for at least one MCP scope. A token that grants nothing cannot make any request.');
+                return;
+            }
+            if (permissions && permissions.actions && (!permissions.actions.length || !permissions.groups.length)) {
                 let missing = !permissions.actions.length ? 'action' : 'section';
                 refuse(`Select at least one ${missing}. A restriction that allows nothing would create a token that cannot make any request.`);
                 return;

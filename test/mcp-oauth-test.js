@@ -12,7 +12,7 @@ const registerRedisTeardown = require('./helpers/redis-teardown');
 const { pkcePair } = require('./helpers/pkce');
 const tokens = require('../lib/tokens');
 const tokenPermissions = require('../lib/token-permissions');
-const { MCP_READ_ONLY_PERMISSIONS } = require('../lib/token-permission-view');
+const { MCP_SECTIONS } = require('../lib/token-permission-view');
 const {
     registerClient,
     getClient,
@@ -211,7 +211,7 @@ test('MCP OAuth', async t => {
             codeChallenge: challenge,
             resource: `${ORIGIN}/mcp`,
             account: null,
-            permissions: MCP_READ_ONLY_PERMISSIONS,
+            permissions: { grants: MCP_SECTIONS.mail.levels.read },
             description: 'MCP: Narrowed'
         });
 
@@ -226,8 +226,7 @@ test('MCP OAuth', async t => {
         });
 
         const tokenData = await tokens.get(response.access_token, false);
-        assert.deepEqual(tokenData.permissions, MCP_READ_ONLY_PERMISSIONS);
-        assert.deepEqual(tokenData.permissions.actions, ['read']);
+        assert.deepEqual(tokenData.permissions, { grants: MCP_SECTIONS.mail.levels.read });
 
         // and the narrowing is the one the enforcement would apply: a send is refused
         assert.equal(tokenPermissions.check({ tokenData, operation: { action: 'send', group: 'submit' } }).allowed, false);

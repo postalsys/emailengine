@@ -1,13 +1,19 @@
 {{!--
-    The MCP access-level radio group, rendered identically by the OAuth consent prompt and the
-    admin token generator so the two cannot drift on what each level promises. The options come
-    from MCP_ACCESS_LEVEL_OPTIONS (lib/token-permission-view.js) through the accessOptions
-    context value.
+    The radio group of one MCP access section (instance management or email access), rendered
+    identically by the OAuth consent prompt, the MCP config page's generator and the token form
+    so the three cannot drift on what each level promises. The options come from MCP_SECTIONS
+    (lib/token-permission-view.js), which also carries the pair list each level mints.
     Params:
-      name     - input name shared by the radio group (required)
-      idPrefix - per-page prefix for the input ids (required)
-      selected - the selected value (required; pass "read" for the static default)
+      section     - the section object from MCP_SECTIONS (required)
+      name        - input name shared by the radio group (required)
+      idPrefix    - per-page prefix for the input ids; ids are <idPrefix>_<level> (required)
+      selected    - the selected level (required)
+      includeNone - true to offer the section's "decline" option last (the consent prompt and the
+                    generator; the token form declines a section by leaving its scope unticked)
 --}}
-{{#each accessOptions}}
-{{> ui/radio id=(concat ../idPrefix value) name=../name value=value label=label selected=../selected hint=hint}}
+{{#each section.options}}
+{{> ui/radio id=(concat ../idPrefix "_" value) name=../name value=value label=label selected=../selected hint=hint}}
 {{/each}}
+{{#if includeNone}}
+{{> ui/radio id=(concat idPrefix "_" section.noneOption.value) name=name value=section.noneOption.value label=section.noneOption.label selected=selected hint=section.noneOption.hint}}
+{{/if}}

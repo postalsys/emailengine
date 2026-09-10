@@ -395,7 +395,10 @@ test.describe('access token pages', () => {
         // No "restrict?" toggle in this mode: an agent credential starts read-only rather than
         // unrestricted, which is the wrong way round for something a model drives
         await expect(page.locator('#apiLimitBlock')).toBeHidden();
-        await expect(page.locator('#mcpAccess_read')).toBeChecked();
+        await expect(page.locator('#mcpMail_read')).toBeChecked();
+        // Only the mail scope is ticked, so only the mail section is offered
+        await expect(page.locator('#mcpMailBlock')).toBeVisible();
+        await expect(page.locator('#mcpManageBlock')).toBeHidden();
 
         // The matrix is the detail view behind the levels, not the way in
         await expect(page.locator('#permissionSection')).toBeHidden();
@@ -405,12 +408,40 @@ test.describe('access token pages', () => {
         const outcome = page.locator('#permissionOutcome');
         await expect(outcome).toBeVisible();
         await expect(outcome).toContainText('MCP tools available');
+        await expect(outcome).toContainText('Email access (Read-only)');
         const readOnlyCount = await outcome.textContent();
 
-        await page.locator('#mcpAccess_full').check();
-        // Full access mints no permissions record at all, so every tool survives
+        await page.locator('#mcpMail_full').check();
+        // Full access grants every pair of the mail surface, so every mail tool survives
         await expect(outcome).toContainText(/(\d+) of \1 MCP tools available/);
         expect(await outcome.textContent()).not.toBe(readOnlyCount);
+
+        expect(errors).toEqual([]);
+    });
+
+    test('a management token is provisioned by its own level, with the mail tools out of reach', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await page.goto(`${BASE_URL}/admin/tokens/new`);
+
+        await page.locator('#scopesAll').uncheck();
+        await page.locator('#scopesMcpManage').check();
+
+        await expect(page.locator('#mcpManageBlock')).toBeVisible();
+        await expect(page.locator('#mcpMailBlock')).toBeHidden();
+        await expect(page.locator('#mcpManage_observe')).toBeChecked();
+
+        const outcome = page.locator('#permissionOutcome');
+        await expect(outcome).toContainText('Instance management (Observe)');
+        await expect(outcome).toContainText('MCP tools available');
+        // The management surface is what is on offer; a mail tool is never counted for it
+        await expect(outcome).toContainText('get_instance_stats');
+        await expect(outcome).not.toContainText('list_messages');
+
+        // Ticking the mail scope too brings the mail section and its tools in
+        await page.locator('#scopesMcp').check();
+        await expect(page.locator('#mcpMailBlock')).toBeVisible();
+        await expect(outcome).toContainText('Email access (Read-only)');
+        await expect(outcome).toContainText('list_messages');
 
         expect(errors).toEqual([]);
     });
@@ -457,19 +488,22 @@ test.describe('access token pages', () => {
 
         await page.locator('#scopesAll').uncheck();
         await page.locator('#scopesMcp').check();
-        await page.locator('#mcpAccess_custom').check();
+        await page.locator('#mcpCustom').check();
 
         await expect(page.locator('#permissionSection')).toBeVisible();
         // The API presets are shapes for the REST API; the named levels above are this mode's presets
         await expect(page.locator('#permissionPresetRow')).toBeHidden();
         await expect(page.locator('#permissionMcpScopeNote')).toBeVisible();
 
-        // Six of the thirteen sections carry an MCP tool
+        // Six of the eighteen sections carry a mail tool; the management ones are out of reach for
+        // a token holding only the mail scope
         await expect(page.locator('#permissionGroup_message')).toBeVisible();
         await expect(page.locator('#permissionGroup_webhook')).toBeHidden();
         await expect(page.locator('#permissionGroup_gateway')).toBeHidden();
+        await expect(page.locator('#permissionGroup_settings')).toBeHidden();
         // A cluster whose every section is out of reach is a heading over nothing
         await expect(page.locator('[data-cluster="Monitoring"]')).toBeHidden();
+        await expect(page.locator('[data-cluster="Instance"]')).toBeHidden();
 
         // Custom starts from the level it was opened out of, which is what its hint promises
         await expect(page.locator('#permissionAction_read')).toBeChecked();
@@ -493,7 +527,7 @@ test.describe('access token pages', () => {
         await page.locator('#description').fill(description);
         await page.locator('#scopesAll').uncheck();
         await page.locator('#scopesMcp').check();
-        await page.locator('#mcpAccess_mail').check();
+        await page.locator('#mcpMail_mail').check();
 
         await page.getByRole('button', { name: 'Generate a token' }).click();
         await expect(page.locator('#showTokenValue')).toHaveValue(/^[0-9a-f]{64}$/, { timeout: 15000 });
@@ -503,11 +537,11 @@ test.describe('access token pages', () => {
         const row = page.locator('tr', { hasText: description });
         await expect(row).toBeVisible();
         await expect(row).toContainText('mcp');
-        // The mail agent level is the non-destructive subset of the MCP surface: it can send, and it
-        // cannot reach the delete tool. Asserted as the whole sentence rather than a fragment, since
-        // the sentence lists exactly the actions the record allows - "delete" being absent from it is
-        // the assertion (a `not.toContainText` would match the row's own Delete button instead).
-        await expect(row).toContainText('Can read, create and modify, send email in Accounts, Folders, Messages, Sending, Sending queue, Templates');
+        // The mail agent level is the non-destructive subset of the mail surface, minted as an
+        // explicit pair list: it can send, and it cannot reach the delete tool. The listing reads a
+        // pair list out section by section, so "delete" being absent from the Messages entry is the
+        // assertion (a `not.toContainText` would match the row's own Delete button instead).
+        await expect(row).toContainText('Messages: read and create and modify; Sending: send email');
     });
 
     test('unticking every box is refused rather than minting a token that can do nothing', async ({ page }) => {

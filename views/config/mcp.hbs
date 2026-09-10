@@ -1,9 +1,11 @@
 {{> ui/page-header title="MCP" icon="icon-[tabler--plug-connected]" badgeLabel="Beta" badgeVariant="info" class="mb-1"}}
 
 <p class="mb-6">
-    Let AI agents work with the connected email accounts over the Model Context Protocol. The MCP endpoint exposes a
-    curated tool set (list and search messages, read content, organize and delete messages, create drafts, send mail)
-    and accepts the same access tokens as the REST API.
+    Let AI agents manage this EmailEngine instance over the Model Context Protocol, and optionally work with the
+    connected mailboxes. The MCP endpoint exposes two tool sets behind two scopes: management (accounts, settings,
+    OAuth2 applications, gateways, tokens, the license, queues and logs) and mail (list and search messages, read
+    content, organize and delete messages, create drafts, send mail). It accepts the same access tokens as the REST
+    API.
 </p>
 
 <div class="mb-6 alert alert-soft alert-info">
@@ -46,8 +48,8 @@
         checked=values.mcpEnabled error=errors.mcpEnabled}}
         <span class="helper-text">Serves the Model Context Protocol at <code>/mcp</code>. The
             <button type="button" class="link cursor-pointer" data-goto-tab="mcp-connect">Connect an agent</button> tab
-            generates access tokens and ready-to-paste setup for clients; a token with the <code>mcp</code> scope works
-            only here and not against the REST API.</span>
+            generates access tokens and ready-to-paste setup for clients; a token with the <code>mcp-manage</code> or
+            <code>mcp</code> scope works only here and not against the REST API.</span>
     </div>
 
     {{!-- Nested rather than a peer: OAuth is a sub-option of an endpoint that is already on,
@@ -105,8 +107,9 @@
 
 {{#> ui/card bodyClass="space-y-4"}}
 
-<p class="text-sm">Generate an access token and ready-to-paste client configuration in one step. The token gets the
-    <code>mcp</code> scope, so it works against the MCP endpoint and nothing else.</p>
+<p class="text-sm">Generate an access token and ready-to-paste client configuration in one step. The token gets the MCP
+    scopes you choose below (<code>mcp-manage</code> for the instance, <code>mcp</code> for mail), so it works against
+    the MCP endpoint and nothing else.</p>
 
 {{#unless canProvision}}
 <div class="alert alert-soft alert-warning text-sm">
@@ -115,28 +118,38 @@
 </div>
 {{/unless}}
 
-<div id="mcpTokenGen" data-presets="{{json mcpAccessPresets}}" data-mcp-url="{{mcpUrl}}" class="space-y-4">
+<div id="mcpTokenGen" data-sections="{{json mcpSections}}" data-mcp-url="{{mcpUrl}}" class="space-y-4">
     {{!-- One column on purpose: two-up put the account field a full screen away from its
           label-mate on wide displays, and the form reads as one top-to-bottom flow --}}
     {{> ui/form-field id="mcpGenLabel" label="What is this token for?" placeholder="for example Cursor or Claude"
         hint="Shows up as the token description, so you can tell agents apart on the Access Tokens page."}}
 
-    {{> mcp_account_limit id="mcpGenAccount"}}
+    {{!-- Management first, mail behind a checkbox: the same two sections, in the same order and
+          from the same table, as the OAuth consent prompt --}}
+    <fieldset class="space-y-2">
+        <legend class="label-text mb-1">{{mcpSections.manage.label}}</legend>
+        {{> mcp_access_levels section=mcpSections.manage name="mcpGenManage" idPrefix="mcpGenManage" selected="observe" includeNone=true}}
+    </fieldset>
 
     <fieldset class="space-y-2">
-        <legend class="label-text mb-1">Access level</legend>
-        {{> mcp_access_levels name="mcpGenAccess" idPrefix="mcpGenAccess" selected="read"}}
-
-        {{!-- What the selected level actually leaves the client able to call, which the level
-              names alone cannot say: the count follows both the level and the account limit
-              above, exactly as tools/list will --}}
-        {{> mcp_tool_count id="mcpGenToolCount" levelName="mcpGenAccess" accountId="mcpGenAccount" class="pt-1"}}
+        <legend class="label-text mb-1">{{mcpSections.mail.label}}</legend>
+        {{> ui/checkbox id="mcpGenMailEnabled" label=mcpSections.mail.toggle.label noName=true hint=mcpSections.mail.toggle.hint}}
+        <div id="mcpGenMailEnabledLevels" class="ps-6 space-y-2 hidden">
+            {{> mcp_access_levels section=mcpSections.mail name="mcpGenMail" idPrefix="mcpGenMail" selected="read"}}
+        </div>
 
         {{!-- At the decision point rather than only in the collapsed manual-config block: the
               level chosen here is what decides whether injected instructions can act --}}
         <p class="text-base-content/60 text-sm">Email content flows into whatever model the connected client runs, and
             instructions inside received mail can steer it - grant sending and deleting rights deliberately.</p>
     </fieldset>
+
+    {{> mcp_account_limit id="mcpGenAccount"}}
+
+    {{!-- What the selected levels actually leave the client able to call, which the level names
+          alone cannot say: the count follows both sections and the account limit, exactly as
+          tools/list will --}}
+    {{> mcp_tool_count id="mcpGenToolCount" manageName="mcpGenManage" mailName="mcpGenMail" mailToggle="mcpGenMailEnabled" accountId="mcpGenAccount" class="pt-1"}}
 
     <div class="flex items-center gap-3">
         {{#if canProvision}}
@@ -166,8 +179,9 @@
     </div>
 
     <div class="text-sm text-base-content/60">
-        Every connected agent is an ordinary access token with the <code>mcp</code> scope - review or revoke them on
-        the <a href="/admin/tokens?scope=mcp-manage&amp;scope=mcp" class="link">Access Tokens</a> page.
+        Every connected agent is an ordinary access token with the <code>mcp-manage</code> or <code>mcp</code> scope -
+        review or revoke them on the <a href="/admin/tokens?scope=mcp-manage&amp;scope=mcp" class="link">Access
+            Tokens</a> page.
     </div>
 </div>
 
@@ -256,9 +270,9 @@
     <ol class="text-base-content/80 ms-4 mt-1 list-decimal space-y-1 text-sm">
         <li>When you connect, the client opens this instance's authorization prompt in the browser. Sign in with the
             admin credentials if asked.</li>
-        <li>On the prompt, pick the access level (read-only is the default) and optionally limit the connector to a
-            single account, then approve.</li>
-        <li>The connector receives its own access token with the <code>mcp</code> scope - review or revoke it at any
+        <li>On the prompt, pick what the connector may manage (observing the instance is the default), switch on mail
+            access if it should read mail, optionally limit it to a single account, then approve.</li>
+        <li>The connector receives its own access token with the MCP scopes you chose - review or revoke it at any
             time on the <a href="/admin/tokens?scope=mcp-manage&amp;scope=mcp" class="link">Access Tokens</a> page.</li>
     </ol>
 </div>
@@ -273,18 +287,35 @@
 
 {{!-- Outside the method panels: what a connected agent receives is the same either way --}}
 {{#> ui/details summary="Exposed tools" summarySmall=(concat toolCatalog.length " tools") class="card bg-base-100 shadow-md mb-6"}}
-<div>
-    <p class="text-sm text-base-content/60 mb-4">This is exactly what a connected agent receives from
-        <code>tools/list</code>. Whether a given token can call a tool also depends on its account binding and
-        permission restrictions.</p>
-    <div class="space-y-3">
-        {{#each toolCatalog}}
-        <div class="flex flex-wrap items-baseline gap-2">
-            <code>{{name}}</code>
-            {{> ui/badge label=badge.label variant=badge.variant soft=true}}
-            <span class="text-sm text-base-content/60 basis-full sm:basis-auto sm:grow">{{description}}</span>
+<div class="space-y-6">
+    <p class="text-sm text-base-content/60">This is exactly what a connected agent receives from
+        <code>tools/list</code>: the management tools for a token with the <code>mcp-manage</code> scope, the mail
+        tools for one with the <code>mcp</code> scope. Whether a given token can call a tool also depends on its access
+        level and account binding.</p>
+    <div>
+        <h6 class="mb-2 font-bold">Instance management <span class="text-base-content/60 font-normal">({{toolCatalog.manage.length}} tools, <code>mcp-manage</code>)</span></h6>
+        <div class="space-y-3">
+            {{#each toolCatalog.manage}}
+            <div class="flex flex-wrap items-baseline gap-2">
+                <code>{{name}}</code>
+                {{> ui/badge label=badge.label variant=badge.variant soft=true}}
+                {{#if shared}}{{> ui/badge label="also mail" variant="neutral" soft=true}}{{/if}}
+                <span class="text-sm text-base-content/60 basis-full sm:basis-auto sm:grow">{{description}}</span>
+            </div>
+            {{/each}}
         </div>
-        {{/each}}
+    </div>
+    <div>
+        <h6 class="mb-2 font-bold">Mail <span class="text-base-content/60 font-normal">({{toolCatalog.mail.length}} tools, <code>mcp</code>)</span></h6>
+        <div class="space-y-3">
+            {{#each toolCatalog.mail}}
+            <div class="flex flex-wrap items-baseline gap-2">
+                <code>{{name}}</code>
+                {{> ui/badge label=badge.label variant=badge.variant soft=true}}
+                <span class="text-sm text-base-content/60 basis-full sm:basis-auto sm:grow">{{description}}</span>
+            </div>
+            {{/each}}
+        </div>
     </div>
 </div>
 {{/ui/details}}
@@ -294,7 +325,7 @@
 <script data-cfasync="false" nonce="{{cspNonce}}">
     (() => {
         let container = document.getElementById('mcpTokenGen');
-        let presets = JSON.parse(container.dataset.presets || '{}');
+        let sections = JSON.parse(container.dataset.sections || '{}');
         let mcpUrl = container.dataset.mcpUrl;
 
         // The one place each artifact is written; the manual block shows them with a
@@ -323,25 +354,38 @@
 
             let label = (document.getElementById('mcpGenLabel').value || '').trim() || 'MCP agent';
             let account = (document.getElementById('mcpGenAccount').value || '').trim();
-            let accessElm = document.querySelector('input[name="mcpGenAccess"]:checked');
-            let access = (accessElm && accessElm.value) || 'read';
+            let manageElm = document.querySelector('input[name="mcpGenManage"]:checked');
+            let mailElm = document.querySelector('input[name="mcpGenMail"]:checked');
+            let choice = {
+                manage: (manageElm && manageElm.value) || 'none',
+                mail: document.getElementById('mcpGenMailEnabled').checked ? (mailElm && mailElm.value) || 'none' : 'none'
+            };
 
             try {
-                if (!Object.prototype.hasOwnProperty.call(presets, access)) {
-                    // A missing preset must not silently mint a wider credential than the
-                    // selected level promises
-                    throw new Error('The access preset failed to load. Reload the page and try again.');
+                if (!sections.manage || !sections.mail) {
+                    // A missing table must not silently mint a wider credential than the
+                    // selected levels promise
+                    throw new Error('The access levels failed to load. Reload the page and try again.');
+                }
+
+                // The same union the consent prompt mints, computed by the shared helper: the
+                // scopes of the sections that were not declined and the grant pairs of their
+                // levels. A token always carries its grants explicitly, so what the operator saw
+                // is exactly what the credential holds.
+                let record = uiMcpLevelRecord(sections, choice);
+                if (!record.surfaces.length) {
+                    throw new Error('Choose at least one kind of access.');
                 }
 
                 let data = await uiPostJson('/admin/tokens/new', {
                     description: 'MCP: ' + label,
-                    scopes: ['mcp'],
+                    scopes: record.surfaces,
                     // The empty string, not null: accountIdSchema is `Joi.string().empty('')`,
                     // which converts '' to the schema default and refuses an explicit null
                     account: account,
-                    // The access-level table maps 'full' to null: the absence of a permissions
-                    // record, because the mcp scope already bounds the token to the MCP surface
-                    permissions: presets[access]
+                    permissions: {
+                        grants: record.grants.map(key => ({ action: key.split(':')[0], group: key.split(':')[1] }))
+                    }
                 });
 
                 if (!data.success) {

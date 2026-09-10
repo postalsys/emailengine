@@ -9,16 +9,9 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert').strict;
 
-const {
-    formModel,
-    summarize,
-    ACTION_LABELS,
-    GROUP_LABELS,
-    MCP_READ_ONLY_PERMISSIONS,
-    MCP_MAIL_AGENT_PERMISSIONS,
-    MCP_ACCESS_LEVELS
-} = require('../lib/token-permission-view');
+const { formModel, summarize, ACTION_LABELS, GROUP_LABELS, MCP_SECTIONS, mcpGrantsFor } = require('../lib/token-permission-view');
 const { ACTION, GRANTABLE_GROUPS, GROUP, SURFACE_GRANTS } = require('../lib/api-routes/permission-map');
+const tokenPermissions = require('../lib/token-permissions');
 
 describe('token permission view', () => {
     describe('formModel', () => {
@@ -85,33 +78,103 @@ describe('token permission view', () => {
         });
     });
 
-    describe('MCP access levels', () => {
-        const mcpGrants = SURFACE_GRANTS.mcp;
+    describe('MCP access sections', () => {
+        const key = grant => `${grant.action}:${grant.group}`;
 
-        it('offers exactly the three levels the consent page and generator present', () => {
-            assert.deepEqual(Object.keys(MCP_ACCESS_LEVELS).sort(), ['full', 'mail', 'read']);
-            assert.equal(MCP_ACCESS_LEVELS.read, MCP_READ_ONLY_PERMISSIONS);
-            assert.equal(MCP_ACCESS_LEVELS.mail, MCP_MAIL_AGENT_PERMISSIONS);
-            assert.equal(MCP_ACCESS_LEVELS.full, null, 'full access is the absence of a permissions record');
+        it('offers the two sections, management first, each bound to its scope', () => {
+            assert.deepEqual(Object.keys(MCP_SECTIONS), ['manage', 'mail']);
+            assert.equal(MCP_SECTIONS.manage.scope, 'mcp-manage');
+            assert.equal(MCP_SECTIONS.mail.scope, 'mcp');
+            // The defaults the pages start from: observe the instance, no mail
+            assert.equal(MCP_SECTIONS.manage.defaultLevel, 'observe');
+            assert.ok(MCP_SECTIONS.mail.toggle, 'the mail section is behind a toggle');
         });
 
-        it('keeps the read-only level to the surface read grants and nothing else', () => {
-            // [...] copies before sorting: .sort() in place would reorder the exported record
-            // itself, which other suites deepEqual against minted token records
-            assert.deepEqual(MCP_READ_ONLY_PERMISSIONS.actions, [ACTION.READ]);
-            assert.deepEqual(
-                [...MCP_READ_ONLY_PERMISSIONS.groups].sort(),
-                [...new Set(mcpGrants.filter(grant => grant.action === ACTION.READ).map(grant => grant.group))].sort()
+        it('derives every level from the surface table of its scope, and nothing else', () => {
+            // A grant added to a surface must reach the level it belongs to without anyone
+            // copying it here, and a level must never name a pair its scope does not admit
+            for (const section of Object.values(MCP_SECTIONS)) {
+                const table = new Set(SURFACE_GRANTS[section.scope].map(key));
+                assert.deepEqual(section.levels.none, []);
+                for (const [level, pairs] of Object.entries(section.levels)) {
+                    for (const grant of pairs) {
+                        assert.ok(table.has(key(grant)), `${section.scope} level ${level} names ${key(grant)}, which the surface does not admit`);
+                    }
+                }
+                // and the widest level is the whole table
+                const widest = section.levels[Object.keys(section.levels).at(-1)];
+                assert.deepEqual(widest.map(key).sort(), [...table].sort());
+            }
+
+            const reads = pairs => pairs.every(grant => grant.action === ACTION.READ);
+            assert.ok(reads(MCP_SECTIONS.manage.levels.observe) && MCP_SECTIONS.manage.levels.observe.length);
+            assert.ok(reads(MCP_SECTIONS.mail.levels.read) && MCP_SECTIONS.mail.levels.read.length);
+            assert.ok(!MCP_SECTIONS.manage.levels.operate.some(grant => grant.action === ACTION.DESTRUCTIVE));
+            assert.ok(!MCP_SECTIONS.mail.levels.mail.some(grant => grant.action === ACTION.DESTRUCTIVE));
+            assert.ok(
+                MCP_SECTIONS.mail.levels.mail.some(grant => grant.action === ACTION.SEND),
+                'the mail agent level sends'
             );
         });
 
-        it('gives the mail-agent level everything but the destructive action', () => {
-            // Derived from the same table the enforcement reads: a destructive grant added to
-            // the surface must never leak into this level, and a new non-destructive action
-            // must appear in it without anyone remembering to copy it here
-            const nonDestructive = mcpGrants.filter(grant => grant.action !== ACTION.DESTRUCTIVE);
-            assert.deepEqual([...MCP_MAIL_AGENT_PERMISSIONS.actions].sort(), [...new Set(nonDestructive.map(grant => grant.action))].sort());
-            assert.deepEqual([...MCP_MAIL_AGENT_PERMISSIONS.groups].sort(), [...new Set(nonDestructive.map(grant => grant.group))].sort());
+        it('offers every level with wording and the pair keys the pages count against', () => {
+            for (const section of Object.values(MCP_SECTIONS)) {
+                const offered = section.options.map(option => option.value);
+                assert.deepEqual(
+                    offered.sort(),
+                    Object.keys(section.levels)
+                        .filter(level => level !== 'none')
+                        .sort(),
+                    `${section.scope} offers levels its table does not have, or hides some`
+                );
+                for (const option of section.options) {
+                    assert.ok(option.label && option.hint && option.caveat, `${option.value} lacks wording`);
+                    assert.ok(option.actions && option.groups, `${option.value} lacks grant wording`);
+                    assert.deepEqual(option.grants, section.levels[option.value].map(key));
+                }
+            }
+            assert.equal(MCP_SECTIONS.manage.noneOption.value, 'none');
+        });
+    });
+
+    describe('mcpGrantsFor', () => {
+        it('mints the scopes of the sections not declined, management first, and the union of their pairs', () => {
+            const both = mcpGrantsFor({ manage: 'operate', mail: 'read' });
+            assert.deepEqual(both.scopes, ['mcp-manage', 'mcp']);
+
+            const keys = both.permissions.grants.map(grant => `${grant.action}:${grant.group}`);
+            assert.ok(keys.includes(`write:${GROUP.SETTINGS}`));
+            assert.ok(keys.includes(`read:${GROUP.MESSAGE}`));
+            // the point of the pair form: the management write does not leak onto the messages
+            assert.ok(!keys.includes(`write:${GROUP.MESSAGE}`));
+            // and a pair both sections grant appears once
+            assert.equal(keys.filter(entry => entry === `read:${GROUP.ACCOUNT}`).length, 1);
+
+            // what check() makes of the minted record agrees
+            const tokenData = { permissions: both.permissions };
+            assert.ok(tokenPermissions.check({ tokenData, operation: { action: ACTION.WRITE, group: GROUP.SETTINGS } }).allowed);
+            assert.ok(tokenPermissions.check({ tokenData, operation: { action: ACTION.READ, group: GROUP.MESSAGE } }).allowed);
+            assert.ok(!tokenPermissions.check({ tokenData, operation: { action: ACTION.WRITE, group: GROUP.MESSAGE } }).allowed);
+        });
+
+        it('mints one scope for one section, and no scope when everything is declined', () => {
+            assert.deepEqual(mcpGrantsFor({ manage: 'none', mail: 'full' }).scopes, ['mcp']);
+            assert.deepEqual(mcpGrantsFor({ manage: 'observe' }).scopes, ['mcp-manage']);
+            assert.deepEqual(mcpGrantsFor({ manage: 'none', mail: 'none' }), { scopes: [], permissions: { grants: [] } });
+            assert.deepEqual(mcpGrantsFor({}).scopes, []);
+        });
+
+        it('always mints an explicit pair list, even for the widest choice', () => {
+            // A consent given for the tools of today must not grow to include a tool shipped next
+            // release, which is what an absent record would do
+            const widest = mcpGrantsFor({ manage: 'administer', mail: 'full' });
+            assert.ok(Array.isArray(widest.permissions.grants) && widest.permissions.grants.length);
+            assert.ok(tokenPermissions.inspect({ permissions: widest.permissions }).narrowed);
+        });
+
+        it('refuses a level the table does not have rather than guessing', () => {
+            assert.throws(() => mcpGrantsFor({ manage: 'root' }), /Unknown manage access level/);
+            assert.throws(() => mcpGrantsFor({ mail: 'everything' }), /Unknown mail access level/);
         });
     });
 
