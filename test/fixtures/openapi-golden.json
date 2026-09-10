@@ -11560,9 +11560,42 @@
           "$ref": "#/components/schemas/TokenGroup"
         }
       },
+      "TokenGrant": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/TokenAction"
+          },
+          "group": {
+            "$ref": "#/components/schemas/TokenGroup"
+          }
+        },
+        "required": [
+          "action",
+          "group"
+        ]
+      },
+      "TokenGrants": {
+        "type": "array",
+        "description": "Exact (action, group) pairs this token may perform, for a narrowing the two axes cannot express, such as reading one section while changing another. Stands alone: a record that sets `grants` may not set `actions` or `groups`",
+        "example": [
+          {
+            "action": "read",
+            "group": "message"
+          },
+          {
+            "action": "write",
+            "group": "template"
+          }
+        ],
+        "minItems": 1,
+        "items": {
+          "$ref": "#/components/schemas/TokenGrant"
+        }
+      },
       "TokenPermissions": {
         "type": "object",
-        "description": "Restricts a token below its scope. Each axis is an allowlist that only narrows, and both apply together, so an operation must match the actions AND the groups. Endpoints that hand out credentials or change instance configuration can never be reached by a token that sets this field, whatever it lists",
+        "description": "Restricts a token below its scope. Written either as two axes, `actions` and `groups`, which are allowlists that apply together so an operation must match both, or as `grants`, a list of exact (action, group) pairs. Endpoints that hand out credentials can never be reached by a token that sets this field, whatever it lists",
         "example": {
           "actions": [
             "read"
@@ -11580,6 +11613,9 @@
           },
           "groups": {
             "$ref": "#/components/schemas/TokenGroups"
+          },
+          "grants": {
+            "$ref": "#/components/schemas/TokenGrants"
           }
         }
       },

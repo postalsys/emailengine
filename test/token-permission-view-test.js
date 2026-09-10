@@ -186,5 +186,44 @@ describe('token permission view', () => {
             assert.equal(summary.unreadable, false);
             assert.equal(summary.groups, 'admin');
         });
+
+        it('describes a pair list section by section', () => {
+            // The shape the form exists for has no two-axis sentence, so each section says what it
+            // allows, in declaration order rather than in the order the record happened to list
+            const summary = summarize({
+                grants: [
+                    { action: ACTION.WRITE, group: GROUP.TEMPLATE },
+                    { action: ACTION.READ, group: GROUP.MESSAGE },
+                    { action: ACTION.READ, group: GROUP.TEMPLATE }
+                ]
+            });
+            assert.equal(summary.unreadable, false);
+            assert.equal(summary.sentence, `${GROUP_LABELS.message}: read; ${GROUP_LABELS.template}: read and create and modify`);
+            assert.equal(summary.actions, `${ACTION_LABELS.read}, ${ACTION_LABELS.write}`);
+            assert.equal(summary.groups, `${GROUP_LABELS.message}, ${GROUP_LABELS.template}`);
+        });
+
+        it('reads a pair list that is a full cross product the way it reads the two axes', () => {
+            // The same record in another spelling should not get a longer sentence
+            const grants = [];
+            for (const action of [ACTION.READ, ACTION.WRITE]) {
+                for (const group of [GROUP.MESSAGE, GROUP.MAILBOX]) {
+                    grants.push({ action, group });
+                }
+            }
+            // Groups in declaration order, which is what the pair form always renders in
+            assert.equal(summarize({ grants }).sentence, summarize({ actions: [ACTION.READ, ACTION.WRITE], groups: [GROUP.MAILBOX, GROUP.MESSAGE] }).sentence);
+            assert.equal(summarize({ grants: [{ action: ACTION.READ, group: GROUP.MESSAGE }] }).sentence, 'Can read in Messages');
+        });
+
+        it('says an empty pair list allows nothing', () => {
+            assert.match(summarize({ grants: [] }).sentence, /cannot make any request/);
+        });
+
+        it('flags an unreadable pair list like any other unreadable record', () => {
+            for (const permissions of [{ grants: 'read' }, { grants: [{ action: 'read' }] }, { grants: [], actions: ['read'] }]) {
+                assert.equal(summarize(permissions).unreadable, true, `${JSON.stringify(permissions)} was not flagged`);
+            }
+        });
     });
 });
