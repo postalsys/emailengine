@@ -23,7 +23,7 @@ const assert = require('node:assert').strict;
 const tokens = require('../../lib/tokens');
 const { redis } = require('../../lib/db');
 const { createAuthorizationCode } = require('../../lib/mcp/oauth');
-const { MCP_READ_ONLY_PERMISSIONS } = require('../../lib/token-permission-view');
+const { mcpGrantsFor } = require('../../lib/token-permission-view');
 const registerRedisTeardown = require('../helpers/redis-teardown');
 const { pkcePair } = require('../helpers/pkce');
 const { extractCrumbFromHtml } = require('./helpers');
@@ -411,11 +411,18 @@ test('MCP endpoint', async t => {
 
             const consent = await browser.get(`/admin/mcp/authorize?${params.toString()}`);
             assert.equal(consent.status, 200);
-            // the three access levels, with read-only pre-selected as the default
-            for (const level of ['read', 'mail', 'full']) {
-                assert.match(consent.text, new RegExp(`name="access" value="${level}"`), `the consent form offers the ${level} level`);
+            // one radio group per access section: instance management, where observe-only is
+            // pre-selected, and mail access, declined until the person or a scope hint asks
+            for (const [section, levels] of [
+                ['manage', ['none', 'observe', 'operate', 'administer']],
+                ['mail', ['none', 'read', 'mail', 'full']]
+            ]) {
+                for (const level of levels) {
+                    assert.match(consent.text, new RegExp(`name="${section}" value="${level}"`), `the consent form offers the ${section} ${level} level`);
+                }
             }
-            assert.match(consent.text, /value="read"\s+checked/, 'read-only must be the pre-selected level');
+            assert.match(consent.text, /name="manage" value="observe"\s+checked/, 'observe-only management must be the pre-selected level');
+            assert.match(consent.text, /name="mail" value="none"\s+checked/, 'mail access must start declined');
 
             const crumb = extractCrumbFromHtml(consent.text);
             assert.ok(crumb, 'the consent form carries a crumb');
@@ -451,13 +458,15 @@ test('MCP endpoint', async t => {
             // half (render, session gate, Deny/Approve) is covered by test/mcp-consent-test.js;
             // what this tier adds is the half that needs the live server - the HTTP token
             // endpoint and the minted credential hitting the real /mcp door.
+            // Read-only mail with no management, the narrowest thing the consent page can approve
+            // that still reaches a mailbox
             const code = await createAuthorizationCode({
                 clientId: registration.body.client_id,
                 redirectUri: REDIRECT_URI,
                 codeChallenge: challenge,
                 resource: `${baseUrl}/mcp`,
                 account: null,
-                permissions: MCP_READ_ONLY_PERMISSIONS,
+                ...mcpGrantsFor({ manage: 'none', mail: 'read' }),
                 description: 'MCP: Redeem flow client'
             });
 
@@ -492,17 +501,22 @@ test('MCP endpoint', async t => {
                 for (const hidden of ['send_message', 'delete_message', 'update_message', 'move_message', 'create_draft']) {
                     assert.ok(!names.includes(hidden), `${hidden} must be hidden from a read-only credential`);
                 }
+                // and nothing from the management surface, which this token holds no scope for
+                for (const hidden of ['get_settings', 'list_tokens', 'update_account']) {
+                    assert.ok(!names.includes(hidden), `${hidden} must be hidden from a mail-only credential`);
+                }
 
                 // the read-only narrowing the consent page defaults to reaches the wire: send
                 // and destructive tools are refused by the token's own permission record
                 for (const [name, toolArgs] of [
                     ['send_message', { account: 'redeem-flow-account' }],
-                    ['delete_message', { account: 'redeem-flow-account', message: 'AAAAAQAACnA' }]
+                    ['delete_message', { account: 'redeem-flow-account', message: 'AAAAAQAACnA' }],
+                    ['get_settings', {}]
                 ]) {
                     const refused = await modernRpc('tools/call', { name, arguments: toolArgs }, { token: oauthToken });
                     assert.equal(refused.status, 200, name);
                     assert.equal(refused.body.result.isError, true, name);
-                    assert.match(refused.body.result.content[0].text, /permission/i, name);
+                    assert.match(refused.body.result.content[0].text, /permission|scope|not found|unknown/i, name);
                 }
 
                 // and the credential stays surface-bound: plain REST refuses it
