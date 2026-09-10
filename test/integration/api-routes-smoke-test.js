@@ -198,14 +198,36 @@ test('narrowed access tokens', async t => {
 
     await t.test('no narrowed token reaches the admin group, whatever it asks for', async () => {
         // The safety property. A record cannot even name `admin` - the schema refuses it - so this
-        // asks for everything that IS nameable and still has to be refused.
+        // asks for everything that IS nameable and still has to be refused what hands out or reads
+        // back a lasting credential: minting a token, and an account's live provider token.
         const agent = await narrowed({ actions: ['read', 'write', 'send', 'destructive'] }, 'smoke: all actions');
 
+        const mint = await agent.post('/v1/tokens').send({ account: 'main-account', description: 'smoke: minted by a narrowed token', scopes: ['api'] });
+        assert.equal(mint.status, 403, 'POST /v1/tokens must be refused: a token that can mint tokens can widen itself');
+        assert.equal(mint.body.requiredPermission.group, 'admin');
+
+        const providerToken = await agent.get('/v1/account/main-account/oauth-token');
+        assert.equal(providerToken.status, 403, 'the live provider token is a credential in its own right');
+        assert.equal(providerToken.body.requiredPermission.group, 'admin');
+    });
+
+    await t.test('the management routes are grantable, but the privileged settings stay out of reach', async () => {
+        // The settings, token and OAuth2 application routes left the admin group so an agent can
+        // manage the instance; what keeps a settings grant from being more than a settings editor
+        // is the per-key rule, on reads and writes alike
+        const agent = await narrowed({ actions: ['read', 'write', 'send', 'destructive'] }, 'smoke: all actions, management');
+
         for (const path of ['/v1/settings?webhooks=true', '/v1/tokens', '/v1/oauth2']) {
-            const denied = await agent.get(path);
-            assert.equal(denied.status, 403, `GET ${path} must be refused: it is in the never-grantable admin group`);
-            assert.equal(denied.body.requiredPermission.group, 'admin');
+            assert.equal((await agent.get(path)).status, 200, `GET ${path} is grantable now`);
         }
+
+        const read = await agent.get('/v1/settings?scriptEnv=true');
+        assert.equal(read.status, 403, 'scriptEnv is where operators keep the API keys their scripts use');
+        assert.match(read.body.message, /scriptEnv/);
+
+        const write = await agent.post('/v1/settings').send({ smtpServerAuthEnabled: false });
+        assert.equal(write.status, 403, 'switching SMTP authentication off would turn a settings grant into sending as any account');
+        assert.match(write.body.message, /smtpServerAuthEnabled/);
     });
 
     await t.test('a narrowed token can not redirect a submission through a proxy it names', async () => {
