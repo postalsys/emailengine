@@ -11557,7 +11557,7 @@
       },
       "TokenGroups": {
         "type": "array",
-        "description": "Which parts of the API this token may reach. Omit to allow all of them",
+        "description": "Which parts of the API this token may reach. Omitted, the token reaches every section except the instance sections (`settings`, `oauth2`, `license`, `token`, `provisioning`), which have to be named",
         "example": [
           "message",
           "mailbox"

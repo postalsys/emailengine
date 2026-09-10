@@ -185,11 +185,21 @@ describe('token permission view', () => {
             assert.equal(summary.unreadable, false);
         });
 
-        it('leaves an absent axis out rather than calling it empty', () => {
+        it('leaves an absent actions axis out rather than calling it empty', () => {
             // Absent means "not narrowed on this axis", which is the opposite of an empty allowlist
             const summary = summarize({ groups: ['message'] });
             assert.equal(summary.actions, null);
             assert.equal(summary.groups, GROUP_LABELS.message);
+        });
+
+        it('reads an absent groups axis the way the enforcement does, by what it leaves out', () => {
+            // An absent groups axis reaches the pre-split sections and not the instance ones, so
+            // the listing must not say "every section" - and must not enumerate thirteen labels
+            // either. The cluster it leaves out is the token form's own heading for those sections.
+            const summary = summarize({ actions: ['read'] });
+            assert.equal(summary.groups, 'every section except Instance');
+            assert.equal(summary.sentence, 'Can read in every section except Instance');
+            assert.equal(summarize({ actions: [...Object.values(ACTION)] }).sentence, 'Full access in every section except Instance');
         });
 
         it('says plainly that an empty allowlist allows nothing', () => {
@@ -214,9 +224,8 @@ describe('token permission view', () => {
 
         it('reads as a sentence rather than as two labelled fields', () => {
             assert.equal(summarize({ actions: ['read'], groups: ['message', 'mailbox'] }).sentence, 'Can read in Messages, Folders');
-            // An absent axis is not a restriction, so it is left out entirely - "all sections" would
-            // imply a grant the record does not make
-            assert.equal(summarize({ actions: ['read'] }).sentence, 'Can read only');
+            // An absent actions axis is not a restriction, so it is left out entirely - "every
+            // action" would imply a grant the record does not make
             assert.equal(summarize({ groups: ['message'] }).sentence, 'Limited to Messages');
         });
 

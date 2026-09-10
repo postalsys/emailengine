@@ -214,8 +214,12 @@ test('narrowed access tokens', async t => {
     await t.test('the management routes are grantable, but the privileged settings stay out of reach', async () => {
         // The settings, token and OAuth2 application routes left the admin group so an agent can
         // manage the instance; what keeps a settings grant from being more than a settings editor
-        // is the per-key rule, on reads and writes alike
-        const agent = await narrowed({ actions: ['read', 'write', 'send', 'destructive'] }, 'smoke: all actions, management');
+        // is the per-key rule, on reads and writes alike. The groups are named because they have
+        // to be - an absent groups axis stops short of them, see the next test.
+        const agent = await narrowed(
+            { actions: ['read', 'write', 'send', 'destructive'], groups: ['settings', 'token', 'oauth2'] },
+            'smoke: all actions, management'
+        );
 
         for (const path of ['/v1/settings?webhooks=true', '/v1/tokens', '/v1/oauth2']) {
             assert.equal((await agent.get(path)).status, 200, `GET ${path} is grantable now`);
@@ -228,6 +232,37 @@ test('narrowed access tokens', async t => {
         const write = await agent.post('/v1/settings').send({ smtpServerAuthEnabled: false });
         assert.equal(write.status, 403, 'switching SMTP authentication off would turn a settings grant into sending as any account');
         assert.match(write.body.message, /smtpServerAuthEnabled/);
+    });
+
+    await t.test('a record that names no groups does not reach the sections the split created', async () => {
+        // Minted exactly as a 2.79 integration would have minted it, when the API said "omit to
+        // allow all of them" and the five management sections did not exist; it must not have
+        // gained them on upgrade (the reasoning is with IMPLICIT_GROUPS in permission-map.js)
+        const agent = await narrowed({ actions: ['read', 'write'] }, 'smoke: actions only, no groups axis');
+
+        assert.equal((await agent.get('/v1/stats')).status, 200, 'the pre-split sections are still reached');
+        assert.equal((await agent.get('/v1/blocklists')).status, 200);
+
+        for (const [method, path, group] of [
+            ['get', '/v1/settings?webhooks=true', 'settings'],
+            ['post', '/v1/settings', 'settings'],
+            ['get', '/v1/tokens', 'token'],
+            ['get', '/v1/oauth2', 'oauth2'],
+            ['get', '/v1/license', 'license'],
+            ['put', '/v1/account/main-account', 'provisioning'],
+            ['post', '/v1/verifyAccount', 'provisioning']
+        ]) {
+            // An empty body on the writes: the strategy refuses before payload validation runs,
+            // which is what the 403 (rather than a 400) shows
+            const req = agent[method](path);
+            const res = await (method === 'get' ? req : req.send({}));
+            assert.equal(res.status, 403, `${method.toUpperCase()} ${path} must be refused to a record that never named ${group}, got ${res.status}`);
+            assert.equal(res.body.requiredPermission.group, group);
+        }
+
+        // Naming the section is what grants it, on the same route
+        const named = await narrowed({ actions: ['read'], groups: ['settings'] }, 'smoke: settings named');
+        assert.equal((await named.get('/v1/settings?webhooks=true')).status, 200);
     });
 
     await t.test('a narrowed token can not redirect a submission through a proxy it names', async () => {

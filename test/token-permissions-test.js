@@ -9,7 +9,11 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert').strict;
 
 const { check, effectiveGrants, REASON } = require('../lib/token-permissions');
-const { ACTION, GROUP, GRANTABLE_GROUPS } = require('../lib/api-routes/permission-map');
+const { ACTION, GROUP, GRANTABLE_GROUPS, IMPLICIT_GROUPS } = require('../lib/api-routes/permission-map');
+
+// The sections the admin split made grantable. A record has to name these; an absent groups axis
+// does not reach them.
+const SPLIT_GROUPS = [GROUP.SETTINGS, GROUP.OAUTH2, GROUP.LICENSE, GROUP.TOKEN, GROUP.PROVISIONING];
 
 // A read of a message, which is the operation most of these narrow around
 const READ_MESSAGE = { action: ACTION.READ, group: GROUP.MESSAGE };
@@ -97,6 +101,66 @@ describe('token permissions', () => {
             // these groups".
             const permissions = { actions: [ACTION.READ], groups: [GROUP.MESSAGE, GROUP.TEMPLATE] };
             assert.ok(!allow(permissions, { action: ACTION.WRITE, group: GROUP.TEMPLATE }).allowed);
+        });
+    });
+
+    describe('an absent groups axis', () => {
+        // Reaches the sections that existed when the two-axis form shipped and not the ones the
+        // admin split added, so a record minted before the split keeps exactly the reach it had
+        // (the reasoning is with IMPLICIT_GROUPS in lib/api-routes/permission-map.js)
+
+        it('stands for exactly the sections that existed before the admin split', () => {
+            // Pinned by name, not derived: a section added to the vocabulary joins GRANTABLE_GROUPS
+            // and must not join this list, or every actions-only record widens again
+            assert.deepEqual(IMPLICIT_GROUPS, [
+                'account',
+                'mailbox',
+                'message',
+                'submit',
+                'outbox',
+                'export',
+                'template',
+                'blocklist',
+                'webhook',
+                'gateway',
+                'events',
+                'diagnostics',
+                'logs'
+            ]);
+            assert.ok(Object.isFrozen(IMPLICIT_GROUPS));
+            assert.deepEqual(
+                GRANTABLE_GROUPS.filter(group => !IMPLICIT_GROUPS.includes(group)).sort(),
+                [...SPLIT_GROUPS].sort(),
+                'a grantable group is neither implicit nor one of the split groups - decide which, and pin it'
+            );
+        });
+
+        it('reaches every pre-split section, so a record from before the split keeps what it had', () => {
+            const permissions = { actions: [ACTION.READ, ACTION.WRITE] };
+            for (const group of IMPLICIT_GROUPS) {
+                assert.ok(allow(permissions, { action: ACTION.READ, group }).allowed, `read on ${group} was denied`);
+                assert.ok(allow(permissions, { action: ACTION.WRITE, group }).allowed, `write on ${group} was denied`);
+            }
+        });
+
+        it('does not reach the sections the split created, whatever actions the record holds', () => {
+            const permissions = { actions: Object.values(ACTION) };
+            for (const group of SPLIT_GROUPS) {
+                for (const action of Object.values(ACTION)) {
+                    const denied = allow(permissions, { action, group });
+                    assert.ok(!denied.allowed, `${action} on ${group} was allowed`);
+                    assert.equal(denied.reason, REASON.GROUP, 'every action is held, so the group is what refuses it');
+                }
+            }
+        });
+
+        it('is the only way a record leaves them out - naming a split section grants it', () => {
+            assert.ok(allow({ actions: [ACTION.WRITE], groups: [GROUP.SETTINGS] }, { action: ACTION.WRITE, group: GROUP.SETTINGS }).allowed);
+            assert.ok(allow({ groups: [GROUP.PROVISIONING] }, { action: ACTION.WRITE, group: GROUP.PROVISIONING }).allowed);
+            assert.ok(
+                allow({ grants: [{ action: ACTION.READ, group: GROUP.TOKEN }] }, { action: ACTION.READ, group: GROUP.TOKEN }).allowed,
+                'the pair form names its sections by construction'
+            );
         });
     });
 
@@ -375,9 +439,13 @@ describe('effectiveGrants', () => {
         assert.deepEqual(pairs.sort(), [`read:${GROUP.MAILBOX}`, `read:${GROUP.MESSAGE}`, `write:${GROUP.MAILBOX}`, `write:${GROUP.MESSAGE}`]);
     });
 
-    it('reads an absent axis as every value of that axis, admin excepted', () => {
+    it('reads an absent actions axis as every action, and an absent groups axis as the pre-split sections', () => {
         const actionsOnly = effectiveGrants({ actions: [ACTION.READ] });
-        assert.equal(actionsOnly.length, GRANTABLE_GROUPS.length);
+        assert.deepEqual(
+            actionsOnly.map(grant => grant.group),
+            IMPLICIT_GROUPS,
+            'an absent groups axis must expand to IMPLICIT_GROUPS, not to the live grantable list'
+        );
         assert.ok(actionsOnly.every(grant => grant.action === ACTION.READ));
         assert.ok(!actionsOnly.some(grant => grant.group === GROUP.ADMIN));
 
@@ -390,6 +458,8 @@ describe('effectiveGrants', () => {
             { actions: [ACTION.READ, ACTION.SEND], groups: [GROUP.MESSAGE, GROUP.SUBMIT] },
             { groups: [GROUP.TEMPLATE] },
             { actions: [ACTION.DESTRUCTIVE] },
+            { actions: [ACTION.READ, ACTION.WRITE] },
+            { groups: [GROUP.SETTINGS, GROUP.MESSAGE] },
             {
                 grants: [
                     { action: ACTION.READ, group: GROUP.MESSAGE },
