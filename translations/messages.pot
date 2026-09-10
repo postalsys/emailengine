@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-09-09 01:28+0000\n"
+"POT-Creation-Date: 2026-09-10 07:45+0000\n"
 
 #: views/error.hbs:6
-#: workers/api.js:3119
+#: workers/api.js:3130
 msgid "Something went wrong"
 msgstr ""
 
@@ -26,6 +26,16 @@ msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
+
+#: views/config/tls.hbs:418
+msgid "%d certificate"
+msgid_plural "%d certificates"
+msgstr[0] ""
+msgstr[1] ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
 
 #: views/oauth-scope-error.hbs:5
 msgid "Insufficient Permissions"
@@ -102,8 +112,42 @@ msgid ""
 "received."
 msgstr ""
 
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+#: views/accounts/register/imap.hbs:13
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:19
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:35
+msgid "This setup link is restricted to this email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:43
+#: views/accounts/register/imap-server.hbs:47
+#: views/accounts/register/imap-server.hbs:154
+msgid "Password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:49
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:55
+msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/index.hbs:6
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:19
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:23
@@ -119,12 +163,6 @@ msgstr ""
 #: views/accounts/register/imap-server.hbs:33
 #: views/accounts/register/imap-server.hbs:140
 msgid "Username"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:47
-#: views/accounts/register/imap-server.hbs:154
-#: views/accounts/register/imap.hbs:43
-msgid "Password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:59
@@ -231,38 +269,6 @@ msgstr ""
 msgid "Request failed."
 msgstr ""
 
-#: views/accounts/register/imap.hbs:13
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:19
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:35
-msgid "This setup link is restricted to this email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:49
-msgid "Enter your account password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:55
-msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/index.hbs:6
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:19
-msgid "Standard IMAP"
-msgstr ""
-
 #: views/account-identity-error.hbs:7
 msgid "Wrong Email Account"
 msgstr ""
@@ -287,7 +293,7 @@ msgid ""
 "contact the service that sent you this link."
 msgstr ""
 
-#: lib/autodetect-imap-settings.js:134
+#: lib/autodetect-imap-settings.js:151
 msgid ""
 "Microsoft has disabled password-based sign-ins (including app passwords) "
 "for Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To "
@@ -295,19 +301,19 @@ msgid ""
 "connect your account."
 msgstr ""
 
-#: lib/tools.js:1534
+#: lib/tools.js:1526
 #: lib/ui-routes/unsubscribe-routes.js:31
 #: lib/ui-routes/unsubscribe-routes.js:99
 msgid "Invalid input"
 msgstr ""
 
-#: lib/tools.js:2399
+#: lib/tools.js:2391
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:2422
-#: lib/tools.js:2428
-#: lib/tools.js:2433
+#: lib/tools.js:2414
+#: lib/tools.js:2420
+#: lib/tools.js:2425
 #: lib/ui-routes/account-routes.js:1157
 msgid "Invalid or expired account setup URL"
 msgstr ""
@@ -319,8 +325,8 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:883
 #: lib/ui-routes/account-routes.js:1270
 #: lib/ui-routes/route-helpers.js:403
-#: workers/api.js:2291
-#: workers/api.js:2361
+#: workers/api.js:2302
+#: workers/api.js:2372
 msgid "Email Account Setup"
 msgstr ""
 
@@ -445,37 +451,37 @@ msgstr ""
 msgid "Couldn't process request. Try again."
 msgstr ""
 
-#: workers/api.js:2220
+#: workers/api.js:2231
 msgid ""
 "The sign-in was cancelled or the requested access was not granted. Open the "
 "account setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2229
+#: workers/api.js:2240
 msgid "Sign-in with the email provider failed: %s"
 msgstr ""
 
-#: workers/api.js:2233
+#: workers/api.js:2244
 msgid "Sign-in with the email provider failed: no authorization code was received"
 msgstr ""
 
-#: workers/api.js:2239
+#: workers/api.js:2250
 msgid "Sign-in with the email provider failed: the request state is not valid"
 msgstr ""
 
-#: workers/api.js:2245
+#: workers/api.js:2256
 msgid ""
 "The account setup session has expired or was already used. Open the account "
 "setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2252
+#: workers/api.js:2263
 msgid ""
 "Sign-in with the email provider failed: the stored setup session is not "
 "valid"
 msgstr ""
 
-#: workers/api.js:3118
-#: workers/api.js:3233
+#: workers/api.js:3129
+#: workers/api.js:3244
 msgid "Requested page not found"
 msgstr ""
