@@ -20,6 +20,7 @@ const settings = require('../lib/settings');
 const { redis } = require('../lib/db');
 const { REDIS_PREFIX } = require('../lib/consts');
 const { createSelfSignedCertificate } = require('../lib/tls/self-signed');
+const { fakeCerts, setEnvMaterial, clearTlsEnv, resetTlsSettings } = require('./helpers/tls-fixtures');
 
 const logger = { info() {}, warn() {}, error() {}, debug() {}, trace() {} };
 
@@ -240,9 +241,8 @@ test('buildCertificateStatus()', async t => {
         if (keys.length) {
             await redis.del(keys);
         }
-        await settings.set('serviceUrl', 'https://mail.example.com');
-        await settings.set('tlsHostnames', null);
-        await settings.set('tlsProvisioning', null);
+        clearTlsEnv();
+        await resetTlsSettings();
     });
 
     await t.test('describes every configured hostname', async () => {
@@ -301,11 +301,9 @@ test('buildCertificateStatus()', async t => {
         assert.equal(quiet.certificates[0].certificate.source, 'self-signed');
         assert.equal(quiet.certificates[0].label.type, 'neutral');
 
-        // The same instance with the SMTP server presenting that certificate to clients
-        const serving = await status.buildCertificateStatus({
-            certs,
-            reported: [{ source: 'self-signed', validTo: new Date(Date.now() + 60 * DAY).toISOString() }]
-        });
+        // The same instance with the SMTP server presenting that certificate to clients, which the
+        // page learns from the listener reports and hands over as one flag
+        const serving = await status.buildCertificateStatus({ certs, served: Promise.resolve(true) });
         assert.equal(serving.served, true);
         assert.equal(serving.certificates[0].label.type, 'warning');
         assert.equal(serving.certificates[0].wanted, true, "and asking Let's Encrypt is the thing to do");
@@ -349,7 +347,9 @@ test('buildCertificateStatus()', async t => {
 
         assert.equal(model.certificates[0].certificate.source, 'manual');
         assert.equal(model.certificates[0].certificate.fingerprint, manual.fingerprint);
-        assert.equal(model.manual.fingerprint, manual.fingerprint);
+        assert.equal(model.certificates[0].certificate.label, 'Uploaded certificate');
+        assert.equal(model.manual, true);
+        assert.equal(model.catalog.find(entry => entry.id === 'manual').certificate.fingerprint, manual.fingerprint);
     });
 
     await t.test('reports the self-signed fallback as the certificate for the names it covers', async () => {
@@ -432,80 +432,178 @@ test('buildCertificateStatus()', async t => {
         assert.equal(model.certificates[0].reason.variant, 'warning');
     });
 
-    await t.test('a hostname served from the environment is not reported as missing', async () => {
-        // Material from EENGINE_*_TLS_CERT is per listener and per process, so nothing this model
-        // reads knows about it. An instance configured only that way had every hostname painted
-        // red as "Missing" while every listener was serving it perfectly well.
-        const certs = {
-            async getCertificate() {
-                return false;
-            }
-        };
+    await t.test('lists every certificate the instance holds, with the listeners presenting it', async () => {
+        await settings.set('tlsHostnames', ['smtp.example.com']);
+        const mail = await createSelfSignedCertificate({ hostnames: ['mail.example.com'] });
+        const manual = await createSelfSignedCertificate({ hostnames: ['other.example.com'] });
+        await store.setManualCertificate({ cert: manual.cert, privateKey: manual.privateKey });
 
-        const model = await status.buildCertificateStatus({
-            certs,
-            // A promise, the way the page hands it over: its listener reads and these reads overlap
-            reported: Promise.resolve([
-                null,
-                {
-                    source: 'env',
-                    subject: 'CN=mail.example.com',
-                    issuer: 'CN=Example CA',
-                    fingerprint: 'AA:BB',
-                    // Which configured names the listener resolved to that material. Only the
-                    // listener knows, which is the whole reason it reports them.
-                    envHostnames: ['mail.example.com'],
-                    validFrom: new Date(Date.now() - DAY).toISOString(),
-                    validTo: new Date(Date.now() + 60 * DAY).toISOString()
-                }
-            ])
-        });
+        const certs = fakeCerts({ 'mail.example.com': mail });
 
-        assert.equal(model.certificates[0].certificate.source, 'env');
-        assert.equal(model.certificates[0].certificate.sourceLabel, 'Environment');
-        assert.equal(model.certificates[0].label.text, 'From environment');
-        assert.equal(typeof model.certificates[0].certificate.validToIso, 'string', 'the dates survive the trip through Redis as strings');
+        const model = await status.buildCertificateStatus({ certs });
 
-        // And reading a listener's report still mints nothing.
+        assert.deepEqual(
+            model.catalog.map(entry => entry.id),
+            ['manual', 'acme:mail.example.com', 'self-signed']
+        );
+        assert.equal(model.catalog[0].label, 'Uploaded certificate');
+        assert.equal(model.catalog[0].certificate.privateKey, undefined, 'the page never carries a key');
+        assert.deepEqual(model.catalog[0].usedBy, [], 'nothing presents a certificate for another name by default');
+
+        // Every listener decides automatically, and the answer is the primary name's certificate
+        assert.deepEqual(
+            model.catalog[1].usedBy.map(entry => [entry.key, entry.label]),
+            [
+                ['api', 'Admin UI and API (automatic)'],
+                ['smtp', 'SMTP server (automatic)'],
+                ['imapProxy', 'IMAP proxy (automatic)']
+            ]
+        );
+
+        // The fallback is listed before it exists, as a choice, and reading the list mints nothing
+        assert.equal(model.catalog[2].certificate, false);
         assert.equal(await redis.hget(store.TLS_KEY, store.SELF_SIGNED_FIELD), null);
+
+        // Each listener: its default, and a dropdown whose automatic entry says what it amounts to
+        assert.deepEqual(
+            model.listeners.map(listener => listener.key),
+            ['api', 'smtp', 'imapProxy']
+        );
+        const smtp = model.listeners[1];
+        assert.equal(smtp.settingKey, 'smtpServerTLSCertificate');
+        assert.equal(smtp.defaultId, 'acme:mail.example.com');
+        assert.equal(smtp.selection, 'auto');
+        assert.equal(smtp.missingLabel, null);
+        assert.deepEqual(
+            smtp.options.map(option => [option.id, option.selected]),
+            [
+                ['auto', true],
+                ['manual', false],
+                ['acme:mail.example.com', false],
+                ['self-signed', false]
+            ]
+        );
+        assert.equal(smtp.options[0].label, "Automatic: Let's Encrypt for mail.example.com");
+        assert.equal(smtp.options[3].covers, 'generated on first use');
+
+        // No listener answers a name with anything but the row's certificate
+        assert.ok(model.certificates.every(row => row.servedBy.length === 0));
     });
 
-    await t.test('a listener report only answers for the names it says it serves', async () => {
-        await settings.set('tlsHostnames', ['smtp.example.com', 'deep.sub.example.com']);
+    await t.test("environment material is listed as a certificate and is its listener's automatic default", async () => {
+        // Material from EENGINE_SMTP_TLS_CERT used to be invisible to this model: per listener,
+        // per process, described only through what the listener reported. It is read from the
+        // shared environment now and listed like everything else.
+        await settings.set('tlsHostnames', ['smtp.example.com']);
+        const env = await createSelfSignedCertificate({ hostnames: ['smtp.example.com'] });
+        const mail = await createSelfSignedCertificate({ hostnames: ['mail.example.com'] });
+        const smtp = await createSelfSignedCertificate({ hostnames: ['smtp.example.com'] });
+        setEnvMaterial('smtp', env);
 
-        const certs = {
-            async getCertificate() {
-                return false;
-            }
-        };
+        const certs = fakeCerts({ 'mail.example.com': mail, 'smtp.example.com': smtp });
 
-        const model = await status.buildCertificateStatus({
-            certs,
-            reported: [
-                {
-                    source: 'env',
-                    // The listener resolved this material for two of the three configured names.
-                    // What the certificate covers is not the question: it is the listener that
-                    // decided, name by name, and a name it did not resolve to it is served
-                    // something else.
-                    envHostnames: ['mail.example.com', 'smtp.example.com'],
-                    altNames: ['*.example.com'],
-                    validTo: new Date(Date.now() + 60 * DAY).toISOString()
-                },
-                // Everything but env material is stored, so it is resolved rather than believed
-                {
-                    source: 'acme',
-                    envHostnames: ['deep.sub.example.com'],
-                    altNames: ['deep.sub.example.com'],
-                    validTo: new Date(Date.now() + 60 * DAY).toISOString()
-                }
-            ]
-        });
+        const model = await status.buildCertificateStatus({ certs, served: true });
 
-        assert.equal(model.certificates[0].label.text, 'From environment');
-        assert.equal(model.certificates[1].label.text, 'From environment');
-        assert.equal(model.certificates[2].certificate, false, 'a name the listener did not resolve to it, however the wildcard reads');
-        assert.equal(model.certificates[2].label.text, 'Not requested');
+        assert.equal(model.catalog[0].id, 'env:smtp');
+        assert.equal(model.catalog[0].label, 'Environment (SMTP server)');
+        assert.equal(model.catalog[0].certificate.sourceLabel, 'Environment');
+        assert.equal(model.catalog[0].status.text, 'From environment');
+        assert.deepEqual(
+            model.catalog[0].usedBy.map(entry => entry.key),
+            ['smtp']
+        );
+
+        // The SMTP server presents it by default; the other listeners are not told anything by it
+        assert.equal(model.listeners[1].defaultId, 'env:smtp');
+        assert.equal(model.listeners[1].selection, 'auto');
+        assert.equal(model.listeners[0].defaultId, 'acme:mail.example.com');
+        assert.equal(model.listeners[2].defaultId, 'acme:mail.example.com');
+
+        // The row for smtp.example.com keeps the issued certificate as what the stored sources
+        // resolve to, and says the SMTP server presents its own material for the name instead -
+        // once the SMTP server is on and serving TLS, which is when a client can tell
+        const row = model.certificates[1];
+        assert.equal(row.certificate.source, 'acme');
+        assert.deepEqual(row.servedBy, [], 'nothing is switched on, so nothing presents anything');
+
+        await settings.set('smtpServerEnabled', true);
+        await settings.set('smtpServerTLSEnabled', true);
+        const serving = await status.buildCertificateStatus({ certs, served: true });
+        assert.deepEqual(
+            serving.certificates[1].servedBy.map(entry => [entry.key, entry.label]),
+            [['smtp', 'Environment (SMTP server)']]
+        );
+        assert.deepEqual(serving.certificates[0].servedBy, [], 'the primary name is answered the same way everywhere');
+    });
+
+    await t.test('a listener set to a certificate presents it, and the dropdown says so', async () => {
+        const mail = await createSelfSignedCertificate({ hostnames: ['mail.example.com'] });
+        const manual = await createSelfSignedCertificate({ hostnames: ['*.example.com'] });
+        await store.setManualCertificate({ cert: manual.cert, privateKey: manual.privateKey });
+        await settings.set('imapProxyServerTLSCertificate', 'manual');
+
+        const certs = fakeCerts({ 'mail.example.com': mail });
+
+        const model = await status.buildCertificateStatus({ certs });
+
+        const imapProxy = model.listeners[2];
+        assert.equal(imapProxy.defaultId, 'manual');
+        assert.equal(imapProxy.selection, 'selected');
+        assert.equal(imapProxy.options.find(option => option.id === 'manual').selected, true);
+        assert.equal(imapProxy.options[0].selected, false);
+        // The wildcard covers the primary name and outranks the issued certificate for it, so it
+        // is also what the other two listeners decide on automatically; the chip says which is which
+        assert.deepEqual(
+            model.catalog.find(entry => entry.id === 'manual').usedBy.map(entry => entry.label),
+            ['Admin UI and API (automatic)', 'SMTP server (automatic)', 'IMAP proxy']
+        );
+
+        // In Let's Encrypt mode the uploaded wildcard outranks the issued certificate for the
+        // name, so on the row the two agree; the choice shows on the listener, not as a difference
+        assert.equal(model.certificates[0].certificate.source, 'manual');
+        assert.deepEqual(model.certificates[0].servedBy, []);
+    });
+
+    await t.test('a chosen certificate that no longer exists is reported, and the dropdown reads automatic', async () => {
+        const mail = await createSelfSignedCertificate({ hostnames: ['mail.example.com'] });
+        await settings.set('smtpServerTLSCertificate', 'acme:gone.example.com');
+
+        const certs = fakeCerts({ 'mail.example.com': mail });
+
+        const model = await status.buildCertificateStatus({ certs });
+
+        const smtp = model.listeners[1];
+        assert.equal(smtp.selection, 'missing');
+        assert.equal(smtp.requested, 'acme:gone.example.com');
+        assert.equal(smtp.missingLabel, "Let's Encrypt for gone.example.com", 'named for the warning, not shown as a bare id');
+        assert.equal(smtp.defaultId, 'acme:mail.example.com');
+        // So saving the page as it stands writes the automatic choice the listener fell back to
+        assert.equal(smtp.options[0].selected, true);
+    });
+
+    await t.test("a chosen default covering a name shows on that name's row", async () => {
+        // The uploaded certificate is for another name and is chosen for the SMTP server. It
+        // does not cover mail.example.com, so that row keeps its certificate on every listener;
+        // a wildcard chosen the same way would be what the SMTP server presents for the name.
+        await settings.set('tlsHostnames', ['smtp.example.com']);
+        const mail = await createSelfSignedCertificate({ hostnames: ['mail.example.com'] });
+        const smtp = await createSelfSignedCertificate({ hostnames: ['smtp.example.com'] });
+        const manual = await createSelfSignedCertificate({ hostnames: ['smtp.example.com', 'other.example.com'] });
+        await store.setManualCertificate({ cert: manual.cert, privateKey: manual.privateKey });
+        await settings.set('tlsProvisioning', 'acme');
+        await settings.set('smtpServerTLSCertificate', 'acme:mail.example.com');
+
+        const certs = fakeCerts({ 'mail.example.com': mail, 'smtp.example.com': smtp });
+
+        const model = await status.buildCertificateStatus({ certs });
+
+        // smtp.example.com resolves to the upload (it outranks the issued one), on every listener:
+        // the chosen default does not cover the name, so it changes nothing there
+        assert.equal(model.certificates[1].certificate.source, 'manual');
+        assert.deepEqual(model.certificates[1].servedBy, []);
+        // mail.example.com is the chosen default's own name, which the row already resolves to
+        assert.equal(model.certificates[0].certificate.source, 'acme');
+        assert.deepEqual(model.certificates[0].servedBy, []);
     });
 
     await t.test('names the certificate authority it is pointed at', async () => {

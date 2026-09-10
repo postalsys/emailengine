@@ -252,7 +252,7 @@ async function init() {
         // The material loaded above is snapshotted inside, at entry. The resolved material is
         // written back into serverOptions below, so a later refresh reading this object again would
         // believe the operator had supplied whatever it resolved through the environment.
-        tlsContext = await createTlsContext({ certs, logger, listenerOptions: serverOptions });
+        tlsContext = await createTlsContext({ certs, logger, listener: 'smtp', listenerOptions: serverOptions });
         Object.assign(serverOptions, tlsContext.options);
 
         // Reached only when there is no material at all, which now means the self-signed fallback

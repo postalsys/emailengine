@@ -4,9 +4,9 @@
 //
 // This page replaces a checkbox on two other pages that ordered a Let's Encrypt certificate in the
 // foreground when it was ticked. The behaviors worth driving through a browser are the ones that
-// were impossible before it existed: seeing what each listener serves, adding a hostname and
-// getting a row for it, uploading a certificate, and asking why an order would fail without waiting
-// minutes for an opaque ACME error.
+// were impossible before it existed: seeing what each listener serves, telling a listener which
+// certificate to present, adding a hostname and getting a row for it, uploading a certificate,
+// and asking why an order would fail without waiting minutes for an opaque ACME error.
 //
 // Sorted after happy-path.spec.js by the pages- prefix, because the specs share one instance and
 // run alphabetically.
@@ -79,6 +79,12 @@ test.describe('TLS certificates', () => {
         await expect(page.locator('[data-listener="smtp"]')).toContainText(/TLS is off|server is disabled/);
         await expect(page.locator('[data-listener="smtp"] a[href="/admin/config/smtp"]')).toBeVisible();
         await expect(page.locator('[data-listener="imapProxy"] a[href="/admin/config/imap-proxy"]')).toBeVisible();
+
+        // Each listener chooses the certificate it presents by default, automatic unless told
+        for (const key of ['api', 'smtp', 'imapProxy']) {
+            await expect(page.locator(`#tlsDefault-${key}`)).toHaveValue('auto');
+            await expect(page.locator(`#tlsDefault-${key} option[value="auto"]`)).toHaveText(/^Automatic: /);
+        }
 
         // The Service URL's own name is a row that cannot be removed
         const serviceRow = page.locator('[data-hostname-row]').first();
@@ -190,7 +196,7 @@ test.describe('TLS certificates', () => {
         const material = await generatePair(['upload.example.com']);
 
         await page.goto('/admin/config/tls');
-        await page.locator('#tls-stored a[href="/admin/config/tls/upload"]').click();
+        await page.locator('#tls-upload-link').click();
         await page.waitForURL(/\/admin\/config\/tls\/upload$/);
         await expect(page.locator('h1', { hasText: 'Upload a certificate' })).toBeVisible();
 
@@ -200,7 +206,11 @@ test.describe('TLS certificates', () => {
         await page.waitForURL(/\/admin\/config\/tls$/);
 
         await expect(page.locator('.alert', { hasText: 'upload.example.com' }).first()).toBeVisible();
-        await expect(page.locator('#tls-stored')).toContainText('upload.example.com');
+        // A row of its own in the certificates table, like every other certificate the instance holds
+        const uploaded = page.locator('[data-certificate-row="manual"]');
+        await expect(uploaded).toContainText('Uploaded certificate');
+        await expect(uploaded).toContainText('upload.example.com');
+        await expect(page.locator('#tls-upload-link')).toHaveText(/Replace/);
 
         // Opening the upload page again says what would be replaced
         await page.goto('/admin/config/tls/upload');
@@ -208,13 +218,15 @@ test.describe('TLS certificates', () => {
         await expect(page.locator('button[type="submit"]', { hasText: 'Replace certificate' })).toBeVisible();
 
         await page.goto('/admin/config/tls');
+        await openRowMenu(page, page.locator('[data-certificate-row="manual"]'));
         await page.locator('#tls-remove-uploaded').click();
         const modal = page.locator('#removeUploaded');
         await expect(modal).toBeVisible();
         await modal.locator('button[type="submit"]').click();
         await page.waitForURL(/\/admin\/config\/tls$/);
         await expect(page.locator('.alert', { hasText: 'Removed the uploaded certificate' }).first()).toBeVisible();
-        await expect(page.locator('#tls-stored')).toContainText('None uploaded yet');
+        await expect(page.locator('[data-certificate-row="manual"]')).toHaveCount(0);
+        await expect(page.locator('#tls-upload-link')).toHaveText(/Upload a certificate/);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
@@ -238,7 +250,7 @@ test.describe('TLS certificates', () => {
         await expect(page.locator('.alert', { hasText: 'does not belong to this certificate' }).first()).toBeVisible();
 
         await page.goto('/admin/config/tls');
-        await expect(page.locator('#tls-stored')).toContainText('None uploaded yet');
+        await expect(page.locator('[data-certificate-row="manual"]')).toHaveCount(0);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
@@ -251,7 +263,10 @@ test.describe('TLS certificates', () => {
 
         // Nothing has generated one on a fresh instance, and looking at the page must not either:
         // rendering it used to be able to start an ACME order. Generating it is an explicit,
-        // confirmed action.
+        // confirmed action, from the fallback's own row in the certificates table.
+        const selfSigned = page.locator('[data-certificate-row="self-signed"]');
+        await expect(selfSigned).toContainText('generated on first use');
+        await openRowMenu(page, selfSigned);
         await page.locator('#tls-regenerate-self-signed').click();
         const modal = page.locator('#regenerateSelfSigned');
         await expect(modal).toBeVisible();
@@ -272,6 +287,38 @@ test.describe('TLS certificates', () => {
         await expect(details).toContainText('SHA-256 fingerprint');
         await expect(details).toContainText('Self-signed');
         await page.keyboard.press('Escape');
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('a listener can be told which certificate to present', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/config/tls');
+
+        // The fallback is a choice before it has been generated, and choosing it is what makes
+        // the SMTP server present it to a client that names no host. The chip on the fallback's
+        // row is how the page says so, without a qualifier: this one was chosen, not decided.
+        await page.selectOption('#tlsDefault-smtp', 'self-signed');
+        await page.locator('#tls-listeners-save').click();
+        await page.waitForURL(/\/admin\/config\/tls$/);
+        await expect(page.locator('.alert', { hasText: 'Updated which certificate each listener presents' }).first()).toBeVisible();
+        await expect(page.locator('#tlsDefault-smtp')).toHaveValue('self-signed');
+        await expect(page.locator('[data-certificate-row="self-signed"] [data-used-by="smtp"]')).toHaveText('SMTP server');
+
+        // Saving the same thing again changes nothing and says so
+        await page.locator('#tls-listeners-save').click();
+        await page.waitForURL(/\/admin\/config\/tls$/);
+        await expect(page.locator('.alert', { hasText: 'No changes to save' }).first()).toBeVisible();
+
+        // Back to automatic, which on this instance amounts to the same certificate, now
+        // decided rather than chosen
+        await page.selectOption('#tlsDefault-smtp', 'auto');
+        await page.locator('#tls-listeners-save').click();
+        await page.waitForURL(/\/admin\/config\/tls$/);
+        await expect(page.locator('#tlsDefault-smtp')).toHaveValue('auto');
+        await expect(page.locator('[data-certificate-row="self-signed"] [data-used-by="smtp"]')).toHaveText('SMTP server (automatic)');
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });

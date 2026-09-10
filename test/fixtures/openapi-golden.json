@@ -9682,6 +9682,30 @@
           "tlsHostnames": {
             "$ref": "#/components/schemas/tlsHostnamesResponse"
           },
+          "apiTLSCertificate": {
+            "type": "string",
+            "description": "The certificate the Admin UI and API presents by default (to a client that names no host, and for every name the certificate covers). \"auto\" lets EmailEngine decide: the material from EENGINE_API_TLS_* when it is set, otherwise the certificate for the Service URL hostname. Otherwise an id from the TLS Certificates page: \"manual\", \"self-signed\", \"acme:<hostname>\", or \"env:api\" / \"env:smtp\" / \"env:imapProxy\". A name the default does not cover is still served its own certificate",
+            "example": "auto",
+            "nullable": true,
+            "maxLength": 262,
+            "pattern": "^(auto|manual|self-signed|env:(api|smtp|imapProxy)|acme:[a-z0-9._:-]+)$"
+          },
+          "smtpServerTLSCertificate": {
+            "type": "string",
+            "description": "The certificate the SMTP server presents by default (to a client that names no host, and for every name the certificate covers). \"auto\" lets EmailEngine decide: the material from EENGINE_SMTP_TLS_* when it is set, otherwise the certificate for the Service URL hostname. Otherwise an id from the TLS Certificates page: \"manual\", \"self-signed\", \"acme:<hostname>\", or \"env:api\" / \"env:smtp\" / \"env:imapProxy\". A name the default does not cover is still served its own certificate",
+            "example": "auto",
+            "nullable": true,
+            "maxLength": 262,
+            "pattern": "^(auto|manual|self-signed|env:(api|smtp|imapProxy)|acme:[a-z0-9._:-]+)$"
+          },
+          "imapProxyServerTLSCertificate": {
+            "type": "string",
+            "description": "The certificate the IMAP proxy presents by default (to a client that names no host, and for every name the certificate covers). \"auto\" lets EmailEngine decide: the material from EENGINE_IMAPPROXY_TLS_* when it is set, otherwise the certificate for the Service URL hostname. Otherwise an id from the TLS Certificates page: \"manual\", \"self-signed\", \"acme:<hostname>\", or \"env:api\" / \"env:smtp\" / \"env:imapProxy\". A name the default does not cover is still served its own certificate",
+            "example": "auto",
+            "nullable": true,
+            "maxLength": 262,
+            "pattern": "^(auto|manual|self-signed|env:(api|smtp|imapProxy)|acme:[a-z0-9._:-]+)$"
+          },
           "imapProxyServerEnabled": {
             "type": "boolean",
             "description": "Enable the IMAP proxy server",
@@ -10391,6 +10415,30 @@
           },
           "tlsHostnames": {
             "$ref": "#/components/schemas/TlsHostnames"
+          },
+          "apiTLSCertificate": {
+            "type": "string",
+            "description": "The certificate the Admin UI and API presents by default (to a client that names no host, and for every name the certificate covers). \"auto\" lets EmailEngine decide: the material from EENGINE_API_TLS_* when it is set, otherwise the certificate for the Service URL hostname. Otherwise an id from the TLS Certificates page: \"manual\", \"self-signed\", \"acme:<hostname>\", or \"env:api\" / \"env:smtp\" / \"env:imapProxy\". A name the default does not cover is still served its own certificate",
+            "example": "auto",
+            "nullable": true,
+            "maxLength": 262,
+            "pattern": "^(auto|manual|self-signed|env:(api|smtp|imapProxy)|acme:[a-z0-9._:-]+)$"
+          },
+          "smtpServerTLSCertificate": {
+            "type": "string",
+            "description": "The certificate the SMTP server presents by default (to a client that names no host, and for every name the certificate covers). \"auto\" lets EmailEngine decide: the material from EENGINE_SMTP_TLS_* when it is set, otherwise the certificate for the Service URL hostname. Otherwise an id from the TLS Certificates page: \"manual\", \"self-signed\", \"acme:<hostname>\", or \"env:api\" / \"env:smtp\" / \"env:imapProxy\". A name the default does not cover is still served its own certificate",
+            "example": "auto",
+            "nullable": true,
+            "maxLength": 262,
+            "pattern": "^(auto|manual|self-signed|env:(api|smtp|imapProxy)|acme:[a-z0-9._:-]+)$"
+          },
+          "imapProxyServerTLSCertificate": {
+            "type": "string",
+            "description": "The certificate the IMAP proxy presents by default (to a client that names no host, and for every name the certificate covers). \"auto\" lets EmailEngine decide: the material from EENGINE_IMAPPROXY_TLS_* when it is set, otherwise the certificate for the Service URL hostname. Otherwise an id from the TLS Certificates page: \"manual\", \"self-signed\", \"acme:<hostname>\", or \"env:api\" / \"env:smtp\" / \"env:imapProxy\". A name the default does not cover is still served its own certificate",
+            "example": "auto",
+            "nullable": true,
+            "maxLength": 262,
+            "pattern": "^(auto|manual|self-signed|env:(api|smtp|imapProxy)|acme:[a-z0-9._:-]+)$"
           },
           "imapProxyServerEnabled": {
             "type": "boolean",
@@ -21205,6 +21253,30 @@
           },
           {
             "name": "tlsHostnames",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "apiTLSCertificate",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "smtpServerTLSCertificate",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "imapProxyServerTLSCertificate",
             "in": "query",
             "schema": {
               "type": "boolean",

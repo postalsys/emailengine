@@ -887,7 +887,14 @@ test('Tools utility tests', async t => {
     await t.test('maybeReloadTlsCertificates() reloads only for the settings a listener resolves from', async () => {
         // The list is the whole contract: a setting that decides what is served but is missing from
         // it leaves that setting silently diverging from what the listeners actually offer.
-        assert.deepEqual(tools.TLS_MATERIAL_SETTINGS.slice().sort(), ['serviceUrl', 'tlsHostnames', 'tlsProvisioning']);
+        assert.deepEqual(tools.TLS_MATERIAL_SETTINGS.slice().sort(), [
+            'apiTLSCertificate',
+            'imapProxyServerTLSCertificate',
+            'serviceUrl',
+            'smtpServerTLSCertificate',
+            'tlsHostnames',
+            'tlsProvisioning'
+        ]);
 
         const logger = { error() {} };
         const commands = [];

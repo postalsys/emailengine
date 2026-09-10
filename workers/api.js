@@ -542,6 +542,7 @@ const init = async () => {
         apiTlsContext = await createTlsContext({
             certs: certHandler,
             logger,
+            listener: 'api',
             // The operator's material and handshake settings are snapshotted inside, at entry,
             // before the resolved options are merged back into this same object below
             listenerOptions: API_TLS

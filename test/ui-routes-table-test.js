@@ -163,6 +163,7 @@ const GOLDEN_ROUTES = [
     'POST /admin/config/tls/delete',
     'POST /admin/config/tls/hostnames',
     'POST /admin/config/tls/hostnames/delete',
+    'POST /admin/config/tls/listeners',
     'POST /admin/config/tls/preflight',
     'POST /admin/config/tls/request',
     'POST /admin/config/tls/upload',
