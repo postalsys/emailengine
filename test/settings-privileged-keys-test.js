@@ -17,6 +17,8 @@ const Hapi = require('@hapi/hapi');
 
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
+const { captureApiRoutes } = require('./helpers/capture-api-routes');
+const { buildToolRegistry } = require('../lib/mcp/tools');
 const settings = require('../lib/settings');
 const { settingsSchema } = require('../lib/schemas');
 const settingsRoutes = require('../lib/api-routes/settings-routes');
@@ -75,6 +77,32 @@ test('privileged settings keys', async t => {
         // it must not be narrower
         for (const key of settings.secretKeys.filter(key => Object.hasOwn(settingsSchema, key))) {
             assert.ok(settings.privilegedKeys.includes(key), `secret ${key} must be privileged`);
+        }
+    });
+
+    await t.test('the MCP settings tools offer exactly the keys the REST rule allows', async () => {
+        // The two rules are one policy on two surfaces: what update_settings puts in front of an
+        // agent has to be what a narrowed token may write, and get_settings reads the same set
+        // (plus the virtual eventTypes). Derived from the real route table, like the registry
+        // itself, so a key hidden from the schema converter shows up here rather than as a build
+        // failure on the next setting someone adds.
+        const { routes } = await captureApiRoutes();
+        const { byName } = buildToolRegistry(routes);
+
+        const hidden = key => (settingsSchema[key].describe().metas || []).some(meta => meta && meta.swaggerHidden);
+        const expected = Object.keys(settingsSchema)
+            .filter(key => !settings.privilegedKeys.includes(key) && !hidden(key))
+            .sort();
+
+        assert.deepEqual(Object.keys(byName.get('update_settings').definition.inputSchema.properties).sort(), expected);
+        assert.deepEqual(Object.keys(byName.get('get_settings').definition.inputSchema.properties).sort(), expected.concat('eventTypes').sort());
+
+        // and every privileged key really is absent from both, whatever the derivation did
+        for (const tool of ['update_settings', 'get_settings']) {
+            const offered = byName.get(tool).definition.inputSchema.properties;
+            for (const key of settings.privilegedKeys) {
+                assert.ok(!(key in offered), `${tool} offers the privileged key ${key}`);
+            }
         }
     });
 

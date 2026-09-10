@@ -189,7 +189,7 @@ test('MCP protocol', async t => {
         // account argument at all
         assert.match(SERVER_INSTRUCTIONS, /list_accounts/);
 
-        const bound = serverInstructions('acct-1');
+        const bound = serverInstructions({ account: 'acct-1', mail: true });
         assert.doesNotMatch(bound, /list_accounts/);
         assert.match(bound, /acct-1/);
         assert.match(bound, /no account argument/);
@@ -199,6 +199,39 @@ test('MCP protocol', async t => {
         for (const instructions of [SERVER_INSTRUCTIONS, bound]) {
             assert.match(instructions, new RegExp(COLLAPSE_CLASS));
         }
+    });
+
+    await t.test('the instructions cover the tool sets the credential holds, and no other', () => {
+        // A management credential is told where to start and what to confirm; the mail lines
+        // (message shape, the collapse marker, the send warning) describe tools it does not have
+        const manage = serverInstructions({ manage: true });
+        assert.match(manage, /get_instance_stats/);
+        assert.match(manage, /before anything destructive/);
+        assert.match(manage, /create_account_setup_link/);
+        assert.doesNotMatch(manage, new RegExp(COLLAPSE_CLASS));
+        assert.doesNotMatch(manage, /send_message/);
+
+        // and the other way round
+        const mail = serverInstructions({ mail: true });
+        assert.match(mail, /list_accounts/);
+        assert.match(mail, new RegExp(COLLAPSE_CLASS));
+        assert.doesNotMatch(mail, /get_instance_stats/);
+        assert.doesNotMatch(mail, /before anything destructive/);
+
+        // both hear both, once each
+        const both = serverInstructions({ manage: true, mail: true });
+        assert.match(both, /get_instance_stats/);
+        assert.match(both, new RegExp(COLLAPSE_CLASS));
+        assert.equal(both.split('list_accounts').length, 3, 'list_accounts is named as the start and as the source of ids, not more');
+
+        // a bound management credential is told it operates that one account
+        const boundManage = serverInstructions({ account: 'acct-1', manage: true });
+        assert.match(boundManage, /acct-1/);
+        assert.match(boundManage, /reconnect or sync it/);
+        assert.doesNotMatch(boundManage, /list_accounts/);
+
+        // and a credential offered nothing is told so rather than handed a workflow
+        assert.match(serverInstructions({}), /offered no tools/);
     });
 
     await t.test('modern: cache hints follow the declared policy for every result-bearing method', async () => {

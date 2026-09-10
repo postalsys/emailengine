@@ -1,5 +1,750 @@
 [
     {
+        "name": "add_to_blocklist",
+        "title": "Add to suppression list",
+        "description": "Add a recipient address to a suppression list, so messages sent with that list id are not delivered to it. Needs the account the block was raised for.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "listId": {
+                    "type": "string",
+                    "description": "List ID. Must use a subdomain name format. Lists are registered ad-hoc, so a new identifier defines a new list.",
+                    "examples": [
+                        "test-list"
+                    ]
+                },
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "recipient": {
+                    "type": "string",
+                    "description": "Email address to add to the list",
+                    "examples": [
+                        "user@example.com"
+                    ]
+                },
+                "reason": {
+                    "type": "string",
+                    "description": "Identifier for the blocking reason",
+                    "examples": [
+                        "unsubscribe"
+                    ],
+                    "default": "block"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "listId",
+                "account",
+                "recipient"
+            ]
+        },
+        "annotations": {
+            "title": "Add to suppression list",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "autodiscover_settings",
+        "title": "Discover mail server settings",
+        "description": "Discover the IMAP and SMTP server settings for an email address from DNS and the provider's autoconfiguration. The natural first step before create_account or verify_account_settings for a mailbox that does not use an OAuth2 application.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "description": "Email address to discover email settings for",
+                    "examples": [
+                        "sender@example.com"
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "email"
+            ]
+        },
+        "annotations": {
+            "title": "Discover mail server settings",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": true
+        }
+    },
+    {
+        "name": "cancel_queued_message",
+        "title": "Cancel queued message",
+        "description": "Cancel a message waiting in the sending queue, by the queue id from get_outbox. A message already handed to the mail server cannot be cancelled.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "queueId": {
+                    "type": "string",
+                    "description": "Queue identifier for scheduled email",
+                    "examples": [
+                        "d41f0423195f271f"
+                    ],
+                    "maxLength": 100
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "queueId"
+            ]
+        },
+        "annotations": {
+            "title": "Cancel queued message",
+            "readOnlyHint": false,
+            "destructiveHint": true,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "check_delivery_test",
+        "title": "Check delivery test",
+        "description": "Check the result of a delivery test started over the REST API: whether the probe message arrived, and its SPF, DKIM and DMARC results.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "deliveryTest": {
+                    "type": "string",
+                    "description": "Test ID",
+                    "examples": [
+                        "6420a6ad-7f82-4e4f-8112-82a9dad1f34d"
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "deliveryTest"
+            ]
+        },
+        "annotations": {
+            "title": "Check delivery test",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "create_account",
+        "title": "Create account",
+        "description": "Register an email account. For an OAuth2 provider set oauth2.provider to the application id (from list_oauth2_apps) and oauth2.authorize to true: the response carries a redirect URL for the user to open and sign in, and no credentials are needed. For IMAP set imap and smtp with the host, port and auth the user supplied (autodiscover_settings finds the servers). Prefer create_account_setup_link when the user can open a link themselves, so no password passes through this conversation.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Account ID. If set to `null`, a unique ID will be generated automatically",
+                    "examples": [
+                        "example"
+                    ],
+                    "maxLength": 256
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Display name for the account",
+                    "examples": [
+                        "My Email Account"
+                    ],
+                    "maxLength": 256
+                },
+                "email": {
+                    "type": "string",
+                    "description": "Default email address of the account",
+                    "examples": [
+                        "user@example.com"
+                    ]
+                },
+                "expectedEmail": {
+                    "type": "string",
+                    "description": "Pins the account to an email address",
+                    "examples": [
+                        "user@example.com"
+                    ]
+                },
+                "path": {
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "description": "Mailbox folders to monitor for changes (IMAP only). Use \"*\" to monitor all folders (default)",
+                    "examples": [
+                        [
+                            "*"
+                        ]
+                    ],
+                    "items": {
+                        "type": "string",
+                        "description": "Mailbox paths to monitor for changes. Use folder names, special-use flags like \"\\Sent\", or \"*\" for all folders. Set to null to reset to default.",
+                        "examples": [
+                            "INBOX"
+                        ],
+                        "maxLength": 1024
+                    }
+                },
+                "subconnections": {
+                    "type": "array",
+                    "description": "Additional mailbox paths to monitor with dedicated IMAP connections for faster change detection. Use sparingly as connection limits are strict.",
+                    "examples": [
+                        [
+                            "[Gmail]/Spam",
+                            "\\Sent"
+                        ]
+                    ],
+                    "items": {
+                        "type": "string",
+                        "maxLength": 256
+                    }
+                },
+                "webhooks": {
+                    "type": "string",
+                    "description": "Account-specific webhook URL",
+                    "examples": [
+                        "https://myservice.com/imap/webhooks"
+                    ]
+                },
+                "logs": {
+                    "type": "boolean",
+                    "description": "Store recent logs",
+                    "examples": [
+                        false
+                    ],
+                    "default": false
+                },
+                "notifyFrom": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "format": "date-time",
+                    "description": "Only send webhooks for messages received after this date. Defaults to account creation time. IMAP only.",
+                    "examples": [
+                        "2021-07-08T07:06:34.336Z"
+                    ],
+                    "default": "now"
+                },
+                "imapIndexer": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Override the global IMAP indexing strategy for this account. \"full\" - Track every change, including deletions. Slower but complete; \"fast\" - Detect new messages only. Cheaper, but deletions and flag changes are missed",
+                    "examples": [
+                        "full"
+                    ],
+                    "enum": [
+                        "full",
+                        "fast",
+                        null
+                    ]
+                },
+                "imap": {
+                    "description": "IMAP configuration. Set to `false` when there is no IMAP access to configure.",
+                    "anyOf": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "useAuthServer": {
+                                    "type": "boolean",
+                                    "description": "Use external authentication server to retrieve credentials dynamically",
+                                    "examples": [
+                                        false
+                                    ]
+                                },
+                                "auth": {
+                                    "description": "Authentication credentials for the IMAP server",
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "user": {
+                                                    "type": "string",
+                                                    "description": "Username or email address for IMAP authentication",
+                                                    "examples": [
+                                                        "myuser@gmail.com"
+                                                    ],
+                                                    "maxLength": 256
+                                                },
+                                                "accessToken": {
+                                                    "description": "OAuth2 access token (when using OAuth2 instead of password authentication)",
+                                                    "examples": [
+                                                        false
+                                                    ],
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string",
+                                                            "maxLength": 16384
+                                                        },
+                                                        {
+                                                            "const": false
+                                                        }
+                                                    ]
+                                                },
+                                                "pass": {
+                                                    "type": "string",
+                                                    "description": "Password for IMAP authentication",
+                                                    "examples": [
+                                                        "verysecret"
+                                                    ],
+                                                    "maxLength": 256
+                                                }
+                                            },
+                                            "required": [
+                                                "user"
+                                            ]
+                                        },
+                                        {
+                                            "const": false
+                                        }
+                                    ]
+                                },
+                                "secure": {
+                                    "type": "boolean",
+                                    "description": "Use TLS encryption for the connection (true for port 993, false for STARTTLS on port 143)",
+                                    "examples": [
+                                        true
+                                    ],
+                                    "default": false
+                                },
+                                "tls": {
+                                    "type": "object",
+                                    "description": "Advanced TLS configuration options",
+                                    "properties": {
+                                        "rejectUnauthorized": {
+                                            "type": "boolean",
+                                            "description": "Reject connections to servers with invalid TLS certificates",
+                                            "examples": [
+                                                true
+                                            ],
+                                            "default": true
+                                        },
+                                        "minVersion": {
+                                            "type": "string",
+                                            "description": "Minimum TLS version to accept (e.g., \"TLSv1.2\", \"TLSv1.3\")",
+                                            "examples": [
+                                                "TLSv1.2"
+                                            ],
+                                            "maxLength": 256
+                                        }
+                                    }
+                                },
+                                "disableIMAP4rev2": {
+                                    "type": "boolean",
+                                    "description": "Do not use IMAP4rev2 even if the server supports it",
+                                    "examples": [
+                                        false
+                                    ]
+                                },
+                                "resyncDelay": {
+                                    "type": "integer",
+                                    "description": "Delay in seconds between full mailbox resynchronizations",
+                                    "examples": [
+                                        900
+                                    ],
+                                    "default": 900
+                                },
+                                "disabled": {
+                                    "type": "boolean",
+                                    "description": "Temporarily disable IMAP operations for this account",
+                                    "examples": [
+                                        false
+                                    ]
+                                },
+                                "host": {
+                                    "type": "string",
+                                    "description": "IMAP server hostname",
+                                    "examples": [
+                                        "imap.gmail.com"
+                                    ]
+                                },
+                                "port": {
+                                    "type": "integer",
+                                    "description": "IMAP server port (typically 993 for IMAP over TLS, 143 for STARTTLS)",
+                                    "examples": [
+                                        993
+                                    ],
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                },
+                                "sentMailPath": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Custom folder path for sent messages. Defaults to auto-detected \"Sent\" folder. Set to null to use default.",
+                                    "examples": [
+                                        "Sent Mail"
+                                    ],
+                                    "maxLength": 1024
+                                },
+                                "draftsMailPath": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Custom folder path for draft messages. Defaults to auto-detected \"Drafts\" folder. Set to null to use default.",
+                                    "examples": [
+                                        "Drafts"
+                                    ],
+                                    "maxLength": 1024
+                                },
+                                "junkMailPath": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Custom folder path for spam/junk messages. Defaults to auto-detected \"Junk\" folder. Set to null to use default.",
+                                    "examples": [
+                                        "Junk"
+                                    ],
+                                    "maxLength": 1024
+                                },
+                                "trashMailPath": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Custom folder path for deleted messages. Defaults to auto-detected \"Trash\" folder. Set to null to use default.",
+                                    "examples": [
+                                        "Trash"
+                                    ],
+                                    "maxLength": 1024
+                                },
+                                "archiveMailPath": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Custom folder path for archived messages. Defaults to auto-detected \"Archive\" folder. Set to null to use default.",
+                                    "examples": [
+                                        "Archive"
+                                    ],
+                                    "maxLength": 1024
+                                }
+                            }
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                },
+                "smtp": {
+                    "description": "SMTP configuration. Set to `false` when there is no SMTP access to configure.",
+                    "anyOf": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "useAuthServer": {
+                                    "type": "boolean",
+                                    "description": "Use external authentication server to retrieve credentials dynamically",
+                                    "examples": [
+                                        false
+                                    ]
+                                },
+                                "auth": {
+                                    "description": "Authentication credentials for the SMTP server",
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "user": {
+                                                    "type": "string",
+                                                    "description": "Username or email address for SMTP authentication",
+                                                    "examples": [
+                                                        "myuser@gmail.com"
+                                                    ],
+                                                    "maxLength": 256
+                                                },
+                                                "accessToken": {
+                                                    "description": "OAuth2 access token (when using OAuth2 instead of password authentication)",
+                                                    "examples": [
+                                                        false
+                                                    ],
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string",
+                                                            "maxLength": 16384
+                                                        },
+                                                        {
+                                                            "const": false
+                                                        }
+                                                    ]
+                                                },
+                                                "pass": {
+                                                    "type": "string",
+                                                    "description": "Password for SMTP authentication",
+                                                    "examples": [
+                                                        "verysecret"
+                                                    ],
+                                                    "maxLength": 256
+                                                }
+                                            },
+                                            "required": [
+                                                "user"
+                                            ]
+                                        },
+                                        {
+                                            "const": false
+                                        }
+                                    ]
+                                },
+                                "host": {
+                                    "type": "string",
+                                    "description": "SMTP server hostname",
+                                    "examples": [
+                                        "smtp.gmail.com"
+                                    ]
+                                },
+                                "port": {
+                                    "type": "integer",
+                                    "description": "SMTP server port (typically 587 for STARTTLS, 465 for SMTP over TLS, 25 for unencrypted)",
+                                    "examples": [
+                                        587
+                                    ],
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                },
+                                "secure": {
+                                    "type": "boolean",
+                                    "description": "Use TLS encryption from the start (true for port 465, false for STARTTLS on ports 587/25)",
+                                    "examples": [
+                                        false
+                                    ],
+                                    "default": false
+                                },
+                                "tls": {
+                                    "type": "object",
+                                    "description": "Advanced TLS configuration options",
+                                    "properties": {
+                                        "rejectUnauthorized": {
+                                            "type": "boolean",
+                                            "description": "Reject connections to servers with invalid TLS certificates",
+                                            "examples": [
+                                                true
+                                            ],
+                                            "default": true
+                                        },
+                                        "minVersion": {
+                                            "type": "string",
+                                            "description": "Minimum TLS version to accept (e.g., \"TLSv1.2\", \"TLSv1.3\")",
+                                            "examples": [
+                                                "TLSv1.2"
+                                            ],
+                                            "maxLength": 256
+                                        }
+                                    }
+                                }
+                            },
+                            "required": [
+                                "host",
+                                "port"
+                            ]
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                },
+                "oauth2": {
+                    "description": "OAuth2 configuration. Set to `false` when the account does not authenticate with OAuth2.",
+                    "anyOf": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "authorize": {
+                                    "type": "boolean",
+                                    "description": "Request an OAuth2 authorization URL instead of directly configuring credentials",
+                                    "examples": [
+                                        false
+                                    ]
+                                },
+                                "redirectUrl": {
+                                    "type": "string",
+                                    "description": "URL to redirect to after OAuth2 authorization completes (only used when authorize=true)",
+                                    "examples": [
+                                        "https://myapp/account/settings.php"
+                                    ]
+                                },
+                                "provider": {
+                                    "type": "string",
+                                    "description": "OAuth2 Application ID configured in EmailEngine",
+                                    "examples": [
+                                        "AAABhaBPHscAAAAH"
+                                    ],
+                                    "maxLength": 256
+                                },
+                                "auth": {
+                                    "type": "object",
+                                    "properties": {
+                                        "user": {
+                                            "type": "string",
+                                            "description": "Primary email account username",
+                                            "examples": [
+                                                "user@outlook.com"
+                                            ],
+                                            "maxLength": 256
+                                        },
+                                        "delegatedUser": {
+                                            "type": "string",
+                                            "description": "Shared mailbox username (Microsoft 365 delegation)",
+                                            "examples": [
+                                                "shared.mailbox@outlook.com"
+                                            ],
+                                            "maxLength": 256
+                                        },
+                                        "delegatedAccount": {
+                                            "type": "string",
+                                            "description": "Account ID to use for authenticating the shared mailbox. When provided, EmailEngine uses this account's credentials instead of creating new ones.",
+                                            "examples": [
+                                                "user123"
+                                            ],
+                                            "maxLength": 256
+                                        }
+                                    }
+                                },
+                                "useAuthServer": {
+                                    "type": "boolean",
+                                    "description": "Use external authentication server for token management instead of EmailEngine",
+                                    "examples": [
+                                        false
+                                    ]
+                                },
+                                "accessToken": {
+                                    "type": "string",
+                                    "description": "OAuth2 access token for the email account",
+                                    "examples": [
+                                        "ya29.a0ARrdaM8a..."
+                                    ],
+                                    "maxLength": 16384
+                                },
+                                "refreshToken": {
+                                    "type": "string",
+                                    "description": "OAuth2 refresh token for obtaining new access tokens",
+                                    "examples": [
+                                        "1//09Ie3CtORQYm..."
+                                    ],
+                                    "maxLength": 16384
+                                },
+                                "expires": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "description": "Access token expiration timestamp",
+                                    "examples": [
+                                        "2021-03-22T13:13:31.000Z"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "auth"
+                            ]
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "name"
+            ]
+        },
+        "annotations": {
+            "title": "Create account",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "create_account_setup_link",
+        "title": "Create account setup link",
+        "description": "Create a one-time link to the hosted setup form, where the user signs in to their mailbox themselves, so no password passes through this conversation. Give the link to the user. Set redirectUrl to where they should land afterwards; optionally account (the id to assign), name, email, expectedEmail (the setup is refused if they sign in as someone else) and type (an OAuth2 application id, or imap).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Account ID. If set to `null`, a unique ID will be generated automatically",
+                    "examples": [
+                        "example"
+                    ],
+                    "default": null,
+                    "maxLength": 256
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Display name for the account",
+                    "examples": [
+                        "My Email Account"
+                    ],
+                    "maxLength": 256
+                },
+                "email": {
+                    "type": "string",
+                    "description": "Specifies the default email address for this account. Users can change it if needed.",
+                    "examples": [
+                        "user@example.com"
+                    ]
+                },
+                "expectedEmail": {
+                    "type": "string",
+                    "description": "Pins the account to an email address",
+                    "examples": [
+                        "user@example.com"
+                    ]
+                },
+                "redirectUrl": {
+                    "type": "string",
+                    "description": "After the authentication process is completed, the user is redirected to this URL",
+                    "examples": [
+                        "https://myapp/account/settings.php"
+                    ]
+                },
+                "type": {
+                    "description": "Pre-select a specific account type (use \"imap\" or an OAuth2 app ID) instead of showing the selection screen",
+                    "examples": [
+                        "imap"
+                    ],
+                    "default": false,
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "redirectUrl"
+            ]
+        },
+        "annotations": {
+            "title": "Create account setup link",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
         "name": "create_draft",
         "title": "Create draft",
         "description": "Store a new message in a folder, typically a draft in the Drafts folder. Takes structured fields (from, to, subject, text, html). It takes the same `reference` block as send_message, so a reply or a forward can be drafted for the user to look over first. Nothing is sent - use send_message for that.",
@@ -327,6 +1072,541 @@
         }
     },
     {
+        "name": "create_gateway",
+        "title": "Create SMTP gateway",
+        "description": "Register an SMTP gateway, a relay server messages can be sent through. Needs an id, a name, the host and the port; a password can be written but never read back.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "gateway": {
+                    "type": "string",
+                    "description": "Gateway ID",
+                    "examples": [
+                        "sendgun"
+                    ],
+                    "default": null,
+                    "maxLength": 256
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Account Name",
+                    "examples": [
+                        "John Smith"
+                    ],
+                    "maxLength": 256
+                },
+                "user": {
+                    "type": "string",
+                    "description": "SMTP authentication username",
+                    "examples": [
+                        "smtp-user"
+                    ],
+                    "default": null,
+                    "maxLength": 1024
+                },
+                "pass": {
+                    "type": "string",
+                    "description": "SMTP authentication password",
+                    "examples": [
+                        "verysecret"
+                    ],
+                    "default": null,
+                    "maxLength": 1024
+                },
+                "host": {
+                    "type": "string",
+                    "description": "Hostname to connect to",
+                    "examples": [
+                        "smtp.gmail.com"
+                    ]
+                },
+                "port": {
+                    "type": "integer",
+                    "description": "Service port number",
+                    "examples": [
+                        465
+                    ],
+                    "minimum": 1,
+                    "maximum": 65536
+                },
+                "secure": {
+                    "type": "boolean",
+                    "description": "Should connection use TLS. Usually true for port 465",
+                    "examples": [
+                        true
+                    ],
+                    "default": false
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "gateway",
+                "name",
+                "host",
+                "port"
+            ]
+        },
+        "annotations": {
+            "title": "Create SMTP gateway",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "create_oauth2_app",
+        "title": "Create OAuth2 application",
+        "description": "Register an OAuth2 application that accounts can sign in through. Needs the provider and the client credentials created at that provider; a client secret or service key can be written but never read back. Confirm the redirect URL with the user: it is where the provider sends authorization codes and has to match what the provider has on file.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Display name for the OAuth2 application",
+                    "examples": [
+                        "My Gmail App"
+                    ],
+                    "maxLength": 256
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Detailed description of the application",
+                    "examples": [
+                        "My cool app"
+                    ],
+                    "maxLength": 1024
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Short title shown on the OAuth2 button",
+                    "examples": [
+                        "App title"
+                    ],
+                    "maxLength": 256
+                },
+                "provider": {
+                    "type": "string",
+                    "description": "OAuth2 provider type. \"gmail\" - Gmail and Google Workspace, using a user-consented OAuth2 flow; \"gmailService\" - Google Workspace using a service account, with no per-user consent screen; \"outlook\" - Outlook and Microsoft 365, using a user-consented OAuth2 flow; \"outlookService\" - Microsoft 365 using application permissions, with no per-user consent screen; \"mailRu\" - Mail.ru",
+                    "examples": [
+                        "gmail"
+                    ],
+                    "enum": [
+                        "gmail",
+                        "gmailService",
+                        "outlook",
+                        "outlookService",
+                        "mailRu"
+                    ],
+                    "maxLength": 256
+                },
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Whether this OAuth2 app is active",
+                    "examples": [
+                        true
+                    ],
+                    "default": false
+                },
+                "clientId": {
+                    "type": "string",
+                    "description": "OAuth2 client ID from the provider",
+                    "examples": [
+                        "52422112755-3uov8bjwlrullq122rdm6l8ui25ho7qf.apps.googleusercontent.com"
+                    ],
+                    "maxLength": 256
+                },
+                "clientSecret": {
+                    "type": "string",
+                    "description": "OAuth2 client secret from the provider",
+                    "examples": [
+                        "boT7Q~dUljnfFdVuqpC11g8nGMjO8kpRAv-ZB"
+                    ],
+                    "maxLength": 256
+                },
+                "baseScopes": {
+                    "type": "string",
+                    "description": "Connection type (IMAP, API, or Pub/Sub)",
+                    "examples": [
+                        "imap"
+                    ],
+                    "enum": [
+                        "imap",
+                        "api",
+                        "pubsub"
+                    ]
+                },
+                "pubSubApp": {
+                    "description": "Pub/Sub application ID for Gmail push notifications",
+                    "examples": [
+                        "AAAAAQAACnA"
+                    ],
+                    "anyOf": [
+                        {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 512
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                },
+                "extraScopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "examples": [
+                            "User.Read"
+                        ],
+                        "maxLength": 255
+                    }
+                },
+                "skipScopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "examples": [
+                            "SMTP.Send"
+                        ],
+                        "maxLength": 255
+                    }
+                },
+                "serviceClient": {
+                    "type": "string",
+                    "description": "Service account unique ID (for 2-legged OAuth2)",
+                    "examples": [
+                        "7103296518315821565203"
+                    ],
+                    "maxLength": 256
+                },
+                "googleProjectId": {
+                    "description": "Google Cloud Project ID",
+                    "examples": [
+                        "project-name-425411"
+                    ],
+                    "anyOf": [
+                        {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 256,
+                            "pattern": "^[a-z][a-z0-9-]{4,28}[a-z0-9]$"
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                },
+                "googleWorkspaceAccounts": {
+                    "type": "boolean",
+                    "description": "Restrict OAuth2 login to Google Workspace accounts only",
+                    "examples": [
+                        false
+                    ]
+                },
+                "googleTopicName": {
+                    "description": "Google Pub/Sub topic name for Gmail push notifications",
+                    "examples": [
+                        "ee-pub-12345"
+                    ],
+                    "anyOf": [
+                        {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 256,
+                            "pattern": "^(?!goog)[A-Za-z][A-Za-z0-9\\-_.~+%]{2,254}$"
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                },
+                "googleSubscriptionName": {
+                    "description": "Google Pub/Sub subscription name",
+                    "examples": [
+                        "ee-sub-12345"
+                    ],
+                    "anyOf": [
+                        {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 256,
+                            "pattern": "^(?!goog)[A-Za-z][A-Za-z0-9\\-_.~+%]{2,254}$"
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                },
+                "serviceClientEmail": {
+                    "type": "string",
+                    "description": "Service account email address",
+                    "examples": [
+                        "name@project-123.iam.gserviceaccount.com"
+                    ]
+                },
+                "serviceKey": {
+                    "type": "string",
+                    "description": "Service account private key in PEM format",
+                    "examples": [
+                        "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgk..."
+                    ],
+                    "maxLength": 102400
+                },
+                "authMethod": {
+                    "type": "string",
+                    "description": "How token requests for the Gmail service account are signed. \"serviceKey\" - Sign token requests with an uploaded service account key; \"externalAccount\" - Sign token requests through Workload Identity Federation, with no key to store",
+                    "examples": [
+                        "externalAccount"
+                    ],
+                    "enum": [
+                        "serviceKey",
+                        "externalAccount"
+                    ]
+                },
+                "externalAccount": {
+                    "type": "string",
+                    "description": "Google external_account credential JSON for Workload Identity Federation",
+                    "examples": [
+                        "{\"type\":\"external_account\",\"audience\":\"//iam.googleapis.com/projects/.../providers/...\",...}"
+                    ],
+                    "maxLength": 65536
+                },
+                "authority": {
+                    "type": "string",
+                    "description": "Microsoft tenant configuration (common, organizations, consumers, or tenant ID)",
+                    "examples": [
+                        "common"
+                    ],
+                    "maxLength": 1024
+                },
+                "cloud": {
+                    "type": "string",
+                    "description": "Microsoft Azure cloud environment. \"global\" - The worldwide Azure cloud, used by most tenants; \"gcc-high\" - US Government Community Cloud High; \"dod\" - US Department of Defense cloud; \"china\" - Azure operated by 21Vianet in China",
+                    "examples": [
+                        "global"
+                    ]
+                },
+                "redirectUrl": {
+                    "type": "string",
+                    "description": "OAuth2 redirect URI configured in the provider",
+                    "examples": [
+                        "https://myservice.com/oauth"
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "name",
+                "provider",
+                "serviceClient",
+                "serviceClientEmail"
+            ]
+        },
+        "annotations": {
+            "title": "Create OAuth2 application",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "create_template",
+        "title": "Create template",
+        "description": "Create a stored email template: a subject and body (html, text, previewText) that send_message can reference by id. account names the account the template belongs to.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Account ID. Use `null` for public templates.",
+                    "examples": [
+                        "example"
+                    ],
+                    "maxLength": 256
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Name of the template",
+                    "examples": [
+                        "Transaction receipt"
+                    ],
+                    "maxLength": 256
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Optional description of the template",
+                    "examples": [
+                        "Something about the template"
+                    ],
+                    "maxLength": 1024
+                },
+                "format": {
+                    "type": "string",
+                    "description": "Markup language for HTML (\"html\" or \"markdown\")",
+                    "default": "html",
+                    "enum": [
+                        "html",
+                        "markdown"
+                    ]
+                },
+                "content": {
+                    "type": "object",
+                    "properties": {
+                        "subject": {
+                            "type": "string",
+                            "description": "Email subject line",
+                            "examples": [
+                                "What a wonderful message"
+                            ],
+                            "maxLength": 10240
+                        },
+                        "text": {
+                            "type": "string",
+                            "description": "Plain text message content",
+                            "examples": [
+                                "Hello from myself!"
+                            ],
+                            "maxLength": 5242880
+                        },
+                        "html": {
+                            "type": "string",
+                            "description": "HTML message content",
+                            "examples": [
+                                "<p>Hello from myself!</p>"
+                            ],
+                            "maxLength": 5242880
+                        },
+                        "previewText": {
+                            "type": "string",
+                            "description": "Preview text shown in email clients after the subject line",
+                            "examples": [
+                                "Welcome to our newsletter!"
+                            ],
+                            "maxLength": 1024
+                        }
+                    }
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "name",
+                "content"
+            ]
+        },
+        "annotations": {
+            "title": "Create template",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "delete_account",
+        "title": "Delete account",
+        "description": "Remove an account from this instance, with its synced index and the tokens bound to it. The mailbox at the provider is untouched. Set revoke to true to also revoke the OAuth2 grant at the provider. Confirm with the user before calling this.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "revoke": {
+                    "type": "boolean",
+                    "description": "Revoke the upstream OAuth2 grant at the provider before deleting the account",
+                    "default": false
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account"
+            ]
+        },
+        "annotations": {
+            "title": "Delete account",
+            "readOnlyHint": false,
+            "destructiveHint": true,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "delete_account_templates",
+        "title": "Delete all templates of an account",
+        "description": "Remove every stored template of one account. Requires force to be true. Confirm with the user before calling this.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "force": {
+                    "type": "boolean",
+                    "description": "Must be true in order to flush templates",
+                    "default": false
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account"
+            ]
+        },
+        "annotations": {
+            "title": "Delete all templates of an account",
+            "readOnlyHint": false,
+            "destructiveHint": true,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "delete_gateway",
+        "title": "Delete SMTP gateway",
+        "description": "Remove an SMTP gateway. Messages queued through it fail to deliver. Confirm with the user before calling this.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "gateway": {
+                    "type": "string",
+                    "description": "Gateway ID",
+                    "examples": [
+                        "example"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "gateway"
+            ]
+        },
+        "annotations": {
+            "title": "Delete SMTP gateway",
+            "readOnlyHint": false,
+            "destructiveHint": true,
+            "openWorldHint": false
+        }
+    },
+    {
         "name": "delete_message",
         "title": "Delete message",
         "description": "Delete one message. It is moved to Trash when possible, and deleted permanently when it already is in Trash.",
@@ -369,6 +1649,117 @@
         }
     },
     {
+        "name": "delete_oauth2_app",
+        "title": "Delete OAuth2 application",
+        "description": "Remove an OAuth2 application. Accounts that signed in through it can no longer refresh their access tokens and stop syncing. Confirm with the user before calling this.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "app": {
+                    "type": "string",
+                    "description": "OAuth2 application ID",
+                    "examples": [
+                        "AAABhaBPHscAAAAH"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "app"
+            ]
+        },
+        "annotations": {
+            "title": "Delete OAuth2 application",
+            "readOnlyHint": false,
+            "destructiveHint": true,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "delete_template",
+        "title": "Delete template",
+        "description": "Remove a stored template.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "template": {
+                    "type": "string",
+                    "description": "Template ID",
+                    "examples": [
+                        "example"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "template"
+            ]
+        },
+        "annotations": {
+            "title": "Delete template",
+            "readOnlyHint": false,
+            "destructiveHint": true,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "flush_account",
+        "title": "Flush and re-sync account",
+        "description": "Discard the account's local index and sync it again from scratch. Every existing message counts as new again, so webhooks fire for all of them; use only when the index is broken or the sync settings changed. Confirm with the user before calling this.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "notifyFrom": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "format": "date-time",
+                    "description": "Only send webhooks for messages received after this date. Defaults to account creation time. IMAP only.",
+                    "examples": [
+                        "2021-07-08T07:06:34.336Z"
+                    ],
+                    "default": "now"
+                },
+                "imapIndexer": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Override the global IMAP indexing strategy for this account. \"full\" - Track every change, including deletions. Slower but complete; \"fast\" - Detect new messages only. Cheaper, but deletions and flag changes are missed",
+                    "examples": [
+                        "full"
+                    ],
+                    "enum": [
+                        "full",
+                        "fast",
+                        null
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account"
+            ]
+        },
+        "annotations": {
+            "title": "Flush and re-sync account",
+            "readOnlyHint": false,
+            "destructiveHint": true,
+            "openWorldHint": false
+        }
+    },
+    {
         "name": "get_account",
         "title": "Get account",
         "description": "Get one account: its display name, email address, connection state and sync status. Credentials are masked.",
@@ -396,6 +1787,34 @@
         },
         "annotations": {
             "title": "Get account",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "get_account_logs",
+        "title": "Get account connection log",
+        "description": "Read the stored connection log of an account: the raw IMAP or provider API trace, which names folders, message ids and subjects. Use it to find out why an account fails to connect or sync. Only kept while logging is enabled for the account or for the whole instance.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account"
+            ]
+        },
+        "annotations": {
+            "title": "Get account connection log",
             "readOnlyHint": true,
             "destructiveHint": false,
             "openWorldHint": false
@@ -433,6 +1852,124 @@
         },
         "annotations": {
             "title": "Get attachment",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "get_blocklist",
+        "title": "Get suppression list",
+        "description": "List the addresses on one suppression list, paged, with the reason and source of each entry.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "listId": {
+                    "type": "string",
+                    "description": "List ID. Must use a subdomain name format. Lists are registered ad-hoc, so a new identifier defines a new list.",
+                    "examples": [
+                        "test-list"
+                    ]
+                },
+                "page": {
+                    "type": "integer",
+                    "description": "Page number (zero indexed, so use 0 for first page)",
+                    "examples": [
+                        0
+                    ],
+                    "default": 0,
+                    "minimum": 0,
+                    "maximum": 1048576
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "description": "How many entries per page",
+                    "examples": [
+                        20
+                    ],
+                    "default": 20,
+                    "minimum": 1,
+                    "maximum": 100
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "listId"
+            ]
+        },
+        "annotations": {
+            "title": "Get suppression list",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "get_gateway",
+        "title": "Get SMTP gateway",
+        "description": "Get one SMTP gateway: host, port, TLS mode, username and the last delivery error. The password is masked.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "gateway": {
+                    "type": "string",
+                    "description": "Gateway ID",
+                    "examples": [
+                        "example"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "gateway"
+            ]
+        },
+        "annotations": {
+            "title": "Get SMTP gateway",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "get_instance_stats",
+        "title": "Get instance statistics",
+        "description": "Get instance-wide statistics: the running version, the license, how many accounts are connected, disconnected or failing, and message and webhook counters for the last `seconds` (default one day). The first call to make when asked how the instance is doing.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "seconds": {
+                    "type": "integer",
+                    "description": "Duration for counters",
+                    "examples": [
+                        3600
+                    ],
+                    "default": 3600,
+                    "minimum": 0,
+                    "maximum": 604800
+                }
+            },
+            "additionalProperties": false
+        },
+        "annotations": {
+            "title": "Get instance statistics",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "get_license",
+        "title": "Get license",
+        "description": "Get the active license: who it is issued to and when it expires, or an empty object when the instance runs unlicensed.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+        },
+        "annotations": {
+            "title": "Get license",
             "readOnlyHint": true,
             "destructiveHint": false,
             "openWorldHint": false
@@ -518,6 +2055,34 @@
         }
     },
     {
+        "name": "get_oauth2_app",
+        "title": "Get OAuth2 application",
+        "description": "Get one OAuth2 application: its provider, client id, scopes, redirect URL and Pub/Sub settings. Client secrets are masked.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "app": {
+                    "type": "string",
+                    "description": "OAuth2 application ID",
+                    "examples": [
+                        "AAABhaBPHscAAAAH"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "app"
+            ]
+        },
+        "annotations": {
+            "title": "Get OAuth2 application",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
         "name": "get_outbox",
         "title": "List outbox",
         "description": "List messages queued for delivery, paged, including scheduled sends and their delivery progress.",
@@ -549,6 +2114,438 @@
         },
         "annotations": {
             "title": "List outbox",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "get_pubsub_status",
+        "title": "Get Gmail Pub/Sub status",
+        "description": "List the Gmail Pub/Sub push subscriptions of the OAuth2 applications and their state, paged. A Gmail account falls back to polling while its subscription is missing.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer",
+                    "description": "Page number (zero indexed, so use 0 for first page)",
+                    "examples": [
+                        0
+                    ],
+                    "default": 0,
+                    "minimum": 0,
+                    "maximum": 1048576
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "description": "How many entries per page",
+                    "examples": [
+                        20
+                    ],
+                    "default": 20,
+                    "minimum": 1,
+                    "maximum": 100
+                }
+            },
+            "additionalProperties": false
+        },
+        "annotations": {
+            "title": "Get Gmail Pub/Sub status",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "get_queue",
+        "title": "Get queue state",
+        "description": "Get the state of a job queue: whether it is paused and how many jobs are active, waiting and delayed. `notify` carries webhook deliveries, `submit` carries outbound mail.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "queue": {
+                    "type": "string",
+                    "description": "Queue ID",
+                    "examples": [
+                        "notify"
+                    ],
+                    "enum": [
+                        "notify",
+                        "submit",
+                        "documents"
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "queue"
+            ]
+        },
+        "annotations": {
+            "title": "Get queue state",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "get_settings",
+        "title": "Get settings",
+        "description": "Read instance settings. Set each setting you want returned to true. Secrets come back as a boolean saying whether a value is stored, credentials inside URLs are masked, and eventTypes lists the webhook event names the instance supports. Settings that would widen this credential (operator scripts, proxies, secrets) are not offered.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "eventTypes": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "webhooksEnabled": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "webhooks": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "webhookEvents": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "notifyHeaders": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "serviceUrl": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "notificationBaseUrl": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "trackClicks": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "trackOpens": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "imapIndexer": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "resolveGmailCategories": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "ignoreMailCertErrors": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "generateEmailSummary": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "openAiModel": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "openAiAPIUrl": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "openAiTemperature": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "openAiTopP": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "openAiMaxTokens": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "openAiPrompt": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "openAiGenerateEmbeddings": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "inboxNewOnly": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "smtpEhloName": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "notifyText": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "notifyWebSafeHtml": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "notifyTextSize": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "notifyAttachments": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "notifyAttachmentSize": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "notifyCalendarEvents": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "logs": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "imapStrategy": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "smtpStrategy": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "smtpServerEnabled": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "smtpServerPort": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "smtpServerHost": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "smtpServerAuthEnabled": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "smtpServerTLSEnabled": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "tlsProvisioning": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "tlsHostnames": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "apiTLSCertificate": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "smtpServerTLSCertificate": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "imapProxyServerTLSCertificate": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "imapProxyServerEnabled": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "imapProxyServerPort": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "imapProxyServerHost": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "imapProxyServerTLSEnabled": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "queueKeep": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "deliveryAttempts": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "gmailSubscriptionTtl": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "locale": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "timezone": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "pageBrandName": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "imapClientName": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "imapClientVersion": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "imapClientVendor": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "imapClientSupportUrl": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "exportMaxConcurrent": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "exportMaxGlobalConcurrent": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "gmailExportBatchSize": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "outlookExportBatchSize": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "exportMaxMessages": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "exportMaxSize": {
+                    "type": "boolean",
+                    "default": false
+                }
+            },
+            "additionalProperties": false
+        },
+        "annotations": {
+            "title": "Get settings",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "get_token",
+        "title": "Get access token",
+        "description": "Get one access token by its id (from list_tokens): scopes, permissions, restrictions and last use. Never the token value itself.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string",
+                    "description": "The token id, as reported by POST /v1/tokens and the token listing",
+                    "examples": [
+                        "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a"
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "token"
+            ]
+        },
+        "annotations": {
+            "title": "Get access token",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "get_token_log",
+        "title": "Get access token audit log",
+        "description": "Read the audit log of one access token, paged: which requests it made, against which account, from which address, and which were refused and why. Only kept while the tokenAuditLog setting is on.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string",
+                    "description": "The token id, as reported by POST /v1/tokens and the token listing",
+                    "examples": [
+                        "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a"
+                    ]
+                },
+                "page": {
+                    "type": "integer",
+                    "description": "Page number (zero indexed, so use 0 for first page)",
+                    "examples": [
+                        0
+                    ],
+                    "default": 0,
+                    "minimum": 0,
+                    "maximum": 1048576
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "description": "How many entries per page",
+                    "examples": [
+                        20
+                    ],
+                    "default": 20,
+                    "minimum": 1,
+                    "maximum": 100
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "token"
+            ]
+        },
+        "annotations": {
+            "title": "Get access token audit log",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "get_webhook_route",
+        "title": "Get webhook route",
+        "description": "Get one webhook route: its target URL, the events it forwards, whether it is enabled, and its filter and mapping functions.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "webhookRoute": {
+                    "type": "string",
+                    "description": "Webhook ID",
+                    "examples": [
+                        "example"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "webhookRoute"
+            ]
+        },
+        "annotations": {
+            "title": "Get webhook route",
             "readOnlyHint": true,
             "destructiveHint": false,
             "openWorldHint": false
@@ -611,6 +2608,80 @@
         },
         "annotations": {
             "title": "List accounts",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "list_blocklists",
+        "title": "List suppression lists",
+        "description": "List the suppression lists (blocklists) and how many addresses each holds, paged.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer",
+                    "description": "Page number (zero indexed, so use 0 for first page)",
+                    "examples": [
+                        0
+                    ],
+                    "default": 0,
+                    "minimum": 0,
+                    "maximum": 1048576
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "description": "How many entries per page",
+                    "examples": [
+                        20
+                    ],
+                    "default": 20,
+                    "minimum": 1,
+                    "maximum": 100
+                }
+            },
+            "additionalProperties": false
+        },
+        "annotations": {
+            "title": "List suppression lists",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "list_gateways",
+        "title": "List SMTP gateways",
+        "description": "List the SMTP gateways (relay servers messages can be sent through instead of the account's own SMTP server), paged. Passwords are masked.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer",
+                    "description": "Page number (zero indexed, so use 0 for first page)",
+                    "examples": [
+                        0
+                    ],
+                    "default": 0,
+                    "minimum": 0,
+                    "maximum": 1048576
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "description": "How many entries per page",
+                    "examples": [
+                        20
+                    ],
+                    "default": 20,
+                    "minimum": 1,
+                    "maximum": 100
+                }
+            },
+            "additionalProperties": false
+        },
+        "annotations": {
+            "title": "List SMTP gateways",
             "readOnlyHint": true,
             "destructiveHint": false,
             "openWorldHint": false
@@ -714,6 +2785,43 @@
         }
     },
     {
+        "name": "list_oauth2_apps",
+        "title": "List OAuth2 applications",
+        "description": "List the OAuth2 applications (Gmail, Outlook and other providers) that accounts can sign in through, paged. Client secrets are masked.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer",
+                    "description": "Page number (zero indexed, so use 0 for first page)",
+                    "examples": [
+                        0
+                    ],
+                    "default": 0,
+                    "minimum": 0,
+                    "maximum": 1048576
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "description": "How many entries per page",
+                    "examples": [
+                        20
+                    ],
+                    "default": 20,
+                    "minimum": 1,
+                    "maximum": 100
+                }
+            },
+            "additionalProperties": false
+        },
+        "annotations": {
+            "title": "List OAuth2 applications",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
         "name": "list_templates",
         "title": "List templates",
         "description": "List stored email templates, paged. Pass an account id for account-specific templates or omit it for shared ones.",
@@ -753,6 +2861,96 @@
         },
         "annotations": {
             "title": "List templates",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "list_tokens",
+        "title": "List access tokens",
+        "description": "List the access tokens on this instance, paged: description, scopes, restrictions, the account each is bound to and when it was last used. Token values are never shown. Filter with query, or with account for the tokens bound to one account.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer",
+                    "description": "Page number (zero indexed, so use 0 for first page)",
+                    "examples": [
+                        0
+                    ],
+                    "default": 0,
+                    "minimum": 0,
+                    "maximum": 1048576
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "description": "How many entries per page",
+                    "examples": [
+                        20
+                    ],
+                    "default": 20,
+                    "minimum": 1,
+                    "maximum": 100
+                },
+                "query": {
+                    "type": "string",
+                    "description": "Filter by description, id or account",
+                    "examples": [
+                        "agent"
+                    ],
+                    "maxLength": 1024
+                },
+                "account": {
+                    "type": "string",
+                    "description": "Only list tokens bound to this account. Omit to list every token on the instance",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false
+        },
+        "annotations": {
+            "title": "List access tokens",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "list_webhook_routes",
+        "title": "List webhook routes",
+        "description": "List the custom webhook routes, paged: per-route targets with their own event filters, beside the global webhook target in the settings. Credentials in target URLs are masked.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer",
+                    "description": "Page number (zero indexed, so use 0 for first page)",
+                    "examples": [
+                        0
+                    ],
+                    "default": 0,
+                    "minimum": 0,
+                    "maximum": 1048576
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "description": "How many entries per page",
+                    "examples": [
+                        20
+                    ],
+                    "default": 20,
+                    "minimum": 1,
+                    "maximum": 100
+                }
+            },
+            "additionalProperties": false
+        },
+        "annotations": {
+            "title": "List webhook routes",
             "readOnlyHint": true,
             "destructiveHint": false,
             "openWorldHint": false
@@ -807,6 +3005,96 @@
             "title": "Move message",
             "readOnlyHint": false,
             "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "reconnect_account",
+        "title": "Reconnect account",
+        "description": "Ask the account's worker to close and re-open its connection. Use after fixing credentials or server settings, or when an account is stuck connecting.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account"
+            ]
+        },
+        "annotations": {
+            "title": "Reconnect account",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "remove_from_blocklist",
+        "title": "Remove from suppression list",
+        "description": "Remove a recipient address from a suppression list, so messages to it are delivered again.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "listId": {
+                    "type": "string",
+                    "description": "List ID. Must use a subdomain name format. Lists are registered ad-hoc, so a new identifier defines a new list.",
+                    "examples": [
+                        "test-list"
+                    ]
+                },
+                "recipient": {
+                    "type": "string",
+                    "description": "Email address to remove from the list",
+                    "examples": [
+                        "user@example.com"
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "listId",
+                "recipient"
+            ]
+        },
+        "annotations": {
+            "title": "Remove from suppression list",
+            "readOnlyHint": false,
+            "destructiveHint": true,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "revoke_token",
+        "title": "Revoke access token",
+        "description": "Revoke an access token by its id. Every client using it is cut off immediately and there is no undo. Confirm with the user before calling this.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string",
+                    "description": "The access token value, or the token id from a listing",
+                    "examples": [
+                        "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a"
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "token"
+            ]
+        },
+        "annotations": {
+            "title": "Revoke access token",
+            "readOnlyHint": false,
+            "destructiveHint": true,
             "openWorldHint": false
         }
     },
@@ -1500,6 +3788,707 @@
         }
     },
     {
+        "name": "set_license",
+        "title": "Apply license",
+        "description": "Apply a license key to this instance. Takes the full license text as issued, including its BEGIN and END lines.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "license": {
+                    "type": "string",
+                    "description": "License file",
+                    "examples": [
+                        "-----BEGIN LICENSE-----\r\n..."
+                    ],
+                    "maxLength": 10240
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "license"
+            ]
+        },
+        "annotations": {
+            "title": "Apply license",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "set_queue_state",
+        "title": "Pause or resume a queue",
+        "description": "Pause or resume a job queue. Set paused to true to stop the queue from processing jobs (they keep accumulating), false to resume it.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "queue": {
+                    "type": "string",
+                    "description": "Queue ID",
+                    "examples": [
+                        "notify"
+                    ],
+                    "enum": [
+                        "notify",
+                        "submit",
+                        "documents"
+                    ]
+                },
+                "paused": {
+                    "type": "boolean",
+                    "description": "Set queue state to paused",
+                    "examples": [
+                        false
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "queue"
+            ]
+        },
+        "annotations": {
+            "title": "Pause or resume a queue",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "sync_account",
+        "title": "Sync account now",
+        "description": "Ask the account's worker to run a sync now instead of waiting for the next scheduled one.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account"
+            ]
+        },
+        "annotations": {
+            "title": "Sync account now",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "update_account",
+        "title": "Update account",
+        "description": "Change an account's configuration: name, email, sync and notification settings, special folders, the webhook target, and the IMAP, SMTP or OAuth2 connection settings. Send only the fields to change. Changing a host makes the next connection authenticate to the new host with the stored credential, so confirm connection changes with the user.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Display name for the account",
+                    "examples": [
+                        "My Email Account"
+                    ],
+                    "maxLength": 256
+                },
+                "email": {
+                    "type": "string",
+                    "description": "Default email address of the account",
+                    "examples": [
+                        "user@example.com"
+                    ]
+                },
+                "expectedEmail": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Pins the account to an email address. Set to `null` to remove the constraint",
+                    "examples": [
+                        "user@example.com"
+                    ]
+                },
+                "path": {
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "description": "Mailbox folders to monitor for changes (IMAP only). Use \"*\" to monitor all folders (default)",
+                    "examples": [
+                        [
+                            "*"
+                        ]
+                    ],
+                    "items": {
+                        "type": "string",
+                        "description": "Mailbox paths to monitor for changes. Use folder names, special-use flags like \"\\Sent\", or \"*\" for all folders. Set to null to reset to default.",
+                        "examples": [
+                            "INBOX"
+                        ],
+                        "maxLength": 1024
+                    }
+                },
+                "subconnections": {
+                    "type": "array",
+                    "description": "Additional mailbox paths to monitor with dedicated IMAP connections for faster change detection. Use sparingly as connection limits are strict.",
+                    "examples": [
+                        [
+                            "[Gmail]/Spam",
+                            "\\Sent"
+                        ]
+                    ],
+                    "items": {
+                        "type": "string",
+                        "maxLength": 256
+                    }
+                },
+                "webhooks": {
+                    "type": "string",
+                    "description": "Account-specific webhook URL",
+                    "examples": [
+                        "https://myservice.com/imap/webhooks"
+                    ]
+                },
+                "logs": {
+                    "type": "boolean",
+                    "description": "Store recent logs",
+                    "examples": [
+                        false
+                    ]
+                },
+                "notifyFrom": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "format": "date-time",
+                    "description": "Only send webhooks for messages received after this date. Defaults to account creation time. IMAP only.",
+                    "examples": [
+                        "2021-07-08T07:06:34.336Z"
+                    ]
+                },
+                "imap": {
+                    "description": "IMAP configuration. Set to `false` to remove the stored IMAP configuration from the account.",
+                    "anyOf": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "partial": {
+                                    "type": "boolean",
+                                    "description": "Update only the provided fields instead of replacing the entire configuration",
+                                    "examples": [
+                                        false
+                                    ],
+                                    "default": false
+                                },
+                                "useAuthServer": {
+                                    "type": "boolean",
+                                    "description": "Use external authentication server to retrieve credentials dynamically",
+                                    "examples": [
+                                        false
+                                    ]
+                                },
+                                "auth": {
+                                    "description": "Authentication credentials for the IMAP server",
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "user": {
+                                                    "type": "string",
+                                                    "description": "Username or email address for IMAP authentication",
+                                                    "examples": [
+                                                        "myuser@gmail.com"
+                                                    ],
+                                                    "maxLength": 256
+                                                },
+                                                "accessToken": {
+                                                    "description": "OAuth2 access token (when using OAuth2 instead of password authentication)",
+                                                    "examples": [
+                                                        false
+                                                    ],
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string",
+                                                            "maxLength": 16384
+                                                        },
+                                                        {
+                                                            "const": false
+                                                        }
+                                                    ]
+                                                },
+                                                "pass": {
+                                                    "type": "string",
+                                                    "description": "Password for IMAP authentication",
+                                                    "examples": [
+                                                        "verysecret"
+                                                    ],
+                                                    "maxLength": 256
+                                                }
+                                            },
+                                            "required": [
+                                                "user"
+                                            ]
+                                        },
+                                        {
+                                            "const": false
+                                        }
+                                    ]
+                                },
+                                "host": {
+                                    "type": "string",
+                                    "description": "IMAP server hostname",
+                                    "examples": [
+                                        "imap.gmail.com"
+                                    ]
+                                },
+                                "port": {
+                                    "type": "integer",
+                                    "description": "IMAP server port",
+                                    "examples": [
+                                        993
+                                    ],
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                },
+                                "secure": {
+                                    "type": "boolean",
+                                    "description": "Use TLS encryption for the connection",
+                                    "examples": [
+                                        true
+                                    ]
+                                },
+                                "tls": {
+                                    "type": "object",
+                                    "description": "Advanced TLS configuration options",
+                                    "properties": {
+                                        "rejectUnauthorized": {
+                                            "type": "boolean",
+                                            "description": "Reject connections to servers with invalid TLS certificates",
+                                            "examples": [
+                                                true
+                                            ]
+                                        },
+                                        "minVersion": {
+                                            "type": "string",
+                                            "description": "Minimum TLS version to accept",
+                                            "examples": [
+                                                "TLSv1.2"
+                                            ],
+                                            "maxLength": 256
+                                        }
+                                    }
+                                },
+                                "disableIMAP4rev2": {
+                                    "type": "boolean",
+                                    "description": "Do not use IMAP4rev2 even if the server supports it",
+                                    "examples": [
+                                        false
+                                    ]
+                                },
+                                "resyncDelay": {
+                                    "type": "integer",
+                                    "description": "Delay in seconds between full mailbox resynchronizations",
+                                    "examples": [
+                                        900
+                                    ]
+                                },
+                                "disabled": {
+                                    "type": "boolean",
+                                    "description": "Temporarily disable IMAP operations for this account",
+                                    "examples": [
+                                        false
+                                    ]
+                                },
+                                "sentMailPath": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Custom folder path for sent messages. Set to null to use default.",
+                                    "examples": [
+                                        "Sent Mail"
+                                    ],
+                                    "maxLength": 1024
+                                },
+                                "draftsMailPath": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Custom folder path for draft messages. Set to null to use default.",
+                                    "examples": [
+                                        "Drafts"
+                                    ],
+                                    "maxLength": 1024
+                                },
+                                "junkMailPath": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Custom folder path for spam/junk messages. Set to null to use default.",
+                                    "examples": [
+                                        "Junk"
+                                    ],
+                                    "maxLength": 1024
+                                },
+                                "trashMailPath": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Custom folder path for deleted messages. Set to null to use default.",
+                                    "examples": [
+                                        "Trash"
+                                    ],
+                                    "maxLength": 1024
+                                },
+                                "archiveMailPath": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Custom folder path for archived messages. Set to null to use default.",
+                                    "examples": [
+                                        "Archive"
+                                    ],
+                                    "maxLength": 1024
+                                }
+                            }
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                },
+                "smtp": {
+                    "description": "SMTP configuration. Set to `false` to remove the stored SMTP configuration from the account.",
+                    "anyOf": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "partial": {
+                                    "type": "boolean",
+                                    "description": "Update only the provided fields instead of replacing the entire configuration",
+                                    "examples": [
+                                        false
+                                    ],
+                                    "default": false
+                                },
+                                "useAuthServer": {
+                                    "type": "boolean",
+                                    "description": "Use external authentication server to retrieve credentials dynamically",
+                                    "examples": [
+                                        false
+                                    ]
+                                },
+                                "auth": {
+                                    "description": "Authentication credentials for the SMTP server",
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "user": {
+                                                    "type": "string",
+                                                    "description": "Username or email address for SMTP authentication",
+                                                    "examples": [
+                                                        "myuser@gmail.com"
+                                                    ],
+                                                    "maxLength": 256
+                                                },
+                                                "accessToken": {
+                                                    "description": "OAuth2 access token (when using OAuth2 instead of password authentication)",
+                                                    "examples": [
+                                                        false
+                                                    ],
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string",
+                                                            "maxLength": 16384
+                                                        },
+                                                        {
+                                                            "const": false
+                                                        }
+                                                    ]
+                                                },
+                                                "pass": {
+                                                    "type": "string",
+                                                    "description": "Password for SMTP authentication",
+                                                    "examples": [
+                                                        "verysecret"
+                                                    ],
+                                                    "maxLength": 256
+                                                }
+                                            },
+                                            "required": [
+                                                "user"
+                                            ]
+                                        },
+                                        {
+                                            "const": false
+                                        }
+                                    ]
+                                },
+                                "host": {
+                                    "type": "string",
+                                    "description": "SMTP server hostname",
+                                    "examples": [
+                                        "smtp.gmail.com"
+                                    ]
+                                },
+                                "port": {
+                                    "type": "integer",
+                                    "description": "SMTP server port",
+                                    "examples": [
+                                        587
+                                    ],
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                },
+                                "secure": {
+                                    "type": "boolean",
+                                    "description": "Use TLS encryption from the start",
+                                    "examples": [
+                                        false
+                                    ]
+                                },
+                                "tls": {
+                                    "type": "object",
+                                    "description": "Advanced TLS configuration options",
+                                    "properties": {
+                                        "rejectUnauthorized": {
+                                            "type": "boolean",
+                                            "description": "Reject connections to servers with invalid TLS certificates",
+                                            "examples": [
+                                                true
+                                            ]
+                                        },
+                                        "minVersion": {
+                                            "type": "string",
+                                            "description": "Minimum TLS version to accept",
+                                            "examples": [
+                                                "TLSv1.2"
+                                            ],
+                                            "maxLength": 256
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                },
+                "oauth2": {
+                    "description": "OAuth2 configuration. Set to `false` to remove the stored OAuth2 configuration from the account.",
+                    "anyOf": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "partial": {
+                                    "type": "boolean",
+                                    "description": "Update only the provided fields instead of replacing the entire configuration",
+                                    "examples": [
+                                        false
+                                    ],
+                                    "default": false
+                                },
+                                "authorize": {
+                                    "type": "boolean",
+                                    "description": "Request an OAuth2 authorization URL instead of directly configuring credentials",
+                                    "examples": [
+                                        false
+                                    ]
+                                },
+                                "provider": {
+                                    "type": "string",
+                                    "description": "OAuth2 Application ID configured in EmailEngine",
+                                    "examples": [
+                                        "AAABhaBPHscAAAAH"
+                                    ],
+                                    "maxLength": 256
+                                },
+                                "auth": {
+                                    "type": "object",
+                                    "properties": {
+                                        "user": {
+                                            "type": "string",
+                                            "description": "Primary email account username",
+                                            "examples": [
+                                                "user@outlook.com"
+                                            ],
+                                            "maxLength": 256
+                                        },
+                                        "delegatedUser": {
+                                            "type": "string",
+                                            "description": "Shared mailbox username (Microsoft 365 delegation)",
+                                            "examples": [
+                                                "shared.mailbox@outlook.com"
+                                            ],
+                                            "maxLength": 256
+                                        },
+                                        "delegatedAccount": {
+                                            "type": "string",
+                                            "description": "Account ID to use for authenticating the shared mailbox. When provided, EmailEngine uses this account's credentials instead of creating new ones.",
+                                            "examples": [
+                                                "user123"
+                                            ],
+                                            "maxLength": 256
+                                        }
+                                    }
+                                },
+                                "useAuthServer": {
+                                    "type": "boolean",
+                                    "description": "Use external authentication server for token management instead of EmailEngine",
+                                    "examples": [
+                                        false
+                                    ]
+                                },
+                                "accessToken": {
+                                    "type": "string",
+                                    "description": "OAuth2 access token for the email account",
+                                    "examples": [
+                                        "ya29.a0ARrdaM8a..."
+                                    ],
+                                    "maxLength": 16384
+                                },
+                                "refreshToken": {
+                                    "type": "string",
+                                    "description": "OAuth2 refresh token for obtaining new access tokens",
+                                    "examples": [
+                                        "1//09Ie3CtORQYm..."
+                                    ],
+                                    "maxLength": 16384
+                                },
+                                "expires": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "description": "Access token expiration timestamp",
+                                    "examples": [
+                                        "2021-03-22T13:13:31.000Z"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "auth"
+                            ]
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account"
+            ]
+        },
+        "annotations": {
+            "title": "Update account",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "update_gateway",
+        "title": "Update SMTP gateway",
+        "description": "Update an SMTP gateway. Send only the fields to change. Changing the host makes the next delivery authenticate to the new host with the stored password, so confirm host changes with the user.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "gateway": {
+                    "type": "string",
+                    "description": "Gateway ID",
+                    "examples": [
+                        "example"
+                    ],
+                    "maxLength": 256
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Account Name",
+                    "examples": [
+                        "John Smith"
+                    ],
+                    "maxLength": 256
+                },
+                "user": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "SMTP authentication username",
+                    "examples": [
+                        "smtp-user"
+                    ],
+                    "maxLength": 1024
+                },
+                "pass": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "SMTP authentication password",
+                    "examples": [
+                        "verysecret"
+                    ],
+                    "maxLength": 1024
+                },
+                "host": {
+                    "type": "string",
+                    "description": "Hostname to connect to",
+                    "examples": [
+                        "smtp.gmail.com"
+                    ]
+                },
+                "port": {
+                    "type": "integer",
+                    "description": "Service port number",
+                    "examples": [
+                        465
+                    ],
+                    "minimum": 1,
+                    "maximum": 65536
+                },
+                "secure": {
+                    "type": "boolean",
+                    "description": "Should connection use TLS. Usually true for port 465",
+                    "examples": [
+                        true
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "gateway"
+            ]
+        },
+        "annotations": {
+            "title": "Update SMTP gateway",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
         "name": "update_message",
         "title": "Update message flags",
         "description": "Update the flags or labels of one message, e.g. add \\Seen to mark it read or \\Flagged to star it.",
@@ -1612,6 +4601,1219 @@
             "readOnlyHint": false,
             "destructiveHint": false,
             "openWorldHint": false
+        }
+    },
+    {
+        "name": "update_oauth2_app",
+        "title": "Update OAuth2 application",
+        "description": "Update an OAuth2 application. Send only the fields to change; a client secret can be replaced but not read back. Changing the redirect URL moves where the provider sends authorization codes, so confirm that with the user.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "app": {
+                    "type": "string",
+                    "description": "OAuth2 application ID",
+                    "examples": [
+                        "AAABhaBPHscAAAAH"
+                    ],
+                    "maxLength": 256
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Application name",
+                    "examples": [
+                        "My Gmail App"
+                    ],
+                    "maxLength": 256
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Application description",
+                    "examples": [
+                        "My cool app"
+                    ],
+                    "maxLength": 1024
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Title for the application button",
+                    "examples": [
+                        "App title"
+                    ],
+                    "maxLength": 256
+                },
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Enable this app",
+                    "examples": [
+                        true
+                    ]
+                },
+                "clientId": {
+                    "description": "Client or Application ID for 3-legged OAuth2 applications",
+                    "examples": [
+                        "52422112755-3uov8bjwlrullq122rdm6l8ui25ho7qf.apps.googleusercontent.com"
+                    ],
+                    "anyOf": [
+                        {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 256
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                },
+                "clientSecret": {
+                    "type": "string",
+                    "description": "Client secret for 3-legged OAuth2 applications",
+                    "examples": [
+                        "boT7Q~dUljnfFdVuqpC11g8nGMjO8kpRAv-ZB"
+                    ],
+                    "maxLength": 256
+                },
+                "pubSubApp": {
+                    "type": "string",
+                    "description": "Cloud Pub/Sub app for Gmail API webhooks",
+                    "examples": [
+                        "AAAAAQAACnA"
+                    ],
+                    "maxLength": 512
+                },
+                "extraScopes": {
+                    "type": "array",
+                    "description": "OAuth2 Extra Scopes",
+                    "items": {
+                        "type": "string",
+                        "examples": [
+                            "User.Read"
+                        ],
+                        "maxLength": 255
+                    }
+                },
+                "skipScopes": {
+                    "type": "array",
+                    "description": "OAuth2 scopes to skip from the base set",
+                    "items": {
+                        "type": "string",
+                        "examples": [
+                            "SMTP.Send"
+                        ],
+                        "maxLength": 255
+                    }
+                },
+                "serviceClient": {
+                    "description": "Service client ID for 2-legged OAuth2 applications",
+                    "examples": [
+                        "7103296518315821565203"
+                    ],
+                    "anyOf": [
+                        {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 256
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                },
+                "googleProjectId": {
+                    "description": "Google Cloud Project ID",
+                    "examples": [
+                        "project-name-425411"
+                    ],
+                    "anyOf": [
+                        {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 256,
+                            "pattern": "^[a-z][a-z0-9-]{4,28}[a-z0-9]$"
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                },
+                "googleWorkspaceAccounts": {
+                    "type": "boolean",
+                    "description": "Restrict OAuth2 login to Google Workspace accounts only",
+                    "examples": [
+                        false
+                    ]
+                },
+                "googleTopicName": {
+                    "description": "Google Pub/Sub topic name for Gmail push notifications",
+                    "examples": [
+                        "ee-pub-12345"
+                    ],
+                    "anyOf": [
+                        {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 256,
+                            "pattern": "^(?!goog)[A-Za-z][A-Za-z0-9\\-_.~+%]{2,254}$"
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                },
+                "googleSubscriptionName": {
+                    "description": "Google Pub/Sub subscription name",
+                    "examples": [
+                        "ee-sub-12345"
+                    ],
+                    "anyOf": [
+                        {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 256,
+                            "pattern": "^(?!goog)[A-Za-z][A-Za-z0-9\\-_.~+%]{2,254}$"
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                },
+                "serviceClientEmail": {
+                    "type": "string",
+                    "description": "Service Client Email for 2-legged OAuth2 applications",
+                    "examples": [
+                        "name@project-123.iam.gserviceaccount.com"
+                    ]
+                },
+                "serviceKey": {
+                    "type": "string",
+                    "description": "PEM formatted service secret for 2-legged OAuth2 applications",
+                    "examples": [
+                        "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgk..."
+                    ],
+                    "maxLength": 102400
+                },
+                "authority": {
+                    "type": "string",
+                    "description": "Authorization tenant value for Outlook OAuth2 applications",
+                    "examples": [
+                        "common"
+                    ],
+                    "maxLength": 1024
+                },
+                "cloud": {
+                    "type": "string",
+                    "description": "Azure cloud type for Outlook OAuth2 applications. \"global\" - The worldwide Azure cloud, used by most tenants; \"gcc-high\" - US Government Community Cloud High; \"dod\" - US Department of Defense cloud; \"china\" - Azure operated by 21Vianet in China",
+                    "examples": [
+                        "global"
+                    ],
+                    "enum": [
+                        "global",
+                        "gcc-high",
+                        "dod",
+                        "china"
+                    ]
+                },
+                "tenant": {
+                    "type": "string",
+                    "examples": [
+                        "f8cdef31-a31e-4b4a-93e4-5f571e91255a"
+                    ],
+                    "maxLength": 1024
+                },
+                "redirectUrl": {
+                    "description": "Redirect URL for 3-legged OAuth2 applications",
+                    "examples": [
+                        "https://myservice.com/oauth"
+                    ],
+                    "anyOf": [
+                        {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "app"
+            ]
+        },
+        "annotations": {
+            "title": "Update OAuth2 application",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "update_settings",
+        "title": "Update settings",
+        "description": "Change instance settings. Send only the keys to change; they take effect immediately on every worker. Covers where webhooks are delivered and which events are sent, notification shaping, the service URL and branding, sync strategy, queue retention, the built-in SMTP server and IMAP proxy listeners, and TLS provisioning. Confirm with the user before changing the webhook target, the service URL or the TLS mode. The settings that would widen this credential (operator scripts, proxies, secrets, the MCP and audit switches) are not offered.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "webhooksEnabled": {
+                    "type": "boolean",
+                    "description": "Enable or disable webhook delivery for all accounts"
+                },
+                "webhooks": {
+                    "type": "string",
+                    "description": "Target URL that will receive webhook notifications via POST requests",
+                    "examples": [
+                        "https://api.example.com/email/webhooks"
+                    ]
+                },
+                "webhookEvents": {
+                    "type": "array",
+                    "description": "List of event types that will trigger webhook notifications",
+                    "items": {
+                        "type": "string",
+                        "examples": [
+                            "messageNew"
+                        ],
+                        "maxLength": 256
+                    }
+                },
+                "notifyHeaders": {
+                    "type": "array",
+                    "description": "Email headers to include in webhook payloads for additional context",
+                    "items": {
+                        "type": "string",
+                        "examples": [
+                            "List-ID"
+                        ],
+                        "maxLength": 256
+                    }
+                },
+                "serviceUrl": {
+                    "type": "string",
+                    "description": "Base URL of this EmailEngine instance (used for generating public URLs, path component is ignored)",
+                    "examples": [
+                        "https://emailengine.example.com"
+                    ]
+                },
+                "notificationBaseUrl": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Public callback URL for external OAuth providers. Falls back to serviceUrl if not set",
+                    "examples": [
+                        "https://emailengine.example.com/notifications"
+                    ]
+                },
+                "trackClicks": {
+                    "type": "boolean",
+                    "description": "Rewrite links in outgoing HTML emails to track click-through rates"
+                },
+                "trackOpens": {
+                    "type": "boolean",
+                    "description": "Insert a tracking pixel in outgoing HTML emails to detect when messages are opened"
+                },
+                "imapIndexer": {
+                    "type": "string",
+                    "description": "How much of a mailbox EmailEngine tracks on each sync. \"full\" - Track every change, including deletions. Slower but complete; \"fast\" - Detect new messages only. Cheaper, but deletions and flag changes are missed",
+                    "examples": [
+                        "full"
+                    ],
+                    "enum": [
+                        "full",
+                        "fast"
+                    ]
+                },
+                "resolveGmailCategories": {
+                    "type": "boolean",
+                    "description": "Automatically detect and categorize Gmail tabs (Primary, Social, Promotions, etc.) for IMAP connections"
+                },
+                "ignoreMailCertErrors": {
+                    "type": "boolean",
+                    "description": "Allow connections to mail servers with self-signed or invalid TLS certificates (not recommended for production)"
+                },
+                "generateEmailSummary": {
+                    "type": "boolean",
+                    "description": "Generate AI-powered summaries for incoming emails using OpenAI"
+                },
+                "openAiModel": {
+                    "type": "string",
+                    "description": "OpenAI model to use for text generation",
+                    "examples": [
+                        "gpt-5-mini"
+                    ]
+                },
+                "openAiAPIUrl": {
+                    "type": "string",
+                    "description": "Base URL for the OpenAI API",
+                    "examples": [
+                        "https://api.openai.com"
+                    ]
+                },
+                "openAiTemperature": {
+                    "type": "number",
+                    "description": "Controls randomness in AI responses (0 = deterministic, 2 = very creative)",
+                    "examples": [
+                        0.8
+                    ],
+                    "minimum": 0,
+                    "maximum": 2
+                },
+                "openAiTopP": {
+                    "type": "number",
+                    "description": "Nucleus sampling parameter for AI text generation (0-1, lower = more focused)",
+                    "examples": [
+                        0.1
+                    ],
+                    "minimum": 0,
+                    "maximum": 1
+                },
+                "openAiMaxTokens": {
+                    "type": "number",
+                    "description": "Maximum tokens limit for OpenAI API requests (defaults: GPT-5: 18000, GPT-4: 6500, GPT-3.5: 3000)",
+                    "examples": [
+                        3000
+                    ],
+                    "minimum": 0
+                },
+                "openAiPrompt": {
+                    "type": "string",
+                    "description": "Custom system prompt to guide AI behavior when processing emails",
+                    "examples": [
+                        "You are an assistant scanning incoming emails…"
+                    ],
+                    "maxLength": 1048576
+                },
+                "openAiGenerateEmbeddings": {
+                    "type": "boolean",
+                    "description": "Generate vector embeddings for semantic search and similarity matching"
+                },
+                "inboxNewOnly": {
+                    "type": "boolean",
+                    "description": "Trigger \"messageNew\" webhooks only for messages arriving in the Inbox folder"
+                },
+                "smtpEhloName": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Hostname to use in SMTP EHLO/HELO commands (defaults to system hostname)",
+                    "examples": [
+                        "relay.example.com"
+                    ]
+                },
+                "notifyText": {
+                    "type": "boolean",
+                    "description": "Include plain text message content in webhook payloads"
+                },
+                "notifyWebSafeHtml": {
+                    "type": "boolean",
+                    "description": "Sanitize HTML content to remove potentially dangerous elements before including in webhooks, and fold quoted thread history into a collapsed block"
+                },
+                "notifyTextSize": {
+                    "type": "integer",
+                    "description": "Maximum size (in bytes) of text content to include in webhook payloads",
+                    "examples": [
+                        1048576
+                    ],
+                    "minimum": 0
+                },
+                "notifyAttachments": {
+                    "type": "boolean",
+                    "description": "Include attachment data in webhook payloads"
+                },
+                "notifyAttachmentSize": {
+                    "type": "integer",
+                    "description": "Maximum size (in bytes) per attachment to include in webhook payloads",
+                    "examples": [
+                        5242880
+                    ],
+                    "minimum": 0
+                },
+                "notifyCalendarEvents": {
+                    "type": "boolean",
+                    "description": "Include parsed calendar event data in webhook payloads"
+                },
+                "logs": {
+                    "type": "object",
+                    "properties": {
+                        "all": {
+                            "type": "boolean",
+                            "description": "Enable detailed logging for all email accounts",
+                            "examples": [
+                                false
+                            ],
+                            "default": false
+                        },
+                        "maxLogLines": {
+                            "type": "integer",
+                            "description": "Maximum number of log entries to retain per account",
+                            "examples": [
+                                10000
+                            ],
+                            "default": 10000,
+                            "minimum": 0,
+                            "maximum": 1000000
+                        }
+                    }
+                },
+                "imapStrategy": {
+                    "type": "string",
+                    "description": "IP address selection strategy for outbound IMAP connections when multiple local addresses are available. \"default\" - Let the operating system pick the source address; \"dedicated\" - Reuse the same local address for an account, so the remote server sees a stable IP; \"random\" - Pick a random local address for every connection",
+                    "enum": [
+                        "default",
+                        "dedicated",
+                        "random"
+                    ]
+                },
+                "smtpStrategy": {
+                    "type": "string",
+                    "description": "IP address selection strategy for outbound SMTP connections when multiple local addresses are available. \"default\" - Let the operating system pick the source address; \"dedicated\" - Reuse the same local address for an account, so the remote server sees a stable IP; \"random\" - Pick a random local address for every connection",
+                    "enum": [
+                        "default",
+                        "dedicated",
+                        "random"
+                    ]
+                },
+                "smtpServerEnabled": {
+                    "type": "boolean",
+                    "description": "Enable the built-in SMTP server for receiving emails"
+                },
+                "smtpServerPort": {
+                    "type": "integer",
+                    "description": "Port number for the built-in SMTP server",
+                    "examples": [
+                        2525
+                    ],
+                    "minimum": 0,
+                    "maximum": 65535
+                },
+                "smtpServerHost": {
+                    "type": "string",
+                    "description": "IP address to bind the SMTP server to (empty = all interfaces)",
+                    "examples": [
+                        "0.0.0.0"
+                    ]
+                },
+                "smtpServerAuthEnabled": {
+                    "type": "boolean",
+                    "description": "Require SMTP authentication for incoming connections"
+                },
+                "smtpServerTLSEnabled": {
+                    "type": "boolean",
+                    "description": "Enable TLS/STARTTLS support for the SMTP server"
+                },
+                "tlsProvisioning": {
+                    "type": "string",
+                    "description": "Where the TLS certificate for the built-in listeners comes from: \"acme\" orders one from Let's Encrypt, \"manual\" uses the certificate uploaded through the admin UI, \"self-signed\" stops trying to get a real one",
+                    "examples": [
+                        "acme"
+                    ],
+                    "enum": [
+                        "acme",
+                        "manual",
+                        "self-signed"
+                    ]
+                },
+                "tlsHostnames": {
+                    "type": "array",
+                    "description": "Additional hostnames to hold certificates for, beyond the Service URL hostname. Each one is ordered separately and served over SNI, so a mail client connecting to smtp.example.com is offered a certificate for that name",
+                    "items": {
+                        "type": "string",
+                        "examples": [
+                            "smtp.example.com"
+                        ],
+                        "maxLength": 255,
+                        "pattern": "^[a-z0-9._:-]+$"
+                    }
+                },
+                "apiTLSCertificate": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The certificate the Admin UI and API presents by default (to a client that names no host, and for every name the certificate covers). \"auto\" lets EmailEngine decide: the material from EENGINE_API_TLS_* when it is set, otherwise the certificate for the Service URL hostname. Otherwise an id from the TLS Certificates page: \"manual\", \"self-signed\", \"acme:<hostname>\", or \"env:api\" / \"env:smtp\" / \"env:imapProxy\". A name the default does not cover is still served its own certificate",
+                    "examples": [
+                        "auto"
+                    ],
+                    "maxLength": 262,
+                    "pattern": "^(auto|manual|self-signed|env:(api|smtp|imapProxy)|acme:[a-z0-9._:-]+)$"
+                },
+                "smtpServerTLSCertificate": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The certificate the SMTP server presents by default (to a client that names no host, and for every name the certificate covers). \"auto\" lets EmailEngine decide: the material from EENGINE_SMTP_TLS_* when it is set, otherwise the certificate for the Service URL hostname. Otherwise an id from the TLS Certificates page: \"manual\", \"self-signed\", \"acme:<hostname>\", or \"env:api\" / \"env:smtp\" / \"env:imapProxy\". A name the default does not cover is still served its own certificate",
+                    "examples": [
+                        "auto"
+                    ],
+                    "maxLength": 262,
+                    "pattern": "^(auto|manual|self-signed|env:(api|smtp|imapProxy)|acme:[a-z0-9._:-]+)$"
+                },
+                "imapProxyServerTLSCertificate": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The certificate the IMAP proxy presents by default (to a client that names no host, and for every name the certificate covers). \"auto\" lets EmailEngine decide: the material from EENGINE_IMAPPROXY_TLS_* when it is set, otherwise the certificate for the Service URL hostname. Otherwise an id from the TLS Certificates page: \"manual\", \"self-signed\", \"acme:<hostname>\", or \"env:api\" / \"env:smtp\" / \"env:imapProxy\". A name the default does not cover is still served its own certificate",
+                    "examples": [
+                        "auto"
+                    ],
+                    "maxLength": 262,
+                    "pattern": "^(auto|manual|self-signed|env:(api|smtp|imapProxy)|acme:[a-z0-9._:-]+)$"
+                },
+                "imapProxyServerEnabled": {
+                    "type": "boolean",
+                    "description": "Enable the IMAP proxy server"
+                },
+                "imapProxyServerPort": {
+                    "type": "integer",
+                    "description": "Port number for the IMAP proxy server",
+                    "examples": [
+                        9993
+                    ],
+                    "minimum": 0,
+                    "maximum": 65535
+                },
+                "imapProxyServerHost": {
+                    "type": "string",
+                    "description": "IP address to bind the IMAP proxy to (empty = all interfaces)",
+                    "examples": [
+                        "0.0.0.0"
+                    ]
+                },
+                "imapProxyServerTLSEnabled": {
+                    "type": "boolean",
+                    "description": "Enable TLS support for the IMAP proxy"
+                },
+                "queueKeep": {
+                    "type": "integer",
+                    "description": "Number of completed and failed queue entries to retain for debugging",
+                    "examples": [
+                        50
+                    ],
+                    "minimum": 0
+                },
+                "deliveryAttempts": {
+                    "type": "integer",
+                    "description": "Maximum number of delivery attempts before marking a message as permanently failed",
+                    "examples": [
+                        10
+                    ],
+                    "minimum": 0
+                },
+                "gmailSubscriptionTtl": {
+                    "type": "integer",
+                    "description": "Gmail Pub/Sub subscription inactivity expiration in days. Empty for Google default (31 days), 0 for no expiration.",
+                    "examples": [
+                        31
+                    ],
+                    "minimum": 0,
+                    "maximum": 365
+                },
+                "locale": {
+                    "type": "string",
+                    "description": "Default language/locale for the user interface",
+                    "examples": [
+                        "fr"
+                    ],
+                    "enum": [
+                        "en",
+                        "et",
+                        "fr",
+                        "de",
+                        "pl",
+                        "ja",
+                        "nl"
+                    ],
+                    "maxLength": 100
+                },
+                "timezone": {
+                    "type": "string",
+                    "description": "Default timezone for date/time display (IANA timezone identifier)",
+                    "examples": [
+                        "Europe/Tallinn"
+                    ],
+                    "maxLength": 100
+                },
+                "pageBrandName": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Brand name displayed in page titles",
+                    "examples": [
+                        "EmailEngine"
+                    ],
+                    "maxLength": 1024
+                },
+                "imapClientName": {
+                    "type": "string",
+                    "description": "Client name advertised via IMAP ID extension",
+                    "examples": [
+                        "EmailEngine"
+                    ],
+                    "maxLength": 1024
+                },
+                "imapClientVersion": {
+                    "type": "string",
+                    "description": "Client version advertised via IMAP ID extension",
+                    "examples": [
+                        "1.3.45"
+                    ],
+                    "maxLength": 1024
+                },
+                "imapClientVendor": {
+                    "type": "string",
+                    "description": "Vendor name advertised via IMAP ID extension",
+                    "examples": [
+                        "Postal Systems"
+                    ],
+                    "maxLength": 1024
+                },
+                "imapClientSupportUrl": {
+                    "type": "string",
+                    "description": "Support URL advertised via IMAP ID extension",
+                    "examples": [
+                        "https://github.com/postalsys/emailengine/issues"
+                    ]
+                },
+                "exportMaxConcurrent": {
+                    "type": "integer",
+                    "description": "Maximum concurrent exports per account",
+                    "examples": [
+                        2
+                    ],
+                    "minimum": 1,
+                    "maximum": 100
+                },
+                "exportMaxGlobalConcurrent": {
+                    "type": "integer",
+                    "description": "Maximum concurrent exports system-wide across all accounts",
+                    "examples": [
+                        8
+                    ],
+                    "minimum": 1,
+                    "maximum": 100
+                },
+                "gmailExportBatchSize": {
+                    "type": "integer",
+                    "description": "Number of parallel message fetch requests for Gmail export operations (default: 10, max: 50)",
+                    "examples": [
+                        10
+                    ],
+                    "minimum": 1,
+                    "maximum": 50
+                },
+                "outlookExportBatchSize": {
+                    "type": "integer",
+                    "description": "Number of messages per batch request for Outlook export operations (default: 20, max: 20 - MS Graph API limit)",
+                    "examples": [
+                        20
+                    ],
+                    "minimum": 1,
+                    "maximum": 20
+                },
+                "exportMaxMessages": {
+                    "type": "integer",
+                    "description": "Maximum number of messages per export (default: 500000)",
+                    "examples": [
+                        500000
+                    ],
+                    "minimum": 1,
+                    "maximum": 10000000
+                },
+                "exportMaxSize": {
+                    "type": "integer",
+                    "description": "Maximum export file size in bytes (default: 10GB)",
+                    "examples": [
+                        10737418240
+                    ],
+                    "minimum": 1
+                }
+            },
+            "additionalProperties": false
+        },
+        "annotations": {
+            "title": "Update settings",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "update_template",
+        "title": "Update template",
+        "description": "Update a stored template's name, description, format or content. Send only the fields to change.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "template": {
+                    "type": "string",
+                    "description": "Template ID",
+                    "examples": [
+                        "example"
+                    ],
+                    "maxLength": 256
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Name of the template",
+                    "examples": [
+                        "Transaction receipt"
+                    ],
+                    "maxLength": 256
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Optional description of the template",
+                    "examples": [
+                        "Something about the template"
+                    ],
+                    "maxLength": 1024
+                },
+                "format": {
+                    "type": "string",
+                    "description": "Markup language for HTML (\"html\" or \"markdown\"). Leave out to keep the stored value",
+                    "enum": [
+                        "html",
+                        "markdown"
+                    ]
+                },
+                "content": {
+                    "type": "object",
+                    "properties": {
+                        "subject": {
+                            "type": "string",
+                            "description": "Email subject line",
+                            "examples": [
+                                "What a wonderful message"
+                            ],
+                            "maxLength": 10240
+                        },
+                        "text": {
+                            "type": "string",
+                            "description": "Plain text message content",
+                            "examples": [
+                                "Hello from myself!"
+                            ],
+                            "maxLength": 5242880
+                        },
+                        "html": {
+                            "type": "string",
+                            "description": "HTML message content",
+                            "examples": [
+                                "<p>Hello from myself!</p>"
+                            ],
+                            "maxLength": 5242880
+                        },
+                        "previewText": {
+                            "type": "string",
+                            "description": "Preview text shown in email clients after the subject line",
+                            "examples": [
+                                "Welcome to our newsletter!"
+                            ],
+                            "maxLength": 1024
+                        }
+                    }
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "template"
+            ]
+        },
+        "annotations": {
+            "title": "Update template",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "verify_account_settings",
+        "title": "Verify account settings",
+        "description": "Test IMAP and SMTP settings without saving them: connects and authenticates with the supplied host, port and credentials and reports what failed. Set mailboxes to true to also list the folders. Useful before create_account or update_account.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "mailboxes": {
+                    "type": "boolean",
+                    "description": "Include mailbox listing in response",
+                    "examples": [
+                        false
+                    ],
+                    "default": false
+                },
+                "imap": {
+                    "description": "IMAP configuration. Set to `false` when there is no IMAP access to configure.",
+                    "anyOf": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "useAuthServer": {
+                                    "type": "boolean",
+                                    "description": "Use external authentication server to retrieve credentials dynamically",
+                                    "examples": [
+                                        false
+                                    ]
+                                },
+                                "auth": {
+                                    "description": "Authentication credentials for the IMAP server",
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "user": {
+                                                    "type": "string",
+                                                    "description": "Username or email address for IMAP authentication",
+                                                    "examples": [
+                                                        "myuser@gmail.com"
+                                                    ],
+                                                    "maxLength": 256
+                                                },
+                                                "accessToken": {
+                                                    "description": "OAuth2 access token (when using OAuth2 instead of password authentication)",
+                                                    "examples": [
+                                                        false
+                                                    ],
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string",
+                                                            "maxLength": 16384
+                                                        },
+                                                        {
+                                                            "const": false
+                                                        }
+                                                    ]
+                                                },
+                                                "pass": {
+                                                    "type": "string",
+                                                    "description": "Password for IMAP authentication",
+                                                    "examples": [
+                                                        "verysecret"
+                                                    ],
+                                                    "maxLength": 256
+                                                }
+                                            },
+                                            "required": [
+                                                "user"
+                                            ]
+                                        },
+                                        {
+                                            "const": false
+                                        }
+                                    ]
+                                },
+                                "secure": {
+                                    "type": "boolean",
+                                    "description": "Use TLS encryption for the connection (true for port 993, false for STARTTLS on port 143)",
+                                    "examples": [
+                                        true
+                                    ],
+                                    "default": false
+                                },
+                                "tls": {
+                                    "type": "object",
+                                    "description": "Advanced TLS configuration options",
+                                    "properties": {
+                                        "rejectUnauthorized": {
+                                            "type": "boolean",
+                                            "description": "Reject connections to servers with invalid TLS certificates",
+                                            "examples": [
+                                                true
+                                            ],
+                                            "default": true
+                                        },
+                                        "minVersion": {
+                                            "type": "string",
+                                            "description": "Minimum TLS version to accept (e.g., \"TLSv1.2\", \"TLSv1.3\")",
+                                            "examples": [
+                                                "TLSv1.2"
+                                            ],
+                                            "maxLength": 256
+                                        }
+                                    }
+                                },
+                                "disableIMAP4rev2": {
+                                    "type": "boolean",
+                                    "description": "Do not use IMAP4rev2 even if the server supports it",
+                                    "examples": [
+                                        false
+                                    ]
+                                },
+                                "resyncDelay": {
+                                    "type": "integer",
+                                    "description": "Delay in seconds between full mailbox resynchronizations",
+                                    "examples": [
+                                        900
+                                    ],
+                                    "default": 900
+                                },
+                                "disabled": {
+                                    "type": "boolean",
+                                    "description": "Temporarily disable IMAP operations for this account",
+                                    "examples": [
+                                        false
+                                    ]
+                                },
+                                "host": {
+                                    "type": "string",
+                                    "description": "IMAP server hostname",
+                                    "examples": [
+                                        "imap.gmail.com"
+                                    ]
+                                },
+                                "port": {
+                                    "type": "integer",
+                                    "description": "IMAP server port (typically 993 for IMAP over TLS, 143 for STARTTLS)",
+                                    "examples": [
+                                        993
+                                    ],
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                },
+                                "sentMailPath": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Custom folder path for sent messages. Defaults to auto-detected \"Sent\" folder. Set to null to use default.",
+                                    "examples": [
+                                        "Sent Mail"
+                                    ],
+                                    "maxLength": 1024
+                                },
+                                "draftsMailPath": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Custom folder path for draft messages. Defaults to auto-detected \"Drafts\" folder. Set to null to use default.",
+                                    "examples": [
+                                        "Drafts"
+                                    ],
+                                    "maxLength": 1024
+                                },
+                                "junkMailPath": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Custom folder path for spam/junk messages. Defaults to auto-detected \"Junk\" folder. Set to null to use default.",
+                                    "examples": [
+                                        "Junk"
+                                    ],
+                                    "maxLength": 1024
+                                },
+                                "trashMailPath": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Custom folder path for deleted messages. Defaults to auto-detected \"Trash\" folder. Set to null to use default.",
+                                    "examples": [
+                                        "Trash"
+                                    ],
+                                    "maxLength": 1024
+                                },
+                                "archiveMailPath": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Custom folder path for archived messages. Defaults to auto-detected \"Archive\" folder. Set to null to use default.",
+                                    "examples": [
+                                        "Archive"
+                                    ],
+                                    "maxLength": 1024
+                                }
+                            }
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                },
+                "smtp": {
+                    "description": "SMTP configuration. Set to `false` when there is no SMTP access to configure.",
+                    "anyOf": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "useAuthServer": {
+                                    "type": "boolean",
+                                    "description": "Use external authentication server to retrieve credentials dynamically",
+                                    "examples": [
+                                        false
+                                    ]
+                                },
+                                "auth": {
+                                    "description": "Authentication credentials for the SMTP server",
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "user": {
+                                                    "type": "string",
+                                                    "description": "Username or email address for SMTP authentication",
+                                                    "examples": [
+                                                        "myuser@gmail.com"
+                                                    ],
+                                                    "maxLength": 256
+                                                },
+                                                "accessToken": {
+                                                    "description": "OAuth2 access token (when using OAuth2 instead of password authentication)",
+                                                    "examples": [
+                                                        false
+                                                    ],
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string",
+                                                            "maxLength": 16384
+                                                        },
+                                                        {
+                                                            "const": false
+                                                        }
+                                                    ]
+                                                },
+                                                "pass": {
+                                                    "type": "string",
+                                                    "description": "Password for SMTP authentication",
+                                                    "examples": [
+                                                        "verysecret"
+                                                    ],
+                                                    "maxLength": 256
+                                                }
+                                            },
+                                            "required": [
+                                                "user"
+                                            ]
+                                        },
+                                        {
+                                            "const": false
+                                        }
+                                    ]
+                                },
+                                "host": {
+                                    "type": "string",
+                                    "description": "SMTP server hostname",
+                                    "examples": [
+                                        "smtp.gmail.com"
+                                    ]
+                                },
+                                "port": {
+                                    "type": "integer",
+                                    "description": "SMTP server port (typically 587 for STARTTLS, 465 for SMTP over TLS, 25 for unencrypted)",
+                                    "examples": [
+                                        587
+                                    ],
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                },
+                                "secure": {
+                                    "type": "boolean",
+                                    "description": "Use TLS encryption from the start (true for port 465, false for STARTTLS on ports 587/25)",
+                                    "examples": [
+                                        false
+                                    ],
+                                    "default": false
+                                },
+                                "tls": {
+                                    "type": "object",
+                                    "description": "Advanced TLS configuration options",
+                                    "properties": {
+                                        "rejectUnauthorized": {
+                                            "type": "boolean",
+                                            "description": "Reject connections to servers with invalid TLS certificates",
+                                            "examples": [
+                                                true
+                                            ],
+                                            "default": true
+                                        },
+                                        "minVersion": {
+                                            "type": "string",
+                                            "description": "Minimum TLS version to accept (e.g., \"TLSv1.2\", \"TLSv1.3\")",
+                                            "examples": [
+                                                "TLSv1.2"
+                                            ],
+                                            "maxLength": 256
+                                        }
+                                    }
+                                }
+                            },
+                            "required": [
+                                "host",
+                                "port"
+                            ]
+                        },
+                        {
+                            "const": false
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "annotations": {
+            "title": "Verify account settings",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": true
+        }
+    },
+    {
+        "name": "verify_oauth2_app",
+        "title": "Verify OAuth2 application",
+        "description": "Check an OAuth2 application against its provider: the credentials, the Pub/Sub setup where it has one, and optionally the connection of one account that uses it.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "app": {
+                    "type": "string",
+                    "description": "OAuth2 application ID",
+                    "examples": [
+                        "AAABhaBPHscAAAAH"
+                    ],
+                    "maxLength": 256
+                },
+                "account": {
+                    "type": "string",
+                    "description": "Mailbox address used to verify domain-wide delegation and live mailbox access",
+                    "examples": [
+                        "user@example.com"
+                    ],
+                    "maxLength": 256
+                },
+                "testConnection": {
+                    "type": "boolean",
+                    "description": "Perform the live IMAP/API connection step when an access token is obtained",
+                    "default": true
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "app"
+            ]
+        },
+        "annotations": {
+            "title": "Verify OAuth2 application",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": true
         }
     }
 ]
