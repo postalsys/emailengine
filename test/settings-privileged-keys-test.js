@@ -90,6 +90,16 @@ test('privileged settings keys', async t => {
         for (const key of ['openAiAPIUrl', 'authServer', 'proxyUrl', 'httpProxyUrl', 'documentStoreUrl']) {
             assert.ok(settings.privilegedKeys.includes(key), `${key} names where a stored secret is sent, so it must be privileged`);
         }
+
+        // What every listener serves and whether outbound TLS is checked at all: which certificate
+        // each listener presents is privileged, so the mode that decides which certificates may be
+        // served (self-signed puts every listener on the unverifiable one) and the hostnames orders
+        // are placed for cannot be less; and a credential that could switch certificate checking
+        // off for every IMAP and SMTP connection would be handing the account passwords to
+        // whoever sits on the path
+        for (const key of ['tlsProvisioning', 'tlsHostnames', 'ignoreMailCertErrors']) {
+            assert.ok(settings.privilegedKeys.includes(key), `${key} decides what TLS is worth on this instance, so it must be privileged`);
+        }
     });
 
     await t.test('the MCP settings tools offer exactly the keys the REST rule allows', async () => {

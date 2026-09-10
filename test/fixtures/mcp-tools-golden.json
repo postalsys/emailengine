@@ -2191,7 +2191,7 @@
     {
         "name": "get_settings",
         "title": "Get settings",
-        "description": "Read instance settings. Set each setting you want returned to true. Secrets come back as a boolean saying whether a value is stored, credentials inside URLs are masked, and eventTypes lists the webhook event names the instance supports. Settings that would widen this credential (operator scripts, proxies, secrets, the built-in listeners) are not offered.",
+        "description": "Read instance settings. Set each setting you want returned to true. Secrets come back as a boolean saying whether a value is stored, credentials inside URLs are masked, and eventTypes lists the webhook event names the instance supports. Settings that would widen this credential (operator scripts, proxies, secrets, the built-in listeners and their TLS, mail certificate checking) are not offered.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -2236,10 +2236,6 @@
                     "default": false
                 },
                 "resolveGmailCategories": {
-                    "type": "boolean",
-                    "default": false
-                },
-                "ignoreMailCertErrors": {
                     "type": "boolean",
                     "default": false
                 },
@@ -2312,14 +2308,6 @@
                     "default": false
                 },
                 "smtpStrategy": {
-                    "type": "boolean",
-                    "default": false
-                },
-                "tlsProvisioning": {
-                    "type": "boolean",
-                    "default": false
-                },
-                "tlsHostnames": {
                     "type": "boolean",
                     "default": false
                 },
@@ -4811,7 +4799,7 @@
     {
         "name": "update_settings",
         "title": "Update settings",
-        "description": "Change instance settings. Send only the keys to change; they take effect immediately on every worker. Covers where webhooks are delivered and which events are sent, notification shaping, the service URL and branding, sync strategy, queue retention, AI processing and TLS provisioning. Confirm with the user before changing the webhook target, the service URL or the TLS mode. The settings that would widen this credential (operator scripts, proxies, secrets, the built-in listeners, the MCP and audit switches) are not offered.",
+        "description": "Change instance settings. Send only the keys to change; they take effect immediately on every worker. Covers where webhooks are delivered and which events are sent, notification shaping, the service URL and branding, sync strategy, queue retention and AI processing. Confirm with the user before changing the webhook target or the service URL. The settings that would widen this credential (operator scripts, proxies, secrets, the built-in listeners and their TLS, mail certificate checking, the MCP and audit switches) are not offered.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -4887,10 +4875,6 @@
                 "resolveGmailCategories": {
                     "type": "boolean",
                     "description": "Automatically detect and categorize Gmail tabs (Primary, Social, Promotions, etc.) for IMAP connections"
-                },
-                "ignoreMailCertErrors": {
-                    "type": "boolean",
-                    "description": "Allow connections to mail servers with self-signed or invalid TLS certificates (not recommended for production)"
                 },
                 "generateEmailSummary": {
                     "type": "boolean",
@@ -5027,30 +5011,6 @@
                         "dedicated",
                         "random"
                     ]
-                },
-                "tlsProvisioning": {
-                    "type": "string",
-                    "description": "Where the TLS certificate for the built-in listeners comes from: \"acme\" orders one from Let's Encrypt, \"manual\" uses the certificate uploaded through the admin UI, \"self-signed\" stops trying to get a real one",
-                    "examples": [
-                        "acme"
-                    ],
-                    "enum": [
-                        "acme",
-                        "manual",
-                        "self-signed"
-                    ]
-                },
-                "tlsHostnames": {
-                    "type": "array",
-                    "description": "Additional hostnames to hold certificates for, beyond the Service URL hostname. Each one is ordered separately and served over SNI, so a mail client connecting to smtp.example.com is offered a certificate for that name",
-                    "items": {
-                        "type": "string",
-                        "examples": [
-                            "smtp.example.com"
-                        ],
-                        "maxLength": 255,
-                        "pattern": "^[a-z0-9._:-]+$"
-                    }
                 },
                 "queueKeep": {
                     "type": "integer",

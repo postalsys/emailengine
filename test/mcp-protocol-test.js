@@ -234,6 +234,17 @@ test('MCP protocol', async t => {
 
         // and a credential offered nothing is told so rather than handed a workflow
         assert.match(serverInstructions({}), /offered no tools/);
+        // while one whose catalog holds only the account reads both sets share - a management
+        // token narrowed to read/account - exercises no scope but is not empty-handed, and must not
+        // be told it is
+        const shared = serverInstructions({ surfaces: [], hasTools: true });
+        assert.match(shared, /only the tools both tool sets share/);
+        assert.doesNotMatch(shared, /offered no tools/);
+        assert.doesNotMatch(shared, /get_instance_stats/);
+        // the same line reaches a bound credential in that position, after its binding sentence
+        const boundShared = serverInstructions({ account: 'acct-1', surfaces: [], hasTools: true });
+        assert.match(boundShared, /acct-1/);
+        assert.match(boundShared, /both tool sets share/);
         // and the management lines come before the mail lines whatever order the surfaces arrive in
         assert.ok(both.indexOf('take effect immediately') < both.indexOf('send_message'));
     });
