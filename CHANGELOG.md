@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.80.1](https://github.com/postalsys/emailengine/compare/v2.80.0...v2.80.1) (2026-09-10)
+
+
+### Bug Fixes
+
+* **accounts:** stop a delete in the startup window from reporting a failure ([b41896b](https://github.com/postalsys/emailengine/commit/b41896b6706a8165b5481db39abff2f4e3299a13))
+* **admin:** keep the admin UI working behind an HTML-rewriting CDN ([c2e6596](https://github.com/postalsys/emailengine/commit/c2e659687f909e8eaa416407b0fb0b4e5c19ba09))
+* **deps:** update imapflow to 2.0.1 for the Exchange Online IMAP4rev2 advertisement ([a6b1b8f](https://github.com/postalsys/emailengine/commit/a6b1b8f0408a404aca76c8d89e894538eb97f00f))
+* **deps:** update imapflow to 2.0.2, bull-board to 9.10.0 and @postalsys/certs to 1.4.1 ([2817f41](https://github.com/postalsys/emailengine/commit/2817f4134437f75e8c1a27049c850d28adc6351c))
+* **deps:** update nodemailer to 10.0.3 across the packages that pin it ([a791216](https://github.com/postalsys/emailengine/commit/a7912162425c8d7e5bcd3ae020ca875b9d950c91))
+* **imap:** report a login the server could not serve as a connection failure, and announce a repeated failure once ([832d6ab](https://github.com/postalsys/emailengine/commit/832d6ab966e0ad0f490aa3137f8130520d12de13))
+* **mcp:** add the mcp-manage surface scope ([4f5043c](https://github.com/postalsys/emailengine/commit/4f5043c0dc118e73fe90cc0851cb110856d6239e))
+* **mcp:** expose the instance management tools ([08f35a8](https://github.com/postalsys/emailengine/commit/08f35a8a1433bfbf1c14d4f03051876bd7bd2571))
+* **mcp:** keep the connection check out of the Observe level and the service URL out of a settings grant ([e85de25](https://github.com/postalsys/emailengine/commit/e85de254950f6d65e8c342f4f7b371fb96428704))
+* **mcp:** keep the TLS mode and mail certificate checking out of a settings grant ([ad6428f](https://github.com/postalsys/emailengine/commit/ad6428ff5c4bdee1421fc1568a6b1810a9598894))
+* **mcp:** offer instance management first on the consent prompt, the generator and the token form ([6022a5c](https://github.com/postalsys/emailengine/commit/6022a5cfa3d792d8b3fe0e08bfa3bfa324d7a500))
+* **mcp:** read every MCP access decision off one section table ([136c860](https://github.com/postalsys/emailengine/commit/136c860f7586a23c644899526c995ff2533034cd))
+* **tls:** let each listener choose the certificate it presents by default ([056ff8f](https://github.com/postalsys/emailengine/commit/056ff8feb4b9cc990b08c8c0484bac0c044a1e28))
+* **tokens:** accept a per-section grant list on token permissions ([ca6ff34](https://github.com/postalsys/emailengine/commit/ca6ff34f8a13cab3f65c614ab5df4644b3bdfa09))
+* **tokens:** keep a record that names no groups out of the sections the admin split created ([d817416](https://github.com/postalsys/emailengine/commit/d81741690a32c26329f0e993bb1f0ce16414f2dc))
+* **tokens:** keep the built-in listeners and the AI endpoint out of a settings grant ([d069dd7](https://github.com/postalsys/emailengine/commit/d069dd7e706f39791e0591e134286cb17e699f66))
+* **tokens:** make the management endpoints grantable in their own sections ([4f975bf](https://github.com/postalsys/emailengine/commit/4f975bf72aeb818bcb3b64c98473f7eef92d040b))
+* **ui:** rebuild the stylesheet so the MCP configuration page gets its section spacing ([e99bd30](https://github.com/postalsys/emailengine/commit/e99bd30644442ced19bfa82f4139076352db7c17))
+
 ## [2.80.0](https://github.com/postalsys/emailengine/compare/v2.79.9...v2.80.0) (2026-09-09)
 
 
