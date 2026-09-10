@@ -51,7 +51,7 @@ test.describe('access token pages', () => {
         // untick is a deliberate subtraction. Starting empty would post two empty allowlists, which
         // grant nothing.
         await expect(page.locator('.permission-action:checked')).toHaveCount(4);
-        await expect(page.locator('.permission-group:checked')).toHaveCount(13);
+        await expect(page.locator('.permission-group:checked')).toHaveCount(18);
 
         await toggle.uncheck();
         await expect(section).toBeHidden();

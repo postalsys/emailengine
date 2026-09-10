@@ -11526,7 +11526,12 @@
             "gateway": "Manage SMTP gateways, which hold outbound SMTP credentials",
             "events": "Subscribe to the instance-wide change stream, which covers every account",
             "diagnostics": "Read statistics and service status",
-            "logs": "Read the per-account connection log. Entries include the protocol or API trace, so they include folder names and message subjects"
+            "logs": "Read the per-account connection log. Entries include the protocol or API trace, so they include folder names and message subjects",
+            "settings": "Read and change instance settings and pause or resume the queues. A write reaches the global webhook target. The keys that would widen a token beyond settings (operator scripts, proxies, secrets, the MCP and audit switches) are refused to a restricted token",
+            "oauth2": "Manage OAuth2 applications. Client secrets are write-only, and a change can move where the provider sends authorization codes",
+            "license": "Read, apply and remove the license key",
+            "token": "List, inspect and revoke access tokens and read their audit logs, which record who read which account. Cannot create tokens",
+            "provisioning": "Add and reconfigure email accounts and SMTP gateways, including where they connect. A stored credential is sent to whatever host the record names after the change"
           }
         },
         "enum": [
@@ -11542,7 +11547,12 @@
           "gateway",
           "events",
           "diagnostics",
-          "logs"
+          "logs",
+          "settings",
+          "oauth2",
+          "license",
+          "token",
+          "provisioning"
         ]
       },
       "TokenGroups": {
@@ -12878,7 +12888,7 @@
           "Credentials are not verified while handling this request. The account connects afterwards, and an authentication failure surfaces as an authenticationError state rather than an error here. Use the account verification endpoint to test credentials up front."
         ],
         "x-ee-action": "write",
-        "x-ee-group": "admin"
+        "x-ee-group": "provisioning"
       }
     },
     "/v1/account/{account}": {
@@ -13127,7 +13137,7 @@
           "Credentials are not verified while handling this request. The account connects afterwards, and an authentication failure surfaces as an authenticationError state rather than an error here. Use the account verification endpoint to test credentials up front."
         ],
         "x-ee-action": "write",
-        "x-ee-group": "admin"
+        "x-ee-group": "provisioning"
       },
       "delete": {
         "summary": "Remove account",
@@ -17693,7 +17703,7 @@
           }
         },
         "x-ee-action": "write",
-        "x-ee-group": "admin"
+        "x-ee-group": "provisioning"
       }
     },
     "/v1/autoconfig": {
@@ -18834,7 +18844,7 @@
           }
         },
         "x-ee-action": "write",
-        "x-ee-group": "admin"
+        "x-ee-group": "provisioning"
       }
     },
     "/v1/gateway/{gateway}": {
@@ -19172,7 +19182,7 @@
           }
         },
         "x-ee-action": "write",
-        "x-ee-group": "admin"
+        "x-ee-group": "provisioning"
       }
     },
     "/v1/gateways": {
@@ -19364,7 +19374,7 @@
           }
         },
         "x-ee-action": "read",
-        "x-ee-group": "admin"
+        "x-ee-group": "license"
       },
       "post": {
         "summary": "Register a license",
@@ -19459,7 +19469,7 @@
           }
         },
         "x-ee-action": "write",
-        "x-ee-group": "admin"
+        "x-ee-group": "license"
       },
       "delete": {
         "summary": "Remove license",
@@ -19536,7 +19546,7 @@
         },
         "x-ee-impact": "destructive",
         "x-ee-action": "destructive",
-        "x-ee-group": "admin"
+        "x-ee-group": "license"
       }
     },
     "/v1/logs/{account}": {
@@ -19766,7 +19776,7 @@
           }
         },
         "x-ee-action": "read",
-        "x-ee-group": "admin"
+        "x-ee-group": "oauth2"
       },
       "post": {
         "summary": "Register OAuth2 application",
@@ -19861,7 +19871,7 @@
           }
         },
         "x-ee-action": "write",
-        "x-ee-group": "admin"
+        "x-ee-group": "oauth2"
       }
     },
     "/v1/oauth2/{app}": {
@@ -19971,7 +19981,7 @@
           }
         },
         "x-ee-action": "read",
-        "x-ee-group": "admin"
+        "x-ee-group": "oauth2"
       },
       "put": {
         "summary": "Update OAuth2 application",
@@ -20088,7 +20098,7 @@
           }
         },
         "x-ee-action": "write",
-        "x-ee-group": "admin"
+        "x-ee-group": "oauth2"
       },
       "delete": {
         "summary": "Remove OAuth2 application",
@@ -20197,7 +20207,7 @@
         },
         "x-ee-impact": "destructive",
         "x-ee-action": "destructive",
-        "x-ee-group": "admin"
+        "x-ee-group": "oauth2"
       }
     },
     "/v1/oauth2/{app}/verify": {
@@ -20317,7 +20327,7 @@
         },
         "x-ee-impact": "readonly",
         "x-ee-action": "read",
-        "x-ee-group": "admin"
+        "x-ee-group": "oauth2"
       }
     },
     "/v1/outbox": {
@@ -21602,7 +21612,7 @@
           }
         },
         "x-ee-action": "read",
-        "x-ee-group": "admin"
+        "x-ee-group": "settings"
       },
       "post": {
         "summary": "Set setting values",
@@ -21697,7 +21707,7 @@
           }
         },
         "x-ee-action": "write",
-        "x-ee-group": "admin"
+        "x-ee-group": "settings"
       }
     },
     "/v1/settings/queue/{queue}": {
@@ -21804,7 +21814,7 @@
           }
         },
         "x-ee-action": "read",
-        "x-ee-group": "admin"
+        "x-ee-group": "settings"
       },
       "put": {
         "summary": "Set queue settings",
@@ -21918,7 +21928,7 @@
           }
         },
         "x-ee-action": "write",
-        "x-ee-group": "admin"
+        "x-ee-group": "settings"
       }
     },
     "/v1/stats": {
@@ -22852,7 +22862,7 @@
           }
         },
         "x-ee-action": "read",
-        "x-ee-group": "admin"
+        "x-ee-group": "token"
       },
       "post": {
         "summary": "Provision an access token",
@@ -23075,7 +23085,7 @@
           }
         },
         "x-ee-action": "read",
-        "x-ee-group": "admin"
+        "x-ee-group": "token"
       },
       "delete": {
         "summary": "Remove a token",
@@ -23182,7 +23192,7 @@
         },
         "x-ee-impact": "destructive",
         "x-ee-action": "destructive",
-        "x-ee-group": "admin"
+        "x-ee-group": "token"
       }
     },
     "/v1/tokens/{token}/log": {
@@ -23327,7 +23337,7 @@
         },
         "x-ee-impact": "readonly",
         "x-ee-action": "read",
-        "x-ee-group": "admin"
+        "x-ee-group": "token"
       }
     },
     "/v1/unified/search": {
@@ -23549,7 +23559,7 @@
         },
         "x-ee-impact": "readonly",
         "x-ee-action": "read",
-        "x-ee-group": "admin"
+        "x-ee-group": "provisioning"
       }
     },
     "/v1/webhookRoutes": {

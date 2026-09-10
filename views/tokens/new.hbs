@@ -255,8 +255,9 @@
                     <span class="icon-[tabler--lock] size-5 shrink-0"></span>
                     <span>
                         Some endpoints are never available to a restricted token, whatever you select here:
-                        settings, OAuth2 applications, licensing, access tokens and stored account
-                        credentials. A token that could reach those could grant itself more.
+                        creating access tokens, reading an account's live OAuth2 credential, and the settings
+                        that would let a token widen itself (operator scripts, proxies, secrets). A token that
+                        could reach those could grant itself more.
                     </span>
                 </div>
             </div>
@@ -506,7 +507,7 @@
 
             let rest = document.createElement('div');
             rest.className = 'text-base-content/60';
-            rest.textContent = 'It cannot reach anything else, or read credentials and settings.';
+            rest.textContent = 'It cannot reach anything else, create tokens or read stored credentials.';
             permissionOutcomeTextElm.append(rest);
         };
 

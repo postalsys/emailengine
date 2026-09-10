@@ -300,12 +300,17 @@ test('API route table and authentication', async t => {
             'events',
             'export',
             'gateway',
+            'license',
             'logs',
             'mailbox',
             'message',
+            'oauth2',
             'outbox',
+            'provisioning',
+            'settings',
             'submit',
             'template',
+            'token',
             'webhook'
         ]);
 
@@ -337,11 +342,15 @@ test('API route table and authentication', async t => {
         // to fail here rather than in a customer's threat model.
         //
         // The oauth-token route is the sharpest of them: it returns a live OAuth2 access token,
-        // which is a mail credential that outlives any narrowing on the token that read it.
-        const sensitive = /\/v1\/(settings|oauth2|license|tokens?)\b|oauth-token|verifyAccount|authentication\/form/;
+        // which is a mail credential that outlives any narrowing on the token that read it. The
+        // token mint is the other: a token that can mint tokens can widen itself. Listing,
+        // inspecting and revoking tokens share the path prefix and are grantable, so the mint is
+        // matched by method as well as by path.
+        const handsOutCredential = route =>
+            /oauth-token|\/v1\/(chat|unified)\//.test(route.path) || (route.method === 'post' && /^\/v1\/tokens?$/.test(route.path));
 
         const misfiled = v1Routes
-            .filter(route => sensitive.test(route.path))
+            .filter(handsOutCredential)
             .map(route => ({ route: route.route, group: routeGrant(route).group }))
             .filter(entry => entry.group !== GROUP.ADMIN)
             .map(entry => `${entry.route} -> ${String(entry.group)}`);
@@ -349,15 +358,105 @@ test('API route table and authentication', async t => {
         assert.deepEqual(
             misfiled,
             [],
-            'a route that hands out a credential or widens what the instance can do must be in GROUP.ADMIN, ' +
-                `which no permissions record can name: ${JSON.stringify(misfiled)}`
+            'a route that hands out a credential must be in GROUP.ADMIN, ' + `which no permissions record can name: ${JSON.stringify(misfiled)}`
         );
 
-        // The pattern has to actually match something, or the assertion above passes vacuously
-        assert.ok(v1Routes.filter(route => sensitive.test(route.path)).length >= 18);
+        // The pattern has to actually match something, or the assertion above passes vacuously:
+        // the two mints, the oauth-token read and the two Document Store routes
+        assert.equal(v1Routes.filter(handsOutCredential).length, 5);
     });
 
-    await t.test('a write that can redirect where stored credentials are sent is never grantable', () => {
+    await t.test('the management routes are grantable, and only in the groups made for them', () => {
+        // The settings, OAuth2 application, license, token and provisioning routes were split out
+        // of the admin group so an agent that manages the instance can hold them. Each has to
+        // resolve to one of the five groups created for the split and never to a group that
+        // existed before it: a record cannot name a group that did not exist when it was written,
+        // so as long as this holds, no token issued before the split gained a route from it.
+        const management = /\/v1\/(settings|oauth2|license|tokens?)\b|verifyAccount|authentication\/form/;
+        const managementGroups = new Set([GROUP.SETTINGS, GROUP.OAUTH2, GROUP.LICENSE, GROUP.TOKEN, GROUP.PROVISIONING]);
+
+        const misfiled = v1Routes
+            .filter(route => management.test(route.path))
+            .map(route => ({ route: route.route, group: routeGrant(route).group }))
+            .filter(entry => entry.group !== GROUP.ADMIN && !managementGroups.has(entry.group))
+            .map(entry => `${entry.route} -> ${String(entry.group)}`);
+
+        assert.deepEqual(misfiled, [], `a management route landed in a pre-split group: ${JSON.stringify(misfiled)}`);
+        assert.ok(v1Routes.filter(route => management.test(route.path)).length >= 20);
+    });
+
+    await t.test('the groups that predate the split still hold exactly the routes they held', () => {
+        // The other half of the non-widening argument above, as a literal: what each grantable
+        // group covered on the day the admin block was split (2.80.x). A route added to one of
+        // these later is a deliberate widening of every token that names the group, and this is
+        // where that decision is made visible rather than slipped in through the route table.
+        const preSplit = {
+            [GROUP.ACCOUNT]: [
+                'GET /v1/accounts',
+                'GET /v1/account/{account}',
+                'DELETE /v1/account/{account}',
+                'PUT /v1/account/{account}/flush',
+                'PUT /v1/account/{account}/reconnect',
+                'PUT /v1/account/{account}/sync',
+                'GET /v1/account/{account}/server-signatures'
+            ],
+            [GROUP.MAILBOX]: [
+                'GET /v1/account/{account}/mailboxes',
+                'POST /v1/account/{account}/mailbox',
+                'PUT /v1/account/{account}/mailbox',
+                'DELETE /v1/account/{account}/mailbox'
+            ],
+            [GROUP.MESSAGE]: [
+                'GET /v1/account/{account}/messages',
+                'POST /v1/account/{account}/search',
+                'GET /v1/account/{account}/message/{message}',
+                'PUT /v1/account/{account}/message/{message}',
+                'DELETE /v1/account/{account}/message/{message}',
+                'PUT /v1/account/{account}/message/{message}/move',
+                'GET /v1/account/{account}/message/{message}/source',
+                'POST /v1/account/{account}/message',
+                'GET /v1/account/{account}/text/{text}',
+                'GET /v1/account/{account}/attachment/{attachment}',
+                'PUT /v1/account/{account}/messages',
+                'PUT /v1/account/{account}/messages/move',
+                'PUT /v1/account/{account}/messages/delete'
+            ],
+            [GROUP.SUBMIT]: [
+                'POST /v1/account/{account}/submit',
+                'POST /v1/account/{account}/message/{message}/submit',
+                'POST /v1/delivery-test/account/{account}'
+            ],
+            [GROUP.OUTBOX]: ['GET /v1/outbox', 'GET /v1/outbox/{queueId}', 'DELETE /v1/outbox/{queueId}'],
+            [GROUP.EXPORT]: [
+                'POST /v1/account/{account}/export',
+                'GET /v1/account/{account}/exports',
+                'GET /v1/account/{account}/export/{exportId}',
+                'GET /v1/account/{account}/export/{exportId}/download',
+                'DELETE /v1/account/{account}/export/{exportId}'
+            ],
+            [GROUP.TEMPLATE]: [
+                'GET /v1/templates',
+                'POST /v1/templates/template',
+                'GET /v1/templates/template/{template}',
+                'PUT /v1/templates/template/{template}',
+                'DELETE /v1/templates/template/{template}',
+                'DELETE /v1/templates/account/{account}'
+            ],
+            [GROUP.BLOCKLIST]: ['GET /v1/blocklists', 'GET /v1/blocklist/{listId}', 'POST /v1/blocklist/{listId}', 'DELETE /v1/blocklist/{listId}'],
+            [GROUP.WEBHOOK]: ['GET /v1/webhookRoutes', 'GET /v1/webhookRoutes/webhookRoute/{webhookRoute}'],
+            [GROUP.GATEWAY]: ['GET /v1/gateways', 'GET /v1/gateway/{gateway}', 'DELETE /v1/gateway/{gateway}'],
+            [GROUP.EVENTS]: ['GET /v1/changes'],
+            [GROUP.DIAGNOSTICS]: ['GET /v1/stats', 'GET /v1/delivery-test/check/{deliveryTest}', 'GET /v1/pubsub/status', 'GET /v1/autoconfig', 'GET /metrics'],
+            [GROUP.LOGS]: ['GET /v1/logs/{account}']
+        };
+
+        for (const [group, routes] of Object.entries(preSplit)) {
+            const now = [...ROUTE_GROUPS.entries()].filter(([, entry]) => entry === group).map(([route]) => route);
+            assert.deepEqual(now.sort(), [...routes].sort(), `the ${group} group changed shape since the admin split`);
+        }
+    });
+
+    await t.test('a write that can redirect where stored credentials are sent is only grantable as provisioning', () => {
         // None of these names a credential in its payload, which is what makes them easy to misfile.
         // Both records keep their stored password across a partial update - Account.persistUpdate()
         // merges the STORED imap/smtp/oauth2 object over the payload, and Gateway.update() hmsets
@@ -365,12 +464,13 @@ test('API route table and authentication', async t => {
         // the next connection authenticate to the new host with the old credentials. Reading those
         // credentials back is masked; sending them somewhere is not.
         //
-        // The gateway pair was missed on the first pass precisely because the account pair had
-        // already been reasoned about: same shape, different module.
+        // They are grantable now, to an agent that provisions accounts - but only through the group
+        // whose description says exactly this, never through `account` or `gateway`, whose holders
+        // were promised no such thing.
         const credentialRedirects = ['POST /v1/account', 'PUT /v1/account/{account}', 'POST /v1/gateway', 'PUT /v1/gateway/edit/{gateway}'];
 
         for (const route of credentialRedirects) {
-            assert.equal(ROUTE_GROUPS.get(route), GROUP.ADMIN, `${route} must not be grantable`);
+            assert.equal(ROUTE_GROUPS.get(route), GROUP.PROVISIONING, `${route} must be grantable only as provisioning`);
         }
     });
 
@@ -382,7 +482,14 @@ test('API route table and authentication', async t => {
         // the same grantable `submit` group and already takes a routing field, so a third route
         // growing `proxy` is not hypothetical. Derived from the registered schemas rather than from
         // a list, so the new route is what fails rather than the customer's threat model.
-        const guarded = ['POST /v1/account/{account}/submit', 'POST /v1/account/{account}/message/{message}/submit'];
+        const guarded = [
+            'POST /v1/account/{account}/submit',
+            'POST /v1/account/{account}/message/{message}/submit',
+            // The provisioning routes, grantable since the admin split
+            'POST /v1/account',
+            'PUT /v1/account/{account}',
+            'POST /v1/verifyAccount'
+        ];
 
         const declaresProxy = route => {
             const payload = route.payload;
