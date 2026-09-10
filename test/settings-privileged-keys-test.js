@@ -78,6 +78,18 @@ test('privileged settings keys', async t => {
         for (const key of settings.secretKeys.filter(key => Object.hasOwn(settingsSchema, key))) {
             assert.ok(settings.privilegedKeys.includes(key), `secret ${key} must be privileged`);
         }
+
+        // Every setting of the built-in listeners: a credential that could switch authentication
+        // off on the SMTP server would send as any account with no credential at all, and one
+        // that could move a listener onto a public interface or off TLS is not a settings editor
+        for (const key of Object.keys(settingsSchema).filter(key => /^(smtpServer|imapProxyServer)/.test(key))) {
+            assert.ok(settings.privilegedKeys.includes(key), `listener setting ${key} must be privileged`);
+        }
+
+        // Every URL a stored secret is sent to, beside the secret itself
+        for (const key of ['openAiAPIUrl', 'authServer', 'proxyUrl', 'httpProxyUrl', 'documentStoreUrl']) {
+            assert.ok(settings.privilegedKeys.includes(key), `${key} names where a stored secret is sent, so it must be privileged`);
+        }
     });
 
     await t.test('the MCP settings tools offer exactly the keys the REST rule allows', async () => {
@@ -96,6 +108,26 @@ test('privileged settings keys', async t => {
 
         assert.deepEqual(Object.keys(byName.get('update_settings').definition.inputSchema.properties).sort(), expected);
         assert.deepEqual(Object.keys(byName.get('get_settings').definition.inputSchema.properties).sort(), expected.concat('eventTypes').sort());
+    });
+
+    await t.test('a narrowed token is refused reading a privileged key, and the ordinary ones still read', async () => {
+        // The read side of the same rule: several of the keys are secrets by the project's own
+        // definition (scriptEnv is where the admin UI tells operators to keep API keys), and the
+        // write guard alone left a read/settings grant able to fetch them
+        const get = (query, tokenData) =>
+            server.inject({ method: 'GET', url: `/v1/settings?${query}`, headers: { 'x-test-token': JSON.stringify(tokenData) } });
+
+        const refused = await get('scriptEnv=true&pageBrandName=true', { permissions: { grants: [{ action: 'read', group: 'settings' }] } });
+        assert.equal(refused.statusCode, 403);
+        assert.match(refused.result.message, /can not read scriptEnv/);
+
+        const allowed = await get('pageBrandName=true&scriptEnv=false', { permissions: { grants: [{ action: 'read', group: 'settings' }] } });
+        assert.equal(allowed.statusCode, 200);
+        assert.ok(Object.hasOwn(allowed.result, 'pageBrandName'));
+        assert.ok(!Object.hasOwn(allowed.result, 'scriptEnv'), 'a flag set to false asks for nothing, so it is not a refusal either');
+
+        const unnarrowed = await get('scriptEnv=true', UNNARROWED);
+        assert.equal(unnarrowed.statusCode, 200);
     });
 
     await t.test('a narrowed token is refused a privileged key, and told which one', async () => {

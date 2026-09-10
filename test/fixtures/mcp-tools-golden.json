@@ -2191,7 +2191,7 @@
     {
         "name": "get_settings",
         "title": "Get settings",
-        "description": "Read instance settings. Set each setting you want returned to true. Secrets come back as a boolean saying whether a value is stored, credentials inside URLs are masked, and eventTypes lists the webhook event names the instance supports. Settings that would widen this credential (operator scripts, proxies, secrets) are not offered.",
+        "description": "Read instance settings. Set each setting you want returned to true. Secrets come back as a boolean saying whether a value is stored, credentials inside URLs are masked, and eventTypes lists the webhook event names the instance supports. Settings that would widen this credential (operator scripts, proxies, secrets, the built-in listeners) are not offered.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -2248,10 +2248,6 @@
                     "default": false
                 },
                 "openAiModel": {
-                    "type": "boolean",
-                    "default": false
-                },
-                "openAiAPIUrl": {
                     "type": "boolean",
                     "default": false
                 },
@@ -2319,59 +2315,11 @@
                     "type": "boolean",
                     "default": false
                 },
-                "smtpServerEnabled": {
-                    "type": "boolean",
-                    "default": false
-                },
-                "smtpServerPort": {
-                    "type": "boolean",
-                    "default": false
-                },
-                "smtpServerHost": {
-                    "type": "boolean",
-                    "default": false
-                },
-                "smtpServerAuthEnabled": {
-                    "type": "boolean",
-                    "default": false
-                },
-                "smtpServerTLSEnabled": {
-                    "type": "boolean",
-                    "default": false
-                },
                 "tlsProvisioning": {
                     "type": "boolean",
                     "default": false
                 },
                 "tlsHostnames": {
-                    "type": "boolean",
-                    "default": false
-                },
-                "apiTLSCertificate": {
-                    "type": "boolean",
-                    "default": false
-                },
-                "smtpServerTLSCertificate": {
-                    "type": "boolean",
-                    "default": false
-                },
-                "imapProxyServerTLSCertificate": {
-                    "type": "boolean",
-                    "default": false
-                },
-                "imapProxyServerEnabled": {
-                    "type": "boolean",
-                    "default": false
-                },
-                "imapProxyServerPort": {
-                    "type": "boolean",
-                    "default": false
-                },
-                "imapProxyServerHost": {
-                    "type": "boolean",
-                    "default": false
-                },
-                "imapProxyServerTLSEnabled": {
                     "type": "boolean",
                     "default": false
                 },
@@ -4863,7 +4811,7 @@
     {
         "name": "update_settings",
         "title": "Update settings",
-        "description": "Change instance settings. Send only the keys to change; they take effect immediately on every worker. Covers where webhooks are delivered and which events are sent, notification shaping, the service URL and branding, sync strategy, queue retention, the built-in SMTP server and IMAP proxy listeners, and TLS provisioning. Confirm with the user before changing the webhook target, the service URL or the TLS mode. The settings that would widen this credential (operator scripts, proxies, secrets, the MCP and audit switches) are not offered.",
+        "description": "Change instance settings. Send only the keys to change; they take effect immediately on every worker. Covers where webhooks are delivered and which events are sent, notification shaping, the service URL and branding, sync strategy, queue retention, AI processing and TLS provisioning. Confirm with the user before changing the webhook target, the service URL or the TLS mode. The settings that would widen this credential (operator scripts, proxies, secrets, the built-in listeners, the MCP and audit switches) are not offered.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -4953,13 +4901,6 @@
                     "description": "OpenAI model to use for text generation",
                     "examples": [
                         "gpt-5-mini"
-                    ]
-                },
-                "openAiAPIUrl": {
-                    "type": "string",
-                    "description": "Base URL for the OpenAI API",
-                    "examples": [
-                        "https://api.openai.com"
                     ]
                 },
                 "openAiTemperature": {
@@ -5087,34 +5028,6 @@
                         "random"
                     ]
                 },
-                "smtpServerEnabled": {
-                    "type": "boolean",
-                    "description": "Enable the built-in SMTP server for receiving emails"
-                },
-                "smtpServerPort": {
-                    "type": "integer",
-                    "description": "Port number for the built-in SMTP server",
-                    "examples": [
-                        2525
-                    ],
-                    "minimum": 0,
-                    "maximum": 65535
-                },
-                "smtpServerHost": {
-                    "type": "string",
-                    "description": "IP address to bind the SMTP server to (empty = all interfaces)",
-                    "examples": [
-                        "0.0.0.0"
-                    ]
-                },
-                "smtpServerAuthEnabled": {
-                    "type": "boolean",
-                    "description": "Require SMTP authentication for incoming connections"
-                },
-                "smtpServerTLSEnabled": {
-                    "type": "boolean",
-                    "description": "Enable TLS/STARTTLS support for the SMTP server"
-                },
                 "tlsProvisioning": {
                     "type": "string",
                     "description": "Where the TLS certificate for the built-in listeners comes from: \"acme\" orders one from Let's Encrypt, \"manual\" uses the certificate uploaded through the admin UI, \"self-signed\" stops trying to get a real one",
@@ -5138,66 +5051,6 @@
                         "maxLength": 255,
                         "pattern": "^[a-z0-9._:-]+$"
                     }
-                },
-                "apiTLSCertificate": {
-                    "type": [
-                        "string",
-                        "null"
-                    ],
-                    "description": "The certificate the Admin UI and API presents by default (to a client that names no host, and for every name the certificate covers). \"auto\" lets EmailEngine decide: the material from EENGINE_API_TLS_* when it is set, otherwise the certificate for the Service URL hostname. Otherwise an id from the TLS Certificates page: \"manual\", \"self-signed\", \"acme:<hostname>\", or \"env:api\" / \"env:smtp\" / \"env:imapProxy\". A name the default does not cover is still served its own certificate",
-                    "examples": [
-                        "auto"
-                    ],
-                    "maxLength": 262,
-                    "pattern": "^(auto|manual|self-signed|env:(api|smtp|imapProxy)|acme:[a-z0-9._:-]+)$"
-                },
-                "smtpServerTLSCertificate": {
-                    "type": [
-                        "string",
-                        "null"
-                    ],
-                    "description": "The certificate the SMTP server presents by default (to a client that names no host, and for every name the certificate covers). \"auto\" lets EmailEngine decide: the material from EENGINE_SMTP_TLS_* when it is set, otherwise the certificate for the Service URL hostname. Otherwise an id from the TLS Certificates page: \"manual\", \"self-signed\", \"acme:<hostname>\", or \"env:api\" / \"env:smtp\" / \"env:imapProxy\". A name the default does not cover is still served its own certificate",
-                    "examples": [
-                        "auto"
-                    ],
-                    "maxLength": 262,
-                    "pattern": "^(auto|manual|self-signed|env:(api|smtp|imapProxy)|acme:[a-z0-9._:-]+)$"
-                },
-                "imapProxyServerTLSCertificate": {
-                    "type": [
-                        "string",
-                        "null"
-                    ],
-                    "description": "The certificate the IMAP proxy presents by default (to a client that names no host, and for every name the certificate covers). \"auto\" lets EmailEngine decide: the material from EENGINE_IMAPPROXY_TLS_* when it is set, otherwise the certificate for the Service URL hostname. Otherwise an id from the TLS Certificates page: \"manual\", \"self-signed\", \"acme:<hostname>\", or \"env:api\" / \"env:smtp\" / \"env:imapProxy\". A name the default does not cover is still served its own certificate",
-                    "examples": [
-                        "auto"
-                    ],
-                    "maxLength": 262,
-                    "pattern": "^(auto|manual|self-signed|env:(api|smtp|imapProxy)|acme:[a-z0-9._:-]+)$"
-                },
-                "imapProxyServerEnabled": {
-                    "type": "boolean",
-                    "description": "Enable the IMAP proxy server"
-                },
-                "imapProxyServerPort": {
-                    "type": "integer",
-                    "description": "Port number for the IMAP proxy server",
-                    "examples": [
-                        9993
-                    ],
-                    "minimum": 0,
-                    "maximum": 65535
-                },
-                "imapProxyServerHost": {
-                    "type": "string",
-                    "description": "IP address to bind the IMAP proxy to (empty = all interfaces)",
-                    "examples": [
-                        "0.0.0.0"
-                    ]
-                },
-                "imapProxyServerTLSEnabled": {
-                    "type": "boolean",
-                    "description": "Enable TLS support for the IMAP proxy"
                 },
                 "queueKeep": {
                     "type": "integer",

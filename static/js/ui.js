@@ -872,7 +872,11 @@ window.uiMcpRecordAllows = (record, action, group) => {
 };
 
 window.uiMcpToolCount = (elm, record) => {
-    let tools = JSON.parse(elm.dataset.mcpTools || '[]');
+    // Parsed once per element: the account field repaints this per keystroke
+    if (!elm.mcpTools) {
+        elm.mcpTools = JSON.parse(elm.dataset.mcpTools || '[]');
+    }
+    let tools = elm.mcpTools;
 
     elm.replaceChildren();
     if (!tools.length || !record) {
