@@ -198,6 +198,25 @@ test('MCP tool registry', async t => {
         }
     });
 
+    await t.test('the observe level leaves out the connection check, which operate offers', () => {
+        // The level drops the read/provisioning pair, so that pair has to stay exactly the route
+        // the exclusion is about - a connection to a caller-named host with caller-supplied
+        // credentials - or the exclusion silently widens or narrows with the route table
+        const readProvisioning = routes.filter(route => {
+            const grant = routeGrant(route);
+            return grant.action === ACTION.READ && grant.group === GROUP.PROVISIONING;
+        });
+        assert.deepEqual(
+            readProvisioning.map(route => route.route),
+            ['POST /v1/verifyAccount']
+        );
+
+        const offeredAt = manage =>
+            tools.filter(tool => toolVisibleTo(byName.get(tool.name), { tokenData: mcpGrantsFor({ manage }), boundAccount: null })).map(tool => tool.name);
+        assert.ok(!offeredAt('observe').includes('verify_account_settings'));
+        assert.ok(offeredAt('operate').includes('verify_account_settings'));
+    });
+
     await t.test('tool schemas are self-contained JSON Schema', () => {
         for (const tool of tools) {
             walk(tool.inputSchema, (node, pointer) => {

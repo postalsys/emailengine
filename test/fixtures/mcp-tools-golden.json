@@ -2191,7 +2191,7 @@
     {
         "name": "get_settings",
         "title": "Get settings",
-        "description": "Read instance settings. Set each setting you want returned to true. Secrets come back as a boolean saying whether a value is stored, credentials inside URLs are masked, and eventTypes lists the webhook event names the instance supports. Settings that would widen this credential (operator scripts, proxies, secrets, the built-in listeners and their TLS, mail certificate checking) are not offered.",
+        "description": "Read instance settings. Set each setting you want returned to true. Secrets come back as a boolean saying whether a value is stored, credentials inside URLs are masked, and eventTypes lists the webhook event names the instance supports. Settings that would widen this credential (operator scripts, the link signing secret, the authentication server, proxy trust and local addresses, proxies, the built-in listeners, TLS certificates and provisioning, the service URL, mail certificate checking, the AI key and endpoint, custom webhook headers, hosted page markup, the MCP and audit switches, the Document Store, and error reporting) are not offered.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -2212,10 +2212,6 @@
                     "default": false
                 },
                 "notifyHeaders": {
-                    "type": "boolean",
-                    "default": false
-                },
-                "serviceUrl": {
                     "type": "boolean",
                     "default": false
                 },
@@ -4799,7 +4795,7 @@
     {
         "name": "update_settings",
         "title": "Update settings",
-        "description": "Change instance settings. Send only the keys to change; they take effect immediately on every worker. Covers where webhooks are delivered and which events are sent, notification shaping, the service URL and branding, sync strategy, queue retention and AI processing. Confirm with the user before changing the webhook target or the service URL. The settings that would widen this credential (operator scripts, proxies, secrets, the built-in listeners and their TLS, mail certificate checking, the MCP and audit switches) are not offered.",
+        "description": "Change instance settings. Send only the keys to change; they take effect immediately on every worker. Covers where webhooks are delivered and which events are sent, notification shaping, branding, sync strategy, queue retention and AI processing. Confirm with the user before changing the webhook target. The settings that would widen this credential (operator scripts, the link signing secret, the authentication server, proxy trust and local addresses, proxies, the built-in listeners, TLS certificates and provisioning, the service URL, mail certificate checking, the AI key and endpoint, custom webhook headers, hosted page markup, the MCP and audit switches, the Document Store, and error reporting) are not offered.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -4835,13 +4831,6 @@
                         ],
                         "maxLength": 256
                     }
-                },
-                "serviceUrl": {
-                    "type": "string",
-                    "description": "Base URL of this EmailEngine instance (used for generating public URLs, path component is ignored)",
-                    "examples": [
-                        "https://emailengine.example.com"
-                    ]
                 },
                 "notificationBaseUrl": {
                     "type": [

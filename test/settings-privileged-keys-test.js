@@ -20,6 +20,8 @@ const registerRedisTeardown = require('./helpers/redis-teardown');
 const { captureApiRoutes } = require('./helpers/capture-api-routes');
 const { buildToolRegistry } = require('../lib/mcp/tools');
 const settings = require('../lib/settings');
+const { PRIVILEGED_SETTINGS_GROUPS, PRIVILEGED_SETTINGS_SUMMARY } = require('../lib/privileged-settings');
+const { ENUM_DESCRIPTIONS } = require('../lib/enum-descriptions');
 const { settingsSchema } = require('../lib/schemas');
 const settingsRoutes = require('../lib/api-routes/settings-routes');
 
@@ -69,7 +71,16 @@ test('privileged settings keys', async t => {
         assert.deepEqual(unknown, [], `privileged keys that the settings schema does not declare: ${JSON.stringify(unknown)}`);
 
         // The list is not vacuous, and the keys that motivate it are on it
-        for (const key of ['openAiPreProcessingFn', 'scriptEnv', 'serviceSecret', 'proxyUrl', 'enableApiProxy', 'mcpOAuthEnabled', 'tokenAuditLog']) {
+        for (const key of [
+            'openAiPreProcessingFn',
+            'scriptEnv',
+            'serviceSecret',
+            'proxyUrl',
+            'enableApiProxy',
+            'serviceUrl',
+            'mcpOAuthEnabled',
+            'tokenAuditLog'
+        ]) {
             assert.ok(settings.privilegedKeys.includes(key), `${key} must be privileged`);
         }
 
@@ -100,6 +111,13 @@ test('privileged settings keys', async t => {
         for (const key of ['tlsProvisioning', 'tlsHostnames', 'ignoreMailCertErrors']) {
             assert.ok(settings.privilegedKeys.includes(key), `${key} decides what TLS is worth on this instance, so it must be privileged`);
         }
+
+        // One group per key, so the phrase every description renders covers the list exactly once
+        assert.equal(new Set(settings.privilegedKeys).size, settings.privilegedKeys.length, 'a key is listed under two groups');
+        assert.ok(
+            PRIVILEGED_SETTINGS_GROUPS.every(group => group.label && group.keys.length),
+            'every group carries the words the descriptions use for it'
+        );
     });
 
     await t.test('the MCP settings tools offer exactly the keys the REST rule allows', async () => {
@@ -118,6 +136,13 @@ test('privileged settings keys', async t => {
 
         assert.deepEqual(Object.keys(byName.get('update_settings').definition.inputSchema.properties).sort(), expected);
         assert.deepEqual(Object.keys(byName.get('get_settings').definition.inputSchema.properties).sort(), expected.concat('eventTypes').sort());
+
+        // What the tools and the permission group say they leave out is rendered from the same
+        // list, so a key added to it is described everywhere at once
+        for (const name of ['get_settings', 'update_settings']) {
+            assert.ok(byName.get(name).definition.description.includes(PRIVILEGED_SETTINGS_SUMMARY), `${name} names the privileged groups`);
+        }
+        assert.ok(ENUM_DESCRIPTIONS.tokenGroup.settings.includes(PRIVILEGED_SETTINGS_SUMMARY), 'the settings group description names them');
     });
 
     await t.test('a narrowed token is refused reading a privileged key, and the ordinary ones still read', async () => {

@@ -111,6 +111,15 @@ describe('token permission view', () => {
             }
 
             assert.ok(!mcpLevel(MCP_SECTIONS.manage, 'operate').pairs.some(grant => grant.action === ACTION.DESTRUCTIVE));
+
+            // Observe is every read of the surface but read/provisioning, the connection check
+            // that dials a caller-named host (see the level's own comment)
+            const observe = mcpLevel(MCP_SECTIONS.manage, 'observe').pairs.map(key);
+            const reads = SURFACE_GRANTS['mcp-manage'].filter(grant => grant.action === ACTION.READ).map(key);
+            assert.deepEqual(
+                reads.filter(pair => !observe.includes(pair)),
+                [`${ACTION.READ}:${GROUP.PROVISIONING}`]
+            );
             assert.ok(!mcpLevel(MCP_SECTIONS.mail, 'mail').pairs.some(grant => grant.action === ACTION.DESTRUCTIVE));
             assert.ok(
                 mcpLevel(MCP_SECTIONS.mail, 'mail').pairs.some(grant => grant.action === ACTION.SEND),
