@@ -25,29 +25,26 @@
 
 <body class="from-primary to-secondary min-h-screen bg-gradient-to-br">
 
-    <div class="container mx-auto px-4">
+    {{!-- centered in the viewport rather than pinned to the top, same as the login layout this
+          mirrors - see views/layout/login.hbs for why min-h-screen sits on the flex container --}}
+    <div class="container mx-auto flex min-h-screen items-center justify-center px-4 py-12">
 
-        <div class="flex justify-center">
+        <div class="w-full max-w-xl">
 
-            <div class="w-full max-w-xl">
+            <div class="card bg-base-100 overflow-hidden shadow-lg">
+                <div class="alert-margin">
+                    {{> alerts}}
 
-                <div class="card bg-base-100 my-12 overflow-hidden shadow-lg">
-                    <div class="alert-margin">
-                        {{> alerts}}
+                    <div class="p-8 sm:p-10">
 
-                        <div class="p-8 sm:p-10">
-
-                            <div class="mb-8 flex justify-center">
-                                <img src="/static/logo/EmailEngine_logo_horiz.png" alt="EmailEngine" class="max-h-7">
-                            </div>
-
-                            {{{content}}}
+                        <div class="mb-8 flex justify-center">
+                            <img src="/static/logo/EmailEngine_logo_horiz.png" alt="EmailEngine" class="max-h-7">
                         </div>
+
+                        {{{content}}}
                     </div>
                 </div>
-
             </div>
-
         </div>
 
     </div>

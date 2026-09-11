@@ -21,7 +21,7 @@
 {{#if apps}}
 <div class="card bg-base-100 shadow-md mb-6">
     <div class="overflow-x-auto">
-        <table class="table">
+        <table class="table ee-table-stack">
             <thead>
                 <tr>
                     <th>Name</th>
@@ -49,19 +49,19 @@
                         {{/if}}
                     </td>
 
-                    <td class="relative">
+                    <td class="relative" data-label="Description">
                         {{> ui/row-link href=(concat "/admin/config/oauth/app/" id)}}{{description}}
                     </td>
 
-                    <td class="relative">
+                    <td class="relative" data-label="Type">
                         {{> ui/row-link href=(concat "/admin/config/oauth/app/" id)}}{{providerData.comment}}
                     </td>
 
-                    <td class="relative">
+                    <td class="relative" data-label="Base scopes">
                         {{> ui/row-link href=(concat "/admin/config/oauth/app/" id)}}{{baseScopesText}}
                     </td>
 
-                    <td class="relative">
+                    <td class="relative" data-label="Status">
                         {{> ui/row-link href=(concat "/admin/config/oauth/app/" id)}}
                         {{#if enabled}}
 
@@ -75,7 +75,7 @@
                         {{/if}}
                     </td>
 
-                    <td class="relative text-end">
+                    <td class="ee-stack-actions relative text-end">
                         {{> ui/row-actions openHref=(concat "/admin/config/oauth/app/" id) label="OAuth2 app actions"
                         deleteModal="#deleteOauthApp" deleteId=id deleteName=name}}
                     </td>

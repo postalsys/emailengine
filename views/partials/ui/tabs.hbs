@@ -11,18 +11,14 @@
       variant - "segment" for the pill/segmented style (.tabs-segment in
                 app.tailwind.css), for a choice nested inside a page that
                 already has a bordered strip at the top; default bordered
-    flex-wrap because FlyonUI lays the strip out as a nowrap flex row with no overflow
-    handling, so one wider than its column pushes the whole page sideways instead of
-    adapting: an API reference operation documents up to eight status codes, which is 464px
-    of tabs against a 390px phone. Wrapping rather than scrolling because these are
-    navigation - a second row keeps every tab reachable, where a scroller hides some behind
-    an interaction with no affordance for it. No strip in the app wraps at desktop width.
+    A strip that outgrows its column wraps rather than scrolls; that rule is on .tabs in
+    app.tailwind.css, because the three hand-rolled link navs need it too.
     Panels are the caller's responsibility: each ui/tab target must match a
     tabpanel element with that id (role="tabpanel" aria-labelledby="<target>-tab").
     The auth-method tabs in oauth_form.hbs intentionally do NOT use this partial -
     they run a custom script instead of the FlyonUI data-tabs plugin.
 --}}
-<nav class="tabs {{#equals variant 'segment'}}tabs-segment{{else}}tabs-bordered{{/equals}} flex-wrap{{#if class}} {{class}}{{/if}}" aria-label="{{label}}" role="tablist"{{#if elId}} id="{{elId}}"{{/if}} data-tabs>
+<nav class="tabs {{#equals variant 'segment'}}tabs-segment{{else}}tabs-bordered{{/equals}}{{#if class}} {{class}}{{/if}}" aria-label="{{label}}" role="tablist"{{#if elId}} id="{{elId}}"{{/if}} data-tabs>
     {{!-- own hash params neutralized against fallthrough into the block --}}
     {{> @partial-block label="" elId="" class="" variant=""}}
 </nav>

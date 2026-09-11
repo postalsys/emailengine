@@ -83,7 +83,7 @@
 
     {{> ui/section-title label="Accounts" class="mt-6 mb-3"}}
 
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-3">
 
         {{#> ui/stat-card variant="primary" icon="icon-[tabler--users]"}}
         <div class="text-sm font-medium text-base-content/60 mb-1">
@@ -131,7 +131,7 @@
     </div>
     {{/ui/section-title}}
 
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
 
         {{> activityCard cardIcon="icon-[tabler--mail]" cardTip="Detected new emails in synced mailboxes"
         cardLabel="New emails" okValue=activity.messageNew}}
@@ -150,7 +150,9 @@
 
     {{> ui/section-title label="System" class="mt-8 mb-3"}}
 
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+    {{!-- auto-fit, so the tiles fill the row whether or not the Document Store adds a third
+          queue - a fixed four-column track left a quarter-width hole at the end without it --}}
+    <div class="grid grid-cols-2 gap-4 xl:grid-cols-[repeat(auto-fit,minmax(15rem,1fr))]">
 
         {{> queueCard queue=stats.queues.notify href="/admin/bull-board/queue/Webhooks%20Queue%20-%20notify" label="Webhooks queue" tooltip="This queue processes webhook notifications" delayedTooltip="Delayed queue entries"}}
 

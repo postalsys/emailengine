@@ -43,6 +43,12 @@ function resolvePrimaryColor(page) {
     });
 }
 
+// A modal is not really gone until its backdrop is. HSOverlay drops the `open` class and
+// dispatches close.overlay before a later transition removes the backdrop, and until then the
+// backdrop swallows every click on the page - which reads as a link or a button that refuses
+// to be clicked, or as a reopened dialog losing the next answer.
+const overlaySettled = page => expect(page.locator('.overlay-backdrop')).toHaveCount(0);
+
 // Asserts that a FlyonUI tab strip actually *shows* which tab is selected.
 // The panes and the toggled class are checked separately; this guards the
 // styling hook specifically, which is a separate class (`tab-active`, applied
@@ -131,7 +137,7 @@ async function deleteViaModal(page, listUrlRe, opts) {
         // confirm modals without slowing the other delete flows down.
         await page.locator('#deleteModal button', { hasText: 'Cancel' }).click();
         await expect(page.locator('#deleteModal.open')).toHaveCount(0);
-        await expect(page.locator('.overlay-backdrop')).toHaveCount(0);
+        await overlaySettled(page);
         await openDeleteAction(page);
         await expect(page.locator('#deleteModal.open')).toHaveCount(1);
     }
@@ -703,6 +709,7 @@ test.describe('admin shell', () => {
         await expect(page.locator('#deleteToken .delete-target-name')).toHaveText(description);
         await page.keyboard.press('Escape');
         await expect(page.locator('#deleteToken.open')).toHaveCount(0);
+        await overlaySettled(page);
 
         // usage instructions panel toggles
         await page.locator('summary', { hasText: 'Usage instructions' }).click();
@@ -1355,6 +1362,7 @@ test.describe('admin shell', () => {
         expect(await page.evaluate(() => document.getElementById('snapshot-thread').value)).not.toBe('');
         await page.keyboard.press('Escape');
         await expect(page.locator('#snapshotThread.open')).toHaveCount(0);
+        await overlaySettled(page);
 
         // the kill/restart action only renders for non-main threads
         const killBtn = page.locator('.kill-thread-btn').first();
@@ -1364,6 +1372,7 @@ test.describe('admin shell', () => {
         expect(await page.evaluate(() => document.getElementById('kill-thread').value)).toBe(killThread);
         await page.keyboard.press('Escape');
         await expect(page.locator('#killThread.open')).toHaveCount(0);
+        await overlaySettled(page);
 
         // thread detail page: follow an accounts-count link when an account is
         // assigned; otherwise open an IMAP worker thread ("Email worker" row)
@@ -2232,11 +2241,7 @@ test.describe('admin shell', () => {
                 return pending;
             };
 
-            // Reopening the same dialog has to wait for the backdrop, not just for the modal
-            // to be hidden. HSOverlay adds `hidden` before it dispatches close.overlay and
-            // removes the backdrop from a later transition, so a dialog that reads as hidden
-            // can still be mid-teardown - and opening into that loses the next answer.
-            const settled = () => expect(page.locator('.overlay-backdrop')).toHaveCount(0);
+            const settled = () => overlaySettled(page);
 
             expect(await answer('confirmModal', 'confirm-ok')).toBe(true);
             await settled();

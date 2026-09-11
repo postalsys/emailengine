@@ -33,7 +33,9 @@
                 {{/if}}
             </div>
         </div>
-        <div class="flex items-center gap-3 shrink-0">
+        {{!-- wraps: the count badge and a 26-character env var name together outrun a phone-width
+              card, and the nowrap on the name is there so it never breaks mid-identifier --}}
+        <div class="flex flex-wrap items-center justify-end gap-3">
             {{#if hasExpected}}
             {{#> ui/tooltip text="Worker threads running vs. the number configured to run"}}
             {{> ui/badge label=countLabel variant=countVariant}}
@@ -48,7 +50,7 @@
     </div>
 
     <div class="overflow-x-auto">
-        <table class="table">
+        <table class="table ee-table-stack">
 
             <thead>
                 <tr>
@@ -86,11 +88,11 @@
                             {{/if}}
                         </span>
                     </td>
-                    <td><span class="text-base-content/60 font-mono text-sm">#{{formatInteger threadId userLocale}}</span></td>
-                    <td>
+                    <td data-label="ID"><span class="text-base-content/60 font-mono text-sm">#{{formatInteger threadId userLocale}}</span></td>
+                    <td data-label="Uptime">
                         <span class="relative-time" data-time="{{timeStr}}"></span>
                     </td>
-                    <td class="text-end">
+                    <td class="text-end" data-label="Memory">
                         {{#if isUnresponsive}}
                         <span class="text-base-content/40">-</span>
                         {{else}}
@@ -98,7 +100,7 @@
                         {{/if}}
                     </td>
                     {{#if ../showAccounts}}
-                    <td class="text-end">
+                    <td class="text-end" data-label="Accounts">
                         {{#if accounts}}
                         <a href="/admin/internals/thread/{{threadId}}"
                             class="link link-animated">{{formatInteger accounts userLocale}}</a>
@@ -107,7 +109,7 @@
                         {{/if}}
                     </td>
                     {{/if}}
-                    <td class="relative text-end">
+                    <td class="ee-stack-actions relative text-end">
                         {{#> ui/row-actions label="Worker actions"}}
                         <li>
                             <button type="button" class="dropdown-item snapshot-thread-btn" data-thread="{{threadId}}">

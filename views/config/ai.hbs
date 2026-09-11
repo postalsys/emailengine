@@ -29,7 +29,7 @@
         </div>
         {{/if}}
 
-        <div class="px-6 py-4 border-b border-base-content/10 flex items-start justify-between gap-4">
+        <div class="px-6 py-4 border-b border-base-content/10 ee-toggle-row flex items-start justify-between gap-4">
             <div>
                 {{#> ui/checkbox id="generateEmailSummary" label="Enable AI Email Processing"
                 checked=values.generateEmailSummary error=errors.generateEmailSummary}}
@@ -200,7 +200,7 @@
     {{/ui/card}}
 
     <div id="prompt_settings" class="card bg-base-100 shadow-md mb-6">
-        <div class="card-header flex items-center justify-between">
+        <div class="card-header flex flex-wrap items-center justify-between gap-3">
             <h6 class="card-title text-primary">AI Instructions</h6>
             {{> ui/btn label="Reset to default" variant="neutral" style="soft" size="sm"
             icon="icon-[tabler--arrow-back-up]" id="prompt-reset-btn"}}

@@ -40,7 +40,7 @@ badgeVariant=pageLabel.type class="mb-1"}}
             no host, and for every name it covers. Other configured names are served their own certificate, from the
             table below.</div>
         <div class="overflow-x-auto">
-            <table class="table ee-table-wrap table-fixed min-w-[56rem]">
+            <table class="table ee-table-wrap table-fixed md:min-w-[56rem] ee-table-stack">
                 <thead>
                     <tr>
                         <th class="w-52">Listener</th>
@@ -62,7 +62,7 @@ badgeVariant=pageLabel.type class="mb-1"}}
                                 {{/if}}
                             </div>
                         </td>
-                        <td class="align-top">
+                        <td class="align-top" data-label="Default certificate">
                             {{> ui/setting-ref name=this.settingKey class="whitespace-nowrap"}}
                             <select id="tlsDefault-{{this.key}}" name="{{this.settingKey}}" class="select max-w-md"
                                 data-tls-default="{{this.key}}">
@@ -77,7 +77,7 @@ badgeVariant=pageLabel.type class="mb-1"}}
                                 setting.</span>
                             {{/equals}}
                         </td>
-                        <td class="align-top text-sm">
+                        <td class="align-top text-sm" data-label="Serving now">
                             {{#if this.serving.certificate}}
                             <div>Presenting {{this.serving.certificate.label}}{{#if this.serving.certificate.validToIso}}, valid
                                 until <span class="local-time"
@@ -128,9 +128,10 @@ badgeVariant=pageLabel.type class="mb-1"}}
 
     {{#if certificates}}
     {{!-- Fixed layout, so the line under a row wraps inside the card instead of widening the table;
-          the minimum width keeps the columns readable on a phone, where the wrapper scrolls. --}}
+          the minimum width keeps the columns readable from md up, where this is still a table.
+          Below that ee-table-stack turns each row into a block, so the minimum is not applied. --}}
     <div class="overflow-x-auto">
-        <table class="table ee-table-wrap table-fixed min-w-[52rem]">
+        <table class="table ee-table-wrap table-fixed md:min-w-[52rem] ee-table-stack">
             <thead>
                 <tr>
                     <th>Hostname</th>
@@ -153,7 +154,7 @@ badgeVariant=pageLabel.type class="mb-1"}}
                             it</div>
                         {{/unless}}
                     </td>
-                    <td>
+                    <td data-label="Status">
                         {{!-- the wrapper keeps the badge on one line: the page script rewrites the
                               badge's own class list on a live update --}}
                         <div class="whitespace-nowrap">
@@ -161,7 +162,7 @@ badgeVariant=pageLabel.type class="mb-1"}}
                             dataName="cert-badge" dataValue=this.hostname}}
                         </div>
                     </td>
-                    <td>
+                    <td data-label="Certificate">
                         {{#if this.certificate}}
                         <a href="#tls-certificates" class="link link-animated">{{this.certificate.label}}</a>
                         {{else}}
@@ -175,13 +176,15 @@ badgeVariant=pageLabel.type class="mb-1"}}
                             {{this.label}}</div>
                         {{/each}}
                     </td>
-                    <td>
+                    <td data-label="Expires">
                         {{#if this.certificate.validToIso}}
                         <div><span class="local-time" data-time="{{this.certificate.validToIso}}">{{this.certificate.validToIso}}</span></div>
                         <div class="text-base-content/60 text-xs"><span class="relative-time" data-time="{{this.certificate.validToIso}}"></span></div>
+                        {{else}}
+                        <span class="text-base-content/40">-</span>
                         {{/if}}
                     </td>
-                    <td class="text-end">
+                    <td class="ee-stack-actions text-end">
                         <div class="flex items-center justify-end gap-1 whitespace-nowrap">
                         {{#if this.wanted}}
                         {{> ui/btn label="Request" variant="primary" style="soft" size="sm" icon="icon-[tabler--refresh]"
@@ -242,7 +245,7 @@ badgeVariant=pageLabel.type class="mb-1"}}
         size="sm" href="/admin/config/tls/upload" icon="icon-[tabler--upload]" id="tls-upload-link"}}
     </div>
     <div class="overflow-x-auto">
-        <table class="table ee-table-wrap table-fixed min-w-[56rem]">
+        <table class="table ee-table-wrap table-fixed md:min-w-[56rem] ee-table-stack">
             <thead>
                 <tr>
                     <th>Certificate</th>
@@ -273,7 +276,7 @@ badgeVariant=pageLabel.type class="mb-1"}}
                         {{/if}}
                         {{/equals}}
                     </td>
-                    <td>
+                    <td data-label="Covers">
                         {{#if this.certificate}}
                         <div class="font-mono text-sm break-words">{{#each this.certificate.altNames}}{{this}}{{#unless @last}},
                             {{/unless}}{{/each}}</div>
@@ -281,18 +284,20 @@ badgeVariant=pageLabel.type class="mb-1"}}
                         <span class="text-base-content/60">Every configured name, generated on first use</span>
                         {{/if}}
                     </td>
-                    <td>
+                    <td data-label="Status">
                         <div class="whitespace-nowrap">
                             {{> ui/badge label=this.status.text variant=this.status.type title=this.status.title}}
                         </div>
                     </td>
-                    <td>
+                    <td data-label="Expires">
                         {{#if this.certificate.validToIso}}
                         <div><span class="local-time" data-time="{{this.certificate.validToIso}}">{{this.certificate.validToIso}}</span></div>
                         <div class="text-base-content/60 text-xs"><span class="relative-time" data-time="{{this.certificate.validToIso}}"></span></div>
+                        {{else}}
+                        <span class="text-base-content/40">-</span>
                         {{/if}}
                     </td>
-                    <td>
+                    <td data-label="Used by">
                         {{#if this.usedBy}}
                         <div class="flex flex-wrap gap-1">
                             {{#each this.usedBy}}
@@ -303,7 +308,7 @@ badgeVariant=pageLabel.type class="mb-1"}}
                         <span class="text-base-content/60 text-sm">No listener presents it by default</span>
                         {{/if}}
                     </td>
-                    <td class="text-end">
+                    <td class="ee-stack-actions text-end">
                         <div class="flex items-center justify-end gap-1 whitespace-nowrap">
                             {{#> ui/row-actions label="Certificate actions"}}
                             {{!-- static first item on purpose: a block that opens with a condition can

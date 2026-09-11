@@ -137,9 +137,17 @@
     opacity: 0.75;
 }
 
-/* Tooltip overrides. Un-layered on purpose: FlyonUI emits .tooltip-content
+/* Tooltip overrides. Un-layered on purpose: FlyonUI emits .tooltip and .tooltip-content
  * in @layer utilities, which beats any components-layer rule regardless of
  * specificity. */
+/* FlyonUI centers .tooltip, which is the bubble AND the trigger inside it. A one-line
+ * trigger never shows it; a multi-line bubble and a dashboard tile label that wraps
+ * ("Webhooks delivered" in a two-up phone grid) both read better left-aligned, the
+ * latter because it sits in a left-aligned card. ui/tooltip renders nothing but the
+ * toggle and the content, so one rule on the wrapper covers both. */
+.tooltip {
+    text-align: start;
+}
 /* tooltips float above the sidebar (lg:z-40) and topbar; FlyonUI's default
  * z-20 leaves bubbles clipped under the drawer. The width cap makes long
  * tooltip texts wrap (FlyonUI's width:max-content otherwise renders them as
@@ -153,15 +161,25 @@
      * box per wrapped line */
     display: block;
     text-wrap: balance;
-    /* FlyonUI centers via .tooltip; multi-line bubbles read better
-     * left-aligned (matches the public-page ee-tooltip) */
-    text-align: start;
 }
+
 /* empty-state gate for SSE state badges (ui/state-badge): while there is no
  * error, the bubble must not render at all. Gated on the wrapper because
  * HSTooltip's show() removes the hidden class from the content. */
 .tooltip.ee-tooltip-empty .tooltip-content {
     display: none;
+}
+
+/* FlyonUI's .badge pins height to --size, so a badge whose label wraps keeps the
+ * one-line box and spills its second line over whatever follows - on the TLS page the
+ * three "used by" badges printed on top of each other. Grow instead: min-height keeps
+ * every single-line badge pixel-identical (one 20px line inside a 24px box), and a
+ * wrapped one gets the room it needs. Un-layered on purpose, like the rules around it:
+ * FlyonUI emits .badge from @layer utilities, which a layered rule of ours could not
+ * outrank whatever its specificity. */
+.badge {
+    height: auto;
+    min-height: var(--size);
 }
 
 /* FlyonUI's .link keeps the surrounding text color (the only resting cue is
@@ -173,6 +191,19 @@
  * far) - a semantic-colored link would need an explicit color override. */
 .link {
     --link-color: var(--color-primary);
+}
+
+/* FlyonUI lays a tab strip out as a nowrap flex row with no overflow handling, so one
+ * wider than its column pushes the whole page sideways instead of adapting: the Document
+ * Store's four section tabs are 437px against a 390px phone, and an API reference operation
+ * documents up to eight status codes. Wrapping rather than scrolling because these are
+ * navigation - a second row keeps every tab reachable, where a scroller hides some behind an
+ * interaction with no affordance for it. No strip in the app wraps at desktop width. Here
+ * rather than on each strip: ui/tabs and the three hand-rolled link navs (oauth_tabs,
+ * document_store_header, the auth-method strip in oauth_form) all need it. Un-layered on
+ * purpose, like the rules around it: FlyonUI emits .tabs from @layer utilities. */
+.tabs {
+    flex-wrap: wrap;
 }
 
 /* Segmented (pill) tab strip, used through ui/tabs variant="segment" for a
@@ -773,5 +804,105 @@
 @utility ee-table-wrap {
     & :is(th, td) {
         white-space: normal;
+    }
+}
+
+/* Setting row: the control on the left, its setting reference (and usually a state badge)
+ * on the right. On a phone the two do not fit beside each other - ui/checkbox's root is
+ * w-full and a setting key does not wrap, so the label was squeezed into a column of single
+ * words - and the reference column has to span the line it wraps onto, or it lands
+ * shrink-to-fit at the start and its text-end does nothing. One utility rather than the same
+ * two variants written at every call site, the same reasoning as .ee-setting-row above. */
+@utility ee-toggle-row {
+    @media (width < 40rem) {
+        flex-wrap: wrap;
+
+        & > *:last-child {
+            width: 100%;
+        }
+    }
+}
+
+/* A resource list that stops being a table on a phone. FlyonUI's .table only offers a
+ * horizontally scrolling container, so at 390px an accounts list shows the Name column and
+ * hides the connection status, and a half-cut second column reads as broken rather than as
+ * something to scroll. Below the md breakpoint each row becomes a stacked block: the column
+ * names move out of the head and into each cell through data-label, the first cell (no
+ * data-label) stays the row's heading, and a cell marked .ee-stack-actions floats its kebab
+ * over that heading. Same layer + :is() reasoning as ee-table-wrap above - the library's cell
+ * rules are utilities-layer :where(), so only a utility of our own can outrank them.
+ * A min-w-[...] that keeps the desktop columns readable has to carry an md: prefix: the
+ * stacked table is a block, so an unprefixed one applies to it and forces a scroller anyway,
+ * and nothing here can override it (same layer, and the utility is emitted later). */
+@utility ee-table-stack {
+    @media (width < 48rem) {
+        display: block;
+
+        & thead {
+            display: none;
+        }
+
+        & tbody {
+            display: block;
+        }
+
+        /* the row separator is .table's own and keeps applying to a display:block row */
+        & tbody tr {
+            display: block;
+            position: relative;
+            padding: 0.75rem 1rem;
+        }
+
+        /* room for the floated kebab, only in the rows that carry one */
+        & tbody tr:has(.ee-stack-actions) {
+            padding-inline-end: 3rem;
+        }
+
+        & :is(td, tbody th) {
+            /* flow-root, not block: the label below is a float, and a plain block box would
+             * let it escape an empty cell and sit beside the next cell's content */
+            display: flow-root;
+            width: auto;
+            padding: 0.125rem 0;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            /* a right-aligned numeric column reads as stray text once the head is gone */
+            text-align: start;
+        }
+
+        /* The label floats rather than taking a flex or grid slot: a cell is free to hold
+         * several blocks (the tokens list puts a scope list, a badge and a sentence in one),
+         * and as flex items those share the row's width and each collapse into a column of
+         * single letters. Floated, the first line runs on after the label and anything
+         * taller simply continues underneath it. */
+        & :is(td, tbody th)[data-label]::before {
+            content: attr(data-label);
+            float: inline-start;
+            margin-inline-end: 0.75rem;
+            color: color-mix(in oklab, var(--color-base-content) 60%, transparent);
+            font-size: 0.6875rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            line-height: 1.25rem;
+        }
+
+        /* :not(.hidden) so the re-assertion below still wins for a hidden actions cell -
+         * this selector is one class heavier than it is */
+        & td.ee-stack-actions:not(.hidden) {
+            position: absolute;
+            top: 0.5rem;
+            inset-inline-end: 0.5rem;
+            padding: 0;
+        }
+
+        /* Re-assert display:none. The rules above name an element as well as this class,
+         * so they outrank a bare .hidden and would reveal a row the page keeps collapsed -
+         * the TLS hostname list carries one hidden row per name for the "why the last order
+         * failed" line, and it appeared as an empty info alert. */
+        & .hidden,
+        & [hidden] {
+            display: none;
+        }
     }
 }

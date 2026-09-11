@@ -14,9 +14,12 @@
                 into the caller's context, so a partial reading `id` also inherits one
                 that merely happens to be in scope - a row's id inside {{#each}}
       class   - extra classes (optional)
+    The tile form hides its icon below sm: two tiles per row on a phone leave the
+    label roughly 60px next to a 36px icon box, which wraps a two-word label into a
+    column. The notice form (title set) keeps it - that card is always full width.
 --}}
 {{#*inline "iconBox"}}
-<div class="bg-{{#if variant}}{{eeColor variant}}{{else}}primary{{/if}}/10 text-{{#if variant}}{{eeColor variant}}{{else}}primary{{/if}} rounded-field flex size-9 shrink-0 items-center justify-center">
+<div class="bg-{{#if variant}}{{eeColor variant}}{{else}}primary{{/if}}/10 text-{{#if variant}}{{eeColor variant}}{{else}}primary{{/if}} rounded-field flex size-9 shrink-0 items-center justify-center{{#unless title}} max-sm:hidden{{/unless}}">
     <span class="{{icon}} size-5"></span>
 </div>
 {{/inline}}

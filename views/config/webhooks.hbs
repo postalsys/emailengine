@@ -38,7 +38,7 @@ class="mb-1"}}
             <h6 class="card-title text-primary">Webhook Processing</h6>
         </div>
 
-        <div class="px-6 py-4 flex items-start justify-between gap-4">
+        <div class="px-6 py-4 ee-toggle-row flex items-start justify-between gap-4">
             {{> ui/checkbox id="webhooks_enabled" name="webhooksEnabled" label="Enable Webhooks"
             checked=values.webhooksEnabled error=errors.webhooksEnabled
             hint="Turn on webhook notifications for email events."}}
@@ -50,7 +50,7 @@ class="mb-1"}}
     </div>
 
     <div class="card bg-base-100 shadow-md mb-6">
-        <div class="card-header flex items-center justify-between">
+        <div class="card-header flex flex-wrap items-center justify-between gap-3">
             <h6 class="card-title text-primary">Default Webhook</h6>
             {{!-- keeps the webhooks-status hook: the or-else-all rule on the
                   URL input disables this button while the URL is empty --}}

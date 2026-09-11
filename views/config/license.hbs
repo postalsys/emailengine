@@ -49,7 +49,7 @@ class="mb-1"}}
 
 {{#if licenseInfo.active}}
 <div class="card bg-base-100 shadow-md mb-6">
-    <div class="card-header flex items-center justify-between">
+    <div class="card-header flex flex-wrap items-center justify-between gap-3">
         <h6 class="card-title text-primary">Current License</h6>
         {{> ui/btn label="Remove License" variant="error" style="soft" size="sm" icon="icon-[tabler--trash]"
         id="unregister-license-link" overlay="#deleteLicense"}}

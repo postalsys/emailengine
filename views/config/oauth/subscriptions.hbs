@@ -5,7 +5,7 @@
 {{#if apps}}
 <div class="card bg-base-100 shadow-md mb-6">
     <div class="overflow-x-auto">
-        <table class="table">
+        <table class="table ee-table-stack">
             <thead>
                 <tr>
                     <th>Name</th>
@@ -27,11 +27,11 @@
                         {{> ui/entity-id id=id prefix="Provider ID"}}
                     </td>
 
-                    <td class="relative">
+                    <td class="relative" data-label="Project ID">
                         {{> ui/row-link href=(concat "/admin/config/oauth/app/" id)}}{{googleProjectId}}
                     </td>
 
-                    <td class="relative">
+                    <td class="relative" data-label="Topic">
                         {{> ui/row-link href=(concat "/admin/config/oauth/app/" id)}}
                         {{#if pubSubTopic}}
                         {{> ui/badge label="Created" variant="success"}}
@@ -40,7 +40,7 @@
                         {{/if}}
                     </td>
 
-                    <td class="relative">
+                    <td class="relative" data-label="Subscription">
                         {{> ui/row-link href=(concat "/admin/config/oauth/app/" id)}}
                         {{#if pubSubSubscription}}
                         {{> ui/badge label="Created" variant="success"}}
@@ -49,7 +49,7 @@
                         {{/if}}
                     </td>
 
-                    <td class="relative">
+                    <td class="relative" data-label="Expiration">
                         {{> ui/row-link href=(concat "/admin/config/oauth/app/" id)}}
                         {{#if expirationLabel}}
                         {{expirationLabel}}
@@ -58,7 +58,7 @@
                         {{/if}}
                     </td>
 
-                    <td class="relative">
+                    <td class="relative" data-label="Status">
                         {{> ui/row-link href=(concat "/admin/config/oauth/app/" id)}}
                         {{!-- relative z-[1] on the tooltip lifts the badge above the
                               row-overlay link so the error tooltip stays hoverable --}}
@@ -75,7 +75,7 @@
                         {{/if}}
                     </td>
 
-                    <td class="relative text-end">
+                    <td class="ee-stack-actions relative text-end">
                         {{> ui/row-actions openHref=(concat "/admin/config/oauth/app/" id) label="OAuth2 app actions"}}
                     </td>
                 </tr>

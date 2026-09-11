@@ -31,7 +31,7 @@
     </div>
     {{/if}}
     <div class="overflow-x-auto">
-        <table class="table">
+        <table class="table ee-table-stack">
             <thead>
                 <tr>
                     <th>Description</th>
@@ -61,7 +61,7 @@
                     </td>
 
                     {{#if ../showAccountColumn}}
-                    <td class="align-top">
+                    <td class="align-top" data-label="Bound to">
                         {{#if account}}
                         {{#if accountKnown}}
                         <a href="/admin/accounts/{{urlpart account}}" class="link link-animated">{{account}}</a>
@@ -77,7 +77,7 @@
                     </td>
                     {{/if}}
 
-                    <td class="align-top">
+                    <td class="align-top" data-label="Scopes">
                         {{#if scopes}}
                         <div class="max-w-xs whitespace-normal">{{#each scopes}}{{#unless first}}, {{/unless}}{{name}}{{/each}}</div>
                         {{/if}}
@@ -95,7 +95,7 @@
                         {{/if}}
                     </td>
 
-                    <td>
+                    <td data-label="Last used">
                         {{#if access.timeStr}}
                         <span class="relative-time" data-time="{{access.timeStr}}"></span>
                         {{else}}
@@ -103,7 +103,7 @@
                         {{/if}}
                     </td>
 
-                    <td class="text-end">
+                    <td class="ee-stack-actions text-end">
                         {{> ui/row-actions label="Token actions" deleteModal="#deleteToken" deleteId=id deleteName=description}}
                     </td>
 

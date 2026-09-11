@@ -11,7 +11,7 @@
     <h6 class="mb-6 text-base-content/60">{{total}} suppressed {{#equals total 1}}address{{else}}addresses{{/equals}}</h6>
 
     <div class="overflow-x-auto">
-        <table class="table">
+        <table class="table ee-table-stack">
             <thead>
                 <tr>
                     <th>Address</th>
@@ -27,17 +27,20 @@
                 {{#each addresses}}
                 <tr class="hover:bg-base-200/60">
                     <td><strong>{{recipient}}</strong></td>
-                    <td>{{reason}}</td>
-                    <td>{{source}}</td>
-                    <td>
+                    <td data-label="Reason">{{reason}}</td>
+                    <td data-label="Source">{{source}}</td>
+                    <td data-label="Account">
                         {{#if account}}
                         <a href="/admin/accounts/{{urlpart account}}" class="link link-primary">{{account}}</a>
                         {{else}}
                         <span class="text-base-content/60">-</span>
                         {{/if}}
                     </td>
-                    <td><span class="text-base-content/60">{{created}}</span></td>
-                    <td class="relative text-end">
+                    <td data-label="Added">
+                        {{!-- every other list renders its stamps through app.js; this one printed the raw ISO string --}}
+                        <span class="text-base-content/60 relative-time" data-time="{{created}}">{{created}}</span>
+                    </td>
+                    <td class="ee-stack-actions relative text-end">
                         {{!-- The condition sits OUTSIDE the ui/row-actions block on purpose: a partial
                              block whose content is nothing but a {{#if}} wrapper loses its content to a
                              Handlebars program-association bug (the menu rendered without the items).

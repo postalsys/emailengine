@@ -20,7 +20,7 @@
             <h6 class="card-title text-primary">Server Configuration</h6>
         </div>
 
-        <div class="px-6 py-4 border-b border-base-content/10 flex items-start justify-between gap-4">
+        <div class="px-6 py-4 border-b border-base-content/10 ee-toggle-row flex items-start justify-between gap-4">
             {{> ui/checkbox id="smtpServerEnabled" name="smtpServerEnabled" label="Enable SMTP Server"
             checked=values.smtpServerEnabled error=errors.smtpServerEnabled
             hint="Start the SMTP server to accept email submissions."}}

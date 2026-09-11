@@ -8,7 +8,7 @@
         <input type="checkbox" class="checkbox checkbox-sm checkbox-entry" data-ip="{{localAddress}}"
             name="localAddresses" value="{{localAddress}}" {{#if checked}}checked{{/if}}>
     </td>
-    <td>{{localAddress}}
+    <td data-label="Local IP">{{localAddress}}
 
         {{#if notice}}<span class="tooltip [--placement:top] inline-flex align-middle"><span
                 class="tooltip-toggle cursor-default"><span
@@ -19,11 +19,11 @@
             {{#if defaultInterface}}<span class="badge badge-soft">default</span>{{/if}}
         </div>
     </td>
-    <td>{{ip}}</td>
-    <td>
+    <td data-label="Public IP">{{ip}}</td>
+    <td data-label="Hostname">
         {{name}}
     </td>
-    <td class="text-end">
+    <td class="ee-stack-actions text-end">
         <button type="button" class="btn btn-error btn-soft btn-circle btn-sm address-action-delete"
             data-address="{{localAddress}}" aria-label="Delete this address" title="Delete this address">
             <span class="icon-[tabler--trash] size-4"></span>

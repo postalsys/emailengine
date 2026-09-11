@@ -1,6 +1,6 @@
 {{!--
-    ui/setting-ref - floated reference link to a setting key in the API docs,
-    shown at the top-right of config form fields:
+    ui/setting-ref - reference link to a setting key in the API docs, shown at the
+    top-right of config form fields (floated from sm up, on its own line below it):
       {{> ui/setting-ref name="proxyEnabled"}}
     Params:
       name   - settings key, shown as the link text (required)
@@ -11,11 +11,16 @@
                no docs anchor)
       prefix - literal text inside the brackets before the link, e.g.
                prefix="API Reference: " (optional)
-      nofloat - true to render in flow instead of float-right (stacked
-               reference columns) (optional)
-      class  - extra classes on the wrapper, e.g. "whitespace-nowrap" for
-               flex-row placements where the float is inert (optional)
+      nofloat - true to never float, at any width. For a stacked reference column,
+               where a floated first entry lands on the same line as the
+               right-aligned block under it and prints over it (optional)
+      class  - extra classes on the wrapper, e.g. "whitespace-nowrap" to keep a
+               setting key from breaking mid-identifier (optional)
+    The float is sm-and-up only. A setting key is long and does not wrap, so beside a
+    phone-width field it left the label a column of single words - or, where that field
+    was a flex row the float could not narrow any further, printed on top of it. Below
+    sm it takes its own line, right-aligned where the float put it.
 --}}
-<div class="text-base-content/60{{#unless nofloat}} float-right{{/unless}} code-link{{#if class}} {{class}}{{/if}}">[{{prefix}}{{#if plain}}{{name}}{{else}}<a
+<div class="text-base-content/60{{#unless nofloat}} sm:float-right max-sm:mb-0.5 max-sm:text-end{{/unless}} code-link{{#if class}} {{class}}{{/if}}">[{{prefix}}{{#if plain}}{{name}}{{else}}<a
         href="{{#if href}}{{href}}{{else}}/admin/reference/settings#postV1Settings{{/if}}" target="_blank"
         rel="noopener noreferrer" class="link link-animated">{{name}}</a>{{/if}}{{suffix}}]</div>

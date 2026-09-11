@@ -23,8 +23,11 @@
                 {{> ui/checkbox id=field name=field label="Enable TLS Encryption" class="trigger-example-render"
                 checked=(lookup values field) error=(lookup errors field)}}
 
+                {{!-- shrink-0: the checkbox beside it is w-full, so without this the badge is the
+                      flex item that gives way - it was squeezed to half its text and printed its
+                      second line over the setting reference --}}
                 {{#if tlsSummary.label}}
-                {{#> ui/tooltip text=tlsSummary.label.title}}
+                {{#> ui/tooltip text=tlsSummary.label.title class="shrink-0"}}
                 {{> ui/badge label=tlsSummary.label.text variant=tlsSummary.label.type elId="tls-label"}}
                 {{/ui/tooltip}}
                 {{/if}}

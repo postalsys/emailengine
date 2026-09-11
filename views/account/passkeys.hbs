@@ -30,7 +30,7 @@
 
     {{#if passkeys.length}}
     <div class="overflow-x-auto">
-        <table class="table">
+        <table class="table ee-table-stack">
             <thead>
                 <tr>
                     <th>Passkey</th>
@@ -56,7 +56,7 @@
                         </div>
                     </td>
 
-                    <td>
+                    <td data-label="Added">
                         {{#if createdAt}}
                         <span class="text-base-content/60 relative-time" data-time="{{createdAt}}"
                             title="{{createdAt}}"></span>
@@ -65,7 +65,7 @@
                         {{/if}}
                     </td>
 
-                    <td>
+                    <td data-label="Last used">
                         {{#if lastUsedAt}}
                         <span class="relative-time" data-time="{{lastUsedAt}}" title="{{lastUsedAt}}"></span>
                         {{else}}
@@ -76,7 +76,7 @@
                         {{/if}}
                     </td>
 
-                    <td class="relative text-end">
+                    <td class="ee-stack-actions relative text-end">
                         {{> ui/row-actions label="Passkey actions" deleteLabel="Remove" deleteModal="#deletePasskey"
                         deleteId=id deleteName=name}}
                     </td>

@@ -24,8 +24,13 @@
       lpignore    - true to add data-lpignore + autocomplete="off" (credential-ish
                     fields that password managers must not autofill)
       class       - extra classes on the input (optional)
+    The control column is capped: on a 1440px screen a card is over 1000px wide, and a
+    single-line input stretched across all of it separates the value from its label and
+    makes a four-digit retry count look like a paragraph field. The selects on the same
+    pages were already capped (max-w-md), so uncapped text inputs read as an oversight.
+    w-full keeps it full width wherever the container is narrower than the cap.
 --}}
-<div class="w-full">
+<div class="w-full max-w-2xl">
     {{#if label}}
     <label class="label-text" for="{{id}}">{{label}}</label>
     {{/if}}

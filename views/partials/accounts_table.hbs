@@ -12,7 +12,7 @@
 <div class="card bg-base-100 shadow-md mb-6">
 
     <div class="overflow-x-auto">
-        <table class="table">
+        <table class="table ee-table-stack">
             <thead>
                 <tr>
                     <th>Name</th>
@@ -33,11 +33,11 @@
                         <div><strong>{{name}}</strong></div>
                         {{> ui/entity-id id=account label="Account ID"}}
                     </td>
-                    <td class="relative">
+                    <td class="relative" data-label="Email">
                         {{> ui/row-link href=(concat "/admin/accounts/" (urlpart account))}}{{email}}
                     </td>
 
-                    <td class="relative">
+                    <td class="relative" data-label="Type">
                         {{> ui/row-link href=(concat "/admin/accounts/" (urlpart account))}}
                         {{#if type.icon}}
                         {{!-- relative z-[1] lifts the tooltip trigger above the row link --}}
@@ -52,7 +52,7 @@
                         {{/if}}
                     </td>
 
-                    <td class="relative w-32">
+                    <td class="relative w-32" data-label="Status">
                         {{> ui/row-link href=(concat "/admin/accounts/" (urlpart account))}}
                         {{!-- live state badge: app.js updates the badge-{type} class,
                               text and error tooltip through the /admin/changes SSE
@@ -67,7 +67,7 @@
                     {{!-- ../showActions: inside {{#each}} the bare name would resolve against the
                           row, not the partial params, so the cell silently vanished (phantom column) --}}
                     {{#if ../showActions}}
-                    <td class="relative text-end">
+                    <td class="ee-stack-actions relative text-end">
                         {{> ui/row-actions openHref=(concat "/admin/accounts/" (urlpart account)) label="Account actions"
                         deleteModal="#deleteAccount" deleteName=(when name name email) deleteAction=(concat "/admin/accounts/" (urlpart account) "/delete")}}
                     </td>

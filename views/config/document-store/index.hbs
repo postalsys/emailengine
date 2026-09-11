@@ -24,13 +24,13 @@
     <input type="hidden" name="crumb" value="{{crumb}}" />
 
     <div class="card bg-base-100 shadow-md mb-6">
-        <div class="card-header flex items-center justify-between">
+        <div class="card-header flex flex-wrap items-center justify-between gap-3">
             <h6 class="card-title text-primary">General settings</h6>
             {{> ui/btn label="Test connection" variant="info" style="soft" size="sm" icon="icon-[tabler--link]"
             id="test-payload-btn"}}
         </div>
 
-        <div class="px-6 py-4 border-b border-base-content/10 flex items-start justify-between gap-4">
+        <div class="px-6 py-4 border-b border-base-content/10 ee-toggle-row flex items-start justify-between gap-4">
             <div>
                 {{> ui/checkbox id="documentStoreEnabled" name="documentStoreEnabled"
                 label="Enable syncing to the Document Store." checked=values.documentStoreEnabled
@@ -46,11 +46,11 @@
             </div>
 
             <div class="text-end space-y-1">
-                {{> ui/setting-ref name="documentStoreEnabled" class="whitespace-nowrap"}}
+                {{!-- nofloat: this is a stacked reference column, and a floated first entry collides with the block under it --}}
+                {{> ui/setting-ref name="documentStoreEnabled" nofloat=true class="whitespace-nowrap"}}
 
-                <div class="text-base-content/60 code-link whitespace-nowrap">[<a
-                        href="/admin/reference/account#putV1AccountAccountFlush" target="_blank"
-                        rel="noopener noreferrer" class="link link-animated">Request&nbsp;account&nbsp;flush</a>]</div>
+                {{> ui/setting-ref name="Request account flush" href="/admin/reference/account#putV1AccountAccountFlush"
+                nofloat=true class="whitespace-nowrap"}}
 
                 {{#if values.documentStoreEnabled}}
                 {{> ui/badge label="enabled" variant="success"}}

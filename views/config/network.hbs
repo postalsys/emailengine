@@ -133,7 +133,7 @@
     </div>
 
     <div class="card bg-base-100 shadow-md mb-6">
-        <div class="card-header flex items-center justify-between">
+        <div class="card-header flex flex-wrap items-center justify-between gap-3">
             <h6 class="card-title text-primary">Available IP Addresses</h6>
             {{> ui/btn label="Scan for IPs" id="reload-btn" icon="icon-[tabler--refresh] reload-icon"}}
         </div>
@@ -144,7 +144,7 @@
             become unavailable, EmailEngine falls back to server defaults.
         </div>
         <div class="overflow-x-auto">
-            <table class="table">
+            <table class="table ee-table-stack">
                 <thead>
                     <tr>
                         <th>

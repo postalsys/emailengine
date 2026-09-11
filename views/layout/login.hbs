@@ -20,28 +20,27 @@
 
 <body class="from-primary to-secondary min-h-screen bg-gradient-to-br">
 
-    <div class="container mx-auto px-4">
+    {{!-- centered in the viewport, not pinned to the top: the card is short and the page is
+          otherwise a full screen of gradient under it. min-h-screen on the flex container
+          rather than a fixed height, so a card taller than the screen grows the page instead
+          of having its top cut off. --}}
+    <div class="container mx-auto flex min-h-screen items-center justify-center px-4 py-12">
 
-        <div class="flex justify-center">
+        <div class="w-full max-w-4xl">
 
-            <div class="w-full max-w-4xl">
+            <div class="card bg-base-100 overflow-hidden shadow-lg">
+                <div class="grid grid-cols-1 lg:grid-cols-2">
+                    <div class="bg-login-page-image hidden lg:block"></div>
+                    <div class="alert-margin">
+                        {{> alerts}}
 
-                <div class="card bg-base-100 my-12 overflow-hidden shadow-lg">
-                    <div class="grid grid-cols-1 lg:grid-cols-2">
-                        <div class="bg-login-page-image hidden lg:block"></div>
-                        <div class="alert-margin">
-                            {{> alerts}}
+                        <div class="p-12">
 
-                            <div class="p-12">
-
-                                {{{content}}}
-                            </div>
+                            {{{content}}}
                         </div>
                     </div>
                 </div>
-
             </div>
-
         </div>
 
     </div>
