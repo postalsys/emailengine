@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-09-11 16:28+0000\n"
+"POT-Creation-Date: 2026-09-11 18:18+0000\n"
 
 #: views/error.hbs:6
 #: workers/api.js:3130
@@ -112,12 +112,35 @@ msgid ""
 "received."
 msgstr ""
 
-#: views/accounts/register/index.hbs:6
-msgid "Choose your email account provider"
+#: views/accounts/register/imap.hbs:13
+msgid "Your name"
 msgstr ""
 
-#: views/accounts/register/index.hbs:19
-msgid "Standard IMAP"
+#: views/accounts/register/imap.hbs:19
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:35
+msgid "This setup link is restricted to this email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:43
+#: views/accounts/register/imap-server.hbs:58
+#: views/accounts/register/imap-server.hbs:165
+msgid "Password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:49
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:55
+#: views/accounts/register/validating.hbs:74
+msgid "Continue"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:23
@@ -139,12 +162,6 @@ msgstr ""
 #: views/accounts/register/imap-server.hbs:44
 #: views/accounts/register/imap-server.hbs:151
 msgid "Username"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:58
-#: views/accounts/register/imap-server.hbs:165
-#: views/accounts/register/imap.hbs:43
-msgid "Password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:70
@@ -258,29 +275,12 @@ msgstr ""
 msgid "Continue to review your mail server settings."
 msgstr ""
 
-#: views/accounts/register/validating.hbs:74
-#: views/accounts/register/imap.hbs:55
-msgid "Continue"
+#: views/accounts/register/index.hbs:6
+msgid "Choose your email account provider"
 msgstr ""
 
-#: views/accounts/register/imap.hbs:13
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:19
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:35
-msgid "This setup link is restricted to this email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:49
-msgid "Enter your account password"
+#: views/accounts/register/index.hbs:19
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/partials/public_test_labels.hbs:9
