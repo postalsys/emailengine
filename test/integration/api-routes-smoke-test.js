@@ -118,7 +118,8 @@ const AUTH_REQUIRED_ROUTES = [
     ['post', '/v1/authentication/form'],
     ['get', '/v1/logs/main-account'],
     ['post', '/v1/verifyAccount'],
-    ['get', '/v1/autoconfig?email=user@example.com']
+    ['get', '/v1/autoconfig?email=user@example.com'],
+    ['post', '/v1/autoconfig']
 ];
 
 // Read/list endpoints that operate on global resources (Redis or the main thread only,
@@ -250,7 +251,8 @@ test('narrowed access tokens', async t => {
             ['get', '/v1/oauth2', 'oauth2'],
             ['get', '/v1/license', 'license'],
             ['put', '/v1/account/main-account', 'provisioning'],
-            ['post', '/v1/verifyAccount', 'provisioning']
+            ['post', '/v1/verifyAccount', 'provisioning'],
+            ['post', '/v1/autoconfig', 'provisioning']
         ]) {
             // An empty body on the writes: the strategy refuses before payload validation runs,
             // which is what the 403 (rather than a 400) shows

@@ -223,3 +223,221 @@ window.addEventListener('pageshow', e => {
     }
     eeSubmittedForms.clear();
 });
+
+/*
+ * The connection test the two hosted-form steps share: the server settings page
+ * (which runs it from a button and reports into a dialog) and the checking page
+ * (which runs it on load and reports inline). Everything from building the
+ * request to laying out the failure rows is the same on both; only what happens
+ * next differs, so that is all each page keeps.
+ *
+ * The text these render comes back from a mail server, so the rows are built out
+ * of DOM nodes rather than markup.
+ */
+
+// Append text to an element, turning bare URLs into links. Text nodes and
+// anchors are created through DOM APIs, so server-provided text is never parsed
+// as HTML - this is what keeps a mail server's response text out of innerHTML.
+window.eeAppendLinkified = (parentElm, text) => {
+    let parts = String(text === null || text === undefined ? '' : text).split(/(https?:\/\/[^\s]+)/g);
+    for (let part of parts) {
+        if (/^https?:\/\//.test(part)) {
+            let a = document.createElement('a');
+            a.href = part;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.textContent = part;
+            parentElm.appendChild(a);
+        } else if (part) {
+            parentElm.appendChild(document.createTextNode(part));
+        }
+    }
+};
+
+// Append one labelled error row (<dt> term, <dd> message) to a <dl class="ee-dl">,
+// optionally followed by a smaller secondary line such as the raw server response.
+window.eeAppendErrorRow = (listElm, type, text, extraLabel, extraText) => {
+    let keyElm = document.createElement('dt');
+    let valueContainerElm = document.createElement('dd');
+    let valueElm = document.createElement('div');
+
+    valueElm.classList.add('ee-error-text');
+
+    keyElm.textContent = type;
+    valueElm.textContent = text;
+
+    valueContainerElm.append(valueElm);
+
+    listElm.appendChild(keyElm);
+    listElm.appendChild(valueContainerElm);
+
+    if (extraLabel && extraText) {
+        let extraLabelElm = document.createElement('div');
+        extraLabelElm.textContent = extraLabel;
+
+        let extraTextElm = document.createElement('small');
+        window.eeAppendLinkified(extraTextElm, extraText);
+
+        valueContainerElm.appendChild(extraLabelElm);
+        valueContainerElm.appendChild(extraTextElm);
+    }
+};
+
+// Run the hosted form's connection test for the values currently in `form`.
+// Resolves with the parsed body for both a passing and a failing test - the
+// endpoint reports a refused login as a 200 carrying { imap, smtp } - and with
+// the error body for a 4xx/5xx, so a caller has one shape to render either way.
+// `opts.timeoutMs` gives up when the request itself never comes back, which the
+// server-side connection budget cannot cover.
+window.eePostConnectionTest = async (form, opts) => {
+    opts = opts || {};
+
+    let body = {};
+    for (let [key, value] of new FormData(form).entries()) {
+        body[key] = value;
+    }
+
+    let signal;
+    if (opts.timeoutMs && typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
+        signal = AbortSignal.timeout(opts.timeoutMs);
+    }
+
+    const res = await fetch('/accounts/new/imap/test', {
+        method: 'post',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+        signal
+    });
+
+    if (!res.ok) {
+        try {
+            return await res.json();
+        } catch (err) {
+            console.error(err);
+        }
+        throw new Error(`${opts.requestFailedText || 'Request failed.'} status: ${res.status}`);
+    }
+
+    return await res.json();
+};
+
+// Lay out what a connection test reported into a <dl class="ee-dl">. Three shapes
+// come back from the endpoint: a Hapi/Boom error body (403, 429), a payload
+// validation failure carrying `fields`, and the per-protocol result of a test that
+// actually ran. `labels` carries the translated strings, which is the only reason
+// the caller has to supply anything.
+window.eeRenderTestErrors = (listElm, data, labels) => {
+    data = data || {};
+    labels = labels || {};
+
+    listElm.innerHTML = '';
+
+    if (data.error && !data.fields) {
+        // A Boom body carries the human-readable text in data.message and only the status name in
+        // data.error ('Forbidden', 'Too Many Requests'); a caller's own catch path passes
+        // { error: Error } instead, hence the fallbacks.
+        window.eeAppendErrorRow(listElm, labels.error, data.message || data.error.message || data.error);
+        return;
+    }
+
+    if (data.fields) {
+        window.eeAppendErrorRow(listElm, labels.invalidSettings, data.message);
+        for (let field of data.fields) {
+            window.eeAppendErrorRow(listElm, '-', field.message);
+        }
+        return;
+    }
+
+    for (let [key, protocol, fallback] of [
+        ['imap', 'IMAP', labels.imapFailed],
+        ['smtp', 'SMTP', labels.smtpFailed]
+    ]) {
+        let result = data[key];
+        if (result && result.success) {
+            continue;
+        }
+        let error = (result && result.error) || fallback;
+        if (result && result.responseText) {
+            window.eeAppendErrorRow(listElm, protocol, error, labels.serverResponse, result.responseText);
+        } else {
+            window.eeAppendErrorRow(listElm, protocol, error);
+        }
+    }
+};
+
+// A one-shot submit for a form the page submits itself. form.submit() fires no
+// submit event, so the document-level latch above never sees it - and both hosted
+// form steps that use it POST to an endpoint claiming a single-use nonce, where a
+// second submission is answered with an error for a step that succeeded.
+//
+// Returns the submit function. `opts.button` gets the busy treatment for the
+// duration, `opts.validate` runs the constraint validation that submit() skips,
+// and `opts.recoveryMs` re-arms the latch when the navigation never happened at
+// all - the visitor cancelled it (Esc / Stop) while the page stayed alive, which
+// fires no DOM event, so without it the form would be left unsubmittable. Re-arming
+// is safe: the single-use nonce is the real double-submit guard, so at worst a
+// later duplicate POST is refused by the server.
+window.eeSubmitOnce = (form, opts) => {
+    opts = opts || {};
+
+    let submitting = false;
+    let recoveryTimer = null;
+
+    let reset = () => {
+        submitting = false;
+        if (recoveryTimer) {
+            clearTimeout(recoveryTimer);
+            recoveryTimer = null;
+        }
+        if (opts.button) {
+            window.eeButtonBusy(opts.button, false);
+        }
+    };
+
+    // Back to a submitted form through the bfcache: JS state survives, so without this
+    // the latch stays set and the buttons stay disabled, deadening the form for good.
+    window.addEventListener('pageshow', e => {
+        if (e.persisted) {
+            reset();
+        }
+    });
+
+    return () => {
+        if (submitting) {
+            return;
+        }
+        // Bail without latching so the visitor can still fix the field
+        if (opts.validate && !form.reportValidity()) {
+            return;
+        }
+        submitting = true;
+        if (opts.button) {
+            window.eeButtonBusy(opts.button, true);
+        }
+        if (opts.recoveryMs) {
+            recoveryTimer = setTimeout(reset, opts.recoveryMs);
+        }
+        form.submit();
+    };
+};
+
+// Fill any input carrying data-ee-tz with the visitor's IANA time zone, so a page
+// that wants one only has to mark the field.
+document.addEventListener('DOMContentLoaded', () => {
+    let fields = document.querySelectorAll('input[data-ee-tz]');
+    if (!fields.length) {
+        return;
+    }
+    try {
+        if (typeof Intl !== 'undefined' && Intl && typeof Intl.DateTimeFormat === 'function') {
+            let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            if (tz) {
+                for (let field of fields) {
+                    field.value = tz;
+                }
+            }
+        }
+    } catch (err) {
+        // Intl probably not supported
+    }
+});

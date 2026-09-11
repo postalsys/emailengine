@@ -6510,6 +6510,11 @@
             "description": "If true, configures this account as a shared mailbox. Currently supported by MS365 OAuth2 accounts",
             "default": false
           },
+          "skipServerSettings": {
+            "type": "boolean",
+            "description": "If true, the mail server settings step is skipped whenever the IMAP and SMTP settings for the address can both be discovered and verified with the password the user enters. The step is still shown if discovery or verification does not fully succeed. Applies to the IMAP setup path only.",
+            "default": false
+          },
           "notifyFrom": {
             "type": "string",
             "format": "date-time",
@@ -6683,6 +6688,49 @@
             "example": "srv"
           }
         }
+      },
+      "AutodiscoverCredentials": {
+        "type": "object",
+        "description": "Credentials to offer if the autodiscovery server refuses to answer anonymously",
+        "properties": {
+          "user": {
+            "type": "string",
+            "description": "Username for the autodiscovery request. Defaults to the email address.",
+            "example": "myuser@gmail.com",
+            "maxLength": 1024,
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "pass": {
+            "type": "string",
+            "description": "Password for the mailbox",
+            "example": "verysecret",
+            "maxLength": 1024
+          }
+        },
+        "required": [
+          "pass"
+        ]
+      },
+      "AutodiscoverRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Email address to discover email settings for",
+            "example": "sender@example.com",
+            "x-format": {
+              "email": true
+            }
+          },
+          "auth": {
+            "$ref": "#/components/schemas/AutodiscoverCredentials"
+          }
+        },
+        "required": [
+          "email"
+        ]
       },
       "BlocklistListResponseItem": {
         "type": "object",
@@ -17605,7 +17653,7 @@
       "post": {
         "summary": "Generate authentication link",
         "operationId": "postV1AuthenticationForm",
-        "description": "Generates a redirect link to the hosted authentication form<br/><br/>If `expectedEmail` is set and the user completes the form as a different identity, the setup is rejected before any credentials are stored. The user stays on EmailEngine, which names both addresses and offers to restart the setup, so the browser is never redirected to `redirectUrl`.",
+        "description": "Generates a redirect link to the hosted authentication form<br/><br/>Set `skipServerSettings` to complete an IMAP setup without asking the user for mail server settings whenever EmailEngine can discover and verify them from the address and password alone.<br/><br/>If `expectedEmail` is set and the user completes the form as a different identity, the setup is rejected before any credentials are stored. The user stays on EmailEngine, which names both addresses and offers to restart the setup, so the browser is never redirected to `redirectUrl`.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -17808,6 +17856,102 @@
         },
         "x-ee-action": "read",
         "x-ee-group": "diagnostics"
+      },
+      "post": {
+        "summary": "Discover Email settings with credentials",
+        "operationId": "postV1Autoconfig",
+        "description": "Try to discover IMAP and SMTP settings for an email account, optionally authenticating against an autodiscovery server that refuses to answer anonymously<br/><br/>Hosted Exchange answers autodiscovery only for an authenticated request, which is why this endpoint exists alongside `GET /v1/autoconfig`. The password is sent to the autodiscovery host named by the address domain's own DNS records, and only after that host has asked for it with a Basic challenge over HTTPS.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
+          }
+        ],
+        "tags": [
+          "Settings"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutodiscoverRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Returns the discovered IMAP and SMTP settings for the address, or empty values when nothing could be resolved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoveredEmailSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-impact": "readonly",
+        "x-ee-action": "read",
+        "x-ee-group": "provisioning"
       }
     },
     "/v1/blocklist/{listId}": {

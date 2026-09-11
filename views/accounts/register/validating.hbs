@@ -1,0 +1,139 @@
+{{!-- Hosted authentication form, IMAP path: the checking step.
+
+Rendered instead of the server settings page when the setup link was issued
+with skipServerSettings and autodiscovery filled in every field the account
+needs (lib/ui-routes/account-routes.js). The page checks the connection and,
+when it holds, submits the same value set the settings form would have
+submitted - so the visitor goes from "email address and password" straight to
+the calling application. A failed check hands them the settings form after all.
+
+The form's action is the settings form, the harmless of its two destinations,
+and JavaScript points it at the account-creating endpoint only once the check
+has passed. That way the no-script path and an interrupted check both land on
+the form rather than creating an account nobody verified. --}}
+
+<form method="post" id="setup-form" action="/accounts/new/imap/settings">
+    <input type="hidden" name="crumb" value="{{crumb}}">
+    <input type="hidden" name="data" value="{{values.data}}">
+    <input type="hidden" name="sig" value="{{values.sig}}">
+    <input type="hidden" name="email" value="{{values.email}}">
+    <input type="hidden" name="name" value="{{values.name}}">
+    <input type="hidden" name="tz" value="{{values.tz}}" data-ee-tz>
+
+    {{!-- The connection fields views/accounts/register/imap-server.hbs renders as controls, so both
+    pages reach /accounts/new/imap/server with identical payloads and the create endpoint needs no
+    branch of its own. The list comes from the same connectionFields schema that validates the
+    submission rather than being written out again here, so a field added there travels with it. --}}
+    {{#each connectionFieldNames}}
+    <input type="hidden" name="{{this}}" value="{{lookup ../values this}}">
+    {{/each}}
+
+    {{!-- Hidden until the script that drives it runs, so a browser without JavaScript is never
+    shown a spinner that will never stop. --}}
+    <div class="ee-status" id="checking-panel" hidden>
+        <span class="ee-icon ee-icon-loader ee-spin ee-status-icon"></span>
+        <h1>{{_ "Checking your mail server" templateLocale }}</h1>
+        <p class="ee-muted ee-status-servers">{{values.imap_host}} &middot; {{values.smtp_host}}</p>
+
+        {{!-- Said once the wait stops looking instant, so it does not start to read as a page that
+        has stopped working. --}}
+        <p class="ee-muted" id="checking-slow" hidden>{{_ "Still checking. This can take up to a minute."
+            templateLocale }}</p>
+
+        {{!-- The way out, offered later than the reassurance. Until the check finishes there is
+        nothing else on this page to press, so a visitor whose mail server never answers needs one -
+        but leaving early abandons a check the server keeps running to its own timeout, so this waits
+        until most of that budget is gone rather than interrupting a check still likely to answer. --}}
+        <p id="checking-escape" hidden><button type="submit" class="ee-btn ee-btn-soft ee-btn-sm">{{_
+                "Enter server settings manually" templateLocale }}</button></p>
+    </div>
+
+    <div class="ee-status" id="failed-panel" hidden>
+        <span class="ee-icon ee-icon-circle-x ee-status-icon ee-error-text"></span>
+        <h1>{{_ "We couldn't sign in to your mail server" templateLocale }}</h1>
+        <p class="ee-muted">{{_ "Check the settings on the next page and try again." templateLocale }}</p>
+
+        <dl class="ee-dl ee-status-errors" id="checking-errors"></dl>
+
+        <div class="ee-form-actions">
+            <button type="submit" class="ee-btn ee-btn-primary">
+                <span class="ee-icon ee-icon-arrow-right"></span>
+                {{_ "Continue to server settings" templateLocale }}
+            </button>
+        </div>
+    </div>
+
+    <noscript>
+        <div class="ee-status">
+            <span class="ee-icon ee-icon-mail ee-status-icon"></span>
+            <h1>{{_ "Almost there" templateLocale }}</h1>
+            <p class="ee-muted">{{_ "Continue to review your mail server settings." templateLocale }}</p>
+            <div class="ee-form-actions">
+                <button type="submit" class="ee-btn ee-btn-primary">
+                    <span class="ee-icon ee-icon-arrow-right"></span>
+                    {{_ "Continue" templateLocale }}
+                </button>
+            </div>
+        </div>
+    </noscript>
+</form>
+
+<script data-cfasync="false" nonce="{{cspNonce}}">
+    // Reveal the spinner before waiting for DOMContentLoaded - the elements above are already
+    // parsed, and the panel is what the visitor should see while the rest of the page loads.
+    document.getElementById('checking-panel').hidden = false;
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+        let myForm = document.getElementById('setup-form');
+        let checkingPanelElm = document.getElementById('checking-panel');
+        let slowNoticeElm = document.getElementById('checking-slow');
+        let escapeElm = document.getElementById('checking-escape');
+        let failedPanelElm = document.getElementById('failed-panel');
+        let errorsListElm = document.getElementById('checking-errors');
+
+        {{!-- The create endpoint claims a single-use nonce, so eeSubmitOnce (static/js/public.js)
+        guards the submit this page makes for the visitor. No busy button and no constraint
+        validation: there is nothing on this page to press or to fill in. --}}
+        let submitForm = eeSubmitOnce(myForm);
+
+        {{!-- Shared with the server settings page, which renders the same rows into a dialog --}}
+        {{> public_test_labels}}
+
+        let showFailure = (data) => {
+            eeRenderTestErrors(errorsListElm, data, TEST_ERROR_LABELS);
+            // Carried on the action rather than in a field, the same way the success path retargets
+            // the form below: it tells the settings form to open by saying why it is being asked for
+            myForm.setAttribute('action', '/accounts/new/imap/settings?checkFailed=1');
+            checkingPanelElm.hidden = true;
+            failedPanelElm.hidden = false;
+        };
+
+        // A mail server that answers slowly is the usual reason this takes a while. The reassurance
+        // comes early; the way out comes late, because taking it abandons a check the server keeps
+        // running to its own 30 second timeout.
+        let waitTimers = [setTimeout(() => (slowNoticeElm.hidden = false), 8 * 1000), setTimeout(() => (escapeElm.hidden = false), 20 * 1000)];
+        let clearWaitTimers = () => waitTimers.forEach(timer => clearTimeout(timer));
+
+        // The server gives up on a connection after 30 seconds, so the timeout only fires when the
+        // request itself never comes back. An aborted check is a failed check - the visitor is
+        // handed the settings form rather than left on a spinner.
+        eePostConnectionTest(myForm, { timeoutMs: 45 * 1000, requestFailedText: REQUEST_FAILED_TEXT })
+            .then(data => {
+                clearWaitTimers();
+                if (data.imap && data.imap.success && data.smtp && data.smtp.success) {
+                    // Everything checks out, so this form becomes the settings form's submit: same
+                    // fields, same endpoint, one step less for the visitor.
+                    // The attribute, not the property: a control named `action` would shadow it
+                    myForm.setAttribute('action', '/accounts/new/imap/server');
+                    submitForm();
+                    return;
+                }
+                showFailure(data);
+            })
+            .catch(err => {
+                clearWaitTimers();
+                showFailure({ error: err });
+            });
+    })
+</script>

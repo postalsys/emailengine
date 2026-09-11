@@ -34,7 +34,7 @@ const { captureRoutes, captureRouteConfigs } = require('./helpers/capture-ui-rou
 const { OAUTH_REDIRECT_FORM_DIRECTIVES } = require('../lib/security-headers');
 
 // The complete, sorted set of routes registered by lib/routes-ui.js (including the
-// already-extracted admin-entities-routes.js it wires in). 157 routes.
+// already-extracted admin-entities-routes.js it wires in). 158 routes.
 const GOLDEN_ROUTES = [
     'DELETE /admin/accounts/{account}/export/{exportId}',
     'GET /.well-known/acme-challenge/{token}',
@@ -109,6 +109,7 @@ const GOLDEN_ROUTES = [
     'POST /accounts/new',
     'POST /accounts/new/imap',
     'POST /accounts/new/imap/server',
+    'POST /accounts/new/imap/settings',
     'POST /accounts/new/imap/test',
     'POST /admin/account/logout-all',
     'POST /admin/account/passkeys/delete',

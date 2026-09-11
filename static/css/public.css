@@ -929,6 +929,47 @@ dialog.ee-modal.ee-modal-wide {
 }
 
 /* ---------------------------------------------------------------------------
+ * Status panel (hosted auth form, the step that checks the discovered mail
+ * server settings before skipping the settings form)
+ * ------------------------------------------------------------------------- */
+
+.ee-status {
+    text-align: center;
+    padding: 1.5rem 0 0.5rem;
+}
+
+/* the panel's own icon is a standalone graphic, not an icon beside text, so it
+   is sized in rem rather than inheriting the 1em of .ee-icon. Both classes are
+   named because .ee-icon sets that 1em further down the file and would otherwise
+   win on source order alone */
+.ee-icon.ee-status-icon {
+    display: block;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin: 0 auto 1rem;
+}
+
+.ee-status h1 {
+    margin-bottom: 0.5rem;
+}
+
+.ee-status-servers {
+    /* two hostnames, which have no natural break opportunity on a narrow screen */
+    overflow-wrap: anywhere;
+}
+
+/* the error rows read as a list, so they keep the normal reading direction
+   inside the otherwise centered panel */
+.ee-status-errors {
+    margin-top: 1.5rem;
+    text-align: start;
+}
+
+.ee-status .ee-form-actions {
+    justify-content: center;
+}
+
+/* ---------------------------------------------------------------------------
  * Error page panel
  * ------------------------------------------------------------------------- */
 

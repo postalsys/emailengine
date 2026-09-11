@@ -15,13 +15,24 @@ dropdown allows skipping the test. --}}
     submission - the payload schemas stripUnknown any posted copy. Do not reintroduce hidden
     inputs for them: echoing a client-controlled hint into the page was an XSS vector. --}}
 
-    <input type="hidden" id="tz" name="tz" value="{{values.tz}}">
+    <input type="hidden" id="tz" name="tz" value="{{values.tz}}" data-ee-tz>
 
     {{#if autodetectFailed}}
     <div class="ee-alert ee-alert-info">
         <span class="ee-icon ee-icon-alert-circle"></span>
         <span>{{_ "Server settings could not be detected automatically for %s. Enter them below." templateLocale
             (escapeHtml autodetectDomain) }}</span>
+    </div>
+    {{/if}}
+
+    {{!-- Set when the checking page sent the visitor here because its connection check did not pass,
+    so the form says what it is for instead of appearing out of nowhere. The per-protocol detail stays
+    on the page they read it on. --}}
+    {{#if checkFailed}}
+    <div class="ee-alert ee-alert-warning">
+        <span class="ee-icon ee-icon-alert-circle"></span>
+        <span>{{_ "We couldn't sign in to your mail server with those settings. Check them and try again."
+            templateLocale }}</span>
     </div>
     {{/if}}
 
@@ -303,139 +314,19 @@ focus ring on) the corner close button --}}
         let submitDownElm = document.getElementById('submit-settings-btn-down')
         let errorsListElm = document.getElementById('test-errors-list')
 
-        // eeButtonBusy() below is feedback only: it greys the real submit <button> out and spins its
-        // icon while a submit is in flight, so the wait for the account to be created is visible (the
-        // dropdown toggle is a <summary> and the skip link an <a>, neither has disabled semantics).
-        // The actual duplicate-submit guard is the formSubmitting latch in submitForm(), which every
-        // path routes through - this form submits through myForm.submit(), which fires no submit
-        // event, so the shared guard in static/js/public.js never sees it.
-        let formSubmitting = false;
-        let submitRecoveryTimer = null;
-        let resetSubmitGuard = () => {
-            formSubmitting = false;
-            if (submitRecoveryTimer) {
-                clearTimeout(submitRecoveryTimer);
-                submitRecoveryTimer = null;
-            }
-            eeButtonBusy(submitElm, false);
-        };
-        let submitForm = () => {
-            // The server claims a single-use nonce, so a second POST from a double-click loses the race and
-            // renders a 403 even though the first request created the account. Submit at most once and
-            // disable the submit controls so a duplicate submission cannot fire.
-            if (formSubmitting) {
-                return;
-            }
-            // myForm.submit() below bypasses HTML5 constraint validation (unlike a real submit button), so
-            // run it explicitly - otherwise a cleared required field round-trips to the server, 400s, and the
-            // re-render wipes the password fields. Bail (without latching the guard) so the user can fix it.
-            if (!myForm.reportValidity()) {
-                return;
-            }
-            formSubmitting = true;
-            eeButtonBusy(submitElm, true);
-            // Recovery timer for an aborted submit: a successful submit navigates away (this page and the
-            // timer are discarded) and a validation error reloads the page fresh, so this only fires when the
-            // navigation never happened - the user cancelled it (Esc / Stop) while the page stayed alive. There
-            // is no DOM event for an aborted navigation, so without this the one-shot guard would leave the form
-            // permanently unsubmittable. Re-enabling is safe: the server's single-use nonce is the real
-            // double-submit guard, so at worst a later duplicate POST is rejected server-side. The delay is a
-            // generous upper bound on a create round trip so it never re-arms a genuinely in-flight submit.
-            submitRecoveryTimer = setTimeout(resetSubmitGuard, 20 * 1000);
-            myForm.submit();
-        };
+        {{!-- The busy button is feedback only: it greys the real submit <button> out and spins its
+        icon while a submit is in flight, so the wait for the account to be created is visible (the
+        dropdown toggle is a <summary> and the skip link an <a>, neither has disabled semantics).
+        The duplicate-submit guard is inside eeSubmitOnce (static/js/public.js), which every submit
+        path here routes through. --}}
+        let submitForm = eeSubmitOnce(myForm, { button: submitElm, validate: true, recoveryMs: 20 * 1000 });
 
-        // Reset the one-shot guard when the page is restored from the back-forward cache (Back after a
-        // submit): bfcache keeps JS state, so without this the flag stays set and the buttons stay disabled,
-        // permanently deadening the form.
-        window.addEventListener('pageshow', e => {
-            if (!e.persisted) {
-                return;
-            }
-            resetSubmitGuard();
-        });
-
-        let appendLinkified = (parentElm, text) => {
-            // Split on URLs and append text nodes + anchors via DOM APIs so server-provided text is
-            // never parsed as HTML (avoids an innerHTML injection sink).
-            let parts = String(text == null ? '' : text).split(/(https?:\/\/[^\s]+)/g);
-            for (let part of parts) {
-                if (/^https?:\/\//.test(part)) {
-                    let a = document.createElement('a');
-                    a.href = part;
-                    a.target = '_blank';
-                    a.rel = 'noopener noreferrer';
-                    a.textContent = part;
-                    parentElm.appendChild(a);
-                } else if (part) {
-                    parentElm.appendChild(document.createTextNode(part));
-                }
-            }
-        }
-
-        let addErrorRow = (type, text, extraLabel, extraText) => {
-            let keyElm = document.createElement('dt');
-            let valueContainerElm = document.createElement('dd');
-            let valueElm = document.createElement('div');
-
-            valueElm.classList.add('ee-error-text')
-
-            keyElm.textContent = type;
-            valueElm.textContent = text;
-
-            valueContainerElm.append(valueElm);
-
-            errorsListElm.appendChild(keyElm);
-            errorsListElm.appendChild(valueContainerElm);
-
-            if (extraLabel && extraText) {
-
-                let extraLabelElm = document.createElement('div');
-                extraLabelElm.textContent = extraLabel;
-
-                let extraTextElm = document.createElement('small');
-                appendLinkified(extraTextElm, extraText);
-
-                valueContainerElm.appendChild(extraLabelElm);
-                valueContainerElm.appendChild(extraTextElm);
-            }
-        }
+        {{!-- Both the row layout and the three response shapes it has to tell apart are shared with
+        the checking page (static/js/public.js); only what happens after belongs to this page. --}}
+        {{> public_test_labels}}
 
         let showErrorPopup = (data) => {
-            data = data || {}
-
-            errorsListElm.innerHTML = '';
-
-            if (data.error && !data.fields) {
-                // A Hapi/Boom error body carries the human-readable text in data.message and only the
-                // status name in data.error ('Forbidden', 'Too Many Requests'); the client-side catch
-                // path passes { error: Error } instead, hence the fallbacks.
-                addErrorRow(`{{_ "Error" templateLocale }}`, data.message || data.error.message || data.error)
-            } else if (data.fields) {
-                addErrorRow(`{{_ "Invalid settings" templateLocale }}`, data.message);
-                for (let field of data.fields) {
-                    addErrorRow('-', field.message);
-                }
-            } else {
-                if (!data.imap || !data.imap.success) {
-                    let error = data.imap && data.imap.error || `{{_ "Couldn't connect to IMAP server" templateLocale }}`
-                    if (data.imap && data.imap.responseText) {
-                        addErrorRow('IMAP', error, `{{_ "Server response:" templateLocale }}`, data.imap.responseText);
-                    } else {
-                        addErrorRow('IMAP', error);
-                    }
-                }
-
-                if (!data.smtp || !data.smtp.success) {
-                    let error = data.smtp && data.smtp.error || `{{_ "Couldn't connect to SMTP server" templateLocale }}`
-                    if (data.smtp && data.smtp.responseText) {
-                        addErrorRow('SMTP', error, `{{_ "Server response:" templateLocale }}`, data.smtp.responseText);
-                    } else {
-                        addErrorRow('SMTP', error);
-                    }
-                }
-            }
-
+            eeRenderTestErrors(errorsListElm, data, TEST_ERROR_LABELS);
             document.getElementById('testResponseModal').showModal();
         }
 
@@ -464,35 +355,7 @@ focus ring on) the corner close button --}}
             }
         }
 
-        let testSettings = async () => {
-            let formData = new FormData(myForm);
-            let body = {}
-            for (var pair of formData.entries()) {
-                body[pair[0]] = pair[1];
-            }
-
-            const res = await fetch('/accounts/new/imap/test', {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-
-            if (!res.ok) {
-                try {
-                    let errData = await res.json();
-                    return errData
-                } catch (err) {
-                    // ignore
-                    console.error(err)
-                }
-
-                throw new Error(`{{_ "Request failed." templateLocale}} status: ${res.status}`);
-            }
-
-            const data = await res.json();
-
-            return data;
-        }
+        let testSettings = () => eePostConnectionTest(myForm, { requestFailedText: REQUEST_FAILED_TEXT });
 
         let runTest = (continueIfSuccessful) => {
             if (formTesting) {
@@ -577,16 +440,7 @@ focus ring on) the corner close button --}}
         let imapPortElm = document.getElementById('imap_port');
         let smtpPortElm = document.getElementById('smtp_port');
 
-        try {
-            if (typeof Intl !== 'undefined' && Intl && typeof Intl.DateTimeFormat === 'function') {
-                let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                if (tz) {
-                    document.getElementById('tz').value = tz;
-                }
-            }
-        } catch (err) {
-            // Intl probably not supported
-        }
+        {{!-- the tz field carries data-ee-tz, which static/js/public.js fills --}}
 
         imapPortElm.addEventListener('change', () => checkPort('imap'));
         imapPortElm.addEventListener('click', () => checkPort('imap'));

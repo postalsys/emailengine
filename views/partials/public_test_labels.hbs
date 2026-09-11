@@ -1,0 +1,15 @@
+{{!-- The translated strings eeRenderTestErrors and eePostConnectionTest (static/js/public.js) take,
+declared once for the two hosted-form pages that run a connection test: the server settings page,
+which reports into a dialog, and the checking page, which reports inline.
+
+The JS behind these lives in public.js; only the strings have to be here, because the gettext
+extractor reads views/**/*.hbs and the `_` helper needs the render context. Included from inside a
+nonced <script> block on each page - it emits no tag of its own. --}}
+const TEST_ERROR_LABELS = {
+    error: `{{_ "Error" templateLocale }}`,
+    invalidSettings: `{{_ "Invalid settings" templateLocale }}`,
+    imapFailed: `{{_ "Couldn't connect to IMAP server" templateLocale }}`,
+    smtpFailed: `{{_ "Couldn't connect to SMTP server" templateLocale }}`,
+    serverResponse: `{{_ "Server response:" templateLocale }}`
+};
+const REQUEST_FAILED_TEXT = `{{_ "Request failed." templateLocale }}`;

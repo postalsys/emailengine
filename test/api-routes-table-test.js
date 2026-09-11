@@ -118,6 +118,7 @@ const GOLDEN_ROUTES = [
     'POST /v1/account/{account}/search',
     'POST /v1/account/{account}/submit',
     'POST /v1/authentication/form',
+    'POST /v1/autoconfig',
     'POST /v1/blocklist/{listId}',
     'POST /v1/chat/{account}',
     'POST /v1/delivery-test/account/{account}',

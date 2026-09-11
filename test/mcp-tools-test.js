@@ -199,17 +199,15 @@ test('MCP tool registry', async t => {
     });
 
     await t.test('the observe level leaves out the connection check, which operate offers', () => {
-        // The level drops the read/provisioning pair, so that pair has to stay exactly the route
-        // the exclusion is about - a connection to a caller-named host with caller-supplied
-        // credentials - or the exclusion silently widens or narrows with the route table
+        // The level drops the read/provisioning pair, so that pair has to stay exactly the routes
+        // the exclusion is about - a connection to a caller-named host, or to the autodiscovery host
+        // a caller-named address points at, with caller-supplied credentials - or the exclusion
+        // silently widens or narrows with the route table
         const readProvisioning = routes.filter(route => {
             const grant = routeGrant(route);
             return grant.action === ACTION.READ && grant.group === GROUP.PROVISIONING;
         });
-        assert.deepEqual(
-            readProvisioning.map(route => route.route),
-            ['POST /v1/verifyAccount']
-        );
+        assert.deepEqual(readProvisioning.map(route => route.route).sort(), ['POST /v1/autoconfig', 'POST /v1/verifyAccount']);
 
         const offeredAt = manage =>
             tools.filter(tool => toolVisibleTo(byName.get(tool.name), { tokenData: mcpGrantsFor({ manage }), boundAccount: null })).map(tool => tool.name);

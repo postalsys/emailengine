@@ -426,3 +426,98 @@ test('Hosted form re-renders with the signed blob on validation failure', async 
         assert.ok(!res.text.includes(`value="${data},${data}"`), 'the array value must not be echoed into the hidden data input');
     });
 });
+
+test('Hosted form can skip the server settings step', async t => {
+    // A setup link issued with skipServerSettings goes straight from the address and password to the
+    // checking page, which verifies the discovered settings and submits them. Everything here turns on
+    // what autodiscovery actually resolved, so the two outcomes are driven by the address: gmail.com is
+    // in the MX-driven resolver's fixed provider table and resolves both servers without any credential
+    // being correct, while example.com resolves nothing at all.
+    const skipBlob = () => {
+        const n = crypto.randomBytes(16).toString('base64url');
+        return signBlob({ n, t: Date.now(), redirectUrl: 'https://example.com/done', skipServerSettings: true });
+    };
+
+    const page1 = async (blob, email) => {
+        const { agent, crumb } = await crumbAgent();
+        return agent.post('/accounts/new/imap').type('form').send({ crumb, data: blob.data, sig: blob.sig, email, password: 'secret' });
+    };
+
+    await t.test('a resolved address reaches the checking page instead of the settings form', async () => {
+        const res = await page1(skipBlob(), 'user@gmail.com');
+
+        assert.equal(res.status, 200, `expected 200, got ${res.status}`);
+        assert.ok(res.text.includes('id="checking-panel"'), 'expected the checking page');
+        assert.ok(!res.text.includes('id="settings-form"'), 'the server settings form must not be rendered');
+        // Its form points at the settings form until the check passes, so an interrupted check or a
+        // browser without JavaScript can never create an account from settings nobody verified
+        assert.ok(res.text.includes('action="/accounts/new/imap/settings"'), 'the checking page must default to the settings form');
+        assert.ok(res.text.includes('value="imap.gmail.com"'), 'the discovered settings must be carried on the page');
+    });
+
+    await t.test('an address that resolves nothing still gets the settings form', async () => {
+        // The skip is best effort: with nothing discovered there is nothing to verify, so the visitor
+        // is asked for the settings exactly as they are without the option
+        const res = await page1(skipBlob(), 'user@example.com');
+
+        assert.equal(res.status, 200, `expected 200, got ${res.status}`);
+        assert.ok(res.text.includes('id="settings-form"'), 'expected the server settings form');
+        assert.ok(!res.text.includes('id="checking-panel"'), 'the checking page must not be rendered');
+    });
+
+    await t.test('without the option a resolved address gets the settings form, pre-verified', async () => {
+        const n = crypto.randomBytes(16).toString('base64url');
+        const res = await page1(signBlob({ n, t: Date.now(), redirectUrl: 'https://example.com/done' }), 'user@gmail.com');
+
+        assert.equal(res.status, 200, `expected 200, got ${res.status}`);
+        assert.ok(res.text.includes('id="settings-form"'), 'expected the server settings form');
+        assert.ok(!res.text.includes('id="checking-panel"'), 'the checking page must not be rendered');
+        // Same completeness answer, used here to auto-run the connection check on load
+        assert.ok(/id="autoTest" value="true"/.test(res.text), 'a complete settings set must still arm the auto-verify');
+    });
+
+    await t.test('the hand-off to the settings form requires a signed blob with a nonce', async () => {
+        const { agent, crumb } = await crumbAgent();
+        const { data, sig } = signBlob({ account: 'no-nonce-settings', email: 'user@example.com' });
+        const res = await agent.post('/accounts/new/imap/settings').type('form').send(Object.assign({ crumb, data, sig }, serverFields));
+        assert.equal(res.status, 403, `expected 403, got ${res.status}`);
+    });
+
+    await t.test('the hand-off says why it is showing the form, but only after a failed check', async () => {
+        // The detail stays on the page the visitor read it on; the form they are sent to has to at
+        // least say what it is for. The no-script Continue reaches the same route with no check
+        // having run, and must not claim one failed.
+        const render = async query => {
+            const { agent, crumb } = await crumbAgent();
+            const n = crypto.randomBytes(16).toString('base64url');
+            const { data, sig } = signBlob({ n, t: Date.now(), redirectUrl: 'https://example.com/done' });
+            const res = await agent.post(`/accounts/new/imap/settings${query}`).type('form').send(Object.assign({ crumb, data, sig }, serverFields));
+            assert.equal(res.status, 200, `expected 200, got ${res.status}`);
+            return res.text;
+        };
+
+        // The apostrophe arrives HTML-escaped, so match the part of the sentence without one
+        const notice = /sign in to your mail server with those settings/;
+
+        assert.match(await render('?checkFailed=1'), notice, 'a failed check must be explained on the form');
+        assert.doesNotMatch(await render(''), notice, 'a hand-off with no check behind it must not claim one failed');
+    });
+
+    await t.test('the hand-off renders the settings form filled in, with the check not re-armed', async () => {
+        const { agent, crumb } = await crumbAgent();
+        const n = crypto.randomBytes(16).toString('base64url');
+        const { data, sig } = signBlob({ n, t: Date.now(), redirectUrl: 'https://example.com/done' });
+
+        const res = await agent.post('/accounts/new/imap/settings').type('form').send(Object.assign({ crumb, data, sig }, serverFields));
+
+        assert.equal(res.status, 200, `expected 200, got ${res.status}`);
+        assert.ok(res.text.includes('id="settings-form"'), 'expected the server settings form');
+        assert.ok(res.text.includes(`value="${data}"`), 'the data blob must be carried into the form');
+        // Unlike the failAction re-render, this one keeps the passwords: they were typed one step ago
+        // and the form has to come up as filled in as it would have been had it rendered directly
+        assert.ok(res.text.includes('value="secret"'), 'the passwords must be prefilled');
+        // The check that sent the visitor here just failed; repeating it on load would only spin and
+        // give the same answer
+        assert.ok(!/id="autoTest" value="true"/.test(res.text), 'the auto-verify must not be re-armed');
+    });
+});
