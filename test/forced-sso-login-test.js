@@ -94,11 +94,27 @@ test('forced SSO hands off to the provider without an HTTP redirect', async t =>
         // The point of rendering instead of redirecting is that the page moves the browser on. If
         // this ever became a page the user has to click through, every forced-SSO login would stop
         // dead on it, and no assertion about which template was chosen would notice.
+        //
+        // The navigation lives in the layout rather than the view: an inline script cannot run
+        // until the stylesheets declared before it have loaded, so one in the body only fires after
+        // the card has painted and the visitor sees a flash of login chrome on the way out.
+        const layout = fs.readFileSync(path.join(__dirname, '..', 'views', 'layout', 'login.hbs'), 'utf-8');
         const source = fs.readFileSync(path.join(__dirname, '..', 'views', 'account', 'login-redirect.hbs'), 'utf-8');
 
-        assert.match(source, /window\.location\.replace\(/, 'the hand-off has to start the navigation itself');
-        assert.match(source, /nonce="\{\{cspNonce\}\}"/, 'and the admin CSP only runs a script carrying the nonce');
-        assert.match(source, /id="sso-continue"/, 'the fallback link the script reads, and a browser without JS follows');
+        assert.match(layout, /window\.location\.replace\(/, 'the hand-off has to start the navigation itself');
+        assert.match(layout, /nonce="\{\{cspNonce\}\}"/, 'and the admin CSP only runs a script carrying the nonce');
+        assert.match(layout, /\{\{#if ssoRedirectUrl\}\}/, 'guarded, or the ordinary login form would redirect too');
+
+        // Above the stylesheets is the whole point - below them it runs after the paint it exists
+        // to avoid.
+        // The link element, not the name: the comment above the script says why it sits where it
+        // does, and matching on the bare filename finds that sentence instead.
+        assert.ok(
+            layout.indexOf('window.location.replace(') < layout.indexOf('<link href="/static/css/flyonui.css"'),
+            'the navigation has to be declared before the stylesheets that would block it'
+        );
+
+        assert.match(source, /id="sso-continue"/, 'the link a browser without JS follows');
     });
 
     await t.test('a denied login still shows the local page, so the notice can be read', async () => {

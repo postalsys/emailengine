@@ -10,13 +10,14 @@ admin page held the form, which is any of them.
 
 location.replace() rather than a meta refresh: it leaves no history entry, so Back does not land
 here and bounce the user straight out again, which is how the HTTP redirect behaved. The link is
-what a browser that did not run the script gets. --}}
+what a browser that did not run the script gets.
+
+The navigation itself is started from views/layout/login.hbs, above the stylesheets: an inline
+script here in the body cannot run until those have loaded, which is long enough for this card to
+paint and read as a flash of the login page. What stays here is the markup a browser without
+JavaScript needs. --}}
 <h1 class="text-base-content mb-2 text-xl font-semibold">Signing in&mldr;</h1>
 
 <p class="text-base-content/60 mb-6 text-sm">Taking you to {{providers.oidc.name}} to sign in.</p>
 
 {{> ui/btn label="Continue" href=ssoRedirectUrl id="sso-continue" icon="icon-[tabler--login-2]" class="btn-block"}}
-
-<script data-cfasync="false" nonce="{{cspNonce}}">
-    window.location.replace(document.getElementById('sso-continue').href);
-</script>

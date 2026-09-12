@@ -12,6 +12,20 @@
     <title>{{#if pageTitleFull}}{{pageTitleFull}}{{else}}{{pageBrandName}}{{#if pageTitle}} -
         {{pageTitle}}{{/if}}{{/if}}</title>
 
+    {{!-- The forced-SSO hand-off starts its navigation here, above the stylesheets, rather than
+          from the page body. An inline script cannot run until the stylesheets declared before it
+          have loaded, and this layout pulls in the font sheet plus a 236 KB flyonui.css, so a
+          script placed after them only runs once the card has already painted - which is a visible
+          flash of login chrome on every forced-SSO sign-in. Nothing has painted this early.
+
+          Only views/account/login-redirect.hbs sets ssoRedirectUrl, and it is a fixed path chosen
+          in lib/ui-routes/auth-routes.js rather than anything a request carries, so the ordinary
+          login form never emits this and no user input reaches the string. Why that page navigates
+          itself instead of the server answering a redirect is the whole story in the view. --}}
+    {{#if ssoRedirectUrl}}
+    <script data-cfasync="false" nonce="{{cspNonce}}">window.location.replace('{{ssoRedirectUrl}}');</script>
+    {{/if}}
+
     {{> head_assets}}
 
     <link href="/static/css/flyonui.css" rel="stylesheet">
