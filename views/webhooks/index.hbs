@@ -1,11 +1,11 @@
-{{#> ui/page-header title="Webhook Routes" icon="icon-[tabler--webhook]" subtitle="Send HTTP callbacks to custom targets when email events match your filters." badgeLabel=total badgeVariant="neutral" class="mb-6"}}
+{{#> ui/page-header title="Webhook Routes" icon="icon-[tabler--webhook]" subtitle="Filter email events, customize their payloads, and send them to your chosen URLs." badgeLabel=total badgeVariant="neutral" class="mb-6"}}
 {{> ui/btn href=newLink label="Create webhook route" icon="icon-[tabler--plus]"}}
 {{/ui/page-header}}
 
 {{> ui/search-crumb parentHref="/admin/webhooks" parentLabel="Webhook Routes" query=query}}
 
 {{#unless webhooksEnabled}}
-<div class="alert alert-soft alert-warning mb-6"><span><strong>Note:</strong> Webhook processing is currently disabled
+<div class="alert alert-soft alert-warning mb-6"><span><strong>Note:</strong> Webhooks are disabled
         for EmailEngine.
         <a href="/admin/config/webhooks" class="link link-animated">Enable webhooks in configuration
             settings</a>.</span></div>
@@ -75,10 +75,9 @@
 {{#> ui/details summary="How webhook routes work" class="card bg-base-100 shadow-md mb-6"}}
 <div>
     <p class="mb-2">
-        EmailEngine tests all events against <em>filter functions</em> of webhook routes. When
-        a filter matches, EmailEngine sends a webhook to the target URL of that route. If
-        the webhook target requires a specific payload format, you can define a <em>mapping
-            function</em> to modify the payload before sending.
+        Each enabled route evaluates events with its filter function. When the filter returns <code>true</code>,
+            EmailEngine sends the event to the route's target URL. Add a map function to change the payload format.
+            Routes run independently of the default webhook target and its event selection.
     </p>
     <p class="mb-0"><a href="https://learn.emailengine.app/docs/integrations/low-code" target="_blank"
             rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">Learn more about webhook

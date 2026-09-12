@@ -2,10 +2,9 @@
 
 {{#> ui/stat-card variant="warning" icon="icon-[tabler--alert-triangle]" class="mb-6"}}
 <ul class="list-disc ps-6">
-    <li>The Document Store backend only supports ElasticSearch v8+. Older ElasticSearch versions and
+    <li>The Document Store backend only supports Elasticsearch v8+. Older Elasticsearch versions and
         other alternatives like OpenSearch aren't compatible.</li>
-    <li>EmailEngine syncs emails to the Document Store based on a "best effort" approach, meaning there
-        might be occasional missed data.</li>
+    <li>Syncing uses a best-effort process, so the Document Store may not contain every mailbox change.</li>
     <li>Email attachments won't be saved in the Document Store.</li>
     <li>To index accounts, turn on the Document Store feature first. If it's off, any processed emails
         won't sync to the Document Store. You can force EmailEngine to resync all emails for an account
@@ -33,9 +32,9 @@
         <div class="px-6 py-4 border-b border-base-content/10 ee-toggle-row flex items-start justify-between gap-4">
             <div>
                 {{> ui/checkbox id="documentStoreEnabled" name="documentStoreEnabled"
-                label="Enable syncing to the Document Store." checked=values.documentStoreEnabled
+                label="Enable syncing to the Document Store" checked=values.documentStoreEnabled
                 error=errors.documentStoreEnabled
-                hint="If enabled, then EmailEngine stores structured email content to ElasticSearch. Stored data does include attachment metadata but not attachment contents."}}
+                hint="Store structured email content in Elasticsearch, including attachment metadata but not attachment contents."}}
 
                 <div class="mt-2"><small><strong>Important:</strong> EmailEngine only saves emails to the Document
                         Store if processed while the feature is active. To add existing emails, use the <a
@@ -64,10 +63,10 @@
 
             <div>
                 {{> ui/setting-ref name="documentStoreUrl"}}
-                {{#> ui/form-field id="documentStoreUrl" label="URL to ElasticSearch" error=errors.documentStoreUrl}}
+                {{#> ui/form-field id="documentStoreUrl" label="URL to Elasticsearch" error=errors.documentStoreUrl}}
                 <input type="url" class="input trigger-example-render{{#if errors.documentStoreUrl}} is-invalid{{/if}}"
                     id="documentStoreUrl" name="documentStoreUrl" value="{{values.documentStoreUrl}}">
-                <span class="helper-text">URL to ElasticSearch API, for example "http://localhost:9200".</span>
+                <span class="helper-text">URL to Elasticsearch API, for example "http://localhost:9200".</span>
                 {{/ui/form-field}}
             </div>
 
@@ -111,7 +110,7 @@
     </div>
 
     <div class="mb-6">
-        {{> ui/btn label="Update settings" type="submit" icon="icon-[tabler--settings]"}}
+        {{> ui/btn label="Save changes" type="submit" icon="icon-[tabler--settings]"}}
     </div>
 
 </form>

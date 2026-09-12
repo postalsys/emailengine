@@ -17,7 +17,7 @@
                     <label class="label-text p-0" for="documentStoreGenerateEmbeddings">Enable the "Chat with emails"
                         feature</label>
 
-                    {{#> ui/tooltip text="Requires ElasticSearch 8.8.0+"}}<span
+                    {{#> ui/tooltip text="Requires Elasticsearch 8.8.0+"}}<span
                         class="icon-[tabler--info-circle] size-4 text-base-content/50"></span>{{/ui/tooltip}}
 
                     {{#unless documentStoreEnabled}}
@@ -37,7 +37,7 @@
                         class="link link-animated">Chat API method</a>.</span>
                 <div class="mt-2"><small><strong>Important:</strong> EmailEngine will only create embeddings for emails
                         processed when the feature is active. To generate embeddings for previously stored emails,
-                        utilize the <a href="/admin/reference/account#putV1AccountAccountFlush" target="_blank"
+                        use the <a href="/admin/reference/account#putV1AccountAccountFlush" target="_blank"
                             rel="noopener noreferrer" class="link link-animated">Flush API method</a>. This will force
                         EmailEngine to re-process all emails in the Document Store.</small>
                 </div>
@@ -117,7 +117,7 @@
 
 
     <div class="mb-6">
-        {{> ui/btn label="Update settings" type="submit" icon="icon-[tabler--settings]"}}
+        {{> ui/btn label="Save changes" type="submit" icon="icon-[tabler--settings]"}}
     </div>
 
 </form>
@@ -130,7 +130,7 @@
             {{#> ui/form-field id="inputAccount" label="Account ID"}}
             <input type="text" class="input" name="account" id="inputAccount" aria-describedby="inputAccountHelp"
                 value="" required>
-            <span class="helper-text">The account ID to send the chat message as.</span>
+            <span class="helper-text">ID of the account whose emails you want to search.</span>
             {{/ui/form-field}}
         </div>
 
@@ -138,7 +138,7 @@
             {{#> ui/form-field id="question" label="Question"}}
             <input type="text" class="input" name="question" id="question" aria-describedby="questionHelp" value=""
                 required>
-            <span class="helper-text">Question to ask about the emails on the account.</span>
+            <span class="helper-text">Ask a question about this account's stored emails.</span>
             {{/ui/form-field}}
         </div>
 

@@ -1,6 +1,6 @@
 {{> ui/page-header title="Branding" icon="icon-[tabler--palette]" class="mb-1"}}
 
-<p class="mb-6">Customize public pages like authentication forms, error pages, and unsubscribe pages.</p>
+<p class="mb-6">Add your branding to public pages, including authentication forms, error pages, and unsubscribe pages.</p>
 
 {{> ui/env-managed-alert}}
 
@@ -22,7 +22,7 @@
                 <input type="text" class="input{{#if errors.pageBrandName}} is-invalid{{/if}}"
                     id="settingsPageBrandName" name="pageBrandName" value="{{values.pageBrandName}}"
                     data-lpignore="true" autocomplete="off" placeholder="EmailEngine" />
-                <span class="helper-text">Appears in browser title bar</span>
+                <span class="helper-text">Shown in the browser tab title.</span>
                 {{/ui/form-field}}
             </div>
 
@@ -58,14 +58,14 @@
                 <span class="helper-text text-error">{{errors.templateHtmlHead}}</span>
                 {{/if}}
 
-                <span class="helper-text">Add custom CSS, fonts, or analytics scripts</span>
+                <span class="helper-text">Add custom CSS, fonts, or analytics scripts to public pages.</span>
             </div>
 
         </div>
     </div>
 
     <div class="mb-6">
-        {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
+        {{> ui/btn label="Save changes" type="submit" icon="icon-[tabler--settings]"}}
     </div>
 
 </form>

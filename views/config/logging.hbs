@@ -1,8 +1,8 @@
 {{> ui/page-header title="Logging" icon="icon-[tabler--settings]" class="mb-1"}}
 
 <p class="mb-6">
-    Track API requests for debugging and monitoring. EmailEngine can log IMAP, SMTP, Gmail API, and MS Graph API
-    activity (credentials and message content are never logged). Download logs anytime for troubleshooting.
+    Record account connection activity for troubleshooting, including IMAP, SMTP, Gmail API, and Microsoft Graph
+    requests. Download stored logs from each account's page.
 </p>
 
 {{> ui/env-managed-alert}}
@@ -16,8 +16,7 @@
                 {{> ui/setting-ref name="logs.all"}}
                 {{> ui/checkbox id="settingsLogsAll" name="all" label="Enable Logging for All Accounts"
                 checked=values.all error=errors.all}}
-                <span class="helper-text">Turn on logging for every connected account. Use with caution, this can impact
-                    performance with many accounts.<br>
+                <span class="helper-text">Record logs for every connected account. Logging many accounts increases memory use and can affect performance.<br>
                     <strong>Restart required</strong> after changing this setting.</span>
             </div>
 
@@ -28,8 +27,7 @@
                 <input type="number" class="input{{#if errors.maxLogLines}} is-invalid{{/if}}"
                     id="settingsLogsMaxLogLines" min="0" max="10000000" name="maxLogLines"
                     value="{{values.maxLogLines}}" />
-                <span class="helper-text">Maximum log entries to keep per account. Logs are stored in memory (Redis), so
-                    choose wisely to avoid running out of RAM.</span>
+                <span class="helper-text">Maximum log entries to retain per account. Higher limits use more Redis memory.</span>
                 {{/ui/form-field}}
             </div>
         
@@ -72,7 +70,7 @@
     {{/ui/card}}
 
     <div class="mb-6">
-        {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
+        {{> ui/btn label="Save changes" type="submit" icon="icon-[tabler--settings]"}}
     </div>
 
 </form>

@@ -60,14 +60,14 @@
             {{/if}}
 
             <dt>Encryption</dt>
-            <dd>{{#if gateway.secure}}TLS/SSL{{else}}STARTTLS (when available){{/if}}
+            <dd>{{#if gateway.secure}}Direct TLS{{else}}STARTTLS (when available){{/if}}
             </dd>
         </dl>
 
 
 {{/ui/card}}
 
-{{#> ui/confirm-modal id="deleteModal" title="Delete Gateway" action=(concat "/admin/gateways/delete/" (urlpart gateway.gateway))
-submitLabel="Delete Gateway"}}
+{{#> ui/confirm-modal id="deleteModal" title="Delete gateway" action=(concat "/admin/gateways/delete/" (urlpart gateway.gateway))
+submitLabel="Delete gateway"}}
 <p>Delete gateway "{{gateway.name}}"? This action cannot be undone.</p>
 {{/ui/confirm-modal}}

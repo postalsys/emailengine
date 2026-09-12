@@ -17,7 +17,7 @@
         {{/ui/tooltip}}
     </div>
     <div class="text-xl font-semibold text-base-content">
-        {{#> ui/tooltip text="Queue entries total"}}{{formatInteger queue.total userLocale}}{{/ui/tooltip}} /
+        {{#> ui/tooltip text="Total queue entries"}}{{formatInteger queue.total userLocale}}{{/ui/tooltip}} /
         {{#> ui/tooltip text=delayedTooltip}}{{formatInteger queue.delayed userLocale}}{{/ui/tooltip}}
     </div>
     {{/ui/stat-card}}
@@ -68,8 +68,7 @@
 
     {{#unless hasAccounts}}
     {{#> ui/stat-card variant="success" title="Welcome to EmailEngine!" icon="icon-[tabler--info-circle]" class="mt-6"}}
-    <p class="mb-2">Get started by connecting your first email account. Once connected, you can send
-        and receive emails through the <a href="/admin/reference" class="link link-animated">API</a>.
+    <p class="mb-2">Connect your first email account to send email and access mailbox data through the <a href="/admin/reference" class="link link-animated">API</a>.
     </p>
     <p class="mb-4 text-sm text-base-content/60">You can also add accounts programmatically via the <a
             href="https://learn.emailengine.app/docs/api/post-v-1-account" target="_blank" rel="noopener noreferrer"
@@ -136,7 +135,7 @@
         {{> activityCard cardIcon="icon-[tabler--mail]" cardTip="Detected new emails in synced mailboxes"
         cardLabel="New emails" okValue=activity.messageNew}}
 
-        {{> activityCard cardIcon="icon-[tabler--mail-forward]" cardTip="Emails accepted by MTA servers for delivery"
+        {{> activityCard cardIcon="icon-[tabler--mail-forward]" cardTip="Emails accepted by the sending server or provider for delivery"
         cardLabel="Emails sent" okValue=activity.submitSuccess failValue=activity.submitFail failLabel="rejected"}}
 
         {{> activityCard cardIcon="icon-[tabler--webhook]" cardTip="Successfully delivered webhook notifications"
@@ -156,7 +155,7 @@
 
         {{> queueCard queue=stats.queues.notify href="/admin/bull-board/queue/Webhooks%20Queue%20-%20notify" label="Webhooks queue" tooltip="This queue processes webhook notifications" delayedTooltip="Delayed queue entries"}}
 
-        {{> queueCard queue=stats.queues.submit href="/admin/bull-board/queue/Submission%20Queue%20-%20submit" label="Submission queue" tooltip="This queue processes emails to be sent via SMTP" delayedTooltip="Delayed queue entries, including emails scheduled to be sent later"}}
+        {{> queueCard queue=stats.queues.submit href="/admin/bull-board/queue/Submission%20Queue%20-%20submit" label="Submission queue" tooltip="This queue processes outgoing emails" delayedTooltip="Delayed queue entries, including emails scheduled to be sent later"}}
 
         {{#if showDocumentStore}}
         {{> queueCard queue=stats.queues.documents href="/admin/bull-board/queue/Document%20Queue%20-%20documents" label="Documents queue" tooltip="This queue indexes mailbox changes to Elasticsearch" delayedTooltip="Delayed queue entries"}}

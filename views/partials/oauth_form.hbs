@@ -55,7 +55,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
             {{#> ui/form-field id="name" label="Application name" error=errors.name}}
             <input type="text" class="input{{#if errors.name}} is-invalid{{/if}}" id="name" name="name"
                 value="{{values.name}}" placeholder="Enter application name, eg. &quot;My App&quot;&mldr;" required />
-            <span class="helper-text">Application name used when listing apps.</span>
+            <span class="helper-text">Name shown in the OAuth2 app list.</span>
             {{/ui/form-field}}
         </div>
 
@@ -63,7 +63,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
             {{#> ui/form-field id="description" label="Description" error=errors.description}}
             <input type="text" class="input{{#if errors.description}} is-invalid{{/if}}" id="description"
                 name="description" value="{{values.description}}" placeholder="" />
-            <span class="helper-text">Optional application description or a comment.</span>
+            <span class="helper-text">Describe what this app is used for.</span>
             {{/ui/form-field}}
         </div>
 
@@ -72,8 +72,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
             {{#> ui/form-field id="title" label="Display title" error=errors.title}}
             <input type="text" class="input{{#if errors.title}} is-invalid{{/if}}" id="title" name="title"
                 value="{{values.title}}" placeholder="" />
-            <span class="helper-text">Optional display title next to the application button on the account type
-                selection page.</span>
+            <span class="helper-text">Optional title shown next to this app on the hosted authentication form.</span>
             {{/ui/form-field}}
         </div>
         {{/unless}}{{/unless}}
@@ -92,7 +91,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
         <div>
             {{> ui/checkbox id="enabled" name="enabled" label="Enable this app" checked=values.enabled
             error=errors.enabled
-            hint="If enabled, then this OAuth2 app is shown as an account type option in the hosted authentication form."}}
+            hint="Show this app as an account type in the hosted authentication form."}}
         </div>
         {{/unless}}{{/unless}}
 
@@ -147,8 +146,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
             <div>
                 {{> ui/btn label="Load configuration from the service key file…" variant="info" id="serviceFile"
                 icon="icon-[tabler--cloud-upload]"}}
-                <span class="helper-text">Select the JSON file you received after generating a new service key to
-                    retrieve the service values.</span>
+                <span class="helper-text">Choose a service account key JSON file to fill in the credentials below.</span>
             </div>
         </div>
 
@@ -167,32 +165,32 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
                 name="googleProjectId" value="{{values.googleProjectId}}"
                 placeholder="Enter the Google Cloud Project ID of the service, for example &quot;project-name-425411&quot;"
                 required />
-            <span class="helper-text">OAuth2 Service Project ID</span>
+            <span class="helper-text">Google Cloud project that owns this service account.</span>
             {{/ui/form-field}}
         </div>
 
         <div>
-            {{#> ui/form-field id="serviceClientEmail" label="Client Email" error=errors.serviceClientEmail}}
+            {{#> ui/form-field id="serviceClientEmail" label="Service account email" error=errors.serviceClientEmail}}
             <input type="email" class="input{{#if errors.serviceClientEmail}} is-invalid{{/if}}" id="serviceClientEmail"
                 name="serviceClientEmail" value="{{values.serviceClientEmail}}"
                 placeholder="Enter the principal of the service, for example &quot;name@project-123.iam.gserviceaccount.com&quot;"
                 required />
-            <span class="helper-text">OAuth2 Service Client Email</span>
+            <span class="helper-text">Email address of the Google service account.</span>
             {{/ui/form-field}}
         </div>
 
         <div>
-            {{#> ui/form-field id="serviceClient" label="Service client" error=errors.serviceClient}}
+            {{#> ui/form-field id="serviceClient" label="Service account client ID" error=errors.serviceClient}}
             <input type="text" class="input{{#if errors.serviceClient}} is-invalid{{/if}}" id="serviceClient"
                 name="serviceClient" value="{{values.serviceClient}}" placeholder="Enter service client ID&mldr;"
                 required />
-            <span class="helper-text">OAuth2 Service Client ID</span>
+            <span class="helper-text">Numeric client ID used to configure domain-wide delegation.</span>
             {{/ui/form-field}}
         </div>
 
         <div class="auth-method-section auth-method-section-serviceKey{{#unless authMethodIsServiceKey}} hidden{{/unless}}">
             <div>
-                {{#> ui/form-field id="serviceKey" label="Secret service key" error=errors.serviceKey}}
+                {{#> ui/form-field id="serviceKey" label="Private key" error=errors.serviceKey}}
                 <textarea class="textarea w-full droptxt autoselect{{#if errors.serviceKey}} is-invalid{{/if}}"
                     id="serviceKey" name="serviceKey" rows="8" data-enable-grammarly="false" spellcheck="false" {{#if
                     hasServiceKey}}placeholder="Service key is set but not shown&mldr;" {{else}}
@@ -224,7 +222,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
         {{else if activeOutlookService}}
 
         <div>
-            {{#> ui/form-field id="clientId" label="Azure Application Id" error=errors.clientId}}
+            {{#> ui/form-field id="clientId" label="Application (client) ID" error=errors.clientId}}
             <input type="text" class="input{{#if errors.clientId}} is-invalid{{/if}}" id="clientId" name="clientId"
                 value="{{values.clientId}}" placeholder="Enter application (client) ID&mldr;" required />
             <span class="helper-text">The Application (client) ID from your Entra app registration.</span>
@@ -274,8 +272,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
         <div>
             {{> ui/btn label="Load configuration from the JSON file…" variant="info" id="gmailConfigFile"
             icon="icon-[tabler--cloud-upload]"}}
-            <span class="helper-text">Select the JSON file you can download when viewing client credential information
-                in Google Cloud Console.</span>
+            <span class="helper-text">Choose the OAuth client JSON file downloaded from Google Cloud Console.</span>
         </div>
 
         <div>
@@ -293,20 +290,20 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
             {{#> ui/form-field id="clientId" error=errors.clientId}}
             <label class="label-text" for="clientId">
                 {{#if activeGmail}}
-                Client Id
+                Client ID
                 {{/if}}
 
                 {{#if activeMailRu}}
-                Client Id
+                Client ID
                 {{/if}}
 
                 {{#if activeOutlook}}
-                Azure Application Id
+                Application (client) ID
                 {{/if}}
             </label>
             <input type="text" class="input{{#if errors.clientId}} is-invalid{{/if}}" id="clientId" name="clientId"
                 value="{{values.clientId}}" placeholder="Enter client ID&mldr;" required />
-            <span class="helper-text">OAuth2 client id.</span>
+            <span class="helper-text">Client ID from your provider's app configuration.</span>
             {{/ui/form-field}}
         </div>
 
@@ -631,9 +628,8 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
         class="card-footer border-base-content/10 border-t px-6 py-4{{#unless baseScopesApi}} hidden{{/unless}}">
 
         <p class="mb-2">
-            To enable webhooks for email accounts managed by this app, EmailEngine needs to set up a Cloud Pub/Sub
-            service using a Gmail Service Account with the <em>Pub/Sub Admin</em> role. Select the Gmail Pub/Sub Service
-            Account below to configure this.
+            For faster webhook notifications, select a Gmail service account with the Pub/Sub Admin role.
+            EmailEngine uses it to set up Google Cloud Pub/Sub for accounts managed by this app.
         </p>
 
         <p class="mb-2">
@@ -759,7 +755,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
         <p class="mb-2">
             Both endpoints must be publicly reachable for anonymous HTTPS
             <strong>POST</strong> requests. When a notification arrives, EmailEngine
-            immediately forwards the event to your application through its own webhooks.
+            processes the change and sends matching events through your configured webhooks.
         </p>
 
         <p>
@@ -802,7 +798,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
         <p class="mb-2">
             Both endpoints must be publicly reachable for anonymous HTTPS
             <strong>POST</strong> requests. When a notification arrives, EmailEngine
-            immediately forwards the event to your application through its own webhooks.
+            processes the change and sends matching events through your configured webhooks.
         </p>
 
         <p>
@@ -822,15 +818,15 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
 {{#if activeGmail}}
 <div class="card bg-base-100 shadow-md mb-6{{#unless baseScopesApi}} hidden{{/unless}}" id="account-type-card-gmail">
     <div class="card-header">
-        <h6 class="card-title text-primary">Account Type Helper</h6>
+        <h6 class="card-title text-primary">Scope presets</h6>
     </div>
     <div class="card-body">
-        <p class="mb-4">Click a button to automatically populate the scope fields with preset configurations:</p>
+        <p class="mb-4">Choose a preset to fill in the scope fields below:</p>
 
         <div class="join mb-4" role="group">
             <button type="button" class="btn btn-outline btn-primary btn-sm join-item account-type-btn"
                 data-type="normal" data-provider="gmail">
-                Normal (Full Access)
+                Full access
             </button>
             <button type="button" class="btn btn-outline btn-primary btn-sm join-item account-type-btn"
                 data-type="readonly" data-provider="gmail">
@@ -848,7 +844,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
 
         <div class="mt-2">
             <small class="text-base-content/60">
-                <strong>Normal:</strong> Default Gmail API scopes for full mailbox access<br>
+                <strong>Full access:</strong> Default Gmail API scopes for full mailbox access<br>
                 <strong>Read-Only:</strong> Uses <code>gmail.readonly</code> scope for read-only access (no send)<br>
                 <strong>Read-Only + Send:</strong> Uses <code>gmail.readonly</code> and <code>gmail.send</code>
                 scopes<br>
@@ -872,15 +868,15 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
 {{#if activeOutlook}}
 <div class="card bg-base-100 shadow-md mb-6{{#unless baseScopesApi}} hidden{{/unless}}" id="account-type-card-outlook">
     <div class="card-header">
-        <h6 class="card-title text-primary">Account Type Helper</h6>
+        <h6 class="card-title text-primary">Scope presets</h6>
     </div>
     <div class="card-body">
-        <p class="mb-4">Click a button to automatically populate the scope fields with preset configurations:</p>
+        <p class="mb-4">Choose a preset to fill in the scope fields below:</p>
 
         <div class="join mb-4" role="group">
             <button type="button" class="btn btn-outline btn-primary btn-sm join-item account-type-btn"
                 data-type="normal" data-provider="outlook">
-                Normal (Full Access)
+                Full access
             </button>
             <button type="button" class="btn btn-outline btn-primary btn-sm join-item account-type-btn"
                 data-type="readonly" data-provider="outlook">
@@ -898,7 +894,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
 
         <div class="mt-2">
             <small class="text-base-content/60">
-                <strong>Normal:</strong> Default MS Graph API scopes for full mailbox access<br>
+                <strong>Full access:</strong> Default MS Graph API scopes for full mailbox access<br>
                 <strong>Read-Only:</strong> Uses <code>Mail.Read</code> scope for read-only access (no send)<br>
                 <strong>Read-Only + Send:</strong> Uses <code>Mail.Read</code> with <code>Mail.Send</code> enabled<br>
                 <strong>Send-Only:</strong> Uses <code>Mail.Send</code> scope only (disables
@@ -912,8 +908,8 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
 {{#> ui/details summary="Additional scopes" id="setupScopes" class="card bg-base-100 shadow-md mb-6"
 open=values.extraScopes}}
 
-<p class="mb-4">Here you can list additional OAuth2 scopes that EmailEngine should ask for. This is mainly needed
-    when you want to re-use the access tokens generated by EmailEngine in other parts of your application.</p>
+<p class="mb-4">Request additional OAuth2 scopes, for example when your application uses the provider access tokens
+                for services beyond email.</p>
 
 {{#if activeGmail}}
 <div class="alert alert-soft alert-info mb-4 block">
@@ -921,7 +917,7 @@ open=values.extraScopes}}
         enabled for your OAuth2 app (look for <em>Enabled APIs & services</em> in <a
             href="https://console.cloud.google.com/apis/dashboard" target="_blank" rel="noopener noreferrer"
             referrerpolicy="no-referrer" class="link link-animated">Google Cloud Console</a>)
-        before registering accounts with these permissions. Otherwise, token generations will fail.</p>
+        before registering accounts with these permissions. Otherwise, token generation will fail.</p>
 </div>
 {{/if}}
 
@@ -930,7 +926,7 @@ open=values.extraScopes}}
         enabled for your OAuth2 app (look for <em>Enabled APIs & services</em> in <a
             href="https://console.cloud.google.com/apis/dashboard" target="_blank" rel="noopener noreferrer"
             referrerpolicy="no-referrer" class="link link-animated">Google Cloud Console</a>)
-        before registering accounts with these permissions. Otherwise, token generations will fail.</span>
+        before registering accounts with these permissions. Otherwise, token generation will fail.</span>
 </div>
 {{/if}}
 
@@ -958,7 +954,7 @@ open=values.extraScopes}}
     <textarea class="textarea w-full font-mono{{#if errors.extraScopes}} is-invalid{{/if}}" id="extraScopes"
         name="extraScopes" rows="5" spellcheck="false" data-enable-grammarly="false"
         placeholder="Scope identifiers like &quot;https://mail.google.com/&quot;&mldr;">{{values.extraScopes}}</textarea>
-    <span class="helper-text">Keep one scope per line</span>
+    <span class="helper-text">Enter one scope per line.</span>
     {{/ui/form-field}}
 </div>
 
@@ -967,8 +963,7 @@ open=values.extraScopes}}
 {{#> ui/details summary="Disabled scopes" id="skipScopes" class="card bg-base-100 shadow-md mb-6"
 open=values.skipScopes}}
 
-<p class="mb-4">Here you can list OAuth2 scopes that EmailEngine should not use. This is mainly needed
-    when you want to disable some default scopes like <code>"SMTP.Send"</code> in Outlook or
+<p class="mb-4">Exclude default OAuth2 scopes that your integration does not need, such as <code>"SMTP.Send"</code> in Outlook or
     <code>"https://www.googleapis.com/auth/gmail.modify"</code> in Gmail.
 </p>
 
@@ -977,7 +972,7 @@ open=values.skipScopes}}
     <textarea class="textarea w-full font-mono{{#if errors.skipScopes}} is-invalid{{/if}}" id="skipScopesList"
         name="skipScopes" rows="5" spellcheck="false" data-enable-grammarly="false"
         placeholder="Scope identifiers like &quot;SMTP.Send&quot;&mldr;">{{values.skipScopes}}</textarea>
-    <span class="helper-text">Keep one scope per line</span>
+    <span class="helper-text">Enter one scope per line.</span>
     {{/ui/form-field}}
 </div>
 

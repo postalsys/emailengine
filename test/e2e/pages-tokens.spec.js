@@ -128,7 +128,7 @@ test.describe('access token pages', () => {
             await page.locator(`#permissionGroup_${group}`).uncheck();
         }
 
-        await page.getByRole('button', { name: 'Generate a token' }).click();
+        await page.getByRole('button', { name: 'Create access token' }).click();
 
         // The value is shown once and never again, so the modal is the only place it appears
         const tokenValue = page.locator('#showTokenValue');
@@ -209,7 +209,7 @@ test.describe('access token pages', () => {
             await expect(page.locator('#account-search')).toBeHidden();
             await expect(page.locator('[data-picker-card]')).toContainText('E2E Token Binding');
 
-            await page.getByRole('button', { name: 'Generate a token' }).click();
+            await page.getByRole('button', { name: 'Create access token' }).click();
 
             await expect(page.locator('#showTokenValue')).toHaveValue(/^[0-9a-f]{64}$/, { timeout: 15000 });
             const boundToken = await page.locator('#showTokenValue').inputValue();
@@ -256,7 +256,7 @@ test.describe('access token pages', () => {
 
         await page.locator('#description').fill(`e2e unknown account ${Date.now()}`);
         await setPickedAccount(page, '#account', 'e2e-no-such-account');
-        await page.getByRole('button', { name: 'Generate a token' }).click();
+        await page.getByRole('button', { name: 'Create access token' }).click();
 
         const error = page.locator('#showTokenError');
         await expect(error).toBeVisible({ timeout: 15000 });
@@ -529,7 +529,7 @@ test.describe('access token pages', () => {
         await page.locator('#scopesMcp').check();
         await page.locator('#mcpLevel_mail_mail').check();
 
-        await page.getByRole('button', { name: 'Generate a token' }).click();
+        await page.getByRole('button', { name: 'Create access token' }).click();
         await expect(page.locator('#showTokenValue')).toHaveValue(/^[0-9a-f]{64}$/, { timeout: 15000 });
         await dismissTokenReveal(page);
 
@@ -554,7 +554,7 @@ test.describe('access token pages', () => {
             await page.locator(`#permissionAction_${action}`).uncheck();
         }
 
-        await page.getByRole('button', { name: 'Generate a token' }).click();
+        await page.getByRole('button', { name: 'Create access token' }).click();
 
         // An empty allowlist allows nothing, so the token would authenticate and then refuse every
         // request it made - a puzzle for whoever was handed it. Refused by tokenPermissionsSchema

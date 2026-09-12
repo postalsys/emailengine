@@ -436,7 +436,7 @@ test.describe('admin shell', () => {
         await page.goto(`${url}/edit`);
         await expect(page.locator('#name')).toBeVisible();
         await expect(page.locator('#email')).toBeVisible();
-        await expect(page.locator('button[type="submit"]', { hasText: 'Update account' })).toBeVisible();
+        await expect(page.locator('button[type="submit"]', { hasText: 'Save changes' })).toBeVisible();
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
@@ -583,7 +583,7 @@ test.describe('admin shell', () => {
         await page.fill('#name', 'E2E Smoke Gateway');
         await page.fill('#host', '127.0.0.1');
         await page.fill('#port', '2525');
-        await page.locator('button[type="submit"]', { hasText: 'Create Gateway' }).click();
+        await page.locator('button[type="submit"]', { hasText: 'Create gateway' }).click();
         // the create redirect lands on the gateway detail page
         await page.waitForURL(/\/admin\/gateways\/gateway\//);
 
@@ -904,7 +904,7 @@ test.describe('admin shell', () => {
         expect(bubble.enclosesList).toBe(true);
         await page.mouse.move(0, 0);
 
-        await page.locator('button[type="submit"]', { hasText: 'Create routing' }).click();
+        await page.locator('button[type="submit"]', { hasText: 'Create webhook route' }).click();
         await page.waitForURL(/\/admin\/webhooks\/webhook\//);
 
         // detail page: read-only ACE previews, FlyonUI tabs switch fn/map panes
@@ -1146,7 +1146,7 @@ test.describe('admin shell', () => {
         const sizeField = page.locator('#settingsNotifyTextSize');
         const origSize = await sizeField.inputValue();
         await sizeField.fill('not-a-size');
-        await page.getByRole('button', { name: 'Save Changes' }).click();
+        await page.getByRole('button', { name: 'Save changes' }).click();
 
         await expect(page.locator('.flash-alert', { hasText: "Couldn't save settings" })).toBeVisible();
         // the submitted value stays in the field instead of resetting to the stored one
@@ -1156,7 +1156,7 @@ test.describe('admin shell', () => {
 
         // restore and confirm the form still saves
         await sizeField.fill(origSize);
-        await page.getByRole('button', { name: 'Save Changes' }).click();
+        await page.getByRole('button', { name: 'Save changes' }).click();
         await expect(page.locator('.flash-alert', { hasText: 'Configuration updated' })).toBeVisible();
 
         expect(errors, errors.join('\n')).toHaveLength(0);
@@ -1766,7 +1766,7 @@ test.describe('admin shell', () => {
         ];
         for (const configPath of configPages) {
             await page.goto(configPath);
-            await page.getByRole('button', { name: 'Save Changes' }).click();
+            await page.getByRole('button', { name: 'Save changes' }).click();
             const flash = page.locator('.flash-alert', { hasText: 'Configuration updated' });
             await expect(flash, `${configPath} save`).toBeVisible({ timeout: 15000 });
             // the close button removes the alert (ui.js .flash-alert-close handler);
@@ -1781,11 +1781,11 @@ test.describe('admin shell', () => {
         const maxLines = page.locator('#settingsLogsMaxLogLines');
         const origLines = await maxLines.inputValue();
         await maxLines.fill('12345');
-        await page.getByRole('button', { name: 'Save Changes' }).click();
+        await page.getByRole('button', { name: 'Save changes' }).click();
         await expect(page.locator('.flash-alert', { hasText: 'Configuration updated' })).toBeVisible();
         await expect(maxLines).toHaveValue('12345');
         await maxLines.fill(origLines);
-        await page.getByRole('button', { name: 'Save Changes' }).click();
+        await page.getByRole('button', { name: 'Save changes' }).click();
         await expect(maxLines).toHaveValue(origLines);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
@@ -1800,14 +1800,14 @@ test.describe('admin shell', () => {
         await page.fill('#name', 'E2E Edit Gateway');
         await page.fill('#host', '127.0.0.1');
         await page.fill('#port', '2525');
-        await page.locator('button[type="submit"]', { hasText: 'Create Gateway' }).click();
+        await page.locator('button[type="submit"]', { hasText: 'Create gateway' }).click();
         await page.waitForURL(/\/admin\/gateways\/gateway\//);
 
         await page.goto('/admin/gateways/edit/e2e-edit-gw');
         await expect(page.locator('#name')).toHaveValue('E2E Edit Gateway');
         await expect(page.locator('#host')).toHaveValue('127.0.0.1');
         await page.fill('#name', 'E2E Edited Gateway');
-        await page.getByRole('button', { name: 'Save Changes' }).click();
+        await page.getByRole('button', { name: 'Save changes' }).click();
         await page.waitForURL(/\/admin\/gateways\/gateway\//);
         await expect(page.getByRole('heading', { name: 'E2E Edited Gateway' })).toBeVisible();
 
@@ -1832,7 +1832,7 @@ test.describe('admin shell', () => {
         await expect(page.locator('#inputSubject')).toHaveValue('e2e edit subject');
         await expect(page.locator('#editor-html .ace_content')).toBeAttached();
         await page.fill('#inputName', 'E2E Edited Template');
-        await page.locator('button[type="submit"]', { hasText: 'Update template' }).click();
+        await page.locator('button[type="submit"]', { hasText: 'Save changes' }).click();
         await page.waitForURL(new RegExp(`${detailUrl.replace(/[/]/g, '\\/')}(\\?|$)`));
         await expect(page.getByRole('heading', { name: 'E2E Edited Template' })).toBeVisible();
 
@@ -1848,7 +1848,7 @@ test.describe('admin shell', () => {
         await page.goto('/admin/webhooks/new');
         await page.fill('#inputName', 'E2E Edit Route');
         await page.fill('#inputTargetUrl', 'https://example.com/e2e-edit-webhook');
-        await page.locator('button[type="submit"]', { hasText: 'Create routing' }).click();
+        await page.locator('button[type="submit"]', { hasText: 'Create webhook route' }).click();
         await page.waitForURL(/\/admin\/webhooks\/webhook\//);
         const detailUrl = new URL(page.url()).pathname;
 
@@ -1857,7 +1857,7 @@ test.describe('admin shell', () => {
         await expect(page.locator('#inputTargetUrl')).toHaveValue('https://example.com/e2e-edit-webhook');
         await expect(page.locator('#editor-fn .ace_content')).toBeAttached();
         await page.fill('#inputName', 'E2E Edited Route');
-        await page.locator('button[type="submit"]', { hasText: 'Update webhook' }).click();
+        await page.locator('button[type="submit"]', { hasText: 'Save changes' }).click();
         await page.waitForURL(new RegExp(`${detailUrl.replace(/[/]/g, '\\/')}(\\?|$)`));
         await expect(page.getByRole('heading', { name: 'E2E Edited Route' })).toBeVisible();
 
@@ -1972,13 +1972,13 @@ test.describe('admin shell', () => {
         expect(await page.locator('#available-paths-list option').count()).toBeGreaterThan(0);
 
         await nameField.fill('E2E Renamed Account');
-        await page.getByRole('button', { name: 'Update account' }).click();
+        await page.getByRole('button', { name: 'Save changes' }).click();
         await page.waitForURL(u => u.pathname === url);
         await expect(page.getByText('E2E Renamed Account').first()).toBeVisible();
 
         await page.goto(`${url}/edit`);
         await page.locator('#name').fill(origName);
-        await page.getByRole('button', { name: 'Update account' }).click();
+        await page.getByRole('button', { name: 'Save changes' }).click();
         await page.waitForURL(u => u.pathname === url);
 
         expect(errors, errors.join('\n')).toHaveLength(0);

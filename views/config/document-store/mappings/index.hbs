@@ -2,16 +2,15 @@
 
 {{#> ui/stat-card variant="info" icon="icon-[tabler--alert-circle]" class="mb-6"}}
 <div class="mb-2">
-    You can create custom field type mappings for emails saved in ElasticSearch. While EmailEngine
+    You can create custom field type mappings for emails saved in Elasticsearch. While EmailEngine
     automatically maps types for its default fields, it doesn't do this for custom fields you've added
-    using the Document Store's pre-processing functions. Oftentimes, relying on ElasticSearch's
-    automatic type detection works well, but not always.
+    using the Document Store's pre-processing functions. Define a mapping when Elasticsearch's automatic type detection does not match your data.
 </div>
 <div>
     <strong>Important:</strong> Once you've set a field mapping, you can't change it without migrating
-    the entire index. This also holds true for fields that ElasticSearch has auto-mapped. If
-    ElasticSearch sets a type for a field automatically, you won't be able to change that type later.
-    Make sure to set your desired mappings before saving data to ElasticSearch.
+    the entire index. This also holds true for fields that Elasticsearch has auto-mapped. If
+    Elasticsearch sets a type for a field automatically, you won't be able to change that type later.
+    Make sure to set your desired mappings before saving data to Elasticsearch.
 </div>
 {{/ui/stat-card}}
 

@@ -11,16 +11,14 @@ badgeVariant=pageLabel.type class="mb-1"}}
 </div>
 {{/ui/page-header}}
 
-<p class="mb-6">Certificates for the SMTP server, the IMAP proxy, and the admin interface when EmailEngine serves HTTPS
-    itself. Each listener presents one certificate by default and answers a client that asks for another configured
-    name with the certificate for that name. Certificates can be ordered from Let's Encrypt, uploaded, supplied through
-    the environment, or generated here as a self-signed fallback so a listener always starts.</p>
+<p class="mb-6">Manage TLS certificates for the SMTP server, IMAP proxy, and HTTPS interface. Use Let's Encrypt, upload a
+    certificate, supply one through environment variables, or generate a self-signed certificate.</p>
 
 {{#if acme.staging}}
 {{#> ui/alert-banner variant="warning" icon="icon-[tabler--flask]" title="Staging certificate authority"}}
 <div>This instance is pointed at the Let's Encrypt staging directory (<code>{{acme.directoryUrl}}</code>). Certificates
-    it issues are signed by a root nobody trusts, so every client will refuse them. Clear
-    <code>EENGINE_ACME_DIRECTORY_URL</code> to go back to production.</div>
+    it issues are for testing and are not trusted by standard clients. To restore the production defaults, clear
+    both <code>EENGINE_ACME_DIRECTORY_URL</code> and <code>EENGINE_ACME_ENVIRONMENT</code>, then restart EmailEngine.</div>
 {{/ui/alert-banner}}
 {{/if}}
 
@@ -73,8 +71,7 @@ badgeVariant=pageLabel.type class="mb-1"}}
                             </select>
                             {{#equals this.selection "missing"}}
                             <span class="helper-text text-warning">{{this.missingLabel}} (<code>{{this.requested}}</code>)
-                                no longer exists, so this listener presents the automatic choice. Save to make that the
-                                setting.</span>
+                                is no longer available. This listener is using the automatic choice. Save changes to keep that selection.</span>
                             {{/equals}}
                         </td>
                         <td class="align-top text-sm" data-label="Serving now">
@@ -105,7 +102,7 @@ badgeVariant=pageLabel.type class="mb-1"}}
             </table>
         </div>
         <div class="card-footer border-base-content/10 border-t px-6 py-4">
-            {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]" id="tls-listeners-save"}}
+            {{> ui/btn label="Save changes" type="submit" icon="icon-[tabler--settings]" id="tls-listeners-save"}}
         </div>
     </div>
 </form>
@@ -150,7 +147,7 @@ badgeVariant=pageLabel.type class="mb-1"}}
                         <div class="text-base-content/60 text-xs">Service URL</div>
                         {{/if}}
                         {{#unless this.acmeEligible}}
-                        <div class="text-base-content/60 text-xs">Not a public name, so Let's Encrypt can not validate
+                        <div class="text-base-content/60 text-xs">Not a public name, so Let's Encrypt cannot validate
                             it</div>
                         {{/unless}}
                     </td>
@@ -359,22 +356,19 @@ badgeVariant=pageLabel.type class="mb-1"}}
             <div>
                 {{> ui/setting-ref name="tlsProvisioning"}}
                 {{> ui/radio id="tlsProvisioningAcme" name="tlsProvisioning" value="acme" label="Let's Encrypt (recommended)"
-                selected=values.tlsProvisioning hint="Ordered and renewed for every public name. An uploaded certificate
-                still wins for the names it covers."}}
+                selected=values.tlsProvisioning hint="Automatically request and renew certificates for public hostnames. Uploaded certificates take priority for the names they cover."}}
             </div>
             <div>
                 {{> ui/radio id="tlsProvisioningManual" name="tlsProvisioning" value="manual" label="Uploaded certificate only"
-                selected=values.tlsProvisioning hint="Nothing is ordered. Names the upload does not cover get the
-                self-signed fallback."}}
+                selected=values.tlsProvisioning hint="Use the uploaded certificate. Hostnames it does not cover use the self-signed fallback."}}
             </div>
             <div>
                 {{> ui/radio id="tlsProvisioningSelfSigned" name="tlsProvisioning" value="self-signed" label="Self-signed only"
-                selected=values.tlsProvisioning hint="For an instance the internet can not reach. Clients must pin the
-                fingerprint or be told to accept the certificate."}}
+                selected=values.tlsProvisioning hint="Use a self-signed certificate. Clients must be configured to trust it, for example by pinning its fingerprint."}}
             </div>
         </div>
         <div class="card-footer border-base-content/10 border-t px-6 py-4">
-            {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
+            {{> ui/btn label="Save changes" type="submit" icon="icon-[tabler--settings]"}}
         </div>
     </div>
 </form>
@@ -390,9 +384,8 @@ badgeVariant=pageLabel.type class="mb-1"}}
 <p class="mb-2">EmailEngine answers the Let's Encrypt <code>http-01</code> challenge itself, at
     <code>/.well-known/acme-challenge/</code>. For that to work, the hostname has to resolve to this machine and a
     request to <strong>port 80</strong> for that name has to reach EmailEngine, directly or through a reverse proxy.
-    Nothing else is needed; the certificate is renewed on its own well before it expires. <em>Check reachability</em>
-    in a hostname's menu makes exactly that request against this instance's own public name, so a missing DNS record
-    or a port 80 that goes somewhere else is reported right away instead of as an opaque ACME error minutes later.</p>
+    EmailEngine renews issued certificates automatically. Use <em>Check reachability</em> in a hostname's menu
+    to check DNS and port 80 access before requesting a certificate.</p>
 <p>Certificate authority: <code>{{acme.directoryUrl}}</code> (account <code>{{acme.environment}}</code>).</p>
 {{/ui/details}}
 

@@ -1,7 +1,7 @@
 {{> ui/page-header title="AI Processing" icon="icon-[tabler--robot]" class="mb-1"}}
 
-<p class="mb-6">Process incoming emails with AI to extract insights and enrich your data. EmailEngine sends email
-    content to OpenAI and adds the AI response to your webhooks.
+<p class="mb-6">Analyze new Inbox emails with AI and include the results in <code>messageNew</code> webhooks.
+    EmailEngine sends email content to the AI provider configured below.
 </p>
 
 {{> ui/env-managed-alert}}
@@ -35,8 +35,8 @@
                 checked=values.generateEmailSummary error=errors.generateEmailSummary}}
                 {{#> ui/tooltip-rich icon="icon-[tabler--info-circle]"}}
                 <strong>Privacy Notice</strong><br>
-                Email text is sent to OpenAI's servers for processing. While OpenAI doesn't use this data for
-                training, ensure this aligns with your privacy policies and user agreements.
+                Email content is sent to the configured AI provider. Review that provider's data handling terms
+                before enabling processing.
                 {{/ui/tooltip-rich}}
                 {{/ui/checkbox}}
                 <span class="helper-text">Process new emails with AI and include the results in
@@ -60,7 +60,7 @@
                 {{#> ui/form-field id="openAiAPIKey" label="API Key" error=errors.openAiAPIKey}}
                 {{> ui/secret-field id="openAiAPIKey" value=values.openAiAPIKey error=errors.openAiAPIKey
                 toggleId="showOpenAiAPIKey" toggleLabel="Show API key" placeholder=(when hasOpenAiAPIKey "Key is set (hidden for security)")}}
-                <span class="helper-text">Your OpenAI API key for authentication.</span>
+                <span class="helper-text">API key for the AI provider configured below.</span>
                 {{/ui/form-field}}
             </div>
 
@@ -70,7 +70,7 @@
                 <div class="flex items-center gap-2">
                     <label class="label-text" for="settingsServiceOpenAiModel">AI Model</label>
 
-                    {{> ui/btn label="Refresh Models" style="text" size="sm" id="reload-models-btn"
+                    {{> ui/btn label="Refresh models" style="text" size="sm" id="reload-models-btn"
                     icon="icon-[tabler--refresh] reload-icon"}}
                 </div>
 
@@ -258,15 +258,13 @@
 
             <div>
                 {{> ui/setting-ref name="openAiMaxTokens"}}
-                {{#> ui/form-field id="settingsOpenAiMaxTokens" label="Max Tokens" error=errors.openAiMaxTokens}}
+                {{#> ui/form-field id="settingsOpenAiMaxTokens" label="Input token limit" error=errors.openAiMaxTokens}}
                 <input type="number" class="input text-list{{#if errors.openAiMaxTokens}} is-invalid{{/if}}"
                     id="settingsOpenAiMaxTokens" step="1" min="0" name="openAiMaxTokens"
                     value="{{values.openAiMaxTokens}}" />
-                <span class="helper-text">Maximum tokens limit for OpenAI API requests. EmailEngine composes the full
-                    prompt from: the user prompt text (above), system prompt describing the AI role, JSON schema
-                    definition, and the structured email data. If the combined prompt exceeds this limit, EmailEngine
-                    automatically shortens the email content until it fits. Defaults: GPT-5: 18000, GPT-4: 6500,
-                    GPT-3.5: 3000.</span>
+                <span class="helper-text">Maximum tokens in the input prompt, including your instructions, the system prompt, the JSON schema,
+                    and email data. EmailEngine shortens the email content to fit this limit. Leave blank for
+                    EmailEngine's model-based default.</span>
                 {{/ui/form-field}}
             </div>
 
@@ -274,7 +272,7 @@
     </div>
 
     <div class="mb-6">
-        {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
+        {{> ui/btn label="Save changes" type="submit" icon="icon-[tabler--settings]"}}
     </div>
 
 </form>
@@ -299,7 +297,7 @@
     {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#testPromptModal"}}
     <button type="button" id="prompt-test-btn" class="btn btn-primary">
         <span class="icon-[tabler--flask] size-4" id="prompt-test-btn-icon"></span>
-        Choose File and Test
+        Choose file and test
     </button>
 
 </div>

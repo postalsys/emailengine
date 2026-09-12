@@ -3,8 +3,8 @@ badgeLabel=(when values.webhooksEnabled "enabled" "disabled")
 badgeVariant=(when values.webhooksEnabled "success" "warning")
 class="mb-1"}}
 
-<p class="mb-6">Get real-time notifications when email events occur. Webhooks send HTTP POST requests to your server
-    whenever events happen in connected accounts.</p>
+<p class="mb-6">Receive email event notifications as HTTP POST requests. Choose a destination, select events,
+    and configure the data included in each webhook.</p>
 
 {{#if values.webhooksEnabled}}
 {{#if webhookErrorFlag}}
@@ -71,8 +71,7 @@ class="mb-1"}}
             </div>
 
             <p><strong>Event Types</strong><br>
-                <small>Choose which events trigger webhooks. Be selective when managing many accounts to avoid memory
-                    issues.</small>
+                <small>Choose which events go to the default webhook URL or account-specific URLs. Webhook routes use their own filters.</small>
             </p>
 
             <div>
@@ -94,7 +93,7 @@ class="mb-1"}}
                 <div class="ps-6">
                     {{> ui/setting-ref name="inboxNewOnly"}}
                     {{> ui/checkbox id="inboxNewOnly" name="inboxNewOnly"
-                    label="Only trigger for incoming emails (skip sent/drafts)" checked=../values.inboxNewOnly
+                    label="Limit new-message notifications to the Inbox" checked=../values.inboxNewOnly
                     error=../errors.inboxNewOnly}}
                 </div>
 
@@ -173,7 +172,7 @@ class="mb-1"}}
                 {{> ui/checkbox id="settingsNotifyWebSafeHtml" name="notifyWebSafeHtml"
                 label="Sanitize HTML for web display" class="text-list" checked=values.notifyWebSafeHtml
                 error=errors.notifyWebSafeHtml
-                hint="Makes HTML safe for direct web page display. Converts plain text emails to HTML when needed, and folds quoted thread history into a collapsed block."}}
+                hint="Remove unsafe HTML, convert plain text to HTML when needed, and collapse quoted thread history."}}
             </div>
 
             <div>
@@ -182,8 +181,7 @@ class="mb-1"}}
                 <input type="text" class="input text-list{{#if errors.notifyTextSize}} is-invalid{{/if}}"
                     id="settingsNotifyTextSize" min="0" name="notifyTextSize" value="{{values.notifyTextSize}}"
                     placeholder="1MB" />
-                <span class="helper-text">Maximum size per content type (text and HTML). Larger content will be
-                    truncated.</span>
+                <span class="helper-text">Maximum size of each text or HTML body. Content above this limit is truncated.</span>
                 {{/ui/form-field}}
             </div>
 
@@ -222,8 +220,7 @@ class="mb-1"}}
                 <input type="text" class="input attachment-list{{#if errors.notifyAttachmentSize}} is-invalid{{/if}}"
                     id="settingsNotifyAttachmentSize" min="0" name="notifyAttachmentSize"
                     value="{{values.notifyAttachmentSize}}" placeholder="2MB" />
-                <span class="helper-text">Skip attachments larger than this size. Large attachments in webhook queues
-                    can consume Redis memory quickly.</span>
+                <span class="helper-text">Include attachment content only when it fits this limit. Larger limits increase Redis memory use.</span>
                 {{/ui/form-field}}
             </div>
         </div>
@@ -261,7 +258,7 @@ class="mb-1"}}
     {{/ui/card}}
 
     <div class="mb-6">
-        {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
+        {{> ui/btn label="Save changes" type="submit" icon="icon-[tabler--settings]"}}
     </div>
 
 </form>

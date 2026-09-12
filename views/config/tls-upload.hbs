@@ -33,8 +33,8 @@
                     {{> ui/btn label="Choose file" variant="neutral" style="soft" size="sm" icon="icon-[tabler--file-import]"
                     class="file-picker-btn shrink-0" dataName="file-target" dataValue="#uploadCert" id="uploadCertFile"}}
                 </div>
-                <span class="helper-text">PEM encoded, pasted or dropped onto the field. The server certificate first;
-                    intermediates may follow it here or go in the chain field below.</span>
+                <span class="helper-text">Paste or upload PEM content with the server certificate first. Add intermediate certificates here
+                    or in the Chain field below.</span>
                 {{/ui/form-field}}
             </div>
 
@@ -46,7 +46,7 @@
                     {{> ui/btn label="Choose file" variant="neutral" style="soft" size="sm" icon="icon-[tabler--file-import]"
                     class="file-picker-btn shrink-0" dataName="file-target" dataValue="#uploadKey" id="uploadKeyFile"}}
                 </div>
-                <span class="helper-text">Stored encrypted with the instance secret and never shown again.</span>
+                <span class="helper-text">Encrypted at rest when an instance secret (EENGINE_SECRET) is configured. The saved key is never shown again.</span>
                 {{/ui/form-field}}
             </div>
 

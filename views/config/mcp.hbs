@@ -1,11 +1,8 @@
 {{> ui/page-header title="MCP" icon="icon-[tabler--plug-connected]" badgeLabel="Beta" badgeVariant="info" class="mb-1"}}
 
 <p class="mb-6">
-    Let AI agents manage this EmailEngine instance over the Model Context Protocol, and optionally work with the
-    connected mailboxes. The MCP endpoint exposes two tool sets behind two scopes: management (accounts, settings,
-    OAuth2 applications, gateways, tokens, the license, queues and logs) and mail (list and search messages, read
-    content, organize and delete messages, create drafts, send mail). It accepts the same access tokens as the REST
-    API.
+    Connect AI agents through the Model Context Protocol (MCP). Choose whether each agent can manage this
+    EmailEngine instance, work with email, or both. Access tokens control which tools and accounts it can use.
 </p>
 
 <div class="mb-6 alert alert-soft alert-info">
@@ -18,8 +15,7 @@
 <div class="mb-6 alert alert-soft alert-warning">
     <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
     <span>The MCP endpoint is disabled for this deployment (<code>EENGINE_MCP_ENABLED</code> or <code>[mcp]
-            enabled</code> in the configuration file), so the settings below have no effect until that gate is turned
-        back on and EmailEngine is restarted.</span>
+            enabled</code> in the configuration file), so the settings below take effect only after MCP is enabled at startup and EmailEngine is restarted.</span>
 </div>
 {{/unless}}
 
@@ -69,7 +65,7 @@
     {{/ui/card}}
 
     <div class="mb-6">
-        {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
+        {{> ui/btn label="Save changes" type="submit" icon="icon-[tabler--settings]"}}
     </div>
 </form>
 
@@ -84,7 +80,7 @@
 {{#unless values.mcpEnabled}}
 <div class="mb-6 alert alert-soft alert-warning">
     <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
-    <span>The MCP endpoint is not enabled yet, so a connected client would get nothing to talk to. Turn it on under
+    <span>Enable the MCP endpoint before connecting a client. Turn it on under
         <button type="button" class="link cursor-pointer" data-goto-tab="mcp-settings">Settings</button> first.</span>
 </div>
 {{/unless}}
@@ -136,8 +132,8 @@
 
     {{!-- At the decision point rather than only in the collapsed manual-config block: the
           level chosen here is what decides whether injected instructions can act --}}
-    <p class="text-base-content/60 text-sm">Email content flows into whatever model the connected client runs, and
-        instructions inside received mail can steer it - grant sending and deleting rights deliberately.</p>
+    <p class="text-base-content/60 text-sm">The connected client may send email content to its AI model. Instructions in received emails can influence
+        the agent. Grant permission to send or delete email only when the agent needs it.</p>
 
     {{> mcp_account_limit id="mcpGenAccount"}}
 
@@ -174,8 +170,8 @@
     </div>
 
     <div class="text-sm text-base-content/60">
-        Every connected agent is an ordinary access token with the <code>mcp-manage</code> or <code>mcp</code> scope -
-        review or revoke them on the <a href="/admin/tokens?scope=mcp-manage&amp;scope=mcp" class="link">Access
+        Each agent connects using an access token with the <code>mcp-manage</code> or <code>mcp</code> scope.
+        Review or revoke these tokens on the <a href="/admin/tokens?scope=mcp-manage&amp;scope=mcp" class="link">Access
             Tokens</a> page.
     </div>
 </div>
@@ -206,8 +202,9 @@
     {{!-- No prompt-injection sentence here: the generator fieldset in this same panel already
           carries it, at the point where the access level is chosen --}}
     <div class="text-sm text-base-content/60">
-        Any access token from the <a href="/admin/tokens" class="link">Access Tokens</a> page works. For an AI agent,
-        prefer a token bound to a single account, with the <code>mcp</code> scope.
+        Create a token on the <a href="/admin/tokens" class="link">Access Tokens</a> page with
+        <code>mcp-manage</code> scope for instance management, <code>mcp</code> scope for email, or both.
+        If the agent only needs one mailbox, limit the token to that account.
     </div>
 
 </div>
@@ -283,9 +280,8 @@
 {{!-- Outside the method panels: what a connected agent receives is the same either way --}}
 {{#> ui/details summary="Exposed tools" summarySmall=(concat toolCatalog.total " tools") class="card bg-base-100 shadow-md mb-6"}}
 <div class="space-y-6">
-    <p class="text-sm text-base-content/60">This is exactly what a connected agent receives from
-        <code>tools/list</code>, grouped by the scope that reaches each tool. Whether a given token can call a tool
-        also depends on its access level and account binding.</p>
+    <p class="text-sm text-base-content/60">Available MCP tools, grouped by scope. A connected agent receives only the tools allowed by its token
+        scopes, permissions, and account restriction.</p>
     {{#each toolCatalog.sections}}
     <div>
         <h6 class="mb-2 font-bold">{{label}} <span class="text-base-content/60 font-normal">({{tools.length}} tools,

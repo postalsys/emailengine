@@ -57,8 +57,7 @@ midHref="/admin/config/document-store/mappings" midLabel="Field mappings" curren
 
     {{#> ui/modal id="submitModal" title="Add mapping" titleId="submitModalLabel"}}
     <div class="modal-body">
-        <p>Are you sure you want to add this mapping? You would have to reindex everything to delete or
-            modify an existing mapping.</p>
+        <p>Add this field mapping? Changing or deleting it later requires reindexing all stored documents.</p>
     </div>
     <div class="modal-footer">
         {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#submitModal"}}

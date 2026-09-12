@@ -40,7 +40,7 @@
             id="request-reconnect" disabled=accountParked}}
             {{/ui/tooltip}}
 
-            {{#> ui/tooltip text="Run periodic folder syncing now"}}
+            {{#> ui/tooltip text="Sync folders now without waiting for the next scheduled sync"}}
             <button type="button" class="btn btn-soft btn-sm" id="request-sync">
                 <span class="icon-[tabler--rotate-clockwise] size-4"></span> Run sync
             </button>
@@ -85,7 +85,7 @@
                     aria-orientation="vertical">
                     {{#if canUseSmtp}}
                     <li><button type="button" class="dropdown-item test-send-trigger"
-                            data-account="{{account.account}}">Account's Mail server</button></li>
+                            data-account="{{account.account}}">Account mail server</button></li>
                     <li>
                         <div class="divider my-1"></div>
                     </li>
@@ -397,7 +397,7 @@
 <div class="grid gap-6 {{#if showSmtp}}lg:grid-cols-2 {{/if}}items-start mb-6">
 
 <div class="card bg-base-100 shadow-md">
-    <div class="card-header"><h6 class="card-title text-primary">IMAP {{#if account.lastErrorState}}<span class="badge badge-error badge-sm">errored</span>{{/if}}</h6>
+    <div class="card-header"><h6 class="card-title text-primary">IMAP {{#if account.lastErrorState}}<span class="badge badge-error badge-sm">Error</span>{{/if}}</h6>
     </div>
     <div class="card-body">
 
@@ -480,7 +480,7 @@
             {{/unless}}
 
             {{#if account.imap.resyncDelay}}
-            <dt>Resync delay</dt>
+            <dt>Resync interval (seconds)</dt>
             <dd>{{account.imap.resyncDelay}}</dd>
             {{/if}}
 
@@ -513,10 +513,8 @@
         <hr>
         <h6 class="card-title text-primary">Subconnections</h6>
 
-        <p>Subconnections are supplementary IMAP connections that help detect changes in secondary folders more quickly.
-            By default, EmailEngine only receives real-time updates for the primary folder and uses periodic
-            polling for secondary folders. However, when faster updates are required from
-            secondary folders, subconnections can be used to ensure prompt notifications.</p>
+        <p>Subconnections are additional IMAP connections that watch secondary folders for changes.
+                        They provide faster updates than the periodic sync used for these folders by default.</p>
 
         <dl class="ee-dl mt-4">
             {{#each subConnectionInfo}}
@@ -533,7 +531,7 @@
 
 {{#if showSmtp}}
 <div class="card bg-base-100 shadow-md">
-    <div class="card-header"><h6 class="card-title text-primary">SMTP {{#if smtpError}}<span class="badge badge-error badge-sm">errored</span>{{/if}}</h6>
+    <div class="card-header"><h6 class="card-title text-primary">SMTP {{#if smtpError}}<span class="badge badge-error badge-sm">Error</span>{{/if}}</h6>
     </div>
     <div class="card-body">
 
@@ -760,7 +758,7 @@
                 <span class="text-base-content/60">None selected - the default target receives no events</span>
                 {{/if}}
                 {{#if webhookRouting.defaultRoute.inboxNewOnly}}
-                <div><small>New-message notifications are limited to INBOX (<em>inboxNewOnly</em>).</small></div>
+                <div><small>New-message notifications are limited to the Inbox (<code>inboxNewOnly</code>).</small></div>
                 {{/if}}
             </dd>
             {{/if}}
@@ -789,7 +787,7 @@
         {{#if account.webhookErrorFlag.message}}
         <hr />
 
-        <div><small><strong>Note:</strong> The last webhook attempt failed with the following response.</small></div>
+        <div><small>The last webhook delivery attempt failed:</small></div>
         <div><code>{{account.webhookErrorFlag.message}}</code></div>
         {{/if}}
 
@@ -820,26 +818,26 @@
 </div>
 {{/ui/modal}}
 
-{{#> ui/confirm-modal id="deleteModal" title="Delete Account" action=(concat "/admin/accounts/" (urlpart account.account) "/delete")
+{{#> ui/confirm-modal id="deleteModal" title="Delete account" action=(concat "/admin/accounts/" (urlpart account.account) "/delete")
 submitLabel="Delete account"}}
-<p>Are you sure you want to delete the account for {{account.name}}? This action cannot be undone.</p>
+<p>Delete <strong>{{account.name}}</strong> from EmailEngine? This removes its synced data, account-specific templates, access tokens, and queued emails. Emails on the mail server are not deleted. This action cannot be undone.</p>
 {{/ui/confirm-modal}}
 
 {{#> ui/modal id="testSendModal" title="Email delivery test" dialogClass="max-w-3xl"}}
 <div class="modal-body">
     <p><small class="text-base-content/60">EmailEngine sends a test email from the selected account to EmailEngine's
             remote testing server. Once the test email has been processed, EmailEngine displays the
-            authorization validation results below.</small>
+            SPF, DKIM, and DMARC authentication results below.</small>
     </p>
     <div id="test-send-pending-message">
-        <p><span class="loading loading-spinner loading-sm align-middle"></span> Testing email delivery settings, please
+        <p><span class="loading loading-spinner loading-sm align-middle"></span> Testing email delivery. Please
             wait&mldr;<br />
             <small><strong>Note:</strong> This process may take several
                 minutes depending on the SMTP server.</small>
         </p>
     </div>
     <div id="test-send-error">
-        <p>Message submission failed with the following result:</p>
+        <p>The test email could not be submitted:</p>
         <div>
             <small class="alert alert-soft alert-error error-message block font-mono"></small>
         </div>
@@ -932,7 +930,7 @@ submitLabel="Delete account"}}
         </div>
         <div id="export-download-section" class="hidden mt-4">
             <a href="#" id="export-download-link" class="btn btn-success btn-block">
-                <span class="icon-[tabler--download] size-4"></span> Download Export
+                <span class="icon-[tabler--download] size-4"></span> Download export
             </a>
         </div>
     </div>
@@ -943,7 +941,7 @@ submitLabel="Delete account"}}
         <span class="icon-[tabler--trash] size-4"></span> Reset
     </button>
     <button type="button" class="btn btn-primary" id="export-start-btn">
-        <span class="icon-[tabler--file-export] size-4"></span> Start Export
+        <span class="icon-[tabler--file-export] size-4"></span> Start export
     </button>
 </div>
 {{/ui/modal}}

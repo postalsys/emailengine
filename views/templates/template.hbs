@@ -31,7 +31,7 @@
             <dd>
                 {{> ui/copy-field id="templateIdValue" value=template.id ariaLabel="ID" small=true join=true class="max-w-md"
                 inputClass="font-mono bg-base-200 border-0"}}
-                <span class="helper-text">Use this ID value as the <em>"template"</em>
+                <span class="helper-text">Use this ID as the <em>"template"</em>
                     property when sending email.</span>
             </dd>
 
@@ -83,7 +83,7 @@
     
 {{/ui/card}}
 
-{{#> ui/confirm-modal id="deleteModal" title="Delete Template" action="/admin/templates/delete"
+{{#> ui/confirm-modal id="deleteModal" title="Delete template" action="/admin/templates/delete"
 fieldName="template" fieldValue=template.id submitLabel="Delete template"}}
 <p>Are you sure you want to delete <strong>{{template.name}}</strong>? This action cannot be undone.</p>
 {{/ui/confirm-modal}}
@@ -97,10 +97,10 @@ fieldName="template" fieldValue=template.id submitLabel="Delete template"}}
 <div class="modal-body space-y-4">
 
     {{#unless account}}
-    {{> ui/account-picker id="inputAccount" name="account" label="Account" hint="The account to send the test email as."}}
+    {{> ui/account-picker id="inputAccount" name="account" label="Account" hint="Account used to send the test email."}}
     {{/unless}}
 
-    {{> ui/form-field id="inputTo" name="inputTo" type="email" label="Recipient's email address" required=true hint="Where to send the test email to."}}
+    {{> ui/form-field id="inputTo" name="inputTo" type="email" label="Recipient's email address" required=true hint="Email address that will receive the test message."}}
 
     {{#> ui/details id="jsonStructure" summary="Handlebars payload" class="card border border-base-content/10" summaryClass="px-4 py-2"}}
     <div>

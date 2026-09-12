@@ -142,7 +142,7 @@
 {{#> ui/modal id="disableTfaModal" title="Disable two-factor authentication" titleId="disableTfaModalLabel"}}
 <form method="post" action="/admin/account/tfa/disable">
     <div class="modal-body space-y-4">
-        <p>Disabling two-factor authentication will make your account less secure. Are you sure you want to continue?</p>
+        <p>Turn off two-factor authentication? Password sign-ins will no longer require a code from your authenticator app.</p>
 
         <div>
             {{!-- The route verifies this server-side: switching the second factor off is a step
@@ -151,7 +151,7 @@
             {{#> ui/form-field id="tfa-disable-password" label="Current password"}}
             <input type="password" class="input" id="tfa-disable-password" name="password" maxlength="256"
                 autocomplete="current-password" required />
-            <span class="helper-text">Confirm your identity before switching off two-factor authentication.</span>
+            <span class="helper-text">Enter your password to confirm this change.</span>
             {{/ui/form-field}}
         </div>
     </div>

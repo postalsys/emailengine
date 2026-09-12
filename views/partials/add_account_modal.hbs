@@ -2,10 +2,10 @@
 <form method="post" action="/admin/accounts/new">
     <input type="hidden" name="crumb" value="{{crumb}}">
     <div class="modal-body space-y-4">
-        {{> ui/form-field id="account-name" name="name" label="Full name:" placeholder="e.g., John Smith"}}
-        {{> ui/form-field id="account-id" name="account" label="Account identifier (optional):" placeholder="e.g., account_123" hint="Leave blank to auto-generate. Existing accounts with this ID will be updated."}}
+        {{> ui/form-field id="account-name" name="name" label="Full name" placeholder="e.g., John Smith"}}
+        {{> ui/form-field id="account-id" name="account" label="Account ID (optional)" placeholder="e.g., account_123" hint="Leave blank to generate an ID. Using an existing ID updates that account."}}
 
-        <p class="text-sm text-base-content/60">You'll be redirected to a hosted authentication form. You can also <a
+        <p class="text-sm text-base-content/60">Next, connect the email account through the hosted authentication form. You can also <a
                 href="https://learn.emailengine.app/docs/accounts/hosted-authentication" target="_blank" rel="noopener noreferrer"
                 referrerpolicy="no-referrer" class="link link-animated">use this form in your own app</a>.
         </p>

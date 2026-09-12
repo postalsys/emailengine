@@ -17,8 +17,7 @@
                 error=errors.enableTokens}}
                 {{> ui/badge label=(when values.enableTokens "enabled" "disabled") variant=(when values.enableTokens "success" "error")}}
                 {{/ui/checkbox}}
-                <span class="helper-text">Disable for development only. Always enable in production for secure API
-                    access. Set <code>EENGINE_REQUIRE_API_AUTH=false</code> at startup to disable by default (not
+                <span class="helper-text">Require an access token for API requests. Keep this enabled in production. Set <code>EENGINE_REQUIRE_API_AUTH=false</code> at startup to disable by default (not
                     recommended).</span>
             </div>
 
@@ -40,7 +39,7 @@
                 error=errors.enableOAuthTokensApi}}
                 <span class="helper-text">Enable <a href="/admin/reference/account#getV1AccountAccountOauthtoken"
                         target="_blank" rel="noopener noreferrer" class="link link-animated">API endpoint</a> to
-                    retrieve OAuth2 tokens. Set <code>EENGINE_ENABLE_OAUTH_TOKENS_API=true</code> at startup to enable
+                    retrieve accounts' live OAuth2 access tokens. Set <code>EENGINE_ENABLE_OAUTH_TOKENS_API=true</code> at startup to enable
                     by default.</span>
             </div>
 
@@ -51,10 +50,9 @@
                 checked=values.tokenAuditLog error=errors.tokenAuditLog}}
                 {{> ui/badge label=(when values.tokenAuditLog "enabled" "disabled") variant=(when values.tokenAuditLog "success" "neutral")}}
                 {{/ui/checkbox}}
-                <span class="helper-text">Record which requests each access token makes, readable at <a
+                <span class="helper-text">Record requests made with each access token. Read the entries at <a
                         href="/admin/reference/access-tokens#getV1TokensTokenLog" target="_blank"
-                        rel="noopener noreferrer" class="link link-animated">the token log endpoint</a>. Adds a write to
-                    every authenticated request, and entries only exist from the point this is switched on.</span>
+                        rel="noopener noreferrer" class="link link-animated">the token log endpoint</a>. Logging starts when enabled and adds a storage write to each authenticated request.</span>
             </div>
 
     {{/ui/card}}
@@ -101,7 +99,7 @@
     {{/ui/card}}
 
     <div class="mb-6">
-        {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
+        {{> ui/btn label="Save changes" type="submit" icon="icon-[tabler--settings]"}}
     </div>
 
 </form>

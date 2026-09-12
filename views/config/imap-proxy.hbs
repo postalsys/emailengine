@@ -2,14 +2,14 @@
       tooltip through the /admin/changes SSE feed (targets .state-info[data-type]) --}}
 {{> ui/page-header title="IMAP Proxy" icon="icon-[tabler--server]" stateLabel=serverState.label stateType="imapProxy" class="mb-1"}}
 
-<p>Access any EmailEngine-managed account through standard IMAP clients. The proxy handles authentication with the real
-    email server, so your IMAP client only needs an access token-no actual credentials or OAuth2 setup required.</p>
+<p>Connect an IMAP client to an account managed by EmailEngine. The proxy authenticates with the email server
+    using the account's stored credentials. Your client signs in with an access token or the global password.</p>
 
 <div class="alert alert-soft alert-info mb-6">
     <span class="icon-[tabler--info-circle] size-5 shrink-0"></span>
     <span><strong>Compatibility Note:</strong> IMAP proxy only works with accounts that
         connect via IMAP protocol. This includes Gmail and Microsoft 365 accounts using OAuth2 authentication with IMAP
-        access. Accounts using MS Graph API or Gmail API as their mail backend are not supported through the
+        access. Accounts using Microsoft Graph or Gmail API as their mail backend are not supported through the
         proxy.</span>
 </div>
 
@@ -54,8 +54,7 @@
                     class="input basicAutoComplete trigger-example-render{{#if errors.imapProxyServerHost}} is-invalid{{/if}}"
                     id="imapProxyServerHost" name="imapProxyServerHost" value="{{values.imapProxyServerHost}}"
                     data-lpignore="true" autocomplete="off" />
-                <span class="helper-text">IP address to bind to. Use "0.0.0.0" or leave empty to accept connections from
-                    anywhere.</span>
+                <span class="helper-text">IP address the proxy listens on. Use "0.0.0.0" or leave blank to listen on all IPv4 interfaces.</span>
                 {{/ui/form-field}}
             </div>
 
@@ -131,7 +130,7 @@
     {{/ui/details}}
 
     <div class="mb-6">
-        {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
+        {{> ui/btn label="Save changes" type="submit" icon="icon-[tabler--settings]"}}
     </div>
 
 </form>

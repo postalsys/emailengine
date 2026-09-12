@@ -5,7 +5,7 @@
 {{#> ui/card}}
 
         {{#> ui/detail-toolbar label="Webhook route actions"}}
-        {{#> ui/tooltip text="Edit Webhook Route contents"}}
+        {{#> ui/tooltip text="Edit webhook route settings"}}
         {{> ui/btn variant="primary" style="outline" size="sm" href=(concat "/admin/webhooks/webhook/" webhook.id "/edit") icon="icon-[tabler--file-pencil]" label="Edit route"}}
         {{/ui/tooltip}}
 
@@ -21,7 +21,7 @@
 
         {{#if webhook.webhookErrorFlag.message}}
         {{#> ui/clear-alert alert="webhook-route" entry=webhook.id class="mb-6"}}
-            <p><strong>Warning:</strong> The last attempted webhook failed with the response below.</p>
+            <p><strong>Warning:</strong> The last webhook delivery attempt failed:</p>
             <hr class="my-2">
             <p class="mb-0">
                 <code>
@@ -95,8 +95,7 @@
                 <div id="errors" class="hidden" role="tabpanel" aria-labelledby="errors-tab">
 
 
-                    <p class="mb-4">The following errors were thrown when executing the functions for this route.
-                        Only the most recent errors are shown.</p>
+                    <p class="mb-4">Recent errors from this route's filter and map functions:</p>
 
                     <div class="overflow-x-auto">
                         <table class="table">

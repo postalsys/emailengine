@@ -10,7 +10,7 @@
         <div>
             <h6 class="card-title text-primary">Passkeys</h6>
             <p class="text-base-content/60 mb-0 text-sm">Sign in with Touch ID, Windows Hello or a security key. A
-                passkey is a complete sign-in on its own - no password and no verification code.</p>
+                passkey lets you sign in without a password or an authenticator code.</p>
             {{#if passkeys.length}}
             {{!-- The RP ID is read from the Service URL on every ceremony, so a changed hostname
                   strands every passkey below while the login page still offers the button - this
@@ -122,7 +122,7 @@ Are you sure you want to remove <strong class="delete-target-name"></strong>? Yo
     <div>
         {{#> ui/form-field id="passkey-name" label="Passkey name"}}
         <input type="text" class="input" id="passkey-name" placeholder="e.g., MacBook Touch ID" maxlength="100" />
-        <span class="helper-text">A friendly name to help you identify this passkey.</span>
+        <span class="helper-text">Use a name you will recognize, such as "Work laptop".</span>
         {{/ui/form-field}}
     </div>
     <div id="passkey-register-error" class="text-error text-sm hidden"></div>

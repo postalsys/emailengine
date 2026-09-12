@@ -2,12 +2,10 @@
       tooltip through the /admin/changes SSE feed (targets .state-info[data-type]) --}}
 {{> ui/page-header title="SMTP Server" icon="icon-[tabler--server]" stateLabel=serverState.label stateType="smtp" class="mb-1"}}
 
-<p>Send emails through EmailEngine using SMTP protocol. While the <a
+<p>Let applications submit email through EmailEngine using SMTP. You can also send email with the <a
         href="/admin/reference/submit#postV1AccountAccountSubmit" target="_blank" rel="noopener noreferrer"
-        referrerpolicy="no-referrer" class="link link-animated">submission API</a> is recommended for modern
-    applications, the SMTP
-    interface supports legacy systems that require traditional email sending.</p>
-<p class="mb-6">Configure your SMTP server settings below.</p>
+        referrerpolicy="no-referrer" class="link link-animated">submission API</a>.</p>
+<p class="mb-6">Set the address, authentication, and TLS options for the SMTP server.</p>
 
 {{> ui/env-managed-alert}}
 
@@ -50,8 +48,7 @@
                     class="input basicAutoComplete trigger-example-render{{#if errors.smtpServerHost}} is-invalid{{/if}}"
                     id="smtpServerHost" name="smtpServerHost" value="{{values.smtpServerHost}}" data-lpignore="true"
                     autocomplete="off" />
-                <span class="helper-text">IP address to bind to. Use "0.0.0.0" or leave empty to accept connections from
-                    anywhere.</span>
+                <span class="helper-text">IP address the server listens on. Use "0.0.0.0" or leave blank to listen on all IPv4 interfaces.</span>
                 {{/ui/form-field}}
             </div>
 
@@ -103,8 +100,8 @@
 
     {{#> ui/details summary="Integration Examples" class="card bg-base-100 shadow-md mb-6"}}
 
-    <p><strong>With authentication enabled:</strong> Use the account ID as username and password for SMTP
-        login.</p>
+    <p><strong>With authentication enabled:</strong> Use the account ID as the username. Use an access token with
+        SMTP scope or the global password as the password.</p>
 
     <p class="mb-4"><strong>With authentication disabled:</strong> Include the <code>X-EE-Account</code> header
         with the account ID in your messages.</p>
@@ -135,7 +132,7 @@
     {{/ui/details}}
 
     <div class="mb-6">
-        {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
+        {{> ui/btn label="Save changes" type="submit" icon="icon-[tabler--settings]"}}
     </div>
 
 </form>

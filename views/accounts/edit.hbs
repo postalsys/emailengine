@@ -13,9 +13,9 @@
 
         <div class="card-body space-y-4">
 
-            {{> ui/form-field id="name" label="Full name" value=values.name error=errors.name hint="Full name of the user"}}
-            {{> ui/form-field id="email" type="email" label="Email" value=values.email error=errors.email hint="Email address of the user"}}
-            {{> ui/form-field id="expectedEmail" type="email" label="Expected identity" value=values.expectedEmail error=errors.expectedEmail hint="Optional. Setups through the hosted authentication form are rejected unless the identity they authenticate matches this address. Clear the field to remove the restriction."}}
+            {{> ui/form-field id="name" label="Full name" value=values.name error=errors.name hint="Name shown for this account in EmailEngine."}}
+            {{> ui/form-field id="email" type="email" label="Email address" value=values.email error=errors.email hint="Email address associated with this account."}}
+            {{> ui/form-field id="expectedEmail" type="email" label="Required email address (optional)" value=values.expectedEmail error=errors.expectedEmail hint="The hosted authentication form only accepts sign-ins that match this address. Leave blank to remove this restriction."}}
 
         </div>
     </div>
@@ -38,12 +38,12 @@
 
             {{> ui/form-field id="imap_auth_user" label="Username" value=values.imap_auth_user error=errors.imap_auth_user lpignore=true required=true}}
 
-            {{> ui/form-field id="imap_auth_pass" type="password" label="Password" value=values.imap_auth_pass error=errors.imap_auth_pass lpignore=true placeholder=(when hasIMAPPass "Password is set but not shown...") hint="Only set if you want to change the current IMAP password"}}
+            {{> ui/form-field id="imap_auth_pass" type="password" label="Password" value=values.imap_auth_pass error=errors.imap_auth_pass lpignore=true placeholder=(when hasIMAPPass "Password saved") hint="Leave blank to keep the current IMAP password."}}
 
             {{> ui/form-field id="imap_host" label="Hostname" value=values.imap_host error=errors.imap_host lpignore=true required=true}}
             {{> ui/form-field id="imap_port" type="number" label="Port" value=values.imap_port error=errors.imap_port lpignore=true required=true}}
 
-            {{> ui/checkbox id="imap_secure" label="Use TLS" checked=values.imap_secure error=errors.imap_secure tooltip="TLS (also known as SSL) is usually only needed when using port 993. For other ports EmailEngine falls back to using STARTTLS based encryption."}}
+            {{> ui/checkbox id="imap_secure" label="Use direct TLS" checked=values.imap_secure error=errors.imap_secure tooltip="Usually enabled for port 993. When disabled, EmailEngine uses STARTTLS if the server supports it."}}
 
             {{> ui/checkbox id="imap_tls_ignoreCertErrors" label="Allow invalid certificates" checked=values.imap_tls_ignoreCertErrors error=errors.imap_tls_ignoreCertErrors tooltip="Accept self-signed or otherwise invalid TLS certificates when connecting to the IMAP server of this account. The Allow Insecure Email Certificates option on the Security configuration page applies the same override to all accounts."}}
 
@@ -51,13 +51,13 @@
 
             {{/unless}}
 
-            {{> ui/form-field id="imap_sentMailPath" label="Sent Mail folder" value=values.imap_sentMailPath error=errors.imap_sentMailPath lpignore=true placeholder='Folder path like "Sent Mail"' list="available-paths-list" hint='Copies of sent emails will be uploaded to this folder. Leave empty to use the default "Sent Mail" folder for this account.'}}
+            {{> ui/form-field id="imap_sentMailPath" label="Sent Mail folder" value=values.imap_sentMailPath error=errors.imap_sentMailPath lpignore=true placeholder='Folder path like "Sent Mail"' list="available-paths-list" hint='Store copies of sent emails in this folder. Leave blank to use the default "Sent Mail" folder for this account.'}}
 
-            {{> ui/form-field id="imap_resyncDelay" type="number" label="Resync delay" value=values.imap_resyncDelay error=errors.imap_resyncDelay lpignore=true hint="Keep empty for default"}}
+            {{> ui/form-field id="imap_resyncDelay" type="number" label="Resync interval (seconds)" value=values.imap_resyncDelay error=errors.imap_resyncDelay lpignore=true hint="Time between full mailbox syncs. Leave blank to keep the current interval."}}
 
             {{/unless}}
 
-            {{> ui/checkbox id="imap_disabled" label="Disable IMAP" checked=values.imap_disabled error=errors.imap_disabled tooltip="Disable IMAP if you are using this email account only for sending emails."}}
+            {{> ui/checkbox id="imap_disabled" label="Disable IMAP" checked=values.imap_disabled error=errors.imap_disabled tooltip="Stop syncing this mailbox while keeping the account available for sending email."}}
 
         </div>
     </div>
@@ -76,12 +76,12 @@
 
             {{> ui/form-field id="smtp_auth_user" label="Username" value=values.smtp_auth_user error=errors.smtp_auth_user lpignore=true required=true}}
 
-            {{> ui/form-field id="smtp_auth_pass" type="password" label="Password" value=values.smtp_auth_pass error=errors.smtp_auth_pass lpignore=true placeholder=(when hasSMTPPass "Password is set but not shown...") hint="Only set if you want to change the current SMTP password"}}
+            {{> ui/form-field id="smtp_auth_pass" type="password" label="Password" value=values.smtp_auth_pass error=errors.smtp_auth_pass lpignore=true placeholder=(when hasSMTPPass "Password saved") hint="Leave blank to keep the current SMTP password."}}
 
             {{> ui/form-field id="smtp_host" label="Hostname" value=values.smtp_host error=errors.smtp_host lpignore=true required=true}}
             {{> ui/form-field id="smtp_port" type="number" label="Port" value=values.smtp_port error=errors.smtp_port lpignore=true required=true}}
 
-            {{> ui/checkbox id="smtp_secure" label="Use TLS" checked=values.smtp_secure error=errors.smtp_secure tooltip="TLS (also known as SSL) is usually only needed when using port 465. For other ports EmailEngine falls back to using STARTTLS based encryption."}}
+            {{> ui/checkbox id="smtp_secure" label="Use direct TLS" checked=values.smtp_secure error=errors.smtp_secure tooltip="Usually enabled for port 465. When disabled, EmailEngine uses STARTTLS if the server supports it."}}
 
             {{> ui/checkbox id="smtp_tls_ignoreCertErrors" label="Allow invalid certificates" checked=values.smtp_tls_ignoreCertErrors error=errors.smtp_tls_ignoreCertErrors tooltip="Accept self-signed or otherwise invalid TLS certificates when connecting to the SMTP server of this account. The Allow Insecure Email Certificates option on the Security configuration page applies the same override to all accounts."}}
 
@@ -99,7 +99,7 @@
 
         <div class="card-body space-y-4">
 
-            {{#> ui/form-field id="proxy" label="Proxy URL" error=errors.proxy hint="Fill this if you want to use a custom proxy for this account. Proxy URL must start with http://, https://, socks://, socks4:// or socks5://"}}
+            {{#> ui/form-field id="proxy" label="Proxy URL" error=errors.proxy hint="Use a custom proxy for this account. Start the URL with http://, https://, socks://, socks4://, or socks5://."}}
             <input type="text" class="input or-else-all{{#if errors.proxy}} is-invalid{{/if}}" id="proxy"
                 placeholder="Connection URL like &quot;socks://localhost:1080&quot;&mldr;" value="{{values.proxy}}"
                 name="proxy" data-target="proxy-status">
@@ -107,7 +107,7 @@
 
             <div>
                 {{> ui/setting-ref name="smtpEhloName"}}
-                {{> ui/form-field id="smtpEhloName" label="SMTP Greeting Hostname" value=values.smtpEhloName error=errors.smtpEhloName placeholder='Proxy hostname like "my.proxy.tld"...'}}
+                {{> ui/form-field id="smtpEhloName" label="SMTP greeting hostname" value=values.smtpEhloName error=errors.smtpEhloName placeholder="mail.example.com"}}
                 <span class="helper-text">Hostname to use for the SMTP EHLO/HELO greeting. Leave empty to use the
                     default <code>{{defaultSmtpEhloName}}</code>. If you are using a dedicated IP address, the hostname
                     of that IP is preferred over this value.</span>
@@ -123,7 +123,7 @@
                 clear.</span>
             {{/ui/form-field}}
 
-            {{#> ui/form-field id="customHeaders" label="List of custom webhook request headers" error=errors.customHeaders hint="Keep one header per line. These headers will be added to the HTTP request when posting webhooks for this email account."}}
+            {{#> ui/form-field id="customHeaders" label="Custom webhook headers" error=errors.customHeaders hint="Enter one header per line in Header-Name: value format. These headers are sent with webhooks for this account."}}
             <textarea class="textarea font-mono w-full{{#if errors.customHeaders}} is-invalid{{/if}}" id="customHeaders"
                 name="customHeaders" rows="5" spellcheck="false" data-enable-grammarly="false"
                 placeholder="Custom headers like &quot;Authorization: Bearer secret_token&quot;&mldr;">{{values.customHeaders}}</textarea>
@@ -133,7 +133,7 @@
     </div>
 
     <div class="mb-6">
-        {{> ui/btn label="Update account" type="submit" icon="icon-[tabler--device-floppy]"}}
+        {{> ui/btn label="Save changes" type="submit" icon="icon-[tabler--device-floppy]"}}
     </div>
 </form>
 

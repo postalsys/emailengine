@@ -6,15 +6,15 @@
 
 {{#> ui/card bodyClass="space-y-4"}}
 
-        {{> ui/form-field id="inputName" name="name" label="Name" value=values.name error=errors.name required=true hint="Name for this template."}}
+        {{> ui/form-field id="inputName" name="name" label="Name" value=values.name error=errors.name required=true hint="Name shown in the template list."}}
 
-        {{> ui/form-field id="inputDescription" name="description" label="Description" value=values.description error=errors.description hint="Description for this template."}}
+        {{> ui/form-field id="inputDescription" name="description" label="Description" value=values.description error=errors.description hint="Describe when to use this template."}}
 
         {{> ui/form-field id="inputSubject" name="subject" label="Subject" value=values.subject error=errors.subject hint="Subject line for the sent email. Handlebars syntax is allowed."}}
 
         {{> ui/form-field id="inputPreviewText" name="previewText" label="Preview text" value=values.previewText error=errors.previewText hint="Preview text appears in the inbox after the subject line. Handlebars syntax is allowed."}}
 
-        {{#> ui/form-field id="inputFormat" label="HTML source format" error=errors.format hint="EmailEngine will generate final HTML using the selected code formatter."}}
+        {{#> ui/form-field id="inputFormat" label="HTML source format" error=errors.format hint="Choose whether to write the email body in HTML or Markdown."}}
         <select class="select{{#if errors.format}} is-invalid{{/if}}" id="inputFormat" name="format">
             {{#each formats}}
             <option value="{{format}}" {{#if selected}}selected{{/if}}>{{name}}</option>

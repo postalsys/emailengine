@@ -15,7 +15,7 @@
                 {{#> ui/form-field id="settingsServiceUrl" label="Service URL" error=errors.serviceUrl}}
                 <input type="url" class="input{{#if errors.serviceUrl}} is-invalid{{/if}}" id="settingsServiceUrl"
                     name="serviceUrl" value="{{values.serviceUrl}}" data-lpignore="true" autocomplete="off" />
-                <span class="helper-text">Base URL where EmailEngine is accessible (without any path).</span>
+                <span class="helper-text">URL used to reach this EmailEngine instance, including http:// or https:// and no path.</span>
                 {{/ui/form-field}}
             </div>
 
@@ -53,7 +53,7 @@
                     {{/each}}
                 </select>
                 <span class="helper-text">
-                    Default language for UI and API responses.
+                    Default language for public pages and translated API messages. The admin interface is in English.
                 </span>
                 {{/ui/form-field}}
 
@@ -104,13 +104,14 @@
         <div class="card-body">
             <div>
                 {{> ui/setting-ref name="queueKeep"}}
-                {{#> ui/form-field id="settingsQueueKeep" label="Job History Limit" error=errors.queueKeep}}
+                {{#> ui/form-field id="settingsQueueKeep" label="Completed job history limit" error=errors.queueKeep}}
                 <input type="number" min="0" class="input{{#if errors.queueKeep}} is-invalid{{/if}}"
                     id="settingsQueueKeep" name="queueKeep" value="{{values.queueKeep}}" data-lpignore="true"
                     autocomplete="off" />
-                <span class="helper-text">Number of completed/failed jobs to keep in <a href="/admin/bull-board"
-                        target="_blank" rel="noopener noreferrer" class="link link-animated">Bull Board</a>. Set to 0 to
-                    disable history.</span>
+                <span class="helper-text">Maximum completed jobs to retain per queue for up to 24 hours. Set to 0 to remove completed jobs.
+                    Failed jobs are retained separately, even when this is 0; this value also raises their count limit
+                    if it exceeds the configured failed-job limit. Review retained jobs on the <a href="/admin/bull-board"
+                        target="_blank" rel="noopener noreferrer" class="link link-animated">Queues</a> page.</span>
                 {{/ui/form-field}}
             </div>
 
@@ -118,7 +119,7 @@
     </div>
 
     <div class="mb-6">
-        {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
+        {{> ui/btn label="Save changes" type="submit" icon="icon-[tabler--settings]"}}
     </div>
 
 </form>
@@ -139,7 +140,7 @@
             uiButtonBusy(cleanQueuesBtn, true);
 
             sendCleanPayload().then(data => {
-                showToast(data.error ? data.error : (data.success ? 'Cleanup request sent' : 'Failed to send payload'), data.success ? 'check-circle' : 'alert-triangle');
+                showToast(data.error ? data.error : (data.success ? 'Cleanup request sent' : 'Could not request queue cleanup. Try again.'), data.success ? 'check-circle' : 'alert-triangle');
             }).catch(err => {
                 showToast('Request failed\n' + err.message, 'alert-triangle');
             }).finally(() => uiButtonBusy(cleanQueuesBtn, false));

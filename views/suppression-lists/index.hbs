@@ -1,4 +1,4 @@
-{{#> ui/page-header title="Suppression Lists" icon="icon-[tabler--mail-off]" subtitle="Recipients excluded from list-based sending. Only messages submitted with a listId are checked against these lists - the send skips every listed address. Messages without a listId are not affected." badgeLabel=total badgeVariant="neutral" class="mb-6"}}
+{{#> ui/page-header title="Suppression Lists" icon="icon-[tabler--mail-off]" subtitle="Manage recipients excluded from emails sent with a matching listId. Messages sent without a listId are not checked." badgeLabel=total badgeVariant="neutral" class="mb-6"}}
 {{> ui/btn label="Add address" icon="icon-[tabler--plus]" overlay="#addAddressModal"}}
 {{/ui/page-header}}
 
@@ -71,7 +71,7 @@
 <form method="post" action="/admin/suppression-lists/add">
     <input type="hidden" name="crumb" value="{{crumb}}">
     <div class="modal-body space-y-4">
-        {{> ui/form-field id="add-list-id" name="listId" label="List ID" required=true placeholder="e.g. newsletter" hint="Subdomain name format. An unknown ID registers a new list."}}
+        {{> ui/form-field id="add-list-id" name="listId" label="List ID" required=true placeholder="e.g. newsletter" hint="Use subdomain format, such as newsletter. A new ID creates a list."}}
         {{> ui/form-field id="add-recipient" name="recipient" label="Email address" type="email" required=true placeholder="user@example.com"}}
         {{> ui/form-field id="add-reason" name="reason" label="Reason" placeholder="block" hint="Optional identifier stored with the entry (default: block)."}}
     </div>
@@ -82,4 +82,6 @@
 </form>
 {{/ui/modal}}
 
-{{> ui/delete-modal id="deleteList" noun="suppression list" action="/admin/suppression-lists/delete" fieldName="listId"}}
+{{#> ui/delete-modal id="deleteList" noun="suppression list" action="/admin/suppression-lists/delete" fieldName="listId"}}
+Delete <strong class="delete-target-name"></strong> and all its entries? These addresses will no longer be excluded from emails sent with this list ID. This action cannot be undone.
+{{/ui/delete-modal}}

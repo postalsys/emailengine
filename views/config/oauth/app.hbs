@@ -76,7 +76,7 @@
             <dd>
                 {{> ui/copy-field id="appIdValue" value=app.id ariaLabel="ID" small=true join=true
                 class="w-full max-w-md" inputClass="bg-base-200 border-0"}}
-                <span class="helper-text" id="inputDescriptionHelp">Use this ID value as the
+                <span class="helper-text" id="inputDescriptionHelp">Use this ID as the
                     <em>"provider"</em> property in the account's OAuth2 options.</span>
             </dd>
 
@@ -111,7 +111,7 @@
             {{/if}}
 
             {{#if app.serviceClientEmail}}
-            <dt>Service Client Email</dt>
+            <dt>Service account email</dt>
             <dd class="font-mono"><small>{{app.serviceClientEmail}}</small></dd>
             {{/if}}
 
@@ -121,7 +121,7 @@
             {{/if}}
 
             {{#if app.serviceKey}}
-            <dt>Secret service key</dt>
+            <dt>Private key</dt>
             <dd class="font-mono"><small>*****</small></dd>
             {{/if}}
 
@@ -207,7 +207,7 @@
 
 {{#if isServiceAccount}}
 {{#> ui/card title="API usage example"}}
-        <p class="text-base-content/60 text-sm mb-2">This application uses service credentials, so accounts can not be
+        <p class="text-base-content/60 text-sm mb-2">This application uses service credentials, so accounts cannot be
             added through the hosted authentication form. Use the API to register email accounts instead.</p>
         <pre
             class="ee-code-block mb-0 whitespace-pre-wrap break-words"><code>curl -XPOST "{{serviceUrl}}/v1/account" \
@@ -287,9 +287,9 @@
 {{/if}}
 
 
-{{#> ui/confirm-modal id="deleteModal" title="Delete OAuth2 App" action="/admin/config/oauth/delete"
+{{#> ui/confirm-modal id="deleteModal" title="Delete OAuth2 app" action="/admin/config/oauth/delete"
 fieldName="app" fieldValue=app.id submitLabel="Delete app" submitIcon="icon-[tabler--trash]"}}
-<p>Are you sure you want to delete the OAuth2 application "{{app.name}}"? This action cannot be undone.</p>
+<p>Delete the OAuth2 app "{{app.name}}"? Accounts using this app will stop working until reconfigured. This action cannot be undone.</p>
 {{/ui/confirm-modal}}
 
 {{#> ui/modal id="verifySetupModal" title="Verify OAuth2 setup" titleId="verifySetupModalLabel" dialogClass="max-w-3xl"}}
@@ -334,18 +334,18 @@ fieldName="app" fieldValue=app.id submitLabel="Delete app" submitIcon="icon-[tab
                 screen, so the account is registered directly. The mailbox must be reachable with the
                 application's service credentials.</small></p>
         <div>
-            {{> ui/form-field id="service-account-name" name="name" label="Full name:" placeholder="e.g., John Smith"}}
+            {{> ui/form-field id="service-account-name" name="name" label="Full name" placeholder="e.g., John Smith"}}
         </div>
         <div>
-            {{#> ui/form-field id="service-account-email" label="Email address:"}}
+            {{#> ui/form-field id="service-account-email" label="Email address"}}
             <input type="email" class="input" id="service-account-email" name="email"
                 placeholder="e.g., user@example.com" required>
             {{/ui/form-field}}
         </div>
         <div>
-            {{> ui/form-field id="service-account-id" name="account" label="Account identifier (optional):"
+            {{> ui/form-field id="service-account-id" name="account" label="Account ID (optional)"
             placeholder="e.g., account_123"
-            hint="Leave blank to auto-generate. Existing accounts with this ID will be updated."}}
+            hint="Leave blank to generate an ID. Using an existing ID updates that account."}}
         </div>
     </div>
     <div class="modal-footer">

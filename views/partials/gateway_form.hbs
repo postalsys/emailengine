@@ -3,16 +3,16 @@
       basicAutoComplete class hook) --}}
 <div class="space-y-4">
 
-    {{> ui/form-field id="name" label="Display Name" value=values.name error=errors.name placeholder="SendGrid Transactional" lpignore=true required=true class="basicAutoComplete" hint="Friendly name to identify this gateway"}}
+    {{> ui/form-field id="name" label="Display Name" value=values.name error=errors.name placeholder="SendGrid Transactional" lpignore=true required=true class="basicAutoComplete" hint="Name shown for this gateway in EmailEngine."}}
 
-    {{> ui/form-field id="user" label="Username" value=values.user error=errors.user lpignore=true hint="SMTP authentication username (if required)"}}
+    {{> ui/form-field id="user" label="Username" value=values.user error=errors.user lpignore=true hint="Username required by your SMTP provider, if any."}}
 
-    {{> ui/form-field id="pass" type="password" label="Password" value=values.pass error=errors.pass lpignore=true placeholder=(when hasSMTPPass "Password saved (hidden for security)") hint=(concat "SMTP authentication password" (when gatewayData ". Leave empty to keep current password"))}}
+    {{> ui/form-field id="pass" type="password" label="Password" value=values.pass error=errors.pass lpignore=true placeholder=(when hasSMTPPass "Password saved") hint=(concat "Password required by your SMTP provider" (when gatewayData ". Leave blank to keep the current password."))}}
 
     {{> ui/form-field id="host" label="Server Address" value=values.host error=errors.host lpignore=true placeholder="smtp.sendgrid.net" required=true hint="SMTP server hostname or IP address"}}
 
-    {{> ui/form-field id="port" type="number" label="Port" value=values.port error=errors.port lpignore=true placeholder="587" required=true hint="Common ports: 25, 587 (STARTTLS), 465 (TLS/SSL)"}}
+    {{> ui/form-field id="port" type="number" label="Port" value=values.port error=errors.port lpignore=true placeholder="587" required=true hint="Common ports: 25 or 587 for STARTTLS, 465 for direct TLS."}}
 
-    {{> ui/checkbox id="secure" label="Use direct TLS" checked=values.secure error=errors.secure tooltip="Enable for port 465 (direct TLS/SSL). For ports 25 and 587, EmailEngine automatically upgrades to encrypted connections using STARTTLS when available."}}
+    {{> ui/checkbox id="secure" label="Use direct TLS" checked=values.secure error=errors.secure tooltip="Usually enabled for port 465. When disabled, EmailEngine uses STARTTLS if the server supports it."}}
 
 </div>

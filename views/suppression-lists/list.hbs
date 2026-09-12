@@ -83,8 +83,10 @@
 </form>
 {{/ui/modal}}
 
-{{> ui/delete-modal id="deleteEntry" noun="address" action=(concat "/admin/suppression-lists/list/" listId "/remove") fieldName="recipient"}}
+{{#> ui/delete-modal id="deleteEntry" noun="address" action=(concat "/admin/suppression-lists/list/" listId "/remove") fieldName="recipient"}}
+Remove <strong class="delete-target-name"></strong> from this suppression list? This address will be eligible to receive emails sent with this list ID again.
+{{/ui/delete-modal}}
 
 {{#> ui/confirm-modal id="deleteListModal" title="Delete suppression list" action="/admin/suppression-lists/delete" fieldName="listId" fieldValue=listId submitLabel="Delete list"}}
-Are you sure you want to delete <strong>{{listId}}</strong> with all of its addresses? Everyone on this list becomes reachable again. This action cannot be undone.
+Delete <strong>{{listId}}</strong> and all its entries? These addresses will no longer be excluded from emails sent with this list ID. This action cannot be undone.
 {{/ui/confirm-modal}}

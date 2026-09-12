@@ -119,7 +119,7 @@
                         {{#unless isMain}}
                         <li>
                             <button type="button" class="dropdown-item text-error kill-thread-btn" data-thread="{{threadId}}">
-                                Restart thread
+                                Restart worker
                             </button>
                         </li>
                         {{/unless}}
@@ -154,15 +154,15 @@
 </div>
 {{/ui/details}}
 
-{{#> ui/confirm-modal id="killThread" title="Restart Thread" action="/admin/internals/kill"
+{{#> ui/confirm-modal id="killThread" title="Restart worker" action="/admin/internals/kill"
 fieldName="thread" fieldId="kill-thread" submitLabel="Restart Thread"}}
-Restart this thread? Any ongoing operations will be interrupted.
+Restart this worker? Its current operations will be interrupted.
 {{/ui/confirm-modal}}
 
 {{#> ui/confirm-modal id="snapshotThread" title="Memory Snapshot" action="/admin/internals/snapshot"
 formId="snapshot-form" formTarget="_blank" fieldName="thread" fieldId="snapshot-thread"
 submitLabel="Download Snapshot" submitVariant="info"}}
-Generate a memory snapshot for debugging? This may briefly affect thread performance.
+Generate a memory snapshot for debugging? This may briefly affect the worker's performance.
 {{/ui/confirm-modal}}
 
 <script data-cfasync="false" nonce="{{cspNonce}}">

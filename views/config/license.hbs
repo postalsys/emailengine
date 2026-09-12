@@ -22,7 +22,7 @@ class="mb-1"}}
 </p>
 
 <div>
-    {{> ui/btn href="https://postalsys.com/plans" external=true label="Renew Subscription"
+    {{> ui/btn href="https://postalsys.com/plans" external=true label="Renew subscription"
     icon="icon-[tabler--arrow-right]"}}
 </div>
 
@@ -33,7 +33,7 @@ class="mb-1"}}
 
 {{#> ui/card}}
         <div class="float-right ms-4">
-            {{> ui/btn href="https://postalsys.com/licenses" external=true label="Get a License"
+            {{> ui/btn href="https://postalsys.com/licenses" external=true label="Get a license"
             icon="icon-[tabler--arrow-right]"}}
         </div>
         <p>
@@ -51,7 +51,7 @@ class="mb-1"}}
 <div class="card bg-base-100 shadow-md mb-6">
     <div class="card-header flex flex-wrap items-center justify-between gap-3">
         <h6 class="card-title text-primary">Current License</h6>
-        {{> ui/btn label="Remove License" variant="error" style="soft" size="sm" icon="icon-[tabler--trash]"
+        {{> ui/btn label="Remove license" variant="error" style="soft" size="sm" icon="icon-[tabler--trash]"
         id="unregister-license-link" overlay="#deleteLicense"}}
     </div>
     <div class="card-body">
@@ -97,7 +97,7 @@ class="mb-1"}}
     <input type="hidden" name="crumb" value="{{crumb}}" />
 
     <div class="mb-6">
-        {{> ui/btn label="Upload License File" variant="info" id="licenseFile" icon="icon-[tabler--file-import]"}}
+        {{> ui/btn label="Upload license file" variant="info" id="licenseFile" icon="icon-[tabler--file-import]"}}
     </div>
 
     <div class="mb-6">
@@ -111,14 +111,14 @@ class="mb-1"}}
     </div>
 
     <div class="mb-2">
-        {{> ui/btn label="Activate License" type="submit" icon="icon-[tabler--key]"}}
+        {{> ui/btn label="Activate license" type="submit" icon="icon-[tabler--key]"}}
     </div>
 
 </form>
 {{/ui/details}}
 
-{{#> ui/confirm-modal id="deleteLicense" title="Remove License" action="/admin/config/license/delete"
-submitLabel="Remove License"}}
+{{#> ui/confirm-modal id="deleteLicense" title="Remove license" action="/admin/config/license/delete"
+submitLabel="Remove license"}}
 Remove the current license key from this EmailEngine instance?
 {{/ui/confirm-modal}}
 

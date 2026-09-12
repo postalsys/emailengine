@@ -10,11 +10,9 @@
 {{#unless canProvision}}
 {{#> ui/stat-card variant="error" title="Set an admin password first" icon="icon-[tabler--shield-lock]" class="mb-6"}}
 
-<p class="mb-4">Access tokens do not expire on their own, so EmailEngine only issues one to a request
-    that carries an admin session. This instance has no admin password set, so there is no session to
-    carry - set one and the form appears here.</p>
+<p class="mb-4">Set an admin password and sign in to create access tokens. Tokens created here remain valid until you delete them.</p>
 <div>
-    {{> ui/btn href="/admin/account/password" variant="primary" icon="icon-[tabler--arrow-right]" label="Enable authentication"}}
+    {{> ui/btn href="/admin/account/password" variant="primary" icon="icon-[tabler--arrow-right]" label="Set admin password"}}
 </div>
 
 {{/ui/stat-card}}
@@ -26,7 +24,7 @@
 
         <div class="card-body space-y-4">
 
-            {{> ui/form-field id="description" label="Description" value=values.description error=errors.description required=true hint="This description is shown when listing active tokens."}}
+            {{> ui/form-field id="description" label="Description" value=values.description error=errors.description required=true hint="Describe the app or task that will use this token."}}
 
             {{!-- A search box rather than a select or free text: an instance can hold far more
                   accounts than a list could usefully carry, and an account id is the one thing
@@ -35,13 +33,12 @@
                   nothing. --}}
             {{> ui/account-picker id="account" label="Account (optional)" value=values.account selected=selectedAccount error=errors.account
                 placeholder="Leave empty to allow all accounts"
-                hint="A bound token only works for that one account. Requests made for any other account are refused."}}
+                hint="Limit this token to one account. Leave blank to allow access to all accounts within the selected scopes and permissions."}}
 
             <div>
                 <h6 class="mb-1 font-bold">Allowed scopes</h6>
                 <p class="text-base-content/60 text-sm mb-3">
-                    Which surfaces this credential opens. Scopes are fixed the moment the token exists, so
-                    a surface left out here cannot be added later.
+                    Choose which EmailEngine interfaces this token can access. Scopes cannot be changed after creation.
                 </p>
 
                 {{!-- One line of plain words per row. The bracketed slug beside each was the only
@@ -57,7 +54,7 @@
                             <label class="label-text grow p-0" for="scopesAll">All scopes</label>
                             <div class="text-base-content/60 code-link">["*"]</div>
                         </div>
-                        <p class="helper-text ms-7">Every surface below, including any added in a later release.</p>
+                        <p class="helper-text ms-7">All interfaces below, including any added in future releases.</p>
                     </li>
 
                     <li class="p-4">
@@ -113,7 +110,7 @@
                         </div>
                         <p class="helper-text ms-7">Let an AI agent manage this instance through the MCP tools at
                             <code>/mcp</code>: accounts, settings, OAuth2 applications, gateways, tokens and the license.
-                            This is not REST API access - the same token is refused by <code>/v1</code>.</p>
+                            This scope does not grant REST API access.</p>
                     </li>
 
                     <li class="p-4">
@@ -125,8 +122,7 @@
                             <div class="text-base-content/60 code-link">["mcp"]</div>
                         </div>
                         <p class="helper-text ms-7">Let an AI agent work with mailbox contents through the MCP tools at
-                            <code>/mcp</code>: list, read, organize and send mail. This is not REST API access - the same
-                            token is refused by <code>/v1</code>.</p>
+                            <code>/mcp</code>: list, read, organize and send mail. This scope does not grant REST API access.</p>
                         {{!-- The endpoint is off by default, so an operator can otherwise mint a
                               credential for something that is not serving and only find out in the
                               client. Both halves of the gate are folded into mcpReady. Revealed by
@@ -135,7 +131,7 @@
                               selection ("All scopes") technically carries the mcp scope too. --}}
                         {{#unless mcpReady}}
                         <p id="mcpDisabledHint" class="helper-text ms-7 text-warning hidden">The MCP endpoint is not
-                            enabled on this instance, so this token would have nothing to talk to. <a
+                            enabled on this instance. Enable it before using this token with an MCP client. <a
                                 href="/admin/config/mcp" class="link">Turn it on</a> first.</p>
                         {{/unless}}
                     </li>
@@ -189,16 +185,16 @@
 
             {{!-- At the decision point, as on the MCP config page: the level chosen here is what
                   decides whether instructions hidden inside received mail can act --}}
-            <p class="text-base-content/60 text-sm">Email content flows into whatever model the connected client runs,
-                and instructions inside received mail can steer it - grant sending and deleting rights deliberately.</p>
+            <p class="text-base-content/60 text-sm">The connected client may send email content to its AI model. Instructions in received emails can influence
+                the agent. Grant permission to send or delete email only when the agent needs it.</p>
         </fieldset>
 
         {{!-- API mode. Unrestricted by default, because an API token is the general-purpose
               credential and narrowing it is the exception. --}}
         <div id="apiLimitBlock" class="hidden">
             <p class="text-base-content/60 text-sm mb-3">
-                By default this token can use the whole API. Restrict it to hand out a credential for a
-                single job: an agent that reads mail but cannot delete it, or a service that can only send.
+                Limit this token to the actions its app or service needs, such as reading email or sending messages.
+                Without restrictions, it can use all operations allowed by its scopes and account selection.
             </p>
             {{> ui/checkbox id="permissionsEnabled" label="Restrict what this token can do" checked=values.permissionsEnabled error=errors.permissions noName=true}}
         </div>
@@ -228,7 +224,7 @@
             <div id="permissionPresetRow">
                 <h6 class="mb-1 font-bold">Pick a preset</h6>
                 <p class="text-base-content/60 text-sm mb-2">
-                    These cover the usual shapes. Adjust the details below if you need something else.
+                    Start with a common set of permissions, then adjust the actions and sections below.
                 </p>
                 <div class="flex flex-wrap gap-2">
                     {{#each permissionPresets}}
@@ -294,20 +290,20 @@
     </div>
 
     <div class="mb-6">
-        {{> ui/btn label="Generate a token" type="submit" icon="icon-[tabler--key]"}}
+        {{> ui/btn label="Create access token" type="submit" icon="icon-[tabler--key]"}}
     </div>
 </form>
 
 {{!-- Wider than the default: the token is 64 characters and this is the only time it is shown, so
       it has to be readable in full rather than scrolled through a 32-character window. --}}
-{{#> ui/modal id="showToken" title="Access tokens" static=true dialogClass="max-w-2xl"}}
+{{#> ui/modal id="showToken" title="Your access token" static=true dialogClass="max-w-2xl"}}
 <div class="modal-body">
     <div id="showTokenLoader" class="py-2 text-center">
         <span class="loading loading-spinner loading-sm align-middle"></span> Generating token&hellip;
     </div>
     <div id="showTokenContent" class="hidden">
 
-        <div class="mb-2">Access token:</div>
+        <div class="mb-2">Copy and store this token securely. It will only be shown once.</div>
         {{!-- w-full because ui/copy-field's join wrapper is inline-flex, so the `grow` on the input
               has nothing to grow inside and the field kept its intrinsic width. text-sm so all 64
               characters fit: this is the only time the value is ever shown, and a token truncated at
