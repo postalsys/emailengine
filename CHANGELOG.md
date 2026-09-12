@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.81.0](https://github.com/postalsys/emailengine/compare/v2.80.1...v2.81.0) (2026-09-12)
+
+
+### Features
+
+* **autodiscovery:** let the API carry credentials and the hosted form skip the settings step ([f78b62e](https://github.com/postalsys/emailengine/commit/f78b62ec910899f7de83fbc972a44858f024b6ac))
+
+
+### Bug Fixes
+
+* **deps:** move the packages that pin nodemailer onto 10.0.9 and dedupe the tree ([db2abd8](https://github.com/postalsys/emailengine/commit/db2abd80319f9ab61406b1d222e357ffbd9ec8b0))
+* **deps:** update joi-messages to 1.1.3 for the Joi 18 validation messages ([c62b34c](https://github.com/postalsys/emailengine/commit/c62b34cc56fd9ca221cdf1e990ac6145c7536236))
+* **deps:** update nodemailer to 10.0.8 across the packages that pin it ([6dc08f7](https://github.com/postalsys/emailengine/commit/6dc08f7ae47db4a7f537d8a13c3004aa9983a690))
+* **docker:** health-check the container over 127.0.0.1, not localhost ([31ab205](https://github.com/postalsys/emailengine/commit/31ab2051ca22d2da45c2079f6581babbdebb0659))
+* **i18n:** fill the empty plural forms in the certificate count ([d51803d](https://github.com/postalsys/emailengine/commit/d51803d89125f962235d05cac5c2f5a1e80900e2))
+* **i18n:** improve translation wording and consistency ([576e692](https://github.com/postalsys/emailengine/commit/576e6924432beef0d0261a578494d703cf04d397))
+* **i18n:** translate the remaining hosted form labels and refresh the catalogs ([b04784c](https://github.com/postalsys/emailengine/commit/b04784ce7eed212b324b4e4dd39a9afcafd47da3))
+* **sentry:** report the release with its package prefix so Sentry can order versions ([7bda29f](https://github.com/postalsys/emailengine/commit/7bda29fdeb6b59bade892570971c0ca12f892a44))
+* **sso:** stop the forced-SSO hand-off flashing the login page before it leaves ([9e64618](https://github.com/postalsys/emailengine/commit/9e646188feaced2ea77342abd4e6de49ad6ed169))
+* **test:** follow the admin copy pass into the two specs it broke ([1524368](https://github.com/postalsys/emailengine/commit/1524368de4b49a176b4338e810503bdca08fac3d))
+* **ui:** make the admin copy consistent and say what each screen actually does ([d7bb57d](https://github.com/postalsys/emailengine/commit/d7bb57d949c8836c6946d3a9f53d3147e3e89ccb))
+* **ui:** make the admin pages read on a phone and stop badges printing over their neighbours ([46e6d49](https://github.com/postalsys/emailengine/commit/46e6d49424a55bb31bbcfe01e759e29484965642))
+
 ## [2.80.1](https://github.com/postalsys/emailengine/compare/v2.80.0...v2.80.1) (2026-09-10)
 
 
