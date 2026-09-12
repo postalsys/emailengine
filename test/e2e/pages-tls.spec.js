@@ -137,7 +137,7 @@ test.describe('TLS certificates', () => {
         await addHostname(page, 'mail.internal');
 
         const row = page.locator('[data-hostname-row="mail.internal"]');
-        await expect(row).toContainText('can not validate');
+        await expect(row).toContainText('cannot validate');
         await expect(row.locator('[data-cert-badge]')).toHaveText('Self-signed');
         await expect(row.locator('.tls-request-btn')).toHaveCount(0);
 

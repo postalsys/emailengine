@@ -713,7 +713,7 @@ test.describe('admin shell', () => {
 
         // usage instructions panel toggles
         await page.locator('summary', { hasText: 'Usage instructions' }).click();
-        await expect(page.getByText('Prometheus endpoint')).toBeVisible();
+        await expect(page.getByText('To collect Prometheus metrics')).toBeVisible();
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
