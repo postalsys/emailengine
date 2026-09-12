@@ -267,7 +267,7 @@ dropdown allows skipping the test. --}}
             <details class="ee-dropdown">
                 <summary id="submit-settings-btn-down" class="ee-btn ee-btn-neutral ee-dropdown-toggle"
                     aria-haspopup="menu">
-                    <span class="ee-sr-only">Toggle Dropdown</span>
+                    <span class="ee-sr-only">{{_ "Toggle Dropdown" templateLocale }}</span>
                     <span class="ee-icon ee-icon-chevron-down"></span>
                 </summary>
                 <ul class="ee-dropdown-menu" role="menu" aria-labelledby="submit-settings-btn-down">
@@ -285,7 +285,7 @@ focus ring on) the corner close button --}}
 <dialog id="testResponseModal" class="ee-modal ee-modal-wide" aria-labelledby="testResponseModalLabel" autofocus>
     <div class="ee-modal-header">
         <h3 class="ee-modal-title" id="testResponseModalLabel">{{_ "Connection test failed" templateLocale }}</h3>
-        <button type="button" class="ee-modal-close" aria-label="Close" data-modal-close>
+        <button type="button" class="ee-modal-close" aria-label="{{_ "Close" templateLocale }}" data-modal-close>
             <span class="ee-icon ee-icon-x"></span>
         </button>
     </div>

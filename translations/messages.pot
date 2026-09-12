@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-09-11 18:18+0000\n"
+"POT-Creation-Date: 2026-09-12 09:10+0000\n"
 
 #: views/error.hbs:6
 #: workers/api.js:3130
@@ -37,6 +37,58 @@ msgstr[1] ""
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
 
+#: views/unsubscribe.hbs:7
+#: views/unsubscribe.hbs:60
+#: views/unsubscribe.hbs:76
+msgid "Unsubscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:9
+msgid "Your email address was unsubscribed."
+msgstr ""
+
+#: views/unsubscribe.hbs:11
+msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
+msgstr ""
+
+#: views/unsubscribe.hbs:18
+msgid "Re-subscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:24
+msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
+msgstr ""
+
+#: views/unsubscribe.hbs:33
+#: views/accounts/register/imap-server.hbs:288
+#: views/accounts/register/imap-server.hbs:297
+#: views/partials/public_alerts.hbs:11
+msgid "Close"
+msgstr ""
+
+#: views/unsubscribe.hbs:35
+msgid "Subscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:54
+msgid "Subscription resumed"
+msgstr ""
+
+#: views/unsubscribe.hbs:56
+msgid "Your email address <em>%s</em> was re-subscribed."
+msgstr ""
+
+#: views/unsubscribe.hbs:71
+#: views/accounts/register/imap.hbs:25
+msgid "Email address"
+msgstr ""
+
+#: views/unsubscribe.hbs:83
+msgid ""
+"This link is not valid. Use the unsubscribe link from the email you "
+"received."
+msgstr ""
+
 #: views/oauth-scope-error.hbs:5
 msgid "Insufficient Permissions"
 msgstr ""
@@ -62,54 +114,12 @@ msgstr ""
 msgid "Try Again"
 msgstr ""
 
-#: views/unsubscribe.hbs:7
-#: views/unsubscribe.hbs:60
-#: views/unsubscribe.hbs:76
-msgid "Unsubscribe"
+#: views/accounts/register/index.hbs:6
+msgid "Choose your email account provider"
 msgstr ""
 
-#: views/unsubscribe.hbs:9
-msgid "Your email address was unsubscribed."
-msgstr ""
-
-#: views/unsubscribe.hbs:11
-msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
-msgstr ""
-
-#: views/unsubscribe.hbs:18
-msgid "Re-subscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:24
-msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
-msgstr ""
-
-#: views/unsubscribe.hbs:33
-#: views/accounts/register/imap-server.hbs:297
-msgid "Close"
-msgstr ""
-
-#: views/unsubscribe.hbs:35
-msgid "Subscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:54
-msgid "Subscription resumed"
-msgstr ""
-
-#: views/unsubscribe.hbs:56
-msgid "Your email address <em>%s</em> was re-subscribed."
-msgstr ""
-
-#: views/unsubscribe.hbs:71
-#: views/accounts/register/imap.hbs:25
-msgid "Email address"
-msgstr ""
-
-#: views/unsubscribe.hbs:83
-msgid ""
-"This link is not valid. Use the unsubscribe link from the email you "
-"received."
+#: views/accounts/register/index.hbs:19
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:13
@@ -231,6 +241,10 @@ msgstr ""
 msgid "Save and continue"
 msgstr ""
 
+#: views/accounts/register/imap-server.hbs:270
+msgid "Toggle Dropdown"
+msgstr ""
+
 #: views/accounts/register/imap-server.hbs:274
 msgid "Skip verification"
 msgstr ""
@@ -273,14 +287,6 @@ msgstr ""
 
 #: views/accounts/register/validating.hbs:70
 msgid "Continue to review your mail server settings."
-msgstr ""
-
-#: views/accounts/register/index.hbs:6
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:19
-msgid "Standard IMAP"
 msgstr ""
 
 #: views/partials/public_test_labels.hbs:9
