@@ -48,7 +48,13 @@ services:
             EENGINE_WORKERS: ${EENGINE_WORKERS:-4}
 
         healthcheck:
-            test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3000/health']
+            # 127.0.0.1 and not localhost: the image is Alpine, so this is BusyBox wget on musl.
+            # musl returns ::1 first for localhost (both are in the container's /etc/hosts) and
+            # BusyBox wget connects to that one address without falling back to the next, while
+            # EmailEngine listens on 0.0.0.0, which is IPv4 only. Through localhost the check can
+            # only ever report "connection refused", so the container stays unhealthy for good and
+            # anything chained behind `depends_on: service_healthy` waits forever.
+            test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:3000/health']
             interval: ${HEALTHCHECK_INTERVAL:-30s}
             timeout: ${HEALTHCHECK_TIMEOUT:-10s}
             retries: ${HEALTHCHECK_RETRIES:-3}
