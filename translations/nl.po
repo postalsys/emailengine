@@ -55,16 +55,18 @@ msgstr "Je e-mailadres is uitgeschreven."
 #: views/unsubscribe.hbs:11
 msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
 msgstr ""
-"Was dit een vergissing? Klik dan <a%s>hier</a> om je opnieuw te abonneren."
+"Was dit een vergissing? Klik dan <a%s>hier</a> om je opnieuw in te "
+"schrijven."
 
 #: views/unsubscribe.hbs:18
 msgid "Re-subscribe"
-msgstr "Opnieuw abonneren"
+msgstr "Opnieuw inschrijven"
 
 #: views/unsubscribe.hbs:24
 msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
 msgstr ""
-"Weet je zeker dat je je e-mailadres <em>%s</em> opnieuw wilt abonneren?"
+"Weet je zeker dat je je opnieuw wilt inschrijven met het e-mailadres "
+"<em>%s</em>?"
 
 #: views/unsubscribe.hbs:33 views/accounts/register/imap-server.hbs:288
 #: views/accounts/register/imap-server.hbs:297
@@ -74,7 +76,7 @@ msgstr "Sluiten"
 
 #: views/unsubscribe.hbs:35
 msgid "Subscribe"
-msgstr "Abonneren"
+msgstr "Inschrijven"
 
 #: views/unsubscribe.hbs:54
 msgid "Subscription resumed"
@@ -82,7 +84,7 @@ msgstr "Abonnement hervat"
 
 #: views/unsubscribe.hbs:56
 msgid "Your email address <em>%s</em> was re-subscribed."
-msgstr "Je e-mailadres <em>%s</em> is opnieuw geabonneerd."
+msgstr "Je e-mailadres <em>%s</em> is opnieuw ingeschreven."
 
 #: views/unsubscribe.hbs:71 views/accounts/register/imap.hbs:25
 msgid "Email address"
@@ -97,15 +99,15 @@ msgstr ""
 
 #: views/oauth-scope-error.hbs:5
 msgid "Insufficient Permissions"
-msgstr "Onvoldoende rechten"
+msgstr "Onvoldoende machtigingen"
 
 #: views/oauth-scope-error.hbs:10
 msgid ""
 "All requested permissions are required for this service to function "
 "properly. Some required permissions were not granted during sign-in."
 msgstr ""
-"Alle gevraagde machtigingen zijn vereist om deze dienst correct te laten "
-"werken. Bij het inloggen zijn sommige vereiste machtigingen niet verleend."
+"Deze dienst heeft alle gevraagde machtigingen nodig om goed te werken. Bij "
+"het inloggen zijn enkele daarvan niet verleend."
 
 #: views/oauth-scope-error.hbs:14
 msgid "The following permissions were not granted:"
@@ -116,8 +118,8 @@ msgid ""
 "Please try again and make sure all permission checkboxes are selected on the "
 "Google consent screen."
 msgstr ""
-"Probeer het nog eens en zorg ervoor dat alle selectievakjes voor toestemming "
-"op het toestemmingsscherm van Google zijn aangevinkt."
+"Probeer het opnieuw en vink op het toestemmingsscherm van Google alle "
+"vakjes voor de gevraagde machtigingen aan."
 
 #: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
 msgid "Try Again"
@@ -137,11 +139,11 @@ msgstr "Jouw naam"
 
 #: views/accounts/register/imap.hbs:19
 msgid "Enter your full name"
-msgstr "Vul je naam in"
+msgstr "Vul je volledige naam in"
 
 #: views/accounts/register/imap.hbs:35
 msgid "This setup link is restricted to this email address"
-msgstr "Deze instellink is beperkt tot dit e-mailadres"
+msgstr "Je kunt deze instellink alleen voor dit e-mailadres gebruiken"
 
 #: views/accounts/register/imap.hbs:37
 msgid "Enter your email address"
@@ -155,7 +157,7 @@ msgstr "Wachtwoord"
 
 #: views/accounts/register/imap.hbs:49
 msgid "Enter your account password"
-msgstr "Vul je wachtwoord in"
+msgstr "Vul het wachtwoord van je account in"
 
 #: views/accounts/register/imap.hbs:55
 #: views/accounts/register/validating.hbs:74
@@ -166,16 +168,16 @@ msgstr "Doorgaan"
 msgid ""
 "Server settings could not be detected automatically for %s. Enter them below."
 msgstr ""
-"De serverinstellingen voor %s konden niet automatisch worden gedetecteerd. "
-"Voer ze hieronder in."
+"De serverinstellingen voor %s konden niet automatisch worden gevonden. Vul "
+"ze hieronder in."
 
 #: views/accounts/register/imap-server.hbs:34
 msgid ""
 "We couldn't sign in to your mail server with those settings. Check them and "
 "try again."
 msgstr ""
-"Met die instellingen konden we geen verbinding maken met uw e-mailserver. "
-"Controleer de instellingen en probeer het nog eens."
+"Met deze instellingen konden we niet inloggen op je e-mailserver. "
+"Controleer de instellingen en probeer het opnieuw."
 
 #: views/accounts/register/imap-server.hbs:41
 msgid "IMAP"
@@ -199,12 +201,12 @@ msgstr "Instructies"
 #: views/accounts/register/imap-server.hbs:83
 #: views/accounts/register/imap-server.hbs:190
 msgid "%s accounts require an application password for %s."
-msgstr "%s-accounts vereisen een toepassingswachtwoord voor %s."
+msgstr "Voor %s-accounts heb je een app-wachtwoord nodig om %s te gebruiken."
 
 #: views/accounts/register/imap-server.hbs:92
 #: views/accounts/register/imap-server.hbs:199
 msgid "Application Password"
-msgstr "Applicatiewachtwoord"
+msgstr "App-wachtwoord"
 
 #: views/accounts/register/imap-server.hbs:106
 #: views/accounts/register/imap-server.hbs:213
@@ -259,11 +261,11 @@ msgstr "Opslaan en doorgaan"
 
 #: views/accounts/register/imap-server.hbs:270
 msgid "Toggle Dropdown"
-msgstr "Dropdown in-/uitschakelen"
+msgstr "Menu openen of sluiten"
 
 #: views/accounts/register/imap-server.hbs:274
 msgid "Skip verification"
-msgstr "Verificatie overslaan"
+msgstr "Controle overslaan"
 
 #: views/accounts/register/imap-server.hbs:287
 msgid "Connection test failed"
@@ -272,16 +274,16 @@ msgstr "Verbindingstest mislukt"
 #: views/accounts/register/imap-server.hbs:293
 msgid "We couldn't connect with these settings. Check the errors below."
 msgstr ""
-"We konden geen verbinding maken met deze instellingen. Controleer de fouten "
-"hieronder."
+"We konden geen verbinding maken met deze instellingen. Bekijk de "
+"foutmeldingen hieronder."
 
 #: views/accounts/register/validating.hbs:35
 msgid "Checking your mail server"
-msgstr "Je e-mailserver controleren"
+msgstr "Je e-mailserver wordt gecontroleerd"
 
 #: views/accounts/register/validating.hbs:40
 msgid "Still checking. This can take up to a minute."
-msgstr "Wordt nog gecontroleerd. Dit kan tot een minuut duren."
+msgstr "De controle loopt nog. Dit kan tot een minuut duren."
 
 #: views/accounts/register/validating.hbs:47
 msgid "Enter server settings manually"
@@ -289,7 +291,7 @@ msgstr "Serverinstellingen handmatig invoeren"
 
 #: views/accounts/register/validating.hbs:53
 msgid "We couldn't sign in to your mail server"
-msgstr "We konden geen verbinding maken met je e-mailserver"
+msgstr "We konden niet inloggen op je e-mailserver"
 
 #: views/accounts/register/validating.hbs:54
 msgid "Check the settings on the next page and try again."
@@ -306,7 +308,9 @@ msgstr "Je bent er bijna"
 
 #: views/accounts/register/validating.hbs:70
 msgid "Continue to review your mail server settings."
-msgstr "Ga verder met het controleren van de instellingen van uw e-mailserver."
+msgstr ""
+"Ga naar de volgende pagina om de instellingen van je e-mailserver te "
+"controleren."
 
 #: views/partials/public_test_labels.hbs:9
 msgid "Error"
@@ -318,15 +322,15 @@ msgstr "Ongeldige instellingen"
 
 #: views/partials/public_test_labels.hbs:11
 msgid "Couldn't connect to IMAP server"
-msgstr "Kon geen verbinding maken met IMAP-server"
+msgstr "Kon geen verbinding maken met de IMAP-server"
 
 #: views/partials/public_test_labels.hbs:12
 msgid "Couldn't connect to SMTP server"
-msgstr "Kon geen verbinding maken met SMTP-server"
+msgstr "Kon geen verbinding maken met de SMTP-server"
 
 #: views/partials/public_test_labels.hbs:13
 msgid "Server response:"
-msgstr "Server reactie:"
+msgstr "Serverreactie:"
 
 #: views/partials/public_test_labels.hbs:15
 msgid "Request failed."
@@ -341,12 +345,12 @@ msgid ""
 "This setup link can only be used with one specific email account, and a "
 "different one was used."
 msgstr ""
-"Deze instellink kan alleen worden gebruikt met één specifiek e-mailaccount, "
-"maar er is een ander account gebruikt."
+"Deze instellink is bedoeld voor één specifiek e-mailaccount. Je hebt "
+"ingelogd met een ander account."
 
 #: views/account-identity-error.hbs:18
 msgid "Expected account"
-msgstr "Verwacht account"
+msgstr "Vereist account"
 
 #: views/account-identity-error.hbs:21
 msgid "Account used"
@@ -357,7 +361,7 @@ msgid ""
 "Try again and use the expected account. If you believe this is a mistake, "
 "contact the service that sent you this link."
 msgstr ""
-"Probeer het opnieuw met het verwachte account. Als je denkt dat dit een "
+"Probeer het opnieuw met het vereiste account. Als je denkt dat dit een "
 "vergissing is, neem dan contact op met de dienst die je deze link heeft "
 "gestuurd."
 
@@ -368,10 +372,10 @@ msgid ""
 "please use the \"Sign in with Microsoft\" button to securely connect your "
 "account."
 msgstr ""
-"Microsoft heeft wachtwoordgebaseerde inlogmethodes (inclusief "
-"applicatiewachtwoorden) uitgeschakeld voor Outlook.com, Hotmail.com en "
-"Microsoft 365 e-mailaccounts. Gebruik de knop \"Inloggen met Microsoft\" om "
-"je account veilig te verbinden."
+"Microsoft staat inloggen met een wachtwoord niet meer toe voor "
+"e-mailaccounts bij Outlook.com, Hotmail.com en Microsoft 365. Dit geldt ook "
+"voor app-wachtwoorden. Klik op \"Sign in with Microsoft\" om je account "
+"veilig te koppelen en door te gaan."
 
 #: lib/tools.js:1526 lib/ui-routes/unsubscribe-routes.js:31
 #: lib/ui-routes/unsubscribe-routes.js:99
@@ -380,12 +384,12 @@ msgstr "Ongeldige invoer"
 
 #: lib/tools.js:2392
 msgid "Signature validation failed"
-msgstr "Handtekeningvalidatie mislukt"
+msgstr "Controle van de handtekening mislukt"
 
 #: lib/tools.js:2415 lib/tools.js:2421 lib/tools.js:2426
 #: lib/ui-routes/account-routes.js:1337
 msgid "Invalid or expired account setup URL"
-msgstr "Ongeldige of verlopen accountinstellings-URL"
+msgstr "De link om je account in te stellen is ongeldig of verlopen"
 
 #: lib/ui-routes/account-routes.js:481 lib/ui-routes/account-routes.js:525
 #: lib/ui-routes/account-routes.js:859 lib/ui-routes/account-routes.js:936
@@ -398,28 +402,28 @@ msgstr "E-mailaccount instellen"
 #: lib/ui-routes/account-routes.js:550 lib/ui-routes/account-routes.js:582
 #: lib/ui-routes/unsubscribe-routes.js:71
 msgid "Invalid request. Check your input and try again."
-msgstr "Ongeldige aanvraag. Controleer je invoer en probeer het opnieuw."
+msgstr "Ongeldig verzoek. Controleer je invoer en probeer het opnieuw."
 
 #: lib/ui-routes/account-routes.js:740
 msgid ""
 "Too many attempts for this setup link. Request a new setup link to continue."
 msgstr ""
-"Te veel pogingen voor deze instellink. Vraag een nieuwe instellink aan om "
-"door te gaan."
+"Er zijn te veel pogingen gedaan met deze instellink. Vraag een nieuwe link "
+"aan om door te gaan."
 
 #: lib/ui-routes/account-routes.js:983 lib/ui-routes/account-routes.js:1387
 msgid "Couldn't set up account. Try again."
-msgstr "Kan geen account aanmaken. Probeer het opnieuw."
+msgstr "Het instellen van je account is mislukt. Probeer het opnieuw."
 
 #: lib/ui-routes/account-routes.js:1071 lib/ui-routes/account-routes.js:1111
 #: lib/ui-routes/admin-entities-routes.js:2078
 msgid "Server hostname was not found"
-msgstr "De serverhostnaam kon niet worden gevonden."
+msgstr "De hostnaam van de server is niet gevonden"
 
 #: lib/ui-routes/account-routes.js:1074 lib/ui-routes/account-routes.js:1114
 #: lib/ui-routes/admin-entities-routes.js:2081
 msgid "Invalid username or password"
-msgstr "Ongeldige gebruikersnaam of wachtwoord"
+msgstr "Gebruikersnaam of wachtwoord is onjuist"
 
 #: lib/ui-routes/account-routes.js:1079 lib/ui-routes/account-routes.js:1131
 #: lib/ui-routes/admin-entities-routes.js:2098
@@ -441,7 +445,7 @@ msgstr "TLS-protocolfout"
 #: lib/ui-routes/account-routes.js:1117
 #: lib/ui-routes/admin-entities-routes.js:2084
 msgid "Authentication credentials were not provided"
-msgstr "Er zijn geen authenticatiegegevens verstrekt"
+msgstr "Er zijn geen inloggegevens opgegeven"
 
 #: lib/ui-routes/account-routes.js:1120
 #: lib/ui-routes/admin-entities-routes.js:2087
@@ -478,16 +482,16 @@ msgid ""
 "The server unexpectedly closed the connection. This usually happens when "
 "attempting to connect to a TLS port without TLS enabled."
 msgstr ""
-"De server sloot onverwacht de verbinding. Dit gebeurt meestal wanneer je "
-"probeert verbinding te maken met een TLS-poort zonder TLS ingeschakeld."
+"De server sloot onverwacht de verbinding. Dit gebeurt meestal als je "
+"verbinding maakt met een TLS-poort terwijl TLS niet is ingeschakeld."
 
 #: lib/ui-routes/route-helpers.js:162
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
 msgstr ""
-"De verbinding is verlopen. Dit gebeurt meestal als je achter een firewall "
-"zit of verbinding maakt met de verkeerde poort."
+"Er is een time-out opgetreden bij het verbinden. Dit gebeurt meestal als "
+"een firewall de verbinding blokkeert of als je de verkeerde poort gebruikt."
 
 #: lib/ui-routes/route-helpers.js:169
 msgid ""
@@ -504,7 +508,7 @@ msgstr "Gedelegeerd"
 
 #: lib/ui-routes/route-helpers.js:224
 msgid "Using credentials from \"%s\""
-msgstr "Gebruikmakend van inloggegevens van \"%s\""
+msgstr "Gebruikt de inloggegevens van account \"%s\""
 
 #: lib/ui-routes/unsubscribe-routes.js:41
 #: lib/ui-routes/unsubscribe-routes.js:167
@@ -523,9 +527,8 @@ msgid ""
 "The sign-in was cancelled or the requested access was not granted. Open the "
 "account setup link again to retry."
 msgstr ""
-"De aanmelding is geannuleerd of de gevraagde toegang is niet verleend. Open "
-"de link voor het instellen van het account opnieuw om het nog eens te "
-"proberen."
+"Het inloggen is geannuleerd of de gevraagde toegang is niet verleend. Open "
+"de instellink voor je account opnieuw om het nog eens te proberen."
 
 #: workers/api.js:2240
 msgid "Sign-in with the email provider failed: %s"
@@ -541,7 +544,7 @@ msgstr ""
 #: workers/api.js:2250
 msgid "Sign-in with the email provider failed: the request state is not valid"
 msgstr ""
-"Het inloggen bij de e-mailprovider is mislukt: de status van het verzoek is "
+"Het inloggen via de e-mailprovider is mislukt: de status van het verzoek is "
 "ongeldig"
 
 #: workers/api.js:2256
@@ -549,16 +552,15 @@ msgid ""
 "The account setup session has expired or was already used. Open the account "
 "setup link again to retry."
 msgstr ""
-"De sessie voor het instellen van het account is verlopen of is al gebruikt. "
-"Open de link voor het instellen van het account opnieuw om het nog eens te "
-"proberen."
+"De sessie voor het instellen van je account is verlopen of al gebruikt. "
+"Open de instellink opnieuw om het nog eens te proberen."
 
 #: workers/api.js:2263
 msgid ""
 "Sign-in with the email provider failed: the stored setup session is not valid"
 msgstr ""
-"Het inloggen bij de e-mailprovider is mislukt: de opgeslagen "
-"configuratiesessie is ongeldig"
+"Het inloggen via de e-mailprovider is mislukt: de opgeslagen sessie voor "
+"het instellen van je account is ongeldig"
 
 #: workers/api.js:3129 workers/api.js:3244
 msgid "Requested page not found"

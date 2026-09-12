@@ -14,7 +14,7 @@ msgstr ""
 
 #: views/error.hbs:6 workers/api.js:3130
 msgid "Something went wrong"
-msgstr "問題がありました"
+msgstr "問題が発生しました"
 
 #: views/error.hbs:8
 msgid "Error code: %s"
@@ -36,31 +36,31 @@ msgstr[0] "%d日"
 #: views/config/tls.hbs:423
 msgid "%d certificate"
 msgid_plural "%d certificates"
-msgstr[0] "%d 証明書"
+msgstr[0] "%d件の証明書"
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr "続き<a href=\"%s\">はこちら</a>をクリック&mldr;"
+msgstr "続行するには<a href=\"%s\">こちら</a>をクリックしてください&mldr;"
 
 #: views/unsubscribe.hbs:7 views/unsubscribe.hbs:60 views/unsubscribe.hbs:76
 msgid "Unsubscribe"
-msgstr "購読解除"
+msgstr "配信停止"
 
 #: views/unsubscribe.hbs:9
 msgid "Your email address was unsubscribed."
-msgstr "メールアドレスの購読が解除されました。"
+msgstr "このメールアドレスへの配信を停止しました。"
 
 #: views/unsubscribe.hbs:11
 msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
-msgstr "間違いでしたか？<a%s>ここ</a>をクリックして再購読してください。"
+msgstr "誤って配信を停止した場合は、<a%s>こちら</a>をクリックすると配信を再開できます。"
 
 #: views/unsubscribe.hbs:18
 msgid "Re-subscribe"
-msgstr "再購読"
+msgstr "配信を再開"
 
 #: views/unsubscribe.hbs:24
 msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
-msgstr "メールアドレス<em>%s</em>を再購読しますか？"
+msgstr "メールアドレス<em>%s</em>への配信を再開してもよろしいですか？"
 
 #: views/unsubscribe.hbs:33 views/accounts/register/imap-server.hbs:288
 #: views/accounts/register/imap-server.hbs:297
@@ -70,15 +70,15 @@ msgstr "閉じる"
 
 #: views/unsubscribe.hbs:35
 msgid "Subscribe"
-msgstr "購読する"
+msgstr "配信を申し込む"
 
 #: views/unsubscribe.hbs:54
 msgid "Subscription resumed"
-msgstr "購読が再開されました"
+msgstr "配信を再開しました"
 
 #: views/unsubscribe.hbs:56
 msgid "Your email address <em>%s</em> was re-subscribed."
-msgstr "メールアドレス<em>%s</em>が再購読されました。"
+msgstr "メールアドレス<em>%s</em>への配信を再開しました。"
 
 #: views/unsubscribe.hbs:71 views/accounts/register/imap.hbs:25
 msgid "Email address"
@@ -93,35 +93,31 @@ msgstr ""
 
 #: views/oauth-scope-error.hbs:5
 msgid "Insufficient Permissions"
-msgstr "権限不足"
+msgstr "必要な権限が不足しています"
 
 #: views/oauth-scope-error.hbs:10
 msgid ""
 "All requested permissions are required for this service to function "
 "properly. Some required permissions were not granted during sign-in."
-msgstr ""
-"このサービスが正常に動作するには、要求されたすべての権限が必要です。サインイ"
-"ン時に、必要な権限の一部が付与されませんでした。"
+msgstr "このサービスを利用するには、求められた権限をすべて許可する必要があります。ログイン時に、一部の権限が許可されませんでした。"
 
 #: views/oauth-scope-error.hbs:14
 msgid "The following permissions were not granted:"
-msgstr "以下の権限は付与されませんでした："
+msgstr "次の権限が許可されていません："
 
 #: views/oauth-scope-error.hbs:23
 msgid ""
 "Please try again and make sure all permission checkboxes are selected on the "
 "Google consent screen."
-msgstr ""
-"もう一度お試しいただき、Googleの同意画面で全ての権限のチェックボックスが選択"
-"されていることをご確認ください。"
+msgstr "もう一度お試しください。Googleの同意画面では、すべての権限にチェックを入れてください。"
 
 #: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
 msgid "Try Again"
-msgstr "もう一度試してください"
+msgstr "もう一度試す"
 
 #: views/accounts/register/index.hbs:6
 msgid "Choose your email account provider"
-msgstr "メールアカウントプロバイダーを選択してください"
+msgstr "ご利用のメールサービスを選択してください"
 
 #: views/accounts/register/index.hbs:19
 msgid "Standard IMAP"
@@ -137,7 +133,7 @@ msgstr "フルネームを入力してください"
 
 #: views/accounts/register/imap.hbs:35
 msgid "This setup link is restricted to this email address"
-msgstr "このセットアップリンクはこのメールアドレス専用です"
+msgstr "この設定リンクは、このメールアドレスでのみ使用できます"
 
 #: views/accounts/register/imap.hbs:37
 msgid "Enter your email address"
@@ -169,9 +165,7 @@ msgstr ""
 msgid ""
 "We couldn't sign in to your mail server with those settings. Check them and "
 "try again."
-msgstr ""
-"その設定では、お客様のメールサーバーにログインできませんでした。設定を確認し"
-"て、もう一度お試しください。"
+msgstr "この設定ではメールサーバーにログインできませんでした。設定を確認して、もう一度お試しください。"
 
 #: views/accounts/register/imap-server.hbs:41
 msgid "IMAP"
@@ -195,12 +189,12 @@ msgstr "手順"
 #: views/accounts/register/imap-server.hbs:83
 #: views/accounts/register/imap-server.hbs:190
 msgid "%s accounts require an application password for %s."
-msgstr "%sのアカウントは%sのアプリケーションパスワードが必要です。"
+msgstr "%sのアカウントで%sを利用するには、アプリパスワードが必要です。"
 
 #: views/accounts/register/imap-server.hbs:92
 #: views/accounts/register/imap-server.hbs:199
 msgid "Application Password"
-msgstr "アプリケーションパスワード"
+msgstr "アプリパスワード"
 
 #: views/accounts/register/imap-server.hbs:106
 #: views/accounts/register/imap-server.hbs:213
@@ -221,8 +215,7 @@ msgid ""
 "TLS (also known as SSL) is usually only needed when using port 993. For "
 "other ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
-"TLS（SSLとも呼ばれます）は、通常ポート993を使用する場合にのみ必要です。その他"
-"のポートではEmailEngineがSTARTTLSベースの暗号化にフォールバックします。"
+"TLS（SSLとも呼ばれます）が必要なのは、通常ポート993を使う場合だけです。他のポートでは、EmailEngineはSTARTTLSで通信を暗号化します。"
 
 #: views/accounts/register/imap-server.hbs:139
 #: views/accounts/register/imap-server.hbs:246
@@ -242,8 +235,7 @@ msgid ""
 "TLS (also known as SSL) is usually only needed when using port 465. For "
 "other ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
-"TLS（SSLとも呼ばれます）は、通常ポート465を使用する場合にのみ必要です。その他"
-"のポートではEmailEngineがSTARTTLSベースの暗号化にフォールバックします。"
+"TLS（SSLとも呼ばれます）が必要なのは、通常ポート465を使う場合だけです。他のポートでは、EmailEngineはSTARTTLSで通信を暗号化します。"
 
 #: views/accounts/register/imap-server.hbs:259
 msgid "Verify connection"
@@ -255,7 +247,7 @@ msgstr "保存して続行"
 
 #: views/accounts/register/imap-server.hbs:270
 msgid "Toggle Dropdown"
-msgstr "ドロップダウンの切り替え"
+msgstr "メニューを開く・閉じる"
 
 #: views/accounts/register/imap-server.hbs:274
 msgid "Skip verification"
@@ -267,15 +259,15 @@ msgstr "接続テストに失敗しました"
 
 #: views/accounts/register/imap-server.hbs:293
 msgid "We couldn't connect with these settings. Check the errors below."
-msgstr "これらの設定では接続できませんでした。以下のエラーを確認してください。"
+msgstr "この設定では接続できませんでした。以下のエラーメッセージを確認してください。"
 
 #: views/accounts/register/validating.hbs:35
 msgid "Checking your mail server"
-msgstr "メールサーバーの確認"
+msgstr "メールサーバーを確認しています"
 
 #: views/accounts/register/validating.hbs:40
 msgid "Still checking. This can take up to a minute."
-msgstr "現在確認中です。最大1分ほどかかる場合があります。"
+msgstr "まだ確認中です。完了まで最大1分ほどかかる場合があります。"
 
 #: views/accounts/register/validating.hbs:47
 msgid "Enter server settings manually"
@@ -283,7 +275,7 @@ msgstr "サーバー設定を手動で入力する"
 
 #: views/accounts/register/validating.hbs:53
 msgid "We couldn't sign in to your mail server"
-msgstr "お客様のメールサーバーにログインできませんでした"
+msgstr "メールサーバーにログインできませんでした"
 
 #: views/accounts/register/validating.hbs:54
 msgid "Check the settings on the next page and try again."
@@ -295,11 +287,11 @@ msgstr "サーバー設定へ進む"
 
 #: views/accounts/register/validating.hbs:69
 msgid "Almost there"
-msgstr "あと少しだ"
+msgstr "あと少しで完了です"
 
 #: views/accounts/register/validating.hbs:70
 msgid "Continue to review your mail server settings."
-msgstr "メールサーバーの設定を引き続き確認してください。"
+msgstr "次のページに進んで、メールサーバーの設定を確認してください。"
 
 #: views/partials/public_test_labels.hbs:9
 msgid "Error"
@@ -327,31 +319,27 @@ msgstr "リクエストに失敗しました。"
 
 #: views/account-identity-error.hbs:7
 msgid "Wrong Email Account"
-msgstr "メールアカウントが違います"
+msgstr "別のメールアカウントでログインしています"
 
 #: views/account-identity-error.hbs:12
 msgid ""
 "This setup link can only be used with one specific email account, and a "
 "different one was used."
-msgstr ""
-"このセットアップリンクは特定のメールアカウントでのみ使用できますが、別のアカ"
-"ウントが使用されました。"
+msgstr "この設定リンクは、指定されたメールアカウントでのみ使用できます。今回は別のアカウントでログインしています。"
 
 #: views/account-identity-error.hbs:18
 msgid "Expected account"
-msgstr "想定されるアカウント"
+msgstr "指定されたアカウント"
 
 #: views/account-identity-error.hbs:21
 msgid "Account used"
-msgstr "使用されたアカウント"
+msgstr "ログインしたアカウント"
 
 #: views/account-identity-error.hbs:27
 msgid ""
 "Try again and use the expected account. If you believe this is a mistake, "
 "contact the service that sent you this link."
-msgstr ""
-"想定されるアカウントでもう一度お試しください。これが間違いだと思われる場合"
-"は、このリンクを送信したサービスにお問い合わせください。"
+msgstr "指定されたアカウントで、もう一度お試しください。心当たりがない場合は、このリンクを送信したサービスの提供元にお問い合わせください。"
 
 #: lib/autodetect-imap-settings.js:151
 msgid ""
@@ -360,15 +348,14 @@ msgid ""
 "please use the \"Sign in with Microsoft\" button to securely connect your "
 "account."
 msgstr ""
-"マイクロソフトは、Outlook.com、Hotmail.com、およびMicrosoft 365メールアカウン"
-"トのパスワードベースのサインイン（アプリのパスワードを含む）を無効にしていま"
-"す。続行するには、「Microsoftでサインイン」ボタンを使用してアカウントを安全に"
-"接続してください。"
+"Microsoftでは、Outlook.com、Hotmail.com、Microsoft "
+"365のメールアカウントにパスワードでログインすることはできなくなりました。アプリパスワードも使用できません。「Sign in with "
+"Microsoft」ボタンからアカウントを安全に接続して、続行してください。"
 
 #: lib/tools.js:1526 lib/ui-routes/unsubscribe-routes.js:31
 #: lib/ui-routes/unsubscribe-routes.js:99
 msgid "Invalid input"
-msgstr "無効な入力"
+msgstr "入力内容が正しくありません"
 
 #: lib/tools.js:2392
 msgid "Signature validation failed"
@@ -377,7 +364,7 @@ msgstr "署名の検証に失敗しました"
 #: lib/tools.js:2415 lib/tools.js:2421 lib/tools.js:2426
 #: lib/ui-routes/account-routes.js:1337
 msgid "Invalid or expired account setup URL"
-msgstr "無効または期限切れのアカウント設定URL"
+msgstr "アカウントの設定リンクが無効か、有効期限が切れています"
 
 #: lib/ui-routes/account-routes.js:481 lib/ui-routes/account-routes.js:525
 #: lib/ui-routes/account-routes.js:859 lib/ui-routes/account-routes.js:936
@@ -395,9 +382,7 @@ msgstr "無効なリクエストです。入力内容を確認して、もう一
 #: lib/ui-routes/account-routes.js:740
 msgid ""
 "Too many attempts for this setup link. Request a new setup link to continue."
-msgstr ""
-"このセットアップリンクでの試行回数が多すぎます。続けるには新しいセットアップ"
-"リンクをリクエストしてください。"
+msgstr "この設定リンクの試行回数が上限に達しました。続行するには、新しい設定リンクを発行してもらってください。"
 
 #: lib/ui-routes/account-routes.js:983 lib/ui-routes/account-routes.js:1387
 msgid "Couldn't set up account. Try again."
@@ -406,17 +391,17 @@ msgstr "アカウントを設定できませんでした。もう一度お試し
 #: lib/ui-routes/account-routes.js:1071 lib/ui-routes/account-routes.js:1111
 #: lib/ui-routes/admin-entities-routes.js:2078
 msgid "Server hostname was not found"
-msgstr "サーバーホスト名が見つかりませんでした"
+msgstr "サーバーのホスト名が見つかりませんでした"
 
 #: lib/ui-routes/account-routes.js:1074 lib/ui-routes/account-routes.js:1114
 #: lib/ui-routes/admin-entities-routes.js:2081
 msgid "Invalid username or password"
-msgstr "無効なユーザー名またはパスワード"
+msgstr "ユーザー名またはパスワードが正しくありません"
 
 #: lib/ui-routes/account-routes.js:1079 lib/ui-routes/account-routes.js:1131
 #: lib/ui-routes/admin-entities-routes.js:2098
 msgid "Connection timed out"
-msgstr "接続タイムアウト"
+msgstr "接続がタイムアウトしました"
 
 #: lib/ui-routes/account-routes.js:1085 lib/ui-routes/account-routes.js:1134
 #: lib/ui-routes/admin-entities-routes.js:2101
@@ -433,7 +418,7 @@ msgstr "TLSプロトコルエラー"
 #: lib/ui-routes/account-routes.js:1117
 #: lib/ui-routes/admin-entities-routes.js:2084
 msgid "Authentication credentials were not provided"
-msgstr "認証情報が提供されませんでした"
+msgstr "認証情報が指定されていません"
 
 #: lib/ui-routes/account-routes.js:1120
 #: lib/ui-routes/admin-entities-routes.js:2087
@@ -451,7 +436,7 @@ msgstr "一時的なエラーです。もう一度お試しください"
 
 #: lib/ui-routes/admin-config-routes.js:193
 msgid "Invalid API key for OpenAI"
-msgstr "OpenAIの無効なAPIキー"
+msgstr "OpenAIのAPIキーが無効です"
 
 #: lib/ui-routes/oauth-config-routes.js:210
 msgid "Unknown"
@@ -459,50 +444,44 @@ msgstr "不明"
 
 #: lib/ui-routes/oauth-config-routes.js:219
 msgid "Indefinite"
-msgstr "不定"
+msgstr "無期限"
 
 #: lib/ui-routes/route-helpers.js:105
 msgid "The server unexpectedly closed the connection."
-msgstr "サーバーが予期せず接続を閉じました。"
+msgstr "サーバーが予期せず接続を切断しました。"
 
 #: lib/ui-routes/route-helpers.js:107
 msgid ""
 "The server unexpectedly closed the connection. This usually happens when "
 "attempting to connect to a TLS port without TLS enabled."
-msgstr ""
-"サーバーが予期せず接続を切断しました。これは通常、TLSが有効になっていないTLS"
-"ポートに接続しようとしたときに発生します。"
+msgstr "サーバーが予期せず接続を切断しました。TLSを有効にせずにTLSポートへ接続しようとすると、通常このエラーが発生します。"
 
 #: lib/ui-routes/route-helpers.js:162
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
-msgstr ""
-"接続がタイムアウトしました。これは通常、ファイアウォールの内側にいるか、間"
-"違ったポートに接続している場合に発生します。"
+msgstr "接続がタイムアウトしました。ファイアウォールで接続が遮断されている場合や、接続先のポートが間違っている場合によく発生します。"
 
 #: lib/ui-routes/route-helpers.js:169
 msgid ""
 "The server refused the connection. This typically occurs if the server is "
 "not running, is overloaded, or you are connecting to the wrong host or port."
-msgstr ""
-"サーバーが接続を拒否しました。これは通常、サーバーが稼動していないか、過負荷"
-"になっているか、間違ったホストまたはポートに接続している場合に発生します。"
+msgstr "サーバーが接続を拒否しました。サーバーが停止している場合や負荷が高い場合、または接続先のホストやポートが間違っている場合によく発生します。"
 
 #: lib/ui-routes/route-helpers.js:223
 msgid "Delegated"
-msgstr "委任された"
+msgstr "委任アクセス"
 
 #: lib/ui-routes/route-helpers.js:224
 msgid "Using credentials from \"%s\""
-msgstr "\"%s\"の認証情報を使用"
+msgstr "アカウント「%s」の認証情報を使用"
 
 #: lib/ui-routes/unsubscribe-routes.js:41
 #: lib/ui-routes/unsubscribe-routes.js:167
 #: lib/ui-routes/unsubscribe-routes.js:197
 #: lib/ui-routes/unsubscribe-routes.js:242
 msgid "Subscription Management"
-msgstr "サブスクリプション管理"
+msgstr "メール配信の管理"
 
 #: lib/ui-routes/unsubscribe-routes.js:186
 #: lib/ui-routes/unsubscribe-routes.js:235
@@ -513,41 +492,32 @@ msgstr "リクエストを処理できませんでした。もう一度お試し
 msgid ""
 "The sign-in was cancelled or the requested access was not granted. Open the "
 "account setup link again to retry."
-msgstr ""
-"サインインがキャンセルされたか、要求されたアクセス権限が付与されませんでし"
-"た。アカウント設定のリンクを再度開いて、やり直してください。"
+msgstr "ログインがキャンセルされたか、必要なアクセスが許可されませんでした。アカウントの設定リンクを開き直して、もう一度お試しください。"
 
 #: workers/api.js:2240
 msgid "Sign-in with the email provider failed: %s"
-msgstr "メールプロバイダーによるログインに失敗しました：%s"
+msgstr "メールサービスへのログインに失敗しました：%s"
 
 #: workers/api.js:2244
 msgid ""
 "Sign-in with the email provider failed: no authorization code was received"
-msgstr ""
-"メールプロバイダーによるサインインに失敗しました：認証コードを受信できません"
-"でした"
+msgstr "メールサービスへのログインに失敗しました：認可コードを受信できませんでした"
 
 #: workers/api.js:2250
 msgid "Sign-in with the email provider failed: the request state is not valid"
-msgstr ""
-"メールプロバイダーでのサインインに失敗しました：リクエストの状態が無効です"
+msgstr "メールサービスへのログインに失敗しました：リクエストの状態が無効です"
 
 #: workers/api.js:2256
 msgid ""
 "The account setup session has expired or was already used. Open the account "
 "setup link again to retry."
-msgstr ""
-"アカウント設定セッションの有効期限が切れたか、すでに使用済みです。アカウント"
-"設定リンクを再度開いて、やり直してください。"
+msgstr "アカウント設定のセッションは、有効期限が切れているか、すでに使用されています。アカウントの設定リンクを開き直して、もう一度お試しください。"
 
 #: workers/api.js:2263
 msgid ""
 "Sign-in with the email provider failed: the stored setup session is not valid"
-msgstr ""
-"メールプロバイダーでのサインインに失敗しました：保存されているセットアップ"
-"セッションが無効です"
+msgstr "メールサービスへのログインに失敗しました：保存されたアカウント設定のセッションが無効です"
 
 #: workers/api.js:3129 workers/api.js:3244
 msgid "Requested page not found"
-msgstr "リクエストされたページが見つかりません"
+msgstr "お探しのページが見つかりません"

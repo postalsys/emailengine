@@ -42,7 +42,7 @@ msgstr[1] "%d certificats"
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr "Cliquez sur <a href=\"%s\">ici</a> pour continuer&mldr;"
+msgstr "Cliquez <a href=\"%s\">ici</a> pour continuer&mldr;"
 
 #: views/unsubscribe.hbs:7 views/unsubscribe.hbs:60 views/unsubscribe.hbs:76
 msgid "Unsubscribe"
@@ -50,11 +50,13 @@ msgstr "Se désabonner"
 
 #: views/unsubscribe.hbs:9
 msgid "Your email address was unsubscribed."
-msgstr "Votre adresse électronique a été désinscrite."
+msgstr "Votre adresse e-mail a été retirée de la liste de diffusion."
 
 #: views/unsubscribe.hbs:11
 msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
-msgstr "C'était une erreur ? Cliquez <a%s>ici</a> pour vous réabonner."
+msgstr ""
+"Vous vous êtes désabonné par erreur ? Cliquez <a%s>ici</a> pour vous "
+"réabonner."
 
 #: views/unsubscribe.hbs:18
 msgid "Re-subscribe"
@@ -62,7 +64,8 @@ msgstr "Se réabonner"
 
 #: views/unsubscribe.hbs:24
 msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
-msgstr "Voulez-vous vraiment réabonner votre adresse e-mail <em>%s</em> ?"
+msgstr ""
+"Voulez-vous vraiment vous réabonner avec l'adresse e-mail <em>%s</em> ?"
 
 #: views/unsubscribe.hbs:33 views/accounts/register/imap-server.hbs:288
 #: views/accounts/register/imap-server.hbs:297
@@ -76,11 +79,12 @@ msgstr "S'abonner"
 
 #: views/unsubscribe.hbs:54
 msgid "Subscription resumed"
-msgstr "Abonnement repris"
+msgstr "Abonnement réactivé"
 
 #: views/unsubscribe.hbs:56
 msgid "Your email address <em>%s</em> was re-subscribed."
-msgstr "Votre adresse e-mail <em>%s</em> a été réinscrite."
+msgstr ""
+"Votre adresse e-mail <em>%s</em> a été réinscrite à la liste de diffusion."
 
 #: views/unsubscribe.hbs:71 views/accounts/register/imap.hbs:25
 msgid "Email address"
@@ -115,20 +119,20 @@ msgid ""
 "Please try again and make sure all permission checkboxes are selected on the "
 "Google consent screen."
 msgstr ""
-"Veuillez réessayer et vous assurer que toutes les cases d'autorisation sont "
-"cochées sur l'écran de consentement de Google."
+"Réessayez en veillant à cocher toutes les cases correspondant aux "
+"autorisations sur la page de consentement de Google."
 
 #: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
 msgid "Try Again"
-msgstr "Essayer de nouveau"
+msgstr "Réessayer"
 
 #: views/accounts/register/index.hbs:6
 msgid "Choose your email account provider"
-msgstr "Choisissez votre fournisseur de compte de messagerie"
+msgstr "Choisissez votre fournisseur de messagerie"
 
 #: views/accounts/register/index.hbs:19
 msgid "Standard IMAP"
-msgstr "IMAP Standard"
+msgstr "IMAP standard"
 
 #: views/accounts/register/imap.hbs:13
 msgid "Your name"
@@ -136,15 +140,16 @@ msgstr "Votre nom"
 
 #: views/accounts/register/imap.hbs:19
 msgid "Enter your full name"
-msgstr "Entrer votre nom et prénom"
+msgstr "Saisissez votre nom complet"
 
 #: views/accounts/register/imap.hbs:35
 msgid "This setup link is restricted to this email address"
-msgstr "Ce lien de configuration est limité à cette adresse e-mail"
+msgstr ""
+"Ce lien de configuration ne peut être utilisé qu'avec cette adresse e-mail"
 
 #: views/accounts/register/imap.hbs:37
 msgid "Enter your email address"
-msgstr "Entrez votre adresse e-mail"
+msgstr "Saisissez votre adresse e-mail"
 
 #: views/accounts/register/imap.hbs:43
 #: views/accounts/register/imap-server.hbs:58
@@ -203,7 +208,7 @@ msgstr "Les comptes %s nécessitent un mot de passe d'application pour %s."
 #: views/accounts/register/imap-server.hbs:92
 #: views/accounts/register/imap-server.hbs:199
 msgid "Application Password"
-msgstr "Mot de passe de l'application"
+msgstr "Mot de passe d'application"
 
 #: views/accounts/register/imap-server.hbs:106
 #: views/accounts/register/imap-server.hbs:213
@@ -224,9 +229,8 @@ msgid ""
 "TLS (also known as SSL) is usually only needed when using port 993. For "
 "other ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
-"TLS (également connu sous le nom de SSL) n'est généralement nécessaire que "
-"lors de l'utilisation du port 993. Pour les autres ports, EmailEngine "
-"revient à l'utilisation du cryptage basé sur STARTTLS."
+"TLS (également appelé SSL) n'est généralement nécessaire que pour le port "
+"993. Pour les autres ports, EmailEngine utilise le chiffrement STARTTLS."
 
 #: views/accounts/register/imap-server.hbs:139
 #: views/accounts/register/imap-server.hbs:246
@@ -246,9 +250,8 @@ msgid ""
 "TLS (also known as SSL) is usually only needed when using port 465. For "
 "other ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
-"TLS (également connu sous le nom de SSL) n'est généralement nécessaire que "
-"lors de l'utilisation du port 465. Pour les autres ports, EmailEngine "
-"revient à l'utilisation du cryptage basé sur STARTTLS."
+"TLS (également appelé SSL) n'est généralement nécessaire que pour le port "
+"465. Pour les autres ports, EmailEngine utilise le chiffrement STARTTLS."
 
 #: views/accounts/register/imap-server.hbs:259
 msgid "Verify connection"
@@ -260,7 +263,7 @@ msgstr "Enregistrer et continuer"
 
 #: views/accounts/register/imap-server.hbs:270
 msgid "Toggle Dropdown"
-msgstr "Permuter le menu déroulant"
+msgstr "Ouvrir ou fermer le menu déroulant"
 
 #: views/accounts/register/imap-server.hbs:274
 msgid "Skip verification"
@@ -273,8 +276,8 @@ msgstr "Le test de connexion a échoué"
 #: views/accounts/register/imap-server.hbs:293
 msgid "We couldn't connect with these settings. Check the errors below."
 msgstr ""
-"Impossible de se connecter avec ces paramètres. Vérifiez les erreurs ci-"
-"dessous."
+"Impossible de se connecter avec ces paramètres. Consultez les messages "
+"d'erreur ci-dessous."
 
 #: views/accounts/register/validating.hbs:35
 msgid "Checking your mail server"
@@ -308,7 +311,8 @@ msgstr "Vous y êtes presque"
 #: views/accounts/register/validating.hbs:70
 msgid "Continue to review your mail server settings."
 msgstr ""
-"Poursuivez la vérification des paramètres de votre serveur de messagerie."
+"Passez à la page suivante pour vérifier les paramètres de votre serveur de "
+"messagerie."
 
 #: views/partials/public_test_labels.hbs:9
 msgid "Error"
@@ -343,12 +347,12 @@ msgid ""
 "This setup link can only be used with one specific email account, and a "
 "different one was used."
 msgstr ""
-"Ce lien de configuration ne peut être utilisé qu’avec un compte de "
-"messagerie précis, mais un autre compte a été utilisé."
+"Ce lien de configuration est réservé à un compte de messagerie précis. Vous "
+"vous êtes connecté avec un autre compte."
 
 #: views/account-identity-error.hbs:18
 msgid "Expected account"
-msgstr "Compte attendu"
+msgstr "Compte requis"
 
 #: views/account-identity-error.hbs:21
 msgid "Account used"
@@ -359,8 +363,8 @@ msgid ""
 "Try again and use the expected account. If you believe this is a mistake, "
 "contact the service that sent you this link."
 msgstr ""
-"Réessayez en utilisant le compte attendu. Si vous pensez qu’il s’agit d’une "
-"erreur, contactez le service qui vous a envoyé ce lien."
+"Réessayez avec le compte requis. Si vous pensez qu'il s'agit d'une erreur, "
+"contactez le service qui vous a envoyé ce lien."
 
 #: lib/autodetect-imap-settings.js:151
 msgid ""
@@ -369,16 +373,15 @@ msgid ""
 "please use the \"Sign in with Microsoft\" button to securely connect your "
 "account."
 msgstr ""
-"Microsoft a désactivé les connexions basées sur un mot de passe (y compris "
-"les mots de passe des applications) pour les comptes de messagerie "
-"Outlook.com, Hotmail.com et Microsoft 365. Pour continuer, veuillez utiliser "
-"le bouton \"Sign in with Microsoft\" pour connecter votre compte en toute "
-"sécurité."
+"Microsoft ne permet plus de se connecter par mot de passe aux comptes "
+"Outlook.com, Hotmail.com et Microsoft 365, y compris avec un mot de passe "
+"d'application. Pour continuer, cliquez sur le bouton \"Sign in with "
+"Microsoft\" afin de connecter votre compte en toute sécurité."
 
 #: lib/tools.js:1526 lib/ui-routes/unsubscribe-routes.js:31
 #: lib/ui-routes/unsubscribe-routes.js:99
 msgid "Invalid input"
-msgstr "Entrée invalide"
+msgstr "Données saisies invalides"
 
 #: lib/tools.js:2392
 msgid "Signature validation failed"
@@ -387,7 +390,7 @@ msgstr "La validation de la signature a échoué"
 #: lib/tools.js:2415 lib/tools.js:2421 lib/tools.js:2426
 #: lib/ui-routes/account-routes.js:1337
 msgid "Invalid or expired account setup URL"
-msgstr "URL de configuration du compte invalide ou expirée"
+msgstr "Le lien de configuration du compte est invalide ou a expiré"
 
 #: lib/ui-routes/account-routes.js:481 lib/ui-routes/account-routes.js:525
 #: lib/ui-routes/account-routes.js:859 lib/ui-routes/account-routes.js:936
@@ -406,12 +409,12 @@ msgstr "Requête invalide. Vérifiez vos informations et réessayez."
 msgid ""
 "Too many attempts for this setup link. Request a new setup link to continue."
 msgstr ""
-"Trop de tentatives pour ce lien de configuration. Demandez un nouveau lien "
-"de configuration pour continuer."
+"Trop de tentatives avec ce lien de configuration. Demandez un nouveau lien "
+"pour continuer."
 
 #: lib/ui-routes/account-routes.js:983 lib/ui-routes/account-routes.js:1387
 msgid "Couldn't set up account. Try again."
-msgstr "Impossible de créer un compte. Veuillez réessayer."
+msgstr "Impossible de configurer le compte. Veuillez réessayer."
 
 #: lib/ui-routes/account-routes.js:1071 lib/ui-routes/account-routes.js:1111
 #: lib/ui-routes/admin-entities-routes.js:2078
@@ -426,7 +429,7 @@ msgstr "Nom d'utilisateur ou mot de passe invalide"
 #: lib/ui-routes/account-routes.js:1079 lib/ui-routes/account-routes.js:1131
 #: lib/ui-routes/admin-entities-routes.js:2098
 msgid "Connection timed out"
-msgstr "Connexion expirée"
+msgstr "Le délai de connexion est dépassé"
 
 #: lib/ui-routes/account-routes.js:1085 lib/ui-routes/account-routes.js:1134
 #: lib/ui-routes/admin-entities-routes.js:2101
@@ -443,7 +446,7 @@ msgstr "Erreur de protocole TLS"
 #: lib/ui-routes/account-routes.js:1117
 #: lib/ui-routes/admin-entities-routes.js:2084
 msgid "Authentication credentials were not provided"
-msgstr "Les informations d'authentification n'ont pas été fournies"
+msgstr "Les identifiants de connexion n'ont pas été fournis"
 
 #: lib/ui-routes/account-routes.js:1120
 #: lib/ui-routes/admin-entities-routes.js:2087
@@ -469,7 +472,7 @@ msgstr "Inconnu"
 
 #: lib/ui-routes/oauth-config-routes.js:219
 msgid "Indefinite"
-msgstr "Indéfini"
+msgstr "Sans limite de durée"
 
 #: lib/ui-routes/route-helpers.js:105
 msgid "The server unexpectedly closed the connection."
@@ -481,25 +484,24 @@ msgid ""
 "attempting to connect to a TLS port without TLS enabled."
 msgstr ""
 "Le serveur a fermé la connexion de manière inattendue. Cela se produit "
-"généralement lors d'une tentative de connexion à un port TLS sans que le "
-"protocole TLS soit activé."
+"généralement si vous vous connectez à un port TLS sans avoir activé TLS."
 
 #: lib/ui-routes/route-helpers.js:162
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
 msgstr ""
-"La connexion a expiré. Cela se produit généralement si vous êtes derrière un "
-"pare-feu ou si vous vous connectez au mauvais port."
+"Le délai de connexion est dépassé. Cela se produit généralement si un "
+"pare-feu bloque la connexion ou si vous utilisez le mauvais port."
 
 #: lib/ui-routes/route-helpers.js:169
 msgid ""
 "The server refused the connection. This typically occurs if the server is "
 "not running, is overloaded, or you are connecting to the wrong host or port."
 msgstr ""
-"Le serveur a refusé la connexion. Cela se produit généralement si le serveur "
-"ne fonctionne pas, s'il est surchargé ou si vous vous connectez au mauvais "
-"hôte ou au mauvais port."
+"Le serveur a refusé la connexion. Cela se produit généralement si le "
+"serveur est arrêté ou surchargé, ou si vous utilisez le mauvais serveur ou "
+"le mauvais port."
 
 #: lib/ui-routes/route-helpers.js:223
 msgid "Delegated"
@@ -507,7 +509,7 @@ msgstr "Délégué"
 
 #: lib/ui-routes/route-helpers.js:224
 msgid "Using credentials from \"%s\""
-msgstr "Utilisation des informations d'identification de \"%s\""
+msgstr "Utilise les identifiants du compte \"%s\""
 
 #: lib/ui-routes/unsubscribe-routes.js:41
 #: lib/ui-routes/unsubscribe-routes.js:167

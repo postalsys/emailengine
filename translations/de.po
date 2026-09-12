@@ -55,8 +55,8 @@ msgstr "Ihre E-Mail-Adresse wurde aus dem Verteiler ausgetragen."
 #: views/unsubscribe.hbs:11
 msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
 msgstr ""
-"War das ein Fehler? Klicken Sie <a%s>hier</a>, um Ihr Abonnement wieder zu "
-"aktivieren."
+"War das ein Versehen? Klicken Sie <a%s>hier</a>, um Ihr Abonnement wieder "
+"zu aktivieren."
 
 #: views/unsubscribe.hbs:18
 msgid "Re-subscribe"
@@ -65,8 +65,8 @@ msgstr "Erneut abonnieren"
 #: views/unsubscribe.hbs:24
 msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
 msgstr ""
-"Sind Sie sicher, dass Sie Ihre E-Mail-Adresse <em>%s</em> erneut abonnieren "
-"möchten?"
+"Möchten Sie Ihre E-Mail-Adresse <em>%s</em> wirklich wieder in den "
+"Verteiler aufnehmen lassen?"
 
 #: views/unsubscribe.hbs:33 views/accounts/register/imap-server.hbs:288
 #: views/accounts/register/imap-server.hbs:297
@@ -80,7 +80,7 @@ msgstr "Abonnieren"
 
 #: views/unsubscribe.hbs:54
 msgid "Subscription resumed"
-msgstr "Abonnement fortgesetzt"
+msgstr "Abonnement wieder aktiviert"
 
 #: views/unsubscribe.hbs:56
 msgid "Your email address <em>%s</em> was re-subscribed."
@@ -100,16 +100,15 @@ msgstr ""
 
 #: views/oauth-scope-error.hbs:5
 msgid "Insufficient Permissions"
-msgstr "Ungenügende Berechtigungen"
+msgstr "Fehlende Berechtigungen"
 
 #: views/oauth-scope-error.hbs:10
 msgid ""
 "All requested permissions are required for this service to function "
 "properly. Some required permissions were not granted during sign-in."
 msgstr ""
-"Alle angeforderten Berechtigungen sind erforderlich, damit dieser Dienst "
-"ordnungsgemäß funktioniert. Einige der erforderlichen Berechtigungen wurden "
-"bei der Anmeldung nicht erteilt."
+"Damit dieser Dienst richtig funktioniert, benötigt er alle angeforderten "
+"Berechtigungen. Einige davon wurden bei der Anmeldung nicht erteilt."
 
 #: views/oauth-scope-error.hbs:14
 msgid "The following permissions were not granted:"
@@ -120,9 +119,9 @@ msgid ""
 "Please try again and make sure all permission checkboxes are selected on the "
 "Google consent screen."
 msgstr ""
-"Bitte versuchen Sie es erneut und stellen Sie sicher, dass auf dem Google-"
-"Einwilligungsbildschirm alle Kontrollkästchen für die Berechtigungen "
-"aktiviert sind."
+"Versuchen Sie es erneut und achten Sie darauf, dass auf der Google-Seite "
+"zur Einwilligung alle Kästchen für die angeforderten Berechtigungen "
+"angekreuzt sind."
 
 #: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
 msgid "Try Again"
@@ -134,7 +133,7 @@ msgstr "Wählen Sie Ihren E-Mail-Anbieter"
 
 #: views/accounts/register/index.hbs:19
 msgid "Standard IMAP"
-msgstr "Standard IMAP"
+msgstr "Standard-IMAP"
 
 #: views/accounts/register/imap.hbs:13
 msgid "Your name"
@@ -146,7 +145,8 @@ msgstr "Geben Sie Ihren vollständigen Namen ein"
 
 #: views/accounts/register/imap.hbs:35
 msgid "This setup link is restricted to this email address"
-msgstr "Dieser Einrichtungslink ist auf diese E-Mail-Adresse beschränkt"
+msgstr ""
+"Dieser Einrichtungslink kann nur für diese E-Mail-Adresse verwendet werden"
 
 #: views/accounts/register/imap.hbs:37
 msgid "Enter your email address"
@@ -160,7 +160,7 @@ msgstr "Passwort"
 
 #: views/accounts/register/imap.hbs:49
 msgid "Enter your account password"
-msgstr "Passwort für Ihr Konto eingeben"
+msgstr "Geben Sie das Passwort für Ihr Konto ein"
 
 #: views/accounts/register/imap.hbs:55
 #: views/accounts/register/validating.hbs:74
@@ -171,16 +171,16 @@ msgstr "Weiter"
 msgid ""
 "Server settings could not be detected automatically for %s. Enter them below."
 msgstr ""
-"Die Server-Einstellungen für %s konnten nicht automatisch ermittelt werden. "
-"Geben Sie diese bitte unten ein."
+"Die Servereinstellungen für %s konnten nicht automatisch ermittelt werden. "
+"Geben Sie sie unten ein."
 
 #: views/accounts/register/imap-server.hbs:34
 msgid ""
 "We couldn't sign in to your mail server with those settings. Check them and "
 "try again."
 msgstr ""
-"Mit diesen Einstellungen konnten wir uns nicht bei Ihrem E-Mail-Server "
-"anmelden. Bitte überprüfen Sie die Einstellungen und versuchen Sie es erneut."
+"Die Anmeldung bei Ihrem E-Mail-Server war mit diesen Einstellungen nicht "
+"möglich. Überprüfen Sie die Einstellungen und versuchen Sie es erneut."
 
 #: views/accounts/register/imap-server.hbs:41
 msgid "IMAP"
@@ -199,17 +199,17 @@ msgstr "Wichtig"
 #: views/accounts/register/imap-server.hbs:81
 #: views/accounts/register/imap-server.hbs:188
 msgid "Instructions"
-msgstr "Anweisungen"
+msgstr "Anleitung"
 
 #: views/accounts/register/imap-server.hbs:83
 #: views/accounts/register/imap-server.hbs:190
 msgid "%s accounts require an application password for %s."
-msgstr "%s-Konten erfordern ein App-Passwort für %s."
+msgstr "%s-Konten benötigen für %s ein App-Passwort."
 
 #: views/accounts/register/imap-server.hbs:92
 #: views/accounts/register/imap-server.hbs:199
 msgid "Application Password"
-msgstr "Anwendungspasswort"
+msgstr "App-Passwort"
 
 #: views/accounts/register/imap-server.hbs:106
 #: views/accounts/register/imap-server.hbs:213
@@ -230,9 +230,8 @@ msgid ""
 "TLS (also known as SSL) is usually only needed when using port 993. For "
 "other ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
-"TLS (auch bekannt als SSL) wird normalerweise nur bei der Verwendung von "
-"Port 993 benötigt. Bei anderen Ports greift EmailEngine auf die STARTTLS-"
-"basierte Verschlüsselung zurück."
+"TLS (auch als SSL bekannt) wird normalerweise nur für Port 993 benötigt. "
+"Bei anderen Ports verwendet EmailEngine eine Verschlüsselung per STARTTLS."
 
 #: views/accounts/register/imap-server.hbs:139
 #: views/accounts/register/imap-server.hbs:246
@@ -252,9 +251,8 @@ msgid ""
 "TLS (also known as SSL) is usually only needed when using port 465. For "
 "other ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
-"TLS (auch bekannt als SSL) wird normalerweise nur bei der Verwendung von "
-"Port 465 benötigt. Bei anderen Ports greift EmailEngine auf die STARTTLS-"
-"basierte Verschlüsselung zurück."
+"TLS (auch als SSL bekannt) wird normalerweise nur für Port 465 benötigt. "
+"Bei anderen Ports verwendet EmailEngine eine Verschlüsselung per STARTTLS."
 
 #: views/accounts/register/imap-server.hbs:259
 msgid "Verify connection"
@@ -266,7 +264,7 @@ msgstr "Speichern und weiter"
 
 #: views/accounts/register/imap-server.hbs:270
 msgid "Toggle Dropdown"
-msgstr "Dropdown umschalten"
+msgstr "Menü öffnen oder schließen"
 
 #: views/accounts/register/imap-server.hbs:274
 msgid "Skip verification"
@@ -279,24 +277,24 @@ msgstr "Verbindungstest fehlgeschlagen"
 #: views/accounts/register/imap-server.hbs:293
 msgid "We couldn't connect with these settings. Check the errors below."
 msgstr ""
-"Verbindung mit diesen Einstellungen nicht möglich. Prüfen Sie die Fehler "
-"unten."
+"Mit diesen Einstellungen konnte keine Verbindung hergestellt werden. "
+"Beachten Sie die Fehlermeldungen unten."
 
 #: views/accounts/register/validating.hbs:35
 msgid "Checking your mail server"
-msgstr "Überprüfung Ihres E-Mail-Servers"
+msgstr "Ihr E-Mail-Server wird geprüft"
 
 #: views/accounts/register/validating.hbs:40
 msgid "Still checking. This can take up to a minute."
-msgstr "Wird noch geprüft. Dies kann bis zu einer Minute dauern."
+msgstr "Die Prüfung läuft noch. Sie kann bis zu einer Minute dauern."
 
 #: views/accounts/register/validating.hbs:47
 msgid "Enter server settings manually"
-msgstr "Server-Einstellungen manuell eingeben"
+msgstr "Servereinstellungen manuell eingeben"
 
 #: views/accounts/register/validating.hbs:53
 msgid "We couldn't sign in to your mail server"
-msgstr "Wir konnten uns nicht bei Ihrem E-Mail-Server anmelden"
+msgstr "Die Anmeldung bei Ihrem E-Mail-Server war nicht möglich"
 
 #: views/accounts/register/validating.hbs:54
 msgid "Check the settings on the next page and try again."
@@ -306,7 +304,7 @@ msgstr ""
 
 #: views/accounts/register/validating.hbs:61
 msgid "Continue to server settings"
-msgstr "Weiter zu den Server-Einstellungen"
+msgstr "Weiter zu den Servereinstellungen"
 
 #: views/accounts/register/validating.hbs:69
 msgid "Almost there"
@@ -314,7 +312,9 @@ msgstr "Fast geschafft"
 
 #: views/accounts/register/validating.hbs:70
 msgid "Continue to review your mail server settings."
-msgstr "Überprüfen Sie weiterhin die Einstellungen Ihres Mail-Servers."
+msgstr ""
+"Fahren Sie fort, um auf der nächsten Seite die Einstellungen Ihres "
+"E-Mail-Servers zu überprüfen."
 
 #: views/partials/public_test_labels.hbs:9
 msgid "Error"
@@ -334,7 +334,7 @@ msgstr "Verbindung zum SMTP-Server nicht möglich"
 
 #: views/partials/public_test_labels.hbs:13
 msgid "Server response:"
-msgstr "Server-Antwort:"
+msgstr "Serverantwort:"
 
 #: views/partials/public_test_labels.hbs:15
 msgid "Request failed."
@@ -349,12 +349,12 @@ msgid ""
 "This setup link can only be used with one specific email account, and a "
 "different one was used."
 msgstr ""
-"Dieser Einrichtungslink kann nur mit einem bestimmten E-Mail-Konto verwendet "
-"werden, es wurde jedoch ein anderes verwendet."
+"Dieser Einrichtungslink ist für ein bestimmtes E-Mail-Konto vorgesehen. Sie "
+"haben sich jedoch mit einem anderen Konto angemeldet."
 
 #: views/account-identity-error.hbs:18
 msgid "Expected account"
-msgstr "Erwartetes Konto"
+msgstr "Vorgesehenes Konto"
 
 #: views/account-identity-error.hbs:21
 msgid "Account used"
@@ -365,9 +365,9 @@ msgid ""
 "Try again and use the expected account. If you believe this is a mistake, "
 "contact the service that sent you this link."
 msgstr ""
-"Versuchen Sie es erneut und verwenden Sie das erwartete Konto. Falls Sie "
-"glauben, dass dies ein Fehler ist, wenden Sie sich an den Dienst, der Ihnen "
-"diesen Link gesendet hat."
+"Versuchen Sie es erneut mit dem vorgesehenen Konto. Wenn Sie einen Fehler "
+"vermuten, wenden Sie sich an den Anbieter, der Ihnen diesen Link geschickt "
+"hat."
 
 #: lib/autodetect-imap-settings.js:151
 msgid ""
@@ -376,10 +376,10 @@ msgid ""
 "please use the \"Sign in with Microsoft\" button to securely connect your "
 "account."
 msgstr ""
-"Microsoft hat die kennwortbasierte Anmeldung (einschließlich Kennwörter für "
-"Anwendungen) für Outlook.com-, Hotmail.com- und Microsoft 365-E-Mail-Konten "
-"deaktiviert. Um fortzufahren, verwenden Sie bitte die Schaltfläche \"Sign in "
-"with Microsoft\", um Ihr Konto sicher zu verbinden."
+"Microsoft erlaubt für E-Mail-Konten bei Outlook.com, Hotmail.com und "
+"Microsoft 365 keine Anmeldung mit einem Passwort mehr. Das gilt auch für "
+"App-Passwörter. Klicken Sie auf \"Sign in with Microsoft\", um Ihr Konto "
+"sicher zu verbinden und fortzufahren."
 
 #: lib/tools.js:1526 lib/ui-routes/unsubscribe-routes.js:31
 #: lib/ui-routes/unsubscribe-routes.js:99
@@ -393,7 +393,7 @@ msgstr "Signaturüberprüfung fehlgeschlagen"
 #: lib/tools.js:2415 lib/tools.js:2421 lib/tools.js:2426
 #: lib/ui-routes/account-routes.js:1337
 msgid "Invalid or expired account setup URL"
-msgstr "Ungültige oder abgelaufene URL für die Kontoeinrichtung"
+msgstr "Der Link zur Kontoeinrichtung ist ungültig oder abgelaufen"
 
 #: lib/ui-routes/account-routes.js:481 lib/ui-routes/account-routes.js:525
 #: lib/ui-routes/account-routes.js:859 lib/ui-routes/account-routes.js:936
@@ -413,8 +413,8 @@ msgstr ""
 msgid ""
 "Too many attempts for this setup link. Request a new setup link to continue."
 msgstr ""
-"Zu viele Versuche für diesen Einrichtungslink. Fordern Sie einen neuen "
-"Einrichtungslink an, um fortzufahren."
+"Zu viele Versuche mit diesem Einrichtungslink. Fordern Sie einen neuen Link "
+"an, um fortzufahren."
 
 #: lib/ui-routes/account-routes.js:983 lib/ui-routes/account-routes.js:1387
 msgid "Couldn't set up account. Try again."
@@ -428,12 +428,12 @@ msgstr "Server-Hostname wurde nicht gefunden"
 #: lib/ui-routes/account-routes.js:1074 lib/ui-routes/account-routes.js:1114
 #: lib/ui-routes/admin-entities-routes.js:2081
 msgid "Invalid username or password"
-msgstr "Ungültiger Benutzername oder Passwort"
+msgstr "Benutzername oder Passwort ist falsch"
 
 #: lib/ui-routes/account-routes.js:1079 lib/ui-routes/account-routes.js:1131
 #: lib/ui-routes/admin-entities-routes.js:2098
 msgid "Connection timed out"
-msgstr "Verbindung abgelaufen"
+msgstr "Zeitüberschreitung beim Verbindungsaufbau"
 
 #: lib/ui-routes/account-routes.js:1085 lib/ui-routes/account-routes.js:1134
 #: lib/ui-routes/admin-entities-routes.js:2101
@@ -450,7 +450,7 @@ msgstr "TLS-Protokollfehler"
 #: lib/ui-routes/account-routes.js:1117
 #: lib/ui-routes/admin-entities-routes.js:2084
 msgid "Authentication credentials were not provided"
-msgstr "Es wurden keine Authentifizierungsdaten angegeben"
+msgstr "Es wurden keine Anmeldedaten angegeben"
 
 #: lib/ui-routes/account-routes.js:1120
 #: lib/ui-routes/admin-entities-routes.js:2087
@@ -487,27 +487,25 @@ msgid ""
 "The server unexpectedly closed the connection. This usually happens when "
 "attempting to connect to a TLS port without TLS enabled."
 msgstr ""
-"Der Server hat die Verbindung unerwartet geschlossen. Dies geschieht in der "
-"Regel, wenn versucht wird, eine Verbindung zu einem TLS-Port ohne "
-"aktiviertes TLS herzustellen."
+"Der Server hat die Verbindung unerwartet geschlossen. Das passiert meist, "
+"wenn Sie sich mit einem TLS-Port verbinden, ohne TLS zu aktivieren."
 
 #: lib/ui-routes/route-helpers.js:162
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
 msgstr ""
-"Zeitüberschreitung bei der Verbindung. Dies tritt in der Regel auf, wenn Sie "
-"sich hinter einer Firewall befinden oder eine Verbindung zum falschen Port "
-"herstellen."
+"Zeitüberschreitung beim Verbindungsaufbau. Das passiert meist, wenn eine "
+"Firewall die Verbindung blockiert oder Sie den falschen Port verwenden."
 
 #: lib/ui-routes/route-helpers.js:169
 msgid ""
 "The server refused the connection. This typically occurs if the server is "
 "not running, is overloaded, or you are connecting to the wrong host or port."
 msgstr ""
-"Der Server hat die Verbindung abgelehnt. Dies geschieht in der Regel, wenn "
-"der Server nicht läuft, überlastet ist oder Sie sich mit dem falschen Host "
-"oder Port verbinden."
+"Der Server hat die Verbindung abgelehnt. Das passiert meist, wenn der "
+"Server nicht läuft, überlastet ist oder Sie den falschen Server oder Port "
+"verwenden."
 
 #: lib/ui-routes/route-helpers.js:223
 msgid "Delegated"
@@ -515,19 +513,20 @@ msgstr "Delegiert"
 
 #: lib/ui-routes/route-helpers.js:224
 msgid "Using credentials from \"%s\""
-msgstr "Verwendung von Anmeldeinformationen aus \"%s\""
+msgstr "Verwendet die Anmeldedaten des Kontos \"%s\""
 
 #: lib/ui-routes/unsubscribe-routes.js:41
 #: lib/ui-routes/unsubscribe-routes.js:167
 #: lib/ui-routes/unsubscribe-routes.js:197
 #: lib/ui-routes/unsubscribe-routes.js:242
 msgid "Subscription Management"
-msgstr "Mitgliederverwaltung"
+msgstr "Abonnement verwalten"
 
 #: lib/ui-routes/unsubscribe-routes.js:186
 #: lib/ui-routes/unsubscribe-routes.js:235
 msgid "Couldn't process request. Try again."
-msgstr "Die Anfrage konnte nicht verarbeitet werden. Bitte versuche es erneut."
+msgstr ""
+"Die Anfrage konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut."
 
 #: workers/api.js:2231
 msgid ""
