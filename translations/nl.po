@@ -38,7 +38,7 @@ msgstr[1] "%d dagen"
 msgid "%d certificate"
 msgid_plural "%d certificates"
 msgstr[0] "%d certificaat"
-msgstr[1] ""
+msgstr[1] "%d certificaten"
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
