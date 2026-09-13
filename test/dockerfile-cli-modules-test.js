@@ -11,9 +11,11 @@ const assert = require('node:assert').strict;
 const fs = require('fs');
 const Path = require('path');
 
+const { readDockerfile, copiedSources } = require('./helpers/dockerfile');
+
 const repoRoot = Path.join(__dirname, '..');
 const cliSource = fs.readFileSync(Path.join(repoRoot, 'bin', 'emailengine.js'), 'utf8');
-const dockerfile = fs.readFileSync(Path.join(repoRoot, 'Dockerfile'), 'utf8');
+const dockerfile = readDockerfile();
 
 // Root-level requires only: `require('../name')` with no further path separator, in any quote style
 // (single, double, backtick). `../lib/x` and bare package names are out of scope - lib/ is copied
@@ -35,25 +37,6 @@ function resolveRootModule(name) {
     } catch (err) {
         return null;
     }
-}
-
-// Source paths of every COPY in the Dockerfile. Handles the real Dockerfile grammar rather than a
-// single (source) capture: any number of `--flag[=value]` options and multiple sources (the last
-// token is the destination). A too-narrow regex here caused false failures on legitimate refactors
-// (a second flag, or a consolidated multi-source COPY).
-function copiedSources(dockerfileText) {
-    let sources = new Set();
-    for (let match of dockerfileText.matchAll(/^COPY\s+(.+)$/gm)) {
-        // Drop --flag tokens, then every remaining token except the last (the destination) is a source.
-        let tokens = match[1]
-            .trim()
-            .split(/\s+/)
-            .filter(token => !token.startsWith('--'));
-        for (let source of tokens.slice(0, -1)) {
-            sources.add(source);
-        }
-    }
-    return sources;
 }
 
 const copiedFiles = copiedSources(dockerfile);

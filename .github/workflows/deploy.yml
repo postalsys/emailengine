@@ -115,6 +115,8 @@ jobs:
                   platforms: ${{ matrix.platform }}
                   load: true
                   tags: emailengine:smoke-test
+                  build-args: |
+                      EE_COMMIT_HASH=${{ github.sha }}
                   # Without a cache backend BuildKit starts cold on every run: setup-buildx-action
                   # creates a fresh builder on an ephemeral runner. The scope is per-architecture so
                   # the two legs cannot evict each other's entries.
@@ -136,6 +138,8 @@ jobs:
                   outputs: type=image,"name=docker.io/${{ github.repository }},ghcr.io/${{ github.repository }}",push-by-digest=true,name-canonical=true,push=true
                   cache-from: type=gha,scope=${{ matrix.arch }}
                   cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+                  build-args: |
+                      EE_COMMIT_HASH=${{ github.sha }}
 
             - name: Export digest
               run: |

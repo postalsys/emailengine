@@ -116,6 +116,8 @@ jobs:
                   load: true
                   tags: emailengine:smoke-test
                   cache-from: type=gha,scope=${{ matrix.arch }}
+                  build-args: |
+                      EE_COMMIT_HASH=${{ github.sha }}
 
             - name: Smoke test the CLI inside the image
               run: bash .github/docker-smoke-test.sh emailengine:smoke-test
@@ -133,6 +135,8 @@ jobs:
                   outputs: type=image,"name=docker.io/${{ github.repository }},ghcr.io/${{ github.repository }}",push-by-digest=true,name-canonical=true,push=true
                   cache-from: type=gha,scope=${{ matrix.arch }}
                   cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+                  build-args: |
+                      EE_COMMIT_HASH=${{ github.sha }}
 
             - name: Export digest
               run: |

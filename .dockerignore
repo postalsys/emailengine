@@ -1,0 +1,44 @@
+# The Dockerfile copies an explicit allowlist of paths, so this mostly just keeps the build context
+# from being sent to the daemon - locally that is node_modules and the several hundred megabytes of
+# built binaries in ee-dist. The `**` rules below are the exception: those paths sit inside directories
+# the Dockerfile does copy, so they change what ends up in the image as well.
+#
+# Deliberately a denylist rather than "ignore everything, then un-ignore what is copied": a new COPY
+# in the Dockerfile should just work, not fail on a file this list forgot to let through.
+
+.git
+.github
+node_modules
+
+# Build outputs and test artifacts
+ee-dist
+dist
+test-results
+blob-report
+playwright-report
+coverage
+
+# Not part of the runtime image
+test
+examples
+screenshots
+scripts
+systemd
+manual-test
+
+# Local environment, secrets and editor state. keylog.txt is a TLS key log (npm run dev writes one);
+# it is gitignored, but nothing else would keep it out of the context and the layer cache.
+.env*
+keylog.txt
+*.heapsnapshot
+*.cpuprofile
+*.heapprofile
+core.*
+.claude
+.vscode
+.idea
+
+# Anchored at every level, not just the root: these turn up inside directories that ARE copied
+# (static/.DS_Store was shipping in the image).
+**/.DS_Store
+**/*.log

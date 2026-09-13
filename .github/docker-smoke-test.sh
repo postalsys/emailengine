@@ -42,4 +42,20 @@ for cmd in scan encrypt; do
     fi
 done
 
+# The image has to be able to say which commit it was built from. update-info.sh writes an empty
+# commit rather than failing when EE_COMMIT_HASH is missing, and the Dockerfile requires the arg
+# precisely so that cannot happen - but the Dockerfile's check is a source-level one, and this is the
+# only place the built artifact is asked the question directly. Also catches the commit being right in
+# the Dockerfile and wrong in the image, e.g. a stale layer replayed from the build cache.
+commit=$(docker run --rm --entrypoint node "$image" -p "require('/emailengine/version-info.json').commit" 2>&1) && rc=0 || rc=$?
+
+if [ "$rc" -ne 0 ]; then
+    echo "::error::could not read version-info.json from the image"
+    printf '%s\n' "$commit"
+    status=1
+elif [ -z "${commit//[[:space:]]/}" ] || [ "$commit" = "undefined" ]; then
+    echo "::error::the image reports no commit hash - it was built without a usable EE_COMMIT_HASH build arg"
+    status=1
+fi
+
 exit $status

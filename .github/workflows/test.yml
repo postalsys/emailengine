@@ -159,6 +159,8 @@ jobs:
                   platforms: linux/amd64
                   load: true
                   tags: emailengine:scan
+                  build-args: |
+                      EE_COMMIT_HASH=${{ github.sha }}
 
             - name: Scan for known vulnerabilities
               uses: aquasecurity/trivy-action@v0.36.0

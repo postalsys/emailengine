@@ -55,15 +55,23 @@ COPY sbom.json sbom.json
 COPY scan.js scan.js
 COPY server.js server.js
 
-RUN mkdir -p .git/refs/heads
-COPY .git/refs/heads/master .git/refs/heads/master
+# The commit hash is passed in rather than read out of the build context, which used to be
+# `COPY .git/refs/heads/master` and tied the build to one branch name. See
+# test/docker-commit-hash-guardrail-test.js for the full account.
+#
+# Declared HERE and not up with the other ARGs: an ARG's value is part of the cache key of every RUN
+# below it, so moving this above `npm ci` makes the install layer miss on every single commit.
+ARG EE_COMMIT_HASH
 
-# version-info.json is generated here and the inputs are dropped again, so neither the git ref nor
-# the script itself ends up in the runtime image.
+# version-info.json is generated here and the script is dropped again, so it does not end up in the
+# runtime image. The `:?` check is the whole enforcement that a commit was supplied: update-info.sh
+# deliberately falls through to an empty commit rather than failing, because its non-Docker callers
+# (render.yaml, the deploy workflow) do not all have one to give. Here it is required, so a build that
+# forgets the arg fails loudly instead of shipping an image that cannot say what it is built from.
 COPY update-info.sh update-info.sh
-RUN chmod +x ./update-info.sh \
+RUN : "${EE_COMMIT_HASH:?EE_COMMIT_HASH build arg is required, e.g. --build-arg EE_COMMIT_HASH=\$(git rev-parse HEAD)}" \
     && ./update-info.sh \
-    && rm -rf .git update-info.sh
+    && rm -f update-info.sh
 
 # Runtime stage.
 FROM node:24-alpine@sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf
