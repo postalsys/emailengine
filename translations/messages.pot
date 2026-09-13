@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-09-12 10:58+0000\n"
+"POT-Creation-Date: 2026-09-13 15:03+0000\n"
 
 #: views/error.hbs:6
 #: workers/api.js:3130
@@ -27,7 +27,7 @@ msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
 
-#: views/config/tls.hbs:423
+#: views/config/tls.hbs:416
 msgid "%d certificate"
 msgid_plural "%d certificates"
 msgstr[0] ""
@@ -35,6 +35,31 @@ msgstr[1] ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:28
+#: views/account-identity-error.hbs:32
+msgid "Try Again"
 msgstr ""
 
 #: views/unsubscribe.hbs:7
@@ -87,31 +112,6 @@ msgstr ""
 msgid ""
 "This link is not valid. Use the unsubscribe link from the email you "
 "received."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:28
-#: views/account-identity-error.hbs:32
-msgid "Try Again"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:13
