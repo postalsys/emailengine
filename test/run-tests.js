@@ -124,7 +124,17 @@ async function main() {
         await waitForServer();
     }
 
-    let runner = spawn(process.execPath, ['--test', `--test-timeout=${TEST_TIMEOUT}`, ...tier.args, ...files], {
+    // --test-force-exit: requiring the lib/db chain opens a Redis client and a BullMQ connection that
+    // nothing closes, so a file whose tests have all passed can still keep its process alive and, since
+    // `node --test` waits for every child, hang the whole tier. Individual files have always worked
+    // around it by force-exiting themselves (test/helpers/redis-teardown.js), but that only covers the
+    // files that remember to, and it covered nothing at all when a file's teardown sat inside a test
+    // that got skipped: test/account-revoke-on-delete-test.js skips without Gmail credentials, and on
+    // dependabot pull requests - where `${{ secrets.X }}` expands to an empty string - the unit tier
+    // hung until the job timeout instead of skipping one suite. Forcing the exit here ends the class
+    // for both tiers and for files that do not exist yet. A failing test still fails: the flag only
+    // takes effect once the run has finished, and the exit code is preserved.
+    let runner = spawn(process.execPath, ['--test', '--test-force-exit', `--test-timeout=${TEST_TIMEOUT}`, ...tier.args, ...files], {
         cwd: PROJECT_ROOT,
         stdio: 'inherit'
     });

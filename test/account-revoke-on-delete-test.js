@@ -12,6 +12,11 @@ const { GmailOauth } = require('../lib/oauth/gmail');
 const oauth2AppsModule = require('../lib/oauth2-apps');
 const { Account } = require('../lib/account');
 const { REDIS_PREFIX } = require('../lib/consts');
+const registerRedisTeardown = require('./helpers/redis-teardown');
+
+// Module level, not inside the test: when the suite skips for missing credentials a `t.after()`
+// registered in that callback never runs, and this file used to hang instead of skipping cleanly.
+registerRedisTeardown();
 
 // Skip the entire suite if Gmail test credentials aren't provisioned for this environment.
 const hasGmailCredentials = !!(
@@ -113,7 +118,6 @@ test('OAuth2 revoke on account delete', { skip: hasGmailCredentials ? false : 'G
         oauth2AppsModule.oauth2Apps.getClient = originalGetClient;
         await new Promise(resolve => captureServer.close(resolve));
         await redis.quit();
-        setTimeout(() => process.exit(), 1000).unref();
     });
 
     function buildAccount(accountId) {
