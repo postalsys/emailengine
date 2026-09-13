@@ -15,7 +15,7 @@
 
             {{> ui/form-field id="name" label="Full name" value=values.name error=errors.name hint="Name shown for this account in EmailEngine."}}
             {{> ui/form-field id="email" type="email" label="Email address" value=values.email error=errors.email hint="Email address associated with this account."}}
-            {{> ui/form-field id="expectedEmail" type="email" label="Required email address (optional)" value=values.expectedEmail error=errors.expectedEmail hint="The hosted authentication form only accepts sign-ins that match this address. Leave blank to remove this restriction."}}
+            {{> ui/form-field id="expectedEmail" type="email" label="Restrict sign-in to email (optional)" value=values.expectedEmail error=errors.expectedEmail hint="The hosted authentication form only accepts sign-ins that match this address. Leave blank to remove this restriction."}}
 
         </div>
     </div>

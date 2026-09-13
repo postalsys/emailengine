@@ -7,7 +7,7 @@
 
     {{> ui/form-field id="user" label="Username" value=values.user error=errors.user lpignore=true hint="Username required by your SMTP provider, if any."}}
 
-    {{> ui/form-field id="pass" type="password" label="Password" value=values.pass error=errors.pass lpignore=true placeholder=(when hasSMTPPass "Password saved") hint=(concat "Password required by your SMTP provider" (when gatewayData ". Leave blank to keep the current password."))}}
+    {{> ui/form-field id="pass" type="password" label="Password" value=values.pass error=errors.pass lpignore=true placeholder=(when hasSMTPPass "Password saved") hint=(concat "Password required by your SMTP provider." (when gatewayData " Leave blank to keep the current password."))}}
 
     {{> ui/form-field id="host" label="Server Address" value=values.host error=errors.host lpignore=true placeholder="smtp.sendgrid.net" required=true hint="SMTP server hostname or IP address"}}
 
