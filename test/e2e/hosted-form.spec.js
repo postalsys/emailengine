@@ -47,7 +47,12 @@ test('hosted auth form: add an IMAP account (Ethereal) and reach connected', asy
                 account: ACCOUNT_ID,
                 name: 'E2E Hosted IMAP',
                 email: acct.user,
-                redirectUrl: `${BASE_URL}/admin`
+                redirectUrl: `${BASE_URL}/admin`,
+
+                // What this spec walks is the manual server-settings step, and skipping it is the
+                // default for a minted link. Ethereal publishes SRV records, so autodiscovery
+                // answers with complete IMAP and SMTP settings and the step would be skipped.
+                skipServerSettings: false
             });
         });
 
@@ -70,7 +75,9 @@ test('hosted auth form: add an IMAP account (Ethereal) and reach connected', asy
         await test.step('hosted form: enter IMAP + SMTP server details and submit', async () => {
             await expect(page.locator('#imap_host')).toBeVisible({ timeout: 30000 });
 
-            // Autodetect does not know ethereal.email, so set every field explicitly.
+            // Every field is set explicitly rather than trusting what autodiscovery prefilled: the
+            // point of this step is that a user can correct the form, and Ethereal's own SRV answer
+            // is not what the account should be created from.
             await page.fill('#imap_auth_user', acct.user);
             await page.fill('#imap_auth_pass', acct.pass);
             await page.fill('#imap_host', acct.imap.host);

@@ -6512,8 +6512,8 @@
           },
           "skipServerSettings": {
             "type": "boolean",
-            "description": "If true, the mail server settings step is skipped whenever the IMAP and SMTP settings for the address can both be discovered and verified with the password the user enters. The step is still shown if discovery or verification does not fully succeed. Applies to the IMAP setup path only.",
-            "default": false
+            "description": "If true, the mail server settings step is skipped whenever the IMAP and SMTP settings for the address can both be discovered and verified with the password the user enters. The step is still shown if discovery or verification does not fully succeed. Set to false to always ask the user for the server settings. Applies to the IMAP setup path only.",
+            "default": true
           },
           "notifyFrom": {
             "type": "string",
@@ -17655,7 +17655,7 @@
       "post": {
         "summary": "Generate authentication link",
         "operationId": "postV1AuthenticationForm",
-        "description": "Generates a redirect link to the hosted authentication form<br/><br/>Set `skipServerSettings` to complete an IMAP setup without asking the user for mail server settings whenever EmailEngine can discover and verify them from the address and password alone.<br/><br/>If `expectedEmail` is set and the user completes the form as a different identity, the setup is rejected before any credentials are stored. The user stays on EmailEngine, which names both addresses and offers to restart the setup, so the browser is never redirected to `redirectUrl`.",
+        "description": "Generates a redirect link to the hosted authentication form<br/><br/>An IMAP setup completes without asking the user for mail server settings whenever EmailEngine can discover and verify them from the address and password alone. Set `skipServerSettings` to false to always show that step.<br/><br/>If `expectedEmail` is set and the user completes the form as a different identity, the setup is rejected before any credentials are stored. The user stays on EmailEngine, which names both addresses and offers to restart the setup, so the browser is never redirected to `redirectUrl`.",
         "parameters": [
           {
             "name": "x-ee-timeout",
