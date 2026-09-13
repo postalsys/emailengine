@@ -32,12 +32,19 @@ const TIERS = {
     unit: {
         dir: 'test',
         // Default --test concurrency: the unit suite is verified to pass in parallel
-        args: []
+        args: [],
+        // Every unit test is fast and the whole tier finishes in seconds, so a full minute in which
+        // no file anywhere reports anything is a stalled file rather than a slow one
+        stallTimeout: 60000
     },
     integration: {
         dir: 'test/integration',
         // Serial - every file talks to the same live server and the same Redis database
         args: ['--test-concurrency=1'],
+        // Must stay above TEST_TIMEOUT: a single integration test may legitimately run for minutes
+        // against a live provider, and a running test reports nothing until it finishes, so anything
+        // shorter would read a slow provider as a stall
+        stallTimeout: TEST_TIMEOUT + 60000,
         // Presence of this field is what makes the tier boot a server
         serverEnv: {
             // Short Gmail fallback-poll interval so gmail-polling-test can exercise the poller
@@ -134,9 +141,28 @@ async function main() {
     // hung until the job timeout instead of skipping one suite. Forcing the exit here ends the class
     // for both tiers and for files that do not exist yet. A failing test still fails: the flag only
     // takes effect once the run has finished, and the exit code is preserved.
-    let runner = spawn(process.execPath, ['--test', '--test-force-exit', `--test-timeout=${TEST_TIMEOUT}`, ...tier.args, ...files], {
+    // test/helpers/stall-reporter.js is the stock spec reporter plus a watchdog for the one failure
+    // --test-force-exit and --test-timeout cannot reach: a file that blocks its event loop, where the
+    // per-test timer cannot fire and the run never finishes. The watchdog lives in a reporter because
+    // a reporter runs inside the runner process, whose own event loop is still healthy, and it is the
+    // only thing there that knows which files have reported.
+    //
+    // It has to be ONE reporter that extends spec, not a second reporter running beside it: with
+    // --test-force-exit, two reporters truncate the run summary - the process exits before they have
+    // drained, and results go missing with `fail 0` still reported. See the reporter's own comment
+    // for the measurements. Passing spec separately here would reintroduce exactly that.
+    let reporterArgs = [`--test-reporter=${path.join(__dirname, 'helpers', 'stall-reporter.js')}`, '--test-reporter-destination=stdout'];
+
+    let runner = spawn(process.execPath, ['--test', '--test-force-exit', `--test-timeout=${TEST_TIMEOUT}`, ...reporterArgs, ...tier.args, ...files], {
         cwd: PROJECT_ROOT,
-        stdio: 'inherit'
+        stdio: 'inherit',
+        env: {
+            ...process.env,
+            // Read by the stall reporter: the files to account for, and how long a silence has to
+            // last before it gives up on them.
+            EE_TEST_FILES: JSON.stringify(files),
+            EE_TEST_STALL_TIMEOUT: String(tier.stallTimeout || 0)
+        }
     });
 
     // A child killed by a signal reports code=null; treat that as a failure
