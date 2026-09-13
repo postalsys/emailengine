@@ -1,533 +1,555 @@
 msgid ""
 msgstr ""
-"Content-Type: text/plain; charset=ascii\n"
+"Project-Id-Version: \n"
 "POT-Creation-Date: 2026-09-13 20:57+0000\n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: sv\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: views/error.hbs:6
-#: workers/api.js:3130
+#: views/error.hbs:6 workers/api.js:3130
 msgid "Something went wrong"
-msgstr ""
+msgstr "Något gick fel"
 
 #: views/error.hbs:8
 msgid "Error code: %s"
-msgstr ""
+msgstr "Felkod: %s"
 
 #: views/error.hbs:20
 msgid "Go back"
-msgstr ""
+msgstr "Tillbaka"
 
 #: views/error.hbs:28
 msgid "Dashboard"
-msgstr ""
+msgstr "Översikt"
 
-#: views/config/license.hbs:20
-#: lib/ui-routes/oauth-config-routes.js:217
+#: views/config/license.hbs:20 lib/ui-routes/oauth-config-routes.js:217
 msgid "%d day"
 msgid_plural "%d days"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%d dag"
+msgstr[1] "%d dagar"
 
 #: views/config/tls.hbs:416
 msgid "%d certificate"
 msgid_plural "%d certificates"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%d certifikat"
+msgstr[1] "%d certifikat"
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
+msgstr "Klicka <a href=\"%s\">här</a> för att fortsätta&mldr;"
 
 #: views/oauth-scope-error.hbs:5
 msgid "Insufficient Permissions"
-msgstr ""
+msgstr "Behörigheter saknas"
 
 #: views/oauth-scope-error.hbs:10
 msgid ""
 "All requested permissions are required for this service to function "
 "properly. Some required permissions were not granted during sign-in."
 msgstr ""
+"Tjänsten behöver alla begärda behörigheter för att fungera som den ska. "
+"Några av dem beviljades inte vid inloggningen."
 
 #: views/oauth-scope-error.hbs:14
 msgid "The following permissions were not granted:"
-msgstr ""
+msgstr "Följande behörigheter saknas:"
 
 #: views/oauth-scope-error.hbs:23
 msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
+"Please try again and make sure all permission checkboxes are selected on the "
+"Google consent screen."
 msgstr ""
+"Försök igen och se till att alla kryssrutor för behörigheter är markerade på "
+"Googles godkännandesida."
 
-#: views/oauth-scope-error.hbs:28
-#: views/account-identity-error.hbs:32
+#: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
 msgid "Try Again"
-msgstr ""
+msgstr "Försök igen"
 
-#: views/unsubscribe.hbs:7
-#: views/unsubscribe.hbs:60
-#: views/unsubscribe.hbs:76
+#: views/unsubscribe.hbs:7 views/unsubscribe.hbs:60 views/unsubscribe.hbs:76
 msgid "Unsubscribe"
-msgstr ""
+msgstr "Avsluta prenumeration"
 
 #: views/unsubscribe.hbs:9
 msgid "Your email address was unsubscribed."
-msgstr ""
+msgstr "Din e-postadress har avregistrerats."
 
 #: views/unsubscribe.hbs:11
 msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
-msgstr ""
+msgstr "Var det ett misstag? Klicka <a%s>här</a> för att prenumerera igen."
 
 #: views/unsubscribe.hbs:18
 msgid "Re-subscribe"
-msgstr ""
+msgstr "Prenumerera igen"
 
 #: views/unsubscribe.hbs:24
 msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
-msgstr ""
+msgstr "Vill du börja prenumerera igen med e-postadressen <em>%s</em>?"
 
-#: views/unsubscribe.hbs:33
-#: views/accounts/register/imap-server.hbs:288
+#: views/unsubscribe.hbs:33 views/accounts/register/imap-server.hbs:288
 #: views/accounts/register/imap-server.hbs:297
 #: views/partials/public_alerts.hbs:11
 msgid "Close"
-msgstr ""
+msgstr "Stäng"
 
 #: views/unsubscribe.hbs:35
 msgid "Subscribe"
-msgstr ""
+msgstr "Prenumerera"
 
 #: views/unsubscribe.hbs:54
 msgid "Subscription resumed"
-msgstr ""
+msgstr "Prenumerationen återupptagen"
 
 #: views/unsubscribe.hbs:56
 msgid "Your email address <em>%s</em> was re-subscribed."
-msgstr ""
+msgstr "Du prenumererar igen med e-postadressen <em>%s</em>."
 
-#: views/unsubscribe.hbs:71
-#: views/accounts/register/imap.hbs:25
+#: views/unsubscribe.hbs:71 views/accounts/register/imap.hbs:25
 msgid "Email address"
-msgstr ""
+msgstr "E-postadress"
 
 #: views/unsubscribe.hbs:83
 msgid ""
-"This link is not valid. Use the unsubscribe link from the email you "
-"received."
+"This link is not valid. Use the unsubscribe link from the email you received."
 msgstr ""
+"Länken är inte giltig. Använd avregistreringslänken i e-postmeddelandet du "
+"fick."
 
 #: views/accounts/register/index.hbs:6
 msgid "Choose your email account provider"
-msgstr ""
+msgstr "Välj din e-postleverantör"
 
 #: views/accounts/register/index.hbs:19
 msgid "Standard IMAP"
-msgstr ""
+msgstr "Vanlig IMAP"
 
 #: views/accounts/register/validating.hbs:35
 msgid "Checking your mail server"
-msgstr ""
+msgstr "Kontrollerar din e-postserver"
 
 #: views/accounts/register/validating.hbs:40
 msgid "Still checking. This can take up to a minute."
-msgstr ""
+msgstr "Vi kontrollerar fortfarande servern. Det kan ta upp till en minut."
 
 #: views/accounts/register/validating.hbs:47
 msgid "Enter server settings manually"
-msgstr ""
+msgstr "Ange serverinställningarna manuellt"
 
 #: views/accounts/register/validating.hbs:53
 msgid "We couldn't sign in to your mail server"
-msgstr ""
+msgstr "Vi kunde inte logga in på din e-postserver"
 
 #: views/accounts/register/validating.hbs:54
 msgid "Check the settings on the next page and try again."
-msgstr ""
+msgstr "Kontrollera inställningarna på nästa sida och försök igen."
 
 #: views/accounts/register/validating.hbs:61
 msgid "Continue to server settings"
-msgstr ""
+msgstr "Fortsätt till serverinställningarna"
 
 #: views/accounts/register/validating.hbs:69
 msgid "Almost there"
-msgstr ""
+msgstr "Nästan klart"
 
 #: views/accounts/register/validating.hbs:70
 msgid "Continue to review your mail server settings."
-msgstr ""
+msgstr "Gå vidare för att se över inställningarna för din e-postserver."
 
 #: views/accounts/register/validating.hbs:74
 #: views/accounts/register/imap.hbs:55
 msgid "Continue"
-msgstr ""
+msgstr "Fortsätt"
 
 #: views/accounts/register/imap.hbs:13
 msgid "Your name"
-msgstr ""
+msgstr "Ditt namn"
 
 #: views/accounts/register/imap.hbs:19
 msgid "Enter your full name"
-msgstr ""
+msgstr "Ange ditt fullständiga namn"
 
 #: views/accounts/register/imap.hbs:35
 msgid "This setup link is restricted to this email address"
-msgstr ""
+msgstr "Länken kan bara användas för den här e-postadressen"
 
 #: views/accounts/register/imap.hbs:37
 msgid "Enter your email address"
-msgstr ""
+msgstr "Ange din e-postadress"
 
 #: views/accounts/register/imap.hbs:43
 #: views/accounts/register/imap-server.hbs:58
 #: views/accounts/register/imap-server.hbs:165
 msgid "Password"
-msgstr ""
+msgstr "Lösenord"
 
 #: views/accounts/register/imap.hbs:49
 msgid "Enter your account password"
-msgstr ""
+msgstr "Ange lösenordet för ditt konto"
 
 #: views/accounts/register/imap-server.hbs:23
 msgid ""
-"Server settings could not be detected automatically for %s. Enter them "
-"below."
+"Server settings could not be detected automatically for %s. Enter them below."
 msgstr ""
+"Serverinställningarna för %s kunde inte hittas automatiskt. Ange dem nedan."
 
 #: views/accounts/register/imap-server.hbs:34
 msgid ""
 "We couldn't sign in to your mail server with those settings. Check them and "
 "try again."
 msgstr ""
+"Vi kunde inte logga in på din e-postserver med de inställningarna. "
+"Kontrollera dem och försök igen."
 
 #: views/accounts/register/imap-server.hbs:41
 msgid "IMAP"
-msgstr ""
+msgstr "IMAP"
 
 #: views/accounts/register/imap-server.hbs:44
 #: views/accounts/register/imap-server.hbs:151
 msgid "Username"
-msgstr ""
+msgstr "Användarnamn"
 
 #: views/accounts/register/imap-server.hbs:70
 #: views/accounts/register/imap-server.hbs:177
 msgid "Important"
-msgstr ""
+msgstr "Viktigt"
 
 #: views/accounts/register/imap-server.hbs:81
 #: views/accounts/register/imap-server.hbs:188
 msgid "Instructions"
-msgstr ""
+msgstr "Instruktioner"
 
 #: views/accounts/register/imap-server.hbs:83
 #: views/accounts/register/imap-server.hbs:190
 msgid "%s accounts require an application password for %s."
-msgstr ""
+msgstr "Har du ett konto hos %s behöver du ett applösenord för att använda %s."
 
 #: views/accounts/register/imap-server.hbs:92
 #: views/accounts/register/imap-server.hbs:199
 msgid "Application Password"
-msgstr ""
+msgstr "Applösenord"
 
 #: views/accounts/register/imap-server.hbs:106
 #: views/accounts/register/imap-server.hbs:213
 msgid "Hostname"
-msgstr ""
+msgstr "Värdnamn"
 
 #: views/accounts/register/imap-server.hbs:116
 #: views/accounts/register/imap-server.hbs:223
 msgid "Port"
-msgstr ""
+msgstr "Port"
 
 #: views/accounts/register/imap-server.hbs:131
 msgid "TLS for IMAP"
-msgstr ""
+msgstr "TLS för IMAP"
 
 #: views/accounts/register/imap-server.hbs:132
 msgid ""
 "TLS (also known as SSL) is usually only needed when using port 993. For "
 "other ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
+"TLS (även kallat SSL) behövs oftast bara för port 993. För andra portar "
+"använder EmailEngine kryptering med STARTTLS i stället."
 
 #: views/accounts/register/imap-server.hbs:139
 #: views/accounts/register/imap-server.hbs:246
 msgid "Use TLS"
-msgstr ""
+msgstr "Använd TLS"
 
 #: views/accounts/register/imap-server.hbs:148
 msgid "SMTP"
-msgstr ""
+msgstr "SMTP"
 
 #: views/accounts/register/imap-server.hbs:238
 msgid "TLS for SMTP"
-msgstr ""
+msgstr "TLS för SMTP"
 
 #: views/accounts/register/imap-server.hbs:239
 msgid ""
 "TLS (also known as SSL) is usually only needed when using port 465. For "
 "other ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
+"TLS (även kallat SSL) behövs oftast bara för port 465. För andra portar "
+"använder EmailEngine kryptering med STARTTLS i stället."
 
 #: views/accounts/register/imap-server.hbs:259
 msgid "Verify connection"
-msgstr ""
+msgstr "Testa anslutningen"
 
 #: views/accounts/register/imap-server.hbs:265
 msgid "Save and continue"
-msgstr ""
+msgstr "Spara och fortsätt"
 
 #: views/accounts/register/imap-server.hbs:270
 msgid "Toggle Dropdown"
-msgstr ""
+msgstr "Visa eller dölj menyn"
 
 #: views/accounts/register/imap-server.hbs:274
 msgid "Skip verification"
-msgstr ""
+msgstr "Hoppa över testet"
 
 #: views/accounts/register/imap-server.hbs:287
 msgid "Connection test failed"
-msgstr ""
+msgstr "Anslutningstestet misslyckades"
 
 #: views/accounts/register/imap-server.hbs:293
 msgid "We couldn't connect with these settings. Check the errors below."
-msgstr ""
+msgstr "Vi kunde inte ansluta med de här inställningarna. Se felmeddelandena nedan."
 
 #: views/partials/public_test_labels.hbs:9
 msgid "Error"
-msgstr ""
+msgstr "Fel"
 
 #: views/partials/public_test_labels.hbs:10
 msgid "Invalid settings"
-msgstr ""
+msgstr "Ogiltiga inställningar"
 
 #: views/partials/public_test_labels.hbs:11
 msgid "Couldn't connect to IMAP server"
-msgstr ""
+msgstr "Kunde inte ansluta till IMAP-servern"
 
 #: views/partials/public_test_labels.hbs:12
 msgid "Couldn't connect to SMTP server"
-msgstr ""
+msgstr "Kunde inte ansluta till SMTP-servern"
 
 #: views/partials/public_test_labels.hbs:13
 msgid "Server response:"
-msgstr ""
+msgstr "Svar från servern:"
 
 #: views/partials/public_test_labels.hbs:15
 msgid "Request failed."
-msgstr ""
+msgstr "Begäran misslyckades."
 
 #: views/account-identity-error.hbs:7
 msgid "Wrong Email Account"
-msgstr ""
+msgstr "Fel e-postkonto"
 
 #: views/account-identity-error.hbs:12
 msgid ""
 "This setup link can only be used with one specific email account, and a "
 "different one was used."
 msgstr ""
+"Den här länken kan bara användas för ett visst e-postkonto. Du loggade in "
+"med ett annat konto."
 
 #: views/account-identity-error.hbs:18
 msgid "Expected account"
-msgstr ""
+msgstr "Kontot som länken gäller för"
 
 #: views/account-identity-error.hbs:21
 msgid "Account used"
-msgstr ""
+msgstr "Kontot du loggade in med"
 
 #: views/account-identity-error.hbs:27
 msgid ""
 "Try again and use the expected account. If you believe this is a mistake, "
 "contact the service that sent you this link."
 msgstr ""
+"Försök igen med kontot som länken gäller för. Om du tror att något har "
+"blivit fel, kontakta tjänsteleverantören som skickade länken till dig."
 
 #: lib/autodetect-imap-settings.js:151
 msgid ""
-"Microsoft has disabled password-based sign-ins (including app passwords) "
-"for Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To "
-"continue, please use the \"Sign in with Microsoft\" button to securely "
-"connect your account."
+"Microsoft has disabled password-based sign-ins (including app passwords) for "
+"Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To continue, "
+"please use the \"Sign in with Microsoft\" button to securely connect your "
+"account."
 msgstr ""
+"Microsoft tillåter inte längre inloggning med lösenord för e-postkonton "
+"hos Outlook.com, Hotmail.com och Microsoft 365. Det gäller även "
+"applösenord. Klicka på \"Sign in with Microsoft\" för att ansluta ditt "
+"konto säkert och fortsätta."
 
-#: lib/tools.js:1526
-#: lib/ui-routes/unsubscribe-routes.js:31
+#: lib/tools.js:1526 lib/ui-routes/unsubscribe-routes.js:31
 #: lib/ui-routes/unsubscribe-routes.js:99
 msgid "Invalid input"
-msgstr ""
+msgstr "Ogiltig inmatning"
 
 #: lib/tools.js:2392
 msgid "Signature validation failed"
-msgstr ""
+msgstr "Signaturen kunde inte verifieras"
 
-#: lib/tools.js:2415
-#: lib/tools.js:2421
-#: lib/tools.js:2426
+#: lib/tools.js:2415 lib/tools.js:2421 lib/tools.js:2426
 #: lib/ui-routes/account-routes.js:1337
 msgid "Invalid or expired account setup URL"
-msgstr ""
+msgstr "Länken för att ansluta kontot är ogiltig eller har gått ut"
 
-#: lib/ui-routes/account-routes.js:481
-#: lib/ui-routes/account-routes.js:525
-#: lib/ui-routes/account-routes.js:859
-#: lib/ui-routes/account-routes.js:936
-#: lib/ui-routes/account-routes.js:949
-#: lib/ui-routes/account-routes.js:996
-#: lib/ui-routes/account-routes.js:1212
-#: lib/ui-routes/account-routes.js:1404
-#: lib/ui-routes/route-helpers.js:403
-#: workers/api.js:2302
-#: workers/api.js:2372
+#: lib/ui-routes/account-routes.js:481 lib/ui-routes/account-routes.js:525
+#: lib/ui-routes/account-routes.js:859 lib/ui-routes/account-routes.js:936
+#: lib/ui-routes/account-routes.js:949 lib/ui-routes/account-routes.js:996
+#: lib/ui-routes/account-routes.js:1212 lib/ui-routes/account-routes.js:1404
+#: lib/ui-routes/route-helpers.js:403 workers/api.js:2302 workers/api.js:2372
 msgid "Email Account Setup"
-msgstr ""
+msgstr "Anslut e-postkonto"
 
-#: lib/ui-routes/account-routes.js:550
-#: lib/ui-routes/account-routes.js:582
+#: lib/ui-routes/account-routes.js:550 lib/ui-routes/account-routes.js:582
 #: lib/ui-routes/unsubscribe-routes.js:71
 msgid "Invalid request. Check your input and try again."
-msgstr ""
+msgstr "Ogiltig begäran. Kontrollera uppgifterna och försök igen."
 
 #: lib/ui-routes/account-routes.js:740
-msgid "Too many attempts for this setup link. Request a new setup link to continue."
+msgid ""
+"Too many attempts for this setup link. Request a new setup link to continue."
 msgstr ""
+"För många försök har gjorts med den här länken. Be om en ny länk för att "
+"ansluta kontot och fortsätta."
 
-#: lib/ui-routes/account-routes.js:983
-#: lib/ui-routes/account-routes.js:1387
+#: lib/ui-routes/account-routes.js:983 lib/ui-routes/account-routes.js:1387
 msgid "Couldn't set up account. Try again."
-msgstr ""
+msgstr "Det gick inte att ansluta kontot. Försök igen."
 
-#: lib/ui-routes/account-routes.js:1071
-#: lib/ui-routes/account-routes.js:1111
+#: lib/ui-routes/account-routes.js:1071 lib/ui-routes/account-routes.js:1111
 #: lib/ui-routes/admin-entities-routes.js:2078
 msgid "Server hostname was not found"
-msgstr ""
+msgstr "Servernamnet kunde inte hittas"
 
-#: lib/ui-routes/account-routes.js:1074
-#: lib/ui-routes/account-routes.js:1114
+#: lib/ui-routes/account-routes.js:1074 lib/ui-routes/account-routes.js:1114
 #: lib/ui-routes/admin-entities-routes.js:2081
 msgid "Invalid username or password"
-msgstr ""
+msgstr "Fel användarnamn eller lösenord"
 
-#: lib/ui-routes/account-routes.js:1079
-#: lib/ui-routes/account-routes.js:1131
+#: lib/ui-routes/account-routes.js:1079 lib/ui-routes/account-routes.js:1131
 #: lib/ui-routes/admin-entities-routes.js:2098
 msgid "Connection timed out"
-msgstr ""
+msgstr "Det tog för lång tid att ansluta"
 
-#: lib/ui-routes/account-routes.js:1085
-#: lib/ui-routes/account-routes.js:1134
+#: lib/ui-routes/account-routes.js:1085 lib/ui-routes/account-routes.js:1134
 #: lib/ui-routes/admin-entities-routes.js:2101
 msgid "Could not connect to server"
-msgstr ""
+msgstr "Kunde inte ansluta till servern"
 
-#: lib/ui-routes/account-routes.js:1098
-#: lib/ui-routes/account-routes.js:1102
-#: lib/ui-routes/account-routes.js:1123
-#: lib/ui-routes/account-routes.js:1127
+#: lib/ui-routes/account-routes.js:1098 lib/ui-routes/account-routes.js:1102
+#: lib/ui-routes/account-routes.js:1123 lib/ui-routes/account-routes.js:1127
 #: lib/ui-routes/admin-entities-routes.js:2090
 #: lib/ui-routes/admin-entities-routes.js:2094
 msgid "TLS protocol error"
-msgstr ""
+msgstr "TLS-protokollfel"
 
 #: lib/ui-routes/account-routes.js:1117
 #: lib/ui-routes/admin-entities-routes.js:2084
 msgid "Authentication credentials were not provided"
-msgstr ""
+msgstr "Inloggningsuppgifter saknas"
 
 #: lib/ui-routes/account-routes.js:1120
 #: lib/ui-routes/admin-entities-routes.js:2087
 msgid "OAuth2 authentication failed"
-msgstr ""
+msgstr "Inloggningen med OAuth2 misslyckades"
 
 #: lib/ui-routes/account-routes.js:1137
 #: lib/ui-routes/admin-entities-routes.js:2104
 msgid "Unexpected server response"
-msgstr ""
+msgstr "Oväntat svar från servern"
 
 #: lib/ui-routes/account-routes.js:1325
 msgid "Temporary error, please try again"
-msgstr ""
+msgstr "Tillfälligt fel, försök igen"
 
 #: lib/ui-routes/admin-config-routes.js:193
 msgid "Invalid API key for OpenAI"
-msgstr ""
+msgstr "Ogiltig API-nyckel för OpenAI"
 
 #: lib/ui-routes/oauth-config-routes.js:210
 msgid "Unknown"
-msgstr ""
+msgstr "Okänt"
 
 #: lib/ui-routes/oauth-config-routes.js:219
 msgid "Indefinite"
-msgstr ""
+msgstr "Utan tidsgräns"
 
 #: lib/ui-routes/route-helpers.js:105
 msgid "The server unexpectedly closed the connection."
-msgstr ""
+msgstr "Servern stängde anslutningen oväntat."
 
 #: lib/ui-routes/route-helpers.js:107
 msgid ""
 "The server unexpectedly closed the connection. This usually happens when "
 "attempting to connect to a TLS port without TLS enabled."
 msgstr ""
+"Servern stängde anslutningen oväntat. Det händer oftast om du försöker "
+"ansluta till en TLS-port utan att ha aktiverat TLS."
 
 #: lib/ui-routes/route-helpers.js:162
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
 msgstr ""
+"Det tog för lång tid att ansluta. Det beror oftast på att en brandvägg "
+"blockerar anslutningen eller att du använder fel port."
 
 #: lib/ui-routes/route-helpers.js:169
 msgid ""
 "The server refused the connection. This typically occurs if the server is "
 "not running, is overloaded, or you are connecting to the wrong host or port."
 msgstr ""
+"Servern nekade anslutningen. Det beror oftast på att servern inte är igång, "
+"att den är överbelastad eller att du försöker ansluta till fel server "
+"eller port."
 
 #: lib/ui-routes/route-helpers.js:223
 msgid "Delegated"
-msgstr ""
+msgstr "Delegerat"
 
 #: lib/ui-routes/route-helpers.js:224
 msgid "Using credentials from \"%s\""
-msgstr ""
+msgstr "Använder inloggningsuppgifterna för kontot \"%s\""
 
 #: lib/ui-routes/unsubscribe-routes.js:41
 #: lib/ui-routes/unsubscribe-routes.js:167
 #: lib/ui-routes/unsubscribe-routes.js:197
 #: lib/ui-routes/unsubscribe-routes.js:242
 msgid "Subscription Management"
-msgstr ""
+msgstr "Hantera prenumeration"
 
 #: lib/ui-routes/unsubscribe-routes.js:186
 #: lib/ui-routes/unsubscribe-routes.js:235
 msgid "Couldn't process request. Try again."
-msgstr ""
+msgstr "Begäran kunde inte behandlas. Försök igen."
 
 #: workers/api.js:2231
 msgid ""
 "The sign-in was cancelled or the requested access was not granted. Open the "
 "account setup link again to retry."
 msgstr ""
+"Inloggningen avbröts eller så fick tjänsten inte den begärda åtkomsten. "
+"Öppna länken för att ansluta kontot igen och försök på nytt."
 
 #: workers/api.js:2240
 msgid "Sign-in with the email provider failed: %s"
-msgstr ""
+msgstr "Inloggningen hos e-postleverantören misslyckades: %s"
 
 #: workers/api.js:2244
-msgid "Sign-in with the email provider failed: no authorization code was received"
+msgid ""
+"Sign-in with the email provider failed: no authorization code was received"
 msgstr ""
+"Inloggningen hos e-postleverantören misslyckades: ingen auktoriseringskod "
+"togs emot"
 
 #: workers/api.js:2250
 msgid "Sign-in with the email provider failed: the request state is not valid"
 msgstr ""
+"Inloggningen hos e-postleverantören misslyckades: begärans state-värde är "
+"ogiltigt"
 
 #: workers/api.js:2256
 msgid ""
 "The account setup session has expired or was already used. Open the account "
 "setup link again to retry."
 msgstr ""
+"Sessionen för att ansluta kontot har gått ut eller har redan använts. "
+"Öppna länken för att ansluta kontot igen och försök på nytt."
 
 #: workers/api.js:2263
 msgid ""
-"Sign-in with the email provider failed: the stored setup session is not "
-"valid"
+"Sign-in with the email provider failed: the stored setup session is not valid"
 msgstr ""
+"Inloggningen hos e-postleverantören misslyckades: den sparade "
+"sessionen för att ansluta kontot är ogiltig"
 
-#: workers/api.js:3129
-#: workers/api.js:3244
+#: workers/api.js:3129 workers/api.js:3244
 msgid "Requested page not found"
-msgstr ""
+msgstr "Sidan kunde inte hittas"

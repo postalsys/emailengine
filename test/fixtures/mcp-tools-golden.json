@@ -5039,7 +5039,8 @@
                         "de",
                         "pl",
                         "ja",
-                        "nl"
+                        "nl",
+                        "sv"
                     ],
                     "maxLength": 100
                 },

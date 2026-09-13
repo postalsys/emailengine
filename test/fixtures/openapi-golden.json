@@ -9333,7 +9333,8 @@
           "de",
           "pl",
           "ja",
-          "nl"
+          "nl",
+          "sv"
         ],
         "nullable": true,
         "maxLength": 100
@@ -10120,7 +10121,8 @@
           "de",
           "pl",
           "ja",
-          "nl"
+          "nl",
+          "sv"
         ],
         "maxLength": 100
       },

@@ -36,7 +36,7 @@ Then merge the template into each catalog and see what is missing:
 
 ```bash
 cd translations
-for loc in en de et fr ja nl pl; do
+for loc in en de et fr ja nl pl sv; do
     msgmerge --update --backup=none --no-fuzzy-matching --quiet $loc.po messages.pot
 done
 
@@ -51,7 +51,7 @@ review.
 Fill in the empty `msgstr` values, then compile and confirm the counts:
 
 ```bash
-for loc in en de et fr ja nl pl; do
+for loc in en de et fr ja nl pl sv; do
     msgfmt --check --statistics -o $loc.mo $loc.po
 done
 ```
@@ -63,7 +63,8 @@ Notes:
 - `en.po` is left untranslated on purpose. English is the source language, so an empty `msgstr` falls
   back to the `msgid`, and `msgfmt` reporting it as almost entirely untranslated is expected.
 - Match the register each catalog already uses rather than one house style. Today de, et and fr address
-  the user formally, ja is polite, and nl and pl are informal.
+  the user formally, ja is polite, and nl, pl and sv are informal (sv uses `du`, which is the neutral
+  register in Swedish rather than a casual one).
 - Reuse the wording a locale already chose for recurring terms. Checking how it translated
   "Email Account Setup", for instance, settles how to render "setup" elsewhere.
 - The strings are extracted without message context, so a bare word like "Expected" cannot be

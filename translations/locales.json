@@ -39,5 +39,11 @@
         "name": "Dutch",
         "locale": "nl",
         "file": "nl.mo"
+    },
+
+    {
+        "name": "Swedish",
+        "locale": "sv",
+        "file": "sv.mo"
     }
 ]
