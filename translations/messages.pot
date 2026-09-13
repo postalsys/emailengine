@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-09-13 20:57+0000\n"
+"POT-Creation-Date: 2026-09-13 22:15+0000\n"
 
 #: views/error.hbs:6
 #: workers/api.js:3130
@@ -26,16 +26,6 @@ msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
-
-#: views/config/tls.hbs:416
-msgid "%d certificate"
-msgid_plural "%d certificates"
-msgstr[0] ""
-msgstr[1] ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
 
 #: views/oauth-scope-error.hbs:5
 msgid "Insufficient Permissions"
@@ -114,6 +104,47 @@ msgid ""
 "received."
 msgstr ""
 
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: views/config/tls.hbs:416
+msgid "%d certificate"
+msgid_plural "%d certificates"
+msgstr[0] ""
+msgstr[1] ""
+
+#: views/accounts/register/imap.hbs:13
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:19
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:35
+msgid "This setup link is restricted to this email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:43
+#: views/accounts/register/imap-server.hbs:58
+#: views/accounts/register/imap-server.hbs:165
+msgid "Password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:49
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:55
+#: views/accounts/register/validating.hbs:74
+msgid "Continue"
+msgstr ""
+
 #: views/accounts/register/index.hbs:6
 msgid "Choose your email account provider"
 msgstr ""
@@ -152,37 +183,6 @@ msgstr ""
 
 #: views/accounts/register/validating.hbs:70
 msgid "Continue to review your mail server settings."
-msgstr ""
-
-#: views/accounts/register/validating.hbs:74
-#: views/accounts/register/imap.hbs:55
-msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:13
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:19
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:35
-msgid "This setup link is restricted to this email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:43
-#: views/accounts/register/imap-server.hbs:58
-#: views/accounts/register/imap-server.hbs:165
-msgid "Password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:49
-msgid "Enter your account password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:23

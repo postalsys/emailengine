@@ -1,0 +1,555 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2026-09-13 20:57+0000\n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: tr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: views/error.hbs:6 workers/api.js:3130
+msgid "Something went wrong"
+msgstr "Bir şeyler ters gitti"
+
+#: views/error.hbs:8
+msgid "Error code: %s"
+msgstr "Hata kodu: %s"
+
+#: views/error.hbs:20
+msgid "Go back"
+msgstr "Geri dön"
+
+#: views/error.hbs:28
+msgid "Dashboard"
+msgstr "Kontrol paneli"
+
+#: views/config/license.hbs:20 lib/ui-routes/oauth-config-routes.js:217
+msgid "%d day"
+msgid_plural "%d days"
+msgstr[0] "%d gün"
+msgstr[1] "%d gün"
+
+#: views/config/tls.hbs:416
+msgid "%d certificate"
+msgid_plural "%d certificates"
+msgstr[0] "%d sertifika"
+msgstr[1] "%d sertifika"
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr "Devam etmek için <a href=\"%s\">buraya</a> tıklayın&mldr;"
+
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr "Eksik izinler"
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+"Hizmetin düzgün çalışabilmesi için istenen tüm izinleri vermeniz gerekiyor. "
+"Oturum açarken bazı izinler verilmedi."
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr "Şu izinler verilmedi:"
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on the "
+"Google consent screen."
+msgstr "Tekrar deneyin ve Google'ın izin ekranındaki tüm kutuları işaretleyin."
+
+#: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
+msgid "Try Again"
+msgstr "Tekrar dene"
+
+#: views/unsubscribe.hbs:7 views/unsubscribe.hbs:60 views/unsubscribe.hbs:76
+msgid "Unsubscribe"
+msgstr "Abonelikten çık"
+
+#: views/unsubscribe.hbs:9
+msgid "Your email address was unsubscribed."
+msgstr "E-posta adresiniz abonelik listesinden çıkarıldı."
+
+#: views/unsubscribe.hbs:11
+msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
+msgstr ""
+"Yanlışlıkla mı abonelikten çıktınız? Yeniden abone olmak için "
+"<a%s>buraya</a> tıklayın."
+
+#: views/unsubscribe.hbs:18
+msgid "Re-subscribe"
+msgstr "Yeniden abone ol"
+
+#: views/unsubscribe.hbs:24
+msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
+msgstr "<em>%s</em> adresiyle yeniden abone olmak istediğinizden emin misiniz?"
+
+#: views/unsubscribe.hbs:33 views/accounts/register/imap-server.hbs:288
+#: views/accounts/register/imap-server.hbs:297
+#: views/partials/public_alerts.hbs:11
+msgid "Close"
+msgstr "Kapat"
+
+#: views/unsubscribe.hbs:35
+msgid "Subscribe"
+msgstr "Abone ol"
+
+#: views/unsubscribe.hbs:54
+msgid "Subscription resumed"
+msgstr "Aboneliğiniz yeniden başlatıldı"
+
+#: views/unsubscribe.hbs:56
+msgid "Your email address <em>%s</em> was re-subscribed."
+msgstr "<em>%s</em> adresiyle aboneliğiniz yeniden başlatıldı."
+
+#: views/unsubscribe.hbs:71 views/accounts/register/imap.hbs:25
+msgid "Email address"
+msgstr "E-posta adresi"
+
+#: views/unsubscribe.hbs:83
+msgid ""
+"This link is not valid. Use the unsubscribe link from the email you received."
+msgstr ""
+"Bu bağlantı geçerli değil. Aldığınız e-postadaki abonelikten çıkma "
+"bağlantısını kullanın."
+
+#: views/accounts/register/index.hbs:6
+msgid "Choose your email account provider"
+msgstr "E-posta sağlayıcınızı seçin"
+
+#: views/accounts/register/index.hbs:19
+msgid "Standard IMAP"
+msgstr "Standart IMAP"
+
+#: views/accounts/register/validating.hbs:35
+msgid "Checking your mail server"
+msgstr "E-posta sunucunuz kontrol ediliyor"
+
+#: views/accounts/register/validating.hbs:40
+msgid "Still checking. This can take up to a minute."
+msgstr "Kontrol sürüyor. Bu işlem bir dakika kadar sürebilir."
+
+#: views/accounts/register/validating.hbs:47
+msgid "Enter server settings manually"
+msgstr "Sunucu ayarlarını elle gir"
+
+#: views/accounts/register/validating.hbs:53
+msgid "We couldn't sign in to your mail server"
+msgstr "E-posta sunucunuzda oturum açamadık"
+
+#: views/accounts/register/validating.hbs:54
+msgid "Check the settings on the next page and try again."
+msgstr "Sonraki sayfadaki ayarları kontrol edip tekrar deneyin."
+
+#: views/accounts/register/validating.hbs:61
+msgid "Continue to server settings"
+msgstr "Sunucu ayarlarına geç"
+
+#: views/accounts/register/validating.hbs:69
+msgid "Almost there"
+msgstr "Az kaldı"
+
+#: views/accounts/register/validating.hbs:70
+msgid "Continue to review your mail server settings."
+msgstr "E-posta sunucunuzun ayarlarını gözden geçirmek için devam edin."
+
+#: views/accounts/register/validating.hbs:74
+#: views/accounts/register/imap.hbs:55
+msgid "Continue"
+msgstr "Devam et"
+
+#: views/accounts/register/imap.hbs:13
+msgid "Your name"
+msgstr "Adınız"
+
+#: views/accounts/register/imap.hbs:19
+msgid "Enter your full name"
+msgstr "Adınızı ve soyadınızı girin"
+
+#: views/accounts/register/imap.hbs:35
+msgid "This setup link is restricted to this email address"
+msgstr "Bu kurulum bağlantısı yalnızca bu e-posta adresiyle kullanılabilir"
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your email address"
+msgstr "E-posta adresinizi girin"
+
+#: views/accounts/register/imap.hbs:43
+#: views/accounts/register/imap-server.hbs:58
+#: views/accounts/register/imap-server.hbs:165
+msgid "Password"
+msgstr "Parola"
+
+#: views/accounts/register/imap.hbs:49
+msgid "Enter your account password"
+msgstr "Hesabınızın parolasını girin"
+
+#: views/accounts/register/imap-server.hbs:23
+msgid ""
+"Server settings could not be detected automatically for %s. Enter them below."
+msgstr ""
+"%s alan adı için sunucu ayarlarını otomatik olarak bulamadık. Ayarları "
+"aşağıya girin."
+
+#: views/accounts/register/imap-server.hbs:34
+msgid ""
+"We couldn't sign in to your mail server with those settings. Check them and "
+"try again."
+msgstr ""
+"Bu ayarlarla e-posta sunucunuzda oturum açamadık. Ayarları kontrol edip "
+"tekrar deneyin."
+
+#: views/accounts/register/imap-server.hbs:41
+msgid "IMAP"
+msgstr "IMAP"
+
+#: views/accounts/register/imap-server.hbs:44
+#: views/accounts/register/imap-server.hbs:151
+msgid "Username"
+msgstr "Kullanıcı adı"
+
+#: views/accounts/register/imap-server.hbs:70
+#: views/accounts/register/imap-server.hbs:177
+msgid "Important"
+msgstr "Önemli"
+
+#: views/accounts/register/imap-server.hbs:81
+#: views/accounts/register/imap-server.hbs:188
+msgid "Instructions"
+msgstr "Yönergeler"
+
+#: views/accounts/register/imap-server.hbs:83
+#: views/accounts/register/imap-server.hbs:190
+msgid "%s accounts require an application password for %s."
+msgstr "%s hesaplarında %s kullanmak için bir uygulama parolası gerekiyor."
+
+#: views/accounts/register/imap-server.hbs:92
+#: views/accounts/register/imap-server.hbs:199
+msgid "Application Password"
+msgstr "Uygulama parolası"
+
+#: views/accounts/register/imap-server.hbs:106
+#: views/accounts/register/imap-server.hbs:213
+msgid "Hostname"
+msgstr "Sunucu adı"
+
+#: views/accounts/register/imap-server.hbs:116
+#: views/accounts/register/imap-server.hbs:223
+msgid "Port"
+msgstr "Port"
+
+#: views/accounts/register/imap-server.hbs:131
+msgid "TLS for IMAP"
+msgstr "IMAP için TLS"
+
+#: views/accounts/register/imap-server.hbs:132
+msgid ""
+"TLS (also known as SSL) is usually only needed when using port 993. For "
+"other ports EmailEngine falls back to using STARTTLS based encryption."
+msgstr ""
+"Genellikle yalnızca 993 numaralı port için TLS (SSL olarak da bilinir) "
+"seçeneğini etkinleştirmeniz gerekir. Diğer portlarda EmailEngine, STARTTLS "
+"ile şifreleme kullanır."
+
+#: views/accounts/register/imap-server.hbs:139
+#: views/accounts/register/imap-server.hbs:246
+msgid "Use TLS"
+msgstr "TLS kullan"
+
+#: views/accounts/register/imap-server.hbs:148
+msgid "SMTP"
+msgstr "SMTP"
+
+#: views/accounts/register/imap-server.hbs:238
+msgid "TLS for SMTP"
+msgstr "SMTP için TLS"
+
+#: views/accounts/register/imap-server.hbs:239
+msgid ""
+"TLS (also known as SSL) is usually only needed when using port 465. For "
+"other ports EmailEngine falls back to using STARTTLS based encryption."
+msgstr ""
+"Genellikle yalnızca 465 numaralı port için TLS (SSL olarak da bilinir) "
+"seçeneğini etkinleştirmeniz gerekir. Diğer portlarda EmailEngine, STARTTLS "
+"ile şifreleme kullanır."
+
+#: views/accounts/register/imap-server.hbs:259
+msgid "Verify connection"
+msgstr "Bağlantıyı test et"
+
+#: views/accounts/register/imap-server.hbs:265
+msgid "Save and continue"
+msgstr "Kaydet ve devam et"
+
+#: views/accounts/register/imap-server.hbs:270
+msgid "Toggle Dropdown"
+msgstr "Menüyü aç veya kapat"
+
+#: views/accounts/register/imap-server.hbs:274
+msgid "Skip verification"
+msgstr "Testi atla"
+
+#: views/accounts/register/imap-server.hbs:287
+msgid "Connection test failed"
+msgstr "Bağlantı testi başarısız oldu"
+
+#: views/accounts/register/imap-server.hbs:293
+msgid "We couldn't connect with these settings. Check the errors below."
+msgstr "Bu ayarlarla bağlanamadık. Aşağıdaki hata mesajlarını kontrol edin."
+
+#: views/partials/public_test_labels.hbs:9
+msgid "Error"
+msgstr "Hata"
+
+#: views/partials/public_test_labels.hbs:10
+msgid "Invalid settings"
+msgstr "Geçersiz ayarlar"
+
+#: views/partials/public_test_labels.hbs:11
+msgid "Couldn't connect to IMAP server"
+msgstr "IMAP sunucusuna bağlanılamadı"
+
+#: views/partials/public_test_labels.hbs:12
+msgid "Couldn't connect to SMTP server"
+msgstr "SMTP sunucusuna bağlanılamadı"
+
+#: views/partials/public_test_labels.hbs:13
+msgid "Server response:"
+msgstr "Sunucu yanıtı:"
+
+#: views/partials/public_test_labels.hbs:15
+msgid "Request failed."
+msgstr "İstek tamamlanamadı."
+
+#: views/account-identity-error.hbs:7
+msgid "Wrong Email Account"
+msgstr "Yanlış e-posta hesabı"
+
+#: views/account-identity-error.hbs:12
+msgid ""
+"This setup link can only be used with one specific email account, and a "
+"different one was used."
+msgstr ""
+"Bu kurulum bağlantısı yalnızca belirli bir e-posta hesabıyla "
+"kullanılabilir. Başka bir hesapla oturum açtınız."
+
+#: views/account-identity-error.hbs:18
+msgid "Expected account"
+msgstr "Kullanılması gereken hesap"
+
+#: views/account-identity-error.hbs:21
+msgid "Account used"
+msgstr "Kullanılan hesap"
+
+#: views/account-identity-error.hbs:27
+msgid ""
+"Try again and use the expected account. If you believe this is a mistake, "
+"contact the service that sent you this link."
+msgstr ""
+"Kullanılması gereken hesapla tekrar deneyin. Bir hata olduğunu "
+"düşünüyorsanız bağlantıyı gönderen hizmet sağlayıcısıyla iletişime geçin."
+
+#: lib/autodetect-imap-settings.js:151
+msgid ""
+"Microsoft has disabled password-based sign-ins (including app passwords) for "
+"Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To continue, "
+"please use the \"Sign in with Microsoft\" button to securely connect your "
+"account."
+msgstr ""
+"Microsoft, Outlook.com, Hotmail.com ve Microsoft 365 e-posta hesaplarında "
+"parolayla oturum açmaya artık izin vermiyor. Uygulama parolaları da buna "
+"dahil. Hesabınızı güvenli bir şekilde bağlamak ve devam etmek için \"Sign "
+"in with Microsoft\" düğmesine tıklayın."
+
+#: lib/tools.js:1526 lib/ui-routes/unsubscribe-routes.js:31
+#: lib/ui-routes/unsubscribe-routes.js:99
+msgid "Invalid input"
+msgstr "Girilen bilgiler geçersiz"
+
+#: lib/tools.js:2392
+msgid "Signature validation failed"
+msgstr "İmza doğrulanamadı"
+
+#: lib/tools.js:2415 lib/tools.js:2421 lib/tools.js:2426
+#: lib/ui-routes/account-routes.js:1337
+msgid "Invalid or expired account setup URL"
+msgstr "Hesap kurulum bağlantısı geçersiz veya süresi dolmuş"
+
+#: lib/ui-routes/account-routes.js:481 lib/ui-routes/account-routes.js:525
+#: lib/ui-routes/account-routes.js:859 lib/ui-routes/account-routes.js:936
+#: lib/ui-routes/account-routes.js:949 lib/ui-routes/account-routes.js:996
+#: lib/ui-routes/account-routes.js:1212 lib/ui-routes/account-routes.js:1404
+#: lib/ui-routes/route-helpers.js:403 workers/api.js:2302 workers/api.js:2372
+msgid "Email Account Setup"
+msgstr "E-posta hesabı kurulumu"
+
+#: lib/ui-routes/account-routes.js:550 lib/ui-routes/account-routes.js:582
+#: lib/ui-routes/unsubscribe-routes.js:71
+msgid "Invalid request. Check your input and try again."
+msgstr "İstek geçersiz. Girdiğiniz bilgileri kontrol edip tekrar deneyin."
+
+#: lib/ui-routes/account-routes.js:740
+msgid ""
+"Too many attempts for this setup link. Request a new setup link to continue."
+msgstr ""
+"Bu kurulum bağlantısıyla çok fazla deneme yapıldı. Devam etmek için yeni "
+"bir kurulum bağlantısı isteyin."
+
+#: lib/ui-routes/account-routes.js:983 lib/ui-routes/account-routes.js:1387
+msgid "Couldn't set up account. Try again."
+msgstr "Hesap kurulumu tamamlanamadı. Tekrar deneyin."
+
+#: lib/ui-routes/account-routes.js:1071 lib/ui-routes/account-routes.js:1111
+#: lib/ui-routes/admin-entities-routes.js:2078
+msgid "Server hostname was not found"
+msgstr "Bu adda bir sunucu bulunamadı"
+
+#: lib/ui-routes/account-routes.js:1074 lib/ui-routes/account-routes.js:1114
+#: lib/ui-routes/admin-entities-routes.js:2081
+msgid "Invalid username or password"
+msgstr "Kullanıcı adı veya parola hatalı"
+
+#: lib/ui-routes/account-routes.js:1079 lib/ui-routes/account-routes.js:1131
+#: lib/ui-routes/admin-entities-routes.js:2098
+msgid "Connection timed out"
+msgstr "Bağlantı zaman aşımına uğradı"
+
+#: lib/ui-routes/account-routes.js:1085 lib/ui-routes/account-routes.js:1134
+#: lib/ui-routes/admin-entities-routes.js:2101
+msgid "Could not connect to server"
+msgstr "Sunucuya bağlanılamadı"
+
+#: lib/ui-routes/account-routes.js:1098 lib/ui-routes/account-routes.js:1102
+#: lib/ui-routes/account-routes.js:1123 lib/ui-routes/account-routes.js:1127
+#: lib/ui-routes/admin-entities-routes.js:2090
+#: lib/ui-routes/admin-entities-routes.js:2094
+msgid "TLS protocol error"
+msgstr "TLS protokol hatası"
+
+#: lib/ui-routes/account-routes.js:1117
+#: lib/ui-routes/admin-entities-routes.js:2084
+msgid "Authentication credentials were not provided"
+msgstr "Oturum açma bilgileri eksik"
+
+#: lib/ui-routes/account-routes.js:1120
+#: lib/ui-routes/admin-entities-routes.js:2087
+msgid "OAuth2 authentication failed"
+msgstr "OAuth2 ile kimlik doğrulanamadı"
+
+#: lib/ui-routes/account-routes.js:1137
+#: lib/ui-routes/admin-entities-routes.js:2104
+msgid "Unexpected server response"
+msgstr "Sunucudan beklenmeyen yanıt"
+
+#: lib/ui-routes/account-routes.js:1325
+msgid "Temporary error, please try again"
+msgstr "Geçici bir hata oluştu, tekrar deneyin"
+
+#: lib/ui-routes/admin-config-routes.js:193
+msgid "Invalid API key for OpenAI"
+msgstr "OpenAI API anahtarı geçersiz"
+
+#: lib/ui-routes/oauth-config-routes.js:210
+msgid "Unknown"
+msgstr "Bilinmiyor"
+
+#: lib/ui-routes/oauth-config-routes.js:219
+msgid "Indefinite"
+msgstr "Süresiz"
+
+#: lib/ui-routes/route-helpers.js:105
+msgid "The server unexpectedly closed the connection."
+msgstr "Sunucu bağlantıyı beklenmedik şekilde kapattı."
+
+#: lib/ui-routes/route-helpers.js:107
+msgid ""
+"The server unexpectedly closed the connection. This usually happens when "
+"attempting to connect to a TLS port without TLS enabled."
+msgstr ""
+"Sunucu bağlantıyı beklenmedik şekilde kapattı. Bu durum genellikle TLS "
+"kapalıyken bir TLS portuna bağlanmaya çalıştığınızda olur."
+
+#: lib/ui-routes/route-helpers.js:162
+msgid ""
+"Connection timed out. This usually occurs if you are behind a firewall or "
+"connecting to the wrong port."
+msgstr ""
+"Bağlantı zaman aşımına uğradı. Bunun nedeni genellikle bağlantıyı "
+"engelleyen bir güvenlik duvarı ya da yanlış port kullanılmasıdır."
+
+#: lib/ui-routes/route-helpers.js:169
+msgid ""
+"The server refused the connection. This typically occurs if the server is "
+"not running, is overloaded, or you are connecting to the wrong host or port."
+msgstr ""
+"Sunucu bağlantıyı reddetti. Sunucu çalışmıyor veya aşırı yüklü olabilir. "
+"Yanlış sunucuya ya da porta bağlanmaya çalışıyor da olabilirsiniz."
+
+#: lib/ui-routes/route-helpers.js:223
+msgid "Delegated"
+msgstr "Yetki devriyle erişim"
+
+#: lib/ui-routes/route-helpers.js:224
+msgid "Using credentials from \"%s\""
+msgstr "\"%s\" hesabının oturum açma bilgileri kullanılıyor"
+
+#: lib/ui-routes/unsubscribe-routes.js:41
+#: lib/ui-routes/unsubscribe-routes.js:167
+#: lib/ui-routes/unsubscribe-routes.js:197
+#: lib/ui-routes/unsubscribe-routes.js:242
+msgid "Subscription Management"
+msgstr "Abonelik yönetimi"
+
+#: lib/ui-routes/unsubscribe-routes.js:186
+#: lib/ui-routes/unsubscribe-routes.js:235
+msgid "Couldn't process request. Try again."
+msgstr "İstek işlenemedi. Tekrar deneyin."
+
+#: workers/api.js:2231
+msgid ""
+"The sign-in was cancelled or the requested access was not granted. Open the "
+"account setup link again to retry."
+msgstr ""
+"Oturum açma işlemi iptal edildi veya istenen erişim izni verilmedi. Tekrar "
+"denemek için hesap kurulum bağlantısını yeniden açın."
+
+#: workers/api.js:2240
+msgid "Sign-in with the email provider failed: %s"
+msgstr "E-posta sağlayıcısı üzerinden oturum açılamadı: %s"
+
+#: workers/api.js:2244
+msgid ""
+"Sign-in with the email provider failed: no authorization code was received"
+msgstr "E-posta sağlayıcısı üzerinden oturum açılamadı: yetkilendirme kodu alınmadı"
+
+#: workers/api.js:2250
+msgid "Sign-in with the email provider failed: the request state is not valid"
+msgstr ""
+"E-posta sağlayıcısı üzerinden oturum açılamadı: isteğin durum bilgisi "
+"geçersiz"
+
+#: workers/api.js:2256
+msgid ""
+"The account setup session has expired or was already used. Open the account "
+"setup link again to retry."
+msgstr ""
+"Hesap kurulumu için açılan oturumun süresi dolmuş veya oturum zaten "
+"kullanılmış. Tekrar denemek için hesap kurulum bağlantısını yeniden açın."
+
+#: workers/api.js:2263
+msgid ""
+"Sign-in with the email provider failed: the stored setup session is not valid"
+msgstr ""
+"E-posta sağlayıcısı üzerinden oturum açılamadı: kaydedilen kurulum oturumu "
+"geçersiz"
+
+#: workers/api.js:3129 workers/api.js:3244
+msgid "Requested page not found"
+msgstr "İstenen sayfa bulunamadı"

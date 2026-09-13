@@ -5040,7 +5040,10 @@
                         "pl",
                         "ja",
                         "nl",
-                        "sv"
+                        "sv",
+                        "es",
+                        "it",
+                        "tr"
                     ],
                     "maxLength": 100
                 },

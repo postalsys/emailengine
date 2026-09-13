@@ -1,0 +1,558 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2026-09-13 20:57+0000\n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: views/error.hbs:6 workers/api.js:3130
+msgid "Something went wrong"
+msgstr "Qualcosa è andato storto"
+
+#: views/error.hbs:8
+msgid "Error code: %s"
+msgstr "Codice di errore: %s"
+
+#: views/error.hbs:20
+msgid "Go back"
+msgstr "Torna indietro"
+
+#: views/error.hbs:28
+msgid "Dashboard"
+msgstr "Pannello di controllo"
+
+#: views/config/license.hbs:20 lib/ui-routes/oauth-config-routes.js:217
+msgid "%d day"
+msgid_plural "%d days"
+msgstr[0] "%d giorno"
+msgstr[1] "%d giorni"
+
+#: views/config/tls.hbs:416
+msgid "%d certificate"
+msgid_plural "%d certificates"
+msgstr[0] "%d certificato"
+msgstr[1] "%d certificati"
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr "Fai clic <a href=\"%s\">qui</a> per continuare&mldr;"
+
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr "Autorizzazioni mancanti"
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+"Per funzionare correttamente, il servizio richiede tutte le autorizzazioni "
+"indicate. Alcune non sono state concesse durante l'accesso."
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr "Le seguenti autorizzazioni non sono state concesse:"
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on the "
+"Google consent screen."
+msgstr ""
+"Riprova selezionando tutte le caselle relative alle autorizzazioni nella "
+"schermata di consenso di Google."
+
+#: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
+msgid "Try Again"
+msgstr "Riprova"
+
+#: views/unsubscribe.hbs:7 views/unsubscribe.hbs:60 views/unsubscribe.hbs:76
+msgid "Unsubscribe"
+msgstr "Annulla l'iscrizione"
+
+#: views/unsubscribe.hbs:9
+msgid "Your email address was unsubscribed."
+msgstr "Il tuo indirizzo email è stato rimosso dalla lista."
+
+#: views/unsubscribe.hbs:11
+msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
+msgstr ""
+"Hai annullato l'iscrizione per errore? Fai clic <a%s>qui</a> per iscriverti "
+"di nuovo."
+
+#: views/unsubscribe.hbs:18
+msgid "Re-subscribe"
+msgstr "Iscriviti di nuovo"
+
+#: views/unsubscribe.hbs:24
+msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
+msgstr "Vuoi davvero iscriverti di nuovo con l'indirizzo <em>%s</em>?"
+
+#: views/unsubscribe.hbs:33 views/accounts/register/imap-server.hbs:288
+#: views/accounts/register/imap-server.hbs:297
+#: views/partials/public_alerts.hbs:11
+msgid "Close"
+msgstr "Chiudi"
+
+#: views/unsubscribe.hbs:35
+msgid "Subscribe"
+msgstr "Iscriviti"
+
+#: views/unsubscribe.hbs:54
+msgid "Subscription resumed"
+msgstr "Iscrizione riattivata"
+
+#: views/unsubscribe.hbs:56
+msgid "Your email address <em>%s</em> was re-subscribed."
+msgstr "L'indirizzo <em>%s</em> è stato aggiunto di nuovo alla lista."
+
+#: views/unsubscribe.hbs:71 views/accounts/register/imap.hbs:25
+msgid "Email address"
+msgstr "Indirizzo email"
+
+#: views/unsubscribe.hbs:83
+msgid ""
+"This link is not valid. Use the unsubscribe link from the email you received."
+msgstr ""
+"Questo link non è valido. Per annullare l'iscrizione, usa il link "
+"nell'email che hai ricevuto."
+
+#: views/accounts/register/index.hbs:6
+msgid "Choose your email account provider"
+msgstr "Scegli il tuo provider di posta"
+
+#: views/accounts/register/index.hbs:19
+msgid "Standard IMAP"
+msgstr "IMAP standard"
+
+#: views/accounts/register/validating.hbs:35
+msgid "Checking your mail server"
+msgstr "Stiamo controllando il tuo server di posta"
+
+#: views/accounts/register/validating.hbs:40
+msgid "Still checking. This can take up to a minute."
+msgstr "La verifica è ancora in corso. Potrebbe volerci fino a un minuto."
+
+#: views/accounts/register/validating.hbs:47
+msgid "Enter server settings manually"
+msgstr "Inserisci manualmente le impostazioni del server"
+
+#: views/accounts/register/validating.hbs:53
+msgid "We couldn't sign in to your mail server"
+msgstr "Non siamo riusciti ad accedere al tuo server di posta"
+
+#: views/accounts/register/validating.hbs:54
+msgid "Check the settings on the next page and try again."
+msgstr "Controlla le impostazioni nella pagina successiva e riprova."
+
+#: views/accounts/register/validating.hbs:61
+msgid "Continue to server settings"
+msgstr "Vai alle impostazioni del server"
+
+#: views/accounts/register/validating.hbs:69
+msgid "Almost there"
+msgstr "Ci siamo quasi"
+
+#: views/accounts/register/validating.hbs:70
+msgid "Continue to review your mail server settings."
+msgstr "Continua per controllare le impostazioni del tuo server di posta."
+
+#: views/accounts/register/validating.hbs:74
+#: views/accounts/register/imap.hbs:55
+msgid "Continue"
+msgstr "Continua"
+
+#: views/accounts/register/imap.hbs:13
+msgid "Your name"
+msgstr "Il tuo nome"
+
+#: views/accounts/register/imap.hbs:19
+msgid "Enter your full name"
+msgstr "Inserisci nome e cognome"
+
+#: views/accounts/register/imap.hbs:35
+msgid "This setup link is restricted to this email address"
+msgstr "Il link può essere usato solo con questo indirizzo email"
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your email address"
+msgstr "Inserisci il tuo indirizzo email"
+
+#: views/accounts/register/imap.hbs:43
+#: views/accounts/register/imap-server.hbs:58
+#: views/accounts/register/imap-server.hbs:165
+msgid "Password"
+msgstr "Password"
+
+#: views/accounts/register/imap.hbs:49
+msgid "Enter your account password"
+msgstr "Inserisci la password del tuo account"
+
+#: views/accounts/register/imap-server.hbs:23
+msgid ""
+"Server settings could not be detected automatically for %s. Enter them below."
+msgstr ""
+"Non siamo riusciti a trovare automaticamente le impostazioni del server per "
+"il dominio %s. Inseriscile qui sotto."
+
+#: views/accounts/register/imap-server.hbs:34
+msgid ""
+"We couldn't sign in to your mail server with those settings. Check them and "
+"try again."
+msgstr ""
+"Non siamo riusciti ad accedere al tuo server di posta con queste "
+"impostazioni. Controllale e riprova."
+
+#: views/accounts/register/imap-server.hbs:41
+msgid "IMAP"
+msgstr "IMAP"
+
+#: views/accounts/register/imap-server.hbs:44
+#: views/accounts/register/imap-server.hbs:151
+msgid "Username"
+msgstr "Nome utente"
+
+#: views/accounts/register/imap-server.hbs:70
+#: views/accounts/register/imap-server.hbs:177
+msgid "Important"
+msgstr "Importante"
+
+#: views/accounts/register/imap-server.hbs:81
+#: views/accounts/register/imap-server.hbs:188
+msgid "Instructions"
+msgstr "Istruzioni"
+
+#: views/accounts/register/imap-server.hbs:83
+#: views/accounts/register/imap-server.hbs:190
+msgid "%s accounts require an application password for %s."
+msgstr "Gli account %s richiedono una password per le app quando usi %s."
+
+#: views/accounts/register/imap-server.hbs:92
+#: views/accounts/register/imap-server.hbs:199
+msgid "Application Password"
+msgstr "Password per le app"
+
+#: views/accounts/register/imap-server.hbs:106
+#: views/accounts/register/imap-server.hbs:213
+msgid "Hostname"
+msgstr "Nome del server"
+
+#: views/accounts/register/imap-server.hbs:116
+#: views/accounts/register/imap-server.hbs:223
+msgid "Port"
+msgstr "Porta"
+
+#: views/accounts/register/imap-server.hbs:131
+msgid "TLS for IMAP"
+msgstr "TLS per IMAP"
+
+#: views/accounts/register/imap-server.hbs:132
+msgid ""
+"TLS (also known as SSL) is usually only needed when using port 993. For "
+"other ports EmailEngine falls back to using STARTTLS based encryption."
+msgstr ""
+"In genere, devi attivare TLS (noto anche come SSL) solo se usi la porta "
+"993. Sulle altre porte, EmailEngine usa la crittografia STARTTLS."
+
+#: views/accounts/register/imap-server.hbs:139
+#: views/accounts/register/imap-server.hbs:246
+msgid "Use TLS"
+msgstr "Usa TLS"
+
+#: views/accounts/register/imap-server.hbs:148
+msgid "SMTP"
+msgstr "SMTP"
+
+#: views/accounts/register/imap-server.hbs:238
+msgid "TLS for SMTP"
+msgstr "TLS per SMTP"
+
+#: views/accounts/register/imap-server.hbs:239
+msgid ""
+"TLS (also known as SSL) is usually only needed when using port 465. For "
+"other ports EmailEngine falls back to using STARTTLS based encryption."
+msgstr ""
+"In genere, devi attivare TLS (noto anche come SSL) solo se usi la porta "
+"465. Sulle altre porte, EmailEngine usa la crittografia STARTTLS."
+
+#: views/accounts/register/imap-server.hbs:259
+msgid "Verify connection"
+msgstr "Verifica la connessione"
+
+#: views/accounts/register/imap-server.hbs:265
+msgid "Save and continue"
+msgstr "Salva e continua"
+
+#: views/accounts/register/imap-server.hbs:270
+msgid "Toggle Dropdown"
+msgstr "Mostra o nascondi il menu"
+
+#: views/accounts/register/imap-server.hbs:274
+msgid "Skip verification"
+msgstr "Salta la verifica"
+
+#: views/accounts/register/imap-server.hbs:287
+msgid "Connection test failed"
+msgstr "Verifica della connessione non riuscita"
+
+#: views/accounts/register/imap-server.hbs:293
+msgid "We couldn't connect with these settings. Check the errors below."
+msgstr ""
+"Non siamo riusciti a connetterci con queste impostazioni. Controlla i "
+"messaggi di errore qui sotto."
+
+#: views/partials/public_test_labels.hbs:9
+msgid "Error"
+msgstr "Errore"
+
+#: views/partials/public_test_labels.hbs:10
+msgid "Invalid settings"
+msgstr "Impostazioni non valide"
+
+#: views/partials/public_test_labels.hbs:11
+msgid "Couldn't connect to IMAP server"
+msgstr "Impossibile connettersi al server IMAP"
+
+#: views/partials/public_test_labels.hbs:12
+msgid "Couldn't connect to SMTP server"
+msgstr "Impossibile connettersi al server SMTP"
+
+#: views/partials/public_test_labels.hbs:13
+msgid "Server response:"
+msgstr "Risposta del server:"
+
+#: views/partials/public_test_labels.hbs:15
+msgid "Request failed."
+msgstr "Richiesta non riuscita."
+
+#: views/account-identity-error.hbs:7
+msgid "Wrong Email Account"
+msgstr "Account email sbagliato"
+
+#: views/account-identity-error.hbs:12
+msgid ""
+"This setup link can only be used with one specific email account, and a "
+"different one was used."
+msgstr ""
+"Questo link è valido solo per uno specifico account email. Hai effettuato "
+"l'accesso con un altro account."
+
+#: views/account-identity-error.hbs:18
+msgid "Expected account"
+msgstr "Account richiesto"
+
+#: views/account-identity-error.hbs:21
+msgid "Account used"
+msgstr "Account utilizzato"
+
+#: views/account-identity-error.hbs:27
+msgid ""
+"Try again and use the expected account. If you believe this is a mistake, "
+"contact the service that sent you this link."
+msgstr ""
+"Riprova con l'account richiesto. Se pensi che ci sia un errore, contatta il "
+"servizio che ti ha inviato il link."
+
+#: lib/autodetect-imap-settings.js:151
+msgid ""
+"Microsoft has disabled password-based sign-ins (including app passwords) for "
+"Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To continue, "
+"please use the \"Sign in with Microsoft\" button to securely connect your "
+"account."
+msgstr ""
+"Microsoft non consente più l'accesso con password per gli account email di "
+"Outlook.com, Hotmail.com e Microsoft 365. Questo vale anche per le password "
+"per le app. Fai clic su \"Sign in with Microsoft\" per collegare il tuo "
+"account in modo sicuro e continuare."
+
+#: lib/tools.js:1526 lib/ui-routes/unsubscribe-routes.js:31
+#: lib/ui-routes/unsubscribe-routes.js:99
+msgid "Invalid input"
+msgstr "Dati inseriti non validi"
+
+#: lib/tools.js:2392
+msgid "Signature validation failed"
+msgstr "Non è stato possibile verificare la firma"
+
+#: lib/tools.js:2415 lib/tools.js:2421 lib/tools.js:2426
+#: lib/ui-routes/account-routes.js:1337
+msgid "Invalid or expired account setup URL"
+msgstr "Il link per collegare l'account non è valido o è scaduto"
+
+#: lib/ui-routes/account-routes.js:481 lib/ui-routes/account-routes.js:525
+#: lib/ui-routes/account-routes.js:859 lib/ui-routes/account-routes.js:936
+#: lib/ui-routes/account-routes.js:949 lib/ui-routes/account-routes.js:996
+#: lib/ui-routes/account-routes.js:1212 lib/ui-routes/account-routes.js:1404
+#: lib/ui-routes/route-helpers.js:403 workers/api.js:2302 workers/api.js:2372
+msgid "Email Account Setup"
+msgstr "Collega un account email"
+
+#: lib/ui-routes/account-routes.js:550 lib/ui-routes/account-routes.js:582
+#: lib/ui-routes/unsubscribe-routes.js:71
+msgid "Invalid request. Check your input and try again."
+msgstr "Richiesta non valida. Controlla i dati e riprova."
+
+#: lib/ui-routes/account-routes.js:740
+msgid ""
+"Too many attempts for this setup link. Request a new setup link to continue."
+msgstr "Troppi tentativi con questo link. Richiedi un nuovo link per continuare."
+
+#: lib/ui-routes/account-routes.js:983 lib/ui-routes/account-routes.js:1387
+msgid "Couldn't set up account. Try again."
+msgstr "Non è stato possibile collegare l'account. Riprova."
+
+#: lib/ui-routes/account-routes.js:1071 lib/ui-routes/account-routes.js:1111
+#: lib/ui-routes/admin-entities-routes.js:2078
+msgid "Server hostname was not found"
+msgstr "Impossibile trovare il server con questo nome"
+
+#: lib/ui-routes/account-routes.js:1074 lib/ui-routes/account-routes.js:1114
+#: lib/ui-routes/admin-entities-routes.js:2081
+msgid "Invalid username or password"
+msgstr "Nome utente o password non corretti"
+
+#: lib/ui-routes/account-routes.js:1079 lib/ui-routes/account-routes.js:1131
+#: lib/ui-routes/admin-entities-routes.js:2098
+msgid "Connection timed out"
+msgstr "Tempo di attesa per la connessione scaduto"
+
+#: lib/ui-routes/account-routes.js:1085 lib/ui-routes/account-routes.js:1134
+#: lib/ui-routes/admin-entities-routes.js:2101
+msgid "Could not connect to server"
+msgstr "Impossibile connettersi al server"
+
+#: lib/ui-routes/account-routes.js:1098 lib/ui-routes/account-routes.js:1102
+#: lib/ui-routes/account-routes.js:1123 lib/ui-routes/account-routes.js:1127
+#: lib/ui-routes/admin-entities-routes.js:2090
+#: lib/ui-routes/admin-entities-routes.js:2094
+msgid "TLS protocol error"
+msgstr "Errore del protocollo TLS"
+
+#: lib/ui-routes/account-routes.js:1117
+#: lib/ui-routes/admin-entities-routes.js:2084
+msgid "Authentication credentials were not provided"
+msgstr "Credenziali di accesso mancanti"
+
+#: lib/ui-routes/account-routes.js:1120
+#: lib/ui-routes/admin-entities-routes.js:2087
+msgid "OAuth2 authentication failed"
+msgstr "Autenticazione OAuth2 non riuscita"
+
+#: lib/ui-routes/account-routes.js:1137
+#: lib/ui-routes/admin-entities-routes.js:2104
+msgid "Unexpected server response"
+msgstr "Risposta del server inattesa"
+
+#: lib/ui-routes/account-routes.js:1325
+msgid "Temporary error, please try again"
+msgstr "Errore temporaneo, riprova"
+
+#: lib/ui-routes/admin-config-routes.js:193
+msgid "Invalid API key for OpenAI"
+msgstr "Chiave API di OpenAI non valida"
+
+#: lib/ui-routes/oauth-config-routes.js:210
+msgid "Unknown"
+msgstr "Sconosciuto"
+
+#: lib/ui-routes/oauth-config-routes.js:219
+msgid "Indefinite"
+msgstr "Senza scadenza"
+
+#: lib/ui-routes/route-helpers.js:105
+msgid "The server unexpectedly closed the connection."
+msgstr "Il server ha chiuso la connessione in modo inatteso."
+
+#: lib/ui-routes/route-helpers.js:107
+msgid ""
+"The server unexpectedly closed the connection. This usually happens when "
+"attempting to connect to a TLS port without TLS enabled."
+msgstr ""
+"Il server ha chiuso la connessione in modo inatteso. Di solito succede "
+"quando usi una porta TLS senza aver attivato TLS."
+
+#: lib/ui-routes/route-helpers.js:162
+msgid ""
+"Connection timed out. This usually occurs if you are behind a firewall or "
+"connecting to the wrong port."
+msgstr ""
+"Tempo di attesa per la connessione scaduto. Di solito succede se un "
+"firewall blocca la connessione o se usi una porta errata."
+
+#: lib/ui-routes/route-helpers.js:169
+msgid ""
+"The server refused the connection. This typically occurs if the server is "
+"not running, is overloaded, or you are connecting to the wrong host or port."
+msgstr ""
+"Il server ha rifiutato la connessione. Di solito succede se il server non è "
+"in funzione o è sovraccarico, oppure se il nome del server o la porta sono "
+"errati."
+
+#: lib/ui-routes/route-helpers.js:223
+msgid "Delegated"
+msgstr "Accesso delegato"
+
+#: lib/ui-routes/route-helpers.js:224
+msgid "Using credentials from \"%s\""
+msgstr "Vengono usate le credenziali dell'account \"%s\""
+
+#: lib/ui-routes/unsubscribe-routes.js:41
+#: lib/ui-routes/unsubscribe-routes.js:167
+#: lib/ui-routes/unsubscribe-routes.js:197
+#: lib/ui-routes/unsubscribe-routes.js:242
+msgid "Subscription Management"
+msgstr "Gestione dell'iscrizione"
+
+#: lib/ui-routes/unsubscribe-routes.js:186
+#: lib/ui-routes/unsubscribe-routes.js:235
+msgid "Couldn't process request. Try again."
+msgstr "Non è stato possibile elaborare la richiesta. Riprova."
+
+#: workers/api.js:2231
+msgid ""
+"The sign-in was cancelled or the requested access was not granted. Open the "
+"account setup link again to retry."
+msgstr ""
+"L'accesso è stato annullato oppure l'autorizzazione richiesta non è stata "
+"concessa. Riapri il link per collegare l'account e riprova."
+
+#: workers/api.js:2240
+msgid "Sign-in with the email provider failed: %s"
+msgstr "Accesso tramite il provider di posta non riuscito: %s"
+
+#: workers/api.js:2244
+msgid ""
+"Sign-in with the email provider failed: no authorization code was received"
+msgstr ""
+"Accesso tramite il provider di posta non riuscito: non abbiamo ricevuto il "
+"codice di autorizzazione"
+
+#: workers/api.js:2250
+msgid "Sign-in with the email provider failed: the request state is not valid"
+msgstr ""
+"Accesso tramite il provider di posta non riuscito: lo stato della richiesta "
+"non è valido"
+
+#: workers/api.js:2256
+msgid ""
+"The account setup session has expired or was already used. Open the account "
+"setup link again to retry."
+msgstr ""
+"La sessione per collegare l'account è scaduta o è già stata usata. Riapri il "
+"link per collegare l'account e riprova."
+
+#: workers/api.js:2263
+msgid ""
+"Sign-in with the email provider failed: the stored setup session is not valid"
+msgstr ""
+"Accesso tramite il provider di posta non riuscito: la sessione di "
+"configurazione salvata non è valida"
+
+#: workers/api.js:3129 workers/api.js:3244
+msgid "Requested page not found"
+msgstr "Pagina non trovata"

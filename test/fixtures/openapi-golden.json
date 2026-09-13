@@ -9334,7 +9334,10 @@
           "pl",
           "ja",
           "nl",
-          "sv"
+          "sv",
+          "es",
+          "it",
+          "tr"
         ],
         "nullable": true,
         "maxLength": 100
@@ -10122,7 +10125,10 @@
           "pl",
           "ja",
           "nl",
-          "sv"
+          "sv",
+          "es",
+          "it",
+          "tr"
         ],
         "maxLength": 100
       },
