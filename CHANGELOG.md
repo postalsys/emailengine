@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.81.1](https://github.com/postalsys/emailengine/compare/v2.81.0...v2.81.1) (2026-09-15)
+
+
+### Bug Fixes
+
+* update dependencies to latest versions ([cd8b72c](https://github.com/postalsys/emailengine/commit/cd8b72c21aa07f8437aa0aebaccbbb40c7ea9c0a))
+
 ## [2.81.0](https://github.com/postalsys/emailengine/compare/v2.80.1...v2.81.0) (2026-09-13)
 
 
