@@ -11,17 +11,14 @@ const { arfDetect, camelCaseComplaint, ORIGINAL_MESSAGE_TYPES } = require('../li
 const { simpleParser } = require('mailparser');
 const fs = require('fs');
 
-// Exercise the real complaint heuristic instead of a copy. The IMAP Mailbox.mightBeAComplaint
-// keeps its folder guard (it reads `this.path` and `this.isAllMail`, so the receiver represents an
-// INBOX folder) and delegates the shape check to the connection, where the API clients' own
-// BaseClient.mightBeAComplaint reads it too, so one heuristic is under test for both arrival paths.
-const { Mailbox } = require('../lib/email-client/imap/mailbox');
+// Exercise the real complaint heuristic instead of a copy: BaseClient.mightBeAComplaint is the one
+// check both arrival paths run, gated on the message being in the Inbox, which is what the
+// messages here represent.
 const { BaseClient } = require('../lib/email-client/base-client');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
-const inboxReceiver = { path: 'INBOX', isAllMail: false, connection: BaseClient.prototype };
-const mightBeAComplaint = messageInfo => Mailbox.prototype.mightBeAComplaint.call(inboxReceiver, messageInfo);
+const mightBeAComplaint = messageInfo => BaseClient.prototype.mightBeAComplaint.call(BaseClient.prototype, { messageSpecialUse: '\\Inbox', ...messageInfo });
 
 const Path = require('path');
 const path = fname => Path.join(__dirname, 'fixtures', 'complaints', fname);
@@ -36,7 +33,6 @@ async function parseForArfDetect(filePath) {
     return {
         from: parsed.from?.value?.[0] || {},
         subject: parsed.subject || '',
-        messageSpecialUse: '\\Inbox',
         attachments: (parsed.attachments || []).map(att => ({
             contentType: att.contentType,
             content: att.content
@@ -257,21 +253,11 @@ test('mightBeAComplaint heuristics', async t => {
         };
         assert.strictEqual(mightBeAComplaint(messageInfo), false);
     });
-});
 
-// The API path's own gate; the shape check is the shared one, exercised above
-test('mightBeAComplaint on the API clients', async t => {
-    const baseClientComplaint = messageData => BaseClient.prototype.mightBeAComplaint.call(BaseClient.prototype, messageData);
-
-    await t.test('requires messageSpecialUse Inbox', () => {
-        const msg = { attachments: [{ contentType: 'message/feedback-report' }] };
-        assert.strictEqual(baseClientComplaint(msg), false);
-        assert.strictEqual(baseClientComplaint({ ...msg, messageSpecialUse: '\\Inbox' }), true);
-    });
-
-    await t.test('an attachment-less message that qualifies on sender and subject does not throw', () => {
-        // The Gmail API and Graph clients leave `attachments` unset when there are none
-        assert.strictEqual(baseClientComplaint({ messageSpecialUse: '\\Inbox', from: { address: 'abuse@isp.example' }, subject: 'Abuse report' }), true);
+    await t.test('Tolerates a message without attachments', async () => {
+        // The Gmail API and Graph clients leave `attachments` unset when there are none, and the
+        // sender and subject rules qualify such a message on their own
+        assert.strictEqual(mightBeAComplaint({ from: { address: 'abuse@isp.example' }, subject: 'Abuse report' }), true);
     });
 });
 

@@ -170,6 +170,10 @@ test('Mailbox.processNew() when the connection goes away mid-enrichment', async 
                 imapClient,
                 notifyFrom: false,
                 syncFrom: false,
+                // The arrival checks live on the connection; none of these messages is a report
+                mightBeDSNResponse: () => false,
+                mightBeABounce: () => false,
+                mightBeAComplaint: () => false,
                 // Only reached once the enrichment is done, which is the point of the last case
                 redis: { pfadd: async () => 1, set: async () => 'OK', del: async () => 1 },
                 async notify(mailbox, event, data) {
@@ -178,9 +182,6 @@ test('Mailbox.processNew() when the connection goes away mid-enrichment', async 
             },
             // The fetch itself is not what is under test - the enrichment that follows it is
             getMessage: async () => messageInfo,
-            mightBeDSNResponse: () => false,
-            mightBeABounce: () => false,
-            mightBeAComplaint: () => false,
             getSeenMessagesKey: () => 'seen:test-account:INBOX'
         });
 
