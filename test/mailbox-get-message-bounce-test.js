@@ -20,7 +20,7 @@ function createContext() {
     const events = [];
     const ctx = {
         path: 'INBOX',
-        listingEntry: {},
+        listingEntry: { specialUse: '\\Inbox' },
         logger: noopLogger,
         connection: {
             getImapConnection: async () => ({
@@ -32,6 +32,8 @@ function createContext() {
             }),
             detectBounce: async (messageInfo, getContent) => {
                 events.push('detect');
+                // The check is for the Inbox only, so the folder has to be decided by now
+                assert.equal(messageInfo.messageSpecialUse, '\\Inbox');
                 assert.equal((await getContent()).toString(), 'raw');
             }
         },
@@ -40,7 +42,9 @@ function createContext() {
                 events.push('release');
             }
         }),
-        getMessageInfo: async () => ({ id: 'm1', uid: 42 })
+        getMessageInfo: async () => ({ id: 'm1', uid: 42 }),
+        // The real implementation, so the folder is decided the way production decides it
+        setMessageSpecialUse: Mailbox.prototype.setMessageSpecialUse
     };
     return { ctx, events };
 }

@@ -155,6 +155,7 @@ test('BaseClient.detectBounce()', async t => {
     const bounceLike = () => ({
         id: 'm1',
         messageId: '<6343ae11.050a0220.d9258.3a6c.GMR@mx.google.com>',
+        messageSpecialUse: '\\Inbox',
         from: { name: 'Mail Delivery Subsystem', address: 'mailer-daemon@googlemail.com' },
         subject: 'Delivery Status Notification (Failure)'
     });
@@ -169,16 +170,26 @@ test('BaseClient.detectBounce()', async t => {
         return { client, downloads: () => downloads };
     }
 
-    await t.test('a bounce is recognized from its content, whatever folder it sits in', async () => {
+    await t.test('a bounce in the Inbox is recognized from its content', async () => {
         const { client, downloads } = makeFetchClient(await fixture('gmail.eml'));
-        // The arrival path only looks at the Inbox and Junk; a bounce moved to Trash is still one
-        const message = Object.assign(bounceLike(), { messageSpecialUse: '\\Trash' });
+        const message = bounceLike();
 
         await client.detectBounce(message);
 
         assert.equal(downloads(), 1);
         assert.equal(message.isBounce, true);
         assert.equal(message.relatedMessageId, '<CAPacwgw3pCyVcmW4nVy8VPX5u5ksn_wZB2jZ_tLUM2es7LaiEA@mail.gmail.com>');
+    });
+
+    await t.test('a message outside the Inbox is not checked', async () => {
+        const { client, downloads } = makeFetchClient(await fixture('gmail.eml'));
+
+        for (const messageSpecialUse of ['\\Trash', '\\Junk', '\\Sent', undefined]) {
+            const message = Object.assign(bounceLike(), { messageSpecialUse });
+            await client.detectBounce(message);
+            assert.ok(!('isBounce' in message), `${messageSpecialUse} is not checked`);
+        }
+        assert.equal(downloads(), 0);
     });
 
     await t.test('the caller can supply the download', async () => {
@@ -193,7 +204,7 @@ test('BaseClient.detectBounce()', async t => {
 
     await t.test('a message that does not look like a bounce is not downloaded', async () => {
         const { client, downloads } = makeFetchClient(Buffer.from('Subject: hello\r\n\r\nhi'));
-        const message = { id: 'm2', from: { name: 'Alice', address: 'alice@example.com' }, subject: 'Lunch?' };
+        const message = { id: 'm2', messageSpecialUse: '\\Inbox', from: { name: 'Alice', address: 'alice@example.com' }, subject: 'Lunch?' };
 
         await client.detectBounce(message);
 

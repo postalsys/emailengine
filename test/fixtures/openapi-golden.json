@@ -3876,7 +3876,7 @@
           },
           "isBounce": {
             "type": "boolean",
-            "description": "Whether this message is a bounce (a delivery failure report). A delivery or delay notification is not one",
+            "description": "Whether this message is a bounce (a delivery failure report). Checked for messages in the Inbox only; a delivery or delay notification is not one",
             "example": false
           },
           "relatedMessageId": {
