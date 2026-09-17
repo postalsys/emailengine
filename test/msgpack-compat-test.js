@@ -6,7 +6,7 @@ const assert = require('node:assert').strict;
 const msgpack = require('../lib/msgpack');
 
 // Blobs encoded with msgpack5 6.0.2, the library used before lib/msgpack. They mirror the
-// persisted shapes (Redis token/listing/log/append-list entries, EENGINE_PREPARED_TOKEN),
+// persisted shapes (Redis token/listing/log entries, EENGINE_PREPARED_TOKEN),
 // so this test is what proves data written by earlier releases stays readable.
 const MSGPACK5_FIXTURES = {
     // API token entry (lib/tokens.js)
@@ -17,8 +17,6 @@ const MSGPACK5_FIXTURES = {
     listing: '93aa6d73672d69642d31323392a85c466c6167676564a6637573746f6d91a76c6162656c2d61',
     // log row with a Date (ext -1 timestamp)
     dated: '82a474696d65d7ff5f5e10006a79a5eea36d7367a86c6f67206c696e65',
-    // two concatenated values (lib/append-list.js hash field)
-    stream: '82a373657101a576616c7565a5666972737482a373657102a576616c7565a67365636f6e64',
     // own '__proto__' key - msgpack5 refused to decode this, the new library must too
     protoKey: '82a95f5f70726f746f5f5f81a8706f6c6c75746564c3a47361666501'
 };
@@ -53,13 +51,6 @@ test('msgpack wrapper compatibility tests', async t => {
         assert.ok(entry.time instanceof Date);
         assert.strictEqual(entry.time.getTime(), new Date('2026-08-10T10:20:30.400Z').getTime());
         assert.strictEqual(entry.msg, 'log line');
-    });
-
-    await t.test('decodeMulti() reads a concatenated msgpack5 stream', () => {
-        assert.deepStrictEqual(msgpack.decodeMulti(Buffer.from(MSGPACK5_FIXTURES.stream, 'hex')), [
-            { seq: 1, value: 'first' },
-            { seq: 2, value: 'second' }
-        ]);
     });
 
     await t.test('refuses to decode an own __proto__ key, like msgpack5 did', () => {

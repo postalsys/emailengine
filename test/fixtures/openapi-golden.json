@@ -3628,64 +3628,6 @@
           }
         }
       },
-      "BounceResponse": {
-        "type": "object",
-        "properties": {
-          "message": {
-            "type": "string",
-            "description": "Error message from the receiving server",
-            "example": "550 5.1.1 No such user"
-          },
-          "status": {
-            "type": "string",
-            "description": "SMTP status code",
-            "example": "5.1.1"
-          }
-        }
-      },
-      "BounceEntry": {
-        "type": "object",
-        "properties": {
-          "message": {
-            "type": "string",
-            "description": "EmailEngine identifier of the bounce notification",
-            "example": "AAAAAQAACnA",
-            "maxLength": 256
-          },
-          "recipient": {
-            "type": "string",
-            "description": "Email address that bounced",
-            "example": "recipient@example.com",
-            "x-format": {
-              "email": true
-            }
-          },
-          "action": {
-            "type": "string",
-            "description": "Bounce action (failed, delayed, etc.)",
-            "example": "failed"
-          },
-          "response": {
-            "$ref": "#/components/schemas/BounceResponse"
-          },
-          "date": {
-            "type": "string",
-            "format": "date-time",
-            "description": "When the bounce was detected",
-            "example": "2021-03-22T13:13:31.000Z"
-          }
-        },
-        "required": [
-          "message"
-        ]
-      },
-      "BounceList": {
-        "type": "array",
-        "description": "Bounce notifications recorded against this message when they arrived",
-        "items": {
-          "$ref": "#/components/schemas/BounceEntry"
-        }
-      },
       "MessageCategory": {
         "type": "string",
         "description": "Gmail inbox tab/category of the message (Gmail API accounts only)",
@@ -3865,9 +3807,6 @@
           },
           "text": {
             "$ref": "#/components/schemas/TextInfoDetails"
-          },
-          "bounces": {
-            "$ref": "#/components/schemas/BounceList"
           },
           "isAutoReply": {
             "type": "boolean",
@@ -4650,9 +4589,6 @@
             "type": "boolean",
             "description": "Whether this message appears to be an automatic reply (out of office, vacation responder, etc.)",
             "example": false
-          },
-          "bounces": {
-            "$ref": "#/components/schemas/BounceList"
           }
         }
       },
@@ -12410,9 +12346,6 @@
             "type": "boolean",
             "description": "Whether this message appears to be an automatic reply (out of office, vacation responder, etc.)",
             "example": false
-          },
-          "bounces": {
-            "$ref": "#/components/schemas/BounceList"
           },
           "account": {
             "type": "string",

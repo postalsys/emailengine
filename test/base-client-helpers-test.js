@@ -1,9 +1,10 @@
 'use strict';
 
 // Hermetic unit tests for the BaseClient helpers shared by every client type: how a send
-// failure is reported (handleSubmitError, now also reached by the API send paths), the bounce
-// store behind the `bounces` field of the message details response, the packed identifier
-// decoder of the API clients, and the two OAuth2 error classifiers used by the transports.
+// failure is reported (handleSubmitError, now also reached by the API send paths), the
+// content-based bounce check behind the isBounce field of the message details response, the
+// packed identifier decoder of the API clients, and the two OAuth2 error classifiers used by
+// the transports.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -20,29 +21,19 @@ const { noopLogger } = require('./helpers/auth-failure');
 
 registerRedisTeardown(redis);
 
-// In-memory stand-in for the two hash commands lib/append-list.js uses
-function makeAppendRedis() {
-    const store = new Map();
-    const hashes = new Map();
+// Records the one hash command handleSubmitError() reaches
+function makeRedis() {
+    const writes = [];
     return {
-        hashes,
-        async hPush(list, key, encoded) {
-            const id = list + ' ' + key;
-            const prev = store.get(id);
-            store.set(id, prev ? Buffer.concat([prev, Buffer.from(encoded)]) : Buffer.from(encoded));
-            return prev ? 2 : 1;
-        },
-        async hgetBuffer(list, key) {
-            return store.get(list + ' ' + key) || null;
-        },
+        writes,
         async hset(key, field, value) {
-            hashes.set(key + ':' + field, value);
+            writes.push({ key, field, value });
         }
     };
 }
 
 function makeClient() {
-    return new BaseClient('acc-1', { logger: noopLogger, accountLogger: { enabled: false, log() {} }, redis: makeAppendRedis() });
+    return new BaseClient('acc-1', { logger: noopLogger, accountLogger: { enabled: false, log() {} }, redis: makeRedis() });
 }
 
 test('BaseClient.handleSubmitError()', async t => {
@@ -70,7 +61,7 @@ test('BaseClient.handleSubmitError()', async t => {
         assert.equal(err.statusCode, 500, 'the API client marks non-retryable sends with 500; the SMTP branch used to null it');
         assert.equal(err.code, 'InvalidMessage');
         assert.equal(err.info.response, 'Bad recipients');
-        assert.equal(client.redis.hashes.size, 0, 'no SMTP status is faked for an API failure');
+        assert.equal(client.redis.writes.length, 0, 'no SMTP status is faked for an API failure');
         assert.deepEqual(feedback, [['fb-1', false, 'Failed to send email']]);
         assert.equal(notifications.length, 1);
         assert.equal(notifications[0].event, EMAIL_DELIVERY_ERROR_NOTIFY);
@@ -90,61 +81,11 @@ test('BaseClient.handleSubmitError()', async t => {
         await client.handleSubmitError(err, Object.assign({ smtpSettings: { host: 'smtp.example.com', port: 587 } }, context));
 
         assert.equal(err.statusCode, 535);
-        assert.ok(client.redis.hashes.has(client.getAccountKey() + ':smtpStatus'), 'the SMTP status is recorded for the account');
+        assert.ok(
+            client.redis.writes.some(write => write.key === client.getAccountKey() && write.field === 'smtpStatus'),
+            'the SMTP status is recorded for the account'
+        );
         assert.equal(notifications[0].payload.smtpResponseCode, 535);
-    });
-});
-
-test('BaseClient bounce store', async t => {
-    await t.test('a stored bounce is listed back in the shape of the bounces field', async () => {
-        const client = makeClient();
-        const before = Date.now();
-
-        const stored = await client.storeBounce('bounce-msg-id', {
-            messageId: '<orig@example.com>',
-            recipient: 'bob@example.com',
-            action: 'failed',
-            response: { message: 'User unknown', status: '5.1.1' }
-        });
-        assert.equal(stored, 1);
-
-        const bounces = await client.listBounces('<orig@example.com>');
-        assert.equal(bounces.length, 1);
-        const [bounce] = bounces;
-        assert.equal(bounce.message, 'bounce-msg-id');
-        assert.equal(bounce.recipient, 'bob@example.com');
-        assert.equal(bounce.action, 'failed');
-        assert.deepEqual(bounce.response, { message: 'User unknown', status: '5.1.1' });
-        assert.ok(new Date(bounce.date).getTime() >= before);
-    });
-
-    await t.test('attachBounces() adds the field only when something was recorded', async () => {
-        const client = makeClient();
-        await client.storeBounce('b1', { messageId: '<x@example.com>', recipient: 'r@example.com', action: 'failed' });
-
-        const hit = { id: 'm1', messageId: '<x@example.com>' };
-        await client.attachBounces(hit);
-        assert.equal(hit.bounces.length, 1);
-        assert.equal(hit.bounces[0].response, undefined);
-
-        const miss = { id: 'm2', messageId: '<y@example.com>' };
-        await client.attachBounces(miss);
-        assert.ok(!('bounces' in miss));
-
-        // a message without a Message-ID is left alone
-        await client.attachBounces({ id: 'm3' });
-    });
-
-    await t.test('a lookup failure leaves the message without the field', async () => {
-        const client = makeClient();
-        client.redis.hgetBuffer = async () => {
-            throw new Error('Redis is down');
-        };
-        const message = { id: 'm1', messageId: '<x@example.com>' };
-
-        await client.attachBounces(message);
-
-        assert.ok(!('bounces' in message));
     });
 });
 

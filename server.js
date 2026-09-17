@@ -127,6 +127,7 @@ const { settingsSchema } = require('./lib/schemas');
 const settings = require('./lib/settings');
 const { oauth2Apps } = require('./lib/oauth2-apps');
 const { backfillAuthFailureDisabled } = require('./lib/account/auth-failure-backfill');
+const { sweepBounceStore } = require('./lib/account/bounce-store-sweep');
 const { documentStoreFeatureEnabled } = require('./lib/document-store');
 const { attachBeacon, persistBeaconMarkers } = require('./lib/license-beacon');
 const tokens = require('./lib/tokens');
@@ -3323,6 +3324,13 @@ const startApplication = async () => {
         await backfillAuthFailureDisabled();
     } catch (err) {
         logger.error({ msg: 'Failed to backfill the auth-failure disable marker', err });
+    }
+
+    // One-time delete of the store behind the retired `bounces` field; not fatal, the completion key is written last
+    try {
+        await sweepBounceStore();
+    } catch (err) {
+        logger.error({ msg: 'Failed to sweep the retired bounce store', err });
     }
 
     // Apply prepared settings

@@ -4,9 +4,9 @@
 // category lookup no longer lets updateMessages() overwrite categories, the webhook queue
 // drain survives a failing "created" event, a message gone before its notification was
 // processed is reported as missing, a single delete purges from Deleted Items the way the
-// bulk delete does, and the sync path fetches without the bounce lookup only the API response
-// reads. The client is built with empty options and only the collaborators each method
-// touches are stubbed.
+// bulk delete does, and the content-based bounce check running only when the message details
+// route asks for it. The client is built with empty options and only the collaborators each
+// method touches are stubbed.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -178,42 +178,19 @@ test('OutlookClient.deleteMessage()', async t => {
     });
 });
 
-test('OutlookClient.getMessage() bounce lookup', async t => {
-    function makeFetchClient() {
+test('OutlookClient.getMessage() bounce detection option', async t => {
+    await t.test('runs the content check only when asked', async () => {
         const outlook = makeClient();
-        let lookups = 0;
         let detections = 0;
         outlook.request = async () => ({ id: 'm1' });
         outlook.formatMessage = () => ({ id: 'm1', messageId: '<m1@example.com>' });
-        outlook.attachBounces = async () => lookups++;
-        outlook.detectBounce = async () => detections++;
         outlook.redis = { pfadd: async () => 1 };
-        return { outlook, lookups: () => lookups, detections: () => detections };
-    }
-
-    await t.test('an API fetch attaches the recorded bounces', async () => {
-        const { outlook, lookups, detections } = makeFetchClient();
+        outlook.detectBounce = async () => detections++;
 
         await outlook.getMessage('m1', {});
-
-        assert.equal(lookups(), 1);
-        assert.equal(detections(), 0, 'the content check runs only when asked for');
-    });
-
-    await t.test('the message details route asks for the content check', async () => {
-        const { outlook, detections } = makeFetchClient();
+        assert.equal(detections, 0);
 
         await outlook.getMessage('m1', { detectBounce: true });
-
-        assert.equal(detections(), 1);
-    });
-
-    await t.test('the sync path fetches without the lookup it never reads', async () => {
-        const { outlook, lookups } = makeFetchClient();
-
-        const messageData = await outlook.prepareNewMessage('m1', {});
-
-        assert.equal(messageData.id, 'm1');
-        assert.equal(lookups(), 0);
+        assert.equal(detections, 1);
     });
 });

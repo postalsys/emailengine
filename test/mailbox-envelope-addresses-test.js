@@ -34,8 +34,6 @@ function createContext({ envelope, headers }) {
             error() {}
         },
         connection: {
-            // getMessageInfo() attaches stored bounces through the connection; none here
-            attachBounces: async () => {},
             account: 'test-account',
             packUid: async () => 'AAAAAAAAAAAA',
             isAutoreply: () => false

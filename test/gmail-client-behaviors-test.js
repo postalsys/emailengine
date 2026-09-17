@@ -4,9 +4,9 @@
 // background timers re-arming after an authentication error clears, moveMessage() leaving the
 // source folder when no source is given, bulk updates paging through the whole result set in
 // batchModify-sized chunks, a message deleted before its history entry is processed being
-// reported as missing, and the sync path fetching without the bounce lookup only the API
-// response reads. The client is built with empty options and only the collaborators each
-// method touches are stubbed.
+// reported as missing, and the content-based bounce check running only when the message
+// details route asks for it. The client is built with empty options and only the collaborators
+// each method touches are stubbed.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -220,42 +220,19 @@ test('GmailClient.prepareNewMessage()', async t => {
     });
 });
 
-test('GmailClient.getMessage() bounce lookup', async t => {
-    function makeFetchClient() {
+test('GmailClient.getMessage() bounce detection option', async t => {
+    await t.test('runs the content check only when asked', async () => {
         const gmail = makeClient();
-        let lookups = 0;
         let detections = 0;
         gmail.request = async () => ({ id: 'm1' });
         gmail.formatMessage = () => ({ id: 'm1', messageId: '<m1@example.com>' });
         gmail.resolveLabels = async () => {};
-        gmail.attachBounces = async () => lookups++;
         gmail.detectBounce = async () => detections++;
-        return { gmail, lookups: () => lookups, detections: () => detections };
-    }
-
-    await t.test('an API fetch attaches the recorded bounces', async () => {
-        const { gmail, lookups, detections } = makeFetchClient();
 
         await gmail.getMessage('m1', {});
-
-        assert.equal(lookups(), 1);
-        assert.equal(detections(), 0, 'the content check runs only when asked for');
-    });
-
-    await t.test('the message details route asks for the content check', async () => {
-        const { gmail, detections } = makeFetchClient();
+        assert.equal(detections, 0);
 
         await gmail.getMessage('m1', { detectBounce: true });
-
-        assert.equal(detections(), 1);
-    });
-
-    await t.test('the sync path fetches without the lookup it never reads', async () => {
-        const { gmail, lookups } = makeFetchClient();
-
-        const messageData = await gmail.prepareNewMessage({ id: 'm1' }, {});
-
-        assert.equal(messageData.id, 'm1');
-        assert.equal(lookups(), 0);
+        assert.equal(detections, 1);
     });
 });
