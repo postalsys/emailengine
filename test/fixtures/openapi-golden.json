@@ -3681,7 +3681,7 @@
       },
       "BounceList": {
         "type": "array",
-        "description": "Bounce notifications detected for this message (IMAP accounts only)",
+        "description": "Bounce notifications recorded against this message when they arrived. Message listings carry the field for IMAP accounts only, message details for every account type",
         "items": {
           "$ref": "#/components/schemas/BounceEntry"
         }
@@ -3873,6 +3873,16 @@
             "type": "boolean",
             "description": "Whether this message appears to be an automatic reply (out of office, vacation responder, etc.)",
             "example": false
+          },
+          "isBounce": {
+            "type": "boolean",
+            "description": "Whether this message was recognized as a bounce (delivery failure report) when it arrived. Set by the same detection that marks the messageNew webhook, so only messages EmailEngine processed as new carry it",
+            "example": false
+          },
+          "relatedMessageId": {
+            "type": "string",
+            "description": "Message-ID of the message that bounced, when this message was recognized as a bounce of it. Set together with isBounce",
+            "example": "<original@example.com>"
           },
           "preview": {
             "type": "string",
@@ -4640,6 +4650,16 @@
             "type": "boolean",
             "description": "Whether this message appears to be an automatic reply (out of office, vacation responder, etc.)",
             "example": false
+          },
+          "isBounce": {
+            "type": "boolean",
+            "description": "Whether this message was recognized as a bounce (delivery failure report) when it arrived. Set by the same detection that marks the messageNew webhook, so only messages EmailEngine processed as new carry it",
+            "example": false
+          },
+          "relatedMessageId": {
+            "type": "string",
+            "description": "Message-ID of the message that bounced, when this message was recognized as a bounce of it. Set together with isBounce",
+            "example": "<original@example.com>"
           },
           "bounces": {
             "$ref": "#/components/schemas/BounceList"
@@ -12400,6 +12420,16 @@
             "type": "boolean",
             "description": "Whether this message appears to be an automatic reply (out of office, vacation responder, etc.)",
             "example": false
+          },
+          "isBounce": {
+            "type": "boolean",
+            "description": "Whether this message was recognized as a bounce (delivery failure report) when it arrived. Set by the same detection that marks the messageNew webhook, so only messages EmailEngine processed as new carry it",
+            "example": false
+          },
+          "relatedMessageId": {
+            "type": "string",
+            "description": "Message-ID of the message that bounced, when this message was recognized as a bounce of it. Set together with isBounce",
+            "example": "<original@example.com>"
           },
           "bounces": {
             "$ref": "#/components/schemas/BounceList"

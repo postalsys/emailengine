@@ -18,23 +18,26 @@ const { noopLogger } = require('./helpers/auth-failure');
 
 registerRedisTeardown(redis);
 
-// In-memory stand-in for the two hash commands lib/append-list.js uses
+// In-memory stand-in for the hash commands the helpers use: the two of lib/append-list.js and the
+// plain hset/hget pair. One map, keyed by hash and field
 function makeAppendRedis() {
     const store = new Map();
-    const hashes = new Map();
+    const id = (key, field) => key + ' ' + field;
     return {
-        hashes,
+        store,
         async hPush(list, key, encoded) {
-            const id = list + ' ' + key;
-            const prev = store.get(id);
-            store.set(id, prev ? Buffer.concat([prev, Buffer.from(encoded)]) : Buffer.from(encoded));
+            const prev = store.get(id(list, key));
+            store.set(id(list, key), prev ? Buffer.concat([prev, Buffer.from(encoded)]) : Buffer.from(encoded));
             return prev ? 2 : 1;
         },
         async hgetBuffer(list, key) {
-            return store.get(list + ' ' + key) || null;
+            return store.get(id(list, key)) || null;
+        },
+        async hget(key, field) {
+            return store.has(id(key, field)) ? store.get(id(key, field)).toString() : null;
         },
         async hset(key, field, value) {
-            hashes.set(key + ':' + field, value);
+            store.set(id(key, field), value);
         }
     };
 }
@@ -68,7 +71,7 @@ test('BaseClient.handleSubmitError()', async t => {
         assert.equal(err.statusCode, 500, 'the API client marks non-retryable sends with 500; the SMTP branch used to null it');
         assert.equal(err.code, 'InvalidMessage');
         assert.equal(err.info.response, 'Bad recipients');
-        assert.equal(client.redis.hashes.size, 0, 'no SMTP status is faked for an API failure');
+        assert.equal(client.redis.store.size, 0, 'no SMTP status is faked for an API failure');
         assert.deepEqual(feedback, [['fb-1', false, 'Failed to send email']]);
         assert.equal(notifications.length, 1);
         assert.equal(notifications[0].event, EMAIL_DELIVERY_ERROR_NOTIFY);
@@ -88,17 +91,19 @@ test('BaseClient.handleSubmitError()', async t => {
         await client.handleSubmitError(err, Object.assign({ smtpSettings: { host: 'smtp.example.com', port: 587 } }, context));
 
         assert.equal(err.statusCode, 535);
-        assert.ok(client.redis.hashes.has(client.getAccountKey() + ':smtpStatus'), 'the SMTP status is recorded for the account');
+        assert.ok(client.redis.store.has(client.getAccountKey() + ' smtpStatus'), 'the SMTP status is recorded for the account');
         assert.equal(notifications[0].payload.smtpResponseCode, 535);
     });
 });
 
 test('BaseClient bounce store', async t => {
+    const bounceMessage = { id: 'bounce-msg-id', messageId: '<bounce@mailer.example.com>' };
+
     await t.test('a stored bounce is listed back in the shape of the bounces field', async () => {
         const client = makeClient();
         const before = Date.now();
 
-        const stored = await client.storeBounce('bounce-msg-id', {
+        const stored = await client.storeBounce(bounceMessage, {
             messageId: '<orig@example.com>',
             recipient: 'bob@example.com',
             action: 'failed',
@@ -118,22 +123,48 @@ test('BaseClient bounce store', async t => {
 
     await t.test('attachBounces() adds the field only when something was recorded', async () => {
         const client = makeClient();
-        await client.storeBounce('b1', { messageId: '<x@example.com>', recipient: 'r@example.com', action: 'failed' });
+        await client.storeBounce(bounceMessage, { messageId: '<x@example.com>', recipient: 'r@example.com', action: 'failed' });
 
         const hit = { id: 'm1', messageId: '<x@example.com>' };
         await client.attachBounces(hit);
         assert.equal(hit.bounces.length, 1);
         assert.equal(hit.bounces[0].response, undefined);
+        assert.ok(!('isBounce' in hit), 'the bounced message is not itself a bounce');
 
         const miss = { id: 'm2', messageId: '<y@example.com>' };
         await client.attachBounces(miss);
         assert.ok(!('bounces' in miss));
+        assert.ok(!('isBounce' in miss));
 
         // a message without a Message-ID is left alone
         await client.attachBounces({ id: 'm3' });
     });
 
-    await t.test('a lookup failure leaves the message without the field', async () => {
+    await t.test('the bounce message itself is marked so a later fetch reports the detection', async () => {
+        // The messageNew webhook carries isBounce and relatedMessageId from the detection at arrival;
+        // the message details response used to carry neither, because nothing recorded them
+        const client = makeClient();
+        await client.storeBounce(bounceMessage, { messageId: '<x@example.com>', recipient: 'r@example.com', action: 'failed' });
+
+        const fetched = { id: bounceMessage.id, messageId: bounceMessage.messageId };
+        await client.attachBounces(fetched);
+
+        assert.equal(fetched.isBounce, true);
+        assert.equal(fetched.relatedMessageId, '<x@example.com>');
+        assert.ok(!('bounces' in fetched), 'nothing bounced in reply to the bounce');
+    });
+
+    await t.test('a bounce without a Message-ID records the bounce but no marker', async () => {
+        const client = makeClient();
+        await client.storeBounce({ id: 'no-msgid' }, { messageId: '<x@example.com>', recipient: 'r@example.com', action: 'failed' });
+
+        const bounced = { id: 'm1', messageId: '<x@example.com>' };
+        await client.attachBounces(bounced);
+        assert.equal(bounced.bounces.length, 1);
+        assert.equal(client.redis.store.size, 1, 'only the bounce record: there is no key to mark the bounce message under');
+    });
+
+    await t.test('a lookup failure leaves the message without the fields', async () => {
         const client = makeClient();
         client.redis.hgetBuffer = async () => {
             throw new Error('Redis is down');
@@ -143,6 +174,8 @@ test('BaseClient bounce store', async t => {
         await client.attachBounces(message);
 
         assert.ok(!('bounces' in message));
+        assert.ok(!('isBounce' in message));
+        assert.ok(!('relatedMessageId' in message));
     });
 });
 
