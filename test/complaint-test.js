@@ -7,21 +7,20 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { arfDetect, camelCaseComplaint } = require('../lib/arf-detect');
+const { arfDetect, camelCaseComplaint, ORIGINAL_MESSAGE_TYPES } = require('../lib/arf-detect');
 const { simpleParser } = require('mailparser');
 const fs = require('fs');
 
-// Exercise the real complaint heuristic instead of a copy. The IMAP sync path
-// uses Mailbox.mightBeAComplaint (lib/email-client/imap/mailbox.js); it only
-// reads `this.path` and `this.isAllMail`, so we bind a minimal receiver that
-// represents an INBOX folder. A regression in the shipping heuristic now fails
-// this suite.
+// Exercise the real complaint heuristic instead of a copy. The IMAP Mailbox.mightBeAComplaint
+// keeps its folder guard (it reads `this.path` and `this.isAllMail`, so the receiver represents an
+// INBOX folder) and delegates the shape check to the connection, where the API clients' own
+// BaseClient.mightBeAComplaint reads it too, so one heuristic is under test for both arrival paths.
 const { Mailbox } = require('../lib/email-client/imap/mailbox');
 const { BaseClient } = require('../lib/email-client/base-client');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
-const inboxReceiver = { path: 'INBOX', isAllMail: false };
+const inboxReceiver = { path: 'INBOX', isAllMail: false, connection: BaseClient.prototype };
 const mightBeAComplaint = messageInfo => Mailbox.prototype.mightBeAComplaint.call(inboxReceiver, messageInfo);
 
 const Path = require('path');
@@ -260,48 +259,34 @@ test('mightBeAComplaint heuristics', async t => {
     });
 });
 
-// BaseClient.mightBeAComplaint (the Gmail/Outlook path) has drifted from the
-// Mailbox.mightBeAComplaint (IMAP path) heuristic above: it gates on
-// messageSpecialUse === '\\Inbox', requires an embedded message for the Hotmail
-// case, and does NOT recognize the generic feedback-loop sender patterns. These
-// tests pin that real (narrower) behavior so a future change to either copy is
-// caught. If the two are ever consolidated, update these expectations together.
-test('mightBeAComplaint drift between BaseClient and Mailbox', async t => {
-    const baseClientComplaint = messageData => BaseClient.prototype.mightBeAComplaint.call(null, messageData);
+// The API path's own gate; the shape check is the shared one, exercised above
+test('mightBeAComplaint on the API clients', async t => {
+    const baseClientComplaint = messageData => BaseClient.prototype.mightBeAComplaint.call(BaseClient.prototype, messageData);
 
-    await t.test('BaseClient requires messageSpecialUse Inbox', () => {
+    await t.test('requires messageSpecialUse Inbox', () => {
         const msg = { attachments: [{ contentType: 'message/feedback-report' }] };
-        // Without the Inbox special-use marker the base-client heuristic bails out.
         assert.strictEqual(baseClientComplaint(msg), false);
         assert.strictEqual(baseClientComplaint({ ...msg, messageSpecialUse: '\\Inbox' }), true);
     });
 
-    await t.test('BaseClient ignores generic FBL sender patterns that Mailbox detects', () => {
-        const msg = {
-            messageSpecialUse: '\\Inbox',
-            from: { address: 'fbl@example.com' },
-            subject: 'FBL Report',
-            attachments: [{ contentType: 'text/rfc822-headers' }]
-        };
-        // Mailbox path: FBL sender + embedded message -> complaint.
-        assert.strictEqual(mightBeAComplaint(msg), true);
-        // BaseClient path: no feedback-report, text/rfc822-headers is not treated
-        // as an embedded message, no FBL pattern -> not a complaint.
-        assert.strictEqual(baseClientComplaint(msg), false);
+    await t.test('an attachment-less message that qualifies on sender and subject does not throw', () => {
+        // The Gmail API and Graph clients leave `attachments` unset when there are none
+        assert.strictEqual(baseClientComplaint({ messageSpecialUse: '\\Inbox', from: { address: 'abuse@isp.example' }, subject: 'Abuse report' }), true);
     });
+});
 
-    await t.test('BaseClient Hotmail case requires an embedded message', () => {
-        const base = {
-            messageSpecialUse: '\\Inbox',
-            from: { address: 'staff@hotmail.com' },
-            subject: 'complaint about message'
-        };
-        // Without an embedded message BaseClient rejects, Mailbox accepts.
-        assert.strictEqual(baseClientComplaint({ ...base, attachments: [] }), false);
-        assert.strictEqual(mightBeAComplaint({ ...base, attachments: [] }), true);
-        // With an embedded message both accept.
-        assert.strictEqual(baseClientComplaint({ ...base, attachments: [{ contentType: 'message/rfc822' }] }), true);
-    });
+// The arrival paths gate and download on the exported type lists, and arfDetect() has to parse
+// every type they name, or a message admitted on one of them is parsed against nothing
+test('every original-message attachment type is parsed', async t => {
+    for (const contentType of ORIGINAL_MESSAGE_TYPES) {
+        await t.test(contentType, async () => {
+            const report = await arfDetect({
+                attachments: [{ contentType, content: 'Message-ID: <original@example.com>\r\nSubject: Hello\r\n\r\nbody' }]
+            });
+
+            assert.strictEqual(report.headers['message-id'], '<original@example.com>');
+        });
+    }
 });
 
 test('camelCaseComplaint', async t => {

@@ -1,7 +1,8 @@
 'use strict';
 
-// The bounce and delivery-report checks that decide which newly arrived IMAP messages are downloaded
-// for detection: the folder guards are IMAP's own, the shape checks are the shared BaseClient ones.
+// The bounce, delivery-report and complaint checks that decide which newly arrived IMAP messages are
+// downloaded for detection: the folder guards are IMAP's own, the shape checks are the shared
+// BaseClient ones. test/complaint-test.js runs the complaint shapes against real reports.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -38,6 +39,13 @@ function mightBeABounce(messageInfo, options) {
 function mightBeDSNResponse(messageInfo, options) {
     return Mailbox.prototype.mightBeDSNResponse.call(mailboxContext(options), messageInfo);
 }
+
+function mightBeAComplaint(messageInfo, options) {
+    return Mailbox.prototype.mightBeAComplaint.call(mailboxContext(options), messageInfo);
+}
+
+// A feedback loop that sends no ARF report part: sender and subject are all there is
+const fblNotice = () => ({ from: { address: 'fbl@isp.example' }, subject: 'Abuse complaint about your message', attachments: [] });
 
 const dsn = () => ({ headers: { 'content-type': ['multipart/report; report-type=delivery-status; boundary="B"'] } });
 
@@ -86,5 +94,20 @@ test('Mailbox.mightBeDSNResponse()', async t => {
     await t.test('on Gmail the label decides, since every message lives in All Mail', async () => {
         assert.equal(mightBeDSNResponse(Object.assign(dsn(), { labels: ['\\Inbox'] }), { path: '[Gmail]/All Mail', isAllMail: true }), true);
         assert.equal(mightBeDSNResponse(Object.assign(dsn(), { labels: ['\\Important'] }), { path: '[Gmail]/All Mail', isAllMail: true }), false);
+    });
+});
+
+test('Mailbox.mightBeAComplaint()', async t => {
+    await t.test('a feedback-loop notice in the Inbox is a complaint candidate', async () => {
+        assert.equal(mightBeAComplaint(fblNotice(), { path: 'INBOX' }), true);
+    });
+
+    await t.test('a message outside the Inbox is not checked', async () => {
+        assert.equal(mightBeAComplaint(fblNotice(), { path: 'Archive' }), false);
+    });
+
+    await t.test('on Gmail the label decides, since every message lives in All Mail', async () => {
+        assert.equal(mightBeAComplaint(Object.assign(fblNotice(), { labels: ['\\Inbox'] }), { path: '[Gmail]/All Mail', isAllMail: true }), true);
+        assert.equal(mightBeAComplaint(Object.assign(fblNotice(), { labels: ['\\Important'] }), { path: '[Gmail]/All Mail', isAllMail: true }), false);
     });
 });
