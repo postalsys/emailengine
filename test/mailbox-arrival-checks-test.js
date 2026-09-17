@@ -1,9 +1,7 @@
 'use strict';
 
-// Mailbox.mightBeABounce() decides which newly arrived IMAP messages are downloaded for bounce
-// detection: the folder and delivery-report guards are IMAP's own, the shape check is the shared
-// BaseClient.looksLikeABounce(), so IMAP and the API clients agree, including on the Exchange rule
-// (an "Undeliverable:" subject with an Auto-Submitted header) that the IMAP copy used to lack.
+// The bounce and delivery-report checks that decide which newly arrived IMAP messages are downloaded
+// for detection: the folder guards are IMAP's own, the shape checks are the shared BaseClient ones.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -23,14 +21,25 @@ const exchangeNdr = () => ({
     headers: { 'auto-submitted': ['auto-generated'] }
 });
 
-function mightBeABounce(messageInfo, { specialUse } = {}) {
-    const ctx = {
+// A mailbox context with the real shape checks, so the two sides agree by construction
+function mailboxContext({ specialUse, path, isAllMail } = {}) {
+    return {
+        path,
+        isAllMail,
         listingEntry: { specialUse },
-        // The real shape check, so the two agree by construction
-        connection: { looksLikeABounce: BaseClient.prototype.looksLikeABounce }
+        connection: BaseClient.prototype
     };
-    return Mailbox.prototype.mightBeABounce.call(ctx, messageInfo);
 }
+
+function mightBeABounce(messageInfo, options) {
+    return Mailbox.prototype.mightBeABounce.call(mailboxContext(options), messageInfo);
+}
+
+function mightBeDSNResponse(messageInfo, options) {
+    return Mailbox.prototype.mightBeDSNResponse.call(mailboxContext(options), messageInfo);
+}
+
+const dsn = () => ({ headers: { 'content-type': ['multipart/report; report-type=delivery-status; boundary="B"'] } });
 
 test('Mailbox.mightBeABounce()', async t => {
     await t.test('an Exchange NDR in the Inbox is a bounce candidate, as it is on the API clients', async () => {
@@ -55,5 +64,27 @@ test('Mailbox.mightBeABounce()', async t => {
     await t.test('an ordinary message in the Inbox is left alone', async () => {
         const message = { from: { name: 'Alice', address: 'alice@example.com' }, subject: 'Lunch?', headers: {} };
         assert.equal(mightBeABounce(message, { specialUse: '\\Inbox' }), false);
+    });
+});
+
+test('Mailbox.mightBeDSNResponse()', async t => {
+    await t.test('a delivery-status report in the Inbox is one', async () => {
+        assert.equal(mightBeDSNResponse(dsn(), { path: 'INBOX' }), true);
+        assert.equal(mightBeDSNResponse(dsn(), { path: 'Inbox' }), true, 'the folder name is compared case-insensitively');
+    });
+
+    await t.test('the Content-Type has to be a delivery-status report', async () => {
+        assert.equal(mightBeDSNResponse({ headers: { 'content-type': ['multipart/report; report-type=feedback-report'] } }, { path: 'INBOX' }), false);
+        assert.equal(mightBeDSNResponse({ headers: { 'content-type': ['text/plain'] } }, { path: 'INBOX' }), false);
+        assert.equal(mightBeDSNResponse({}, { path: 'INBOX' }), false);
+    });
+
+    await t.test('a message outside the Inbox is not checked', async () => {
+        assert.equal(mightBeDSNResponse(dsn(), { path: 'Archive' }), false);
+    });
+
+    await t.test('on Gmail the label decides, since every message lives in All Mail', async () => {
+        assert.equal(mightBeDSNResponse(Object.assign(dsn(), { labels: ['\\Inbox'] }), { path: '[Gmail]/All Mail', isAllMail: true }), true);
+        assert.equal(mightBeDSNResponse(Object.assign(dsn(), { labels: ['\\Important'] }), { path: '[Gmail]/All Mail', isAllMail: true }), false);
     });
 });
