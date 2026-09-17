@@ -224,19 +224,30 @@ test('GmailClient.getMessage() bounce lookup', async t => {
     function makeFetchClient() {
         const gmail = makeClient();
         let lookups = 0;
+        let detections = 0;
         gmail.request = async () => ({ id: 'm1' });
         gmail.formatMessage = () => ({ id: 'm1', messageId: '<m1@example.com>' });
         gmail.resolveLabels = async () => {};
         gmail.attachBounces = async () => lookups++;
-        return { gmail, lookups: () => lookups };
+        gmail.detectBounce = async () => detections++;
+        return { gmail, lookups: () => lookups, detections: () => detections };
     }
 
     await t.test('an API fetch attaches the recorded bounces', async () => {
-        const { gmail, lookups } = makeFetchClient();
+        const { gmail, lookups, detections } = makeFetchClient();
 
         await gmail.getMessage('m1', {});
 
         assert.equal(lookups(), 1);
+        assert.equal(detections(), 0, 'the content check runs only when asked for');
+    });
+
+    await t.test('the message details route asks for the content check', async () => {
+        const { gmail, detections } = makeFetchClient();
+
+        await gmail.getMessage('m1', { detectBounce: true });
+
+        assert.equal(detections(), 1);
     });
 
     await t.test('the sync path fetches without the lookup it never reads', async () => {
