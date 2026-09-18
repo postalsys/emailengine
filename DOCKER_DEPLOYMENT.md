@@ -10,6 +10,15 @@ This guide covers everything from local development to production deployment of 
 - [Operations & Maintenance](#operations--maintenance)
 - [Troubleshooting](#troubleshooting)
 
+## Easypanel
+
+If you'd rather not manage docker-compose and Redis tuning yourself, [Easypanel](https://easypanel.io) is a self-hosted deployment platform with a one-click EmailEngine template (Redis wired up with noeviction policy automatically):
+
+[![Deploy on Easypanel][easypanel-btn]][easypanel-deploy]
+
+[easypanel-btn]: https://easypanel.io/img/deploy-on-easypanel-40.svg
+[easypanel-deploy]: https://easypanel.io/templates/emailengine
+
 ## Quick Start
 
 ### Prerequisites
