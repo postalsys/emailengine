@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-09-15 09:05+0000\n"
+"POT-Creation-Date: 2026-09-22 20:10+0000\n"
 
 #: views/error.hbs:6
 #: workers/api.js:3130
@@ -32,10 +32,6 @@ msgid "%d certificate"
 msgid_plural "%d certificates"
 msgstr[0] ""
 msgstr[1] ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
 
 #: views/oauth-scope-error.hbs:5
 msgid "Insufficient Permissions"
@@ -114,12 +110,79 @@ msgid ""
 "received."
 msgstr ""
 
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
 #: views/accounts/register/index.hbs:6
 msgid "Choose your email account provider"
 msgstr ""
 
 #: views/accounts/register/index.hbs:19
 msgid "Standard IMAP"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:35
+msgid "Checking your mail server"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:40
+msgid "Still checking. This can take up to a minute."
+msgstr ""
+
+#: views/accounts/register/validating.hbs:47
+msgid "Enter server settings manually"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:53
+msgid "We couldn't sign in to your mail server"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:54
+msgid "Check the settings on the next page and try again."
+msgstr ""
+
+#: views/accounts/register/validating.hbs:61
+msgid "Continue to server settings"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:69
+msgid "Almost there"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:70
+msgid "Continue to review your mail server settings."
+msgstr ""
+
+#: views/accounts/register/validating.hbs:74
+#: views/accounts/register/imap.hbs:55
+msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:13
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:19
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:35
+msgid "This setup link is restricted to this email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:43
+#: views/accounts/register/imap-server.hbs:58
+#: views/accounts/register/imap-server.hbs:165
+msgid "Password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:49
+msgid "Enter your account password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:23
@@ -141,12 +204,6 @@ msgstr ""
 #: views/accounts/register/imap-server.hbs:44
 #: views/accounts/register/imap-server.hbs:151
 msgid "Username"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:58
-#: views/accounts/register/imap-server.hbs:165
-#: views/accounts/register/imap.hbs:43
-msgid "Password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:70
@@ -230,63 +287,6 @@ msgstr ""
 
 #: views/accounts/register/imap-server.hbs:293
 msgid "We couldn't connect with these settings. Check the errors below."
-msgstr ""
-
-#: views/accounts/register/imap.hbs:13
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:19
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:35
-msgid "This setup link is restricted to this email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:49
-msgid "Enter your account password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:55
-#: views/accounts/register/validating.hbs:74
-msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:35
-msgid "Checking your mail server"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:40
-msgid "Still checking. This can take up to a minute."
-msgstr ""
-
-#: views/accounts/register/validating.hbs:47
-msgid "Enter server settings manually"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:53
-msgid "We couldn't sign in to your mail server"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:54
-msgid "Check the settings on the next page and try again."
-msgstr ""
-
-#: views/accounts/register/validating.hbs:61
-msgid "Continue to server settings"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:69
-msgid "Almost there"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:70
-msgid "Continue to review your mail server settings."
 msgstr ""
 
 #: views/partials/public_test_labels.hbs:9
