@@ -328,8 +328,8 @@ test('OutlookClient.submitMessage draft handling', async t => {
     });
 });
 
-// IMAPClient.resolveDraftForSubmit with the mailbox collaborators stubbed
-function makeImapClient({ path, flags, specialUse }) {
+// An IMAPClient that never connects: the tests below stub the collaborators each method reaches
+function newImapClient() {
     const connection = new IMAPClient('test-account', {
         logger: noopLogger,
         accountLogger: { enabled: false, log() {} },
@@ -337,6 +337,14 @@ function makeImapClient({ path, flags, specialUse }) {
     });
 
     connection.checkIMAPConnection = () => true;
+
+    return connection;
+}
+
+// IMAPClient.resolveDraftForSubmit with the mailbox collaborators stubbed
+function makeImapClient({ path, flags, specialUse }) {
+    const connection = newImapClient();
+
     connection.unpackUid = async () => (path ? { path, uidValidity: '1', uid: 100 } : false);
     connection.mailboxes = new Map(path ? [[path, { listingEntry: { path, specialUse } }]] : []);
     connection.getMessage = async () => ({ id: 'id-1', flags });
@@ -344,6 +352,43 @@ function makeImapClient({ path, flags, specialUse }) {
 
     return connection;
 }
+
+// IMAPClient.uploadToSentFolder with the listing and the connection stubbed
+function makeSentUploadClient({ sentMailbox }) {
+    const warnings = [];
+    const appended = [];
+    const connection = newImapClient();
+
+    connection.logger = Object.assign({}, noopLogger, { warn: entry => warnings.push(entry) });
+    connection.getSpecialUseMailbox = async () => sentMailbox;
+    connection.getImapConnection = async () => ({
+        append: async (path, raw, flags) => {
+            appended.push({ path, raw, flags });
+        }
+    });
+
+    const upload = () => connection.uploadToSentFolder(RAW_DRAFT, {}, 'queue-1', '<sent-1@example.com>', { allowSecondary: true });
+
+    return { upload, warnings, appended };
+}
+
+test('IMAPClient.uploadToSentFolder', async t => {
+    await t.test('stores the copy in the mailbox flagged \\Sent', async () => {
+        const { upload, warnings, appended } = makeSentUploadClient({ sentMailbox: { path: 'SENT' } });
+
+        assert.strictEqual(await upload(), true);
+        assert.deepStrictEqual(appended, [{ path: 'SENT', raw: RAW_DRAFT, flags: ['\\Seen'] }]);
+        assert.deepStrictEqual(warnings, []);
+    });
+
+    await t.test('warns and skips the copy when the listing has no Sent mailbox', async () => {
+        const { upload, warnings, appended } = makeSentUploadClient({ sentMailbox: undefined });
+
+        assert.strictEqual(await upload(), false);
+        assert.deepStrictEqual(appended, []);
+        assert.deepStrictEqual(warnings, [{ msg: 'No Sent mailbox found, skipping the sent copy', queueId: 'queue-1', messageId: '<sent-1@example.com>' }]);
+    });
+});
 
 test('IMAPClient.resolveDraftForSubmit', async t => {
     // mailbox 1 / uid 100; the stubs above decide the actual behavior
