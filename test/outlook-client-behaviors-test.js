@@ -84,7 +84,10 @@ test('OutlookClient.processHistory()', async t => {
             { type: 'created', message: 'broken' },
             { type: 'updated', message: 'm2' }
         ];
-        outlook.accountObject = { pullQueueEvent: async () => (events.length ? events.shift() : null) };
+        outlook.accountObject = {
+            promoteDueQueueEvents: async () => null,
+            pullQueueEvent: async () => (events.length ? events.shift() : null)
+        };
         outlook.getMessageFetchOptions = async () => ({});
         outlook.prepareNewMessage = async () => {
             throw new Error('Graph is down');
