@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.81.2](https://github.com/postalsys/emailengine/compare/v2.81.1...v2.81.2) (2026-09-26)
+
+
+### Bug Fixes
+
+* **api:** check isBounce for messages in the Inbox only ([de05eff](https://github.com/postalsys/emailengine/commit/de05eff7d684cd7beeb227a912afa6aa0988b421))
+* **api:** decide isBounce at fetch time instead of storing a marker ([2c81311](https://github.com/postalsys/emailengine/commit/2c813117f95757c6cf656ae3f904042c3b458a7a))
+* **api:** remove the bounces field and the store behind it ([b67acb9](https://github.com/postalsys/emailengine/commit/b67acb9618754a108e32e4bafbef0b05d4773ade))
+* **api:** report isBounce and relatedMessageId in message responses ([b551bfd](https://github.com/postalsys/emailengine/commit/b551bfd7457466e8f51ff77540d0bb4afd59eb21))
+* **deps:** update imapflow to 2.0.6 ([07d5ea7](https://github.com/postalsys/emailengine/commit/07d5ea7eb42cdb01fd9a091db043837ecd8e58d3))
+* **gmail:** retry new messages that fail on a transient API error ([f7d45f9](https://github.com/postalsys/emailengine/commit/f7d45f9edc1afaaf44b0d145caddb13aef0e76c1))
+* **imap:** run the shared arrival checks instead of IMAP wrappers ([26cd53c](https://github.com/postalsys/emailengine/commit/26cd53c771ed8f6abbd740c22ef62319b54401a8))
+* **imap:** share the bounce shape check with the API clients ([a0302a2](https://github.com/postalsys/emailengine/commit/a0302a2ff40ab62f8fd5dfc68f26cbc9175d0059))
+* **imap:** share the complaint shape check with the API clients ([90a9825](https://github.com/postalsys/emailengine/commit/90a9825044fc024cf5977c5c56ccf5a484973cd4))
+* **imap:** share the delivery-report shape check with the API clients ([aa777df](https://github.com/postalsys/emailengine/commit/aa777dfefbe8047f7b7a6df7000fb95b89189a2c))
+* **outlook:** retry change notifications that fail on a transient Graph error ([9d1301c](https://github.com/postalsys/emailengine/commit/9d1301cff3bd2b505e0d3402c40c2eefaf1c44ed))
+* **submit:** warn when the sent copy is skipped for lack of a Sent mailbox ([47fd10b](https://github.com/postalsys/emailengine/commit/47fd10bdef5dc732265b10619122456d574942de))
+* **sync:** defer Gmail and Graph changes that fail on a transient error ([b778adf](https://github.com/postalsys/emailengine/commit/b778adfab637ce7b2afc801e7eedd4f31f3a50a9))
+
 ## [2.81.1](https://github.com/postalsys/emailengine/compare/v2.81.0...v2.81.1) (2026-09-15)
 
 
