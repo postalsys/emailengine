@@ -48,6 +48,8 @@ function makeClient(account, historyPage) {
         processed.push(entry.id);
     };
     client.request = async () => historyPage;
+    client.accountObject = { listDueChangeEvents: async () => ({ due: [], next: null }) };
+    client.getHistoryContext = async () => ({ labels: [], newMessageOptions: {} });
     return { client, logs, processed, markersDuringProcessing };
 }
 

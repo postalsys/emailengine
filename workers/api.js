@@ -2027,6 +2027,7 @@ const init = async () => {
 
             const outlookSubscription = accountData.outlookSubscription;
 
+            const events = [];
             for (let entry of notificationEntries) {
                 // enumerate and queue all entries
                 const subscriptionIdMatch = entry.subscriptionId === outlookSubscription.id;
@@ -2046,12 +2047,14 @@ const init = async () => {
                     continue;
                 }
 
-                let event = {
+                events.push({
                     type: entry.changeType,
                     message: entry.resourceData && entry.resourceData.id
-                };
+                });
+            }
 
-                await accountObject.pushQueueEvent(event);
+            if (events.length) {
+                await accountObject.pushQueueEvents(events);
             }
 
             return h.response(Buffer.alloc(0)).code(202);

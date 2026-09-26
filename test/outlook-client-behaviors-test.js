@@ -85,7 +85,7 @@ test('OutlookClient.processHistory()', async t => {
             { type: 'updated', message: 'm2' }
         ];
         outlook.accountObject = {
-            promoteDueQueueEvents: async () => null,
+            listDueChangeEvents: async () => ({ due: [], next: null }),
             pullQueueEvent: async () => (events.length ? events.shift() : null)
         };
         outlook.getMessageFetchOptions = async () => ({});
