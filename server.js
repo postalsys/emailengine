@@ -139,6 +139,7 @@ const { QueueEvents } = require('bullmq');
 const getSecret = require('./lib/get-secret');
 
 const { rejectWorkerCalls } = require('./lib/reject-worker-calls');
+const { pickLeastLoadedWorker, rollbackAssignment, releaseWorkerAccounts, requeueFailedAccounts } = require('./lib/account-assignment');
 const { RespawnTracker } = require('./lib/respawn-backoff');
 
 const msgpack = require('./lib/msgpack');
@@ -1195,15 +1196,8 @@ let spawnWorker = async (type, opts) => {
                 availableIMAPWorkers.delete(worker);
 
                 // Reassign accounts from dead worker
-                if (workerAssigned.has(worker)) {
-                    let accountList = workerAssigned.get(worker);
-                    workerAssigned.delete(worker);
-
-                    for (let account of accountList) {
-                        assigned.delete(account);
-                        unassigned.add(account);
-                    }
-
+                let accountList = releaseWorkerAccounts({ workerAssigned, assigned, unassigned }, worker);
+                if (accountList) {
                     logger[exitLevel]({
                         msg: 'Worker exited, moving accounts to unassigned',
                         accounts: accountList.size,
@@ -1716,6 +1710,11 @@ async function assignAccounts() {
     }
 
     assigning = true;
+    // Collect accounts that fail assignment so we do not re-insert into
+    // the Set we are iterating (re-insertion during for..of would cause
+    // the same account to be visited again in the same pass). Returned to
+    // unassigned in the finally block, so no throw can strand them.
+    let failedAccounts = [];
     try {
         if (!unassigned) {
             // First run - load all accounts from Redis
@@ -1742,19 +1741,9 @@ async function assignAccounts() {
             workerLoadMap.set(worker, accountCount);
         }
 
-        // Sort workers by load (ascending) for even distribution
-        let sortedWorkers = Array.from(workerLoadMap.entries())
-            .sort((a, b) => a[1] - b[1])
-            .map(entry => entry[0]);
-
         // Calculate target accounts per worker for even distribution
         let totalAccounts = assigned.size + unassigned.size;
         let targetPerWorker = Math.ceil(totalAccounts / availableIMAPWorkers.size);
-
-        // Collect accounts that fail assignment so we do not re-insert into
-        // the Set we are iterating (re-insertion during for..of would cause
-        // the same account to be visited again in the same pass).
-        let failedAccounts = [];
 
         // Assign each unassigned account
         for (let account of unassigned) {
@@ -1774,24 +1763,12 @@ async function assignAccounts() {
                 // Use rendezvous hashing for consistent reassignment after failures
                 worker = selectRendezvousNode(account, Array.from(availableIMAPWorkers));
             } else {
-                // Use load-aware round-robin for initial assignment
-                // Find the least loaded worker that hasn't reached the target
-                worker = sortedWorkers.find(w => {
-                    let currentLoad = workerLoadMap.get(w) || 0;
-                    return currentLoad < targetPerWorker;
-                });
-
-                // If all workers reached target, use the least loaded one
-                if (!worker) {
-                    worker = sortedWorkers[0];
-                }
+                // Use load-aware round-robin for initial assignment: the least loaded running
+                // worker that hasn't reached the target, else the least loaded one
+                worker = pickLeastLoadedWorker(availableIMAPWorkers, workerLoadMap, targetPerWorker);
 
                 // Update the load map for next iteration
                 workerLoadMap.set(worker, (workerLoadMap.get(worker) || 0) + 1);
-                // Re-sort workers by updated load
-                sortedWorkers = Array.from(workerLoadMap.entries())
-                    .sort((a, b) => a[1] - b[1])
-                    .map(entry => entry[0]);
             }
 
             // Track assignment
@@ -1811,16 +1788,9 @@ async function assignAccounts() {
                     runIndex
                 });
             } catch (err) {
-                // Roll back -- account was never actually assigned
-                workerAssigned.get(worker).delete(account);
-                assigned.delete(account);
-                // Revert load map so subsequent iterations see accurate counts
-                if (!isReassignment) {
-                    workerLoadMap.set(worker, workerLoadMap.get(worker) - 1);
-                    sortedWorkers = Array.from(workerLoadMap.entries())
-                        .sort((a, b) => a[1] - b[1])
-                        .map(entry => entry[0]);
-                }
+                // Roll back -- account was never actually assigned. Also reverts the load map so
+                // subsequent iterations see accurate counts
+                rollbackAssignment({ workerAssigned, assigned, workerLoadMap }, account, worker, !isReassignment);
                 failedAccounts.push(account);
                 logger.error({ msg: 'Failed to assign account to worker', account, threadId: worker.threadId, err });
                 continue;
@@ -1830,11 +1800,6 @@ async function assignAccounts() {
             if (CONNECTION_SETUP_DELAY) {
                 await new Promise(r => setTimeout(r, CONNECTION_SETUP_DELAY));
             }
-        }
-
-        // Re-add failed accounts after iteration completes
-        for (let account of failedAccounts) {
-            unassigned.add(account);
         }
 
         // Log final distribution for monitoring
@@ -1849,6 +1814,9 @@ async function assignAccounts() {
             totalAssigned: assigned.size
         });
     } finally {
+        // Re-add failed accounts after iteration completes
+        requeueFailedAccounts({ assigned, unassigned }, failedAccounts);
+
         assigning = false;
 
         // Safety net: if accounts remain unassigned, schedule a retry with backoff
