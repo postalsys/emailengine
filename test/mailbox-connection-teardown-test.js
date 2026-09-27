@@ -77,6 +77,35 @@ test('Mailbox.requireImapClient()', async t => {
     });
 });
 
+test('keepsArrivalQueued()', async t => {
+    const { keepsArrivalQueued } = require('../lib/email-client/imap/mailbox');
+    const withCode = code => Object.assign(new Error('failed'), { code });
+
+    await t.test('keeps a message the server throttled, instead of dropping it with no webhook', () => {
+        // ImapFlow 2.0.8+ throws ETHROTTLE once every FETCH retry was throttled
+        assert.equal(keepsArrivalQueued(withCode('ETHROTTLE')), true);
+    });
+
+    await t.test('keeps a message on a gone connection or a network failure', () => {
+        assert.equal(keepsArrivalQueued(withCode('NoConnection')), true);
+        assert.equal(keepsArrivalQueued(withCode('ECONNRESET')), true);
+    });
+
+    await t.test('a throttled arrival is counted per queued entry', () => {
+        const { Mailbox } = require('../lib/email-client/imap/mailbox');
+        const mailbox = Object.create(Mailbox.prototype);
+
+        assert.equal(mailbox.countThrottledArrival('a'), 1);
+        assert.equal(mailbox.countThrottledArrival('a'), 2);
+        assert.equal(mailbox.countThrottledArrival('b'), 1);
+    });
+
+    await t.test('drops a message that failed for any other reason', () => {
+        assert.equal(keepsArrivalQueued(withCode('DownloadIncomplete')), false);
+        assert.equal(keepsArrivalQueued(new TypeError('broken')), false);
+    });
+});
+
 test('Mailbox.loadAttachmentContent()', async t => {
     // The three enrichment passes that need an attachment body (notifyAttachments, the inline
     // images, calendar parts) each carried their own copy of this. Only the calendar copy declined

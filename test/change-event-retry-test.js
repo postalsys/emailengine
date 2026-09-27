@@ -30,12 +30,21 @@ function apiError(status) {
 function stubStore(queue = [], due = []) {
     const store = {
         deferred: [],
+        rescheduled: [],
+        leased: [],
         completed: [],
         asked: 0,
         listDueChangeEvents: async () => {
             store.asked++;
             return { due: due.splice(0).map((event, i) => ({ event, member: `member-${i}` })), next: null };
         },
+        // processDueDeferredEvents() swaps each change for its next attempt before handling it
+        leaseChangeEvent: async (member, next) => {
+            store.leased.push(member);
+            return next ? `lease:${member}` : null;
+        },
+        // a change deferred again while it is leased moves the lease instead of adding an entry
+        rescheduleChangeEvent: async (member, dueTime) => store.rescheduled.push({ member, dueTime }),
         completeChangeEvent: async member => store.completed.push(member),
         deferChangeEvent: async (event, dueTime) => store.deferred.push({ event, dueTime }),
         pullQueueEvent: async () => (queue.length ? queue.shift() : null)
@@ -75,6 +84,8 @@ test('BaseClient.deferFailedChangeEvent()', async t => {
     await t.test('a transient failure is deferred with the next delay on the schedule', async () => {
         const store = stubStore();
         const client = makeOutlook(store);
+        // Redis was asked: nothing is waiting
+        client.deferredDueAt = null;
 
         const before = Date.now();
         await client.deferFailedChangeEvent({ type: 'created', message: 'm1' }, apiError(504), ['m1']);
@@ -91,6 +102,39 @@ test('BaseClient.deferFailedChangeEvent()', async t => {
         assert.ok(delays[0] >= CHANGE_EVENT_RETRY_DELAYS[0] && delays[0] < CHANGE_EVENT_RETRY_DELAYS[0] + 1000);
         assert.ok(delays[1] >= CHANGE_EVENT_RETRY_DELAYS[2] && delays[1] < CHANGE_EVENT_RETRY_DELAYS[2] + 1000);
         assert.equal(client.deferredDueAt, store.deferred[0].dueTime, 'the earliest due time is remembered');
+    });
+
+    await t.test('an unknown due time stays unknown, so an earlier stored change is not skipped', async () => {
+        const client = makeOutlook(stubStore());
+        client.deferredDueAt = undefined;
+
+        await client.deferFailedChangeEvent({ type: 'updated', message: 'm1', attempt: 3 }, apiError(503));
+
+        assert.equal(client.deferredDueAt, undefined);
+    });
+
+    await t.test('an unknown due time still arms a timer, so a deferral is not left waiting', () => {
+        const client = makeOutlook(stubStore());
+        client.deferredDueAt = undefined;
+
+        client.scheduleDeferredRetryTimer();
+
+        assert.ok(client.deferredRetryTimer, 'a fallback check is armed');
+        client.cancelDeferredRetryTimer();
+    });
+
+    await t.test('a cancel that lands while Redis is being read is not overwritten by the read', async () => {
+        let release;
+        const client = makeOutlook({
+            listDueChangeEvents: () => new Promise(resolve => (release = resolve))
+        });
+
+        const pass = client.processDueDeferredEvents(async () => false);
+        client.cancelDeferredRetryTimer();
+        release({ due: [], next: null });
+        await pass;
+
+        assert.equal(client.deferredDueAt, undefined, 'the next run still asks Redis');
     });
 
     await t.test('network failures and throttling are retried', async () => {
@@ -183,11 +227,13 @@ test('OutlookClient.processHistory()', async t => {
         await outlook.processHistory();
 
         assert.deepEqual(updated, ['retried', 'queued']);
-        assert.deepEqual(store.completed, ['member-0', 'member-1']);
+        assert.deepEqual(store.leased, ['member-0', 'member-1']);
+        assert.deepEqual(store.completed, ['lease:member-0'], 'the one deferred again keeps its lease as the next attempt');
         assert.deepEqual(
-            store.deferred.map(entry => entry.event),
-            [{ type: 'updated', message: 'fails-again', attempt: 2 }]
+            store.rescheduled.map(entry => entry.member),
+            ['lease:member-1']
         );
+        assert.equal(store.deferred.length, 0);
     });
 
     await t.test('a message is marked seen only once it was announced, so a failed one is not skipped on its retry', async () => {
@@ -257,7 +303,7 @@ test('OutlookClient.processHistory()', async t => {
 
         assert.equal(store.deferred.length, 1);
         assert.deepEqual(await outlook.getAnnounced([emailId]), new Set());
-        await redis.del(outlook.getAccountKey());
+        assert.equal(await redis.exists(outlook.getAccountKey()), 0, 'a pass does not recreate a deleted account record');
     });
 });
 
@@ -328,6 +374,9 @@ test('Outlook missed-notification recovery', async t => {
         const announced = [];
         outlook.processNew = clearsPath(async messageData => announced.push(messageData.id));
 
+        // hSetExists only writes to an existing account record
+        await redis.hset(outlook.getAccountKey(), 'account', outlook.account);
+
         const before = Date.now();
         await outlook.syncMissedMessages({ since: Date.now() - 60 * 1000, options: {} });
 
@@ -355,10 +404,13 @@ test('Outlook missed-notification recovery', async t => {
         await outlook.processHistory();
         outlook.cancelDeferredRetryTimer();
 
-        assert.equal(store.deferred.length, 1);
-        assert.equal(store.deferred[0].event.type, 'missedRecovery');
-        assert.equal(store.deferred[0].event.attempt, 1);
-        assert.deepEqual(store.completed, ['member-0']);
+        assert.deepEqual(store.leased, ['member-0']);
+        assert.deepEqual(
+            store.rescheduled.map(entry => entry.member),
+            ['lease:member-0'],
+            'the leased request is moved to its next attempt'
+        );
+        assert.deepEqual(store.completed, []);
     });
 
     await t.test('several requests due in one drain are served by one recovery pass', async () => {
@@ -378,7 +430,7 @@ test('Outlook missed-notification recovery', async t => {
         await outlook.processHistory();
 
         assert.deepEqual(passes, [now - 1000 - OUTLOOK_MISSED_LOOKBACK]);
-        assert.deepEqual(store.completed, ['member-0', 'member-1']);
+        assert.deepEqual(store.completed, ['lease:member-0', 'lease:member-1']);
     });
 
     await t.test('the lifecycle hook makes the next drain look for the stored request, even mid-drain', async () => {
@@ -431,6 +483,35 @@ test('Account.queueMissedRecovery()', async t => {
 
         await redis.del(account.getDeferredQueueKey());
     });
+});
+
+test('OutlookClient retried created event', async t => {
+    await t.test('is skipped when a recovery pass announced the message in the meantime', async () => {
+        const outlook = makeOutlook(stubStore());
+        outlook.account = `retry-announced-${process.pid}`;
+        const emailId = `announced-${process.pid}`;
+        outlook.prepareNewMessage = async id => ({ id, path: 'INBOX' });
+        const announced = [];
+        outlook.processNew = clearsPath(async messageData => announced.push(messageData.id));
+
+        try {
+            await outlook.markAnnounced(emailId, 'Archive');
+            // the dedupe bucket entry has long expired by the time a later attempt runs
+            await redis.hdel(outlook.dedupeBucketKeys()[1], `${emailId}:created`);
+
+            await outlook.processChangeEvent({ type: 'created', message: emailId, attempt: 3 }, {});
+            assert.deepEqual(announced, []);
+        } finally {
+            await redis.del(outlook.getAnnouncedKey());
+        }
+    });
+});
+
+test('OutlookClient.mayRefreshListingFor()', () => {
+    const outlook = makeOutlook(null);
+    assert.equal(outlook.mayRefreshListingFor('f1'), true);
+    assert.equal(outlook.mayRefreshListingFor('f1'), false, 'the same missing folder does not refresh again right away');
+    assert.equal(outlook.mayRefreshListingFor('f2'), true);
 });
 
 test('OutlookClient change probes do not mistake a failed request for a missing message', async t => {
@@ -599,8 +680,33 @@ test('GmailClient history retries', async t => {
         await gmail.processHistory(10, 10);
 
         assert.deepEqual(announced, ['m1']);
-        assert.deepEqual(store.completed, ['member-0']);
+        assert.deepEqual(store.completed, ['lease:member-0']);
         assert.equal(store.deferred.length, 0);
+    });
+
+    await t.test('a labels failure defers the due messages as themselves and is not retried per message', async () => {
+        const store = stubStore(
+            [],
+            [
+                { type: 'created', message: { id: 'm1' }, attempt: 1 },
+                { type: 'created', message: { id: 'm2' }, attempt: 1 }
+            ]
+        );
+        const gmail = makeGmail(store);
+        let labelCalls = 0;
+        gmail.getLabels = async () => {
+            labelCalls++;
+            throw apiError(503);
+        };
+        gmail.request = async () => ({ history: [], historyId: '10' });
+
+        await gmail.processHistory(10, 10);
+
+        assert.equal(labelCalls, 1);
+        assert.deepEqual(
+            store.rescheduled.map(entry => entry.member),
+            ['lease:member-0', 'lease:member-1']
+        );
     });
 
     await t.test('a queued follow-up run starts from the stored cursor', async () => {
@@ -664,6 +770,52 @@ test('Account deferred change store', async t => {
 
     await t.test('an empty store reports nothing due', async () => {
         assert.deepEqual(await account.listDueChangeEvents(), { due: [], next: null });
+    });
+
+    await t.test('an unreadable entry is dropped instead of blocking the rest', async () => {
+        await redis.zadd(account.getDeferredQueueKey(), Date.now() - 1000, '{not json');
+        await account.deferChangeEvent({ type: 'created', message: 'ok', attempt: 1 }, Date.now() - 1000);
+
+        const { due } = await account.listDueChangeEvents();
+
+        assert.deepEqual(
+            due.map(entry => entry.event.message),
+            ['ok']
+        );
+        assert.equal(await redis.zscore(account.getDeferredQueueKey(), '{not json'), null);
+    });
+
+    const stored = async () => (await redis.zrange(account.getDeferredQueueKey(), 0, -1)).map(member => JSON.parse(member));
+
+    await t.test('a change is leased as its next attempt while it is handled', async () => {
+        const client = makeOutlook(account);
+        await account.deferChangeEvent({ type: 'created', message: 'crash', attempt: 1 }, Date.now() - 1000);
+
+        // what a restart would find if the worker died inside the handler
+        let duringHandling;
+        await client.processDueDeferredEvents(async event => {
+            assert.equal(event.attempt, 1);
+            duringHandling = await redis.zrange(account.getDeferredQueueKey(), 0, -1, 'WITHSCORES');
+        });
+
+        const [member, score] = duringHandling;
+        assert.deepEqual(JSON.parse(member), { type: 'created', message: 'crash', attempt: 2 }, 'one attempt further');
+        assert.ok(Number(score) >= Date.now() + CHANGE_EVENT_RETRY_DELAYS[1] - 1000, 'and not before that attempt is due');
+        assert.deepEqual(await stored(), [], 'handled, so the lease is gone');
+    });
+
+    await t.test('a change deferred again keeps a single entry, a handled one leaves none', async () => {
+        const client = makeOutlook(account);
+        await account.deferChangeEvent({ type: 'created', message: 'again', attempt: 1 }, Date.now() - 1000);
+        await account.deferChangeEvent({ type: 'created', message: 'done', attempt: 1 }, Date.now() - 1000);
+
+        await client.processDueDeferredEvents(async event => {
+            if (event.message === 'again') {
+                await client.deferFailedChangeEvent(event, apiError(503));
+            }
+        });
+
+        assert.deepEqual(await stored(), [{ type: 'created', message: 'again', attempt: 2 }]);
     });
 
     await t.test('an Outlook message whose fetch failed is announced on the retry', async () => {

@@ -859,6 +859,26 @@ test('Export error classifiers', async t => {
         assert.strictEqual(isSkippableError(err), true);
     });
 
+    await t.test('ImapFlow throttling is retried and a message gone mid-download is skipped', () => {
+        // ImapFlow 2.0.8+ throws these where it used to resolve undefined or end a truncated
+        // stream; as unknown codes they failed the whole export job
+        // as it arrives from the IMAP worker, which reports ETHROTTLE as 429
+        let throttled = new Error('Command failed');
+        throttled.code = 'ETHROTTLE';
+        throttled.statusCode = 429;
+        assert.strictEqual(isTransientError(throttled), true);
+        assert.strictEqual(isSkippableError(throttled), false);
+
+        let apiThrottled = new Error('Too Many Requests');
+        apiThrottled.statusCode = 429;
+        assert.strictEqual(isTransientError(apiThrottled), true, 'a throttled Gmail or Graph request is retried too');
+
+        let incomplete = new Error('Message disappeared during download');
+        incomplete.code = 'DownloadIncomplete';
+        assert.strictEqual(isSkippableError(incomplete), true);
+        assert.strictEqual(isTransientError(incomplete), false);
+    });
+
     await t.test('transient and permanent errors are not skippable', () => {
         let timeout = new Error('connection timed out');
         timeout.code = 'ETIMEDOUT';

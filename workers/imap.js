@@ -21,6 +21,7 @@ const { oauth2Apps, isApiBasedApp } = require('../lib/oauth2-apps');
 const { redis, notifyQueue, submitQueue, documentsQueue, getFlowProducer } = require('../lib/db');
 const { sendToMessagePort, MessagePortWritable } = require('../lib/message-port-stream');
 const { packRpcError, unpackRpcError } = require('../lib/worker-rpc-error');
+const { ImapFlowErrorCode } = require('imapflow');
 const { getESClient } = require('../lib/document-store');
 const settings = require('../lib/settings');
 const msgpack = require('../lib/msgpack');
@@ -1057,6 +1058,11 @@ parentPort.on('message', message => {
                 // 503 is excluded from the error branch on purpose: both "no active handler" and
                 // IMAPConnectionClosing carry it, and a worker taking over accounts answers every
                 // in-flight command with one until the reassignment settles.
+                if (err.code === ImapFlowErrorCode.ETHROTTLE && !err.statusCode) {
+                    // ImapFlow gave up after the server throttled every retry: the caller should
+                    // back off, the same answer a throttled Gmail or Graph request gets
+                    err.statusCode = 429;
+                }
                 let isServerFault = !err.statusCode || (err.statusCode >= 500 && err.statusCode !== 503);
                 logger[isServerFault ? 'error' : 'debug'](Object.assign({ msg: 'Command failed' }, message, { err }));
                 parentPort.postMessage(Object.assign({ cmd: 'resp', mid: message.mid }, packRpcError(err)));
