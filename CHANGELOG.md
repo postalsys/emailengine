@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.81.2](https://github.com/postalsys/emailengine/compare/v2.81.1...v2.81.2) (2026-09-27)
+
+
+### Bug Fixes
+
+* **api:** check isBounce for messages in the Inbox only ([de05eff](https://github.com/postalsys/emailengine/commit/de05eff7d684cd7beeb227a912afa6aa0988b421))
+* **api:** decide isBounce at fetch time instead of storing a marker ([2c81311](https://github.com/postalsys/emailengine/commit/2c813117f95757c6cf656ae3f904042c3b458a7a))
+* **api:** remove the bounces field and the store behind it ([b67acb9](https://github.com/postalsys/emailengine/commit/b67acb9618754a108e32e4bafbef0b05d4773ade))
+* **api:** report isBounce and relatedMessageId in message responses ([b551bfd](https://github.com/postalsys/emailengine/commit/b551bfd7457466e8f51ff77540d0bb4afd59eb21))
+* **deps:** update dependencies, hold @sentry/node at 10.x ([6c74381](https://github.com/postalsys/emailengine/commit/6c7438108559fa5eef36a022756515f623ac965f))
+* **deps:** update imapflow to 2.0.6 ([07d5ea7](https://github.com/postalsys/emailengine/commit/07d5ea7eb42cdb01fd9a091db043837ecd8e58d3))
+* **deps:** update imapflow to 2.1.0, dedupe nodemailer and undici ([13da944](https://github.com/postalsys/emailengine/commit/13da944e7ffee2943a91bfd4a0ade21b60c8f2b1))
+* **docker:** bump the node:24-alpine base image digest ([0cb6d23](https://github.com/postalsys/emailengine/commit/0cb6d23a8e975e09bce10158434332b3f1131e89))
+* **gmail:** retry new messages that fail on a transient API error ([f7d45f9](https://github.com/postalsys/emailengine/commit/f7d45f9edc1afaaf44b0d145caddb13aef0e76c1))
+* **imap:** run the shared arrival checks instead of IMAP wrappers ([26cd53c](https://github.com/postalsys/emailengine/commit/26cd53c771ed8f6abbd740c22ef62319b54401a8))
+* **imap:** share the bounce shape check with the API clients ([a0302a2](https://github.com/postalsys/emailengine/commit/a0302a2ff40ab62f8fd5dfc68f26cbc9175d0059))
+* **imap:** share the complaint shape check with the API clients ([90a9825](https://github.com/postalsys/emailengine/commit/90a9825044fc024cf5977c5c56ccf5a484973cd4))
+* **imap:** share the delivery-report shape check with the API clients ([aa777df](https://github.com/postalsys/emailengine/commit/aa777dfefbe8047f7b7a6df7000fb95b89189a2c))
+* keep assigning accounts when an IMAP worker exits mid-assignment ([ed87eee](https://github.com/postalsys/emailengine/commit/ed87eee43ff6eba3b53d6556d7fc33e6ebfca0dc))
+* keep throttled IMAP arrivals and harden the deferred change retries ([4830bb4](https://github.com/postalsys/emailengine/commit/4830bb451c5ee166c2ee0e6beef9cc759424341a))
+* **outlook:** recover missed Graph notifications durably ([ff0eca6](https://github.com/postalsys/emailengine/commit/ff0eca6dbdfdbda34776b0b5c92b9c07cfbe5d04))
+* **outlook:** retry change notifications that fail on a transient Graph error ([9d1301c](https://github.com/postalsys/emailengine/commit/9d1301cff3bd2b505e0d3402c40c2eefaf1c44ed))
+* **submit:** warn when the sent copy is skipped for lack of a Sent mailbox ([47fd10b](https://github.com/postalsys/emailengine/commit/47fd10bdef5dc732265b10619122456d574942de))
+* **sync:** defer Gmail and Graph changes that fail on a transient error ([b778adf](https://github.com/postalsys/emailengine/commit/b778adfab637ce7b2afc801e7eedd4f31f3a50a9))
+
 ## [2.81.1](https://github.com/postalsys/emailengine/compare/v2.81.0...v2.81.1) (2026-09-15)
 
 
