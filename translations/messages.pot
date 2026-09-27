@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-09-27 16:43+0000\n"
+"POT-Creation-Date: 2026-09-27 19:09+0000\n"
 
 #: views/error.hbs:6
 #: workers/api.js:3140
@@ -32,6 +32,10 @@ msgid "%d certificate"
 msgid_plural "%d certificates"
 msgstr[0] ""
 msgstr[1] ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
 
 #: views/oauth-scope-error.hbs:5
 msgid "Insufficient Permissions"
@@ -110,10 +114,6 @@ msgid ""
 "received."
 msgstr ""
 
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
-
 #: views/accounts/register/imap.hbs:13
 msgid "Your name"
 msgstr ""
@@ -143,14 +143,6 @@ msgstr ""
 #: views/accounts/register/imap.hbs:55
 #: views/accounts/register/validating.hbs:74
 msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/index.hbs:6
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:19
-msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/validating.hbs:35
@@ -287,6 +279,14 @@ msgstr ""
 
 #: views/accounts/register/imap-server.hbs:293
 msgid "We couldn't connect with these settings. Check the errors below."
+msgstr ""
+
+#: views/accounts/register/index.hbs:6
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:19
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/partials/public_test_labels.hbs:9
