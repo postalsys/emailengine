@@ -1147,14 +1147,14 @@ test('API tests', async t => {
         assert.ok(response.body.deleted);
     });
 
-    // --- Outlook Graph API behavior tests (verify syncMissedMessages assumptions) ---
+    // --- Outlook Graph API behavior tests (verify the Graph behavior syncMissedMessages relies on) ---
 
     await t.test('Graph API message query returns messages from all folders with parentFolderId', { timeout: testConfig.OUTLOOK_TIMEOUT }, async () => {
         let graphToken = await getGraphToken();
         assert.ok(graphToken, 'Should receive access token');
         let email = process.env.OUTLOOK_SERVICE_ACCOUNT_EMAIL;
 
-        // Query recent messages with parentFolderId - same pattern as syncMissedMessages
+        // Query recent messages with parentFolderId, the listing syncMissedMessages pages through
         let sinceTime = new Date(Date.now() - 30 * 60 * 1000).toISOString();
         let queryParams = new URLSearchParams({
             $filter: `receivedDateTime gt ${sinceTime}`,

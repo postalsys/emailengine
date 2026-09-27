@@ -709,8 +709,9 @@ class ConnectionHandler {
                 return true;
 
             case 'missed':
+                // the API worker already stored the recovery request, see Account.queueMissedRecovery()
                 logger.info({ msg: 'Handling missed notification lifecycle event', account: message.account });
-                return await connection.syncMissedMessages();
+                return connection.recoverMissedNotifications();
 
             default:
                 logger.warn({ msg: 'Unknown subscription lifecycle event', event: message.event, account: message.account });

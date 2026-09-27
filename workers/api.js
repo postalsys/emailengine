@@ -2182,6 +2182,13 @@ const init = async () => {
                         account: request.query.account
                     });
 
+                    if (entry.lifecycleEvent === 'missed') {
+                        // Stored before answering, one quick write: the worker call below may find
+                        // no worker for the account, and the lost changes are not reported again.
+                        // A failed write is answered with an error, so Graph delivers it again
+                        await accountObject.queueMissedRecovery();
+                    }
+
                     // Fire-and-forget: return HTTP 202 immediately so Microsoft
                     // does not time out the lifecycle webhook delivery
                     call({

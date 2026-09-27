@@ -2,8 +2,8 @@
 
 // Unit coverage for the "Run sync" (PUT /v1/account/{account}/sync) catch-up implemented
 // for API accounts. Gmail and Outlook previously inherited the base no-op syncMailboxes();
-// these tests verify the new per-provider overrides trigger a real catch-up and that the
-// Outlook missed-message recovery can bypass its cooldown for a manual sync.
+// these tests verify the new per-provider overrides trigger a real catch-up, which for Outlook
+// is a stored missed-message recovery request.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -145,104 +145,49 @@ test('Run sync for Gmail accounts', async t => {
 });
 
 test('Run sync for Outlook accounts', async t => {
-    await t.test('refreshes folder cache and forces missed-message recovery', async () => {
+    await t.test('refreshes folder cache and queues a missed-message recovery', async () => {
         let folderRefreshed = false;
-        let missedOpts;
+        let queued = 0;
+        let recovered = 0;
         let ctx = {
             closed: false,
             logger: createMockLogger(),
+            accountObject: { queueMissedRecovery: async () => queued++ },
             renewMailboxFolderCache: async () => {
                 folderRefreshed = true;
             },
-            syncMissedMessages: async opts => {
-                missedOpts = opts;
-                return true;
-            }
+            recoverMissedNotifications: () => recovered++
         };
 
         let result = await OutlookClient.prototype.syncMailboxes.call(ctx);
 
         assert.strictEqual(result, true);
         assert.ok(folderRefreshed, 'folder cache should be refreshed');
-        assert.deepStrictEqual(missedOpts, { force: true }, 'missed recovery should be forced for a manual sync');
+        assert.strictEqual(queued, 1, 'the recovery request is stored, so it is retried when it fails');
+        assert.strictEqual(recovered, 1, 'and picked up right away');
     });
 
     await t.test('continues to recovery even if folder cache refresh throws', async () => {
-        let missedCalled = false;
+        let queued = 0;
         let ctx = {
             closed: false,
             logger: createMockLogger(),
+            accountObject: { queueMissedRecovery: async () => queued++ },
             renewMailboxFolderCache: async () => {
                 throw new Error('graph down');
             },
-            syncMissedMessages: async () => {
-                missedCalled = true;
-                return true;
-            }
+            recoverMissedNotifications: () => true
         };
 
         let result = await OutlookClient.prototype.syncMailboxes.call(ctx);
 
         assert.strictEqual(result, true);
-        assert.ok(missedCalled, 'recovery should still run after a folder refresh failure');
+        assert.strictEqual(queued, 1, 'recovery should still be queued after a folder refresh failure');
     });
 
     await t.test('returns null when the client is closed', async () => {
         let ctx = { closed: true };
         let result = await OutlookClient.prototype.syncMailboxes.call(ctx);
         assert.strictEqual(result, null);
-    });
-});
-
-test('Outlook syncMissedMessages cooldown handling', async t => {
-    await t.test('respects the cooldown when not forced', async () => {
-        let setCalled = false;
-        let ctx = {
-            account: 'o1',
-            logger: createMockLogger(),
-            getAccountKey: () => 'iad:o1',
-            redis: Object.assign(createMockRedis(), {
-                set: async () => {
-                    setCalled = true;
-                    return null; // NX fails -> cooldown active
-                }
-            })
-        };
-
-        let result = await OutlookClient.prototype.syncMissedMessages.call(ctx);
-
-        assert.strictEqual(result, false, 'should skip when cooldown is active');
-        assert.ok(setCalled, 'cooldown key should be checked when not forced');
-    });
-
-    await t.test('bypasses the cooldown when forced', async () => {
-        let setCalled = false;
-        let requestCalled = false;
-        let ctx = {
-            account: 'o2',
-            logger: createMockLogger(),
-            getAccountKey: () => 'iad:o2',
-            oauth2UserPath: 'me',
-            redis: Object.assign(createMockRedis(), {
-                set: async () => {
-                    setCalled = true;
-                    return 'OK';
-                },
-                hget: async () => null,
-                del: async () => 1
-            }),
-            request: async () => {
-                // Proves we proceeded past the cooldown gate; throwing exercises the
-                // graceful error path (caught, returns false).
-                requestCalled = true;
-                throw new Error('graph query failed');
-            }
-        };
-
-        let result = await OutlookClient.prototype.syncMissedMessages.call(ctx, { force: true });
-
-        assert.strictEqual(result, false);
-        assert.strictEqual(setCalled, false, 'cooldown key must not be acquired when forced');
-        assert.ok(requestCalled, 'forced run should proceed to query messages');
     });
 });
