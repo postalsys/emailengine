@@ -11,7 +11,8 @@ module.exports = {
     // is a major we are deliberately soaking. Using 'minor' instead of a blanket reject so these
     // still receive security/patch updates within the safe major instead of being frozen at one
     // exact version. Verified against Node 20 (Docker) 2026-06-17.
-    target: name => (['nanoid', 'ical.js', 'gettext-parser', 'xgettext-template', 'chai', 'undici', 'marked'].includes(name) ? 'minor' : 'latest'),
+    target: name =>
+        ['nanoid', 'ical.js', 'gettext-parser', 'xgettext-template', 'chai', 'undici', 'marked', '@sentry/node'].includes(name) ? 'minor' : 'latest',
     //   nanoid            - 4.x dropped the CommonJS require export (ESM-only)
     //   ical.js           - 2.x is ESM-only
     //   gettext-parser    - 8.x is ESM-only
@@ -22,6 +23,10 @@ module.exports = {
     //   marked            - 16.x dropped the CommonJS build (ESM-only, needs require(esm)/Node >=20.19); 15.x is the
     //                       last require()-compatible line. 15.0.12 verified on Node 20-24 and in a yao/pkg node24 build.
     //                       Permanent while the Node 20 floor above stands.
+    //   @sentry/node      - 11.x requires Node >=20.19 (the DigitalOcean images are not guaranteed to be on a 20.x
+    //                       that new), and it depends on @sentry/bundler-plugins, which pulls the 16 MB Sentry CLI
+    //                       (package `sentry`, licensed FSL-1.1-Apache-2.0, not an OSI license) into the runtime
+    //                       tree and the pkg bundle. Reconsider if a later 11.x drops that dependency.
     //
     // bullmq was capped at 5.x until 2026-08-17, when both stated reasons had expired. Now on 6.x, which
     // moves cron-parser off the deprecated 4.9.0 onto 5.x - but not off luxon, which cron-parser depends
