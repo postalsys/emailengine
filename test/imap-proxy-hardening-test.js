@@ -181,7 +181,11 @@ test('a single command can not announce literals without bound', async () => {
         }
         client.send(payload + ')\r\n');
         await client.waitFor(/^A1 NO Too much literal data/m);
-        assert.equal(client.buffer.split('+ Go ahead').length - 1, 32);
+        // Count the continuations that preceded the refusal. The lines left in the payload after
+        // it are parsed as new commands, and how many of their answers have already arrived
+        // depends on socket chunking (the CI runners deliver them together with the NO)
+        const beforeRefusal = client.buffer.split('A1 NO Too much literal data')[0];
+        assert.equal(beforeRefusal.split('+ Go ahead').length - 1, 32);
         client.socket.destroy();
     } finally {
         await closeServer(server);
