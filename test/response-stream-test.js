@@ -207,4 +207,47 @@ test('ResponseStream tests', async t => {
 
         stream.finalize();
     });
+    await t.test('a client that stops reading is dropped once its backlog passes the cap', async () => {
+        // Nothing reads this stream, which is what a connected but stalled consumer looks like
+        // from here. Every frame used to be buffered for as long as the socket stayed open.
+        let stream = new ResponseStream({ maxBuffered: 64 * 1024 });
+        let payload = { data: 'x'.repeat(1024) };
+
+        let sent = 0;
+        while (!stream._finalized && sent < 10000) {
+            stream.sendMessage(payload);
+            sent++;
+        }
+
+        assert.ok(stream._finalized, 'the stalled stream must be finalized');
+        assert.ok(sent < 200, `dropped after ${sent} frames, near the 64 KB cap rather than never`);
+        assert.ok(stream.destroyed, 'the stalled stream must be destroyed');
+        assert.ok(!registeredPublishers.has(stream), 'the stalled stream must leave the publisher set');
+
+        // Further fan-out to it is a no-op rather than more buffering
+        let before = stream.writableLength;
+        stream.sendMessage(payload);
+        assert.equal(stream.writableLength, before);
+    });
+
+    await t.test('a client that keeps reading is never dropped, whatever the volume', async () => {
+        let stream = new ResponseStream({ maxBuffered: 64 * 1024 });
+        let received = 0;
+        stream.on('data', chunk => (received += chunk.length));
+        let payload = { data: 'x'.repeat(1024) };
+
+        for (let i = 0; i < 1000; i++) {
+            stream.sendMessage(payload);
+            if (i % 10 === 0) {
+                // let the consumer drain, as a reading client does between events
+                await new Promise(resolve => setImmediate(resolve));
+            }
+        }
+        await new Promise(resolve => setImmediate(resolve));
+
+        assert.ok(!stream._finalized, 'a reading client must stay connected');
+        assert.ok(received > 1000 * 1024, 'every frame reaches a reading client');
+
+        stream.finalize();
+    });
 });

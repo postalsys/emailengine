@@ -1,10 +1,8 @@
 #!/usr/bin/env node
 
-// npm install googleapis
-
 'use strict';
 
-const { google } = require('googleapis');
+const { fetch } = require('undici');
 const http = require('http');
 const url = require('url');
 const fs = require('fs');
@@ -18,7 +16,42 @@ const SCOPE_PROFILES = {
     sendonly: ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/gmail.send']
 };
 
-let oauth2Client = null; // Will be initialized based on account selection
+const REDIRECT_URI = 'http://127.0.0.1:3000/oauth';
+
+let currentAccount = null; // the account whose client credentials the browser flow below uses
+
+// The two OAuth2 calls the flow needs, made against Google's endpoints directly: the googleapis
+// client this script used to require is not a dependency of the repository
+function buildAuthUrl(email, scopes) {
+    const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+    authUrl.searchParams.set('client_id', currentAccount.clientId);
+    authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('scope', scopes.join(' '));
+    authUrl.searchParams.set('access_type', 'offline');
+    authUrl.searchParams.set('login_hint', email);
+    authUrl.searchParams.set('prompt', 'consent');
+    return authUrl.href;
+}
+
+async function exchangeCode(code) {
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            code,
+            client_id: currentAccount.clientId,
+            client_secret: currentAccount.clientSecret,
+            redirect_uri: REDIRECT_URI,
+            grant_type: 'authorization_code'
+        }).toString()
+    });
+    const tokens = await res.json();
+    if (!res.ok) {
+        throw new Error(`Token exchange failed (${res.status}): ${tokens.error || ''} ${tokens.error_description || ''}`.trim());
+    }
+    return tokens;
+}
 
 async function updateEnvFile(email, refreshToken, accountType) {
     const envPath = path.join(__dirname, '..', '.env');
@@ -38,12 +71,7 @@ async function updateEnvFile(email, refreshToken, accountType) {
 
 async function getNewTokens(email, scopes, accountType) {
     return new Promise((resolve, reject) => {
-        const authUrl = oauth2Client.generateAuthUrl({
-            access_type: 'offline',
-            scope: scopes,
-            login_hint: email,
-            prompt: 'consent'
-        });
+        const authUrl = buildAuthUrl(email, scopes);
 
         console.log('\n' + '='.repeat(80));
         console.log(`Authorize account: ${email}`);
@@ -64,12 +92,12 @@ async function getNewTokens(email, scopes, accountType) {
 
                         server.close();
 
-                        const { tokens } = await oauth2Client.getToken(code);
+                        const tokens = await exchangeCode(code);
 
                         console.log('\nTokens received:');
                         console.log('Access Token:', tokens.access_token.substring(0, 20) + '...');
                         console.log('Refresh Token:', tokens.refresh_token);
-                        console.log('Expires:', new Date(tokens.expiry_date).toISOString());
+                        console.log('Expires:', new Date(Date.now() + tokens.expires_in * 1000).toISOString());
                         console.log('Scope:', tokens.scope);
 
                         await updateEnvFile(email, tokens.refresh_token, accountType);
@@ -162,8 +190,8 @@ async function main() {
 
     for (const account of accounts) {
         try {
-            // Initialize OAuth2 client for this specific account
-            oauth2Client = new google.auth.OAuth2(account.clientId, account.clientSecret, 'http://127.0.0.1:3000/oauth');
+            // The browser flow reads the client credentials of this account
+            currentAccount = account;
 
             await getNewTokens(account.email, account.scopes, account.type);
             console.log(`\n✓ Successfully refreshed tokens for ${account.email} (${account.type})\n`);

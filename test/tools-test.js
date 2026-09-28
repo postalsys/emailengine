@@ -318,6 +318,40 @@ test('Tools utility tests', async t => {
         assert.strictEqual(tools.getBoolean('no'), false);
     });
 
+    await t.test('getBoolean() parses "on"/"enabled"', async () => {
+        // OIDC_FORCED=on, EENGINE_SMTP_ENABLED=on and friends used to read as false, while joi and
+        // resolveHttpProxy() already took `on` as true
+        assert.strictEqual(tools.getBoolean('on'), true);
+        assert.strictEqual(tools.getBoolean('ON'), true);
+        assert.strictEqual(tools.getBoolean(' on '), true);
+        assert.strictEqual(tools.getBoolean('enabled'), true);
+        assert.strictEqual(tools.getBoolean('off'), false);
+        assert.strictEqual(tools.getBoolean('disabled'), false);
+        assert.strictEqual(tools.getBoolean('once'), false);
+    });
+
+    await t.test('getRedisStats() totals command stats from zero', async () => {
+        const redisStub = {
+            async info(section) {
+                return section === 'commandstats'
+                    ? 'cmdstat_get:calls=3,usec=30,usec_per_call=10.00,rejected_calls=1,failed_calls=0\r\ncmdstat_set:calls=2,usec=10,usec_per_call=5.00,rejected_calls=0,failed_calls=2'
+                    : 'redis_version:7.2.0';
+            },
+            async slowlog() {
+                return 0;
+            }
+        };
+        const stats = await tools.getRedisStats(redisStub);
+        assert.deepStrictEqual(stats.cmdstat_total, { calls: 5, usec: 40, rejected_calls: 1, failed_calls: 2 });
+    });
+
+    await t.test('mergeObjects() treats arrays as values, not records', async () => {
+        // A partial update carrying a narrower scope list must not get the stored tail back
+        const destination = { scope: ['a'], auth: { user: 'u' } };
+        tools.mergeObjects(destination, { scope: ['a', 'b', 'c'], auth: { user: 'x', pass: 'p' }, provider: 'gmail' });
+        assert.deepStrictEqual(destination, { scope: ['a'], auth: { user: 'u', pass: 'p' }, provider: 'gmail' });
+    });
+
     await t.test('getBoolean() parses numeric strings', async () => {
         assert.strictEqual(tools.getBoolean('1'), true);
         assert.strictEqual(tools.getBoolean('0'), false);
@@ -368,19 +402,6 @@ test('Tools utility tests', async t => {
 
         assert.strictEqual(tools.setBit(buffer, -1, 0, true), false);
         assert.strictEqual(tools.setBit(buffer, 1, 0, true), false);
-    });
-
-    // escapeRegExp tests
-    await t.test('escapeRegExp() escapes special characters', async () => {
-        assert.strictEqual(tools.escapeRegExp('test.string'), 'test\\.string');
-        assert.strictEqual(tools.escapeRegExp('a*b+c?'), 'a\\*b\\+c\\?');
-        assert.strictEqual(tools.escapeRegExp('[a-z]'), '\\[a-z\\]');
-        assert.strictEqual(tools.escapeRegExp('$100'), '\\$100');
-    });
-
-    await t.test('escapeRegExp() leaves normal strings unchanged', async () => {
-        assert.strictEqual(tools.escapeRegExp('hello'), 'hello');
-        assert.strictEqual(tools.escapeRegExp('test123'), 'test123');
     });
 
     await t.test('escapeRedisGlob() escapes glob metacharacters', async () => {
@@ -849,6 +870,23 @@ test('Tools utility tests', async t => {
     await t.test('getLogs() answers an empty log with a notice', async () => {
         const stream = await tools.getLogs(redis, 'tools-logs-missing-account');
         assert.strictEqual(await readStream(stream), 'No logs found for tools-logs-missing-account\n');
+    });
+
+    await t.test('getLogs() builds a Content-Disposition any account id can live in', async () => {
+        const { validateHeaderValue } = require('node:http');
+        const stub = { lrangeBuffer: async () => [] };
+
+        // Cyrillic is above U+00FF, which Node refuses in a header value: the download used to 500
+        const stream = await tools.getLogs(stub, '\u043f\u043e\u0447\u0442\u0430"acc');
+        const header = stream.headers['content-disposition'];
+        assert.doesNotThrow(() => validateHeaderValue('content-disposition', header));
+        assert.ok(/^[\x20-\x7e]+$/.test(header), 'the header value is plain ASCII');
+        assert.ok(header.includes('filename="logs.______acc.txt"'), header);
+        const encoded = header.match(/filename\*=UTF-8''(.+)$/)[1];
+        assert.strictEqual(decodeURIComponent(encoded), 'logs.\u043f\u043e\u0447\u0442\u0430"acc.txt');
+
+        const plain = await tools.getLogs(stub, 'plain-account');
+        assert.strictEqual(plain.headers['content-disposition'], `attachment; filename="logs.plain-account.txt"; filename*=UTF-8''logs.plain-account.txt`);
     });
 
     await t.test('getLogs() rejects when the log cannot be read, rather than ending a 200 stream with the error', async () => {

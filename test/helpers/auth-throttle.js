@@ -9,7 +9,7 @@
 // when the test ends.
 
 const { redis } = require('../../lib/db');
-const { authFailureKey, AUTH_FAILURE_LIMIT, AUTH_FAILURE_WINDOW } = require('../../lib/auth-token');
+const { authFailureKey, authFailureAddressKey, AUTH_FAILURE_LIMIT, AUTH_FAILURE_WINDOW } = require('../../lib/auth-token');
 const { rateLimitWindowKey } = require('../../lib/rate-limit');
 
 const ROLLOVER_MARGIN = 3000;
@@ -24,8 +24,21 @@ const ROLLOVER_MARGIN = 3000;
  * @returns {Promise<string>} the window key
  */
 async function trackedWindow(t, remoteAddress, account) {
-    const key = authFailureKey(remoteAddress, account);
+    return await trackedKey(t, authFailureKey(remoteAddress, account));
+}
 
+/**
+ * The same for the per-address budget, the one that ignores the username.
+ *
+ * @param {Object} t - node:test context of the test that owns the counter
+ * @param {string} remoteAddress - client IP
+ * @returns {Promise<string>} the window key
+ */
+async function trackedAddressWindow(t, remoteAddress) {
+    return await trackedKey(t, authFailureAddressKey(remoteAddress));
+}
+
+async function trackedKey(t, key) {
     const { windowEnds } = rateLimitWindowKey(key, AUTH_FAILURE_WINDOW);
     const remaining = windowEnds - Date.now();
     if (remaining < ROLLOVER_MARGIN) {
@@ -47,4 +60,4 @@ async function exhaustBudget(windowKey, count) {
     await redis.set(windowKey, typeof count === 'number' ? count : AUTH_FAILURE_LIMIT, 'EX', AUTH_FAILURE_WINDOW);
 }
 
-module.exports = { trackedWindow, exhaustBudget };
+module.exports = { trackedWindow, trackedAddressWindow, exhaustBudget };

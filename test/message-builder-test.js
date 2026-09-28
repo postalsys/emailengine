@@ -14,7 +14,8 @@ const {
     NotificationBuilder,
     ProviderMessageIdHandler,
     SmtpErrorBuilder,
-    SentMailCopyDecider
+    SentMailCopyDecider,
+    SmtpConfigBuilder
 } = require('../lib/email-client/message-builder');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
@@ -135,6 +136,15 @@ test('NetworkRoutingBuilder.build', async t => {
         assert.deepStrictEqual(routing, { localAddress: '10.0.0.5', proxy: 'socks5://p', name: 'host1' });
     });
 
+    await t.test('strips proxy credentials, since the object reaches webhook payloads', () => {
+        const routing = NetworkRoutingBuilder.build({ proxy: 'socks5://user:secret@proxy.example.com:1080' }, {});
+        assert.strictEqual(routing.proxy, 'socks5://proxy.example.com:1080');
+        assert.doesNotMatch(JSON.stringify(routing), /secret/);
+
+        const http = NetworkRoutingBuilder.build({ proxy: 'http://user:secret@proxy.example.com:3128/' }, {});
+        assert.strictEqual(http.proxy, 'http://proxy.example.com:3128/');
+    });
+
     await t.test('records a requested localAddress that differs from the effective one', () => {
         const routing = NetworkRoutingBuilder.build({ localAddress: '10.0.0.5' }, { localAddress: '10.0.0.9' });
         assert.strictEqual(routing.requestedLocalAddress, '10.0.0.9');
@@ -171,5 +181,32 @@ test('NotificationBuilder payloads', async t => {
         assert.strictEqual(payload.smtpResponseCode, 550);
         assert.strictEqual(payload.smtpCommand, 'RCPT');
         assert.deepStrictEqual(payload.job, { attempt: 1 });
+    });
+});
+
+test('SmtpConfigBuilder.loadGateway', async t => {
+    const silentLogger = { warn: () => false, info: () => false, debug: () => false, error: () => false };
+
+    await t.test('without a gateway id there is nothing to load', async () => {
+        const builder = new SmtpConfigBuilder({ redis, logger: silentLogger, account: 'a' });
+        assert.deepStrictEqual(await builder.loadGateway(null, '<m@x>'), { gatewayData: null, gatewayObject: null });
+    });
+
+    // The message was queued for a gateway; falling back to the account's own SMTP server would
+    // send it through a route nobody asked for.
+    await t.test('a gateway that does not exist fails instead of falling through to the account SMTP', async () => {
+        const builder = new SmtpConfigBuilder({ redis, logger: silentLogger, account: 'a' });
+        await assert.rejects(builder.loadGateway('no-such-gateway-for-test', '<m@x>'), err => {
+            assert.strictEqual(err.code, 'GatewayNotFound');
+            assert.match(err.message, /no-such-gateway-for-test/);
+            return true;
+        });
+    });
+
+    await t.test('a transient load failure is thrown as is, so the job retries', async () => {
+        const failing = new Error('Connection is closed.');
+        const brokenRedis = { hgetallBuffer: async () => Promise.reject(failing) };
+        const builder = new SmtpConfigBuilder({ redis: brokenRedis, logger: silentLogger, account: 'a' });
+        await assert.rejects(builder.loadGateway('gw1', '<m@x>'), err => err === failing);
     });
 });

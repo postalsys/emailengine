@@ -82,6 +82,20 @@ test('RespawnTracker', async t => {
         assert.strictEqual(mid.recordExit('imap', 0), DEFAULT_BASE_DELAY);
     });
 
+    await t.test('counts streaks per respawn slot, so exits of sibling workers do not compound (WORK-7)', () => {
+        // server.js keys the tracker by spawn slot. Keyed by type, four IMAP workers each exiting
+        // once in quick succession pushed the fourth respawn to 8s, and the next ones past the 10s
+        // failsafe reassignment that leaves a late worker with no accounts.
+        const tracker = makeTracker();
+        const delays = ['imap:1', 'imap:2', 'imap:3', 'imap:4'].map(slot => tracker.recordExit(slot, 100));
+        assert.deepStrictEqual(delays, [1000, 1000, 1000, 1000]);
+
+        // A slot that itself keeps crashing still backs off
+        assert.strictEqual(tracker.recordExit('imap:1', 100), 2000);
+        assert.strictEqual(tracker.streakFor('imap:1'), 2);
+        assert.strictEqual(tracker.streakFor('imap:2'), 1);
+    });
+
     await t.test('treats an uptime at the stability threshold as healthy', () => {
         const tracker = makeTracker();
         tracker.recordExit('imap', 100);

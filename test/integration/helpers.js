@@ -207,7 +207,17 @@ function startMockImapServer({ capabilities = 'IMAP4rev1 IDLE ID UIDPLUS', onCom
     });
 }
 
+// Skip value for a test that needs provider credentials: false when every named environment
+// variable is set, otherwise a reason naming the missing ones. Secrets are absent on Dependabot and
+// fork pull requests (`${{ secrets.X }}` expands to an empty string there) and in a fresh checkout,
+// and a provider section that fails for that reason teaches people to ignore a red integration job.
+function skipUnlessEnv(...names) {
+    const missing = names.filter(name => !process.env[name]);
+    return missing.length ? `provider credentials not set (${missing.join(', ')})` : false;
+}
+
 module.exports = {
+    skipUnlessEnv,
     createUsableTestAccount,
     waitForCondition,
     waitForAccountConnected,

@@ -9,8 +9,12 @@
 //     same code makes an intercepted 2FA code reusable
 //   * passkey register/auth options and verify, per IP (10/min)
 //
+// The failure-only guards (the SMTP and IMAP-proxy logins, the second factor) reserve an attempt
+// through reserveAttempts() and give it back through releaseAttempts() when it succeeds; both run
+// lib/lua/ee-reserve-attempts.lua and ee-release-attempts.lua.
+//
 // Runs against the test Redis db (config/test.toml -> db 13) so the real INCRBY/EXPIRE
-// transaction and the real time-bucket key derivation are exercised. Each test uses a unique
+// transaction, the real scripts and the real time-bucket key derivation are exercised. Each test uses a unique
 // key suffix, so a re-run inside the same time bucket starts from a clean counter.
 
 const test = require('node:test');
@@ -18,7 +22,8 @@ const assert = require('node:assert').strict;
 const crypto = require('crypto');
 
 const { redis } = require('../lib/db');
-const { checkRateLimit, peekRateLimit, rateLimitWindowKey } = require('../lib/rate-limit');
+const { REDIS_PREFIX } = require('../lib/consts');
+const { checkRateLimit, rateLimitWindowKey, windowBudget, reserveAttempts, releaseAttempts, incrementCounter } = require('../lib/rate-limit');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
 // Every subject is unique per run and every counter carries a TTL of at most its window size,
@@ -210,32 +215,80 @@ test('Rate limiter', async t => {
         );
     });
 
-    await t.test('peekRateLimit() reads the counter without spending it', async () => {
-        // The failure-only guards on the submission surfaces look before an attempt and record
-        // only a refusal; a peek that counted would throttle the legitimate client behind it
-        const key = uniqueKey('peek');
+    await t.test('incrementCounter() is the INCRBY + EXPIRE behind the window check', async () => {
+        const key = `${REDIS_PREFIX}unit-test:counter:${crypto.randomBytes(8).toString('hex')}`;
+
+        assert.strictEqual(await incrementCounter(key, 1, 60), 1);
+        assert.strictEqual(await incrementCounter(key, 2, 60), 3);
+        const ttl = await redis.ttl(key);
+        assert.ok(ttl > 0 && ttl <= 60, 'the counter carries the TTL it was given');
+    });
+
+    await t.test('reserveAttempts() admits up to the limit and takes a refused reservation back', async () => {
+        // The failure-only guards (the submission surfaces, the second factor) reserve an attempt
+        // before checking it; a refused reservation must leave the counter where it was, or a
+        // spent budget would keep growing with every refused attempt
+        const key = uniqueKey('reserve');
         const ALLOWED = 3;
+        const budgets = [windowBudget(key, ALLOWED, 60)];
 
-        const untouched = await peekRateLimit(key, ALLOWED, 60);
-        assert.strictEqual(untouched.success, true);
-        assert.strictEqual(untouched.count, 0);
-        assert.strictEqual(await redis.exists(windowKeyFor(key, 60)), 0, 'a peek must not create the counter');
-
-        for (let i = 0; i < ALLOWED - 1; i++) {
-            await checkRateLimit(key, 1, ALLOWED, 60);
+        for (let i = 1; i <= ALLOWED; i++) {
+            const { admitted, counts } = await reserveAttempts(budgets);
+            assert.strictEqual(admitted, true, `attempt ${i} fits`);
+            assert.deepStrictEqual(counts, [i]);
         }
-        const nearly = await peekRateLimit(key, ALLOWED, 60);
-        assert.strictEqual(nearly.success, true, 'one attempt short of the limit is still allowed');
-        assert.strictEqual(nearly.count, ALLOWED - 1);
 
-        await checkRateLimit(key, 1, ALLOWED, 60);
-        const spent = await peekRateLimit(key, ALLOWED, 60);
-        assert.strictEqual(spent.success, false, 'at the limit the next attempt is refused');
-        assert.strictEqual(spent.count, ALLOWED);
-        assert.strictEqual(spent.allowed, ALLOWED);
-        assert.ok(spent.ttl > 0 && spent.ttl <= 60);
+        const refused = await reserveAttempts(budgets);
+        assert.strictEqual(refused.admitted, false);
+        assert.deepStrictEqual(refused.counts, [ALLOWED], 'the counts are reported as they were');
+        assert.strictEqual(await redis.get(windowKeyFor(key, 60)), String(ALLOWED), 'a refused attempt is not counted');
 
-        const again = await peekRateLimit(key, ALLOWED, 60);
-        assert.strictEqual(again.count, ALLOWED, 'peeking twice reads the same value');
+        const ttl = await redis.ttl(windowKeyFor(key, 60));
+        assert.ok(ttl > 0 && ttl <= 60, 'the counter expires with its window');
+    });
+
+    await t.test('reserveAttempts() reserves in every budget or in none', async () => {
+        // Two budgets with different windows, like the per-username and per-address login budgets:
+        // once the narrow one is spent, the wide one must not be charged for the refused attempt
+        const narrow = uniqueKey('narrow');
+        const wide = uniqueKey('wide');
+        const budgets = [windowBudget(narrow, 1, 60), windowBudget(wide, 10, 3600)];
+
+        assert.strictEqual((await reserveAttempts(budgets)).admitted, true);
+
+        const refused = await reserveAttempts(budgets);
+        assert.strictEqual(refused.admitted, false);
+        assert.deepStrictEqual(refused.counts, [1, 1]);
+        assert.strictEqual(await redis.get(windowKeyFor(wide, 3600)), '1', 'the wide budget is not charged for a refusal');
+    });
+
+    await t.test('releaseAttempts() gives an accepted attempt back and deletes an idle counter', async () => {
+        const key = uniqueKey('release');
+        const budgets = [windowBudget(key, 3, 60)];
+        const keys = budgets.map(budget => budget.key);
+
+        await reserveAttempts(budgets);
+        await reserveAttempts(budgets);
+        await releaseAttempts(keys);
+        assert.strictEqual(await redis.get(keys[0]), '1');
+
+        await releaseAttempts(keys);
+        assert.strictEqual(await redis.exists(keys[0]), 0, 'a counter back at zero is deleted');
+
+        // a counter that expired meanwhile is not recreated as a negative number
+        await releaseAttempts(keys);
+        assert.strictEqual(await redis.exists(keys[0]), 0);
+        assert.strictEqual((await reserveAttempts(budgets)).counts[0], 1, 'and the next attempt counts from one');
+    });
+
+    await t.test('parallel reservations cannot spend more than the budget', async () => {
+        const key = uniqueKey('parallel-reserve');
+        const ALLOWED = 5;
+        const budgets = [windowBudget(key, ALLOWED, 60)];
+
+        const results = await Promise.all(Array.from({ length: 20 }, () => reserveAttempts(budgets)));
+
+        assert.strictEqual(results.filter(r => r.admitted).length, ALLOWED, 'exactly `allowed` attempts may be reserved at once');
+        assert.strictEqual(await redis.get(windowKeyFor(key, 60)), String(ALLOWED));
     });
 });

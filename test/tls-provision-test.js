@@ -519,6 +519,92 @@ test('certificate provisioning', async t => {
         assert.equal((await provision.getProvisioningStatus())[hostname].state, 'valid', 'and nothing overwrote it with a failure');
     });
 
+    await t.test('an expiring self-signed certificate reloads the listeners in every mode, once', async () => {
+        // Self-signed only: the ACME half of the reconciler returns before doing anything
+        await settings.set('tlsProvisioning', 'self-signed');
+
+        const expiring = await createSelfSignedCertificate({ hostnames: ['mail.example.com'], validityDays: 10 });
+        await redis.hset(`${REDIS_PREFIX}tls`, 'selfSigned', JSON.stringify({ cert: expiring.cert, hostnames: ['mail.example.com'] }));
+
+        const commands = [];
+        const call = async message => commands.push(message.cmd);
+        const certs = stubCerts({});
+
+        const result = await provision.reconcileCertificates({ certs, logger, call });
+        assert.equal(result.skipped, 'self-signed');
+        assert.deepEqual(commands, ['apiReloadCertificates', 'smtpReloadCertificates', 'imapProxyReloadCertificates']);
+
+        // Not asked about again while the same certificate is stored
+        await provision.reconcileCertificates({ certs, logger, call });
+        assert.equal(commands.length, 3);
+
+        // A current certificate asks for nothing
+        const current = await createSelfSignedCertificate({ hostnames: ['mail.example.com'] });
+        await redis.hset(`${REDIS_PREFIX}tls`, 'selfSigned', JSON.stringify({ cert: current.cert, hostnames: ['mail.example.com'] }));
+        assert.equal(await provision.refreshExpiringSelfSigned({ logger, call }), false);
+        assert.equal(commands.length, 3);
+    });
+
+    await t.test('the timer pass leaves alone a name the button is already ordering', async () => {
+        let release;
+        const gate = new Promise(resolve => {
+            release = resolve;
+        });
+        const certs = stubCerts({
+            async onAcquire(hostname) {
+                await gate;
+                return await issued(hostname);
+            }
+        });
+        const call = async () => {};
+
+        const hostname = 'mail.example.com';
+        await settings.set('smtpServerEnabled', true);
+        await settings.set('smtpServerTLSEnabled', true);
+
+        const requested = await provision.requestProvisioning({ certs, logger, call, hostnames: [hostname] });
+        assert.deepEqual(requested.accepted, [hostname]);
+
+        // The ten-minute timer fires while the button's order waits on the CA. The `queued` and
+        // `ordering` records carry no `attempted`, which read as "never tried"
+        const timerPass = await provision.reconcileCertificates({ certs, logger, call });
+        assert.deepEqual(timerPass.results, [], 'the timer did not start a second order');
+
+        release();
+        await waitFor(async () => {
+            const record = (await provision.getProvisioningStatus())[hostname];
+            return record && record.state === 'valid' ? record : false;
+        }, 'the background order to finish');
+
+        assert.equal(certs.calls.filter(entry => entry.skipAcquire === false).length, 1, 'one order reached the certificate authority');
+    });
+
+    await t.test('the button does not start a second order while the timer is ordering', async () => {
+        let release;
+        const gate = new Promise(resolve => {
+            release = resolve;
+        });
+        const certs = stubCerts({
+            async onAcquire(hostname) {
+                await gate;
+                return await issued(hostname);
+            }
+        });
+        const call = async () => {};
+        await settings.set('smtpServerEnabled', true);
+        await settings.set('smtpServerTLSEnabled', true);
+
+        const timerPass = provision.reconcileCertificates({ certs, logger, call });
+        await waitFor(async () => certs.calls.some(entry => entry.skipAcquire === false), 'the timer to start ordering');
+
+        const requested = await provision.requestProvisioning({ certs, logger, call, hostnames: ['mail.example.com'] });
+        assert.deepEqual(requested.accepted, ['mail.example.com']);
+
+        release();
+        await timerPass;
+        assert.equal(certs.calls.filter(entry => entry.skipAcquire === false).length, 1);
+    });
+
     await t.test('provisioning state can be cleared for a hostname that is no longer served', async () => {
         await provision.setProvisioningStatus(logger, 'gone.example.com', { state: 'failed', message: 'nope' });
         assert.ok((await provision.getProvisioningStatus())['gone.example.com']);

@@ -236,3 +236,89 @@ test('GmailClient.getMessage() bounce detection option', async t => {
         assert.equal(detections, 1);
     });
 });
+
+test('GmailClient.getAttachmentList()', async t => {
+    // Gmail omits body.data for a zero-size part. Decoding it threw ERR_INVALID_ARG_TYPE whenever a
+    // text type was requested, which failed every messageNew of such a message with notifyText on
+    await t.test('skips an empty text part instead of throwing', () => {
+        const gmail = makeClient();
+        const messageData = {
+            id: 'm1',
+            payload: {
+                mimeType: 'multipart/alternative',
+                partId: '',
+                body: { size: 0 },
+                parts: [
+                    { partId: '0', mimeType: 'text/plain', headers: [], body: { size: 0 } },
+                    { partId: '1', mimeType: 'text/html', headers: [], body: { size: 5, data: Buffer.from('<b/>!').toString('base64url') } }
+                ]
+            }
+        };
+
+        const { textContents, encodedTextSize } = gmail.getAttachmentList(messageData, { textType: '*' });
+
+        assert.equal(textContents[0], null);
+        assert.equal(textContents[1].toString(), '<b/>!');
+        assert.deepEqual(encodedTextSize, { plain: 0, html: 5 });
+    });
+});
+
+test('GmailClient.processHistoryEntry() label names', async t => {
+    function labelEntry(labelIds) {
+        return { labelsAdded: [{ message: { id: 'm1', threadId: 't1', labelIds: ['INBOX'] }, labelIds }] };
+    }
+
+    // The label list is cached for an hour, so a label created since was unknown and its change
+    // was dropped from the messageUpdated event
+    await t.test('an unknown label id refreshes the list once per run', async () => {
+        const gmail = makeClient();
+        const updates = [];
+        gmail.notify = async (mailbox, event, data) => updates.push(data);
+        let refreshes = 0;
+        gmail.getLabels = async force => {
+            assert.equal(force, true);
+            refreshes++;
+            return [
+                { id: 'Label_1', name: 'Old' },
+                { id: 'Label_2', name: 'Created a minute ago' }
+            ];
+        };
+        const context = { labels: [{ id: 'Label_1', name: 'Old' }], newMessageOptions: {} };
+
+        await gmail.processHistoryEntry(labelEntry(['Label_2']), context);
+        await gmail.processHistoryEntry(labelEntry(['Label_2']), context);
+
+        assert.equal(refreshes, 1);
+        assert.deepEqual(
+            updates.map(update => update.changes.labels.added),
+            [['Created a minute ago'], ['Created a minute ago']]
+        );
+    });
+
+    await t.test('a label still unknown after the refresh is reported by its id', async () => {
+        const gmail = makeClient();
+        const updates = [];
+        gmail.notify = async (mailbox, event, data) => updates.push(data);
+        gmail.getLabels = async () => [];
+
+        await gmail.processHistoryEntry(labelEntry(['Label_9']), { labels: [], newMessageOptions: {} });
+
+        assert.deepEqual(updates[0].changes.labels.added, ['Label_9']);
+    });
+});
+
+test('GmailClient.close()', async t => {
+    // The worker catches and logs a rejected close(); the client itself no longer swallows the
+    // state write failure, so a shutdown with Redis gone is visible in the worker log
+    await t.test('a failing state write rejects after the state was switched', async () => {
+        const gmail = makeClient();
+        gmail.state = 'connected';
+        gmail.setStateVal = async () => {
+            throw new Error('Connection is closed.');
+        };
+
+        await assert.rejects(gmail.close(), /Connection is closed/);
+        assert.equal(gmail.state, 'disconnected');
+        assert.equal(gmail.closed, true);
+    });
+});

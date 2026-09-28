@@ -12,6 +12,21 @@ const tokenAuditLog = require('../lib/token-audit-log');
 const { redis } = require('../lib/db');
 const { REDIS_PREFIX } = require('../lib/consts');
 
+// Polls until check() resolves truthy or the deadline passes, for cleanup that production code fires
+// without awaiting. A fixed sleep either wastes time or, on a loaded runner, is not long enough.
+async function waitUntil(check, timeoutMs = 2000) {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+        if (await check()) {
+            return true;
+        }
+        if (Date.now() > deadline) {
+            return false;
+        }
+        await new Promise(resolve => setTimeout(resolve, 20));
+    }
+}
+
 test('Token management tests', async t => {
     // Track created tokens for cleanup
     const createdTokens = [];
@@ -484,12 +499,10 @@ test('Token management tests', async t => {
         );
 
         // the record is removed rather than left to accumulate; the cleanup is fired
-        // without awaiting inside get(), so give it a turn to land
-        await new Promise(resolve => setTimeout(resolve, 50));
-
+        // without awaiting inside get(), so wait for it to land
         const hashedToken = crypto.createHash('sha256').update(Buffer.from(token, 'hex')).digest('hex');
-        const stored = await redis.hget(`${REDIS_PREFIX}tokens`, hashedToken);
-        assert.equal(stored, null, 'expired token is dropped from the token hash');
+        const dropped = await waitUntil(async () => (await redis.hget(`${REDIS_PREFIX}tokens`, hashedToken)) === null);
+        assert.ok(dropped, 'expired token is dropped from the token hash');
     });
 
     await t.test('a token with no expiry never expires', async () => {
@@ -556,10 +569,11 @@ test('Token management tests', async t => {
         assert.ok(!listed.tokens.some(entry => entry.description === 'expired and never used'), 'an expired token must not be listed');
 
         // the record is actually removed, not just filtered out of the response
-        await new Promise(resolve => setTimeout(resolve, 50));
         const hashedToken = crypto.createHash('sha256').update(Buffer.from(token, 'hex')).digest('hex');
-        assert.equal(await redis.hget(`${REDIS_PREFIX}tokens`, hashedToken), null);
-        assert.equal(await redis.sismember(`${REDIS_PREFIX}iat`, hashedToken), 0);
+        const reaped = await waitUntil(
+            async () => (await redis.hget(`${REDIS_PREFIX}tokens`, hashedToken)) === null && (await redis.sismember(`${REDIS_PREFIX}iat`, hashedToken)) === 0
+        );
+        assert.ok(reaped, 'expired token is dropped from the token hash and the index');
     });
 
     await t.test('list() keeps a token that has not expired yet', async () => {

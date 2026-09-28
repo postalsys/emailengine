@@ -10,8 +10,9 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { createImapProxyAuthHandler, classifyCredentialFailure, isImapResponseError, toImapResponseError } = require('../lib/imap-proxy-auth');
-const { AUTH_FAILURE_LIMIT } = require('../lib/auth-token');
-const { trackedWindow, exhaustBudget } = require('./helpers/auth-throttle');
+const { AUTH_FAILURE_LIMIT, AUTH_FAILURE_ADDRESS_LIMIT, authFailureAddressKey, AUTH_FAILURE_WINDOW } = require('../lib/auth-token');
+const { rateLimitWindowKey } = require('../lib/rate-limit');
+const { trackedWindow, trackedAddressWindow, exhaustBudget } = require('./helpers/auth-throttle');
 const { oauth2Apps } = require('../lib/oauth2-apps');
 const tokens = require('../lib/tokens');
 const settings = require('../lib/settings');
@@ -105,6 +106,13 @@ registerRedisTeardown(redis, async () => {
     }
     try {
         await settings.set('imapProxyServerPassword', prevPassword || '');
+    } catch (err) {
+        // ignore
+    }
+    // The handler tests refuse non-token passwords from the default session address, which the
+    // per-address budget counts; do not leave that for the next run
+    try {
+        await redis.del(rateLimitWindowKey(authFailureAddressKey('127.0.0.1'), AUTH_FAILURE_WINDOW).windowKey);
     } catch (err) {
         // ignore
     }
@@ -239,6 +247,46 @@ test('IMAP proxy auth failure throttle', async t => {
         assert.strictEqual(accountData.account, ACCOUNT);
     });
 
+    await t.test('parallel attempts cannot spend more than the budget', async t => {
+        const ip = '203.0.113.27';
+        const windowKey = await trackedWindow(t, ip, ACCOUNT);
+        await trackedAddressWindow(t, ip);
+        // Five attempts left
+        await exhaustBudget(windowKey, AUTH_FAILURE_LIMIT - 5);
+
+        const results = await Promise.allSettled(
+            Array.from({ length: 20 }, () => authenticate({ username: ACCOUNT, password: 'nope' }, session({ remoteAddress: ip })))
+        );
+
+        const evaluated = results.filter(r => r.status === 'rejected' && !/Too many failed/.test(r.reason.message)).length;
+        // Checking and recording in two steps let all twenty through
+        assert.strictEqual(evaluated, 5);
+        assert.strictEqual(await redis.get(windowKey), String(AUTH_FAILURE_LIMIT));
+    });
+
+    await t.test('rotating usernames does not escape the per-address budget for the shared password', async t => {
+        const ip = '203.0.113.28';
+        const addressKey = await trackedAddressWindow(t, ip);
+        await exhaustBudget(addressKey, AUTH_FAILURE_ADDRESS_LIMIT);
+
+        await settings.set('imapProxyServerPassword', 'global-proxy-pass');
+        try {
+            // A fresh username, so its own budget is untouched, and the right shared password
+            await assert.rejects(
+                () => authenticate({ username: ACCOUNT, password: 'global-proxy-pass' }, session({ remoteAddress: ip })),
+                err => /Too many failed/.test(err.message)
+            );
+        } finally {
+            await settings.set('imapProxyServerPassword', '');
+        }
+
+        // A token is not a guess at the shared password, so an address that spent that budget
+        // still logs in with one
+        await trackedWindow(t, ip, ACCOUNT);
+        const { accountData } = await authenticate({ username: ACCOUNT, password: proxyToken }, session({ remoteAddress: ip }));
+        assert.strictEqual(accountData.account, ACCOUNT);
+    });
+
     await t.test('the API-only refusal is about the account, not the credential, and spends nothing', async t => {
         const ip = '203.0.113.26';
         const windowKey = await trackedWindow(t, ip, API_ACCOUNT);
@@ -317,5 +365,31 @@ test('IMAP proxy credential failure classification', async t => {
 
     await t.test('an internal fault is not answered as an IMAP response', () => {
         assert.strictEqual(isImapResponseError(new Error('Missing or disabled OAuth2 app')), false);
+    });
+});
+
+test('IMAP proxy refusal text does not reveal the shared password', async t => {
+    await t.test('wrong password and right password for an unknown user read the same', async t => {
+        const ip = '203.0.113.29';
+        await trackedWindow(t, ip, ACCOUNT);
+        await trackedWindow(t, ip, 'no-such-account-xyz');
+        await trackedAddressWindow(t, ip);
+
+        await settings.set('imapProxyServerPassword', 'global-proxy-pass');
+        let wrongPassword;
+        let unknownUser;
+        try {
+            wrongPassword = await authenticate({ username: ACCOUNT, password: 'not-the-password' }, session({ remoteAddress: ip })).catch(err => err);
+            unknownUser = await authenticate({ username: 'no-such-account-xyz', password: 'global-proxy-pass' }, session({ remoteAddress: ip })).catch(
+                err => err
+            );
+        } finally {
+            await settings.set('imapProxyServerPassword', '');
+        }
+
+        assert.ok(wrongPassword instanceof Error && unknownUser instanceof Error);
+        assert.strictEqual(wrongPassword.message, unknownUser.message);
+        assert.strictEqual(wrongPassword.serverResponseCode, unknownUser.serverResponseCode);
+        assert.strictEqual(wrongPassword.responseStatus, unknownUser.responseStatus);
     });
 });

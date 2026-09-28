@@ -125,6 +125,42 @@ test('OAuth2AppsHandler CRUD and encryption', async t => {
         assert.ok(!flags.some(entry => entry.app === healthyId), 'an app without an active flag is not reported');
     });
 
+    // A token renewal builds a new client every time, and the clear check used to live in the
+    // client's closure, so every renewal's first successful request read the meta blob again
+    await t.test('the auth flag clear check is throttled per app, across clients', async () => {
+        const id = await createApp();
+        let reads = 0;
+        const realReadMeta = oauth2Apps.readMeta;
+        oauth2Apps.readMeta = async function (...args) {
+            reads++;
+            return realReadMeta.apply(this, args);
+        };
+        try {
+            const first = oauth2Apps.createFlagSetter(id, 'gmail');
+            const second = oauth2Apps.createFlagSetter(id, 'gmail');
+
+            await first();
+            await second();
+            await first();
+            assert.strictEqual(reads, 1, 'one read serves every client of the app inside the interval');
+
+            // setting a flag resets the throttle and takes one read for the write
+            await second({ message: 'refused' });
+            assert.strictEqual(reads, 2);
+            assert.strictEqual((await oauth2Apps.get(id)).meta?.authFlag?.message, 'refused');
+
+            // clearing reads the meta once and hands it to the write instead of reading it again
+            await first();
+            assert.strictEqual(reads, 3);
+            assert.ok(!(await oauth2Apps.get(id)).meta?.authFlag, 'the flag is cleared');
+
+            await second();
+            assert.strictEqual(reads, 3, 'the clear check is not repeated inside the interval');
+        } finally {
+            oauth2Apps.readMeta = realReadMeta;
+        }
+    });
+
     await t.test('del removes the app and its index entry', async () => {
         const id = await createApp();
         // sanity: present before delete

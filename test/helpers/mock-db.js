@@ -8,7 +8,9 @@
 // stubs stay empty - a test that needs Redis should use the real client and
 // test/helpers/redis-teardown instead.
 //
-// Must be called before the module under test is required.
+// Must be called before the module under test is required. The export names have to match
+// lib/db's exactly (test/mock-db-shape-test.js), since a missing name reads as undefined in the
+// module under test rather than failing where the drift is.
 
 const mockQueue = {
     add: async () => ({}),
@@ -32,9 +34,12 @@ function installDbMock({ redis } = {}) {
             submitQueue: mockQueue,
             documentsQueue: mockQueue,
             exportQueue: mockQueue,
+            // lib/tools.js destructures this at load
+            QUEUES_BY_NAME: {},
+            logBullErrors: emitter => emitter,
             getFlowProducer: () => ({}),
             REDIS_CONF: {},
-            getRedisURL: () => 'redis://mock'
+            watchRedisReconnect: () => {}
         }
     };
 

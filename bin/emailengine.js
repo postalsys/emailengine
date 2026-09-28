@@ -2,13 +2,17 @@
 /* eslint global-require: 0 */
 'use strict';
 
+// No native addons (CLAUDE.md "Pure JavaScript only"): keep msgpackr, loaded through bullmq by
+// lib/db below, off its optional node-gyp decoder. server.js sets the same for a direct start.
+process.env.MSGPACKR_NATIVE_ACCELERATION_DISABLED = 'true';
+
 const packageData = require('../package.json');
 const fs = require('fs');
 const pathlib = require('path');
 const settings = require('../lib/settings');
 const { checkLicense } = require('../lib/tools');
-const pbkdf2 = require('@phc/pbkdf2');
-const { PDKDF2_ITERATIONS, PDKDF2_SALT_SIZE, PDKDF2_DIGEST, generateWebhookTable } = require('../lib/consts');
+const pbkdf2 = require('../lib/pbkdf2-phc');
+const { generateWebhookTable } = require('../lib/consts');
 const { Account } = require('../lib/account');
 const getSecret = require('../lib/get-secret');
 const { redis } = require('../lib/db');
@@ -386,11 +390,7 @@ function run() {
                 }
 
                 let updatePassword = async () => {
-                    let passwordHash = await pbkdf2.hash(password, {
-                        iterations: PDKDF2_ITERATIONS,
-                        saltSize: PDKDF2_SALT_SIZE,
-                        digest: PDKDF2_DIGEST
-                    });
+                    let passwordHash = await pbkdf2.hash(password);
 
                     let authData = await settings.get('authData');
 
@@ -581,7 +581,13 @@ function run() {
                     case 'import':
                         {
                             let rawToken = (argv.token || argv.t || '').toString();
-                            let tokenData = msgpack.decode(Buffer.from(rawToken, 'base64url'));
+                            let tokenData;
+                            try {
+                                tokenData = msgpack.decode(Buffer.from(rawToken, 'base64url'));
+                            } catch (err) {
+                                console.error(`Unable to decode token data: ${err.message}`);
+                                return process.exit(1);
+                            }
                             tokens
                                 .setRawData(tokenData)
                                 .then(result => {
@@ -600,8 +606,12 @@ function run() {
                         break;
 
                     default:
-                        console.error('Future feature');
-                        break;
+                        // Nothing else would end the process: the Redis connection opened on load
+                        // kept it running with no output
+                        console.error(tokensCmd ? `Unknown tokens command: ${tokensCmd}` : 'A tokens command is required');
+                        console.error('');
+                        console.error(generateCommandHelp('tokens'));
+                        return process.exit(1);
                 }
             }
             break;
@@ -703,10 +713,17 @@ function run() {
             }
             break;
 
-        default:
+        case '':
             // run normally
             require('../server');
             break;
+
+        default:
+            // A mistyped command used to start the server instead
+            console.error(`Unknown command: ${cmd}`);
+            console.error('');
+            console.error('Run "emailengine help" to see available commands.');
+            return process.exit(1);
     }
 }
 

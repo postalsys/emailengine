@@ -2,8 +2,57 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const dnsPromises = require('node:dns').promises;
+const pubface = require('pubface');
+
+// No network in the unit tier. lib/utils/network.js destructures both of these at load, so the
+// stubs have to be in place before it is required; they delegate to per-test state so each test
+// decides what the "network" answers. resolvePublicInterfaces() would otherwise call
+// api.nodemailer.com, and reverse() would do live reverse DNS.
+const fakeNet = {
+    interfaces: [],
+    reverse: new Map(),
+    reverseCalls: []
+};
+
+const originalReverse = dnsPromises.reverse;
+const originalResolvePublicInterfaces = pubface.resolvePublicInterfaces;
+
+dnsPromises.reverse = async ip => {
+    fakeNet.reverseCalls.push(ip);
+    if (fakeNet.reverse.has(ip)) {
+        return fakeNet.reverse.get(ip);
+    }
+    let err = new Error(`getHostByAddr ENOTFOUND ${ip}`);
+    err.code = 'ENOTFOUND';
+    throw err;
+};
+// Fresh copies, since updatePublicInterfaces() mutates the entries it is handed
+pubface.resolvePublicInterfaces = async () => fakeNet.interfaces.map(entry => Object.assign({}, entry));
 
 const { matchIp, resolveClientIp, googleCrawlerMap, detectAutomatedRequest, updatePublicInterfaces, getLocalAddress } = require('../lib/utils/network');
+const { REDIS_PREFIX } = require('../lib/consts');
+
+// The module holds its own references now, so the globals can go back
+dnsPromises.reverse = originalReverse;
+pubface.resolvePublicInterfaces = originalResolvePublicInterfaces;
+
+const INTERFACES_KEY = `${REDIS_PREFIX}interfaces`;
+
+function recordingRedis(existing) {
+    const calls = { hset: [], hget: [] };
+    return {
+        calls,
+        hset: async (key, field, value) => {
+            calls.hset.push([key, field, value]);
+            return 1;
+        },
+        hget: async (key, field) => {
+            calls.hget.push([key, field]);
+            return existing ? existing(key, field) : null;
+        }
+    };
+}
 
 test('Network Utilities tests', async t => {
     t.after(() => {
@@ -328,74 +377,85 @@ test('Network Utilities tests', async t => {
     });
 
     await t.test('detectAutomatedRequest() handles DNS lookup failures gracefully', async () => {
-        // This IP should not be a Google crawler and DNS reverse will likely fail
-        // The function should handle this gracefully and return false
+        fakeNet.reverseCalls = [];
+        // Not a Google crawler, and the stubbed reverse lookup throws ENOTFOUND for it
         const result = await detectAutomatedRequest('192.0.2.1'); // TEST-NET-1, reserved
         assert.strictEqual(result, false);
+        assert.deepStrictEqual(fakeNet.reverseCalls, ['192.0.2.1']);
     });
 
-    // updatePublicInterfaces tests with mock Redis
-    await t.test('updatePublicInterfaces() updates Redis with interface data', async () => {
-        const storedData = new Map();
-        const mockRedis = {
-            hset: async (key, field, value) => {
-                if (!storedData.has(key)) {
-                    storedData.set(key, new Map());
-                }
-                storedData.get(key).set(field, value);
-                return 1;
-            },
-            hget: async (key, field) => {
-                if (!storedData.has(key)) return null;
-                return storedData.get(key).get(field) || null;
-            }
-        };
-
-        // This should not throw
-        await updatePublicInterfaces(mockRedis);
-
-        // Check that some data was stored (depends on system having network interfaces)
-        // At minimum, it should complete without error
-        assert.ok(true, 'updatePublicInterfaces completed without error');
+    await t.test('detectAutomatedRequest() flags known scanners by reverse DNS', async () => {
+        fakeNet.reverse.set('192.0.2.10', ['scan01.barracuda.com']);
+        fakeNet.reverse.set('192.0.2.11', ['MX.SPFBL.NET ']);
+        fakeNet.reverse.set('192.0.2.12', ['mail.example.com']);
+        fakeNet.reverse.set('192.0.2.13', ['notbarracuda.com.example.org']);
+        fakeNet.reverse.set('192.0.2.14', []);
+        try {
+            assert.strictEqual(await detectAutomatedRequest('192.0.2.10'), true);
+            assert.strictEqual(await detectAutomatedRequest('192.0.2.11'), true, 'hostname is trimmed and lowercased');
+            assert.strictEqual(await detectAutomatedRequest('192.0.2.12'), false);
+            assert.strictEqual(await detectAutomatedRequest('192.0.2.13'), false, 'suffix match only');
+            assert.strictEqual(await detectAutomatedRequest('192.0.2.14'), false, 'no PTR record');
+        } finally {
+            fakeNet.reverse.clear();
+        }
     });
 
-    await t.test('updatePublicInterfaces() handles existing interface entries', async () => {
-        const storedData = new Map();
-        const mockRedis = {
-            hset: async (key, field, value) => {
-                if (!storedData.has(key)) {
-                    storedData.set(key, new Map());
-                }
-                storedData.get(key).set(field, value);
-                return 1;
-            },
-            hget: async (key, field) => {
-                // Return existing entry for first call
-                if (field !== 'default:IPv4' && field !== 'default:IPv6') {
-                    return JSON.stringify({ name: 'existing-name', localAddress: field, ip: '1.2.3.4' });
-                }
-                return null;
-            }
-        };
+    // updatePublicInterfaces tests: the interface list comes from the stubbed pubface
+    await t.test('updatePublicInterfaces() stores each interface and the per-family defaults', async () => {
+        fakeNet.interfaces = [
+            { localAddress: '10.0.0.5', ip: '203.0.113.5', name: 'mx1.example.com', family: 'IPv4', defaultInterface: true },
+            { localAddress: '10.0.0.6', ip: '203.0.113.6', name: 'mx2.example.com', family: 'IPv4' },
+            { localAddress: 'fd00::5', ip: '2001:db8::5', name: 'mx1.example.com', family: 'IPv6', defaultInterface: true },
+            // No local address: nothing to key it on, so it is skipped
+            { ip: '203.0.113.7', name: 'orphan', family: 'IPv4' }
+        ];
 
-        await updatePublicInterfaces(mockRedis);
-        assert.ok(true, 'updatePublicInterfaces handled existing entries');
+        const redis = recordingRedis();
+        await updatePublicInterfaces(redis);
+
+        assert.deepStrictEqual(redis.calls.hset, [
+            [INTERFACES_KEY, 'default:IPv4', '10.0.0.5'],
+            [INTERFACES_KEY, '10.0.0.5', JSON.stringify({ localAddress: '10.0.0.5', ip: '203.0.113.5', name: 'mx1.example.com', family: 'IPv4' })],
+            [INTERFACES_KEY, '10.0.0.6', JSON.stringify({ localAddress: '10.0.0.6', ip: '203.0.113.6', name: 'mx2.example.com', family: 'IPv4' })],
+            [INTERFACES_KEY, 'default:IPv6', 'fd00::5'],
+            [INTERFACES_KEY, 'fd00::5', JSON.stringify({ localAddress: 'fd00::5', ip: '2001:db8::5', name: 'mx1.example.com', family: 'IPv6' })]
+        ]);
     });
 
-    await t.test('updatePublicInterfaces() handles malformed JSON in existing entry', async () => {
-        const mockRedis = {
-            hset: async () => 1,
-            hget: async (key, field) => {
-                if (field !== 'default:IPv4' && field !== 'default:IPv6') {
-                    return 'not-valid-json{';
-                }
-                return null;
-            }
-        };
+    await t.test('updatePublicInterfaces() keeps a stored name when the lookup found none', async () => {
+        fakeNet.interfaces = [{ localAddress: '10.0.0.5', ip: '203.0.113.5', name: null, family: 'IPv4' }];
 
-        // Should not throw even with malformed JSON
-        await updatePublicInterfaces(mockRedis);
-        assert.ok(true, 'updatePublicInterfaces handled malformed JSON');
+        const redis = recordingRedis((key, field) =>
+            field === '10.0.0.5' ? JSON.stringify({ name: 'existing-name', localAddress: field, ip: '1.2.3.4' }) : null
+        );
+        await updatePublicInterfaces(redis);
+
+        assert.deepStrictEqual(redis.calls.hget, [[INTERFACES_KEY, '10.0.0.5']]);
+        assert.deepStrictEqual(redis.calls.hset, [
+            [INTERFACES_KEY, '10.0.0.5', JSON.stringify({ localAddress: '10.0.0.5', ip: '203.0.113.5', name: 'existing-name', family: 'IPv4' })]
+        ]);
+    });
+
+    await t.test('updatePublicInterfaces() does not overwrite a stored entry with an incomplete one', async () => {
+        // The public IP could not be resolved this time; the stored entry is better than nothing
+        fakeNet.interfaces = [{ localAddress: '10.0.0.5', ip: null, name: 'mx1.example.com', family: 'IPv4' }];
+
+        const redis = recordingRedis(() => JSON.stringify({ name: 'mx1.example.com', localAddress: '10.0.0.5', ip: '203.0.113.5' }));
+        await updatePublicInterfaces(redis);
+
+        assert.deepStrictEqual(redis.calls.hset, []);
+    });
+
+    await t.test('updatePublicInterfaces() overwrites a stored entry holding malformed JSON', async () => {
+        fakeNet.interfaces = [{ localAddress: '10.0.0.5', ip: '203.0.113.5', name: 'mx1.example.com', family: 'IPv4' }];
+
+        const redis = recordingRedis(() => 'not-valid-json{');
+        await updatePublicInterfaces(redis);
+
+        assert.deepStrictEqual(redis.calls.hset, [
+            [INTERFACES_KEY, '10.0.0.5', JSON.stringify({ localAddress: '10.0.0.5', ip: '203.0.113.5', name: 'mx1.example.com', family: 'IPv4' })]
+        ]);
     });
 
     // getLocalAddress tests with mock Redis

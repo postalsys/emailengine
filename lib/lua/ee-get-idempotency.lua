@@ -18,12 +18,18 @@ Returns:
     - bucketKey: The Redis key where the idempotency entry is stored
     - runIndex: The run index of the task
     - threadId: The thread ID processing the task
+
+Single-node only: the bucket hashes are built from the prefix inside the script instead of being
+declared in KEYS, so a Redis Cluster cannot route or slot-check them.
+
+An entry that does not decode, or carries no numeric runIndex, is treated like a stale pending
+task and replaced. It used to raise a Lua error, which failed the caller's whole transaction.
 --]]
 
 local bucketKeyPrefix = KEYS[1];
 local idempotencyKey = ARGV[1];
 
-local runIndex = tonumber(ARGV[2]);
+local runIndex = tonumber(ARGV[2]) or 0;
 local threadId = tonumber(ARGV[3]);
 
 local buckets = ARGV[4];
@@ -36,13 +42,19 @@ for bucket in string.gmatch(buckets, "([^,]+)") do
     if redis.call("HEXISTS", bucketKey, idempotencyKey) == 1 then
         local existingValue = redis.call("HGET", bucketKey, idempotencyKey);
 
-        local parsedValue = cjson.decode(existingValue);
+        local decoded, parsedValue = pcall(cjson.decode, existingValue);
+        if not decoded or type(parsedValue) ~= "table" then
+            parsedValue = {};
+        end
         local existingStatus = parsedValue["status"];
         local existingRunIndex = parsedValue["runIndex"];
         local existingThreadId = parsedValue["threadId"];
 
+        if existingStatus == nil then
+            -- Unreadable entry, treat it as absent
+            redis.log( redis.LOG_WARNING, "EE: Ignoring unreadable idempotency entry in " .. bucketKey);
         -- Check if this is a stale pending task from a previous run
-        if existingStatus == "pending" and (existingRunIndex < runIndex or existingThreadId ~= threadId) then
+        elseif existingStatus == "pending" and (type(existingRunIndex) ~= "number" or existingRunIndex < runIndex or existingThreadId ~= threadId) then
             -- Ignore stale pending task
             redis.log( redis.LOG_NOTICE, "EE: Ignoring pending task with old run index: " .. existingValue .. " Current run index: " .. tostring(runIndex).. " Current thread ID: " .. tostring(threadId));
         else

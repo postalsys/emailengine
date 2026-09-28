@@ -15,6 +15,8 @@ const { redis } = require('./lib/db');
 const config = require('@zone-eu/wild-config');
 const { encrypt, decrypt, parseEncryptedData } = require('./lib/encrypt');
 const { encryptedKeys } = require('./lib/settings');
+const { ENCRYPTED_ACCOUNT_FIELDS } = require('./lib/account');
+const { ENCRYPTED_ROUTE_FIELDS } = require('./lib/webhooks');
 const getSecret = require('./lib/get-secret');
 const msgpack = require('./lib/msgpack');
 
@@ -163,6 +165,23 @@ async function main() {
             }
         }
 
+        // The credential-bearing fields stored as plain strings (webhooksCustomHeaders is its JSON
+        // encoding); '' is a cleared marker and stays as it is
+        for (let key of ENCRYPTED_ACCOUNT_FIELDS) {
+            if (!accountData[key] || typeof accountData[key] !== 'string') {
+                continue;
+            }
+            try {
+                let value = await processSecret(accountData[key], encryptSecret);
+                if (value !== accountData[key]) {
+                    updates[key] = value;
+                    updated = true;
+                }
+            } catch (err) {
+                console.error(`Could not process "${key}" for ${account}. Check decryption secrets.`);
+            }
+        }
+
         if (updated) {
             let result = await redis.hmset(`${REDIS_PREFIX}iad:${account}`, updates);
             if (result === 'OK') {
@@ -248,6 +267,55 @@ async function main() {
     }
 
     console.log(`Updated ${updatedApps}/${apps.length} OAuth2 apps`);
+
+    // Custom webhook routes: the target URL and the custom header list inside each route's msgpack
+    // meta entry. A route written before these were encrypted holds the headers as an array, which
+    // is converted to the JSON string form lib/webhooks.js stores.
+    let updatedRoutes = 0;
+    let routes = await redis.smembers(`${REDIS_PREFIX}wh:i`);
+    for (let route of routes) {
+        let metaBuf = await redis.hgetBuffer(`${REDIS_PREFIX}wh:c`, `${route}:meta`);
+        if (!metaBuf) {
+            continue;
+        }
+
+        let meta;
+        try {
+            meta = msgpack.decode(metaBuf);
+        } catch (err) {
+            console.log(`Webhook route ${route}: failed to parse`);
+            continue;
+        }
+
+        try {
+            let routeUpdated = false;
+            for (let key of ENCRYPTED_ROUTE_FIELDS) {
+                let stored = Array.isArray(meta[key]) ? JSON.stringify(meta[key]) : meta[key];
+                if (!stored || typeof stored !== 'string') {
+                    continue;
+                }
+                let value = await processSecret(stored, encryptSecret);
+                if (value !== meta[key]) {
+                    meta[key] = value;
+                    routeUpdated = true;
+                }
+            }
+
+            if (routeUpdated) {
+                let result = await redis.hmset(`${REDIS_PREFIX}wh:c`, { [`${route}:meta`]: msgpack.encode(meta) });
+                if (result === 'OK') {
+                    console.log(`Webhook route ${route}: updated`);
+                } else {
+                    console.log(`Webhook route ${route}: Unexpected response from DB: ${result}`);
+                }
+                updatedRoutes++;
+            }
+        } catch (err) {
+            console.error(`Could not process encrypted values for webhook route ${route}. Check decryption secrets.`);
+        }
+    }
+
+    console.log(`Updated ${updatedRoutes}/${routes.length} webhook routes`);
 
     // TLS private keys managed by @postalsys/certs. These live in the module's own hash, not in the
     // EmailEngine settings hash, so they need their own pass - without it a rotation leaves the ACME

@@ -53,6 +53,15 @@ test('MCP account resource URIs', async t => {
         }
     });
 
+    await t.test('refuses dot segments, which Hapi would collapse into another route', () => {
+        for (const uri of [`${ACCOUNT_URI_PREFIX}.`, `${ACCOUNT_URI_PREFIX}..`, `${ACCOUNT_URI_PREFIX}%2E%2E`]) {
+            assert.equal(parseAccountUri(uri), null, uri);
+        }
+        assert.ok(!isRepresentableAccountId('..'));
+        assert.ok(!isRepresentableAccountId('.'));
+        assert.ok(isRepresentableAccountId('...'), 'only a whole dot segment is special');
+    });
+
     await t.test('returns null for a malformed percent-escape rather than throwing', () => {
         // decodeURIComponent throws URIError on these; an uncaught throw here became an HTTP 500
         for (const uri of [`${ACCOUNT_URI_PREFIX}%`, `${ACCOUNT_URI_PREFIX}%zz`, `${ACCOUNT_URI_PREFIX}%E0%A4`, `${ACCOUNT_URI_PREFIX}100%`]) {

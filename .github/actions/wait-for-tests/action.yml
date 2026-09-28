@@ -1,0 +1,43 @@
+name: Wait for tests
+description: >-
+    Waits for the "Run Tests" workflow (test.yml) to conclude on one commit and fails unless it
+    succeeded. Shared by deploy.yml and release.yaml, whose jobs must not deploy or publish a
+    commit whose tests are red or were cancelled. The calling job's timeout bounds the wait.
+inputs:
+    token:
+        description: A token that can read the repository's workflow runs (github.token)
+        required: true
+    sha:
+        description: The commit whose test run to wait for
+        required: true
+runs:
+    using: composite
+    steps:
+        - name: Wait for the test workflow on this commit
+          shell: bash
+          env:
+              GH_TOKEN: ${{ inputs.token }}
+              SHA: ${{ inputs.sha }}
+          run: |
+              # Polls the "Run Tests" run (test.yml) for this exact commit. On master that run
+              # is never cancelled by a later push (see the concurrency block in test.yml), so
+              # it always reaches a conclusion; the calling job's timeout bounds the wait.
+              url="repos/${GITHUB_REPOSITORY}/actions/workflows/test.yml/runs?head_sha=${SHA}&event=push&per_page=1"
+              while true; do
+                  run="$(gh api "$url" --jq '.workflow_runs[0] | select(. != null) | "\(.status) \(.conclusion) \(.html_url)"')"
+                  if [ -n "$run" ]; then
+                      read -r status conclusion link <<< "$run"
+                      if [ "$status" = "completed" ]; then
+                          if [ "$conclusion" = "success" ]; then
+                              echo "Tests passed for ${SHA}: ${link}"
+                              exit 0
+                          fi
+                          echo "::error::Tests for ${SHA} concluded '${conclusion}' (${link}). Fix or re-run them, then re-run this job."
+                          exit 1
+                      fi
+                      echo "Tests for ${SHA} are ${status}: ${link}"
+                  else
+                      echo "No test run for ${SHA} yet"
+                  fi
+                  sleep 30
+              done

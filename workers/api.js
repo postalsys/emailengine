@@ -69,7 +69,7 @@ const { buildRetrySetup } = require('../lib/oauth/retry-setup');
 const { matchesExpectedIdentity, pendingSetupExpectation, resolveExpectedIdentity } = require('../lib/account/expected-identity');
 
 const handlebars = require('handlebars');
-const AuthBearer = require('hapi-auth-bearer-token');
+const { apiTokenScheme, SCHEME_NAME: API_TOKEN_SCHEME } = require('../lib/api-token-scheme');
 const tokens = require('../lib/tokens');
 const tokenPermissions = require('../lib/token-permissions');
 const { mcpFeatureEnabled } = require('../lib/mcp');
@@ -787,10 +787,10 @@ const init = async () => {
         cors: !!CORS_CONFIG
     };
 
-    await server.register(AuthBearer);
+    server.auth.scheme(API_TOKEN_SCHEME, apiTokenScheme);
 
     // Authentication for API calls
-    server.auth.strategy('api-token', 'bearer-access-token', {
+    server.auth.strategy('api-token', API_TOKEN_SCHEME, {
         allowQueryToken: true, // optional, false by default
         validate: async (request, token /*, h*/) => {
             let disableTokens = await settings.get('disableTokens');
@@ -885,7 +885,7 @@ const init = async () => {
                 tokenData = await tokens.get(token, false, { log: !request.app.mcpInternal, remoteAddress: request.app.ip });
             } catch (err) {
                 // A thrown Boom reaches the client the way the scope and permission refusals
-                // below do (hapi-auth-bearer-token does not catch it), so the reason travels as a
+                // below do (the api-token scheme does not catch it), so the reason travels as a
                 // machine-readable code - UnknownToken, ExpiredToken, InvalidToken - while the
                 // message stays the generic one the scheme itself would have sent. The scheme
                 // name keeps the WWW-Authenticate header the plugin's own refusal carries.
@@ -2871,7 +2871,10 @@ const init = async () => {
         layoutPath: './views/layout',
         partialsPath: './views/partials',
 
-        isCached: false,
+        // Uncached, vision re-reads and re-registers every partial with synchronous fs calls on
+        // each render, blocking the worker that also serves /v1. Only development wants live
+        // template edits.
+        isCached: process.env.NODE_ENV !== 'development',
 
         async context(request) {
             // The three reads are independent, and this runs on every admin page render. The

@@ -409,6 +409,43 @@ test('API reference model', async t => {
         assert.deepEqual(constraintList({ type: 'string', minLength: 1, maxLength: 5 * 1024 * 1024 }), ['1 to 5242880 chars']);
     });
 
+    await t.test('a sentinel anyOf branch renders as the schema plus an also-accepts line', () => {
+        // The generator publishes `.allow(false)` on an object as anyOf [schema, false] so a
+        // strict validator accepts real payloads; the reader still sees the object's own rows
+        const local = {
+            components: {
+                schemas: {
+                    Conf: { type: 'object', description: 'Settings', properties: { host: { type: 'string' } } }
+                }
+            }
+        };
+        const tree = buildSchemaTree(
+            local,
+            {
+                type: 'object',
+                properties: {
+                    conf: { anyOf: [{ $ref: '#/components/schemas/Conf' }, { type: 'boolean', enum: [false] }] },
+                    count: { anyOf: [{ type: 'integer' }, { type: 'boolean', enum: [false] }], description: 'Total' },
+                    either: { anyOf: [{ type: 'string' }, { type: 'object', properties: { a: { type: 'string' } } }] }
+                }
+            },
+            'x'
+        );
+
+        const [conf, count, either] = tree.children;
+        assert.equal(conf.typeLabel, 'object');
+        assert.deepEqual(conf.alsoAccepts, ['false']);
+        assert.deepEqual(
+            conf.children.map(child => child.name),
+            ['host']
+        );
+        assert.equal(count.typeLabel, 'integer');
+        assert.deepEqual(count.alsoAccepts, ['false']);
+        assert.match(count.descriptionHtml, /Total/);
+        // A real alternatives list is still a list of variants
+        assert.equal(either.variants.length, 2);
+    });
+
     await t.test('array item types are resolved through $ref', () => {
         const tree = buildSchemaTree(spec, { $ref: '#/components/schemas/AccountsFilterResponse' });
         assert.ok(tree);

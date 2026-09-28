@@ -30,6 +30,7 @@
 <input type="hidden" id="examplePayloadsJson" value="{{examplePayloadsJson}}">
 <input type="hidden" id="scriptEnvJson" value="{{scriptEnvJson}}">
 <input type="hidden" id="defaultTestPayloadJson" value="{{defaultTestPayload}}">
+<input type="hidden" id="filterEditorFormId" value="{{#if formId}}{{formId}}{{else}}edit-form{{/if}}">
 
 {{#> ui/modal id="setPayloadModal" title=(when modalTitle modalTitle "Set test payload") dialogClass="max-w-3xl"}}
 <div class="modal-body">
@@ -229,7 +230,7 @@ the *Set test payload* button to change the filter payload.`);
         editorMapPreview.clearSelection(1);
         {{/if}}
 
-        document.getElementById('{{#if formId}}{{formId}}{{else}}edit-form{{/if}}').addEventListener('submit', () => {
+        document.getElementById(document.getElementById('filterEditorFormId').value).addEventListener('submit', () => {
             document.getElementById('fn-content-element').value = JSON.stringify(editorFn.getValue());
             {{#if hasMap}}
             document.getElementById('map-content-element').value = JSON.stringify(editorMap.getValue());

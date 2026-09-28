@@ -11,6 +11,19 @@ permissions:
     id-token: write
 
 name: Manage Release
+
+# Flow: release_please runs on every push to master as before, opening or updating the release PR
+# and, when that PR is merged, drafting the release and pushing its tag. Nothing is published at
+# that point. The tests job then waits for the "Run Tests" workflow (test.yml) to finish on the
+# same commit, and the npm and Docker jobs need it, so a release whose tests are red or were
+# cancelled never reaches a registry. When the tests fail, fix or re-run them and then use
+# "Re-run failed jobs" here: the tests job reads the latest attempt of the test run, so the
+# publish jobs go ahead once it is green. The release stays a draft until upload.sh publishes it,
+# as before.
+#
+# Waiting in a job, rather than triggering this workflow with workflow_run, keeps the release
+# PR updated on every push and keeps the npm job in a push-triggered run of this file, which is
+# what npm trusted publishing is bound to (see the publish job).
 jobs:
     release_please:
         name: Create or prepare release
@@ -30,10 +43,32 @@ jobs:
             - uses: googleapis/release-please-action@v4
               id: release
 
+    tests:
+        name: Wait for tests
+        runs-on: ubuntu-latest
+        needs: release_please
+        if: needs.release_please.outputs.release_created
+        # The test workflow's integration job alone may take 15 minutes, and it can queue first
+        timeout-minutes: 60
+        permissions:
+            actions: read
+            # the wait step is a local composite action, read from the checkout below
+            contents: read
+        steps:
+            - name: Checkout the wait-for-tests action
+              uses: actions/checkout@v6
+              with:
+                  sparse-checkout: .github/actions/wait-for-tests
+
+            - name: Wait for the test workflow on this commit
+              uses: ./.github/actions/wait-for-tests
+              with:
+                  token: ${{ github.token }}
+                  sha: ${{ github.sha }}
     publish:
         name: Publish NPM package
         runs-on: ubuntu-latest
-        needs: release_please
+        needs: [release_please, tests]
         # Fires as soon as release-please creates the release, which it does even though the
         # release is a draft - `release_created` reports the release object, not its visibility.
         #
@@ -65,7 +100,7 @@ jobs:
 
     publish_docker:
         name: Publish Tagged Docker Image (${{ matrix.arch }})
-        needs: release_please
+        needs: [release_please, tests]
         if: needs.release_please.outputs.release_created
         # One job per architecture, each on a runner of that architecture. The arm64 leg used to be
         # emulated through QEMU on an x86 runner, where `npm ci` hit an illegal instruction and then

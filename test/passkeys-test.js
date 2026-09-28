@@ -180,7 +180,7 @@ function createMockRedis() {
         ttl: async () => 3600,
         quit: async () => {},
         disconnect: () => {},
-        subscribe: () => {},
+        subscribe: async () => {},
         on: () => {},
         off: () => {},
         defineCommand: () => {},

@@ -159,7 +159,7 @@ function createMockRedis() {
         scan: async () => ['0', []],
         quit: async () => {},
         disconnect: () => {},
-        subscribe: () => {},
+        subscribe: async () => {},
         on: () => {},
         off: () => {},
         defineCommand: () => {},

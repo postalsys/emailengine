@@ -19,7 +19,7 @@ const {
     assertNoNetworkOverride,
     MASKED
 } = require('../lib/api-routes/route-helpers');
-const { submittedValues, formatAccountData } = require('../lib/ui-routes/route-helpers');
+const { submittedValues, formatAccountData, windowedPageLinks, buildPagingView } = require('../lib/ui-routes/route-helpers');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
@@ -292,6 +292,15 @@ test('maskSecrets covers every credential-bearing field of an entity', async t =
         assert.ok(!JSON.stringify(values).includes('hpass'));
     });
 
+    await t.test('masks the basic-auth credentials of the authServer setting', () => {
+        // resolveCredentials() accepts user:pass@ in authServer, so GET /v1/settings?authServer=true
+        // used to return the credential service's password to any unnarrowed token
+        const values = { authServer: 'https://svc:apass@auth.example.com/creds' };
+        maskSecrets(values);
+        assert.equal(values.authServer, `https://${MASKED}:${MASKED}@auth.example.com/creds`);
+        assert.ok(containsMaskedSecret('authServer', values.authServer), 'a masked echo is caught on write');
+    });
+
     await t.test('leaves everything that is not a credential alone', () => {
         const entity = {
             account: 'acct',
@@ -555,6 +564,14 @@ test('compiled view fragments', async t => {
         assert.doesNotMatch(html, /\{\{/, 'no unrendered expression is left in the markup');
     });
 
+    await t.test('the json helper cannot break out of a textarea', () => {
+        // Error-log views print inbound message data this way; a SafeString return value once let
+        // a </textarea> in that data end the element and start a script
+        const html = handlebars.compile('<textarea>{{json p}}</textarea>')({ p: { x: '</textarea><script>' } });
+        assert.ok(!html.includes('</textarea><script>'), html);
+        assert.match(html, /&lt;\/textarea&gt;&lt;script&gt;/);
+    });
+
     await t.test('the address list renders a checked row for a selected address', () => {
         const html = compiledFragments.addressList({
             addresses: [
@@ -568,5 +585,33 @@ test('compiled view fragments', async t => {
         assert.doesNotMatch(html, /value="10\.0\.0\.2" checked>/);
         assert.match(html, /badge-soft">default</);
         assert.match(html, /Not routable/);
+    });
+});
+
+test('pagination links are windowed', async t => {
+    const titles = links => links.map(link => (link.gap ? '...' : link.title));
+    const urlFor = page => `/list?page=${page}`;
+
+    await t.test('a short listing links every page', () => {
+        assert.deepEqual(titles(windowedPageLinks(5, 0, urlFor)), [1, 2, 3, 4, 5]);
+        assert.deepEqual(titles(windowedPageLinks(0, 0, urlFor)), [1], 'an empty listing still has its one page');
+    });
+
+    await t.test('a long listing links the ends and the pages around the current one', () => {
+        assert.deepEqual(titles(windowedPageLinks(5000, 0, urlFor)), [1, 2, 3, '...', 5000]);
+        assert.deepEqual(titles(windowedPageLinks(5000, 99, urlFor)), [1, '...', 98, 99, 100, 101, 102, '...', 5000]);
+        assert.deepEqual(titles(windowedPageLinks(5000, 4999, urlFor)), [1, '...', 4998, 4999, 5000]);
+    });
+
+    await t.test('the current page is marked and every link carries its URL', () => {
+        const links = windowedPageLinks(50, 9, urlFor);
+        assert.equal(links.filter(link => link.active).length, 1);
+        assert.equal(links.find(link => link.active).url, '/list?page=10');
+    });
+
+    await t.test('buildPagingView uses the window', () => {
+        const view = buildPagingView('admin/suppression-lists', { page: 0, pages: 1000 }, { pageSize: 20 });
+        assert.ok(view.pageLinks.length < 10);
+        assert.equal(view.showPaging, true);
     });
 });

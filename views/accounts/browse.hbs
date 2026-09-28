@@ -26,6 +26,11 @@
 </div>
 {{/ui/modal}}
 
+{{!-- Handed over as form values rather than JS string literals: HTML escaping is not JS
+escaping, and an account ID is free text (a quote, a backslash or an entity broke the page) --}}
+<input type="hidden" id="browse-account" value="{{account}}">
+<input type="hidden" id="browse-session-token" value="{{sessionToken}}">
+
 <script data-cfasync="false" type="module" nonce="{{cspNonce}}">
     import { EmailEngineClient } from '/static/js/ee-client.js';
 
@@ -34,10 +39,11 @@
     // theme switch (data-theme on the root element) and the system scheme.
     const client = new EmailEngineClient({
         apiUrl: window.location.origin,
-        account: '{{account}}',
-        accessToken: '{{sessionToken}}',
-        // the widget appends its own stylesheet element; the admin policy accepts it with this nonce
-        styleNonce: '{{cspNonce}}',
+        account: document.getElementById('browse-account').value,
+        accessToken: document.getElementById('browse-session-token').value,
+        // the widget appends its own stylesheet element; the admin policy accepts it with this
+        // nonce, read off a nonced script (the nonce property survives the attribute being hidden)
+        styleNonce: document.querySelector('script[nonce]').nonce,
         container: document.getElementById('email-client'),
         darkMode: uiEffectiveTheme() === 'dark',
         showDarkModeToggle: false,

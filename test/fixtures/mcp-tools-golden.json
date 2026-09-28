@@ -985,6 +985,7 @@
                 "attachments": {
                     "type": "array",
                     "description": "List of attachments",
+                    "maxItems": 500,
                     "items": {
                         "type": "object",
                         "properties": {
@@ -3627,6 +3628,7 @@
                 "attachments": {
                     "type": "array",
                     "description": "List of attachments",
+                    "maxItems": 500,
                     "items": {
                         "type": "object",
                         "properties": {

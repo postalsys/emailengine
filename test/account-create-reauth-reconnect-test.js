@@ -36,7 +36,7 @@ function createMockRedis() {
         sMembers: async () => [],
         quit: async () => {},
         disconnect: () => {},
-        subscribe: () => {},
+        subscribe: async () => {},
         on: () => {},
         off: () => {},
         defineCommand: () => {},
@@ -68,14 +68,7 @@ require.cache[dbPath] = {
 
 const { Account } = require('../lib/account');
 const { createAccountHash, DISABLED_MARKER, DISABLED_AT } = require('./helpers/account-hash');
-
-function createMockLogger() {
-    let logger = {};
-    for (let level of ['trace', 'debug', 'info', 'warn', 'error', 'fatal']) {
-        logger[level] = () => {};
-    }
-    return logger;
-}
+const { createMockLogger } = require('./helpers/mock-logger');
 
 // Builds a mock `this` for Account.prototype.create and records every RPC call() it issues.
 //

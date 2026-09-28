@@ -114,8 +114,13 @@ test('isAuthorized', async t => {
         assert.equal(sso.isAuthorized({ email: 'bob@other.com' }, emails, []), false);
     });
 
-    await t.test('falls back to username when email is absent', () => {
-        assert.equal(sso.isAuthorized({ username: 'someone@corp.example.com' }, emails, []), true);
+    await t.test('a username is never matched against the email allow-list', () => {
+        // preferred_username is user-chosen on a self-registration IdP; without an email claim
+        // there is nothing the allow-list can be checked against
+        assert.equal(sso.isAuthorized({ username: 'someone@corp.example.com' }, emails, []), false);
+        assert.equal(sso.isAuthorized(sso.mapUserinfoProfile({ sub: 'x', preferred_username: 'alice@example.com' }), emails, []), false);
+        // Groups still authorize a profile without an email claim
+        assert.equal(sso.isAuthorized({ username: 'someone@corp.example.com', groups: ['emailengine-admins'] }, emails, groups), true);
     });
 
     await t.test('group allow-list matches on membership (slash-insensitive)', () => {

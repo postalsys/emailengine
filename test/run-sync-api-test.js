@@ -25,7 +25,7 @@ function createMockRedis() {
         exists: async () => 0,
         quit: async () => {},
         disconnect: () => {},
-        subscribe: () => {},
+        subscribe: async () => {},
         on: () => {},
         off: () => {},
         defineCommand: () => {},
@@ -58,17 +58,10 @@ require.cache[dbPath] = {
 
 const { GmailClient } = require('../lib/email-client/gmail-client');
 const { OutlookClient } = require('../lib/email-client/outlook-client');
+const { createMockLogger } = require('./helpers/mock-logger');
 
 const GMAIL_READ_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
 const GMAIL_SEND_SCOPE = 'https://www.googleapis.com/auth/gmail.send';
-
-function createMockLogger() {
-    let logger = {};
-    for (let level of ['trace', 'debug', 'info', 'warn', 'error', 'fatal']) {
-        logger[level] = () => {};
-    }
-    return logger;
-}
 
 test('Run sync for Gmail accounts', async t => {
     await t.test('triggers a history catch-up when new history exists', async () => {

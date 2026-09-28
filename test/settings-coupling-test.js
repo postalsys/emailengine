@@ -64,9 +64,14 @@ test('Settings AI text coupling', async t => {
         const headers = [{ key: 'Authorization', value: 'Bearer abc' }];
 
         await settings.set('webhooks', webhooks);
-        await settings.setMulti({ webhooksCustomHeaders: headers, proxyUrl: 'socks5://user:pass@127.0.0.1:1080' });
+        await settings.setMulti({
+            webhooksCustomHeaders: headers,
+            proxyUrl: 'socks5://user:pass@127.0.0.1:1080',
+            // resolveCredentials() sends the userinfo of this URL as basic auth
+            authServer: 'https://auth:pass@auth.example.com/credentials'
+        });
 
-        for (const key of ['webhooks', 'webhooksCustomHeaders', 'proxyUrl']) {
+        for (const key of ['webhooks', 'webhooksCustomHeaders', 'proxyUrl', 'authServer']) {
             const raw = await redis.hget(`${REDIS_PREFIX}settings`, key);
             assert.ok(raw.startsWith('$wd01$'), `${key} must be stored encrypted, got ${raw.slice(0, 12)}`);
             assert.ok(!raw.includes('s3cret') && !raw.includes('Bearer') && !raw.includes('pass@'), `${key} must not be stored in the clear`);
@@ -77,6 +82,12 @@ test('Settings AI text coupling', async t => {
         assert.strictEqual(await settings.get('webhooks'), webhooks);
         assert.deepStrictEqual(await settings.get('webhooksCustomHeaders'), headers);
         assert.strictEqual(await settings.get('proxyUrl'), 'socks5://user:pass@127.0.0.1:1080');
+        assert.strictEqual(await settings.get('authServer'), 'https://auth:pass@auth.example.com/credentials');
+    });
+
+    await t.test('an authServer value stored in the clear before it was encrypted still reads', async () => {
+        await redis.hset(`${REDIS_PREFIX}settings`, 'authServer', JSON.stringify('https://auth:pass@legacy.example.com/'));
+        assert.strictEqual(await settings.get('authServer'), 'https://auth:pass@legacy.example.com/');
     });
 
     await t.test('a value stored in the clear before encryption still reads', async () => {

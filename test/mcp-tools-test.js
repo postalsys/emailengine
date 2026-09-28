@@ -588,6 +588,20 @@ test('MCP tool executor', async t => {
         assert.match(result.content[0].text, /Missing required tool argument: id/);
     });
 
+    await t.test('a dot-segment path argument is refused rather than collapsed into another route', async () => {
+        // /v1/demo/account/../message/x would reach /v1/demo/message/x, a different route than
+        // the tool names and outside the argument shaping this tool applies
+        for (const value of ['.', '..']) {
+            const result = await callTool({ server, tool: byName.get('demo_message'), args: { account: value, message: 'msg-1' }, request: outerRequest() });
+            assert.equal(result.isError, true, value);
+            assert.match(result.content[0].text, /Invalid value for tool argument: account/);
+        }
+
+        // Dots inside a value are ordinary characters
+        const result = await callTool({ server, tool: byName.get('demo_get'), args: { id: '...' }, request: outerRequest() });
+        assert.equal(JSON.parse(result.content[0].text).id, '...');
+    });
+
     await t.test("forced arguments are sent, and are not the caller's to set", async () => {
         const result = await callTool({ server, tool: byName.get('demo_message'), args: { account: 'acct-1', message: 'msg-1' }, request: outerRequest() });
         assert.deepEqual(JSON.parse(result.content[0].text).asked, { textType: '*', preProcessHtml: 'true' });

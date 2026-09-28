@@ -8,6 +8,7 @@ const supertest = require('supertest');
 const test = require('node:test');
 const assert = require('node:assert').strict;
 const webhooksServer = require('./webhooks-server');
+const { skipUnlessEnv } = require('./helpers');
 
 const accessToken = '2aa97ad0456d6624a55d30780aa2ff61bfb7edc6fa00935b40814b271e718660';
 const server = supertest.agent(`http://127.0.0.1:${config.api.port}`).auth(accessToken, { type: 'bearer' });
@@ -31,7 +32,20 @@ async function waitForCondition(checkFn, options = {}) {
     throw new Error(`Timeout: ${message}`);
 }
 
-test('Gmail send-only account - isolated send test', async t => {
+// Talks to live Gmail throughout; skipped as a whole without the credentials
+const sendOnlySkip = skipUnlessEnv(
+    'GMAIL_API_PROJECT_ID',
+    'GMAIL_API_SERVICE_CLIENT',
+    'GMAIL_API_SERVICE_EMAIL',
+    'GMAIL_API_SERVICE_KEY',
+    'GMAIL_SENDONLY_PROJECT_ID',
+    'GMAIL_SENDONLY_CLIENT_ID',
+    'GMAIL_SENDONLY_CLIENT_SECRET',
+    'GMAIL_SENDONLY_ACCOUNT_EMAIL',
+    'GMAIL_SENDONLY_ACCOUNT_REFRESH'
+);
+
+test('Gmail send-only account - isolated send test', { skip: sendOnlySkip }, async t => {
     let oauth2PubsubId;
     let oauth2SendOnlyAppId;
 

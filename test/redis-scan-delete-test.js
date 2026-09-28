@@ -119,4 +119,70 @@ test('redisScanDelete', async t => {
 
         await assert.rejects(() => redisScanDelete(fakeRedis, logger, 'whatever:*'), /boom/);
     });
+
+    // A stub whose scan yields the given key batches and whose pipeline answers exec() with `reply`
+    function scanStub(keyBatches, reply) {
+        const { Readable } = require('stream');
+        return {
+            scanStream() {
+                return Readable.from(keyBatches, { objectMode: true });
+            },
+            pipeline() {
+                const queued = [];
+                return {
+                    del(key) {
+                        queued.push(key);
+                    },
+                    exec(cb) {
+                        setImmediate(() => reply(queued, cb));
+                    }
+                };
+            }
+        };
+    }
+
+    await t.test('rejects when a DEL pipeline fails instead of reporting the keys as deleted', async () => {
+        const fakeRedis = scanStub([['a', 'b']], (queued, cb) => cb(new Error('Connection is closed.')));
+        await assert.rejects(() => redisScanDelete(fakeRedis, logger, 'whatever:*'), /Connection is closed/);
+    });
+
+    await t.test('rejects when one DEL in the batch answers with an error', async () => {
+        const fakeRedis = scanStub([['a', 'b']], (queued, cb) =>
+            cb(null, [
+                [null, 1],
+                [new Error('READONLY replica'), null]
+            ])
+        );
+        await assert.rejects(() => redisScanDelete(fakeRedis, logger, 'whatever:*'), /READONLY/);
+    });
+
+    await t.test('counts only keys Redis actually removed', async () => {
+        // The second key vanished between SCAN and DEL, so DEL reports 0 for it
+        const fakeRedis = scanStub([['a', 'b', 'c']], (queued, cb) =>
+            cb(null, [
+                [null, 1],
+                [null, 0],
+                [null, 1]
+            ])
+        );
+        assert.strictEqual(await redisScanDelete(fakeRedis, logger, 'whatever:*'), 2);
+    });
+
+    await t.test('waits for a mid-scan batch before resolving', async () => {
+        // A full batch is flushed during the scan; its failure must still reach the caller
+        const big = Array.from({ length: REDIS_BATCH_DELETE_SIZE }, (v, i) => `k${i}`);
+        let calls = 0;
+        const fakeRedis = scanStub([big, ['tail']], (queued, cb) => {
+            calls++;
+            if (queued.length === REDIS_BATCH_DELETE_SIZE) {
+                return setTimeout(() => cb(new Error('batch failed')), 20);
+            }
+            cb(
+                null,
+                queued.map(() => [null, 1])
+            );
+        });
+        await assert.rejects(() => redisScanDelete(fakeRedis, logger, 'whatever:*'), /batch failed/);
+        assert.strictEqual(calls, 2);
+    });
 });

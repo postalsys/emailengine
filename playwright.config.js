@@ -6,6 +6,9 @@
 //
 // Run once:  npm run test:e2e:install   (fetch the Chromium browser)
 // Run suite: npm run test:e2e
+//
+// A single spec can be run on its own (`npx playwright test pages-admin`), but tests that need
+// the account happy-path.spec.js registers then fail; set EE_E2E_STANDALONE=1 to skip them.
 
 const { defineConfig, devices } = require('@playwright/test');
 

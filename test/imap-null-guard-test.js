@@ -39,7 +39,7 @@ function createMockRedis() {
         exists: async () => 0,
         quit: async () => {},
         disconnect: () => {},
-        subscribe: () => {},
+        subscribe: async () => {},
         on: () => {},
         off: () => {},
         // ioredfour Lock calls defineCommand() to register Lua scripts
@@ -75,6 +75,7 @@ require.cache[dbPath] = {
 
 // Now safe to import IMAPClient without opening real connections
 const { IMAPClient } = require('../lib/email-client/imap-client');
+const { ReconnectBackoff } = require('../lib/email-client/reconnect-backoff');
 
 function createMockLogger() {
     let calls = [];
@@ -152,7 +153,6 @@ test('IMAP null guard tests', async t => {
             logger,
             imapClient: createMockImapClient(),
             mailboxes,
-            untaggedExpungeTimer: null,
             resyncTimer: null,
             completedTimer: null,
             state: 'connected',
@@ -198,7 +198,6 @@ test('IMAP null guard tests', async t => {
             logger,
             imapClient: mockImapClient,
             mailboxes,
-            untaggedExpungeTimer: null,
             resyncTimer: null,
             completedTimer: null,
             state: 'connected',
@@ -245,7 +244,6 @@ test('IMAP null guard tests', async t => {
             }),
             mailboxes,
             main: { path: 'INBOX' },
-            untaggedExpungeTimer: null,
             resyncTimer: null,
             completedTimer: null,
             state: 'syncing',
@@ -255,6 +253,10 @@ test('IMAP null guard tests', async t => {
             refreshFolderList: async () => null,
             // the sync ends by returning the connection to the main mailbox
             select: async () => {},
+            // and by arming the periodic resync
+            scheduleResync: IMAPClient.prototype.scheduleResync,
+            resyncBackoff: new ReconnectBackoff({ baseDelay: 4000, maxDelay: 30000, factor: 2 }),
+            resyncDelay: 60 * 1000,
             setStateVal: async () => {},
             getAccountKey: () => 'test:account',
             redis: mockRedis,

@@ -54,7 +54,7 @@ function createMockRedis() {
         exists: async () => 0,
         quit: async () => {},
         disconnect: () => {},
-        subscribe: () => {},
+        subscribe: async () => {},
         on: () => {},
         off: () => {},
         defineCommand: () => {},
@@ -88,14 +88,7 @@ require.cache[dbPath] = {
 const { Account, isAuthFailureDisabled } = require('../lib/account');
 const { AUTH_FAILURE_DISABLED_LEGACY_DESCRIPTION } = require('../lib/consts');
 const { createAccountHash, DISABLED_MARKER, DISABLED_AT } = require('./helpers/account-hash');
-
-function createMockLogger() {
-    let logger = {};
-    for (let level of ['trace', 'debug', 'info', 'warn', 'error', 'fatal']) {
-        logger[level] = () => {};
-    }
-    return logger;
-}
+const { createMockLogger } = require('./helpers/mock-logger');
 
 // Builds a mock `this` for Account.prototype.update and records every RPC call() it issues.
 // `lockEvents` records the update lock's lifecycle interleaved with the RPC dispatches, so a test

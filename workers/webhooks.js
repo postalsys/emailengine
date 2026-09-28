@@ -11,17 +11,19 @@ const { webhooks: Webhooks } = require('../lib/webhooks');
 const { GooglePubSub } = require('../lib/oauth/pubsub/google');
 
 const { readEnvValue, threadStats, getDuration, httpAgent, getServiceSecret, redactUrlCredentials, splitUrlCredentials } = require('../lib/tools');
-const { sendWebhookRequest } = require('../lib/webhook-request');
+const { sendWebhookRequest, isUnrecoverableWebhookError } = require('../lib/webhook-request');
 const { willBeFinalAttempt, isFinalFailedAttempt } = require('../lib/delivery-error');
 const { validateWebhookTarget } = require('../lib/webhook-egress');
-const { resolveTargetUrl, isDeliverableRoute, eventAllowed } = require('../lib/webhook-routing');
+const { resolveTargetUrl, isDeliverableRoute, eventAllowed, deliveryCustomHeaders, isRouteMappingMissing } = require('../lib/webhook-routing');
 
 const { initSentry } = require('../lib/sentry');
 initSentry('webhooks');
 
-const { redis, queueConf } = require('../lib/db');
+const { redis, queueConf, logBullErrors } = require('../lib/db');
 const { Worker, UnrecoverableError } = require('bullmq');
 const settings = require('../lib/settings');
+const { decryptField } = require('../lib/encrypt');
+const getSecret = require('../lib/get-secret');
 
 const { REDIS_PREFIX, ACCOUNT_DELETED_NOTIFY, MESSAGE_NEW_NOTIFY } = require('../lib/consts');
 
@@ -40,11 +42,6 @@ const NOTIFY_QC = (readEnvValue('EENGINE_NOTIFY_QC') && Number(readEnvValue('EEN
 // Wall-clock cap for a single webhook delivery attempt; falls back to the
 // DEFAULT_WEBHOOK_REQUEST_TIMEOUT baked into sendWebhookRequest when unset
 const WEBHOOK_TIMEOUT = getDuration(readEnvValue('EENGINE_WEBHOOK_TIMEOUT')) || false;
-
-// Neither of these changes on a retry: the egress policy rejects the same destination every time,
-// and an endpoint configured to redirect keeps redirecting. Such a delivery is final on its first
-// failure, which decides both the log level and whether the remaining attempts are spent.
-const isUnrecoverableWebhookError = err => !!err && (err.code === 'EEGRESSBLOCKED' || err.code === 'EREDIRECTNOTFOLLOWED');
 
 let callQueue = new Map();
 let mids = 0;
@@ -90,6 +87,15 @@ function getAccountKey(account) {
     return `${REDIS_PREFIX}iad:${account}`;
 }
 
+// The account `webhooks` and `webhooksCustomHeaders` fields are encrypted at rest (see
+// ENCRYPTED_ACCOUNT_FIELDS in lib/account.js); a value stored before that is cleartext, which
+// decrypt() passes through. One that no longer decrypts reads as unset, as it does for the account.
+async function openAccountField(field, value, account) {
+    return decryptField(value, await getSecret(), err =>
+        logger.error({ msg: 'Failed to decrypt account webhook setting', action: 'webhook', account, field, err })
+    );
+}
+
 async function metrics(logger, key, method, ...args) {
     try {
         parentPort.postMessage({
@@ -116,7 +122,10 @@ async function onCommand(command) {
         case 'close':
             clearTimeout(startRetryTimer);
             googlePubSub.stopAll();
-            await notifyWorker.close(true);
+            // Not forced: a forced close abandons the delivery in flight, which BullMQ then
+            // re-runs as stalled after the lock expires, so the receiver got the event twice
+            // with the same X-EE-Wh-Id. The main thread bounds this wait with its own drain timeout.
+            await notifyWorker.close();
             return true;
         default:
             logger.debug({ msg: 'Unhandled command', command });
@@ -205,8 +214,9 @@ const notifyWorker = new Worker(
             job.__routeId = job.data._route.id;
         }
 
-        // validate if we should even process this webhook
-        let accountExists = await redis.hexists(accountKey, 'account');
+        // One round trip for the existence check and the two account fields a delivery may need
+        // (used to be three, one per job). The fields are opened where they are used, below.
+        let [accountExists, storedWebhooks, storedCustomHeaders] = await redis.hmget(accountKey, 'account', 'webhooks', 'webhooksCustomHeaders');
         if (!accountExists && job.name !== ACCOUNT_DELETED_NOTIFY) {
             logger.debug({
                 msg: 'Account not found',
@@ -239,13 +249,27 @@ const notifyWorker = new Worker(
         if (job.data._route && job.data._route.id) {
             customRoute = await Webhooks.getMeta(job.data._route.id);
             customMapping = job.data._route.mapping;
+            let mappingMissing = isRouteMappingMissing(job.data._route);
             delete job.data._route;
             if (!isDeliverableRoute(customRoute)) {
                 return;
             }
+            if (mappingMissing) {
+                logger.warn({
+                    msg: 'Custom webhook route has no mapped payload, not sending',
+                    action: 'webhook',
+                    queue: job.queue.name,
+                    code: 'missing_mapping',
+                    job: job.id,
+                    event: job.name,
+                    account: job.data.account,
+                    route: customRoute.id
+                });
+                return;
+            }
         }
 
-        let accountWebhooks = await redis.hget(accountKey, 'webhooks');
+        let accountWebhooks = await openAccountField('webhooks', storedWebhooks, job.data.account);
 
         // the global setting is only fetched when neither a custom route nor the account override decides the target
         let webhooks = resolveTargetUrl(customRoute && customRoute.targetUrl, accountWebhooks, null).url || (await settings.get('webhooks'));
@@ -266,7 +290,10 @@ const notifyWorker = new Worker(
         }
 
         let accountWebhooksCustomHeaders;
-        let accountWebhooksCustomHeadersJson = await redis.hget(accountKey, 'webhooksCustomHeaders');
+        // The account's headers belong to the account's (or the global) target. A custom route is
+        // an operator-defined endpoint with headers of its own: the account's secrets must not
+        // travel there, nor override the route's own Authorization.
+        let accountWebhooksCustomHeadersJson = customRoute ? null : await openAccountField('webhooksCustomHeaders', storedCustomHeaders, job.data.account);
         if (accountWebhooksCustomHeadersJson) {
             try {
                 accountWebhooksCustomHeaders = JSON.parse(accountWebhooksCustomHeadersJson);
@@ -395,21 +422,11 @@ const notifyWorker = new Worker(
 
         if (customRoute) {
             headers['X-EE-Wh-Custom-Route'] = customRoute.id;
-            for (let header of customRoute.customHeaders || []) {
-                headers[header.key] = header.value;
-            }
-        } else {
-            let webhookCustomHeaders = await settings.get('webhooksCustomHeaders');
-            for (let header of webhookCustomHeaders || []) {
-                headers[header.key] = header.value;
-            }
         }
-
-        if (accountWebhooksCustomHeaders) {
-            for (let header of accountWebhooksCustomHeaders || []) {
-                headers[header.key] = header.value;
-            }
-        }
+        Object.assign(
+            headers,
+            deliveryCustomHeaders(customRoute, customRoute ? null : await settings.get('webhooksCustomHeaders'), accountWebhooksCustomHeaders)
+        );
 
         let start = Date.now();
         let duration;
@@ -579,6 +596,8 @@ const notifyWorker = new Worker(
         queueConf || {}
     )
 );
+
+logBullErrors(notifyWorker, 'worker:webhooks');
 
 notifyWorker.on('completed', async job => {
     metrics(logger, 'queuesProcessed', 'inc', {

@@ -11,10 +11,17 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 const crypto = require('crypto');
+const zlib = require('node:zlib');
 const supertest = require('supertest');
 const config = require('@zone-eu/wild-config');
+const nodemailer = require('nodemailer');
+const { SMTPServer } = require('smtp-server');
+const { ImapFlow } = require('imapflow');
 const testConfig = require('../integration/test-config');
 const { ACCESS_TOKEN, waitForCondition } = require('../integration/helpers');
+// What test/run-tests.js booted the server with: where the built-in SMTP server and IMAP proxy
+// listen and the shared passwords they accept
+const listenerSettings = require('./listener-settings');
 
 const server = supertest.agent(`http://127.0.0.1:${config.api.port}`).auth(ACCESS_TOKEN, { type: 'bearer' });
 
@@ -27,10 +34,11 @@ const BLOB = Buffer.from(Array.from({ length: 1024 }, (_, i) => i % 256));
 const TEXT_CONTENT = 'Tere tulemast! Õäöü õnnelik unicode \u{1F643}';
 const HTML_CONTENT = '<b>Tere tulemast! Õäöü õnnelik unicode \u{1F643}</b>';
 
-async function createDovecotAccount(account, imapExtras) {
+async function createDovecotAccount(account, imapExtras, accountExtras) {
     await server
         .post(`/v1/account`)
         .send({
+            ...accountExtras,
             account,
             name: `Dovecot live test (${account})`,
             email: `${account}@example.com`,
@@ -217,5 +225,203 @@ test('disableIMAP4rev2 account against live Dovecot', async t => {
 
     await t.test('uploads a message and reads back byte-exact content over rev1', async () => {
         await uploadAndVerifyMessage(account);
+    });
+});
+
+// Dovecot has no SMTP side, so the account's outbound SMTP points at a capture server in this
+// process: what EmailEngine's submit worker delivers lands here.
+async function startCaptureSmtp() {
+    const received = [];
+    const smtp = new SMTPServer({
+        authOptional: true,
+        allowInsecureAuth: true,
+        disabledCommands: ['STARTTLS'],
+        logger: false,
+        // The submit worker may keep its connection open; do not wait the default 30s for it at close
+        closeTimeout: 1000,
+        onAuth(auth, session, callback) {
+            callback(null, { user: auth.username });
+        },
+        onData(stream, session, callback) {
+            const chunks = [];
+            stream.on('data', chunk => chunks.push(chunk));
+            stream.on('end', () => {
+                received.push({
+                    from: session.envelope.mailFrom && session.envelope.mailFrom.address,
+                    to: session.envelope.rcptTo.map(rcpt => rcpt.address),
+                    raw: Buffer.concat(chunks).toString()
+                });
+                callback();
+            });
+        }
+    });
+    await new Promise(resolve => smtp.listen(0, '127.0.0.1', resolve));
+    return { smtp, received, port: smtp.server.address().port };
+}
+
+// The listeners are separate worker threads that come up alongside the API, not before /health
+// answers, so the first connection may race them
+async function retryConnect(fn, what) {
+    let lastError;
+    const deadline = Date.now() + 30000;
+    while (Date.now() < deadline) {
+        try {
+            return await fn();
+        } catch (err) {
+            if (!['ECONNREFUSED', 'ECONNECTION', 'ESOCKET'].includes(err.code)) {
+                throw err;
+            }
+            lastError = err;
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+    }
+    throw new Error(`${what} did not accept connections: ${lastError && lastError.message}`);
+}
+
+test('built-in SMTP server, IMAP proxy and export against live Dovecot', async t => {
+    const account = `ee-listen-${crypto.randomBytes(4).toString('hex')}`;
+    const capture = await startCaptureSmtp();
+
+    t.after(async () => {
+        await server.delete(`/v1/account/${account}`);
+        await new Promise(resolve => capture.smtp.close(resolve));
+    });
+
+    await createDovecotAccount(
+        account,
+        {},
+        {
+            smtp: {
+                host: '127.0.0.1',
+                port: capture.port,
+                secure: false,
+                auth: { user: account, pass: 'pass' }
+            }
+        }
+    );
+
+    await t.test('accepts a message on the built-in SMTP server and delivers it through the account', async () => {
+        const token = crypto.randomBytes(8).toString('hex');
+        const subject = `SMTP listener test ${token}`;
+
+        const transport = nodemailer.createTransport({
+            host: listenerSettings.smtpServerHost,
+            port: listenerSettings.smtpServerPort,
+            secure: false,
+            ignoreTLS: true,
+            auth: { user: account, pass: listenerSettings.smtpServerPassword }
+        });
+
+        try {
+            const info = await retryConnect(
+                () =>
+                    transport.sendMail({
+                        from: `${account}@example.com`,
+                        to: 'recipient@example.com',
+                        subject,
+                        text: TEXT_CONTENT,
+                        messageId: `<${token}@example.com>`
+                    }),
+                'the built-in SMTP server'
+            );
+            assert.match(info.response, /^250 .*queued for delivery/i, `unexpected SMTP response: ${info.response}`);
+        } finally {
+            transport.close();
+        }
+
+        // The submit worker picks it off the queue and sends it with the account's own SMTP settings
+        const delivered = await waitForCondition(() => capture.received.find(entry => entry.raw.includes(token)), {
+            timeout: testConfig.CONNECTION_TIMEOUT,
+            message: 'the queued message never reached the account SMTP server'
+        });
+        assert.deepStrictEqual(delivered.to, ['recipient@example.com']);
+        assert.ok(delivered.raw.includes(`Subject: ${subject}`), 'subject survives the relay');
+
+        // and the copy EmailEngine stores in the Sent folder reads back over IMAP from Dovecot
+        const sentCopy = await waitForCondition(
+            async () => {
+                const response = await server
+                    .post(`/v1/account/${account}/search?path=Sent`)
+                    .send({ search: { header: { 'message-id': `<${token}@example.com>` } } })
+                    .expect(200);
+                return response.body.messages && response.body.messages[0];
+            },
+            { timeout: testConfig.CONNECTION_TIMEOUT, message: 'no copy of the sent message appeared in the Sent folder' }
+        );
+        assert.equal(sentCopy.subject, subject);
+    });
+
+    await t.test('logs in through the IMAP proxy and lists the mailboxes', async () => {
+        const client = new ImapFlow({
+            host: listenerSettings.imapProxyServerHost,
+            port: listenerSettings.imapProxyServerPort,
+            secure: false,
+            doSTARTTLS: false,
+            auth: { user: account, pass: listenerSettings.imapProxyServerPassword },
+            logger: false
+        });
+        client.on('error', () => {
+            // surfaced through the rejected connect() or list() below
+        });
+
+        await retryConnect(() => client.connect(), 'the IMAP proxy');
+        try {
+            const mailboxes = await client.list();
+            const paths = mailboxes.map(mailbox => mailbox.path);
+            for (const expected of ['INBOX', 'Sent', 'Trash']) {
+                assert.ok(paths.includes(expected), `the proxied listing must include ${expected} (got ${JSON.stringify(paths)})`);
+            }
+
+            // the session is the account's real mailbox, not a stub
+            const status = await client.status('Sent', { messages: true });
+            assert.ok(status.messages >= 1, 'the Sent copy from the SMTP test is visible through the proxy');
+        } finally {
+            await client.logout();
+        }
+    });
+
+    await t.test('runs an export to completion and downloads the archive', async () => {
+        const message = await uploadAndVerifyMessage(account);
+
+        const created = await server
+            .post(`/v1/account/${account}/export`)
+            .send({
+                folders: ['INBOX'],
+                startDate: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
+                endDate: new Date(Date.now() + 24 * 3600 * 1000).toISOString()
+            })
+            .expect(200);
+        assert.ok(created.body.exportId);
+
+        const finished = await waitForCondition(
+            async () => {
+                const response = await server.get(`/v1/account/${account}/export/${created.body.exportId}`).expect(200);
+                if (['failed', 'cancelled'].includes(response.body.status)) {
+                    throw new Error(`export ended as ${response.body.status}: ${response.body.error}`);
+                }
+                return response.body.status === 'completed' ? response.body : false;
+            },
+            { timeout: testConfig.CONNECTION_TIMEOUT, message: 'the export did not complete' }
+        );
+        assert.equal(finished.phase, 'complete');
+
+        const download = await server
+            .get(`/v1/account/${account}/export/${created.body.exportId}/download`)
+            .buffer(true)
+            .parse((res, callback) => {
+                const chunks = [];
+                res.on('data', chunk => chunks.push(chunk));
+                res.on('end', () => callback(null, Buffer.concat(chunks)));
+            })
+            .expect(200);
+
+        const lines = zlib
+            .gunzipSync(download.body)
+            .toString()
+            .split('\n')
+            .filter(line => line.trim())
+            .map(line => JSON.parse(line));
+        const exported = lines.find(entry => entry.subject === message.subject);
+        assert.ok(exported, `the uploaded message must be in the export (got ${lines.length} entries)`);
     });
 });

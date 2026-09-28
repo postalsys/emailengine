@@ -360,3 +360,64 @@ test('removeBcc', async t => {
         assert.match(out, /body/);
     });
 });
+
+// A multipart message with more MIME nodes than the splitter allows (1000). The splitter raises
+// EMAXLEN on it, and before the error was forwarded that was an uncaught exception that took the
+// whole IMAP worker down (every account on it) instead of failing the one submission.
+function manyPartsMessage(parts) {
+    const lines = [
+        'From: a@example.com',
+        'To: b@example.com',
+        'Bcc: c@example.com',
+        'Subject: many parts',
+        'MIME-Version: 1.0',
+        'Content-Type: multipart/mixed; boundary="xx"',
+        ''
+    ];
+    for (let i = 0; i < parts; i++) {
+        lines.push('--xx', 'Content-Type: text/plain', '', `part${i}`);
+    }
+    lines.push('--xx--', '');
+    return Buffer.from(lines.join('\r\n'));
+}
+
+// A single MIME node whose header block exceeds the splitter's 1MB cap.
+function hugeHeaderMessage() {
+    return Buffer.from(['From: a@example.com', 'To: b@example.com', 'Bcc: c@example.com', `X-Big: ${'a'.repeat(1100 * 1024)}`, '', 'body'].join('\r\n'));
+}
+
+test('splitter limits reject instead of crashing the worker', async t => {
+    const assertPermanent = err => {
+        assert.strictEqual(err.code, 'EMAXLEN');
+        assert.match(err.message, /Failed to parse message/);
+        // 552 is what lib/delivery-error.js reads as a permanent rejection, so a retried
+        // delivery does not hit the same wall again; 400 is what the API answers.
+        assert.strictEqual(err.responseCode, 552);
+        assert.strictEqual(err.statusCode, 400);
+        return true;
+    };
+
+    await t.test('getRawEmail with 1100 MIME parts rejects', async () => {
+        await assert.rejects(() => getRawEmail({ raw: manyPartsMessage(1100) }, null), assertPermanent);
+    });
+
+    await t.test('getRawEmail with an oversized header block rejects', async () => {
+        await assert.rejects(() => getRawEmail({ raw: hugeHeaderMessage() }, null), assertPermanent);
+    });
+
+    await t.test('removeBcc with 1100 MIME parts rejects', async () => {
+        await assert.rejects(() => removeBcc(manyPartsMessage(1100)), assertPermanent);
+    });
+
+    await t.test('the rejection is classified as permanent by the submit worker', async () => {
+        const { isPermanentDeliveryError } = require('../lib/delivery-error');
+        const err = await removeBcc(manyPartsMessage(1100)).catch(err => err);
+        assert.strictEqual(isPermanentDeliveryError(err), true);
+    });
+
+    await t.test('a message within the limits still goes through', async () => {
+        const out = (await removeBcc(manyPartsMessage(10))).toString();
+        assert.doesNotMatch(out, /^Bcc:/im);
+        assert.match(out, /part9/);
+    });
+});

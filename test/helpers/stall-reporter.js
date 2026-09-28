@@ -56,14 +56,20 @@ function expectedFiles() {
 // Composes the spec reporter rather than extending it. `new spec()` returns its own object, so a
 // subclass's `super()` call replaces `this` with that object and every subclass method - including
 // the _transform override this needs - is silently dropped. The failure is quiet: the reporter still
-// renders perfectly, it just never tracks anything. So this is a Transform of its own that forwards
-// each event to an internal spec instance and republishes whatever that writes.
+// renders perfectly, it just never tracks anything. So this is a Transform of its own that hands
+// each event to an internal spec instance and republishes what that renders.
+//
+// It calls the instance's _transform and _flush directly, in step with its own, instead of writing
+// to it as a stream and relaying its 'data' events. The relay adds a stream hop, and on Node 20 the
+// --test-force-exit exit arrives before that hop drains: every run lost its summary (no pass or
+// fail line, no failing-tests list) while the per-test lines still printed. Node 22 and 24 happened
+// to drain in time. The spec reporter of every supported Node answers both through the callback,
+// so the output is identical.
 class StallAwareSpecReporter extends Transform {
     constructor(options) {
         super({ ...options, writableObjectMode: true });
 
         this.inner = new spec();
-        this.inner.on('data', chunk => this.push(chunk));
 
         this.outstanding = new Set(expectedFiles());
         this.lastEvent = Date.now();
@@ -109,6 +115,13 @@ class StallAwareSpecReporter extends Transform {
         setTimeout(() => process.exit(1), STDOUT_FLUSH_GRACE_MS);
     }
 
+    forward(err, output, callback) {
+        if (output) {
+            this.push(output);
+        }
+        callback(err);
+    }
+
     _transform(event, encoding, callback) {
         this.lastEvent = Date.now();
 
@@ -118,15 +131,14 @@ class StallAwareSpecReporter extends Transform {
             this.outstanding.delete(event.data.name);
         }
 
-        this.inner.write(event, callback);
+        this.inner._transform(event, encoding, (err, output) => this.forward(err, output, callback));
     }
 
     _flush(callback) {
         if (this.watchdog) {
             clearInterval(this.watchdog);
         }
-        this.inner.end();
-        this.inner.on('end', callback);
+        this.inner._flush((err, output) => this.forward(err, output, callback));
     }
 }
 

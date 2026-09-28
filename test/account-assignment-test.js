@@ -8,7 +8,16 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { pickLeastLoadedWorker, rollbackAssignment, releaseWorkerAccounts, requeueFailedAccounts } = require('../lib/account-assignment');
+const {
+    pickLeastLoadedWorker,
+    rollbackAssignment,
+    releaseWorkerAccounts,
+    requeueFailedAccounts,
+    forgetAccount,
+    shouldRequeueFailedAssignment,
+    planRebalance,
+    mapConcurrent
+} = require('../lib/account-assignment');
 
 function makeState(workers) {
     return {
@@ -116,4 +125,114 @@ test('pickLeastLoadedWorker()', async t => {
 test('releaseWorkerAccounts() returns null for a worker with no accounts tracked', () => {
     const state = makeState([]);
     assert.equal(releaseWorkerAccounts(state, { threadId: 1 }), null);
+});
+
+function assign(state, worker, accounts) {
+    for (const account of accounts) {
+        state.workerAssigned.get(worker).add(account);
+        state.assigned.set(account, worker);
+    }
+}
+
+test('forgetAccount() drops a deleted account from every record, including `assigned` (WORK-8)', () => {
+    const w1 = { threadId: 1 };
+    const state = makeState([w1]);
+    assign(state, w1, ['a', 'b']);
+
+    assert.equal(forgetAccount(state, 'a'), w1, 'returns the worker to send the cleanup to');
+    assert.equal(state.assigned.has('a'), false, 'a deleted account must not stay routed to its worker');
+    assert.deepEqual([...state.workerAssigned.get(w1)], ['b']);
+
+    forgetAccount(state, 'b');
+    assert.equal(state.workerAssigned.has(w1), false, 'an emptied account set is dropped');
+});
+
+test('forgetAccount() handles an unassigned account and the state before the first load', () => {
+    const state = makeState([]);
+    state.unassigned.add('a');
+    assert.equal(forgetAccount(state, 'a'), null);
+    assert.equal(state.unassigned.has('a'), false);
+
+    assert.equal(forgetAccount(Object.assign(state, { unassigned: false }), 'b'), null);
+});
+
+test('shouldRequeueFailedAssignment() drops an account that no longer exists (WORK-15)', async () => {
+    const notFound = Object.assign(new Error('Account record was not found'), { statusCode: 404 });
+    assert.equal(await shouldRequeueFailedAssignment(notFound, 'a', async () => true), false, 'the worker said it is gone');
+
+    const timeout = Object.assign(new Error('Request timed out'), { code: 'Timeout', statusCode: 504 });
+    assert.equal(await shouldRequeueFailedAssignment(timeout, 'a', async () => false), false, 'deleted while the pass ran');
+    assert.equal(await shouldRequeueFailedAssignment(timeout, 'a', async () => true), true, 'a transient failure is retried');
+    assert.equal(
+        await shouldRequeueFailedAssignment(timeout, 'a', async () => {
+            throw new Error('Redis down');
+        }),
+        true,
+        'an unknown membership keeps the account'
+    );
+});
+
+test('planRebalance() gives a late worker its share from the most loaded workers (WORK-7)', () => {
+    const [w1, w2, w3] = [{ threadId: 1 }, { threadId: 2 }, { threadId: 3 }];
+    const state = makeState([w1, w2, w3]);
+    // The failsafe reassignment spread w3's accounts over the survivors before w3 came back
+    assign(state, w1, ['a1', 'a2', 'a3', 'a4', 'a5']);
+    assign(state, w2, ['b1', 'b2', 'b3', 'b4']);
+
+    const moves = planRebalance(state, w3);
+    assert.equal(moves.length, 3, 'nine accounts over three workers is three each');
+    assert.deepEqual(
+        moves.map(move => move.worker.threadId),
+        [1, 1, 2],
+        'accounts come from whichever worker holds the most'
+    );
+    for (const { account, worker } of moves) {
+        assert.equal(state.assigned.get(account), worker, 'each move names the account and its current worker');
+    }
+});
+
+test('planRebalance() leaves a balanced fleet alone', () => {
+    const [w1, w2] = [{ threadId: 1 }, { threadId: 2 }];
+    const state = makeState([w1, w2]);
+    assert.deepEqual(planRebalance(state, w2), [], 'nothing to move without accounts');
+
+    assign(state, w1, ['a1']);
+    assert.deepEqual(planRebalance(state, w2), [], 'moving the only account would only move the imbalance');
+
+    assign(state, w2, ['b1']);
+    assert.deepEqual(planRebalance(state, w2), []);
+    assert.deepEqual(planRebalance(state, { threadId: 9 }), [], 'an unknown worker gets nothing');
+});
+
+test('mapConcurrent() bounds the calls in flight and keeps the results in item order', async () => {
+    let inFlight = 0;
+    let peak = 0;
+    const results = await mapConcurrent([50, 10, 30, 20, 40], 2, async (delay, index) => {
+        inFlight++;
+        peak = Math.max(peak, inFlight);
+        await new Promise(resolve => setTimeout(resolve, delay / 10));
+        inFlight--;
+        return { delay, index };
+    });
+    assert.deepStrictEqual(
+        results.map(r => r.delay),
+        [50, 10, 30, 20, 40]
+    );
+    assert.strictEqual(peak, 2, 'never more than the limit in flight');
+});
+
+test('mapConcurrent() rejects with the first failure once the calls in flight have settled', async () => {
+    let settled = 0;
+    await assert.rejects(
+        mapConcurrent([1, 2, 3, 4], 2, async item => {
+            await new Promise(resolve => setTimeout(resolve, 5));
+            settled++;
+            if (item === 1) {
+                throw new Error('first failure');
+            }
+        }),
+        /first failure/
+    );
+    assert.strictEqual(settled, 2, 'the call already in flight finished, nothing new was started');
+    assert.deepStrictEqual(await mapConcurrent([], 4, async () => 1), []);
 });

@@ -1,23 +1,30 @@
 #!/usr/bin/env node
 'use strict';
 
-// Runs one of the two test tiers described in .claude/rules/testing.md:
+// Runs one of the test tiers described in .claude/rules/testing.md:
 //
 //   node test/run-tests.js unit         flush Redis, then run test/*-test.js in parallel
 //   node test/run-tests.js integration  flush Redis, boot a live server, then run
 //                                       test/integration/*-test.js serially against it
+//   node test/run-tests.js dovecot      the same for test/dovecot/*-test.js, with the SMTP server
+//                                       and IMAP proxy enabled; called by
+//                                       test/dovecot/run-dovecot-tests.sh once the container is up
 //
 // NODE_ENV is defaulted below before anything requires the config: @zone-eu/wild-config picks the
 // Redis database from it, so without it the development database would be flushed instead of the
-// test one. The dovecot and e2e tiers orchestrate themselves (test/dovecot/run-dovecot-tests.sh and
-// the Playwright webServer block) and do not go through here.
+// test one. The e2e tier orchestrates itself (the Playwright webServer block) and does not go
+// through here.
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
 
 const { spawn } = require('node:child_process');
 const { once } = require('node:events');
 const fs = require('node:fs');
+const net = require('node:net');
+const os = require('node:os');
 const path = require('node:path');
+
+const config = require('@zone-eu/wild-config');
 
 const { flushRedis } = require('./helpers/flush-redis');
 const { waitForServer } = require('./helpers/wait-for-server');
@@ -52,6 +59,23 @@ const TIERS = {
             // resetting the timer, and a stray fallback sync is coalesced/idempotent.
             EENGINE_GMAIL_FALLBACK_POLL_INTERVAL: '15000'
         }
+    },
+    dovecot: {
+        dir: 'test/dovecot',
+        args: ['--test-concurrency=1'],
+        // Account connects, sends and an export each wait on a real IMAP server
+        testTimeout: 240000,
+        // Above testTimeout for the same reason as the integration tier
+        stallTimeout: 240000 + 60000,
+        // Both listeners are only spawned at boot, so they have to be switched on in the settings
+        // the server starts with. EENGINE_SETTINGS replaces the prepared settings from the config
+        // file rather than adding to them, hence the merge.
+        serverEnv: () => ({
+            EENGINE_SETTINGS: JSON.stringify(Object.assign(JSON.parse(config.settings || '{}'), require('./dovecot/listener-settings')))
+        }),
+        // Every IMAP exchange is logged at trace level; keep it out of the job output unless the
+        // run fails
+        serverLog: true
     }
 };
 
@@ -95,12 +119,45 @@ function stopServer() {
     }
 }
 
-function startServer(env) {
+// A listener already on the API port would answer /health in place of the server this run boots,
+// and the tier would run against old code on a freshly flushed database. Typically a leftover test
+// server: EmailEngine renames its process title, so `pkill -f 'node server.js'` misses it and
+// `pkill -x emailengine` is what finds it.
+function assertPortFree(port) {
+    return new Promise((resolve, reject) => {
+        let socket = net.connect(port, '127.0.0.1');
+        socket.setTimeout(1000);
+        socket.once('connect', () => {
+            socket.destroy();
+            reject(new Error(`Port ${port} is already in use - stop the process holding it first (lsof -nP -iTCP:${port} -sTCP:LISTEN)`));
+        });
+        socket.once('timeout', () => {
+            socket.destroy();
+            resolve();
+        });
+        socket.once('error', () => resolve());
+    });
+}
+
+let serverLogPath = null;
+
+function startServer(env, { serverLog } = {}) {
+    let stdio = ['ignore', 'inherit', 'inherit'];
+    if (serverLog) {
+        serverLogPath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'emailengine-test-server-')), 'server.log');
+        let fd = fs.openSync(serverLogPath, 'w');
+        stdio = ['ignore', fd, fd];
+    }
+
     server = spawn(process.execPath, ['server.js'], {
         cwd: PROJECT_ROOT,
-        stdio: ['ignore', 'inherit', 'inherit'],
+        stdio,
         env: { ...process.env, ...env }
     });
+    if (typeof stdio[1] === 'number') {
+        // The child holds its own copy
+        fs.closeSync(stdio[1]);
+    }
     server.on('exit', () => {
         server = null;
     });
@@ -124,11 +181,18 @@ async function main() {
 
     let files = findTestFiles(tier.dir);
 
+    if (tier.serverEnv) {
+        // Before the flush: a stale server on the port would be left running on an emptied database
+        await assertPortFree(config.api.port);
+    }
+
     await flushRedis();
 
     if (tier.serverEnv) {
-        startServer(tier.serverEnv);
-        await waitForServer();
+        startServer(typeof tier.serverEnv === 'function' ? tier.serverEnv() : tier.serverEnv, tier);
+        // Handing over the process makes a server that dies during boot fail the run at once,
+        // instead of after the full readiness timeout
+        await waitForServer({ child: server });
     }
 
     // --test-force-exit: requiring the lib/db chain opens a Redis client and a BullMQ connection that
@@ -136,7 +200,7 @@ async function main() {
     // `node --test` waits for every child, hang the whole tier. Individual files have always worked
     // around it by force-exiting themselves (test/helpers/redis-teardown.js), but that only covers the
     // files that remember to, and it covered nothing at all when a file's teardown sat inside a test
-    // that got skipped: test/account-revoke-on-delete-test.js skips without Gmail credentials, and on
+    // that got skipped: test/account-revoke-on-delete-test.js used to skip without Gmail credentials, and on
     // dependabot pull requests - where `${{ secrets.X }}` expands to an empty string - the unit tier
     // hung until the job timeout instead of skipping one suite. Forcing the exit here ends the class
     // for both tiers and for files that do not exist yet. A failing test still fails: the flag only
@@ -153,7 +217,9 @@ async function main() {
     // for the measurements. Passing spec separately here would reintroduce exactly that.
     let reporterArgs = [`--test-reporter=${path.join(__dirname, 'helpers', 'stall-reporter.js')}`, '--test-reporter-destination=stdout'];
 
-    let runner = spawn(process.execPath, ['--test', '--test-force-exit', `--test-timeout=${TEST_TIMEOUT}`, ...reporterArgs, ...tier.args, ...files], {
+    let testTimeout = tier.testTimeout || TEST_TIMEOUT;
+
+    let runner = spawn(process.execPath, ['--test', '--test-force-exit', `--test-timeout=${testTimeout}`, ...reporterArgs, ...tier.args, ...files], {
         cwd: PROJECT_ROOT,
         stdio: 'inherit',
         env: {
@@ -170,7 +236,32 @@ async function main() {
     process.exitCode = signal ? 1 : code;
 }
 
-main().catch(err => {
-    console.error(err.stack || err.message);
-    process.exitCode = 1;
-});
+function printServerLogTail() {
+    if (!serverLogPath) {
+        return;
+    }
+    try {
+        let lines = fs.readFileSync(serverLogPath, 'utf-8').trimEnd().split('\n');
+        console.error(`\nLast ${Math.min(lines.length, 50)} lines of the server log (${serverLogPath}):`);
+        console.error(lines.slice(-50).join('\n'));
+    } catch (err) {
+        console.error(`Could not read the server log at ${serverLogPath}: ${err.message}`);
+    }
+}
+
+// Required by test/test-runner-server-guards-test.js for assertPortFree(); only a direct run
+// starts a tier
+if (require.main === module) {
+    main()
+        .catch(err => {
+            console.error(err.stack || err.message);
+            process.exitCode = 1;
+        })
+        .finally(() => {
+            if (process.exitCode) {
+                printServerLogTail();
+            }
+        });
+}
+
+module.exports = { assertPortFree, TIERS };

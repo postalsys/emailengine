@@ -31,6 +31,7 @@ means re-applying these.
 | `d51e92d2` | 2026-06-06 | Prevent post-BYE command dispatch during teardown |
 | `31f6a590` | 2026-07-26 | Fix the dead teardown guard in the notification listener |
 | `74856cf6` | 2026-09-02 | Drop the built-in self-signed key/certificate pair from `tls-options.js`; a listener with TLS and no certificate is refused at startup instead of served with a key that ships in every copy |
+| (pending) | 2026-09-28 | Cap list nesting depth in the parser and guard the debug-log compile; check the command state before accepting a literal and cap literal count/bytes per command; `maxConnections`; error listener and timeout while waiting for the PROXY header; hand bytes pipelined after LOGIN to the proxy (`unbind()` returns `head` and `closed`); lazy indexer load in `imap-tools.js`; indexer `drain` wait and quoted-printable decoding fixes; removed the unused root `memory-notifier.js` |
 
 Earlier local changes (`09085d12`, `0a389560`, `7e2e94f3`, `04c2aa90`, `1d6df05e`, `612d9f96`,
 `13edec58`, `2e0bf1ce`, `b9a3e06c`, `b58a827e`, `1813f089`) are maintenance: dependency swaps

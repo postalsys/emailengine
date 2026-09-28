@@ -10,7 +10,13 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { sendWebhookRequest } = require('../lib/webhook-request');
+const { sendWebhookRequest, isUnrecoverableWebhookError } = require('../lib/webhook-request');
+
+// The delivery timeout is an unref'd AbortSignal.timeout timer. On Node 20 the event loop can
+// drain before it fires, which the test runner reports as a pending promise; a real worker always
+// has other open handles, so keep one alive for the duration of this file only.
+const eventLoopHold = setInterval(() => {}, 1000);
+test.after(() => clearInterval(eventLoopHold));
 
 function fakeResponse(overrides) {
     let drained = false;
@@ -195,4 +201,23 @@ test('sendWebhookRequest passes a 3xx through as an ordinary failure without a v
     const fakeFetch = async () => res;
 
     await assert.rejects(sendWebhookRequest(fakeFetch, 'http://webhook.test/hook', { method: 'post' }), err => err.statusCode === 302 && !err.code);
+});
+
+test('isUnrecoverableWebhookError ends the retries only for egress refusals and redirects', async () => {
+    const withCode = code => Object.assign(new Error('failed'), { code });
+
+    assert.strictEqual(isUnrecoverableWebhookError(withCode('EEGRESSBLOCKED')), true);
+    assert.strictEqual(isUnrecoverableWebhookError(withCode('EREDIRECTNOTFOLLOWED')), true);
+
+    // The redirect error sendWebhookRequest itself throws is one of them
+    const redirectFetch = async () => ({ ok: false, status: 302, statusText: 'Found', text: async () => '' });
+    const redirectErr = await sendWebhookRequest(redirectFetch, 'https://example.com/', { validateTarget: async () => {} }).catch(err => err);
+    assert.strictEqual(isUnrecoverableWebhookError(redirectErr), true);
+
+    // Everything else keeps the full retry schedule, 4xx included
+    for (const err of [withCode('ETIMEDOUT'), withCode('ECONNREFUSED'), Object.assign(new Error('Unauthorized'), { statusCode: 401 }), new Error('x')]) {
+        assert.strictEqual(isUnrecoverableWebhookError(err), false);
+    }
+    assert.strictEqual(isUnrecoverableWebhookError(null), false);
+    assert.strictEqual(isUnrecoverableWebhookError(undefined), false);
 });

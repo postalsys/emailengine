@@ -102,6 +102,16 @@ test('POST /v1/settings', async t => {
         }
     });
 
+    await t.test('a changed listener setting restarts that listener and no other', async () => {
+        // The table is shared with the admin listener pages (LISTENER_RELOADS in lib/consts.js),
+        // so the API route restarts exactly the worker whose startup-only settings changed
+        const { route, commands } = await captureWithCommands();
+
+        await route.handler({ payload: { smtpServerPort: 2525 }, logger });
+
+        assert.deepEqual(commands, ['smtpReload']);
+    });
+
     await t.test('posting back the value already stored reloads nothing', async () => {
         // A write is not a change: settings.set() is an unconditional hset, and a read-modify-write
         // client posts the whole settings object on every call. Reloading on the write alone handed

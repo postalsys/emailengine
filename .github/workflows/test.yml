@@ -7,9 +7,14 @@ on:
 permissions:
     contents: read
 
+# Off master a newer push supersedes the run for the older one. On master every commit keeps its
+# own run to completion: release.yaml and deploy.yml wait for this workflow's result on the exact
+# commit they publish, so a cancelled run there would block a release instead of saving minutes.
+# The group is per commit on master because with cancel-in-progress off GitHub still cancels a
+# PENDING run in the same group when a newer one queues behind it.
 concurrency:
-    group: ${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: true
+    group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/master' && github.sha || github.ref }}
+    cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
     # Skip CI for release-please's auto-generated release PR / branch: it only bumps the
@@ -53,10 +58,20 @@ jobs:
                   npm run lint
 
     unit:
-        name: Unit Tests
+        name: Unit Tests (Node ${{ matrix.node }})
         if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
         timeout-minutes: 10
         runs-on: ubuntu-24.04
+        # package.json promises Node >=20, while every other job runs 24 and the dependency tree
+        # declares later 20.x minimums of its own (undici 7 >=20.18.1, html-to-text 10 >=20.19.0).
+        # The 20.x leg runs the oldest release the tree itself accepts. Anything older is not a
+        # meaningful target: below 20.14 node --test has no --test-force-exit, which
+        # test/run-tests.js relies on, and on 20.14 dozens of unit tests fail on test runner
+        # differences (root-level hooks, mock timers) before the code under test is reached.
+        strategy:
+            fail-fast: false
+            matrix:
+                node: ['24', '20.19.0']
         # Service containers to run with `container-job`
         services:
             # Label used to access the service container
@@ -73,27 +88,19 @@ jobs:
                     - 6379:6379
         steps:
             - uses: actions/checkout@v6
-            - name: Use Node.js 24
+            - name: Use Node.js ${{ matrix.node }}
               uses: actions/setup-node@v6
               with:
-                  node-version: 24
+                  node-version: ${{ matrix.node }}
                   cache: npm
             - run: npm install
+            # No secrets: the unit tier is hermetic, so it runs the same on forks and Dependabot
+            # pull requests as on master
             - name: Run unit tests
               run: |
                   npm run test:unit
               env:
                   NODE_ENV: test
-                  # account-revoke-on-delete-test.js runs against live Gmail when
-                  # these are present and skips itself when they are not
-                  GMAIL_API_PROJECT_ID: ${{ secrets.TEST_GMAIL_API_PROJECT_ID }}
-                  GMAIL_API_CLIENT_ID: ${{ secrets.TEST_GMAIL_API_CLIENT_ID }}
-                  GMAIL_API_CLIENT_SECRET: ${{ secrets.TEST_GMAIL_API_CLIENT_SECRET }}
-                  GMAIL_API_SERVICE_EMAIL: ${{ secrets.TEST_GMAIL_API_SERVICE_EMAIL }}
-                  GMAIL_API_SERVICE_CLIENT: ${{ secrets.TEST_GMAIL_API_SERVICE_CLIENT }}
-                  GMAIL_API_SERVICE_KEY: ${{ secrets.TEST_GMAIL_API_SERVICE_KEY }}
-                  GMAIL_API_ACCOUNT_EMAIL_1: ${{ secrets.TEST_GMAIL_API_ACCOUNT_EMAIL_1 }}
-                  GMAIL_API_ACCOUNT_REFRESH_1: ${{ secrets.TEST_GMAIL_API_ACCOUNT_REFRESH_1 }}
 
     dovecot:
         # Live IMAP tier against a real IMAP4rev2 server (Dovecot 2.4 in Docker);

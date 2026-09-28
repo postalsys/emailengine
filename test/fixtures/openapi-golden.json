@@ -131,7 +131,7 @@
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "bearerFormat": "JWT",
+        "bearerFormat": "opaque",
         "description": "Enter your access token"
       }
     },
@@ -195,9 +195,6 @@
         "type": "string",
         "description": "OAuth2 access token (when using OAuth2 instead of password authentication)",
         "example": false,
-        "enum": [
-          false
-        ],
         "maxLength": 16384
       },
       "ImapAuthentication": {
@@ -206,9 +203,6 @@
         "x-meta": {
           "usage": "Send this for ordinary password authentication. Omit it when `useAuthServer` is on, because EmailEngine then fetches credentials from your authentication server for every connection and a stored password would be dead configuration.\n\nOn an update this replaces the whole credentials object unless `partial` is also set."
         },
-        "enum": [
-          false
-        ],
         "properties": {
           "user": {
             "type": "string",
@@ -217,7 +211,17 @@
             "maxLength": 256
           },
           "accessToken": {
-            "$ref": "#/components/schemas/ImapAccessToken"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImapAccessToken"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "pass": {
             "type": "string",
@@ -251,9 +255,6 @@
       "ImapConfiguration": {
         "type": "object",
         "description": "IMAP configuration. Set to `false` when there is no IMAP access to configure.",
-        "enum": [
-          false
-        ],
         "properties": {
           "useAuthServer": {
             "type": "boolean",
@@ -264,7 +265,17 @@
             }
           },
           "auth": {
-            "$ref": "#/components/schemas/ImapAuthentication"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImapAuthentication"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "secure": {
             "type": "boolean",
@@ -350,9 +361,6 @@
         "type": "string",
         "description": "OAuth2 access token (when using OAuth2 instead of password authentication)",
         "example": false,
-        "enum": [
-          false
-        ],
         "maxLength": 16384
       },
       "SmtpAuthentication": {
@@ -361,9 +369,6 @@
         "x-meta": {
           "usage": "Send this for ordinary password authentication. Omit it when `useAuthServer` is on, because EmailEngine then fetches credentials from your authentication server for every connection and a stored password would be dead configuration.\n\nOn an update this replaces the whole credentials object unless `partial` is also set."
         },
-        "enum": [
-          false
-        ],
         "properties": {
           "user": {
             "type": "string",
@@ -372,7 +377,17 @@
             "maxLength": 256
           },
           "accessToken": {
-            "$ref": "#/components/schemas/SmtpAccessToken"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SmtpAccessToken"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "pass": {
             "type": "string",
@@ -406,9 +421,6 @@
       "SmtpConfiguration": {
         "type": "object",
         "description": "SMTP configuration. Set to `false` when there is no SMTP access to configure.",
-        "enum": [
-          false
-        ],
         "properties": {
           "useAuthServer": {
             "type": "boolean",
@@ -419,7 +431,17 @@
             }
           },
           "auth": {
-            "$ref": "#/components/schemas/SmtpAuthentication"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SmtpAuthentication"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "host": {
             "type": "string",
@@ -480,9 +502,6 @@
       "OAuth2": {
         "type": "object",
         "description": "OAuth2 configuration. Set to `false` when the account does not authenticate with OAuth2.",
-        "enum": [
-          false
-        ],
         "properties": {
           "authorize": {
             "type": "boolean",
@@ -710,13 +729,43 @@
             "$ref": "#/components/schemas/AccountImapIndexer"
           },
           "imap": {
-            "$ref": "#/components/schemas/ImapConfiguration"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImapConfiguration"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "smtp": {
-            "$ref": "#/components/schemas/SmtpConfiguration"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SmtpConfiguration"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "oauth2": {
-            "$ref": "#/components/schemas/OAuth2"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OAuth2"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "webhooksCustomHeaders": {
             "$ref": "#/components/schemas/AccountWebhooksCustomHeaders"
@@ -995,7 +1044,17 @@
             }
           },
           "auth": {
-            "$ref": "#/components/schemas/ImapAuthentication"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImapAuthentication"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "secure": {
             "type": "boolean",
@@ -1090,7 +1149,17 @@
             }
           },
           "auth": {
-            "$ref": "#/components/schemas/SmtpAuthentication"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SmtpAuthentication"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "host": {
             "type": "string",
@@ -1429,9 +1498,6 @@
       "AccountQuota": {
         "type": "object",
         "description": "Account quota information if query argument quota=true. This value will be false if the server does not provide quota information.",
-        "enum": [
-          false
-        ],
         "properties": {
           "usage": {
             "type": "integer",
@@ -1856,7 +1922,17 @@
             "$ref": "#/components/schemas/AccountCounters"
           },
           "quota": {
-            "$ref": "#/components/schemas/AccountQuota"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AccountQuota"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "syncTime": {
             "type": "string",
@@ -1880,9 +1956,6 @@
         "type": "string",
         "description": "OAuth2 access token (when using OAuth2 instead of password authentication)",
         "example": false,
-        "enum": [
-          false
-        ],
         "maxLength": 16384
       },
       "ImapUpdateAuthentication": {
@@ -1891,9 +1964,6 @@
         "x-meta": {
           "usage": "Send this for ordinary password authentication. Omit it when `useAuthServer` is on, because EmailEngine then fetches credentials from your authentication server for every connection and a stored password would be dead configuration.\n\nOn an update this replaces the whole credentials object unless `partial` is also set."
         },
-        "enum": [
-          false
-        ],
         "properties": {
           "user": {
             "type": "string",
@@ -1902,7 +1972,17 @@
             "maxLength": 256
           },
           "accessToken": {
-            "$ref": "#/components/schemas/ImapUpdateAccessToken"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImapUpdateAccessToken"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "pass": {
             "type": "string",
@@ -1935,9 +2015,6 @@
       "IMAPUpdate": {
         "type": "object",
         "description": "IMAP configuration. Set to `false` to remove the stored IMAP configuration from the account.",
-        "enum": [
-          false
-        ],
         "properties": {
           "partial": {
             "type": "boolean",
@@ -1957,7 +2034,17 @@
             }
           },
           "auth": {
-            "$ref": "#/components/schemas/ImapUpdateAuthentication"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImapUpdateAuthentication"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "host": {
             "type": "string",
@@ -2041,9 +2128,6 @@
         "type": "string",
         "description": "OAuth2 access token (when using OAuth2 instead of password authentication)",
         "example": false,
-        "enum": [
-          false
-        ],
         "maxLength": 16384
       },
       "SmtpUpdateAuthentication": {
@@ -2052,9 +2136,6 @@
         "x-meta": {
           "usage": "Send this for ordinary password authentication. Omit it when `useAuthServer` is on, because EmailEngine then fetches credentials from your authentication server for every connection and a stored password would be dead configuration.\n\nOn an update this replaces the whole credentials object unless `partial` is also set."
         },
-        "enum": [
-          false
-        ],
         "properties": {
           "user": {
             "type": "string",
@@ -2063,7 +2144,17 @@
             "maxLength": 256
           },
           "accessToken": {
-            "$ref": "#/components/schemas/SmtpUpdateAccessToken"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SmtpUpdateAccessToken"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "pass": {
             "type": "string",
@@ -2096,9 +2187,6 @@
       "SMTPUpdate": {
         "type": "object",
         "description": "SMTP configuration. Set to `false` to remove the stored SMTP configuration from the account.",
-        "enum": [
-          false
-        ],
         "properties": {
           "partial": {
             "type": "boolean",
@@ -2118,7 +2206,17 @@
             }
           },
           "auth": {
-            "$ref": "#/components/schemas/SmtpUpdateAuthentication"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SmtpUpdateAuthentication"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "host": {
             "type": "string",
@@ -2148,9 +2246,6 @@
       "OAuth2Update": {
         "type": "object",
         "description": "OAuth2 configuration. Set to `false` to remove the stored OAuth2 configuration from the account.",
-        "enum": [
-          false
-        ],
         "properties": {
           "partial": {
             "type": "boolean",
@@ -2313,13 +2408,43 @@
             }
           },
           "imap": {
-            "$ref": "#/components/schemas/IMAPUpdate"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IMAPUpdate"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "smtp": {
-            "$ref": "#/components/schemas/SMTPUpdate"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SMTPUpdate"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "oauth2": {
-            "$ref": "#/components/schemas/OAuth2Update"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OAuth2Update"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "webhooksCustomHeaders": {
             "$ref": "#/components/schemas/AccountWebhooksCustomHeaders"
@@ -2997,20 +3122,34 @@
             "example": false
           },
           "messages": {
-            "type": "integer",
-            "description": "Total number of messages in the mailbox. False if the count is not known",
-            "example": 120,
-            "enum": [
-              false
-            ]
+            "anyOf": [
+              {
+                "type": "integer",
+                "example": 120
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ],
+            "description": "Total number of messages in the mailbox. False if the count is not known"
           },
           "uidNext": {
-            "type": "integer",
-            "description": "Next UID value that will be assigned. False if the value is not known",
-            "example": 121,
-            "enum": [
-              false
-            ]
+            "anyOf": [
+              {
+                "type": "integer",
+                "example": 121
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ],
+            "description": "Next UID value that will be assigned. False if the value is not known"
           },
           "status": {
             "$ref": "#/components/schemas/MailboxResponseStatus"
@@ -3227,9 +3366,6 @@
         "x-meta": {
           "usage": "Use this to forward an attachment that is already on another message without downloading and re-uploading it. Take the id from the attachment list of the referenced message.\n\nIt is exclusive with `content`: send one or the other, never both."
         },
-        "enum": [
-          false
-        ],
         "nullable": true,
         "maxLength": 256
       },
@@ -3262,7 +3398,17 @@
             "$ref": "#/components/schemas/MsgUploadEncoding"
           },
           "reference": {
-            "$ref": "#/components/schemas/MsgUploadReference"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MsgUploadReference"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "content": {
             "type": "string",
@@ -3278,6 +3424,7 @@
       "UploadAttachmentList": {
         "type": "array",
         "description": "List of attachments",
+        "maxItems": 500,
         "items": {
           "$ref": "#/components/schemas/UploadAttachment"
         }
@@ -4336,7 +4483,9 @@
           "deliveryAttempts": {
             "type": "integer",
             "description": "How many delivery attempts to make until message is considered as failed",
-            "example": 10
+            "example": 10,
+            "minimum": 0,
+            "maximum": 100
           },
           "gateway": {
             "type": "string",
@@ -4992,6 +5141,25 @@
           }
         }
       },
+      "BulkUpdateFailedEmailIds": {
+        "type": "array",
+        "description": "List of emailId values the server refused after retries (MS Graph API accounts only)",
+        "items": {
+          "type": "string",
+          "description": "Globally unique email identifier (when supported by the email server)",
+          "example": "1278455344230334865",
+          "maxLength": 256
+        }
+      },
+      "BulkUpdateFailed": {
+        "type": "object",
+        "description": "Present when some messages could not be processed (MS Graph API accounts only)",
+        "properties": {
+          "emailIds": {
+            "$ref": "#/components/schemas/BulkUpdateFailedEmailIds"
+          }
+        }
+      },
       "BulkUpdatedEmailIds": {
         "type": "array",
         "description": "List of updated email IDs (Gmail API and MS Graph API accounts only)",
@@ -5010,6 +5178,9 @@
           },
           "labels": {
             "$ref": "#/components/schemas/BulkLabelUpdateResponse"
+          },
+          "failed": {
+            "$ref": "#/components/schemas/BulkUpdateFailed"
           },
           "emailIds": {
             "$ref": "#/components/schemas/BulkUpdatedEmailIds"
@@ -5100,6 +5271,25 @@
           }
         }
       },
+      "BulkDeleteFailedEmailIds": {
+        "type": "array",
+        "description": "List of emailId values the server refused after retries (MS Graph API accounts only)",
+        "items": {
+          "type": "string",
+          "description": "Globally unique email identifier (when supported by the email server)",
+          "example": "1278455344230334865",
+          "maxLength": 256
+        }
+      },
+      "BulkDeleteFailed": {
+        "type": "object",
+        "description": "Present when some messages could not be processed (MS Graph API accounts only)",
+        "properties": {
+          "emailIds": {
+            "$ref": "#/components/schemas/BulkDeleteFailedEmailIds"
+          }
+        }
+      },
       "MessagesDeleteResponse": {
         "type": "object",
         "properties": {
@@ -5113,6 +5303,9 @@
           },
           "deletedMessages": {
             "$ref": "#/components/schemas/MessagesDeleted"
+          },
+          "failed": {
+            "$ref": "#/components/schemas/BulkDeleteFailed"
           }
         }
       },
@@ -5144,6 +5337,25 @@
           "maxLength": 256
         }
       },
+      "BulkMoveFailedEmailIds": {
+        "type": "array",
+        "description": "List of emailId values the server refused after retries (MS Graph API accounts only)",
+        "items": {
+          "type": "string",
+          "description": "Globally unique email identifier (when supported by the email server)",
+          "example": "1278455344230334865",
+          "maxLength": 256
+        }
+      },
+      "BulkMoveFailed": {
+        "type": "object",
+        "description": "Present when some messages could not be processed (MS Graph API accounts only)",
+        "properties": {
+          "emailIds": {
+            "$ref": "#/components/schemas/BulkMoveFailedEmailIds"
+          }
+        }
+      },
       "MessagesMoveResponse": {
         "type": "object",
         "properties": {
@@ -5157,6 +5369,9 @@
           },
           "emailIds": {
             "$ref": "#/components/schemas/MovedEmailIdsArray"
+          },
+          "failed": {
+            "$ref": "#/components/schemas/BulkMoveFailed"
           }
         },
         "required": [
@@ -5618,9 +5833,6 @@
       "TemplateRender": {
         "type": "object",
         "description": "Template rendering options. Set to `false` to send the template as-is, without rendering it.",
-        "enum": [
-          false
-        ],
         "properties": {
           "format": {
             "$ref": "#/components/schemas/RenderFormat"
@@ -5654,9 +5866,6 @@
         "x-meta": {
           "usage": "Use this to forward an attachment that is already on another message without downloading and re-uploading it. Take the id from the attachment list of the referenced message.\n\nIt is exclusive with `content`: send one or the other, never both."
         },
-        "enum": [
-          false
-        ],
         "nullable": true,
         "maxLength": 256
       },
@@ -5689,7 +5898,17 @@
             "$ref": "#/components/schemas/AttachmentEncoding"
           },
           "reference": {
-            "$ref": "#/components/schemas/AttachmentReference"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AttachmentReference"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "content": {
             "type": "string",
@@ -5705,6 +5924,7 @@
       "UploadAttachmentList1": {
         "type": "array",
         "description": "List of attachments",
+        "maxItems": 500,
         "items": {
           "$ref": "#/components/schemas/UploadAttachment1"
         }
@@ -5838,7 +6058,17 @@
             "$ref": "#/components/schemas/BccAddressList"
           },
           "render": {
-            "$ref": "#/components/schemas/TemplateRender"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TemplateRender"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "attachments": {
             "$ref": "#/components/schemas/UploadAttachmentList1"
@@ -5898,7 +6128,9 @@
           "deliveryAttempts": {
             "type": "integer",
             "description": "How many delivery attempts to make until message is considered as failed",
-            "example": 10
+            "example": 10,
+            "minimum": 0,
+            "maximum": 100
           },
           "gateway": {
             "type": "string",
@@ -6199,10 +6431,7 @@
       "AccountsQueryFilter": {
         "type": "string",
         "description": "Search term used for filtering, or false when no filter was applied",
-        "example": false,
-        "enum": [
-          false
-        ]
+        "example": false
       },
       "AccountListState": {
         "type": "string",
@@ -6368,7 +6597,17 @@
             "example": 24
           },
           "query": {
-            "$ref": "#/components/schemas/AccountsQueryFilter"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AccountsQueryFilter"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "state": {
             "type": "string",
@@ -6404,10 +6643,7 @@
         "type": "string",
         "description": "Pre-select a specific account type (use \"imap\" or an OAuth2 app ID) instead of showing the selection screen",
         "example": "imap",
-        "default": false,
-        "enum": [
-          false
-        ]
+        "default": false
       },
       "RequestAuthForm": {
         "type": "object",
@@ -6489,7 +6725,17 @@
             }
           },
           "type": {
-            "$ref": "#/components/schemas/DefaultAccountType"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DefaultAccountType"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           }
         },
         "required": [
@@ -6532,9 +6778,6 @@
       "ResolvedServerSettings": {
         "type": "object",
         "description": "Discovered IMAP settings. False if IMAP settings were not found",
-        "enum": [
-          false
-        ],
         "properties": {
           "auth": {
             "$ref": "#/components/schemas/DetectedAuthenticationInfo"
@@ -6565,9 +6808,6 @@
       "DiscoveredServerSettings": {
         "type": "object",
         "description": "Discovered SMTP settings. False if SMTP settings were not found",
-        "enum": [
-          false
-        ],
         "properties": {
           "auth": {
             "$ref": "#/components/schemas/DetectedAuthenticationInfo"
@@ -6620,10 +6860,30 @@
         "type": "object",
         "properties": {
           "imap": {
-            "$ref": "#/components/schemas/ResolvedServerSettings"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResolvedServerSettings"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "smtp": {
-            "$ref": "#/components/schemas/DiscoveredServerSettings"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiscoveredServerSettings"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "appPassword": {
             "$ref": "#/components/schemas/DiscoveredAppPasswordInfo"
@@ -7048,9 +7308,6 @@
         "type": "string",
         "description": "Optional gateway ID",
         "example": false,
-        "enum": [
-          false
-        ],
         "nullable": true,
         "maxLength": 256
       },
@@ -7058,7 +7315,17 @@
         "type": "object",
         "properties": {
           "gateway": {
-            "$ref": "#/components/schemas/DeliveryTestGateway"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeliveryTestGateway"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           }
         }
       },
@@ -7527,9 +7794,6 @@
       "LicenseDetails": {
         "type": "object",
         "description": "Details of the registered license. False when no license is registered.",
-        "enum": [
-          false
-        ],
         "properties": {
           "application": {
             "type": "string",
@@ -7595,7 +7859,17 @@
             "example": "EmailEngine License"
           },
           "details": {
-            "$ref": "#/components/schemas/LicenseDetails"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LicenseDetails"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "suspended": {
             "type": "boolean",
@@ -7639,9 +7913,6 @@
         "type": "string",
         "description": "Google Cloud Project ID",
         "example": "project-name-425411",
-        "enum": [
-          false
-        ],
         "nullable": true,
         "maxLength": 256,
         "pattern": "^[a-z][a-z0-9-]{4,28}[a-z0-9]$",
@@ -7653,9 +7924,6 @@
         "type": "string",
         "description": "Google Pub/Sub topic name for Gmail push notifications",
         "example": "ee-pub-12345",
-        "enum": [
-          false
-        ],
         "nullable": true,
         "maxLength": 256,
         "pattern": "^(?!goog)[A-Za-z][A-Za-z0-9\\-_.~+%]{2,254}$",
@@ -7667,9 +7935,6 @@
         "type": "string",
         "description": "Google Pub/Sub subscription name",
         "example": "ee-sub-12345",
-        "enum": [
-          false
-        ],
         "nullable": true,
         "maxLength": 256,
         "pattern": "^(?!goog)[A-Za-z][A-Za-z0-9\\-_.~+%]{2,254}$",
@@ -7717,9 +7982,6 @@
         "type": "string",
         "description": "Cloud Pub/Sub app ID used for Gmail change notifications",
         "example": "AAAAAQAACnA",
-        "enum": [
-          false
-        ],
         "nullable": true,
         "maxLength": 512
       },
@@ -7834,7 +8096,17 @@
             "example": "9103965568215821627203"
           },
           "googleProjectId": {
-            "$ref": "#/components/schemas/GoogleProjectId"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoogleProjectId"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "googleWorkspaceAccounts": {
             "type": "boolean",
@@ -7842,10 +8114,30 @@
             "example": false
           },
           "googleTopicName": {
-            "$ref": "#/components/schemas/GoogleTopicName"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoogleTopicName"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "googleSubscriptionName": {
-            "$ref": "#/components/schemas/GoogleSubscriptionName"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoogleSubscriptionName"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "serviceClientEmail": {
             "type": "string",
@@ -7870,7 +8162,17 @@
             "$ref": "#/components/schemas/AppBaseScopes"
           },
           "pubSubApp": {
-            "$ref": "#/components/schemas/AppPubSubApp"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AppPubSubApp"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "authMethod": {
             "type": "string",
@@ -7995,9 +8297,6 @@
         "type": "string",
         "description": "Pub/Sub application ID for Gmail push notifications",
         "example": "AAAAAQAACnA",
-        "enum": [
-          false
-        ],
         "nullable": true,
         "maxLength": 512
       },
@@ -8099,7 +8398,17 @@
             "$ref": "#/components/schemas/OAuth2BaseScopes"
           },
           "pubSubApp": {
-            "$ref": "#/components/schemas/PubSubAppId"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PubSubAppId"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "extraScopes": {
             "$ref": "#/components/schemas/OAuth2ExtraScopesApi"
@@ -8117,7 +8426,17 @@
             }
           },
           "googleProjectId": {
-            "$ref": "#/components/schemas/GoogleProjectId"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoogleProjectId"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "googleWorkspaceAccounts": {
             "type": "boolean",
@@ -8125,10 +8444,30 @@
             "example": false
           },
           "googleTopicName": {
-            "$ref": "#/components/schemas/GoogleTopicName"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoogleTopicName"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "googleSubscriptionName": {
-            "$ref": "#/components/schemas/GoogleSubscriptionName"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoogleSubscriptionName"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "serviceClientEmail": {
             "type": "string",
@@ -8316,7 +8655,17 @@
             }
           },
           "googleProjectId": {
-            "$ref": "#/components/schemas/GoogleProjectId"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoogleProjectId"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "googleWorkspaceAccounts": {
             "type": "boolean",
@@ -8324,10 +8673,30 @@
             "example": false
           },
           "googleTopicName": {
-            "$ref": "#/components/schemas/GoogleTopicName"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoogleTopicName"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "googleSubscriptionName": {
-            "$ref": "#/components/schemas/GoogleSubscriptionName"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoogleSubscriptionName"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "serviceClientEmail": {
             "type": "string",
@@ -8362,7 +8731,17 @@
             "$ref": "#/components/schemas/AppBaseScopes"
           },
           "pubSubApp": {
-            "$ref": "#/components/schemas/AppPubSubApp"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AppPubSubApp"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "authMethod": {
             "type": "string",
@@ -8420,9 +8799,6 @@
         "type": "string",
         "description": "Client or Application ID for 3-legged OAuth2 applications",
         "example": "52422112755-3uov8bjwlrullq122rdm6l8ui25ho7qf.apps.googleusercontent.com",
-        "enum": [
-          false
-        ],
         "nullable": true,
         "maxLength": 256,
         "x-convert": {
@@ -8457,9 +8833,6 @@
         "type": "string",
         "description": "Service client ID for 2-legged OAuth2 applications",
         "example": "7103296518315821565203",
-        "enum": [
-          false
-        ],
         "nullable": true,
         "maxLength": 256,
         "x-convert": {
@@ -8492,9 +8865,6 @@
         "type": "string",
         "description": "Redirect URL for 3-legged OAuth2 applications",
         "example": "https://myservice.com/oauth",
-        "enum": [
-          false
-        ],
         "nullable": true,
         "x-format": {
           "uri": {
@@ -8542,7 +8912,17 @@
             "example": true
           },
           "clientId": {
-            "$ref": "#/components/schemas/UpdateOAuth2ClientId"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UpdateOAuth2ClientId"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "clientSecret": {
             "type": "string",
@@ -8566,10 +8946,30 @@
             "$ref": "#/components/schemas/UpdateOAuth2SkipScopes"
           },
           "serviceClient": {
-            "$ref": "#/components/schemas/UpdateServiceClient"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UpdateServiceClient"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "googleProjectId": {
-            "$ref": "#/components/schemas/GoogleProjectId"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoogleProjectId"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "googleWorkspaceAccounts": {
             "type": "boolean",
@@ -8577,10 +8977,30 @@
             "example": false
           },
           "googleTopicName": {
-            "$ref": "#/components/schemas/GoogleTopicName"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoogleTopicName"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "googleSubscriptionName": {
-            "$ref": "#/components/schemas/GoogleSubscriptionName"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoogleSubscriptionName"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "serviceClientEmail": {
             "type": "string",
@@ -8620,7 +9040,17 @@
             }
           },
           "redirectUrl": {
-            "$ref": "#/components/schemas/UpdateOAuth2RedirectUrl"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UpdateOAuth2RedirectUrl"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           }
         }
       },
@@ -8819,10 +9249,7 @@
         "type": "string",
         "format": "date-time",
         "description": "Next delivery attempt time (approximate, computed from the retry backoff without jitter). False when all delivery attempts have been used up",
-        "example": "2021-02-17T13:43:18.860Z",
-        "enum": [
-          false
-        ]
+        "example": "2021-02-17T13:43:18.860Z"
       },
       "OutboxStatus": {
         "type": "string",
@@ -8985,7 +9412,17 @@
             "example": "2021-02-17T13:43:18.860Z"
           },
           "nextAttempt": {
-            "$ref": "#/components/schemas/nextAttempt"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/nextAttempt"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "attemptsMade": {
             "type": "integer",
@@ -12403,10 +12840,30 @@
             "default": false
           },
           "imap": {
-            "$ref": "#/components/schemas/ImapConfiguration"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImapConfiguration"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "smtp": {
-            "$ref": "#/components/schemas/SmtpConfiguration"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SmtpConfiguration"
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            ]
           },
           "proxy": {
             "type": "string",
@@ -20083,7 +20540,7 @@
       "put": {
         "summary": "Update OAuth2 application",
         "operationId": "putV1Oauth2App",
-        "description": "Updates OAuth2 application information",
+        "description": "Updates OAuth2 application information. Stored secrets (`clientSecret`, `serviceKey`, `accessToken`, `externalAccount`) read back as \"******\". A masked value is not the stored one - leave the field out of an update to keep the secret; sending the placeholder back is refused with 400.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -20868,7 +21325,7 @@
       "get": {
         "summary": "List specific settings",
         "operationId": "getV1Settings",
-        "description": "List setting values for specific keys. Credentials are masked: the credentials in any proxy or webhook URL and the values of custom webhook headers read back as \"******\", and encrypted secrets are returned as booleans. A masked value is not the stored one - POST /v1/settings skips it when it matches the stored value and refuses it otherwise.",
+        "description": "List setting values for specific keys. Credentials are masked: the credentials in any proxy, webhook or authentication server URL and the values of custom webhook headers read back as \"******\", and encrypted secrets are returned as booleans. A masked value is not the stored one - POST /v1/settings skips it when it matches the stored value and refuses it otherwise.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -22964,7 +23421,7 @@
       "post": {
         "summary": "Provision an access token",
         "operationId": "postV1Tokens",
-        "description": "Provisions a new access token. Either bind it to an account, or set `permissions` - an instance-wide token that is not narrowed reaches every account and every endpoint, so the API declines to mint one.",
+        "description": "Provisions a new access token. Either bind it to an account, or set `permissions` - an instance-wide token that is not narrowed reaches every account and every endpoint, so the API declines to mint one. A token can not mint one less restricted than itself: when the calling token has an address allowlist, a referrer allowlist, a rate limit or an expiry, the request has to repeat each of them at least as narrowly (addresses within its allowlist, referrers from its list, a rate no higher, an expiry no later), otherwise it is refused with 403.",
         "parameters": [
           {
             "name": "x-ee-timeout",

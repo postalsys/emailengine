@@ -37,6 +37,7 @@ function createContext() {
                 assert.equal((await getContent()).toString(), 'raw');
             }
         },
+        lockForMessage: Mailbox.prototype.lockForMessage,
         getMailboxLock: async () => ({
             release() {
                 events.push('release');

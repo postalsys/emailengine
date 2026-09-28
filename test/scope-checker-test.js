@@ -37,6 +37,11 @@ test('OAuth Scope Checker tests', async t => {
         assert.ok(MS_GRAPH_DOMAINS.includes('microsoftgraph.chinacloudapi.cn'));
     });
 
+    await t.test('gmail.labels is not a read scope, send + labels is send-only', async () => {
+        const scopes = ['https://www.googleapis.com/auth/gmail.send', 'https://www.googleapis.com/auth/gmail.labels'];
+        assert.deepStrictEqual(checkAccountScopes('gmail', scopes), { hasSendScope: true, hasReadScope: false });
+    });
+
     // normalizeMsGraphScope tests
     await t.test('normalizeMsGraphScope() passes through plain scope names', async () => {
         assert.strictEqual(normalizeMsGraphScope('offline_access'), 'offline_access');

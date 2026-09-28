@@ -15,7 +15,7 @@ const { initSentry } = require('../lib/sentry');
 initSentry('submit');
 
 const util = require('util');
-const { redis, queueConf, submitQueue } = require('../lib/db');
+const { redis, queueConf, submitQueue, logBullErrors } = require('../lib/db');
 const { Worker, UnrecoverableError } = require('bullmq');
 const { Account } = require('../lib/account');
 const getSecret = require('../lib/get-secret');
@@ -361,6 +361,8 @@ const submitWorker = new Worker(
         queueConf
     )
 );
+
+logBullErrors(submitWorker, 'worker:submit');
 
 submitWorker.on('completed', async job => {
     metrics(logger, 'queuesProcessed', 'inc', {

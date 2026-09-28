@@ -293,6 +293,65 @@ test('messageWebSafeHtml', async t => {
     });
 });
 
+test('messageWebSafeHtml: sender markup can not fake the collapse marker', async t => {
+    await t.test('drops the reserved class names from sender HTML, in every attribute syntax', async () => {
+        const html = await messageWebSafeHtml({
+            subject: 'Hello',
+            text: {
+                html:
+                    '<html><body><p>Visible text</p>' +
+                    '<details class="ee-collapsed-thread"><summary class="ee-collapsed-thread-toggle"></summary>hidden one</details>' +
+                    "<details class='keep ee-collapsed-thread'>hidden two</details>" +
+                    '<details class=ee-collapsed-thread>hidden three</details>' +
+                    '<details/class="ee&#45;collapsed&#x2d;thread">hidden four</details>' +
+                    '<details CLASS = "EE-COLLAPSED-THREAD other">hidden five</details>' +
+                    '</body></html>'
+            }
+        });
+
+        assert.doesNotMatch(html, /ee-collapsed-thread/i);
+        assert.match(html, /hidden one/);
+        assert.match(html, /hidden five/);
+        // unrelated class names survive
+        assert.match(html, /class="keep"/);
+        assert.match(html, /class="other"/);
+    });
+
+    await t.test('our own marker still comes through when the sender tried to add one', async () => {
+        const spoofed = JSON.parse(JSON.stringify(gmailReply));
+        spoofed.text.html = spoofed.text.html.replace('<div dir="ltr">Yes', '<details class="ee-collapsed-thread">x</details><div dir="ltr">Yes');
+        const html = await messageWebSafeHtml(spoofed);
+
+        assert.equal(html.split(MARKER).length - 1, 1, 'exactly one marker, the one we placed');
+        assert.match(html, /walk through the deploy plan/);
+    });
+});
+
+test('messageWebSafeHtml: a body the sanitizer can not handle is rendered as escaped text', async t => {
+    await t.test('deeply nested HTML', async () => {
+        const html = await messageWebSafeHtml({
+            subject: 'Hello',
+            text: { html: '<div>'.repeat(4000) + 'deep <content> & more' + '</div>'.repeat(4000), plain: 'deep <content> & more' }
+        });
+        assert.match(html, /deep &lt;content&gt; &amp; more/);
+        assert.doesNotMatch(html, /<content>/);
+    });
+
+    await t.test('deeply nested HTML without a plain part', async () => {
+        const html = await messageWebSafeHtml({
+            subject: 'Hello',
+            text: { html: '<div>'.repeat(4000) + 'only &lt;html&gt;' + '</div>'.repeat(4000) }
+        });
+        assert.match(html, /only &lt;html&gt;/);
+        assert.doesNotMatch(html, /<div><div>/);
+    });
+
+    await t.test('deeply quoted plain text', async () => {
+        const html = await messageWebSafeHtml({ subject: 'Hello', text: { plain: '>'.repeat(6000) + ' quoted' } });
+        assert.match(html, /quoted/);
+    });
+});
+
 test('webSafeTextResponse', async t => {
     await t.test('returns one rendering and drops the plaintext twin', async () => {
         const response = await webSafeTextResponse({

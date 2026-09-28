@@ -163,7 +163,7 @@ function createMockRedis() {
         scan: async () => ['0', []],
         quit: async () => {},
         disconnect: () => {},
-        subscribe: () => {},
+        subscribe: async () => {},
         on: () => {},
         off: () => {},
         defineCommand: name => {
@@ -323,7 +323,7 @@ function createTestInstance(overrides) {
     return instance;
 }
 
-const MOCKED_METHODS = ['ensurePubsub', 'setMeta', 'get', 'getClient', 'getServiceAccessToken'];
+const MOCKED_METHODS = ['ensurePubsub', 'setMeta', 'get', 'getClient', 'getServiceAccessToken', 'invalidateServiceAccessToken'];
 
 function withMockedOauth2Apps(mocks, fn) {
     let originals = {};
@@ -341,7 +341,8 @@ function withMockedOauth2Apps(mocks, fn) {
                 throw create404Error();
             }
         }),
-        getServiceAccessToken: async () => 'mock-token'
+        getServiceAccessToken: async () => 'mock-token',
+        invalidateServiceAccessToken: async () => {}
     };
     for (let method of MOCKED_METHODS) {
         oauth2Apps[method] = mocks[method] || defaults[method];
@@ -484,6 +485,88 @@ test('Pub/Sub subscription recovery tests', async t => {
                     setMetaCalls.some(c => c.meta.pubSubFlag !== undefined && c.meta.pubSubFlag !== null),
                     'pubSubFlag should be set for 401 errors'
                 );
+            }
+        )();
+    });
+
+    await t.test('401 drops the cached service token so the next run fetches a new one', async () => {
+        let invalidated = [];
+
+        await withMockedOauth2Apps(
+            {
+                invalidateServiceAccessToken: async id => {
+                    invalidated.push(id);
+                }
+            },
+            async () => {
+                let instance = createTestInstance({
+                    appData: {
+                        id: 'test-app',
+                        pubSubSubscription: 'projects/test/subscriptions/test-sub',
+                        accessToken: 'stale',
+                        accessTokenExpires: new Date(Date.now() + 30 * 60 * 1000).toISOString()
+                    },
+                    client: {
+                        request: async () => {
+                            throw create401Error();
+                        }
+                    }
+                });
+
+                await assert.rejects(() => instance.run(), { statusCode: 401 });
+
+                assert.deepStrictEqual(invalidated, ['test-app'], 'the stored token is cleared');
+                assert.strictEqual(instance.appData.accessToken, null, 'the in-memory copy is cleared too');
+                assert.strictEqual(instance.appData.accessTokenExpires, null);
+            }
+        )();
+    });
+
+    // Past five failed recoveries every later attempt used to be refused until a restart or an
+    // app update, even after the operator fixed the permissions
+    await t.test('recovery backs off after five failures instead of refusing forever', async () => {
+        let ensurePubsubCalls = 0;
+
+        await withMockedOauth2Apps(
+            {
+                ensurePubsub: async () => {
+                    ensurePubsubCalls++;
+                    throw new Error('GCP permission error');
+                }
+            },
+            async () => {
+                let instance = createTestInstance({ _recoveryAttempts: 0, _nextRecoveryAt: 0 });
+
+                for (let i = 0; i < 5; i++) {
+                    await assert.rejects(() => instance.attemptRecovery('test'), /GCP permission error/);
+                }
+                assert.strictEqual(ensurePubsubCalls, 5);
+
+                // the sixth waits for the backoff and tells the loop how long
+                let backoffErr;
+                await assert.rejects(
+                    () => instance.attemptRecovery('test'),
+                    err => {
+                        backoffErr = err;
+                        return /backing off/.test(err.message);
+                    }
+                );
+                assert.strictEqual(ensurePubsubCalls, 5, 'no attempt inside the backoff window');
+                assert.ok(backoffErr.retryDelay > 9 * 60 * 1000 && backoffErr.retryDelay <= 10 * 60 * 1000);
+
+                // once the window has passed the recovery runs again
+                instance._nextRecoveryAt = Date.now() - 1;
+                await assert.rejects(() => instance.attemptRecovery('test'), /GCP permission error/);
+                assert.strictEqual(ensurePubsubCalls, 6);
+                assert.ok(instance._nextRecoveryAt - Date.now() > 19 * 60 * 1000, 'the next window is longer');
+
+                // and succeeds once the operator has fixed the permissions
+                instance._nextRecoveryAt = Date.now() - 1;
+                oauth2Apps.ensurePubsub = async () => {
+                    ensurePubsubCalls++;
+                };
+                await instance.attemptRecovery('test');
+                assert.strictEqual(ensurePubsubCalls, 7);
             }
         )();
     });

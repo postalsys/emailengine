@@ -98,6 +98,8 @@ USER emailengineuser
 
 ENV EENGINE_HOST=0.0.0.0
 ENV EENGINE_API_PROXY=true
+# The pure JavaScript msgpackr decoder is what the pkg binary uses, so npm and Docker installs decode the same way and no native addon is loaded
+ENV MSGPACKR_NATIVE_ACCELERATION_DISABLED=true
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD ["node", "/emailengine/server.js"]

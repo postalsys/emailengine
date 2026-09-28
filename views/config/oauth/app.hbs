@@ -364,9 +364,10 @@ fieldName="app" fieldValue=app.id submitLabel="Delete app" submitIcon="icon-[tab
 </script>
 {{/if}}
 
+<input type="hidden" id="verify-app-id" value="{{app.id}}">
 <script data-cfasync="false" nonce="{{cspNonce}}">
     document.addEventListener('DOMContentLoaded', () => {
-        const appId = "{{app.id}}";
+        const appId = document.getElementById('verify-app-id').value;
         const stepsElm = document.getElementById('verify-steps');
         const pendingElm = document.getElementById('verify-pending');
         const errorElm = document.getElementById('verify-error');

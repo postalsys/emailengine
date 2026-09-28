@@ -283,6 +283,27 @@ test('ExternalAccountSigner', async t => {
         assert.strictEqual(stsParams.get('subject_token'), 'imds-token');
     });
 
+    // The credential source is a host-local identity endpoint; through the configured HTTP or
+    // SOCKS proxy it is unreachable, and the proxy would see the request headers and the token
+    await t.test('the url credential source bypasses the proxy, STS and signJwt keep the shared dispatcher', async () => {
+        const { httpAgent } = require('../lib/tools');
+        let { fetchImpl, calls } = makeFakeFetch({
+            'http://169.254.169.254': () => makeResponse({ status: 200, text: '{"access_token":"imds-token"}' }),
+            'https://sts.googleapis.com/v1/token': () => makeResponse({ status: 200, json: { access_token: 'fed', expires_in: 3600 } }),
+            'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc%40proj.iam.gserviceaccount.com:signJwt': () =>
+                makeResponse({ status: 200, json: { signedJwt: 'a.b.c' } })
+        });
+
+        let signer = new ExternalAccountSigner({ config: VALID_URL_CONFIG, fetchImpl });
+        await signer.sign({ iss: 'svc@proj.iam.gserviceaccount.com' });
+
+        assert.strictEqual(calls[0].options.dispatcher, __test__.credentialSourceAgent);
+        assert.notStrictEqual(calls[0].options.dispatcher, httpAgent.retry);
+        assert.notStrictEqual(calls[0].options.dispatcher, httpAgent.fetch);
+        assert.strictEqual(calls[1].options.dispatcher, httpAgent.retry);
+        assert.strictEqual(calls[2].options.dispatcher, httpAgent.retry);
+    });
+
     await t.test('sign() caches federated token across calls within TTL', async () => {
         let now = 1700000000000;
         let { fetchImpl, calls } = makeFakeFetch({

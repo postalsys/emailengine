@@ -131,20 +131,51 @@ test('Gmail poison history entry protection', async t => {
         assert.strictEqual(await redis.hget(client.getAccountKey(), 'googleHistoryProcessing'), null);
     });
 
-    await t.test('an entry that throws is logged and does not loop', async () => {
+    // An entry that threw used to be logged and passed over, and the cursor moved past it: its
+    // label changes and deletions were lost with no syncWarning. The run now stops on it, the
+    // cursor stays on the last entry that went through, and the in-flight marker bounds the retries
+    await t.test('an entry that throws ends the run with the cursor before it', async () => {
         const { client, logs } = makeClient('poison-test-throw', {
-            history: [historyEntry(1001)],
-            historyId: '1001'
+            history: [historyEntry(1001), historyEntry(1002), historyEntry(1003)],
+            historyId: '1003'
         });
-        client.processHistoryEntry = async () => {
-            throw new Error('processing failed');
+        const processed = [];
+        client.processHistoryEntry = async entry => {
+            if (entry.id === '1002') {
+                throw new Error('processing failed');
+            }
+            processed.push(entry.id);
         };
 
-        await client.processHistory(1000, 1001);
+        await assert.rejects(client.processHistory(1000, 1003), /processing failed/);
 
-        // thrown errors keep the pre-existing behavior: logged, cursor advances
-        assert.ok(logs.error.find(entry => entry.msg === 'Failed to process history entry'));
-        assert.strictEqual(await redis.hget(client.getAccountKey(), 'googleHistoryId'), '1001');
+        assert.ok(logs.error.find(entry => entry.msg === 'Failed to process history entry' && entry.entryId === '1002'));
+        assert.deepStrictEqual(processed, ['1001'], 'nothing after the failed entry is processed');
+        assert.strictEqual(await redis.hget(client.getAccountKey(), 'googleHistoryId'), '1001', 'the cursor stays on the last good entry');
+        assert.deepStrictEqual(JSON.parse(await redis.hget(client.getAccountKey(), 'googleHistoryProcessing')), { id: '1002', count: 1 });
+    });
+
+    await t.test('an entry that keeps throwing is skipped with a syncWarning at the attempt limit', async () => {
+        const { client } = makeClient('poison-test-throw-limit', {
+            history: [historyEntry(1001), historyEntry(1002)],
+            historyId: '1002'
+        });
+        const processed = [];
+        client.processHistoryEntry = async entry => {
+            if (entry.id === '1001') {
+                throw new Error('processing failed');
+            }
+            processed.push(entry.id);
+        };
+
+        for (let run = 0; run < GMAIL_MAX_HISTORY_ENTRY_ATTEMPTS; run++) {
+            await assert.rejects(client.processHistory(1000, 1002), /processing failed/);
+        }
+        // the next run skips it and carries on
+        await client.processHistory(1000, 1002);
+
+        assert.deepStrictEqual(processed, ['1002']);
+        assert.strictEqual(await redis.hget(client.getAccountKey(), 'googleHistoryId'), '1002');
         assert.strictEqual(await redis.hget(client.getAccountKey(), 'googleHistoryProcessing'), null);
     });
 
@@ -156,5 +187,27 @@ test('Gmail poison history entry protection', async t => {
         await client.close();
 
         assert.strictEqual(await redis.hget(client.getAccountKey(), 'googleHistoryProcessing'), null);
+    });
+});
+
+test('Gmail history with an expired cursor', async t => {
+    await t.test('a 404 moves the cursor to the current history id', async () => {
+        const { client } = makeClient('poison-test-expired', null);
+        client.request = async url => {
+            if (url.includes('/history')) {
+                const err = new Error('Requested entity was not found');
+                err.oauthRequest = { status: 404, response: { error: { code: 404 } } };
+                throw err;
+            }
+            if (url.includes('/profile')) {
+                return { historyId: '5000' };
+            }
+            throw new Error(`unexpected request ${url}`);
+        };
+
+        await client.processHistory(1000, 1000);
+
+        assert.strictEqual(await redis.hget(client.getAccountKey(), 'googleHistoryId'), '5000');
+        await redis.del(client.getAccountKey());
     });
 });

@@ -18,7 +18,7 @@ const GB_EMPTY_DELAY = 10 * 1000;
 const { initSentry } = require('../lib/sentry');
 initSentry('documents');
 
-const { redis, queueConf } = require('../lib/db');
+const { redis, queueConf, logBullErrors } = require('../lib/db');
 const { Worker } = require('bullmq');
 const { getESClient } = require('../lib/document-store');
 const { generateTextPreview } = require('../lib/generate-text-preview');
@@ -908,6 +908,8 @@ if( ctx._source.bounces != null) {
         queueConf
     )
 );
+
+logBullErrors(documentsWorker, 'worker:documents');
 
 documentsWorker.on('completed', async job => {
     metrics(logger, 'queuesProcessed', 'inc', {

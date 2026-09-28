@@ -165,4 +165,12 @@ test('Redis URL parsing', async t => {
         assert.throws(() => parseRedisUrl('not a url at all'));
         assert.throws(() => parseRedisUrl(''));
     });
+
+    await t.test('an IPv6 literal host loses its URL brackets', () => {
+        // WHATWG URL reports the hostname as `[::1]`; handed to ioredis like that the connect
+        // fails with a DNS lookup error for the bracketed string
+        assert.deepStrictEqual(parseRedisUrl('redis://[::1]:6379/2'), { host: '::1', port: 6379, db: 2 });
+        assert.strictEqual(parseRedisUrl('redis://[2001:db8::10]:6380').host, '2001:db8::10');
+        assert.strictEqual(parseRedisUrl('redis://[::ffff:7f00:1]').host, '::ffff:7f00:1');
+    });
 });

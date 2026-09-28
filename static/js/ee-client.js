@@ -1,3 +1,65 @@
+// Stylesheet inside the message body's shadow root (see _renderMessageBody). Host rules do not
+// reach in, so this carries everything the body needs: a reset on the host, the image cap, and
+// the folded-thread control. Custom properties still inherit through the boundary, which is how
+// the font and the dark mode colours arrive from .ee-client / .ee-dark-mode.
+const MESSAGE_BODY_STYLES = `
+    :host {
+        all: initial;
+        display: block;
+        color: inherit;
+        font-family: var(--ee-font, sans-serif);
+        font-size: 14px;
+        line-height: 1.6;
+        overflow-wrap: break-word;
+    }
+
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+    }
+
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Quoted thread history, folded away by EmailEngine - see _labelCollapsedThreads() */
+    .ee-collapsed-thread {
+        margin-top: 12px;
+    }
+
+    .ee-collapsed-thread-toggle {
+        display: inline-block;
+        padding: 4px 10px;
+        border: 1px solid var(--ee-toggle-border, #ddd);
+        border-radius: 4px;
+        background: var(--ee-toggle-bg, white);
+        color: var(--ee-toggle-color, inherit);
+        cursor: pointer;
+        /* The message brings its own fonts along; the control keeps the client's */
+        font-family: var(--ee-font, sans-serif);
+        font-size: 12px;
+        line-height: 1;
+        user-select: none;
+        list-style: none;
+    }
+
+    .ee-collapsed-thread-toggle:hover {
+        background: var(--ee-toggle-hover-bg, #f0f0f0);
+        border-color: var(--ee-toggle-hover-border, #ddd);
+    }
+
+    /* Same, for Safari before it supported list-style on a summary */
+    .ee-collapsed-thread-toggle::-webkit-details-marker {
+        display: none;
+    }
+
+    .ee-collapsed-thread[open] > .ee-collapsed-thread-toggle {
+        margin-bottom: 12px;
+    }
+`;
+
 export class EmailEngineClient {
     constructor(options = {}) {
         this.apiUrl = options.apiUrl || 'http://127.0.0.1:3000';
@@ -148,13 +210,27 @@ export class EmailEngineClient {
         return await response.json();
     }
 
+    // Base path for this account's endpoints. The id is a path segment, so characters such as
+    // '#', '?', '/' or '%' in it must be encoded or they cut or redirect the request.
+    _accountPath() {
+        return `/v1/account/${encodeURIComponent(this.account)}`;
+    }
+
+    _messagePath(messageId, suffix = '') {
+        return `${this._accountPath()}/message/${encodeURIComponent(messageId)}${suffix}`;
+    }
+
+    _attachmentPath(attachmentId) {
+        return `${this._accountPath()}/attachment/${encodeURIComponent(attachmentId)}`;
+    }
+
     async loadFolders() {
         // Reset the pane to its loading state so a retry after a failure does not
         // keep showing the previous error while the new request is in flight.
         this._setPaneHtml('.ee-folder-tree', '<div class="ee-loading">Loading folders...</div>');
 
         try {
-            const data = await this.apiRequest('GET', `/v1/account/${this.account}/mailboxes`);
+            const data = await this.apiRequest('GET', `${this._accountPath()}/mailboxes`);
             this.folders = data.mailboxes || [];
             this._folderTreeCache = null;
             if (this.container) {
@@ -177,7 +253,7 @@ export class EmailEngineClient {
                 params.set('cursor', cursor);
             }
 
-            const data = await this.apiRequest('GET', `/v1/account/${this.account}/messages?${params}`);
+            const data = await this.apiRequest('GET', `${this._accountPath()}/messages?${params}`);
             this.messages = data.messages || [];
             this.currentFolder = path;
             this.nextPageCursor = data.nextPageCursor || null;
@@ -214,7 +290,7 @@ export class EmailEngineClient {
                 webSafeHtml: true,
                 markAsSeen: true
             });
-            const data = await this.apiRequest('GET', `/v1/account/${this.account}/message/${messageId}?${params}`);
+            const data = await this.apiRequest('GET', this._messagePath(messageId, `?${params}`));
             this.currentMessage = data;
 
             this.currentMessage.unseen = false;
@@ -254,7 +330,7 @@ export class EmailEngineClient {
         try {
             const flagUpdate = seen ? { flags: { add: ['\\Seen'] } } : { flags: { delete: ['\\Seen'] } };
 
-            await this.apiRequest('PUT', `/v1/account/${this.account}/message/${messageId}`, flagUpdate);
+            await this.apiRequest('PUT', this._messagePath(messageId), flagUpdate);
 
             const msg = this.messages.find(m => m.id === messageId);
             if (msg) {
@@ -280,7 +356,7 @@ export class EmailEngineClient {
 
     async deleteMessage(messageId) {
         try {
-            await this.apiRequest('DELETE', `/v1/account/${this.account}/message/${messageId}`);
+            await this.apiRequest('DELETE', this._messagePath(messageId));
 
             this.messages = this.messages.filter(m => m.id !== messageId);
             if (this.container) {
@@ -303,7 +379,7 @@ export class EmailEngineClient {
 
     async moveMessage(messageId, targetPath) {
         try {
-            await this.apiRequest('PUT', `/v1/account/${this.account}/message/${messageId}/move`, {
+            await this.apiRequest('PUT', this._messagePath(messageId, '/move'), {
                 path: targetPath
             });
 
@@ -336,7 +412,7 @@ export class EmailEngineClient {
     // of the instance; used as the From identity of saved drafts.
     async _getAccountInfo() {
         if (!this._accountInfo) {
-            this._accountInfo = await this.apiRequest('GET', `/v1/account/${this.account}`);
+            this._accountInfo = await this.apiRequest('GET', this._accountPath());
         }
         return this._accountInfo;
     }
@@ -349,7 +425,7 @@ export class EmailEngineClient {
                 text: text
             };
 
-            const response = await this.apiRequest('POST', `/v1/account/${this.account}/submit`, messageData);
+            const response = await this.apiRequest('POST', `${this._accountPath()}/submit`, messageData);
             return response;
         } catch (error) {
             console.error('Failed to send message:', error);
@@ -390,7 +466,7 @@ export class EmailEngineClient {
                 // Non-fatal: the draft is saved without a From header
             }
 
-            const response = await this.apiRequest('POST', `/v1/account/${this.account}/message`, messageData);
+            const response = await this.apiRequest('POST', `${this._accountPath()}/message`, messageData);
             return response;
         } catch (error) {
             console.error('Failed to save draft:', error);
@@ -400,11 +476,7 @@ export class EmailEngineClient {
 
     async submitDraft(messageId, options = null) {
         try {
-            const response = await this.apiRequest(
-                'POST',
-                `/v1/account/${this.account}/message/${messageId}/submit`,
-                options
-            );
+            const response = await this.apiRequest('POST', this._messagePath(messageId, '/submit'), options);
             return response;
         } catch (error) {
             console.error('Failed to submit draft:', error);
@@ -618,7 +690,7 @@ export class EmailEngineClient {
 
     async downloadAttachment(attachmentId, suggestedFilename = null) {
         try {
-            const response = await this._fetchBlob(`/v1/account/${this.account}/attachment/${attachmentId}`);
+            const response = await this._fetchBlob(this._attachmentPath(attachmentId));
 
             // Get filename from Content-Disposition header if available
             const contentDisposition = response.headers.get('content-disposition');
@@ -646,7 +718,7 @@ export class EmailEngineClient {
 
     async downloadOriginalMessage(messageId, subject = null) {
         try {
-            const response = await this._fetchBlob(`/v1/account/${this.account}/message/${messageId}/source`);
+            const response = await this._fetchBlob(this._messagePath(messageId, '/source'));
 
             // Get the email data
             const blob = await response.blob();
@@ -669,17 +741,24 @@ export class EmailEngineClient {
         }
     }
 
-    createStyles() {
-        if (typeof document === 'undefined') {
-            return;
-        }
-
+    // A <style> element carrying styleNonce, for the widget stylesheet and the message body's
+    // shadow root alike: a stylesheet inside a shadow root is checked against style-src-elem too.
+    _createStyle(css) {
         const style = document.createElement('style');
         if (this.styleNonce) {
             // the IDL property, which is what the policy check reads on an element a script inserts
             style.nonce = this.styleNonce;
         }
-        style.textContent = `
+        style.textContent = css;
+        return style;
+    }
+
+    createStyles() {
+        if (typeof document === 'undefined') {
+            return;
+        }
+
+        const style = this._createStyle(`
             .ee-client {
                 --ee-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
                 display: flex;
@@ -879,8 +958,7 @@ export class EmailEngineClient {
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
             
-            .ee-button,
-            .ee-collapsed-thread-toggle {
+            .ee-button {
                 padding: 4px 10px;
                 border: 1px solid #ddd;
                 background: white;
@@ -897,8 +975,7 @@ export class EmailEngineClient {
                 height: 24px;
             }
             
-            .ee-button:hover:not(:disabled),
-            .ee-collapsed-thread-toggle:hover {
+            .ee-button:hover:not(:disabled) {
                 background: #f0f0f0;
             }
             
@@ -932,38 +1009,6 @@ export class EmailEngineClient {
                 font-weight: 500;
             }
             
-            .ee-message-body {
-                line-height: 1.6;
-            }
-            
-            .ee-message-body img {
-                max-width: 100%;
-                height: auto;
-            }
-
-            /* Quoted thread history, folded away by EmailEngine - see _labelCollapsedThreads() */
-            .ee-collapsed-thread {
-                margin-top: 12px;
-            }
-
-            .ee-collapsed-thread-toggle {
-                display: inline-block;
-                height: auto;
-                /* The message brings its own fonts along; the control keeps the client's */
-                font-family: var(--ee-font);
-                user-select: none;
-                list-style: none;
-            }
-
-            /* Same, for Safari before it supported list-style on a summary */
-            .ee-collapsed-thread-toggle::-webkit-details-marker {
-                display: none;
-            }
-
-            .ee-collapsed-thread[open] > .ee-collapsed-thread-toggle {
-                margin-bottom: 12px;
-            }
-
             .ee-attachments {
                 margin-top: 16px;
                 padding-top: 16px;
@@ -1436,6 +1481,15 @@ export class EmailEngineClient {
                 color: #e0e0e0;
             }
 
+            /* Read inside the message body's shadow root, where .ee-dark-mode selectors cannot reach */
+            .ee-dark-mode {
+                --ee-toggle-bg: #333;
+                --ee-toggle-border: #444;
+                --ee-toggle-color: #e0e0e0;
+                --ee-toggle-hover-bg: #444;
+                --ee-toggle-hover-border: #555;
+            }
+
             .ee-dark-mode .ee-message-viewer {
                 background: #1a1a1a;
             }
@@ -1445,15 +1499,13 @@ export class EmailEngineClient {
                 border-color: #333;
             }
 
-            .ee-dark-mode .ee-button,
-            .ee-dark-mode .ee-collapsed-thread-toggle {
+            .ee-dark-mode .ee-button {
                 background: #333;
                 border-color: #444;
                 color: #e0e0e0;
             }
 
-            .ee-dark-mode .ee-button:hover,
-            .ee-dark-mode .ee-collapsed-thread-toggle:hover {
+            .ee-dark-mode .ee-button:hover {
                 background: #444;
                 border-color: #555;
             }
@@ -1564,7 +1616,7 @@ export class EmailEngineClient {
                 background: #66b2ff;
                 color: #1a1a1a;
             }
-        `;
+        `);
         document.head.appendChild(style);
         this._styleElement = style;
     }
@@ -1861,9 +1913,7 @@ export class EmailEngineClient {
                         ${this.escapeHtml(msg.subject || '(no subject)')}
                     </div>
                 </div>
-                <div class="ee-message-body">
-                    ${msg.text && msg.text.html ? msg.text.html : msg.text && msg.text.plain ? `<pre>${this.escapeHtml(msg.text.plain)}</pre>` : ''}
-                </div>
+                <div class="ee-message-body"></div>
                 ${
                     msg.attachments && msg.attachments.length > 0
                         ? `
@@ -1890,7 +1940,8 @@ export class EmailEngineClient {
         `;
         viewer.innerHTML = html;
 
-        this._labelCollapsedThreads(viewer);
+        const bodyRoot = this._renderMessageBody(viewer.querySelector('.ee-message-body'), msg);
+        this._labelCollapsedThreads(bodyRoot);
 
         const sendDraftButton = viewer.querySelector('[data-action="send-draft"]');
         if (sendDraftButton) {
@@ -1976,6 +2027,30 @@ export class EmailEngineClient {
         // Message content scrolling is now handled in loadMessage method
     }
 
+    // The message body goes into a shadow root on its container. Sanitised message HTML still
+    // carries class and id attributes, and in the host document those would pick up the host's
+    // own stylesheet (a utility class like "fixed inset-0" could cover the whole page) or collide
+    // with its ids. Inside the shadow root no host selector matches, while the message's inline
+    // style attributes keep working. The host element is the same .ee-message-body as before, so
+    // sizing and scrolling of the viewer are unchanged.
+    _renderMessageBody(host, msg) {
+        const root = host.attachShadow({ mode: 'open' });
+        const style = this._createStyle(MESSAGE_BODY_STYLES);
+
+        const content = document.createElement('div');
+        content.className = 'ee-message-body-content';
+        if (msg.text && msg.text.html) {
+            content.innerHTML = msg.text.html;
+        } else if (msg.text && msg.text.plain) {
+            const pre = document.createElement('pre');
+            pre.textContent = msg.text.plain;
+            content.appendChild(pre);
+        }
+
+        root.replaceChildren(style, content);
+        return root;
+    }
+
     // EmailEngine's web-safe HTML folds quoted thread history (reply history, forwarded content,
     // disclaimers) into a <details class="ee-collapsed-thread"> whose <summary> it leaves empty on
     // purpose, for the renderer to label. The fold is closed until the reader opens it.
@@ -1983,8 +2058,8 @@ export class EmailEngineClient {
     // A sender can put the same markup in their own HTML - it survives sanitization - so every
     // match is relabelled rather than trusted, and the control always reads as one of these two
     // labels instead of whatever text came with the message.
-    _labelCollapsedThreads(viewer) {
-        viewer.querySelectorAll('details.ee-collapsed-thread > summary.ee-collapsed-thread-toggle').forEach(toggle => {
+    _labelCollapsedThreads(root) {
+        root.querySelectorAll('details.ee-collapsed-thread > summary.ee-collapsed-thread-toggle').forEach(toggle => {
             const details = toggle.parentElement;
             const applyLabel = () => {
                 toggle.textContent = details.open ? 'Hide quoted text' : 'Show quoted text';
@@ -2381,7 +2456,7 @@ export class EmailEngineClient {
     async _keepTokenAlive() {
         try {
             // Ping account endpoint to keep token alive
-            await this.apiRequest('GET', `/v1/account/${this.account}`);
+            await this.apiRequest('GET', this._accountPath());
             console.debug('Keep-alive ping sent for sess_ token');
         } catch (error) {
             console.warn('Keep-alive ping failed:', error.message);

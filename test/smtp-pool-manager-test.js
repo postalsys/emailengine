@@ -87,7 +87,10 @@ test('generatePoolKey', async t => {
             name: makeSettings({ name: 'clienthost' }),
             localAddress: makeSettings({ localAddress: '10.0.0.9' }),
             proxy: makeSettings({ proxy: 'socks5://127.0.0.1:1080' }),
-            transactionLog: makeSettings({ transactionLog: true })
+            transactionLog: makeSettings({ transactionLog: true }),
+            tls: makeSettings({ tls: { rejectUnauthorized: false } }),
+            requireTLS: makeSettings({ requireTLS: true }),
+            ignoreTLS: makeSettings({ ignoreTLS: true })
         };
         for (const [field, settings] of Object.entries(variants)) {
             assert.notStrictEqual(generatePoolKey(settings), base, `${field} should affect the pool key`);

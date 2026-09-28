@@ -396,7 +396,9 @@ test.describe('admin shell', () => {
     });
 
     // The detail/edit/browse page tests need an existing account. The happy-path spec
-    // registers one when the full suite runs; standalone runs skip gracefully.
+    // registers one earlier in the full run, so a missing account there means that spec failed
+    // (an Ethereal or trial-endpoint outage) and these tests fail with it rather than reading as
+    // skipped. Running this file on its own, set EE_E2E_STANDALONE=1 to skip them instead.
     async function firstAccountUrl(page) {
         await page.goto('/admin/accounts');
         const row = page.locator('tbody tr td a[href^="/admin/accounts/"]').first();
@@ -406,11 +408,22 @@ test.describe('admin shell', () => {
         return row.getAttribute('href');
     }
 
+    async function requireAccountUrl(page) {
+        const url = await firstAccountUrl(page);
+        if (!url) {
+            test.skip(!!process.env.EE_E2E_STANDALONE, 'no account registered (EE_E2E_STANDALONE run)');
+            throw new Error(
+                'No account is registered. happy-path.spec.js registers one earlier in the full run, so check why it failed. ' +
+                    'To run this file on its own, set EE_E2E_STANDALONE=1 to skip the account-dependent tests.'
+            );
+        }
+        return url;
+    }
+
     test('account detail page: toolbar tooltips and modals', async ({ page }) => {
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
-        const url = await firstAccountUrl(page);
-        test.skip(!url, 'no account registered (standalone run)');
+        const url = await requireAccountUrl(page);
 
         await page.goto(url);
 
@@ -430,8 +443,7 @@ test.describe('admin shell', () => {
     test('account edit page: form renders', async ({ page }) => {
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
-        const url = await firstAccountUrl(page);
-        test.skip(!url, 'no account registered (standalone run)');
+        const url = await requireAccountUrl(page);
 
         await page.goto(`${url}/edit`);
         await expect(page.locator('#name')).toBeVisible();
@@ -448,8 +460,7 @@ test.describe('admin shell', () => {
         // api-tagged route naming that account, including the account edit that rewrites the
         // account's webhook target and stored credentials.
         await ensureAdminSession(page);
-        const url = await firstAccountUrl(page);
-        test.skip(!url, 'no account registered (standalone run)');
+        const url = await requireAccountUrl(page);
 
         const accountId = url.split('/').pop();
         await page.goto(`${url}/browse`);
@@ -513,8 +524,7 @@ test.describe('admin shell', () => {
     test('account browse page: ee-client widget initializes', async ({ page }) => {
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
-        const url = await firstAccountUrl(page);
-        test.skip(!url, 'no account registered (standalone run)');
+        const url = await requireAccountUrl(page);
 
         await page.goto(`${url}/browse`);
         await expect
@@ -1959,8 +1969,7 @@ test.describe('admin shell', () => {
     test('account edit: rename round-trip and folder-path datalist', async ({ page }) => {
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
-        const url = await firstAccountUrl(page);
-        test.skip(!url, 'no account registered (standalone run)');
+        const url = await requireAccountUrl(page);
 
         await page.goto(`${url}/edit`);
         const nameField = page.locator('#name');
@@ -1987,8 +1996,7 @@ test.describe('admin shell', () => {
     test('account detail: reconnect, sync, logs toggle/flush and logs download', async ({ page }) => {
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
-        const url = await firstAccountUrl(page);
-        test.skip(!url, 'no account registered (standalone run)');
+        const url = await requireAccountUrl(page);
         await page.goto(url);
 
         const toast = text => page.locator('#toastContainer .alert', { hasText: text });
@@ -2068,8 +2076,7 @@ test.describe('admin shell', () => {
     test('account detail: export flow completes and serves the download', async ({ page }) => {
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
-        const url = await firstAccountUrl(page);
-        test.skip(!url, 'no account registered (standalone run)');
+        const url = await requireAccountUrl(page);
         await page.goto(url);
 
         await page.locator('#request-export').click();
@@ -2099,8 +2106,7 @@ test.describe('admin shell', () => {
     test('topbar search: query and state filter narrow the accounts list', async ({ page }) => {
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
-        const url = await firstAccountUrl(page);
-        test.skip(!url, 'no account registered (standalone run)');
+        await requireAccountUrl(page);
 
         await page.goto('/admin/accounts');
         await page.locator('header form input[name="query"]').fill('e2e');

@@ -12,7 +12,7 @@ const assert = require('node:assert').strict;
 const { fetch: fetchCmd } = require('undici');
 
 const { startCapturingServer, stopServer } = require('./helpers/capture-http-server');
-const { fetchWithVettedRedirects, MAX_REDIRECTS } = require('../lib/egress-fetch');
+const { fetchWithVettedRedirects, readBodyCapped, MAX_REDIRECTS } = require('../lib/egress-fetch');
 
 // A capturing server that is shut down when the owning test ends
 async function serverFor(t, responder) {
@@ -169,5 +169,76 @@ test('fetchWithVettedRedirects', async t => {
 
         const res = await fetchWithVettedRedirects(fetchCmd, `${baseUrl}/a`);
         assert.equal(await res.text(), 'b');
+    });
+});
+
+test('readBodyCapped', async t => {
+    // Streams `size` bytes in 16 KB chunks, or without end when size is Infinity
+    const streamer = size => (res, req, closed) => {
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        let sent = 0;
+        const next = () => {
+            if (sent >= size) {
+                return res.end();
+            }
+            sent += 16 * 1024;
+            res.write('x'.repeat(16 * 1024), next);
+        };
+        res.on('close', () => closed.push(sent));
+        next();
+    };
+
+    async function server(t, handler) {
+        const closed = [];
+        const started = await startCapturingServer((res, req) => handler(res, req, closed));
+        t.after(() => {
+            started.server.closeAllConnections();
+            return stopServer(started.server);
+        });
+        return { baseUrl: started.baseUrl, closed };
+    }
+
+    await t.test('returns a body within the budget', async t => {
+        const { baseUrl } = await server(t, streamer(32 * 1024));
+        const res = await fetchCmd(`${baseUrl}/`);
+        assert.equal((await readBodyCapped(res, 64 * 1024)).length, 32 * 1024);
+    });
+
+    await t.test('refuses a body over the budget and cancels the stream', async t => {
+        const { baseUrl, closed } = await server(t, streamer(Infinity));
+        const res = await fetchCmd(`${baseUrl}/`);
+        await assert.rejects(readBodyCapped(res, 64 * 1024), err => err.code === 'EBODYTOOLARGE');
+
+        // The endless response was actually cut off, not merely ignored
+        const until = Date.now() + 2000;
+        while (!closed.length && Date.now() < until) {
+            await new Promise(resolve => setTimeout(resolve, 20));
+        }
+        assert.equal(closed.length, 1);
+    });
+
+    await t.test('applies the budget to a response without a stream too', async () => {
+        const stub = { body: null, text: async () => 'x'.repeat(10) };
+        await assert.rejects(readBodyCapped(stub, 5), err => err.code === 'EBODYTOOLARGE');
+        assert.equal(await readBodyCapped(stub, 10), 'x'.repeat(10));
+    });
+
+    await t.test('a redirect with an endless body is still followed', async t => {
+        let baseUrl;
+        ({ baseUrl } = await server(t, (res, req, closed) => {
+            if (req.path === '/a') {
+                res.writeHead(302, { Location: '/b' });
+                const timer = setInterval(() => res.write('x'.repeat(16 * 1024)), 1);
+                res.on('close', () => {
+                    clearInterval(timer);
+                    closed.push(true);
+                });
+                return;
+            }
+            ok(res, 'arrived');
+        }));
+
+        const res = await fetchWithVettedRedirects(fetchCmd, `${baseUrl}/a`, {});
+        assert.equal(await res.text(), 'arrived');
     });
 });

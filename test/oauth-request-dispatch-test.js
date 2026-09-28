@@ -65,74 +65,41 @@ test('Buffer payload dispatcher and Gmail endpoint selection', async t => {
         return new MailRuOauth(baseOpts);
     }
 
-    // Empty Buffer payloads should use retryAgent (retry on 429),
-    // non-empty Buffer payloads should use fetchAgent (no retry).
+    // The OAuth2 clients send a provider API request exactly once, whatever the payload shape:
+    // which failures are worth repeating is decided by the request layer above them
+    // (lib/email-client/api-retry.js), which knows the method and the provider's answers. The
+    // transport used to retry on its own as well, and one throttled call became up to 24 requests
+    for (const [label, createClient, method, payload] of [
+        ['Gmail: an empty Buffer payload', createGmail, 'post', Buffer.alloc(0)],
+        ['Gmail: a non-empty Buffer payload', createGmail, 'post', Buffer.from('binary-data')],
+        ['Gmail: a JSON object payload', createGmail, 'post', { key: 'value' }],
+        ['Gmail: a GET', createGmail, 'get', null],
+        ['Outlook: an empty Buffer payload', createOutlook, 'delete', Buffer.alloc(0)],
+        ['Outlook: a non-empty Buffer payload', createOutlook, 'post', Buffer.from('data')],
+        ['Outlook: a JSON object payload', createOutlook, 'post', { key: 'value' }],
+        ['Outlook: a GET', createOutlook, 'get', null]
+    ]) {
+        await t.test(`${label} is sent once and a 429 surfaces with its Retry-After`, async () => {
+            const { server, baseUrl, requestCounts } = await startTestServer('always-429');
+            try {
+                await assert.rejects(
+                    () => createClient().request('fake-token', `${baseUrl}/once`, method, payload),
+                    err => {
+                        assert.strictEqual(err.statusCode, 429);
+                        assert.strictEqual(err.oauthRequest.status, 429);
+                        assert.strictEqual(err.retryAfter, 0, 'the Retry-After header is parsed for the retry layer');
+                        assert.strictEqual(err.oauthRequest.retryAfter, 0);
+                        return true;
+                    }
+                );
+                assert.strictEqual(requestCounts['/once'], 1);
+            } finally {
+                await stopServer(server);
+            }
+        });
+    }
 
-    await t.test('Gmail: empty Buffer payload retries on 429', async () => {
-        const { server, baseUrl, requestCounts } = await startTestServer('429-then-200');
-        try {
-            const result = await createGmail().request('fake-token', `${baseUrl}/gmail-empty-buf`, 'post', Buffer.alloc(0));
-            assert.deepStrictEqual(result, { ok: true, attempt: 2 });
-            assert.ok(requestCounts['/gmail-empty-buf'] >= 2, 'Empty buffer POST should be retried on 429');
-        } finally {
-            await stopServer(server);
-        }
-    });
-
-    await t.test('Gmail: non-empty Buffer payload does not retry on 429', async () => {
-        const { server, baseUrl, requestCounts } = await startTestServer('always-429');
-        try {
-            await assert.rejects(
-                () => createGmail().request('fake-token', `${baseUrl}/gmail-nonempty-buf`, 'post', Buffer.from('binary-data')),
-                err => {
-                    assert.strictEqual(err.oauthRequest.status, 429);
-                    return true;
-                }
-            );
-            assert.strictEqual(requestCounts['/gmail-nonempty-buf'], 1, 'Non-empty buffer should not retry');
-        } finally {
-            await stopServer(server);
-        }
-    });
-
-    await t.test('Gmail: JSON object payload retries on 429 (baseline)', async () => {
-        const { server, baseUrl, requestCounts } = await startTestServer('429-then-200');
-        try {
-            const result = await createGmail().request('fake-token', `${baseUrl}/gmail-json`, 'post', { key: 'value' });
-            assert.deepStrictEqual(result, { ok: true, attempt: 2 });
-            assert.ok(requestCounts['/gmail-json'] >= 2, 'JSON payload should be retried on 429');
-        } finally {
-            await stopServer(server);
-        }
-    });
-
-    await t.test('Outlook: empty Buffer payload retries on 429', async () => {
-        const { server, baseUrl, requestCounts } = await startTestServer('429-then-200');
-        try {
-            const result = await createOutlook().request('fake-token', `${baseUrl}/outlook-empty-buf`, 'delete', Buffer.alloc(0));
-            assert.deepStrictEqual(result, { ok: true, attempt: 2 });
-            assert.ok(requestCounts['/outlook-empty-buf'] >= 2, 'Empty buffer DELETE should be retried on 429');
-        } finally {
-            await stopServer(server);
-        }
-    });
-
-    await t.test('Outlook: non-empty Buffer payload does not retry on 429', async () => {
-        const { server, baseUrl, requestCounts } = await startTestServer('always-429');
-        try {
-            await assert.rejects(
-                () => createOutlook().request('fake-token', `${baseUrl}/outlook-nonempty-buf`, 'post', Buffer.from('data')),
-                err => {
-                    assert.strictEqual(err.oauthRequest.status, 429);
-                    return true;
-                }
-            );
-            assert.strictEqual(requestCounts['/outlook-nonempty-buf'], 1, 'Non-empty buffer should not retry');
-        } finally {
-            await stopServer(server);
-        }
-    });
-
+    // Mail.ru keeps the transport-level retry (its API is only asked for the user profile)
     await t.test('Mail.ru: empty Buffer payload retries on 429', async () => {
         const { server, baseUrl, requestCounts } = await startTestServer('429-then-200');
         try {
@@ -157,6 +124,102 @@ test('Buffer payload dispatcher and Gmail endpoint selection', async t => {
             assert.strictEqual(requestCounts['/mailru-nonempty-buf'], 1, 'Non-empty buffer should not retry');
         } finally {
             await stopServer(server);
+        }
+    });
+
+    await t.test('Outlook: the send requests are marked noRetry', async () => {
+        const { buildStructuredSendMailRequest, buildDraftSendRequest, buildRawSendMailRequest } = require('../lib/email-client/outlook/send-request');
+        assert.strictEqual(buildStructuredSendMailRequest({ subject: 'x' }, 'me').options.noRetry, true);
+        assert.strictEqual(buildDraftSendRequest('msg-1', 'me').options.noRetry, true);
+        assert.strictEqual(buildRawSendMailRequest(Buffer.from('raw'), 'me').options.noRetry, true);
+    });
+
+    // The retry layer, driven through the real OAuth2 clients against the local server: a
+    // throttled read is repeated after the Retry-After the server sent, a send is not
+    const gmailApi = require('../lib/email-client/gmail/gmail-api');
+    const graphApi = require('../lib/email-client/outlook/graph-api');
+    const { noopLogger } = require('./helpers/auth-failure');
+
+    function apiContext(oAuth2Client) {
+        return {
+            account: 'test-account',
+            logger: noopLogger,
+            getTokenData: async () => ({ accessToken: 'fake-token', cached: false }),
+            invalidateAccessToken: async () => {},
+            oAuth2Client
+        };
+    }
+
+    await t.test('Gmail: the request layer repeats a throttled read once the server allows it', async () => {
+        const { server, baseUrl, requestCounts } = await startTestServer('429-then-200');
+        try {
+            const result = await gmailApi.request(apiContext(createGmail()), `${baseUrl}/gmail-throttled-get`, 'get');
+            assert.deepStrictEqual(result, { ok: true, attempt: 2 });
+            assert.strictEqual(requestCounts['/gmail-throttled-get'], 2);
+        } finally {
+            await stopServer(server);
+        }
+    });
+
+    await t.test('Gmail: a noRetry send is sent exactly once', async () => {
+        const { server, baseUrl, requestCounts } = await startTestServer('always-429');
+        try {
+            await assert.rejects(
+                () => gmailApi.request(apiContext(createGmail()), `${baseUrl}/gmail-send`, 'post', { raw: 'abc' }, { noRetry: true }),
+                err => err.oauthRequest.status === 429
+            );
+            assert.strictEqual(requestCounts['/gmail-send'], 1);
+        } finally {
+            await stopServer(server);
+        }
+    });
+
+    await t.test('Outlook: the request layer repeats a throttled read once the server allows it', async () => {
+        const { server, baseUrl, requestCounts } = await startTestServer('429-then-200');
+        try {
+            const outlook = createOutlook();
+            outlook.apiBase = baseUrl;
+            const result = await graphApi.requestWithRetry(apiContext(outlook), '/outlook-throttled-get', 'get');
+            assert.deepStrictEqual(result, { ok: true, attempt: 2 });
+            assert.strictEqual(requestCounts['/v1.0/outlook-throttled-get'], 2);
+        } finally {
+            await stopServer(server);
+        }
+    });
+
+    await t.test('Outlook: a noRetry send is sent exactly once', async () => {
+        const { server, baseUrl, requestCounts } = await startTestServer('always-429');
+        try {
+            const { buildStructuredSendMailRequest } = require('../lib/email-client/outlook/send-request');
+            const outlook = createOutlook();
+            outlook.apiBase = baseUrl;
+            const structured = buildStructuredSendMailRequest({ subject: 'x' }, 'me');
+            await assert.rejects(
+                () => graphApi.requestWithRetry(apiContext(outlook), structured.path, 'post', structured.body, structured.options),
+                err => err.oauthRequest.status === 429
+            );
+            assert.strictEqual(requestCounts['/v1.0/me/sendMail'], 1);
+        } finally {
+            await stopServer(server);
+        }
+    });
+
+    // $value endpoints return raw MIME; a text round-trip replaced every non-UTF-8 byte with U+FFFD
+    await t.test('Outlook: returnBuffer keeps 8-bit bytes intact', async () => {
+        const body = Buffer.from([0x53, 0x75, 0x62, 0x6a, 0x3a, 0x20, 0xe4, 0xf6, 0xfc, 0xff, 0x80]);
+        const binServer = http.createServer((req, res) => {
+            res.writeHead(200, { 'Content-Type': 'application/octet-stream' });
+            res.end(body);
+        });
+        await new Promise(resolve => binServer.listen(0, '127.0.0.1', resolve));
+        try {
+            const result = await createOutlook().request('fake-token', `http://127.0.0.1:${binServer.address().port}/$value`, 'get', Buffer.alloc(0), {
+                returnBuffer: true
+            });
+            assert.ok(Buffer.isBuffer(result));
+            assert.ok(result.equals(body));
+        } finally {
+            await stopServer(binServer);
         }
     });
 

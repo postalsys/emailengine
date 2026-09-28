@@ -13,20 +13,45 @@ const { fetch } = require('undici');
 const POLL_INTERVAL = 500;
 const TIMEOUT = 120 * 1000;
 
-async function waitForServer() {
+// `child` is the spawned server process, when the caller has one. Without it a server that
+// crashed on boot was only noticed after the whole two minute timeout, and a stale listener on
+// the same port could answer /health in its place.
+function exitDescription(child) {
+    if (!child) {
+        return null;
+    }
+    if (child.exitCode !== null) {
+        return `exit code ${child.exitCode}`;
+    }
+    if (child.signalCode !== null) {
+        return `signal ${child.signalCode}`;
+    }
+    return null;
+}
+
+async function waitForServer({ child } = {}) {
     const url = `http://127.0.0.1:${config.api.port}/health`;
     let started = Date.now();
     while (Date.now() - started < TIMEOUT) {
+        let ready = false;
         try {
             let res = await fetch(url);
-            if (res.ok) {
-                console.log(`Server is ready at ${url} (waited ${((Date.now() - started) / 1000).toFixed(1)}s)`);
-                return;
-            }
+            ready = res.ok;
             // consume the body so the keep-alive socket can be reused between polls
             await res.body?.cancel();
         } catch (err) {
             // server is not listening yet, keep polling
+        }
+
+        // Checked after the probe too: a 200 may have come from the process that has just died
+        let exited = exitDescription(child);
+        if (exited) {
+            throw new Error(`Server process exited (${exited}) before ${url} became ready`);
+        }
+
+        if (ready) {
+            console.log(`Server is ready at ${url} (waited ${((Date.now() - started) / 1000).toFixed(1)}s)`);
+            return;
         }
         await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
     }

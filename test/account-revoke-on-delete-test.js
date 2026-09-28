@@ -1,7 +1,5 @@
 'use strict';
 
-require('dotenv').config({ quiet: true });
-
 const http = require('node:http');
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -14,17 +12,19 @@ const { Account } = require('../lib/account');
 const { REDIS_PREFIX } = require('../lib/consts');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
-// Module level, not inside the test: when the suite skips for missing credentials a `t.after()`
-// registered in that callback never runs, and this file used to hang instead of skipping cleanly.
+// Module level, not inside the test: a `t.after()` registered in a test callback never runs when
+// that test is skipped, and this file used to hang instead of skipping cleanly.
 registerRedisTeardown();
 
-// Skip the entire suite if Gmail test credentials aren't provisioned for this environment.
-const hasGmailCredentials = !!(
-    process.env.GMAIL_API_CLIENT_ID &&
-    process.env.GMAIL_API_CLIENT_SECRET &&
-    process.env.GMAIL_API_ACCOUNT_EMAIL_1 &&
-    process.env.GMAIL_API_ACCOUNT_REFRESH_1
-);
+// Fixed dummy values. Nothing here reaches Google: the revoke URL is the local capture server below
+// and a revoke call sends the stored token verbatim, so opaque strings exercise the same path the
+// real credentials did. The suite used to be gated on live Gmail secrets and silently skipped
+// wherever they were missing (forks, dependabot, a fresh checkout).
+const TEST_CLIENT_ID = 'revoke-test-client-id.apps.googleusercontent.com';
+const TEST_CLIENT_SECRET = 'revoke-test-client-secret';
+const TEST_PROJECT_ID = 'revoke-test-project';
+const TEST_ACCOUNT_EMAIL = 'revoke-test@example.com';
+const TEST_REFRESH_TOKEN = '1//revoke-test-refresh-token';
 
 const TEST_GMAIL_APP = 'test-revoke-gmail-app';
 const TEST_GMAIL_SERVICE_APP = 'test-revoke-gmail-service-app';
@@ -34,7 +34,7 @@ function makeStubLogger() {
     return { trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop };
 }
 
-test('OAuth2 revoke on account delete', { skip: hasGmailCredentials ? false : 'Gmail test credentials not set in env' }, async t => {
+test('OAuth2 revoke on account delete', async t => {
     const redis = new Redis(config.dbs.redis);
 
     // Local capture server impersonates the OAuth2 revoke endpoint so the test does not actually
@@ -65,7 +65,7 @@ test('OAuth2 revoke on account delete', { skip: hasGmailCredentials ? false : 'G
     const captureRevokeUrl = `http://127.0.0.1:${capturePort}/revoke`;
 
     // Override oauth2Apps.get/getClient for our synthetic provider ids so the real Gmail OAuth2 client
-    // is constructed with the env-provided credentials but its revokeUrl points at the local capture
+    // is constructed with the dummy credentials but its revokeUrl points at the local capture
     // server. Other provider ids fall through to the original implementations.
     const originalGet = oauth2AppsModule.oauth2Apps.get.bind(oauth2AppsModule.oauth2Apps);
     const originalGetClient = oauth2AppsModule.oauth2Apps.getClient.bind(oauth2AppsModule.oauth2Apps);
@@ -83,11 +83,11 @@ test('OAuth2 revoke on account delete', { skip: hasGmailCredentials ? false : 'G
     oauth2AppsModule.oauth2Apps.getClient = async (provider, opts) => {
         if (provider === TEST_GMAIL_APP) {
             const client = new GmailOauth({
-                clientId: process.env.GMAIL_API_CLIENT_ID,
-                clientSecret: process.env.GMAIL_API_CLIENT_SECRET,
+                clientId: TEST_CLIENT_ID,
+                clientSecret: TEST_CLIENT_SECRET,
                 redirectUrl: 'http://127.0.0.1:7003/oauth',
                 scopes: ['https://www.googleapis.com/auth/gmail.modify'],
-                googleProjectId: process.env.GMAIL_API_PROJECT_ID,
+                googleProjectId: TEST_PROJECT_ID,
                 setFlag: async () => {},
                 logger: opts && opts.logger
             });
@@ -98,11 +98,11 @@ test('OAuth2 revoke on account delete', { skip: hasGmailCredentials ? false : 'G
         if (provider === TEST_GMAIL_SERVICE_APP) {
             const client = new GmailOauth({
                 authMethod: 'serviceKey',
-                serviceClient: process.env.GMAIL_API_SERVICE_CLIENT || 'stub-service-client',
-                serviceClientEmail: process.env.GMAIL_API_SERVICE_EMAIL || 'stub-sa@example.com',
-                serviceKey: process.env.GMAIL_API_SERVICE_KEY,
+                serviceClient: 'stub-service-client',
+                serviceClientEmail: 'stub-sa@example.com',
+                serviceKey: 'stub-service-key',
                 scopes: ['https://www.googleapis.com/auth/gmail.modify'],
-                googleProjectId: process.env.GMAIL_API_PROJECT_ID,
+                googleProjectId: TEST_PROJECT_ID,
                 setFlag: async () => {},
                 logger: opts && opts.logger
             });
@@ -154,14 +154,14 @@ test('OAuth2 revoke on account delete', { skip: hasGmailCredentials ? false : 'G
         resetCapture();
 
         const accountId = `revoke-it-${Date.now()}-a`;
-        const refreshToken = process.env.GMAIL_API_ACCOUNT_REFRESH_1;
+        const refreshToken = TEST_REFRESH_TOKEN;
 
         const account = await seedAccount(accountId, {
             name: 'Revoke Test',
-            email: process.env.GMAIL_API_ACCOUNT_EMAIL_1,
+            email: TEST_ACCOUNT_EMAIL,
             oauth2: {
                 provider: TEST_GMAIL_APP,
-                auth: { user: process.env.GMAIL_API_ACCOUNT_EMAIL_1 },
+                auth: { user: TEST_ACCOUNT_EMAIL },
                 refreshToken,
                 accessToken: 'sentinel-access-token-should-not-be-used'
             }
@@ -192,10 +192,10 @@ test('OAuth2 revoke on account delete', { skip: hasGmailCredentials ? false : 'G
 
         const account = await seedAccount(accountId, {
             name: 'Revoke Fallback',
-            email: process.env.GMAIL_API_ACCOUNT_EMAIL_1,
+            email: TEST_ACCOUNT_EMAIL,
             oauth2: {
                 provider: TEST_GMAIL_APP,
-                auth: { user: process.env.GMAIL_API_ACCOUNT_EMAIL_1 },
+                auth: { user: TEST_ACCOUNT_EMAIL },
                 accessToken
             }
         });
@@ -218,11 +218,11 @@ test('OAuth2 revoke on account delete', { skip: hasGmailCredentials ? false : 'G
 
         const account = await seedAccount(accountId, {
             name: 'No Revoke',
-            email: process.env.GMAIL_API_ACCOUNT_EMAIL_1,
+            email: TEST_ACCOUNT_EMAIL,
             oauth2: {
                 provider: TEST_GMAIL_APP,
-                auth: { user: process.env.GMAIL_API_ACCOUNT_EMAIL_1 },
-                refreshToken: process.env.GMAIL_API_ACCOUNT_REFRESH_1
+                auth: { user: TEST_ACCOUNT_EMAIL },
+                refreshToken: TEST_REFRESH_TOKEN
             }
         });
 
@@ -242,10 +242,10 @@ test('OAuth2 revoke on account delete', { skip: hasGmailCredentials ? false : 'G
 
         const account = await seedAccount(accountId, {
             name: 'Service Account',
-            email: process.env.GMAIL_API_ACCOUNT_EMAIL_1,
+            email: TEST_ACCOUNT_EMAIL,
             oauth2: {
                 provider: TEST_GMAIL_SERVICE_APP,
-                auth: { user: process.env.GMAIL_API_ACCOUNT_EMAIL_1 },
+                auth: { user: TEST_ACCOUNT_EMAIL },
                 accessToken: 'gmailService-access-token'
             }
         });
@@ -268,10 +268,10 @@ test('OAuth2 revoke on account delete', { skip: hasGmailCredentials ? false : 'G
 
         const account = await seedAccount(accountId, {
             name: 'Revoke Error',
-            email: process.env.GMAIL_API_ACCOUNT_EMAIL_1,
+            email: TEST_ACCOUNT_EMAIL,
             oauth2: {
                 provider: TEST_GMAIL_APP,
-                auth: { user: process.env.GMAIL_API_ACCOUNT_EMAIL_1 },
+                auth: { user: TEST_ACCOUNT_EMAIL },
                 refreshToken: 'definitely-not-a-real-token'
             }
         });

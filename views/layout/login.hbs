@@ -23,7 +23,8 @@
           login form never emits this and no user input reaches the string. Why that page navigates
           itself instead of the server answering a redirect is the whole story in the view. --}}
     {{#if ssoRedirectUrl}}
-    <script data-cfasync="false" nonce="{{cspNonce}}">window.location.replace('{{ssoRedirectUrl}}');</script>
+    <meta name="ee-sso-redirect" content="{{ssoRedirectUrl}}">
+    <script data-cfasync="false" nonce="{{cspNonce}}">window.location.replace(document.querySelector('meta[name="ee-sso-redirect"]').content);</script>
     {{/if}}
 
     {{> head_assets}}

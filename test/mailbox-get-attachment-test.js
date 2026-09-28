@@ -46,6 +46,7 @@ function createMockContext({
         path: 'INBOX',
         listingEntry: { path: 'INBOX' },
         logger: { trace() {}, debug() {}, info() {}, warn() {}, error() {} },
+        lockForMessage: Mailbox.prototype.lockForMessage,
         getMailboxLock: async () => ({
             release() {
                 events.push('release');
@@ -211,5 +212,52 @@ test('Mailbox.getText() lock handling', async t => {
         await Mailbox.prototype.getText.call(ctx, { uid: 42 }, ['1'], { skipLock: true }, {});
 
         assert.deepEqual(events, [], 'skipLock means an outer operation owns the lock and gives it back itself');
+    });
+});
+
+test('Mailbox.getAttachment() download size cap', async t => {
+    const { MAX_ALLOWED_DOWNLOAD_SIZE } = require('../lib/consts');
+
+    // `Math.min(options.maxBytes || 0, MAX_ALLOWED_DOWNLOAD_SIZE)` came out as 0 for a caller that
+    // passed no limit, and ImapFlow reads 0 as "no limit": forwarded attachments and draft
+    // submissions, which buffer the whole stream, downloaded with no cap at all
+    function capturingContext() {
+        const requested = [];
+        const { ctx } = createMockContext();
+        const connectionClient = {
+            download: async (uid, part, opts) => {
+                requested.push(opts.maxBytes);
+                return { meta: { contentType: 'application/pdf' }, content: new PassThrough() };
+            }
+        };
+        ctx.connection.getImapConnection = async () => connectionClient;
+        return { ctx, requested };
+    }
+
+    await t.test('a download without maxBytes is capped at MAX_ALLOWED_DOWNLOAD_SIZE', async () => {
+        const { ctx, requested } = capturingContext();
+
+        const content = await Mailbox.prototype.getAttachment.call(ctx, { uid: 42 }, '2', {}, {});
+        content.destroy();
+
+        assert.deepEqual(requested, [MAX_ALLOWED_DOWNLOAD_SIZE]);
+    });
+
+    await t.test('a raw message download without maxBytes is capped too', async () => {
+        const { ctx, requested } = capturingContext();
+
+        const content = await Mailbox.prototype.getAttachment.call(ctx, { uid: 42 }, false, {}, {});
+        content.destroy();
+
+        assert.deepEqual(requested, [MAX_ALLOWED_DOWNLOAD_SIZE]);
+    });
+
+    await t.test('a smaller caller limit is kept', async () => {
+        const { ctx, requested } = capturingContext();
+
+        const content = await Mailbox.prototype.getAttachment.call(ctx, { uid: 42 }, '2', { maxBytes: 1024 }, {});
+        content.destroy();
+
+        assert.deepEqual(requested, [1024]);
     });
 });

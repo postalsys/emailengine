@@ -249,6 +249,7 @@ test('GmailClient.submitMessage draft handling', async t => {
         assert.strictEqual(result.messageId, '<draft-1@example.com>');
         assert.strictEqual(calls.length, 1, 'only the drafts.send call is expected');
         assert.deepStrictEqual(calls[0].payload, { id: 'r-draft-1' });
+        assert.strictEqual(calls[0].options.noRetry, true, 'a send is never repeated');
         assert.strictEqual(notifications.length, 1);
         assert.strictEqual(notifications[0].payload.queueId, 'queue-1');
     });
@@ -272,6 +273,74 @@ test('GmailClient.submitMessage draft handling', async t => {
             calls.find(call => call.url.includes('/messages/msg-1/trash')),
             'the origin draft message must be moved to Trash'
         );
+    });
+});
+
+// Once messages/send has answered, the message is out. The Message-ID read-back used to run
+// unguarded BEFORE the smtp-completed progress write, so a failed read rejected the job with
+// progress still unset and the submit worker retried it: a duplicate for the recipient.
+test('GmailClient.submitMessage after a successful send', async t => {
+    const READ_SCOPES = ['https://www.googleapis.com/auth/gmail.modify'];
+
+    function armProgress(client) {
+        const progress = [];
+        client.submitQueue = {
+            getJob: async () => ({
+                updateProgress: async value => {
+                    progress.push(value);
+                }
+            })
+        };
+        return progress;
+    }
+
+    await t.test('a failing Message-ID read does not reject and keeps the progress marker', async () => {
+        const { gmail, calls } = makeGmailClient([
+            ['/messages/send', { id: 'msg-sent-1', threadId: 'thread-1', labelIds: ['SENT'] }],
+            ['/messages/msg-sent-1', oauthApiError(503)]
+        ]);
+        const notifications = armSubmitStubs(gmail, { oauth2: { accessToken: { scope: READ_SCOPES } } });
+        const progress = armProgress(gmail);
+
+        const result = await gmail.submitMessage(QUEUE_ENTRY());
+
+        assert.ok(
+            calls.find(call => call.url.includes('/messages/msg-sent-1')),
+            'the read-back was attempted'
+        );
+        assert.strictEqual(result.messageId, '<draft-1@example.com>', 'falls back to the original Message-ID');
+        assert.strictEqual(progress.length, 1);
+        assert.strictEqual(progress[0].status, 'smtp-completed');
+        assert.strictEqual(notifications.length, 1, 'messageSent is still announced');
+    });
+
+    await t.test('the progress marker is written once, before the read-back runs', async () => {
+        let progress;
+        const { gmail } = makeGmailClient([
+            ['/messages/send', { id: 'msg-sent-1', threadId: 'thread-1', labelIds: ['SENT'] }],
+            [
+                '/messages/msg-sent-1',
+                () => {
+                    assert.strictEqual(progress.length, 1, 'smtp-completed must already be recorded');
+                    return { payload: { headers: [{ name: 'Message-Id', value: '<rewritten@mail.gmail.com>' }] } };
+                }
+            ]
+        ]);
+        const notifications = armSubmitStubs(gmail, { oauth2: { accessToken: { scope: READ_SCOPES } } });
+        progress = armProgress(gmail);
+
+        const result = await gmail.submitMessage(QUEUE_ENTRY());
+
+        // The rewritten id travels in the result and the messageSent notification, not in a
+        // second progress write: the first one is the duplicate-send guard and needs no update
+        assert.strictEqual(result.messageId, '<rewritten@mail.gmail.com>');
+        assert.deepStrictEqual(
+            progress.map(entry => [entry.status, entry.messageId, entry.originalMessageId]),
+            [['smtp-completed', '<draft-1@example.com>', '<draft-1@example.com>']]
+        );
+        assert.strictEqual(notifications.length, 1);
+        assert.strictEqual(notifications[0].payload.messageId, '<rewritten@mail.gmail.com>');
+        assert.strictEqual(notifications[0].payload.originalMessageId, '<draft-1@example.com>');
     });
 });
 

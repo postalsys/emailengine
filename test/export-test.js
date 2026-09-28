@@ -94,7 +94,7 @@ function createMockRedis() {
         scan: async () => ['0', []],
         quit: async () => {},
         disconnect: () => {},
-        subscribe: () => {},
+        subscribe: async () => {},
         on: () => {},
         off: () => {},
         defineCommand: () => {},
@@ -126,7 +126,7 @@ require.cache[dbPath] = {
 };
 
 // Now safe to import production modules
-const { Export, generateExportId, calculateScore, getExportKey, getExportQueueKey, isOwnExportFile } = require('../lib/export');
+const { Export, generateExportId, calculateScore, getExportKey, getExportQueueKey, exportFilePath } = require('../lib/export');
 const { REDIS_PREFIX } = require('../lib/consts');
 
 test('Export functionality tests', async t => {
@@ -758,30 +758,43 @@ test('Export functionality tests', async t => {
     });
 
     // File containment: the download and delete paths read `filePath` back from Redis, and only
-    // the export's own file may be served or unlinked through it
-    await t.test('isOwnExportFile() accepts the export file, plain or encrypted, in any directory', () => {
+    // the export's own file may be served or unlinked through it - the name is always derived
+    // from the id, the stored path only says which directory the export was written to
+    await t.test('exportFilePath() names the export file, plain or encrypted, in the stored directory', () => {
         const exportId = generateExportId();
-        assert.strictEqual(isOwnExportFile(exportId, `/var/exports/${exportId}.ndjson.gz`), true);
-        assert.strictEqual(isOwnExportFile(exportId, `/tmp/old-location/${exportId}.ndjson.gz.enc`), true);
+        assert.strictEqual(
+            exportFilePath(exportId, { filePath: `/var/exports/${exportId}.ndjson.gz`, isEncrypted: '0' }),
+            `/var/exports/${exportId}.ndjson.gz`
+        );
+        assert.strictEqual(
+            exportFilePath(exportId, { filePath: `/tmp/old-location/${exportId}.ndjson.gz.enc`, isEncrypted: '1' }),
+            `/tmp/old-location/${exportId}.ndjson.gz.enc`,
+            'an older export still lives where it was written'
+        );
     });
 
-    await t.test('isOwnExportFile() refuses anything that is not the export file', () => {
+    await t.test('exportFilePath() never yields anything but the export file', () => {
         const exportId = generateExportId();
         const other = generateExportId();
-        assert.strictEqual(isOwnExportFile(exportId, `/var/exports/${other}.ndjson.gz`), false, 'another export');
-        assert.strictEqual(isOwnExportFile(exportId, '/etc/passwd'), false);
-        assert.strictEqual(isOwnExportFile(exportId, `/var/exports/${exportId}.ndjson.gz/../../etc/passwd`), false, 'a traversal behind the name');
-        assert.strictEqual(isOwnExportFile(exportId, `/var/exports/${exportId}.ndjson`), false, 'wrong extension');
-        assert.strictEqual(isOwnExportFile(exportId, ''), false);
-        assert.strictEqual(isOwnExportFile(exportId, null), false);
-        assert.strictEqual(isOwnExportFile('', `/var/exports/.ndjson.gz`), false);
+        assert.strictEqual(exportFilePath(exportId, { filePath: `/var/exports/${other}.ndjson.gz` }), `/var/exports/${exportId}.ndjson.gz`, 'another export');
+        assert.strictEqual(exportFilePath(exportId, { filePath: '/etc/passwd' }), `/etc/${exportId}.ndjson.gz`);
+        assert.strictEqual(
+            exportFilePath(exportId, { filePath: `/var/exports/${exportId}.ndjson.gz/../../etc/passwd` }),
+            `/var/etc/${exportId}.ndjson.gz`,
+            'a traversal behind the name'
+        );
+        assert.strictEqual(exportFilePath(exportId, { filePath: '' }), null);
+        assert.strictEqual(exportFilePath(exportId, { filePath: null }), null);
+        assert.strictEqual(exportFilePath(exportId, {}), null);
+        assert.strictEqual(exportFilePath('', { filePath: `/var/exports/.ndjson.gz` }), null);
     });
 
-    await t.test('Export.getFile() refuses a stored path that is not the export file', async () => {
+    await t.test('Export.getFile() never serves a stored path that is not the export file', async () => {
         const account = 'contain-acct';
         const exportId = generateExportId();
         mockRedisData[getExportKey(account, exportId)] = { exportId, account, status: 'completed', filePath: '/etc/hosts', isEncrypted: '0' };
 
+        // the derived name does not exist in that directory, so it is a missing file, not /etc/hosts
         await assert.rejects(Export.getFile(account, exportId), err => err.code === 'FileNotFound' && err.statusCode === 404);
     });
 

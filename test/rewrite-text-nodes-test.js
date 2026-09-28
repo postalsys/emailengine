@@ -211,4 +211,26 @@ test('rewriteTextNodes', async t => {
             MimeNode.prototype.getDecoder = realGetDecoder;
         }
     });
+
+    await t.test('rejects instead of crashing when the message has more MIME nodes than the splitter allows', async () => {
+        const lines = ['From: a@example.com', 'MIME-Version: 1.0', 'Content-Type: multipart/mixed; boundary="xx"', ''];
+        for (let i = 0; i < 1100; i++) {
+            lines.push('--xx', 'Content-Type: text/html', '', `<p>part${i}</p>`);
+        }
+        lines.push('--xx--', '');
+        for (const source of [msg(lines), Buffer.from(msg(lines))]) {
+            await assert.rejects(
+                () => rewriteTextNodes(source, { htmlRewriter: tagging }),
+                err => err.code === 'EMAXLEN' && err.responseCode === 552
+            );
+        }
+    });
+
+    await t.test('rejects instead of crashing on an oversized header block', async () => {
+        const source = msg(['From: a@example.com', `X-Big: ${'a'.repeat(1100 * 1024)}`, 'Content-Type: text/html', '', '<p>x</p>']);
+        await assert.rejects(
+            () => rewriteTextNodes(source, { htmlRewriter: tagging }),
+            err => err.code === 'EMAXLEN'
+        );
+    });
 });

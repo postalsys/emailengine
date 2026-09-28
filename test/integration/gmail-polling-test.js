@@ -14,6 +14,7 @@ const supertest = require('supertest');
 const test = require('node:test');
 const assert = require('node:assert').strict;
 const webhooksServer = require('./webhooks-server');
+const { skipUnlessEnv } = require('./helpers');
 
 const accessToken = '2aa97ad0456d6624a55d30780aa2ff61bfb7edc6fa00935b40814b271e718660';
 const server = supertest.agent(`http://127.0.0.1:${config.api.port}`).auth(accessToken, { type: 'bearer' });
@@ -33,7 +34,18 @@ async function waitForCondition(checkFn, { interval = 1000, timeout = 120000, me
     throw new Error(`Timeout: ${message}`);
 }
 
-test('Gmail polling without Pub/Sub detects new mail', async t => {
+// Talks to live Gmail throughout; skipped as a whole without the credentials
+const gmailSkip = skipUnlessEnv(
+    'GMAIL_API_PROJECT_ID',
+    'GMAIL_API_CLIENT_ID',
+    'GMAIL_API_CLIENT_SECRET',
+    'GMAIL_API_ACCOUNT_EMAIL_1',
+    'GMAIL_API_ACCOUNT_REFRESH_1',
+    'GMAIL_API_ACCOUNT_EMAIL_2',
+    'GMAIL_API_ACCOUNT_REFRESH_2'
+);
+
+test('Gmail polling without Pub/Sub detects new mail', { skip: gmailSkip }, async t => {
     let appId;
 
     t.before(async () => {

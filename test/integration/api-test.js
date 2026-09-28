@@ -11,12 +11,46 @@ const nodemailer = require('nodemailer');
 const Redis = require('ioredis');
 const redis = new Redis(config.dbs.redis);
 const webhooksServer = require('./webhooks-server');
+const { skipUnlessEnv } = require('./helpers');
 
 const { fetch: fetchCmd } = require('undici');
 
 const accessToken = '2aa97ad0456d6624a55d30780aa2ff61bfb7edc6fa00935b40814b271e718660';
 
 const server = supertest.agent(`http://127.0.0.1:${config.api.port}`).auth(accessToken, { type: 'bearer' });
+
+// The IMAP section runs against an Ethereal account and needs no secrets; every provider section is
+// skipped when its credentials are missing (Dependabot and fork pull requests, a fresh checkout).
+// Subtests within a section depend on each other, so each section is gated as a whole.
+const gmailSkip = skipUnlessEnv(
+    'GMAIL_API_PROJECT_ID',
+    'GMAIL_API_CLIENT_ID',
+    'GMAIL_API_CLIENT_SECRET',
+    'GMAIL_API_ACCOUNT_EMAIL_1',
+    'GMAIL_API_ACCOUNT_REFRESH_1',
+    'GMAIL_API_ACCOUNT_EMAIL_2',
+    'GMAIL_API_ACCOUNT_REFRESH_2',
+    'GMAIL_API_SERVICE_CLIENT',
+    'GMAIL_API_SERVICE_EMAIL',
+    'GMAIL_API_SERVICE_KEY'
+);
+// The send-only section reads a message the Gmail section received and sends to Gmail account 2
+const gmailSendOnlySkip =
+    gmailSkip ||
+    skipUnlessEnv(
+        'GMAIL_SENDONLY_PROJECT_ID',
+        'GMAIL_SENDONLY_CLIENT_ID',
+        'GMAIL_SENDONLY_CLIENT_SECRET',
+        'GMAIL_SENDONLY_ACCOUNT_EMAIL',
+        'GMAIL_SENDONLY_ACCOUNT_REFRESH'
+    );
+const outlookSkip = skipUnlessEnv('OUTLOOK_SERVICE_CLIENT_ID', 'OUTLOOK_SERVICE_CLIENT_SECRET', 'OUTLOOK_SERVICE_TENANT_ID', 'OUTLOOK_SERVICE_ACCOUNT_EMAIL');
+const gmailServiceSkip = skipUnlessEnv(
+    'GMAIL_SERVICE_POSTALSYS_CLIENT',
+    'GMAIL_SERVICE_POSTALSYS_SERVICE_EMAIL',
+    'GMAIL_SERVICE_POSTALSYS_KEY',
+    'GMAIL_SERVICE_POSTALSYS_ACCOUNT_EMAIL'
+);
 
 let testAccount;
 const defaultAccountId = 'main-account';
@@ -638,7 +672,7 @@ test('API tests', async t => {
         assert.strictEqual(responseSearchTarget.body.messages[0].messageId, '<test2@example.com>');
     });
 
-    await t.test('Create Gmail API OAuth2 service project', { timeout: 30000 }, async () => {
+    await t.test('Create Gmail API OAuth2 service project', { skip: gmailSkip, timeout: 30000 }, async () => {
         let gmailServiceData = {
             name: 'Gmail API Pub/Sub',
             provider: 'gmailService',
@@ -655,7 +689,7 @@ test('API tests', async t => {
         assert.ok(oauth2PubsubId);
     });
 
-    await t.test('Create Gmail API OAuth2 client project', { timeout: 30000 }, async () => {
+    await t.test('Create Gmail API OAuth2 client project', { skip: gmailSkip, timeout: 30000 }, async () => {
         let gmailClientData = {
             name: 'Gmail API Client',
             provider: 'gmail',
@@ -673,7 +707,7 @@ test('API tests', async t => {
         assert.ok(oauth2AppId);
     });
 
-    await t.test('Register Gmail account 1', { timeout: 30000 }, async () => {
+    await t.test('Register Gmail account 1', { skip: gmailSkip, timeout: 30000 }, async () => {
         const response = await server
             .post(`/v1/account`)
             .send({
@@ -693,7 +727,7 @@ test('API tests', async t => {
         assert.strictEqual(response.body.state, 'new');
     });
 
-    await t.test('Register Gmail account 2', { timeout: 30000 }, async () => {
+    await t.test('Register Gmail account 2', { skip: gmailSkip, timeout: 30000 }, async () => {
         const response = await server
             .post(`/v1/account`)
             .send({
@@ -713,7 +747,7 @@ test('API tests', async t => {
         assert.strictEqual(response.body.state, 'new');
     });
 
-    await t.test('wait until Gmail accounts are available', { timeout: 120000 }, async () => {
+    await t.test('wait until Gmail accounts are available', { skip: gmailSkip, timeout: 120000 }, async () => {
         for (let account of [gmailAccountId1, gmailAccountId2]) {
             // wait until connected with longer timeout for Gmail
             await waitForCondition(
@@ -736,19 +770,19 @@ test('API tests', async t => {
         }
     });
 
-    await t.test('list mailboxes for Gmail account 1', { timeout: 30000 }, async () => {
+    await t.test('list mailboxes for Gmail account 1', { skip: gmailSkip, timeout: 30000 }, async () => {
         const response = await server.get(`/v1/account/${gmailAccountId1}/mailboxes`).expect(200);
 
         assert.ok(response.body.mailboxes.some(mb => mb.specialUse === '\\Inbox'));
     });
 
-    await t.test('list inbox messages for Gmail account 1 (greeting emails)', { timeout: 30000 }, async () => {
+    await t.test('list inbox messages for Gmail account 1 (greeting emails)', { skip: gmailSkip, timeout: 30000 }, async () => {
         const response = await server.get(`/v1/account/${gmailAccountId1}/messages?path=INBOX`).expect(200);
 
         assert.ok(response.body.total > 0);
     });
 
-    await t.test('submit by API', { timeout: 120000 }, async () => {
+    await t.test('submit by API', { skip: gmailSkip, timeout: 120000 }, async () => {
         let messageId = `<test-${Date.now()}@example.com>`;
 
         const response = await server
@@ -797,7 +831,7 @@ test('API tests', async t => {
         assert.ok(gmailReceivedEmailId);
     });
 
-    await t.test('reply by reference by API', { timeout: 120000 }, async () => {
+    await t.test('reply by reference by API', { skip: gmailSkip, timeout: 120000 }, async () => {
         let messageId = `<test-${Date.now()}@example.com>`;
 
         const response = await server
@@ -843,7 +877,7 @@ test('API tests', async t => {
         assert.ok(messageNewWebhook);
     });
 
-    await t.test('Create Gmail send-only OAuth2 client project', { timeout: 30000 }, async () => {
+    await t.test('Create Gmail send-only OAuth2 client project', { skip: gmailSendOnlySkip, timeout: 30000 }, async () => {
         let gmailSendOnlyClientData = {
             name: 'Gmail API Send-Only Client',
             provider: 'gmail',
@@ -862,7 +896,7 @@ test('API tests', async t => {
         assert.ok(oauth2SendOnlyAppId);
     });
 
-    await t.test('Register Gmail send-only account', { timeout: 30000 }, async () => {
+    await t.test('Register Gmail send-only account', { skip: gmailSendOnlySkip, timeout: 30000 }, async () => {
         const response = await server
             .post(`/v1/account`)
             .send({
@@ -882,7 +916,7 @@ test('API tests', async t => {
         assert.strictEqual(response.body.state, 'new');
     });
 
-    await t.test('wait until Gmail send-only account is available', { timeout: 180000 }, async () => {
+    await t.test('wait until Gmail send-only account is available', { skip: gmailSendOnlySkip, timeout: 180000 }, async () => {
         // wait until connected with longer timeout for Gmail
         await waitForCondition(
             async () => {
@@ -907,21 +941,21 @@ test('API tests', async t => {
         await waitForAccountWebhooks(gmailSendOnlyAccountId);
     });
 
-    await t.test('send-only account - list mailboxes should fail', { timeout: 30000 }, async () => {
+    await t.test('send-only account - list mailboxes should fail', { skip: gmailSendOnlySkip, timeout: 30000 }, async () => {
         const response = await server.get(`/v1/account/${gmailSendOnlyAccountId}/mailboxes`).expect(403);
 
         // Gmail API will reject the request due to insufficient scopes
         assert.ok(response.body.error);
     });
 
-    await t.test('send-only account - list messages should fail', { timeout: 30000 }, async () => {
+    await t.test('send-only account - list messages should fail', { skip: gmailSendOnlySkip, timeout: 30000 }, async () => {
         const response = await server.get(`/v1/account/${gmailSendOnlyAccountId}/messages?path=INBOX`).expect(403);
 
         // Gmail API will reject the request due to insufficient scopes
         assert.ok(response.body.error);
     });
 
-    await t.test('send-only account - get message should fail', { timeout: 30000 }, async () => {
+    await t.test('send-only account - get message should fail', { skip: gmailSendOnlySkip, timeout: 30000 }, async () => {
         // Use a message ID from gmailAccountId2 to try to access it
         if (!gmailReceivedEmailId) {
             throw new Error('No message ID available for testing');
@@ -933,7 +967,7 @@ test('API tests', async t => {
         assert.ok(response.body.error);
     });
 
-    await t.test('send-only account - submit email successfully', { timeout: 180000 }, async () => {
+    await t.test('send-only account - submit email successfully', { skip: gmailSendOnlySkip, timeout: 180000 }, async () => {
         let messageId = `<sendonly-test-${Date.now()}@example.com>`;
 
         const response = await server
@@ -972,7 +1006,7 @@ test('API tests', async t => {
 
     // --- Outlook Service (client_credentials) tests ---
 
-    await t.test('Create Outlook Service OAuth2 app', { timeout: 30000 }, async () => {
+    await t.test('Create Outlook Service OAuth2 app', { skip: outlookSkip, timeout: 30000 }, async () => {
         const response = await server
             .post(`/v1/oauth2`)
             .send({
@@ -989,7 +1023,7 @@ test('API tests', async t => {
         assert.ok(outlookServiceAppId);
     });
 
-    await t.test('Register Outlook Service account', { timeout: 30000 }, async () => {
+    await t.test('Register Outlook Service account', { skip: outlookSkip, timeout: 30000 }, async () => {
         const response = await server
             .post(`/v1/account`)
             .send({
@@ -1008,7 +1042,7 @@ test('API tests', async t => {
         assert.strictEqual(response.body.state, 'new');
     });
 
-    await t.test('wait until Outlook Service account is connected', { timeout: 120000 }, async () => {
+    await t.test('wait until Outlook Service account is connected', { skip: outlookSkip, timeout: 120000 }, async () => {
         await waitForCondition(
             async () => {
                 const response = await server.get(`/v1/account/${outlookServiceAccountId}`).expect(200);
@@ -1025,19 +1059,19 @@ test('API tests', async t => {
         );
     });
 
-    await t.test('list mailboxes for Outlook Service account', { timeout: 30000 }, async () => {
+    await t.test('list mailboxes for Outlook Service account', { skip: outlookSkip, timeout: 30000 }, async () => {
         const response = await server.get(`/v1/account/${outlookServiceAccountId}/mailboxes`).expect(200);
 
         assert.ok(response.body.mailboxes.some(mb => mb.specialUse === '\\Inbox'));
     });
 
-    await t.test('list inbox messages for Outlook Service account', { timeout: 30000 }, async () => {
+    await t.test('list inbox messages for Outlook Service account', { skip: outlookSkip, timeout: 30000 }, async () => {
         const response = await server.get(`/v1/account/${outlookServiceAccountId}/messages?path=INBOX`).expect(200);
 
         assert.ok(typeof response.body.total === 'number');
     });
 
-    await t.test('send email via Outlook Service account', { timeout: 120000 }, async () => {
+    await t.test('send email via Outlook Service account', { skip: outlookSkip, timeout: 120000 }, async () => {
         let messageId = `<outlook-test-${Date.now()}@example.com>`;
 
         const response = await server
@@ -1086,7 +1120,7 @@ test('API tests', async t => {
         assert.ok(outlookReceivedEmailId);
     });
 
-    await t.test('get Outlook Service message details', { timeout: 30000 }, async () => {
+    await t.test('get Outlook Service message details', { skip: outlookSkip, timeout: 30000 }, async () => {
         assert.ok(outlookReceivedEmailId, 'Need received email ID from previous test');
 
         const response = await server.get(`/v1/account/${outlookServiceAccountId}/message/${outlookReceivedEmailId}`).expect(200);
@@ -1095,7 +1129,7 @@ test('API tests', async t => {
         assert.ok(response.body.from);
     });
 
-    await t.test('get Outlook Service message text', { timeout: 30000 }, async () => {
+    await t.test('get Outlook Service message text', { skip: outlookSkip, timeout: 30000 }, async () => {
         assert.ok(outlookReceivedEmailId, 'Need received email ID from previous test');
 
         const response = await server.get(`/v1/account/${outlookServiceAccountId}/text/${outlookReceivedEmailId}`).expect(200);
@@ -1103,7 +1137,7 @@ test('API tests', async t => {
         assert.ok(response.body.plain || response.body.html);
     });
 
-    await t.test('download Outlook Service raw message', { timeout: 30000 }, async () => {
+    await t.test('download Outlook Service raw message', { skip: outlookSkip, timeout: 30000 }, async () => {
         assert.ok(outlookReceivedEmailId, 'Need received email ID from previous test');
 
         const response = await server.get(`/v1/account/${outlookServiceAccountId}/message/${outlookReceivedEmailId}/source`).expect(200);
@@ -1111,7 +1145,7 @@ test('API tests', async t => {
         assert.ok(response.text.length > 0);
     });
 
-    await t.test('search messages in Outlook Service account', { timeout: 30000 }, async () => {
+    await t.test('search messages in Outlook Service account', { skip: outlookSkip, timeout: 30000 }, async () => {
         const response = await server
             .post(`/v1/account/${outlookServiceAccountId}/search?path=INBOX`)
             .send({
@@ -1124,7 +1158,7 @@ test('API tests', async t => {
         assert.ok(Array.isArray(response.body.messages));
     });
 
-    await t.test('update message flags in Outlook Service account', { timeout: 60000 }, async () => {
+    await t.test('update message flags in Outlook Service account', { skip: outlookSkip, timeout: 60000 }, async () => {
         assert.ok(outlookReceivedEmailId, 'Need received email ID from previous test');
 
         const response = await server
@@ -1139,7 +1173,7 @@ test('API tests', async t => {
         assert.ok(response.body.flags);
     });
 
-    await t.test('delete message in Outlook Service account', { timeout: 30000 }, async () => {
+    await t.test('delete message in Outlook Service account', { skip: outlookSkip, timeout: 30000 }, async () => {
         assert.ok(outlookReceivedEmailId, 'Need received email ID from previous test');
 
         const response = await server.delete(`/v1/account/${outlookServiceAccountId}/message/${outlookReceivedEmailId}`).expect(200);
@@ -1149,51 +1183,55 @@ test('API tests', async t => {
 
     // --- Outlook Graph API behavior tests (verify the Graph behavior syncMissedMessages relies on) ---
 
-    await t.test('Graph API message query returns messages from all folders with parentFolderId', { timeout: testConfig.OUTLOOK_TIMEOUT }, async () => {
-        let graphToken = await getGraphToken();
-        assert.ok(graphToken, 'Should receive access token');
-        let email = process.env.OUTLOOK_SERVICE_ACCOUNT_EMAIL;
+    await t.test(
+        'Graph API message query returns messages from all folders with parentFolderId',
+        { skip: outlookSkip, timeout: testConfig.OUTLOOK_TIMEOUT },
+        async () => {
+            let graphToken = await getGraphToken();
+            assert.ok(graphToken, 'Should receive access token');
+            let email = process.env.OUTLOOK_SERVICE_ACCOUNT_EMAIL;
 
-        // Query recent messages with parentFolderId, the listing syncMissedMessages pages through
-        let sinceTime = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-        let queryParams = new URLSearchParams({
-            $filter: `receivedDateTime gt ${sinceTime}`,
-            $select: 'id,parentFolderId',
-            $top: '10',
-            $orderby: 'receivedDateTime desc'
-        });
+            // Query recent messages with parentFolderId, the listing syncMissedMessages pages through
+            let sinceTime = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+            let queryParams = new URLSearchParams({
+                $filter: `receivedDateTime gt ${sinceTime}`,
+                $select: 'id,parentFolderId',
+                $top: '10',
+                $orderby: 'receivedDateTime desc'
+            });
 
-        let messagesRes = await fetchCmd(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(email)}/messages?${queryParams}`, {
-            headers: {
-                Authorization: `Bearer ${graphToken}`,
-                Prefer: 'IdType="ImmutableId"'
+            let messagesRes = await fetchCmd(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(email)}/messages?${queryParams}`, {
+                headers: {
+                    Authorization: `Bearer ${graphToken}`,
+                    Prefer: 'IdType="ImmutableId"'
+                }
+            });
+            assert.equal(messagesRes.status, 200, 'Should return 200');
+
+            let messagesData = await messagesRes.json();
+            assert.ok(Array.isArray(messagesData.value), 'Should return value array');
+            assert.ok(messagesData.value.length > 0, 'Should have at least one recent message');
+
+            // Every message should have both id and parentFolderId
+            for (let msg of messagesData.value) {
+                assert.ok(msg.id, 'Message should have id');
+                assert.ok(msg.parentFolderId, 'Message should have parentFolderId');
             }
-        });
-        assert.equal(messagesRes.status, 200, 'Should return 200');
 
-        let messagesData = await messagesRes.json();
-        assert.ok(Array.isArray(messagesData.value), 'Should return value array');
-        assert.ok(messagesData.value.length > 0, 'Should have at least one recent message');
-
-        // Every message should have both id and parentFolderId
-        for (let msg of messagesData.value) {
-            assert.ok(msg.id, 'Message should have id');
-            assert.ok(msg.parentFolderId, 'Message should have parentFolderId');
+            // Recent messages typically span multiple folders (Inbox + Sent Items) once the
+            // test has both received and sent. The actual API contract being tested is that
+            // each message carries parentFolderId - covered by the per-message asserts above.
+            // The folder spread is data-dependent (quiet test mailboxes can have single-folder
+            // activity in the time window), so log instead of failing when only one folder
+            // shows up.
+            let distinctFolders = new Set(messagesData.value.map(m => m.parentFolderId));
+            if (distinctFolders.size < 2) {
+                console.warn(`Graph query returned messages from only ${distinctFolders.size} folder(s); cross-folder spread not asserted`);
+            }
         }
+    );
 
-        // Recent messages typically span multiple folders (Inbox + Sent Items) once the
-        // test has both received and sent. The actual API contract being tested is that
-        // each message carries parentFolderId - covered by the per-message asserts above.
-        // The folder spread is data-dependent (quiet test mailboxes can have single-folder
-        // activity in the time window), so log instead of failing when only one folder
-        // shows up.
-        let distinctFolders = new Set(messagesData.value.map(m => m.parentFolderId));
-        if (distinctFolders.size < 2) {
-            console.warn(`Graph query returned messages from only ${distinctFolders.size} folder(s); cross-folder spread not asserted`);
-        }
-    });
-
-    await t.test('Graph API pagination returns @odata.nextLink', { timeout: testConfig.OUTLOOK_TIMEOUT }, async () => {
+    await t.test('Graph API pagination returns @odata.nextLink', { skip: outlookSkip, timeout: testConfig.OUTLOOK_TIMEOUT }, async () => {
         let graphToken = await getGraphToken();
         let email = process.env.OUTLOOK_SERVICE_ACCOUNT_EMAIL;
 
@@ -1238,7 +1276,7 @@ test('API tests', async t => {
 
     // --- Gmail Service Account (IMAP XOAUTH2) tests ---
 
-    await t.test('Create gmailService OAuth2 app', { timeout: 30000 }, async () => {
+    await t.test('Create gmailService OAuth2 app', { skip: gmailServiceSkip, timeout: 30000 }, async () => {
         const response = await server
             .post(`/v1/oauth2`)
             .send({
@@ -1254,7 +1292,7 @@ test('API tests', async t => {
         assert.ok(gmailServiceAppId);
     });
 
-    await t.test('Register gmailService account', { timeout: 30000 }, async () => {
+    await t.test('Register gmailService account', { skip: gmailServiceSkip, timeout: 30000 }, async () => {
         const response = await server
             .post(`/v1/account`)
             .send({
@@ -1273,7 +1311,7 @@ test('API tests', async t => {
         assert.strictEqual(response.body.state, 'new');
     });
 
-    await t.test('wait until gmailService account connects via IMAP XOAUTH2', { timeout: 120000 }, async () => {
+    await t.test('wait until gmailService account connects via IMAP XOAUTH2', { skip: gmailServiceSkip, timeout: 120000 }, async () => {
         let lastResponse;
         await waitForCondition(
             async () => {
@@ -1293,19 +1331,19 @@ test('API tests', async t => {
         assert.notStrictEqual(lastResponse.body.isApi, true, 'gmailService should use IMAP XOAUTH2, not the API path');
     });
 
-    await t.test('list mailboxes for gmailService account', { timeout: 30000 }, async () => {
+    await t.test('list mailboxes for gmailService account', { skip: gmailServiceSkip, timeout: 30000 }, async () => {
         const response = await server.get(`/v1/account/${gmailServiceAccountId}/mailboxes`).expect(200);
 
         assert.ok(response.body.mailboxes.some(mb => mb.specialUse === '\\Inbox'));
     });
 
-    await t.test('delete gmailService account', { timeout: 30000 }, async () => {
+    await t.test('delete gmailService account', { skip: gmailServiceSkip, timeout: 30000 }, async () => {
         const response = await server.delete(`/v1/account/${gmailServiceAccountId}`).expect(200);
 
         assert.ok(response.body.deleted);
     });
 
-    await t.test('delete gmailService OAuth2 app', { timeout: 30000 }, async () => {
+    await t.test('delete gmailService OAuth2 app', { skip: gmailServiceSkip, timeout: 30000 }, async () => {
         const response = await server.delete(`/v1/oauth2/${gmailServiceAppId}`).expect(200);
 
         assert.ok(response.body.deleted);

@@ -22,7 +22,8 @@ Returns:
     [2] Skip value used
     [3] Array of account data (HGETALL results for each matching account)
 
-NOTE: This script is not compatible with Redis clustering if using account id as the hash slot key
+NOTE: Single-node only. The per-account hashes are built from the prefix inside the script
+instead of being declared in KEYS, so a Redis Cluster cannot route or slot-check them.
 --]]
 
 local listKey = KEYS[1];
@@ -46,8 +47,10 @@ local total = redis.call("SCARD", listKey);  -- Get total account count
 
 local list = redis.call("SMEMBERS", listKey);  -- Load all account IDs
 
--- Early return if offset exceeds total
-if skip >= total then
+-- Early return if offset exceeds total. Only for an unfiltered listing: with a state filter or a
+-- search the first value is the number of MATCHING accounts, which SCARD is not, so a page past the
+-- end used to report every account as matching.
+if skip >= total and filterState == '*' and strsearch == '' then
 	return {total,skip, {}}
 end
 

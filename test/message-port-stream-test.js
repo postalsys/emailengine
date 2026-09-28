@@ -529,3 +529,113 @@ test('releaseListeners() hands a port back without reporting a failed transfer',
         port2.close();
     }
 });
+
+test('a reader that stops consuming stalls the writer once the credit window is spent (WORK-10)', async () => {
+    // The writer used to acknowledge every chunk at once, so the source was drained at network
+    // speed and a slow HTTP client left the whole payload queued in the API worker.
+    const { port1, port2 } = new MessageChannel();
+    const window = 64 * 1024;
+    const chunkSize = 16 * 1024;
+
+    try {
+        const writable = new MessagePortWritable(port2, { creditWindow: window });
+        // A tiny highWaterMark, so the reader stops pulling from its queue almost immediately
+        const reader = new MessagePortReadable(port1, { creditWindow: window });
+        reader._readableState.highWaterMark = chunkSize;
+
+        let produced = 0;
+        const total = 64;
+        const source = new Readable({
+            highWaterMark: chunkSize,
+            read() {
+                if (produced >= total) {
+                    return this.push(null);
+                }
+                produced++;
+                this.push(Buffer.alloc(chunkSize, 1));
+            }
+        });
+
+        pipeToMessagePort(source, writable, { error() {}, debug() {} });
+
+        // Nobody reads: let the writer run as far as it can
+        for (let i = 0; i < 20; i++) {
+            await tick();
+        }
+
+        const sentBytes = produced * chunkSize;
+        assert.ok(sentBytes < total * chunkSize, 'the writer must stop before draining the whole source');
+        assert.ok(
+            reader.readableQueue.length * chunkSize <= window + chunkSize,
+            `the reader queue stays within the credit window (${reader.readableQueue.length} chunks queued)`
+        );
+
+        // Once the consumer reads, the rest arrives
+        let received = 0;
+        await new Promise((resolve, reject) => {
+            reader.on('data', chunk => {
+                received += chunk.length;
+            });
+            reader.on('end', resolve);
+            reader.on('error', reject);
+        });
+        assert.strictEqual(received, total * chunkSize, 'every byte is delivered once the consumer catches up');
+    } finally {
+        port1.close();
+        port2.close();
+    }
+});
+
+test('the reader returns credit in batches rather than one ack per chunk', async () => {
+    // Every chunk used to be acknowledged on its own, doubling the messages crossing the thread
+    // boundary. Credit is returned once a quarter of the window has been consumed instead.
+    const { port1, port2 } = new MessageChannel();
+    const window = 64 * 1024;
+    const chunkSize = 4 * 1024;
+    const total = 32;
+
+    try {
+        let acks = 0;
+        let acked = 0;
+        port2.on('message', message => {
+            if (message && typeof message.ack === 'number') {
+                acks++;
+                acked += message.ack;
+            }
+        });
+        const writable = new MessagePortWritable(port2, { creditWindow: window });
+        const reader = new MessagePortReadable(port1, { creditWindow: window });
+
+        let produced = 0;
+        const source = new Readable({
+            read() {
+                if (produced >= total) {
+                    return this.push(null);
+                }
+                produced++;
+                this.push(Buffer.alloc(chunkSize, 1));
+            }
+        });
+        pipeToMessagePort(source, writable, { error() {}, debug() {} });
+
+        let received = 0;
+        await new Promise((resolve, reject) => {
+            reader.on('data', chunk => {
+                received += chunk.length;
+            });
+            reader.on('end', resolve);
+            reader.on('error', reject);
+        });
+        // The acks are posted before 'end' reaches the consumer, but their delivery to port2 is a
+        // separate turn of the event loop
+        await tick();
+
+        assert.strictEqual(received, total * chunkSize, 'every byte is delivered');
+        assert.strictEqual(acked, total * chunkSize, 'all of the credit comes back');
+        assert.ok(acks < total, `fewer acks than chunks (${acks} acks for ${total} chunks)`);
+        assert.ok(acks >= Math.floor((total * chunkSize) / (window / 4)), `credit is returned as batches fill (${acks} acks)`);
+    } finally {
+        port1.close();
+        port2.close();
+    }
+});

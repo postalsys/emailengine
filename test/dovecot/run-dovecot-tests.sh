@@ -25,40 +25,13 @@ PLATFORM_ARG="${EENGINE_DOVECOT_PLATFORM:+--platform=$EENGINE_DOVECOT_PLATFORM}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-# explicit template instead of -t: GNU mktemp requires the X's and treats -t
-# differently from BSD/macOS mktemp
-SERVER_LOG="$(mktemp "${TMPDIR:-/tmp}/emailengine-dovecot-server.XXXXXX")"
-SERVER_PID=""
-
 cd "$PROJECT_DIR"
 
-# The API port comes from config/test.toml - the same source the test server,
-# wait-for-server.js and the test files read, so they cannot drift
-API_PORT="$(NODE_ENV=test node -p 'require("@zone-eu/wild-config").api.port')"
-
 cleanup() {
-    if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
-        kill "$SERVER_PID" 2>/dev/null || true
-    fi
     docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
-
-# The API port must be free before booting - a stale process (typically a
-# leftover test server: EmailEngine renames its process title to `emailengine`,
-# so `pkill -f 'node server.js'` does not match it; use `pkill -x emailengine`)
-# would answer /health and silently serve old code to the tests
-if node -e "
-    const socket = require('net').connect(Number(process.argv[1]), '127.0.0.1');
-    socket.on('connect', () => { socket.destroy(); process.exit(0); });
-    socket.on('error', () => process.exit(1));
-    setTimeout(() => process.exit(1), 1000);
-" "$API_PORT" 2>/dev/null; then
-    echo "Port $API_PORT is already in use - kill the process holding it first" >&2
-    echo "(check with: lsof -nP -iTCP:$API_PORT -sTCP:LISTEN)" >&2
-    exit 1
-fi
 
 # Guard against a stale image cached for the wrong architecture: `docker run`
 # without --platform silently reuses a local image even when its architecture
@@ -79,15 +52,6 @@ docker run ${PLATFORM_ARG:+"$PLATFORM_ARG"} -d --name "$CONTAINER_NAME" \
     -v "$SCRIPT_DIR/dovecot-test.conf:/etc/dovecot/conf.d/99-emailengine-test.conf:ro" \
     -p "127.0.0.1:$PORT:31143" \
     "$IMAGE" >/dev/null
-
-# EmailEngine does not need Dovecot to boot (accounts are only created inside
-# the tests), so start it right away and let the two readiness waits overlap
-echo "Flushing Redis test database..."
-NODE_ENV=test node test/helpers/flush-redis.js
-
-echo "Starting EmailEngine test server..."
-NODE_ENV=test node server.js > "$SERVER_LOG" 2>&1 &
-SERVER_PID=$!
 
 echo "Waiting for Dovecot to accept IMAP connections on port $PORT..."
 for i in $(seq 1 30); do
@@ -110,10 +74,9 @@ for i in $(seq 1 30); do
     sleep 1
 done
 
-if ! NODE_ENV=test node test/helpers/wait-for-server.js; then
-    echo "EmailEngine test server did not become ready" >&2
-    tail -n 50 "$SERVER_LOG" >&2 || true
-    exit 1
-fi
-
-NODE_ENV=test EENGINE_DOVECOT_PORT="$PORT" node --test --test-concurrency=1 --test-timeout=240000 test/dovecot/dovecot-live-test.js
+# test/run-tests.js does the rest, as for the other tiers: refuses to start when the API port is
+# already taken (a leftover test server would silently serve old code), flushes the test database,
+# boots the server with the SMTP server and IMAP proxy enabled (test/dovecot/listener-settings.js),
+# fails at once if it dies during boot, and runs the tests with the stall watchdog and
+# --test-force-exit. The server log goes to a temp file whose tail is printed on failure.
+NODE_ENV=test EENGINE_DOVECOT_PORT="$PORT" node test/run-tests.js dovecot

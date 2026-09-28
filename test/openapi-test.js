@@ -121,6 +121,47 @@ describe('joi to OpenAPI schema conversion', () => {
         assert.equal(result.properties.blank.enum, undefined);
     });
 
+    test('publishes a sentinel of another type as its own anyOf branch, not an exclusive enum', () => {
+        // `{type: 'object', enum: [false]}` is a schema no JSON value satisfies, so a strict
+        // validator refused every real configuration the document described that way
+        const converter = new SchemaConverter({ sentinelBranches: true });
+        converter.convert(
+            Joi.object({
+                config: Joi.object({ host: Joi.string() }).allow(false).label('Config').description('Server settings'),
+                count: Joi.number().integer().allow(false).description('Message count'),
+                mode: Joi.string().valid('a', 'b').allow(false, null),
+                token: Joi.string().allow(false).label('Token'),
+                anything: Joi.any().allow(false)
+            }).label('Root'),
+            { useDefinitions: true }
+        );
+        const result = converter.definitions.Root;
+
+        assert.deepEqual(result.properties.config, { anyOf: [{ $ref: '#/components/schemas/Config' }, { type: 'boolean', enum: [false] }] });
+        assert.equal(converter.definitions.Config.enum, undefined, 'the object schema itself carries no enum');
+        assert.equal(converter.definitions.Config.description, 'Server settings');
+
+        assert.deepEqual(result.properties.count, { anyOf: [{ type: 'integer' }, { type: 'boolean', enum: [false] }], description: 'Message count' });
+
+        // A string with a real value list keeps it as a named schema, the sentinel beside it
+        assert.equal(result.properties.mode.anyOf[1].type, 'boolean');
+        const mode = converter.definitions[result.properties.mode.anyOf[0].$ref.split('/').pop()];
+        assert.deepEqual(mode.enum, ['a', 'b']);
+        assert.equal(mode.nullable, true);
+
+        // A label is a public type name, so losing its only enum member must not unregister it
+        assert.deepEqual(result.properties.token.anyOf[0], { $ref: '#/components/schemas/Token' });
+        assert.deepEqual(converter.definitions.Token, { type: 'string' });
+
+        // joi `any` really does accept false, so there is nothing to split
+        assert.deepEqual(converter.definitions.anything.enum, [false]);
+    });
+
+    test('keeps sentinels in the enum unless asked to split them, for the MCP converter', () => {
+        const { result } = convert(Joi.object({ config: Joi.object({ host: Joi.string() }).allow(false) }));
+        assert.deepEqual(result.properties.config.enum, [false]);
+    });
+
     test('documents per-value enum descriptions through x-meta', () => {
         const { result } = convert(
             Joi.object({

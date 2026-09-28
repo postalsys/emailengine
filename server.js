@@ -14,6 +14,12 @@
  * @see {@link https://emailengine.app}
  */
 
+// No native addons (CLAUDE.md "Pure JavaScript only"). bullmq depends on msgpackr, whose optional
+// dependency msgpackr-extract is a node-gyp addon that npm and Docker installs pick up and load
+// when present, while the pkg binary decodes in JavaScript. This makes every install decode the
+// same way. Set before anything can require bullmq; worker threads share this environment.
+process.env.MSGPACKR_NATIVE_ACCELERATION_DISABLED = 'true';
+
 // Load environment variables if not already loaded
 if (!process.env.EE_ENV_LOADED) {
     require('dotenv').config({ quiet: true });
@@ -115,7 +121,7 @@ initSentry('main');
 
 // Import additional dependencies
 const pathlib = require('path');
-const { redis, queueConf, notifyQueue, submitQueue, documentsQueue, exportQueue } = require('./lib/db');
+const { redis, queueConf, notifyQueue, submitQueue, documentsQueue, exportQueue, logBullErrors } = require('./lib/db');
 const { queueStats } = require('./lib/queue-stats');
 const { packRpcError, unpackRpcError } = require('./lib/worker-rpc-error');
 const promClient = require('prom-client');
@@ -139,7 +145,16 @@ const { QueueEvents } = require('bullmq');
 const getSecret = require('./lib/get-secret');
 
 const { rejectWorkerCalls } = require('./lib/reject-worker-calls');
-const { pickLeastLoadedWorker, rollbackAssignment, releaseWorkerAccounts, requeueFailedAccounts } = require('./lib/account-assignment');
+const {
+    pickLeastLoadedWorker,
+    rollbackAssignment,
+    releaseWorkerAccounts,
+    requeueFailedAccounts,
+    forgetAccount,
+    mapConcurrent,
+    shouldRequeueFailedAssignment,
+    planRebalance
+} = require('./lib/account-assignment');
 const { RespawnTracker } = require('./lib/respawn-backoff');
 
 const msgpack = require('./lib/msgpack');
@@ -747,6 +762,8 @@ let mids = 0; // Message ID counter
 // Application state flags
 let isClosing = false; // Is the application shutting down?
 let assigning = false; // Is account assignment in progress?
+// Unassign calls in flight at once while rebalanceOnto() holds the assignment lock
+const REBALANCE_CONCURRENCY = 8;
 
 // Account assignment tracking
 let unassigned = false; // Set of unassigned accounts
@@ -761,7 +778,8 @@ const MAX_ASSIGN_RETRIES = 3; // Max consecutive safety-net retries before givin
 // Worker management
 let imapInitialWorkersLoaded = false; // Have all initial IMAP workers started?
 let workers = new Map(); // Map of type -> Set of workers
-const respawnTracker = new RespawnTracker(); // paces respawns for worker types that keep crashing
+const respawnTracker = new RespawnTracker(); // paces respawns for worker slots that keep crashing
+let spawnSlotCounter = 0; // source of respawn slot ids, see spawnWorker()
 
 // Shutdown drain budget. A worker with no in-flight job answers immediately, so this only costs
 // real time when there is genuinely something to finish - which is exactly when waiting is worth
@@ -1080,9 +1098,11 @@ async function sendWebhook(account, event, data) {
  * @param {Object} [opts] - Optional spawn options
  * @param {Object} [opts.workerData] - Data passed to the worker thread (e.g. API worker index). The
  *                                      proxy in effect is added for every type, see lib/tools.js
+ * @param {string} [slot] - Respawn slot this thread fills. A respawn passes its predecessor's slot
+ *                          so the crash streak is counted per slot, not per worker type
  * @returns {Promise<number|void>} Thread ID if successful
  */
-let spawnWorker = async (type, opts) => {
+let spawnWorker = async (type, opts, slot) => {
     // Don't spawn workers during shutdown
     if (isClosing) {
         return;
@@ -1110,6 +1130,13 @@ let spawnWorker = async (type, opts) => {
         }
 
         await updateServerState(type, 'spawning');
+    }
+
+    // A fresh spawn opens its own slot. Counting the crash streak per type made every short-lived
+    // exit of ANY IMAP worker double the next respawn delay of all of them, so unrelated exits
+    // pushed a restart past the 10s failsafe reassignment.
+    if (!slot) {
+        slot = `${type}:${++spawnSlotCounter}`;
     }
 
     // Create new worker thread
@@ -1188,7 +1215,12 @@ let spawnWorker = async (type, opts) => {
 
             // Update server state for proxy servers
             if (['smtp', 'imapProxy'].includes(type)) {
-                updateServerState(type, suspendedWorkerTypes.has(type) ? 'suspended' : 'exited');
+                // Not awaited, so the rejection has to be handled here: a Redis reply error
+                // (OOM, READONLY) would otherwise reach the global handler and take the whole
+                // process down with it.
+                updateServerState(type, suspendedWorkerTypes.has(type) ? 'suspended' : 'exited').catch(err =>
+                    logger.error({ msg: 'Unable to update server state', type, err })
+                );
             }
 
             // Handle IMAP worker cleanup
@@ -1289,13 +1321,13 @@ let spawnWorker = async (type, opts) => {
             // Respawn worker after delay, preserving any spawn options (e.g. API worker index).
             // The delay grows while a worker type keeps dying on startup, so a deterministic
             // crash no longer respawns once a second forever.
-            let respawnDelay = respawnTracker.recordExit(type, Date.now() - spawnedAt);
-            let streak = respawnTracker.streakFor(type);
+            let respawnDelay = respawnTracker.recordExit(slot, Date.now() - spawnedAt);
+            let streak = respawnTracker.streakFor(slot);
             if (streak > 1) {
-                logger.warn({ msg: 'Worker is crash looping, delaying respawn', type, consecutiveFailures: streak, respawnDelay });
+                logger.warn({ msg: 'Worker is crash looping, delaying respawn', type, slot, consecutiveFailures: streak, respawnDelay });
             }
             await new Promise(r => setTimeout(r, respawnDelay));
-            await spawnWorker(type, opts);
+            await spawnWorker(type, opts, slot);
         };
 
         // Handle worker exit
@@ -1475,9 +1507,16 @@ let spawnWorker = async (type, opts) => {
                         redis.hincrby(accountKey, `stats:count:${accountUpdateKey}`, 1).catch(() => false);
                     }
 
-                    // Update Prometheus metrics
+                    // Update Prometheus metrics. prom-client throws synchronously on an unknown
+                    // label, a negative counter increment or a non-finite value, and this runs in
+                    // an event handler on the main thread, where a throw would take every worker
+                    // down with it.
                     if (message.key && metrics[message.key] && typeof metrics[message.key][message.method] === 'function') {
-                        metrics[message.key][message.method](...message.args);
+                        try {
+                            metrics[message.key][message.method](...message.args);
+                        } catch (err) {
+                            logger.error({ msg: 'Unable to apply worker metric', type, key: message.key, method: message.method, err });
+                        }
                     }
 
                     return;
@@ -1599,6 +1638,10 @@ let spawnWorker = async (type, opts) => {
                                     unassignedAccounts: unassigned.size
                                 });
                             }
+                        } else if (imapInitialWorkersLoaded) {
+                            // The failsafe timer already gave this worker's accounts to the
+                            // survivors (or it is an extra worker), so nothing is pending for it
+                            rebalanceOnto(worker).catch(err => logger.error({ msg: 'Unable to rebalance accounts', err }));
                         }
                     }
                     break;
@@ -1698,6 +1741,95 @@ async function call(worker, message, transferList) {
 }
 
 /**
+ * Whether an account is still registered, checked before a failed assignment is retried
+ * @param {string} account
+ * @returns {Promise<boolean>}
+ */
+async function isRegisteredAccount(account) {
+    return !!(await redis.sismember(`${REDIS_PREFIX}ia:accounts`, account));
+}
+
+/**
+ * Tells an IMAP worker to close an account without deleting anything, used when the account moves
+ * to another worker. Returns whether the worker confirmed it
+ * @param {Worker} worker
+ * @param {string} account
+ * @returns {Promise<boolean>}
+ */
+async function unassignFromWorker(worker, account) {
+    if (!onlineWorkers.has(worker)) {
+        // An exited worker holds no connections
+        return true;
+    }
+    try {
+        await call(worker, { cmd: 'unassign', account });
+        return true;
+    } catch (err) {
+        logger.error({ msg: 'Failed to unassign account from worker', account, threadId: worker.threadId, err });
+        return false;
+    }
+}
+
+/**
+ * Moves a fair share of accounts onto an IMAP worker that became ready while the rest of the fleet
+ * already served every account. That is the normal outcome of a restart slower than the failsafe
+ * reassignment timer, and nothing else ever gives such a worker any accounts
+ * @param {Worker} worker - The worker that became ready
+ * @returns {Promise<void>}
+ */
+async function rebalanceOnto(worker) {
+    if (isClosing || !availableIMAPWorkers.has(worker)) {
+        return;
+    }
+    if (assigning) {
+        // A pass is running (typically the failsafe one); look again once it has settled
+        setTimeout(() => rebalanceOnto(worker).catch(err => logger.error({ msg: 'Unable to rebalance accounts', err })), 5000).unref();
+        return;
+    }
+
+    let moves = planRebalance({ workerAssigned, availableWorkers: availableIMAPWorkers }, worker);
+    if (!moves.length) {
+        return;
+    }
+
+    assigning = true;
+    let moved = 0;
+    try {
+        // Every other assignment pass waits on the lock held here, and a fair share of a large
+        // fleet is hundreds of round trips, so the unassign calls run a few at a time rather than
+        // one after the other
+        await mapConcurrent(moves, REBALANCE_CONCURRENCY, async ({ account, worker: donor }) => {
+            // The donor may have lost the account (deleted, donor exited) while we awaited
+            if (assigned.get(account) !== donor) {
+                return;
+            }
+            // Only an account the donor has let go of can move, or it would sync in two workers
+            if (!(await unassignFromWorker(donor, account))) {
+                return;
+            }
+            if (assigned.get(account) !== donor) {
+                return;
+            }
+            forgetAccount({ workerAssigned, assigned, unassigned }, account);
+            unassigned.add(account);
+            moved++;
+        });
+    } finally {
+        assigning = false;
+    }
+
+    if (moved) {
+        logger.info({ msg: 'Rebalancing accounts onto a restarted IMAP worker', threadId: worker.threadId, accounts: moved });
+    }
+    // Also run when nothing moved: an account added while this held the assignment lock found the
+    // pass refused and is waiting in unassigned. Every worker is available again, so the pass
+    // picks the least loaded one, which is the newcomer.
+    if (moved || unassigned.size) {
+        await assignAccounts();
+    }
+}
+
+/**
  * Assign unassigned accounts to available IMAP workers
  * Uses load-aware distribution with round-robin for initial assignment
  * and rendezvous hashing for reassignments after worker failures
@@ -1791,8 +1923,22 @@ async function assignAccounts() {
                 // Roll back -- account was never actually assigned. Also reverts the load map so
                 // subsequent iterations see accurate counts
                 rollbackAssignment({ workerAssigned, assigned, workerLoadMap }, account, worker, !isReassignment);
-                failedAccounts.push(account);
+
+                if (err.code === 'Timeout') {
+                    // A timed-out assign is still running in the worker and would connect the
+                    // account there after this pass has handed it to another worker, so the same
+                    // account would sync twice. Cancel it; the worker also drops an assignment
+                    // superseded this way, see assignConnection().
+                    unassignFromWorker(worker, account);
+                }
+
                 logger.error({ msg: 'Failed to assign account to worker', account, threadId: worker.threadId, err });
+
+                if (await shouldRequeueFailedAssignment(err, account, isRegisteredAccount)) {
+                    failedAccounts.push(account);
+                } else {
+                    logger.info({ msg: 'Dropped assignment of an account that no longer exists', account });
+                }
                 continue;
             }
 
@@ -2066,14 +2212,15 @@ let upgradeCheckTimer = false;
  * @returns {Promise<void>}
  */
 let upgradeCheckHandler = async () => {
-    let upgradeInfoExists = await redis.hexists(`${REDIS_PREFIX}settings`, 'upgrade');
-    if (!upgradeInfoExists) {
-        // No upgrade info stored
-        return;
+    // An up-to-date instance keeps checking too. The check used to return early, before
+    // rescheduling, whenever no upgrade was already known, so the daily check stopped after its
+    // first run on every instance that was current at the time.
+    try {
+        await processCheckUpgrade();
+    } finally {
+        upgradeCheckTimer = setTimeout(checkUpgrade, UPGRADE_CHECK_TIMEOUT);
+        upgradeCheckTimer.unref();
     }
-    await processCheckUpgrade();
-    upgradeCheckTimer = setTimeout(checkUpgrade, UPGRADE_CHECK_TIMEOUT);
-    upgradeCheckTimer.unref();
 };
 
 /**
@@ -2157,7 +2304,8 @@ const processRedisPing = async () => {
         redisPingCounter.push(duration);
         // Keep last 300 measurements
         if (redisPingCounter.length > 300) {
-            redisPingCounter = redisPingCounter.slice(0, 150);
+            // keep the newest samples, the average is computed from the tail
+            redisPingCounter = redisPingCounter.slice(-150);
         }
         return duration;
     } catch (err) {
@@ -2833,23 +2981,14 @@ async function onCommand(worker, message) {
             // Guarded for the same reason as the `new` branch above, and here the throw was
             // answered with a 500 for a deletion that had in fact succeeded: the account was
             // already gone from Redis by the time this message was sent.
-            if (unassigned) {
-                unassigned.delete(message.account);
-            }
-            if (assigned.has(message.account)) {
-                let assignedWorker = assigned.get(message.account);
-                if (workerAssigned.has(assignedWorker)) {
-                    workerAssigned.get(assignedWorker).delete(message.account);
-                    if (!workerAssigned.get(assignedWorker).size) {
-                        // Last account on this worker
-                        workerAssigned.delete(assignedWorker);
-                    }
+            {
+                let assignedWorker = forgetAccount({ workerAssigned, assigned, unassigned }, message.account);
+                if (assignedWorker) {
+                    // Notify worker to clean up
+                    call(assignedWorker, message)
+                        .then(() => logger.debug('Account cleanup completed'))
+                        .catch(err => logger.error({ msg: 'Account cleanup failed', account: message.account, err }));
                 }
-
-                // Notify worker to clean up
-                call(assignedWorker, message)
-                    .then(() => logger.debug('Account cleanup completed'))
-                    .catch(err => logger.error({ msg: 'Account cleanup failed', account: message.account, err }));
             }
             sendWebhook(message.account, ACCOUNT_DELETED_NOTIFY, { account: message.account }).catch(err =>
                 logger.error({ msg: 'Account deletion webhook failed', account: message.account, err })
@@ -3022,17 +3161,35 @@ async function onCommand(worker, message) {
 }
 
 // Metrics collection results
-let metricsResult = {};
+// Connection states published so far, so a state no account is in any more is reported as 0
+// instead of keeping its last value
+let publishedConnectionStates = new Set();
+let collectingMetrics = false;
 
 /**
  * Collect IMAP connection metrics from all workers
  * @returns {Promise<void>}
  */
 async function collectMetrics() {
-    // Reset counters
-    Object.keys(metricsResult || {}).forEach(key => {
-        metricsResult[key] = 0;
-    });
+    // Runs every second but awaits a countConnections call per worker, each allowed the full command
+    // timeout. Overlapping runs used to add into one shared result object while another run zeroed
+    // it, so the gauge reported doubled or partial counts exactly when a worker was slow.
+    if (collectingMetrics) {
+        return;
+    }
+    collectingMetrics = true;
+    try {
+        await collectConnectionMetrics();
+    } finally {
+        collectingMetrics = false;
+    }
+}
+
+async function collectConnectionMetrics() {
+    let metricsResult = {};
+    for (let status of publishedConnectionStates) {
+        metricsResult[status] = 0;
+    }
 
     // Subscription state counters
     let subscriptionResults = { valid: 0, expired: 0, unset: 0, failed: 0, pending: 0 };
@@ -3077,6 +3234,7 @@ async function collectMetrics() {
 
     // Update Prometheus metrics for connections
     Object.keys(metricsResult).forEach(status => {
+        publishedConnectionStates.add(status);
         metrics.imapConnections.set({ status }, metricsResult[status]);
     });
 
@@ -3658,10 +3816,9 @@ startApplication()
         startHealthMonitoring();
 
         // Initialize queue event listeners
-        queueEvents.notify = new QueueEvents('notify', Object.assign({}, queueConf));
-        queueEvents.submit = new QueueEvents('submit', Object.assign({}, queueConf));
-        queueEvents.documents = new QueueEvents('documents', Object.assign({}, queueConf));
-        queueEvents.export = new QueueEvents('export', Object.assign({}, queueConf));
+        for (let name of ['notify', 'submit', 'documents', 'export']) {
+            queueEvents[name] = logBullErrors(new QueueEvents(name, Object.assign({}, queueConf)), `queueEvents:${name}`);
+        }
 
         // Periodic queue cleanup (every 6 hours)
         const QUEUE_CLEANUP_INTERVAL = 6 * 60 * 60 * 1000;

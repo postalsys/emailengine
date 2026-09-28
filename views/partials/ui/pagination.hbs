@@ -8,7 +8,8 @@
       showPaging - falsy when there is only one page; suppresses all output
       prevPage   - URL of the previous page, falsy when on the first page
       nextPage   - URL of the next page, falsy when on the last page
-      pageLinks  - array of { url, title, active }
+      pageLinks  - array of { url, title, active }, or { gap: true } where pages are
+                   left out (windowedPageLinks in lib/ui-routes/route-helpers.js)
 --}}
 {{#if showPaging}}
 <div class="card-footer border-base-content/10 border-t px-6 py-4">
@@ -20,7 +21,11 @@
         {{/if}}
 
         {{#each pageLinks}}
+        {{#if gap}}
+        <span class="join-item btn btn-soft btn-sm btn-disabled" aria-hidden="true">&hellip;</span>
+        {{else}}
         <a class="join-item btn btn-sm {{#if active}}btn-primary{{else}}btn-soft{{/if}}" href="{{url}}">{{title}}</a>
+        {{/if}}
         {{/each}}
 
         {{#if nextPage}}

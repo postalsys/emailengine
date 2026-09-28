@@ -21,8 +21,14 @@ const {
     createAuthorizationCode,
     redeemAuthorizationCode,
     verifyPkce,
-    normalizeScopes
+    normalizeScopes,
+    touchClient,
+    CLIENT_TTL,
+    PENDING_CLIENT_TTL,
+    MAX_PENDING_CLIENTS,
+    pendingClientsKey
 } = require('../lib/mcp/oauth');
+const { REDIS_PREFIX } = require('../lib/consts');
 
 registerRedisTeardown(redis);
 
@@ -245,5 +251,64 @@ test('MCP OAuth', async t => {
         assert.equal(tokenPermissions.check({ tokenData, operation: { action: 'read', group: 'message' } }).allowed, true);
 
         await tokens.delete(response.access_token);
+    });
+});
+
+test('MCP OAuth client registration lifetime', async t => {
+    const ttlOf = async clientId => await redis.ttl(`${REDIS_PREFIX}mcp:oauth:client:${clientId}`);
+
+    await t.test('a registration lives only until consent, which extends it to the full lifetime', async () => {
+        const client = await registerClient({ redirectUris: ['https://claude.ai/cb'], clientName: 'Lifetime' });
+
+        const initial = await ttlOf(client.client_id);
+        assert.ok(initial > 0 && initial <= PENDING_CLIENT_TTL, `unconsented registration TTL ${initial}`);
+        assert.notEqual(await redis.zscore(pendingClientsKey(), client.client_id), null);
+
+        await touchClient(client.client_id);
+        const extended = await ttlOf(client.client_id);
+        assert.ok(extended > PENDING_CLIENT_TTL && extended <= CLIENT_TTL, `consented registration TTL ${extended}`);
+        assert.equal(await redis.zscore(pendingClientsKey(), client.client_id), null, 'no longer counted as pending');
+    });
+
+    await t.test('registrations waiting for consent are capped instance wide', async t => {
+        // Lowered for these calls only: the pending set is shared with the suites running
+        // alongside, so this test adds and removes only its own members
+        const key = pendingClientsKey();
+        const limit = 50;
+        assert.ok(limit < MAX_PENDING_CLIENTS);
+        const mine = [];
+        t.after(async () => {
+            if (mine.length) {
+                await redis.zrem(key, ...mine);
+            }
+        });
+
+        const expires = Date.now() + 60 * 1000;
+        const fill = [];
+        for (let i = 0; i < limit; i++) {
+            mine.push(`filler-${i}`);
+            fill.push(expires, `filler-${i}`);
+        }
+        await redis.zadd(key, ...fill);
+
+        await assert.rejects(
+            registerClient({ redirectUris: ['https://claude.ai/cb'], maxPending: limit }),
+            err => err.oauthError === 'temporarily_unavailable' && err.statusCode === 503
+        );
+
+        // Expired entries do not count: once they lapse, registration works again, and the
+        // lapsed entries are pruned by it
+        await redis.zrem(key, ...mine);
+        const lapsed = [];
+        for (let i = 0; i < limit; i++) {
+            mine.push(`lapsed-${i}`);
+            lapsed.push(Date.now() - 1000, `lapsed-${i}`);
+        }
+        await redis.zadd(key, ...lapsed);
+
+        const client = await registerClient({ redirectUris: ['https://claude.ai/cb'], maxPending: limit });
+        mine.push(client.client_id);
+        assert.match(client.client_id, /^[0-9a-f]{32}$/);
+        assert.equal(await redis.zscore(key, 'lapsed-0'), null);
     });
 });

@@ -12,6 +12,9 @@ const assert = require('node:assert').strict;
 const {
     acceptFilter,
     openListenStream,
+    handleListen,
+    reserveListenStream,
+    recheckListenStreams,
     publishAccountChange,
     canOpenListenStream,
     MAX_STREAMS_PER_CREDENTIAL,
@@ -183,6 +186,186 @@ test('MCP listen streams', async t => {
             for (const entry of opened) {
                 entry.stream.finalize();
             }
+        }
+    });
+});
+
+test('MCP listen admission under concurrency', async t => {
+    await t.test('concurrent listen requests cannot pass the per-credential cap', async () => {
+        // Holds every authorization check open until released, so all requests are in the
+        // accept phase at the same time, which is where the old count-only check was blind
+        const injected = [];
+        let releaseChecks;
+        const gate = new Promise(resolve => (releaseChecks = resolve));
+        const server = {
+            async inject(opts) {
+                injected.push(opts.url);
+                await gate;
+                return { statusCode: 200 };
+            }
+        };
+
+        const filter = { resourceSubscriptions: [accountUri('acct-1'), accountUri('acct-2')] };
+        const attempts = Array.from({ length: 10 }, (v, i) =>
+            handleListen({ h: stubToolkit(), server, request: stubRequest('cred-race'), subscriptionId: `race-${i}`, filter })
+        );
+
+        // Let every attempt reach its first await
+        await new Promise(resolve => setImmediate(resolve));
+        releaseChecks();
+        const responses = await Promise.all(attempts);
+
+        const opened = responses.filter(Boolean);
+        try {
+            assert.strictEqual(opened.length, MAX_STREAMS_PER_CREDENTIAL);
+            // Only the admitted requests spent injected requests
+            assert.strictEqual(injected.length, MAX_STREAMS_PER_CREDENTIAL * 2);
+            assert.ok(!canOpenListenStream(stubRequest('cred-race')));
+        } finally {
+            for (const response of opened) {
+                response.stream.finalize();
+            }
+        }
+        assert.ok(canOpenListenStream(stubRequest('cred-race')), 'closing the streams frees the slots');
+    });
+
+    await t.test('a reservation is given back when authorization fails', async () => {
+        const server = {
+            async inject() {
+                throw new Error('dispatch failed');
+            }
+        };
+        for (let i = 0; i < MAX_STREAMS_PER_CREDENTIAL + 1; i++) {
+            await assert.rejects(
+                handleListen({
+                    h: stubToolkit(),
+                    server,
+                    request: stubRequest('cred-fail'),
+                    subscriptionId: `fail-${i}`,
+                    filter: { resourceSubscriptions: [accountUri('acct-1')] }
+                })
+            );
+        }
+        assert.ok(canOpenListenStream(stubRequest('cred-fail')));
+    });
+
+    await t.test('reservations count against the cap before the stream exists', async () => {
+        const releases = [];
+        for (let i = 0; i < MAX_STREAMS_PER_CREDENTIAL; i++) {
+            releases.push(reserveListenStream(stubRequest('cred-reserve')));
+        }
+        assert.ok(releases.every(Boolean));
+        assert.strictEqual(reserveListenStream(stubRequest('cred-reserve')), null);
+        releases[0]();
+        releases[0]();
+        const again = reserveListenStream(stubRequest('cred-reserve'));
+        assert.ok(again, 'a released slot is available again, and releasing twice frees only one');
+        assert.strictEqual(reserveListenStream(stubRequest('cred-reserve')), null);
+        for (const release of [...releases, again]) {
+            release();
+        }
+    });
+});
+
+test('MCP listen streams re-check their authorization', async t => {
+    const waitFor = async (check, timeout) => {
+        const until = Date.now() + timeout;
+        while (!check() && Date.now() < until) {
+            await new Promise(resolve => setTimeout(resolve, 10));
+        }
+        return check();
+    };
+
+    // Answers each account's status from a table the test changes while the stream is open
+    function mutableServer(statuses) {
+        return {
+            async inject(opts) {
+                const account = decodeURIComponent(opts.url.replace('/v1/account/', ''));
+                return { statusCode: statuses[account] || 200 };
+            }
+        };
+    }
+
+    await t.test('one pass probes each (credential, account) pair once, however many streams share it', async () => {
+        // Each stream used to run its own timer and its own round of injected requests
+        const server = stubServer(['acct-shared', 'acct-own']);
+        const streams = [];
+        const subscriptions = [[accountUri('acct-shared')], [accountUri('acct-shared'), accountUri('acct-own')]];
+        for (let i = 0; i < subscriptions.length; i++) {
+            const response = await handleListen({
+                h: stubToolkit(),
+                server,
+                request: stubRequest('cred-shared'),
+                subscriptionId: `shared-${i}`,
+                filter: { resourceSubscriptions: subscriptions[i] }
+            });
+            streams.push(response.stream);
+        }
+        try {
+            server.injected.length = 0;
+            await recheckListenStreams();
+            assert.deepStrictEqual(server.injected.sort(), ['/v1/account/acct-own', '/v1/account/acct-shared']);
+            assert.ok(streams.every(stream => !stream.destroyed));
+        } finally {
+            for (const stream of streams) {
+                stream.finalize();
+            }
+        }
+    });
+
+    await t.test('a revoked token closes the stream', async () => {
+        const statuses = {};
+        const response = await handleListen({
+            h: stubToolkit(),
+            server: mutableServer(statuses),
+            request: stubRequest('cred-revoke'),
+            subscriptionId: 'revoke',
+            filter: { resourceSubscriptions: [accountUri('acct-1')] },
+            recheckInterval: 20
+        });
+        const stream = response.stream;
+        try {
+            await new Promise(resolve => setTimeout(resolve, 60));
+            assert.ok(!stream.destroyed, 'a credential that still reads the account keeps its stream');
+
+            statuses['acct-1'] = 401;
+            assert.ok(await waitFor(() => stream.destroyed, 1000), 'the stream closed once the token was gone');
+        } finally {
+            stream.finalize();
+        }
+    });
+
+    await t.test('a lost grant drops that URI, and the stream once nothing is left', async () => {
+        const statuses = {};
+        const response = await handleListen({
+            h: stubToolkit(),
+            server: mutableServer(statuses),
+            request: stubRequest('cred-grant'),
+            subscriptionId: 'grant',
+            filter: { resourceSubscriptions: [accountUri('acct-1'), accountUri('acct-2')] },
+            recheckInterval: 20
+        });
+        const stream = response.stream;
+        try {
+            statuses['acct-1'] = 403;
+            assert.ok(await waitFor(() => !stream.mcpSubscription.resourceUris.has(accountUri('acct-1')), 1000));
+            assert.ok(!stream.destroyed);
+
+            // A lost URI no longer receives notifications
+            const sent = [];
+            stream.sendMessage = message => sent.push(message);
+            publishAccountChange({ account: 'acct-1' });
+            assert.strictEqual(sent.length, 0);
+
+            // A transient failure changes nothing
+            statuses['acct-2'] = 503;
+            await new Promise(resolve => setTimeout(resolve, 60));
+            assert.ok(!stream.destroyed);
+
+            statuses['acct-2'] = 403;
+            assert.ok(await waitFor(() => stream.destroyed, 1000));
+        } finally {
+            stream.finalize();
         }
     });
 });

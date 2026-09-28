@@ -10,7 +10,8 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { createSmtpAuthHandler, createSmtpAccountResolver } = require('../lib/smtp-auth');
-const { AUTH_FAILURE_LIMIT } = require('../lib/auth-token');
+const { AUTH_FAILURE_LIMIT, authFailureKey, authFailureAddressKey, AUTH_FAILURE_WINDOW } = require('../lib/auth-token');
+const { rateLimitWindowKey } = require('../lib/rate-limit');
 const { trackedWindow, exhaustBudget } = require('./helpers/auth-throttle');
 const tokens = require('../lib/tokens');
 const settings = require('../lib/settings');
@@ -93,6 +94,17 @@ registerRedisTeardown(redis, async () => {
     } catch (err) {
         // ignore
     }
+    // The handler tests refuse non-token passwords from the default session address, which the
+    // per-address budget counts; do not leave that for the next run
+    try {
+        await redis.del(
+            rateLimitWindowKey(authFailureAddressKey('127.0.0.1'), AUTH_FAILURE_WINDOW).windowKey,
+            // and the per-username budgets of the same address, so back-to-back runs start clean
+            ...[ACCOUNT, OTHER_ACCOUNT, 'someone-else'].map(account => rateLimitWindowKey(authFailureKey('127.0.0.1', account), AUTH_FAILURE_WINDOW).windowKey)
+        );
+    } catch (err) {
+        // ignore
+    }
 });
 
 test('SMTP auth handler', async t => {
@@ -148,6 +160,27 @@ test('SMTP auth handler', async t => {
         const result = await onAuth({ username: ACCOUNT, password: smtpToken }, sess);
         assert.deepStrictEqual(result, { user: ACCOUNT });
         assert.ok(accountCache.has(sess));
+    });
+
+    await t.test('a failure to load the account answers 454, not a permanent 535', async () => {
+        const { Account } = require('../lib/account');
+        const realLoad = Account.prototype.loadAccountData;
+        Account.prototype.loadAccountData = async function () {
+            throw new Error('Connection is closed.');
+        };
+        try {
+            await assert.rejects(
+                () => onAuth({ username: ACCOUNT, password: smtpToken }, session({ remoteAddress: '203.0.113.31' })),
+                err => {
+                    assert.match(err.message, /Failed to authenticate user/);
+                    // smtp-server only reads responseCode
+                    assert.strictEqual(err.responseCode, 454);
+                    return true;
+                }
+            );
+        } finally {
+            Account.prototype.loadAccountData = realLoad;
+        }
     });
 
     await t.test('accepts a token whose permissions allow sending', async () => {

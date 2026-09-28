@@ -65,7 +65,7 @@ function createMockRedis() {
         scan: async () => ['0', []],
         quit: async () => {},
         disconnect: () => {},
-        subscribe: () => {},
+        subscribe: async () => {},
         on: () => {},
         off: () => {},
         defineCommand: () => {},
@@ -723,6 +723,103 @@ test('HTTP proxy agent management', async t => {
             delete process.env.EENGINE_HTTP_PROXY_URL;
             await stopServer(target.server);
             await stopServer(proxy.server);
+        }
+    });
+
+    await t.test('SOCKS agent - a TLS handshake that never completes times out and closes the tunnel', async () => {
+        // A target that accepts the tunnelled connection and never answers the ClientHello
+        const held = new Set();
+        let closedByClient = 0;
+        const blackhole = net.createServer(socket => {
+            held.add(socket);
+            // read (and drop) the ClientHello so the peer closing is noticed
+            socket.resume();
+            socket.on('error', () => {});
+            socket.on('close', () => {
+                closedByClient++;
+                held.delete(socket);
+            });
+        });
+        await new Promise(resolve => blackhole.listen(0, '127.0.0.1', resolve));
+        const socks = await startSocksServer();
+
+        const agent = createSocksAgent(socks.url, { connectTimeout: 300, headersTimeout: 10000, bodyTimeout: 10000 });
+        try {
+            const started = Date.now();
+            await assert.rejects(
+                () => fetchCmd(`https://127.0.0.1:${blackhole.address().port}/`, { dispatcher: agent }),
+                err => {
+                    const cause = err.cause || err;
+                    assert.strictEqual(cause.code, 'ETIMEDOUT');
+                    return true;
+                }
+            );
+            assert.ok(Date.now() - started < 5000, 'the handshake wait is bounded by connectTimeout');
+
+            // Both halves of the tunnel are destroyed, so the target sees its connection close
+            for (let i = 0; i < 50 && !closedByClient; i++) {
+                await new Promise(resolve => setTimeout(resolve, 20));
+            }
+            assert.strictEqual(closedByClient, 1, 'the tunnelled connection should be closed');
+        } finally {
+            await agent.close().catch(() => {});
+            for (let socket of held) {
+                socket.destroy();
+            }
+            await new Promise(resolve => blackhole.close(resolve));
+            await socks.stop();
+        }
+    });
+
+    await t.test('the shared retry dispatcher gives up after two retries', async () => {
+        // Callers are API requests and worker RPCs on a 10 s budget; five retries used to outlast it
+        let requests = 0;
+        const target = http.createServer((req, res) => {
+            requests++;
+            res.writeHead(429, { 'Content-Type': 'text/plain' });
+            res.end('slow down');
+        });
+        await new Promise(resolve => target.listen(0, '127.0.0.1', resolve));
+        try {
+            setMockSetting('httpProxyEnabled', false);
+            setMockSetting('proxyEnabled', false);
+            await reloadHttpProxyAgent();
+
+            // undici reports the exhausted retries as a failed fetch carrying the last status
+            await assert.rejects(fetchCmd(`http://127.0.0.1:${target.address().port}/`, { dispatcher: httpAgent.retry }), err => {
+                assert.strictEqual(err.cause && err.cause.statusCode, 429);
+                return true;
+            });
+            assert.strictEqual(requests, 3, 'one request plus two retries');
+        } finally {
+            await stopServer(target);
+        }
+    });
+
+    await t.test('the shared retry dispatcher caps a long Retry-After at five seconds', async () => {
+        let requests = 0;
+        const target = http.createServer((req, res) => {
+            requests++;
+            if (requests === 1) {
+                res.writeHead(429, { 'Retry-After': '120' });
+                return res.end();
+            }
+            res.writeHead(200, { 'Content-Type': 'text/plain' });
+            res.end('ok');
+        });
+        await new Promise(resolve => target.listen(0, '127.0.0.1', resolve));
+        try {
+            setMockSetting('httpProxyEnabled', false);
+            setMockSetting('proxyEnabled', false);
+            await reloadHttpProxyAgent();
+
+            const started = Date.now();
+            const res = await fetchCmd(`http://127.0.0.1:${target.address().port}/`, { dispatcher: httpAgent.retry });
+            assert.strictEqual(await res.text(), 'ok');
+            const elapsed = Date.now() - started;
+            assert.ok(elapsed < 8000, `the retry waited ${elapsed}ms, not the 120 s the server asked for`);
+        } finally {
+            await stopServer(target);
         }
     });
 

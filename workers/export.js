@@ -5,9 +5,6 @@ const { parentPort } = require('worker_threads');
 const packageData = require('../package.json');
 const config = require('@zone-eu/wild-config');
 const logger = require('../lib/logger');
-const fs = require('fs');
-const zlib = require('zlib');
-const { pipeline } = require('stream');
 
 const {
     REDIS_PREFIX,
@@ -30,13 +27,15 @@ const {
     isExportLimitReached,
     parseActiveEntry,
     getExportKey,
+    exportFilePath,
+    openExportOutput,
     ACTIVE_EXPORTS_KEY
 } = require('../lib/export');
 
 const { initSentry } = require('../lib/sentry');
 initSentry('export');
 
-const { redis, queueConf } = require('../lib/db');
+const { redis, queueConf, logBullErrors } = require('../lib/db');
 const { Worker } = require('bullmq');
 const { Account } = require('../lib/account');
 const getSecret = require('../lib/get-secret');
@@ -359,7 +358,8 @@ async function indexFolder(accountObject, account, exportId, folderPath, startDa
 
 async function exportMessages(job, exportData) {
     const { account, exportId } = job.data;
-    const { filePath } = exportData;
+    // Derived from the id like every other reader of the record, never the stored path as such
+    const filePath = exportFilePath(exportId, exportData);
     const includeAttachments = exportData.includeAttachments === '1';
     const textType = exportData.textType || '*';
     const rawMaxBytes = Number(exportData.maxBytes);
@@ -377,31 +377,19 @@ async function exportMessages(job, exportData) {
         timeout: EXPORT_TIMEOUT
     });
 
-    const gzipStream = zlib.createGzip();
-    const fileStream = fs.createWriteStream(filePath, { mode: 0o600 });
+    // Everything that can fail before the export starts writing runs before the output file is
+    // opened: a failure here used to leave the file descriptor (and the unlinked file's disk space)
+    // held for the life of the worker.
+    const accountData = await accountObject.loadAccountData(account);
+    const isApiAccount = await accountObject.isApiClient(accountData);
 
-    let encryptStream = null;
-    let streamError = null;
-
-    const secret = isEncrypted ? await getSecret() : null;
-
-    const streams = [gzipStream];
-    if (secret) {
-        const { createEncryptStream } = require('../lib/stream-encrypt');
-        encryptStream = await createEncryptStream(secret);
-        streams.push(encryptStream);
-    }
-    streams.push(fileStream);
-
-    pipeline(...streams, err => {
-        if (err && !streamError) {
-            streamError = err;
-        }
-    });
+    const output = await openExportOutput(filePath, isEncrypted ? await getSecret() : null);
+    const gzipStream = output.input;
+    const fileStream = output.output;
 
     function writeWithBackpressure(data) {
-        if (streamError) {
-            return Promise.reject(streamError);
+        if (output.error()) {
+            return Promise.reject(output.error());
         }
 
         if (gzipStream.write(data)) {
@@ -436,8 +424,6 @@ async function exportMessages(job, exportData) {
     // from inside the retry backoff so a batch stuck retrying does not let the lock lapse.
     const maybeExtendLease = createLeaseExtender(job, account, exportId);
 
-    const accountData = await accountObject.loadAccountData(account);
-    const isApiAccount = await accountObject.isApiClient(accountData);
     const MESSAGE_FETCH_BATCH_SIZE = 10; // Batch size for parallel message fetching
     const MAX_BATCH_RETRIES = 5; // Max retries for rate-limited or transient per-message errors within a batch
     const BATCH_RETRY_BASE_DELAY = 5000; // Base delay for batch retry backoff (5 seconds)
@@ -490,8 +476,8 @@ async function exportMessages(job, exportData) {
 
     try {
         while (true) {
-            if (streamError) {
-                throw streamError;
+            if (output.error()) {
+                throw output.error();
             }
 
             if (sizeLimitReached) {
@@ -536,8 +522,8 @@ async function exportMessages(job, exportData) {
 
             if (isApiAccount && entriesToFetch.length > 1) {
                 for (let i = 0; i < entriesToFetch.length; i += MESSAGE_FETCH_BATCH_SIZE) {
-                    if (streamError) {
-                        throw streamError;
+                    if (output.error()) {
+                        throw output.error();
                     }
                     if (sizeLimitReached) {
                         break;
@@ -630,8 +616,8 @@ async function exportMessages(job, exportData) {
                 }
             } else {
                 for (const entry of entriesToFetch) {
-                    if (streamError) {
-                        throw streamError;
+                    if (output.error()) {
+                        throw output.error();
                     }
 
                     let message = null;
@@ -697,6 +683,37 @@ async function exportMessages(job, exportData) {
         processingError = err;
     }
 
+    const FINALIZATION_TIMEOUT = 30000;
+    await new Promise((resolve, reject) => {
+        if (output.error()) {
+            // The chain already failed and pipeline() tore it down, so no 'finish' or 'error'
+            // is coming; waiting would only run out the timeout
+            output.destroy();
+            return reject(output.error());
+        }
+        const timeout = setTimeout(() => {
+            output.destroy();
+            reject(output.error() || new Error('Stream finalization timed out'));
+        }, FINALIZATION_TIMEOUT);
+        gzipStream.end();
+        fileStream.once('finish', () => {
+            clearTimeout(timeout);
+            resolve();
+        });
+        fileStream.once('error', err => {
+            clearTimeout(timeout);
+            reject(output.error() || err);
+        });
+    });
+
+    if (processingError) {
+        throw processingError;
+    }
+    if (output.error()) {
+        throw output.error();
+    }
+
+    // Written after the file is closed, so a failure here cannot leave the streams open
     if (sizeLimitReached) {
         logger.warn({
             msg: 'Export truncated: size limit reached',
@@ -707,32 +724,6 @@ async function exportMessages(job, exportData) {
             messagesExported: processed
         });
         await Export.update(account, exportId, { truncated: '1' });
-    }
-
-    const FINALIZATION_TIMEOUT = 30000;
-    await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-            gzipStream.destroy();
-            if (encryptStream) encryptStream.destroy();
-            fileStream.destroy();
-            reject(streamError || new Error('Stream finalization timed out'));
-        }, FINALIZATION_TIMEOUT);
-        gzipStream.end();
-        fileStream.once('finish', () => {
-            clearTimeout(timeout);
-            resolve();
-        });
-        fileStream.once('error', err => {
-            clearTimeout(timeout);
-            reject(streamError || err);
-        });
-    });
-
-    if (processingError) {
-        throw processingError;
-    }
-    if (streamError) {
-        throw streamError;
     }
 
     logger.info({ msg: 'Export messages completed', account, exportId, messagesExported: processed, bytesWritten: totalBytesWritten });
@@ -794,9 +785,7 @@ const exportWorker = new Worker(
 
             const exportData = await redis.hgetall(`${REDIS_PREFIX}exp:${account}:${exportId}`).catch(() => ({}));
 
-            if (exportData.filePath) {
-                await fs.promises.unlink(exportData.filePath).catch(() => {});
-            }
+            await Export.removeFile(exportId, exportData);
 
             if (err.code === 'ExportCancelled') {
                 await Export.deleteFully(account, exportId);
@@ -836,6 +825,8 @@ const exportWorker = new Worker(
         ...queueConf
     }
 );
+
+logBullErrors(exportWorker, 'worker:export');
 
 exportWorker.on('completed', async job => {
     metrics(logger, 'queuesProcessed', 'inc', { queue: 'export', status: 'completed' });
@@ -898,9 +889,13 @@ async function onCommand(command) {
     }
 
     // Now that interrupted exports have been reconciled and orphaned files cleaned, start consuming
-    // jobs. Mirrors BullMQ's own autorun: a fatal run() failure is surfaced as an 'error' event,
-    // which (no listener) crashes the worker thread so the main process can restart it.
-    exportWorker.run().catch(error => exportWorker.emit('error', error));
+    // jobs. A fatal run() failure leaves a thread that keeps sending heartbeats while consuming
+    // nothing, so it exits instead and the main process respawns it. (Re-emitting it as an 'error'
+    // event did not crash anything: BullMQ catches an unlistened 'error' and prints it.)
+    exportWorker.run().catch(err => {
+        logger.fatal({ msg: 'Export queue processing stopped, exiting worker', err });
+        logger.flush(() => process.exit(1));
+    });
 
     setInterval(() => {
         try {

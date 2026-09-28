@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 const crypto = require('crypto');
 
-const { encrypt, decrypt, parseEncryptedData } = require('../lib/encrypt');
+const { encrypt, decrypt, encryptField, decryptField, parseEncryptedData } = require('../lib/encrypt');
 
 test('Encryption tests', async t => {
     const testSecret = 'test-secret-password-123';
@@ -193,6 +193,78 @@ test('Encryption tests', async t => {
         const parsed = parseEncryptedData(null);
         assert.strictEqual(parsed.format, 'cleartext');
         assert.strictEqual(parsed.data, '');
+    });
+
+    await t.test('values written by one process share a salt, so one derived key serves them all', async () => {
+        // The derived key is cached per (secret, salt): a salt per value made the cache useless
+        // past its size, and every hot-path decrypt of a fresh value ran a cold scrypt
+        const encrypted1 = encrypt('first value', testSecret);
+        const encrypted2 = encrypt('second value', testSecret);
+        const parsed1 = parseEncryptedData(encrypted1);
+        const parsed2 = parseEncryptedData(encrypted2);
+
+        assert.ok(parsed1.salt.equals(parsed2.salt), 'one salt per process');
+        assert.ok(!parsed1.iv.equals(parsed2.iv), 'the GCM IV stays random per value');
+        assert.strictEqual(parsed1.iv.length, 12);
+
+        assert.strictEqual(decrypt(encrypted1, testSecret), 'first value');
+        assert.strictEqual(decrypt(encrypted2, testSecret), 'second value');
+    });
+
+    await t.test('two secrets sharing the process salt keep their own derived keys', async () => {
+        // The key cache is keyed per (secret, salt). With one salt buffer for every write, an
+        // entry keyed on that buffer's identity let the second secret's key overwrite the first's,
+        // and a value then decrypted "successfully" with the wrong secret
+        const first = encrypt('for the first secret', 'first-secret');
+        const second = encrypt('for the second secret', 'second-secret');
+
+        assert.strictEqual(decrypt(first, 'first-secret'), 'for the first secret');
+        assert.strictEqual(decrypt(second, 'second-secret'), 'for the second secret');
+        assert.throws(() => decrypt(first, 'second-secret'));
+        assert.throws(() => decrypt(second, 'first-secret'));
+        // and again, now that both keys have been through the cache in the other order
+        assert.strictEqual(decrypt(first, 'first-secret'), 'for the first secret');
+        assert.strictEqual(encrypt('again', 'first-secret') !== encrypt('again', 'second-secret'), true);
+        assert.strictEqual(decrypt(encrypt('again', 'first-secret'), 'first-secret'), 'again');
+    });
+
+    await t.test('a value written with its own salt still decrypts', async () => {
+        // What every value stored before the shared salt looks like: the same format, a random
+        // salt of its own. Built by hand, since encrypt() no longer writes one.
+        const cleartext = 'legacy value';
+        const salt = crypto.randomBytes(16);
+        const iv = crypto.randomBytes(12);
+        const key = crypto.scryptSync(testSecret, salt, 32);
+        const cipher = crypto.createCipheriv('aes-256-gcm', key, iv, { authTagLength: 16 });
+        const ciphertext = Buffer.concat([cipher.update(cleartext), cipher.final()]);
+        const legacy = ['', 'wd01', 'aes-256-gcm', cipher.getAuthTag(), iv, salt, ciphertext]
+            .map(part => (Buffer.isBuffer(part) ? part.toString('hex') : part))
+            .join('$');
+
+        assert.strictEqual(decrypt(legacy, testSecret), cleartext);
+        assert.ok(!parseEncryptedData(encrypt(cleartext, testSecret)).salt.equals(salt), 'and the next write uses the process salt');
+    });
+
+    await t.test('encryptField() and decryptField() treat empty and unreadable values as unset', async () => {
+        assert.strictEqual(encryptField('', testSecret), '', 'the empty string is a cleared marker and stays as it is');
+        assert.strictEqual(encryptField('value', ''), 'value', 'nothing to encrypt with without a secret');
+        const stored = encryptField('value', testSecret);
+        assert.ok(stored.startsWith('$wd01$'));
+
+        assert.strictEqual(decryptField(stored, testSecret), 'value');
+        assert.strictEqual(decryptField('cleartext', testSecret), 'cleartext', 'a value stored before its field was encrypted passes through');
+        assert.strictEqual(decryptField('', testSecret), '');
+        assert.strictEqual(decryptField(null, testSecret), null);
+
+        const errors = [];
+        assert.strictEqual(
+            decryptField(stored, 'another-secret', err => errors.push(err)),
+            undefined,
+            'unreadable reads as unset'
+        );
+        assert.strictEqual(errors.length, 1);
+        assert.strictEqual(errors[0].code, 'InternalConfigError');
+        assert.strictEqual(decryptField(stored, 'another-secret'), undefined, 'the report callback is optional');
     });
 
     await t.test('scrypt key derivation is consistent for same password and salt', async () => {

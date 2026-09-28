@@ -33,8 +33,19 @@ const ALLOWED_LICENSES = [
 ];
 
 // Build-time packages whose output ships inside the compiled UI assets
-// (static/css/flyonui.css, static/js/flyonui.js)
-const ASSET_PACKAGES = ['tailwindcss', 'flyonui', '@iconify/tailwind4', '@iconify-json/tabler'];
+// (static/css/flyonui.css, static/js/flyonui.js) or is copied under static/ by
+// copy-static-files.sh (the ACE editor, the message browser client, the WebAuthn
+// browser bundle). All devDependencies, so `npm ls --omit=dev` above never lists
+// them and they have to be named here to appear in the listing at all.
+const ASSET_PACKAGES = [
+    'tailwindcss',
+    'flyonui',
+    '@iconify/tailwind4',
+    '@iconify-json/tabler',
+    'ace-builds',
+    '@postalsys/ee-client',
+    '@simplewebauthn/browser'
+];
 
 // Packages whose package.json declares no (or an unparseable) license even
 // though their shipped LICENSE file is clear. Keep each entry justified; fix

@@ -92,27 +92,109 @@ test('OAuth integration tests', async t => {
         assert.strictEqual(params.get('redirect_uri'), 'http://localhost/callback?param=value');
     });
 
-    await t.test('Error response falls back when responseJson is undefined or null', async () => {
-        const buildErrorResponse = responseJson => {
-            return responseJson || { error: 'Failed to parse response' };
-        };
+    // Token-error handling is exercised through the real OutlookOauth.refreshToken() against a local
+    // token endpoint. These used to be hand-written copies of the fallback and the partial-secret
+    // regex, and the regex copy had already drifted from lib/oauth/outlook.js.
+    async function withTokenEndpoint(respond, fn) {
+        const requests = [];
+        const server = http.createServer((req, res) => {
+            const chunks = [];
+            req.on('data', chunk => chunks.push(chunk));
+            req.on('end', () => {
+                requests.push({ method: req.method, url: req.url, body: Buffer.concat(chunks).toString() });
+                const { status, body } = respond();
+                res.writeHead(status, { 'Content-Type': 'application/json' });
+                res.end(body);
+            });
+        });
+        await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+        try {
+            const flags = [];
+            const outlook = new OutlookOauth({
+                ...baseOpts,
+                clientSecret: 'abcdefghijklmnopqrstuvwxyz',
+                authority: 'common',
+                setFlag: async (...args) => flags.push(args)
+            });
+            outlook.entraEndpoint = `http://127.0.0.1:${server.address().port}`;
+            await fn(outlook, { requests, flags });
+        } finally {
+            await new Promise(resolve => server.close(resolve));
+        }
+    }
 
-        assert.deepStrictEqual(buildErrorResponse(undefined), { error: 'Failed to parse response' });
-        assert.deepStrictEqual(buildErrorResponse(null), { error: 'Failed to parse response' });
-        assert.strictEqual(buildErrorResponse({ error: 'invalid_grant' }).error, 'invalid_grant');
+    await t.test('OutlookOauth.refreshToken falls back to a placeholder when the error body is not JSON', async () => {
+        await withTokenEndpoint(
+            () => ({ status: 400, body: '<html>Bad Request</html>' }),
+            async (outlook, { requests }) => {
+                await assert.rejects(
+                    () => outlook.refreshToken({ refreshToken: 'rt-1' }),
+                    err => {
+                        assert.strictEqual(err.code, 'ETokenRefresh');
+                        assert.strictEqual(err.statusCode, 400);
+                        assert.deepStrictEqual(err.tokenRequest.response, { error: 'Failed to parse response' });
+                        assert.strictEqual(err.tokenRequest.clientSecret, undefined);
+                        return true;
+                    }
+                );
+                assert.strictEqual(requests.length, 1);
+                assert.strictEqual(requests[0].url, '/common/oauth2/v2.0/token');
+                const params = new URLSearchParams(requests[0].body);
+                assert.strictEqual(params.get('grant_type'), 'refresh_token');
+                assert.strictEqual(params.get('refresh_token'), 'rt-1');
+            }
+        );
     });
 
-    await t.test('Optional chaining prevents error on null error_description', async () => {
-        const EXPOSE_PARTIAL_SECRET_KEY_REGEX = /Unauthorized/i;
+    await t.test('OutlookOauth.refreshToken exposes a partial client secret and flags the app for a rejected secret', async () => {
+        await withTokenEndpoint(
+            () => ({
+                status: 401,
+                body: JSON.stringify({ error: 'invalid_client', error_description: 'AADSTS7000215: Invalid client secret is provided.' })
+            }),
+            async (outlook, { flags }) => {
+                await assert.rejects(
+                    () => outlook.refreshToken({ refreshToken: 'rt-1' }),
+                    err => {
+                        assert.strictEqual(err.code, 'ETokenRefresh');
+                        assert.ok(err.tokenRequest.clientSecret, 'partial secret is attached');
+                        assert.notStrictEqual(err.tokenRequest.clientSecret, 'abcdefghijklmnopqrstuvwxyz', 'never the whole secret');
+                        return true;
+                    }
+                );
+                assert.strictEqual(flags.length, 1);
+                assert.strictEqual(flags[0][0].code, 'OUTLOOK_CLIENT_SECRET_INVALID');
+            }
+        );
+    });
 
-        const testCases = [null, undefined, {}, { error: 'some_error' }, { error_description: null }, { error_description: undefined }];
+    await t.test('OutlookOauth.refreshToken handles an invalid_grant without error_description', async () => {
+        await withTokenEndpoint(
+            () => ({ status: 400, body: JSON.stringify({ error: 'invalid_grant', error_description: null }) }),
+            async (outlook, { flags }) => {
+                await assert.rejects(
+                    () => outlook.refreshToken({ refreshToken: 'rt-1' }),
+                    err => {
+                        assert.strictEqual(err.tokenRequest.clientSecret, undefined);
+                        assert.strictEqual(err.tokenRequest.userFlag.code, 'OUTLOOK_TOKEN_RENEWAL_FAILED');
+                        return true;
+                    }
+                );
+                // A user-level failure is not an app misconfiguration
+                assert.strictEqual(flags.length, 0);
+            }
+        );
+    });
 
-        for (const response of testCases) {
-            const result = EXPOSE_PARTIAL_SECRET_KEY_REGEX.test(response?.error_description);
-            assert.strictEqual(typeof result, 'boolean');
-        }
-
-        assert.ok(EXPOSE_PARTIAL_SECRET_KEY_REGEX.test({ error_description: 'Unauthorized access' }?.error_description));
+    await t.test('OutlookOauth.refreshToken clears the app flag on success', async () => {
+        await withTokenEndpoint(
+            () => ({ status: 200, body: JSON.stringify({ access_token: 'at-1', refresh_token: 'rt-2', expires_in: 3600 }) }),
+            async (outlook, { flags }) => {
+                const result = await outlook.refreshToken({ refreshToken: 'rt-1' });
+                assert.strictEqual(result.access_token, 'at-1');
+                assert.deepStrictEqual(flags, [[]]);
+            }
+        );
     });
 
     await t.test('GmailOauth generates valid auth URL', async () => {

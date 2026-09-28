@@ -12,10 +12,36 @@ concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: true
 
+# Nothing here deploys or pushes :edge until the "Run Tests" workflow (test.yml) has passed on the
+# same commit: the tests job waits for it, and both the demo deploy and the image build need it.
+# A newer push to master cancels this run while it waits (the concurrency block above), which is
+# what should happen - the newer commit is the one to deploy. A red test run fails the tests job,
+# and "Re-run failed jobs" here picks up a later green attempt.
 jobs:
+    tests:
+        name: Wait for tests
+        runs-on: ubuntu-24.04
+        timeout-minutes: 60
+        permissions:
+            actions: read
+            # the wait step is a local composite action, read from the checkout below
+            contents: read
+        steps:
+            - name: Checkout the wait-for-tests action
+              uses: actions/checkout@v6
+              with:
+                  sparse-checkout: .github/actions/wait-for-tests
+
+            - name: Wait for the test workflow on this commit
+              uses: ./.github/actions/wait-for-tests
+              with:
+                  token: ${{ github.token }}
+                  sha: ${{ github.sha }}
+
     deploy:
         name: Deploy Demo App
         runs-on: ubuntu-24.04
+        needs: tests
         timeout-minutes: 15
 
         steps:
@@ -63,6 +89,7 @@ jobs:
 
     docker:
         name: Build Docker Image (${{ matrix.arch }})
+        needs: tests
         # One job per architecture, each on a runner of that architecture. The arm64 leg used to be
         # emulated through QEMU on an x86 runner, where `npm ci` hit an illegal instruction and then
         # hung until the job timeout - reliably on any commit that touches package-lock.json, since

@@ -18,9 +18,9 @@ const { OutlookClient } = require('../lib/email-client/outlook-client');
 const { BaseClient } = require('../lib/email-client/base-client');
 const { Account } = require('../lib/account');
 const { oauth2Apps, isApiBasedApp } = require('../lib/oauth2-apps');
-const { redis, notifyQueue, submitQueue, documentsQueue, getFlowProducer } = require('../lib/db');
+const { redis, notifyQueue, submitQueue, documentsQueue, getFlowProducer, watchRedisReconnect } = require('../lib/db');
 const { sendToMessagePort, MessagePortWritable } = require('../lib/message-port-stream');
-const { packRpcError, unpackRpcError } = require('../lib/worker-rpc-error');
+const { packRpcError, unpackRpcError, describeRpcCommand } = require('../lib/worker-rpc-error');
 const { ImapFlowErrorCode } = require('imapflow');
 const { getESClient } = require('../lib/document-store');
 const settings = require('../lib/settings');
@@ -63,35 +63,29 @@ class ConnectionHandler {
         this.mids = 0;
 
         this.accounts = new Map();
+
+        // account -> token of the latest assign. An unassign or a newer assign replaces or drops it,
+        // which is how an assign still awaiting its setup learns it has been superseded. The one
+        // supersession check there is: the identity of the this.accounts entry cannot serve, because
+        // nothing is registered there until the Account object exists, so an unassign that lands
+        // during the loads before that leaves nothing to compare against. Entry identity is only
+        // consulted to decide whether a cleanup or an init retry still concerns the entry this
+        // assign registered.
+        this.assignTokens = new Map();
     }
 
     async init() {
-        // Track Redis connection state for reconnection detection
-        let hasSeenStableConnection = false;
-        let redisWasDisconnected = false;
-
-        // Check initial Redis state
-        if (redis.status === 'ready') {
-            hasSeenStableConnection = true;
-        }
-
-        redis.on('ready', () => {
-            if (redisWasDisconnected && hasSeenStableConnection) {
-                // Redis reconnected after being disconnected during our lifetime
+        // Redis reconnected after being disconnected during our lifetime. In-memory account state
+        // may no longer match Redis (a restart or a flush), so exit cleanly: the main thread
+        // treats exit code 0 as this case, respawns the worker and reassigns its accounts.
+        watchRedisReconnect(
+            redis,
+            () => {
                 logger.info({ msg: 'Redis reconnected after disconnection, exiting worker for clean restart', worker: 'imap' });
-                // Exit gracefully - the main process will restart this worker
                 process.exit(0);
-            }
-            // Mark that we've seen a stable connection
-            hasSeenStableConnection = true;
-        });
-
-        redis.on('end', () => {
-            if (hasSeenStableConnection) {
-                logger.warn({ msg: 'Redis connection lost', worker: 'imap' });
-                redisWasDisconnected = true;
-            }
-        });
+            },
+            () => logger.warn({ msg: 'Redis connection lost', worker: 'imap' })
+        );
 
         // indicate that we are ready to process connections
         parentPort.postMessage({ cmd: 'ready' });
@@ -187,6 +181,34 @@ class ConnectionHandler {
         return accountLogger;
     }
 
+    /**
+     * Closes an account connection this worker no longer tracks. Nothing is deleted, the account
+     * is only moving to another worker or being assigned here again
+     * @param {string} account - Account ID
+     * @param {Object} accountObject - The entry that was removed from this.accounts
+     */
+    async closeReleasedConnection(account, accountObject) {
+        if (!accountObject || !accountObject.connection) {
+            return;
+        }
+        try {
+            await accountObject.connection.close();
+        } catch (err) {
+            logger.error({ msg: 'Failed to close released account connection', account, err });
+        }
+    }
+
+    // The main thread takes an account back after an `assign` it gave up waiting for, or to move
+    // it onto another worker. An assignment still being set up notices the missing entry and stops.
+    async unassignConnection(account) {
+        logger.info({ msg: 'Account unassign requested', account });
+        this.assignTokens.delete(account);
+        let accountObject = this.accounts.get(account);
+        this.accounts.delete(account);
+        await this.closeReleasedConnection(account, accountObject);
+        return true;
+    }
+
     async assignConnection(account, runIndex, initOpts) {
         logger.debug({ msg: 'Assigned account to worker', account });
 
@@ -197,6 +219,10 @@ class ConnectionHandler {
         if (!runIndex && this.runIndex) {
             runIndex = this.runIndex;
         }
+
+        const token = Symbol(account);
+        this.assignTokens.set(account, token);
+        const isCurrent = () => this.assignTokens.get(account) === token;
 
         let accountLogger = await this.getAccountLogger(account);
         let secret = await getSecret();
@@ -210,8 +236,62 @@ class ConnectionHandler {
             esClient: await getESClient(logger)
         });
 
-        this.accounts.set(account, accountObject);
+        if (!isCurrent()) {
+            logger.info({ msg: 'Dropped superseded account assignment', account });
+            return false;
+        }
 
+        // Assigning an account this worker already runs replaces the connection. A retried assign
+        // (the main thread timed out on the first one) used to overwrite the map entry and leave the
+        // first connection running with nothing able to reach it. Swapped without an await in
+        // between, so two overlapping assigns cannot both keep a connection.
+        let previous = this.accounts.get(account);
+        this.accounts.set(account, accountObject);
+        await this.closeReleasedConnection(account, previous);
+
+        let current;
+        try {
+            current = await this.setupConnection(account, accountObject, { runIndex, accountLogger, secret, isCurrent });
+        } catch (err) {
+            // Leave no connection-less entry behind: it answered commands with "no active handler"
+            // and counted as a disconnected account for as long as the worker lived. Only the entry
+            // this assign registered is its to remove, a newer assign may have replaced it
+            if (this.accounts.get(account) === accountObject) {
+                this.accounts.delete(account);
+            }
+            if (isCurrent()) {
+                this.assignTokens.delete(account);
+            }
+            if (err.isBoom && !err.statusCode && err.output) {
+                // Lets the main thread tell an account that is gone (404) from a transient failure
+                err.statusCode = err.output.statusCode;
+            }
+            throw err;
+        }
+
+        if (!current) {
+            // Unassigned or assigned again while this was being set up; the client was never
+            // started, so there is nothing to close
+            if (this.accounts.get(account) === accountObject) {
+                this.accounts.delete(account);
+            }
+            logger.info({ msg: 'Dropped superseded account assignment', account });
+            return false;
+        }
+
+        // do not wait before returning as it may take forever
+        this.startConnection(account, accountObject, initOpts);
+    }
+
+    /**
+     * Loads the account and builds its client, without starting it
+     * @param {string} account - Account ID
+     * @param {Object} accountObject - The entry assignConnection() registered
+     * @param {Object} opts - runIndex, accountLogger, secret and isCurrent, the assign's own
+     *   supersession check (see the assignTokens comment in the constructor)
+     * @returns {Promise<boolean>} false when the assign was superseded in the meantime
+     */
+    async setupConnection(account, accountObject, { runIndex, accountLogger, secret, isCurrent }) {
         const accountData = await accountObject.loadAccountData();
 
         if (accountData.oauth2 && accountData.oauth2.auth) {
@@ -300,13 +380,16 @@ class ConnectionHandler {
             accountObject.logger = accountObject.connection.logger;
         }
 
+        if (!isCurrent()) {
+            return false;
+        }
+
         if (accountData.state) {
             await redis.hSetExists(accountObject.connection.getAccountKey(), 'state', accountData.state);
             await emitChangeEvent(logger, account, 'state', accountData.state);
         }
 
-        // do not wait before returning as it may take forever
-        this.startConnection(account, accountObject, initOpts);
+        return isCurrent();
     }
 
     /**
@@ -342,6 +425,7 @@ class ConnectionHandler {
 
     async deleteConnection(account) {
         logger.info({ msg: 'Deleting connection', account });
+        this.assignTokens.delete(account);
         if (this.accounts.has(account)) {
             let accountObject = this.accounts.get(account);
             if (accountObject.connection) {
@@ -441,7 +525,12 @@ class ConnectionHandler {
                     msg: 'Account reconnection requested'
                 });
 
-                await accountObject.connection.close();
+                try {
+                    await accountObject.connection.close();
+                } catch (err) {
+                    // a failed state write during close must not stop the reconnect
+                    logger.error({ msg: 'Failed to close connection', account, err });
+                }
             }
 
             await this.assignConnection(account, false, { forceWatchRenewal: true });
@@ -860,9 +949,12 @@ class ConnectionHandler {
         logger.info({ msg: 'Closing account connections', accounts: this.accounts.size });
         this.connectionsClosed = true;
 
-        this.accounts.forEach(accountObject => {
+        this.accounts.forEach((accountObject, account) => {
             if (accountObject && accountObject.connection) {
-                accountObject.connection.close();
+                // Gmail and Graph close() write state to Redis; a rejection here is only worth a log line
+                Promise.resolve()
+                    .then(() => accountObject.connection.close())
+                    .catch(err => logger.error({ msg: 'Failed to close connection', account, err }));
             }
         });
     }
@@ -913,6 +1005,7 @@ class ConnectionHandler {
                 return true;
 
             case 'delete':
+            case 'unassign':
             case 'update':
             case 'sync':
             case 'pause':
@@ -1050,9 +1143,6 @@ parentPort.on('message', message => {
                 });
             })
             .catch(err => {
-                if (message.message && message.message.data && message.message.data.raw) {
-                    message.message.data.raw = message.message.data.raw.length;
-                }
                 // Anything with a client-facing status (404 not found, 503 no active handler) is
                 // reported back to the caller as the command response, so it is not a server fault.
                 // 503 is excluded from the error branch on purpose: both "no active handler" and
@@ -1064,7 +1154,7 @@ parentPort.on('message', message => {
                     err.statusCode = 429;
                 }
                 let isServerFault = !err.statusCode || (err.statusCode >= 500 && err.statusCode !== 503);
-                logger[isServerFault ? 'error' : 'debug'](Object.assign({ msg: 'Command failed' }, message, { err }));
+                logger[isServerFault ? 'error' : 'debug'](Object.assign(describeRpcCommand(message), { msg: 'Command failed', err }));
                 parentPort.postMessage(Object.assign({ cmd: 'resp', mid: message.mid }, packRpcError(err)));
             });
     }

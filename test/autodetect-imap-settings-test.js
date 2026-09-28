@@ -22,6 +22,8 @@ const { mock } = require('node:test');
 const assert = require('node:assert').strict;
 
 const dns = require('dns').promises;
+const http = require('http');
+const { fetch: fetchCmd } = require('undici');
 
 const {
     autodetectImapSettings,
@@ -31,6 +33,10 @@ const {
     buildAutodiscoverRequest,
     buildAutodiscoverSoapRequest,
     runAutodiscovery,
+    resolver,
+    resolveUsingSRV,
+    timedFunction,
+    MAX_AUTODISCOVERY_BODY,
     hasResolvedHost,
     getAppPassword,
     escapeXml
@@ -733,14 +739,14 @@ test('runAutodiscovery', async t => {
     await t.test('announces every request as text/xml', async () => {
         // Exchange answers application/xml with 415 before it ever looks at the body
         const { calls, fetchResource } = stubFetch({ [POX]: { status: 200, body: poxWithImap } });
-        await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', undefined, fetchResource);
+        await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', undefined, { fetchResource });
         assert.strictEqual(calls[0].headers['Content-type'], 'text/xml; charset=utf-8');
     });
 
     await t.test('never sends credentials to a server that answers anonymously', async () => {
         const { calls, fetchResource } = stubFetch({ [POX]: { status: 200, body: poxWithImap } });
 
-        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, fetchResource);
+        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, { fetchResource });
 
         assert.deepStrictEqual(res.imap, { host: 'imap.example.com', port: 993, secure: true, auth: { user: 'real-login' } });
         assert.strictEqual(calls.length, 1, 'one request is enough when it is answered');
@@ -753,7 +759,7 @@ test('runAutodiscovery', async t => {
             [SOAP]: { status: 401 }
         });
 
-        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, fetchResource);
+        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, { fetchResource });
 
         assert.deepStrictEqual(res.smtp, { host: 'smtp.example.com', port: 587, secure: false });
         assert.ok(!calls[0].headers.Authorization, 'the first request is anonymous');
@@ -770,7 +776,10 @@ test('runAutodiscovery', async t => {
         </Account>`);
         const { calls, fetchResource } = stubFetch({ [POX]: { status: 200, body: poxNoServer }, [SOAP]: { status: 401 } });
 
-        await assert.rejects(() => runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, fetchResource), /Invalid response/);
+        await assert.rejects(
+            () => runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, { fetchResource }),
+            /Invalid response/
+        );
         assert.strictEqual(calls.length, 1, 'and it still counts as an anonymous answer, so no password is offered');
     });
 
@@ -778,7 +787,10 @@ test('runAutodiscovery', async t => {
         // A 200 is not a request for credentials, however unhelpful its body
         const { calls, fetchResource } = stubFetch({ [POX]: { status: 200, body: poxWebOnly }, [SOAP]: { status: 401 } });
 
-        await assert.rejects(() => runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, fetchResource), /Invalid response/);
+        await assert.rejects(
+            () => runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, { fetchResource }),
+            /Invalid response/
+        );
         assert.strictEqual(calls.length, 1, 'an answer without a challenge ends the lookup');
     });
 
@@ -789,7 +801,10 @@ test('runAutodiscovery', async t => {
             [SOAP]: { status: 200, body: soapResponse(ovhStyleSettings) }
         });
 
-        await assert.rejects(() => runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, fetchResource), /Invalid response/);
+        await assert.rejects(
+            () => runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, { fetchResource }),
+            /Invalid response/
+        );
         assert.strictEqual(calls.length, 1);
     });
 
@@ -800,7 +815,7 @@ test('runAutodiscovery', async t => {
             [SOAP]: { status: 200, body: soapResponse(ovhStyleSettings) }
         });
 
-        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, fetchResource);
+        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, { fetchResource });
 
         assert.deepStrictEqual(res.imap, { host: 'pro2.mail.ovh.net', port: 993, secure: true });
         assert.deepStrictEqual(res.smtp, { host: 'pro2.mail.ovh.net', port: 587, secure: false });
@@ -816,7 +831,7 @@ test('runAutodiscovery', async t => {
             [SOAP]: { status: 200, body: soapResponse(ovhStyleSettings) }
         });
 
-        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, fetchResource);
+        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, { fetchResource });
 
         assert.deepStrictEqual(res.imap.auth, { user: 'real-login' });
         assert.strictEqual(calls.filter(call => call.path === SOAP).length, 1, 'both are asked at once rather than one after the other');
@@ -833,7 +848,7 @@ test('runAutodiscovery', async t => {
             [SOAP]: () => new Promise(resolve => (releaseSoap = resolve))
         });
 
-        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, fetchResource);
+        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, { fetchResource });
 
         assert.deepStrictEqual(res.imap, { host: 'imap.example.com', port: 993, secure: true, auth: { user: 'real-login' } });
         assert.ok(releaseSoap, 'the SOAP endpoint was asked, and had still not answered');
@@ -849,7 +864,7 @@ test('runAutodiscovery', async t => {
             [SOAP]: { status: 200, body: soapResponse(ovhStyleSettings) }
         });
 
-        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, fetchResource);
+        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, { fetchResource });
 
         assert.deepStrictEqual(res.imap, { host: 'pro2.mail.ovh.net', port: 993, secure: true });
         assert.ok(releasePox, 'the legacy endpoint was asked, and had still not answered');
@@ -859,7 +874,7 @@ test('runAutodiscovery', async t => {
     await t.test('gives up without credentials rather than guessing', async () => {
         const { calls, fetchResource } = stubFetch({ [POX]: { status: 401 }, [SOAP]: { status: 200, body: soapResponse(ovhStyleSettings) } });
 
-        await assert.rejects(() => runAutodiscovery('https://autodiscover.example.com', 'user@example.com', undefined, fetchResource), /Invalid response/);
+        await assert.rejects(() => runAutodiscovery('https://autodiscover.example.com', 'user@example.com', undefined, { fetchResource }), /Invalid response/);
         assert.strictEqual(calls.length, 1, 'nothing is asked that cannot be answered without a password');
     });
 
@@ -868,7 +883,10 @@ test('runAutodiscovery', async t => {
         // parking host is not a request for credentials
         const { calls, fetchResource } = stubFetch({ [POX]: { status: 404 }, [SOAP]: { status: 200, body: soapResponse(ovhStyleSettings) } });
 
-        await assert.rejects(() => runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, fetchResource), /Invalid response/);
+        await assert.rejects(
+            () => runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, { fetchResource }),
+            /Invalid response/
+        );
         assert.strictEqual(calls.length, 1, 'no credentialed retry against a host that never challenged');
     });
 
@@ -880,7 +898,7 @@ test('runAutodiscovery', async t => {
             [SOAP]: { status: 200, body: soapResponse(ovhStyleSettings) }
         });
 
-        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, fetchResource);
+        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, { fetchResource });
 
         assert.deepStrictEqual(res.imap, { host: 'pro2.mail.ovh.net', port: 993, secure: true });
         for (let call of calls.slice(1)) {
@@ -896,14 +914,20 @@ test('runAutodiscovery', async t => {
             [SOAP]: { status: 200, body: soapResponse(ovhStyleSettings) }
         });
 
-        await assert.rejects(() => runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, fetchResource), /Invalid response/);
+        await assert.rejects(
+            () => runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, { fetchResource }),
+            /Invalid response/
+        );
         assert.strictEqual(calls.length, 1, 'no credential is sent anywhere once the challenge came over http');
     });
 
     await t.test('gives up when the credentials are refused', async () => {
         const { fetchResource } = stubFetch({ [POX]: { status: 401 }, [SOAP]: { status: 401 } });
 
-        await assert.rejects(() => runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, fetchResource), /Invalid response/);
+        await assert.rejects(
+            () => runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, { fetchResource }),
+            /Invalid response/
+        );
     });
 
     await t.test('survives one endpoint throwing outright', async () => {
@@ -917,7 +941,7 @@ test('runAutodiscovery', async t => {
             [SOAP]: { status: 200, body: soapResponse(ovhStyleSettings) }
         });
 
-        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, fetchResource);
+        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', credentials, { fetchResource });
         assert.deepStrictEqual(res.imap, { host: 'pro2.mail.ovh.net', port: 993, secure: true });
     });
 
@@ -927,9 +951,266 @@ test('runAutodiscovery', async t => {
             [SOAP]: { status: 401 }
         });
 
-        await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', { pass: 'secret' }, fetchResource);
+        await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', { pass: 'secret' }, { fetchResource });
 
         const authorization = calls.find(call => call.headers.Authorization).headers.Authorization;
         assert.strictEqual(authorization, `Basic ${Buffer.from('user@example.com:secret').toString('base64')}`);
+    });
+});
+
+// A minimal Mozilla autoconfig document naming an IMAP server, optionally padded past the size cap
+const autoconfigDoc = (host, padding) => `<?xml version="1.0" encoding="UTF-8"?>
+<clientConfig version="1.1">
+  <!--${padding || ''}-->
+  <emailProvider id="example.com">
+    <incomingServer type="imap"><hostname>${host}</hostname><port>993</port><socketType>SSL</socketType></incomingServer>
+  </emailProvider>
+</clientConfig>`;
+
+const noDns = {
+    resolveMx: async () => {
+        throw Object.assign(new Error('ENOTFOUND'), { code: 'ENOTFOUND' });
+    },
+    resolveSrv: async () => {
+        throw Object.assign(new Error('ENOTFOUND'), { code: 'ENOTFOUND' });
+    }
+};
+
+// A stand-in response carrying a text body, like the one runAutodiscovery's stubs return
+const textResponse = (status, body) => ({ ok: status >= 200 && status < 300, status, url: '', headers: { get: () => null }, text: async () => body || '' });
+
+test('processAutoconfigFile tolerates a server without port or socketType', async t => {
+    await t.test('a missing <port> and <socketType> do not discard the document', async () => {
+        const text = `<?xml version="1.0"?>
+<clientConfig version="1.1"><emailProvider id="example.com">
+  <incomingServer type="imap"><hostname>imap.example.com</hostname></incomingServer>
+  <outgoingServer type="smtp"><hostname>smtp.example.com</hostname><port>465</port><socketType>SSL</socketType></outgoingServer>
+</emailProvider></clientConfig>`;
+        // Used to throw "Cannot read properties of undefined (reading 'filter')"
+        const res = await processAutoconfigFile('user@example.com', 'example.com', text, 'test');
+        assert.deepStrictEqual(res.imap, { host: 'imap.example.com', secure: false });
+        assert.deepStrictEqual(res.smtp, { host: 'smtp.example.com', port: 465, secure: true });
+    });
+});
+
+test('resolveUsingSRV', async t => {
+    await t.test('keeps the IMAP answer when the domain has no _submission record', async () => {
+        const srvDns = {
+            resolveSrv: async name => {
+                if (name === '_imaps._tcp.example.com') {
+                    return [{ name: 'imap.example.com', port: 993, priority: 1, weight: 1 }];
+                }
+                // Every SMTP record is missing; the last lookup used to be the unguarded one
+                throw Object.assign(new Error('ENOTFOUND'), { code: 'ENOTFOUND' });
+            }
+        };
+        const res = await resolveUsingSRV('user@example.com', { dns: srvDns });
+        assert.deepStrictEqual(res.imap, { host: 'imap.example.com', port: 993, secure: true });
+        assert.strictEqual(res.smtp, false);
+    });
+
+    await t.test('reports nothing rather than throwing when no record exists at all', async () => {
+        const res = await resolveUsingSRV('user@example.com', { dns: noDns });
+        assert.deepStrictEqual(res, { imap: false, smtp: false, _source: 'srv' });
+    });
+
+    await t.test('looks up the IMAP and SMTP records at the same time', async () => {
+        // The two chains used to run one after the other inside a budget shared with four other
+        // resolvers. Every lookup is held until both first lookups have been asked for.
+        const asked = [];
+        let release;
+        const gate = new Promise(resolve => {
+            release = resolve;
+        });
+        const dns = {
+            resolveSrv: async name => {
+                asked.push(name);
+                if (asked.length === 2) {
+                    release();
+                }
+                await gate;
+                if (name === '_imaps._tcp.example.com') {
+                    return [{ name: 'imap.example.com', port: 993, priority: 1, weight: 1 }];
+                }
+                if (name === '_submission._tcp.example.com') {
+                    return [{ name: 'smtp.example.com', port: 587, priority: 1, weight: 1 }];
+                }
+                throw Object.assign(new Error('ENOTFOUND'), { code: 'ENOTFOUND' });
+            }
+        };
+        const res = await resolveUsingSRV('user@example.com', { dns });
+        assert.deepStrictEqual(asked.slice(0, 2).sort(), ['_imaps._tcp.example.com', '_submissions._tcp.example.com']);
+        assert.deepStrictEqual(res.imap, { host: 'imap.example.com', port: 993, secure: true });
+        assert.deepStrictEqual(res.smtp, { host: 'smtp.example.com', port: 587, secure: false });
+    });
+});
+
+test('timedFunction', async t => {
+    await t.test('aborts the lookup it was handed when the budget runs out', async () => {
+        let seenSignal;
+        const started = Date.now();
+        await assert.rejects(
+            timedFunction(
+                signal => {
+                    seenSignal = signal;
+                    return new Promise(() => {});
+                },
+                50,
+                'test'
+            ),
+            err => err._source === 'test' && /timed out/.test(err.message)
+        );
+        assert.ok(Date.now() - started < 1000);
+        assert.strictEqual(seenSignal.aborted, true);
+    });
+
+    await t.test('does not abort a lookup that finished in time', async () => {
+        let seenSignal;
+        const res = await timedFunction(
+            async signal => {
+                seenSignal = signal;
+                return 'done';
+            },
+            1000,
+            'test'
+        );
+        assert.strictEqual(res, 'done');
+        assert.strictEqual(seenSignal.aborted, false);
+    });
+
+    await t.test('still races a plain promise', async () => {
+        assert.strictEqual(await timedFunction(Promise.resolve(1), 1000), 1);
+    });
+});
+
+test('resolver (stand-in DNS and fetch)', async t => {
+    // Answers per URL host, so a test states which lookup returns what
+    const fetchByHost = table => async (url, opts) => {
+        const host = new URL(url).hostname;
+        const handler = table[host];
+        if (!handler) {
+            return textResponse(404);
+        }
+        return await handler(url, opts);
+    };
+
+    await t.test('the first lookup to name a server wins', async () => {
+        const res = await resolver('user@example.com', gt, null, {
+            dns: noDns,
+            timeout: 2000,
+            fetchResource: fetchByHost({
+                // Answers first, but names nothing: a loss, not a win
+                'example.com': async () => textResponse(200, '<clientConfig version="1.1"></clientConfig>'),
+                'autoconfig.example.com': async () => {
+                    await new Promise(resolve => setTimeout(resolve, 20));
+                    return textResponse(200, autoconfigDoc('imap.autoconfig.example.com'));
+                },
+                'autoconfig.thunderbird.net': async () => {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    return textResponse(200, autoconfigDoc('imap.mozilla.example.com'));
+                }
+            })
+        });
+        assert.strictEqual(res.imap.host, 'imap.autoconfig.example.com');
+        assert.strictEqual(res._source, 'autoconfig');
+    });
+
+    await t.test('reports the last failure once every lookup came back empty', async () => {
+        await assert.rejects(
+            resolver('user@example.com', gt, null, { dns: noDns, timeout: 2000, fetchResource: fetchByHost({}) }),
+            err => err._is_last === true
+        );
+    });
+
+    await t.test('a lookup that outlives its budget loses to one that answers', async () => {
+        const res = await resolver('user@example.com', gt, null, {
+            dns: noDns,
+            timeout: 100,
+            fetchResource: fetchByHost({
+                'autoconfig.example.com': () => new Promise(() => {}),
+                'autoconfig.thunderbird.net': async () => textResponse(200, autoconfigDoc('imap.mozilla.example.com'))
+            })
+        });
+        assert.strictEqual(res.imap.host, 'imap.mozilla.example.com');
+    });
+
+    await t.test('an oversize document is refused', async () => {
+        const padding = 'x'.repeat(MAX_AUTODISCOVERY_BODY);
+        await assert.rejects(
+            resolver('user@example.com', gt, null, {
+                dns: noDns,
+                timeout: 2000,
+                fetchResource: fetchByHost({ 'autoconfig.example.com': async () => textResponse(200, autoconfigDoc('imap.example.com', padding)) })
+            }),
+            err => err._is_last === true
+        );
+
+        // The same document without the padding resolves, so it is the size that was refused
+        const res = await resolver('user@example.com', gt, null, {
+            dns: noDns,
+            timeout: 2000,
+            fetchResource: fetchByHost({ 'autoconfig.example.com': async () => textResponse(200, autoconfigDoc('imap.example.com')) })
+        });
+        assert.strictEqual(res.imap.host, 'imap.example.com');
+    });
+});
+
+test('resolver cuts off hosts that never stop sending', async t => {
+    // Every lookup is sent to one local server, whatever host it was meant for, through the real
+    // fetch, so the abort and the body cap act on actual sockets
+    async function streamingServer(t, writeChunk) {
+        const closed = [];
+        const server = http.createServer((req, res) => {
+            res.writeHead(200, { 'Content-Type': 'text/xml' });
+            res.write('<?xml version="1.0"?><clientConfig><!--');
+            const timer = setInterval(() => res.write(writeChunk), 10);
+            res.on('close', () => {
+                clearInterval(timer);
+                closed.push(Date.now());
+            });
+        });
+        await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+        t.after(() => {
+            server.closeAllConnections();
+            server.close();
+        });
+        const base = `http://127.0.0.1:${server.address().port}`;
+        let opened = 0;
+        const fetchResource = (url, opts) => {
+            opened++;
+            return fetchCmd(`${base}${new URL(url).pathname}`, Object.assign({}, opts, { redirect: 'manual' }));
+        };
+        return { closed, fetchResource, opened: () => opened };
+    }
+
+    const waitFor = async (check, timeout) => {
+        const until = Date.now() + timeout;
+        while (!check() && Date.now() < until) {
+            await new Promise(resolve => setTimeout(resolve, 20));
+        }
+        return check();
+    };
+
+    await t.test('a slow endless body is aborted when the budget runs out', async () => {
+        const { closed, fetchResource, opened } = await streamingServer(t, 'x');
+        const started = Date.now();
+
+        await assert.rejects(resolver('user@example.com', gt, null, { dns: noDns, timeout: 300, fetchResource }), err => err._is_last === true);
+        assert.ok(Date.now() - started < 2000, 'the race gave up within the budget');
+        assert.ok(opened() >= 4, 'the HTTP lookups reached the server');
+
+        // Before the abort existed, the race was decided but every response kept streaming
+        assert.ok(await waitFor(() => closed.length === opened(), 2000), `every response was cut off (${closed.length}/${opened()})`);
+        assert.ok(Math.max(...closed) - started < 2500);
+    });
+
+    await t.test('a fast endless body stops at the size cap, well before the budget', async () => {
+        const { closed, fetchResource, opened } = await streamingServer(t, 'x'.repeat(64 * 1024));
+        const started = Date.now();
+
+        await assert.rejects(resolver('user@example.com', gt, null, { dns: noDns, timeout: 10000, fetchResource }), err => err._is_last === true);
+        // Refused on size, not on the ten second budget
+        assert.ok(Date.now() - started < 5000);
+        assert.ok(await waitFor(() => closed.length === opened(), 2000), `every response was cut off (${closed.length}/${opened()})`);
     });
 });

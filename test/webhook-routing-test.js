@@ -151,3 +151,39 @@ test('Webhook routing tests', async t => {
         );
     });
 });
+
+test('deliveryCustomHeaders keeps account headers off custom routes', () => {
+    const { deliveryCustomHeaders } = require('../lib/webhook-routing');
+    const globalHeaders = [{ key: 'X-Global', value: 'g' }];
+    const accountHeaders = [
+        { key: 'Authorization', value: 'Bearer account-secret' },
+        { key: 'X-Account', value: 'a' }
+    ];
+    const route = { id: 'r1', customHeaders: [{ key: 'Authorization', value: 'Bearer route-token' }] };
+
+    // A custom route gets exactly its own headers
+    assert.deepStrictEqual(deliveryCustomHeaders(route, globalHeaders, accountHeaders), { Authorization: 'Bearer route-token' });
+    assert.deepStrictEqual(deliveryCustomHeaders({ id: 'r2' }, globalHeaders, accountHeaders), {});
+
+    // The default target gets the global headers, then the account's on top
+    assert.deepStrictEqual(deliveryCustomHeaders(null, [{ key: 'Authorization', value: 'global' }].concat(globalHeaders), accountHeaders), {
+        Authorization: 'Bearer account-secret',
+        'X-Global': 'g',
+        'X-Account': 'a'
+    });
+    assert.deepStrictEqual(deliveryCustomHeaders(null, null, null), {});
+});
+
+test('isRouteMappingMissing drops a legacy job queued with a failed mapping', () => {
+    const { isRouteMappingMissing } = require('../lib/webhook-routing');
+
+    // routes without a map script never carry a mapping
+    assert.strictEqual(isRouteMappingMissing({ id: 'r' }), false);
+    assert.strictEqual(isRouteMappingMissing(undefined), false);
+
+    // a mapped route with its payload
+    assert.strictEqual(isRouteMappingMissing({ id: 'r', mapping: { a: 1 } }), false);
+
+    // the map failed: jobs queued before pushToQueue() skipped such a route carry null
+    assert.strictEqual(isRouteMappingMissing({ id: 'r', mapping: null }), true);
+});

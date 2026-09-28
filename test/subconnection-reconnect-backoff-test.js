@@ -216,3 +216,86 @@ test('Subconnection.reconnect() close and re-entry races', async t => {
         assert.equal(subconnection.state, 'connected');
     });
 });
+
+test('Subconnection.reconnect() refused login', async t => {
+    // A subconnection used to retry a refused credential forever, every 30 seconds per
+    // subconnection, for the whole auth-failure park window: lockout and fail2ban territory while
+    // the primary connection was backing off to 10 minutes. The primary owns that retry now
+    const refusedLogin = () => Object.assign(new Error('Authentication failed'), { authenticationFailed: true, serverResponseCode: 'AUTHENTICATIONFAILED' });
+
+    await t.test('stops retrying and disables itself when the server refuses the credential', async () => {
+        const { subconnection } = makeSubconnection();
+        let startCalls = 0;
+        subconnection.start = async () => {
+            startCalls++;
+            throw refusedLogin();
+        };
+
+        assert.equal(await subconnection.reconnect(), false);
+
+        assert.equal(startCalls, 1, 'a refused login must not be retried by the subconnection');
+        assert.equal(subconnection.state, 'authenticationError');
+        assert.equal(subconnection.disabled, true, 'must look disabled to the reconciler, which replaces it later');
+        assert.equal(subconnection.loginRefused, true, 'the marker the parent revives it by');
+        assert.equal(subconnection.isClosed, true);
+        assert.equal(subconnection._connecting, false);
+        assert.equal(await subconnection.reconnect(), false, 'a later close or error event must not start a new cycle');
+    });
+
+    await t.test('keeps retrying a login the server could not serve right now', async () => {
+        // [UNAVAILABLE] is the server's own temporary failure, not a verdict on the credential
+        const { subconnection } = makeSubconnection();
+        let startCalls = 0;
+        const originalStart = subconnection.start;
+        subconnection.start = async () => {
+            startCalls++;
+            if (startCalls === 1) {
+                throw Object.assign(new Error('Try again later'), { authenticationFailed: true, serverResponseCode: 'UNAVAILABLE' });
+            }
+            return originalStart();
+        };
+
+        await subconnection.reconnect();
+
+        assert.equal(startCalls, 2, 'a transient login failure is retried');
+        assert.equal(subconnection.state, 'connected');
+        assert.ok(!subconnection.loginRefused);
+    });
+});
+
+test('Subconnection error listener after the client was let go', async t => {
+    await t.test('a late error event after close does not call close() on null', async () => {
+        // The missing-mailbox shutdown nulls this.imapClient without detaching the listeners, and
+        // the close handler nulls the listener's own reference, so a late 'error' read
+        // null === null as "still the current client" and threw from inside the listener
+        const subconnection = new Subconnection({
+            parent: {
+                getImapConfig: async () => ({}),
+                connections: new Set(),
+                redis: { hSetExists: async () => {} },
+                getAccountKey: () => 'iad:test-account',
+                untrackConnection: async () => {}
+            },
+            account: 'test-account',
+            mailbox: { path: 'Shared Folders/team' },
+            logger: noopLogger
+        });
+
+        // Build the client through the real start() so the real listeners are attached; only the
+        // network connect is skipped
+        subconnection.connect = async () => true;
+        await subconnection.start();
+
+        const client = subconnection.imapClient;
+        assert.ok(client, 'start() must have created a client');
+
+        // Mirror the missing-mailbox shutdown, then the socket closing
+        subconnection.close();
+        subconnection.imapClient = null;
+        client.emit('close');
+        await new Promise(resolve => setImmediate(resolve));
+
+        assert.doesNotThrow(() => client.emit('error', new Error('late socket error')));
+        client.removeAllListeners();
+    });
+});

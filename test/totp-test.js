@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { generateTotpSeed, verifyTotp, generateTotpUrl } = require('../lib/totp');
+const { generateTotpSeed, verifyTotp, generateTotpUrl, generateTotpQrDataUrl } = require('../lib/totp');
 const { TOTP_WINDOW_SIZE } = require('../lib/consts');
 
 // Regression vectors generated with speakeasy 2.0.0 through the exact call the admin login
@@ -110,4 +110,15 @@ test('TOTP tests', async t => {
         }
         assert.strictEqual(seen.size, 100);
     });
+});
+
+test('generateTotpQrDataUrl renders the enrolment code as an image data URL', () => {
+    const url = generateTotpQrDataUrl(generateTotpUrl('x9yTNw2SPNe7V6EjsRWq', { label: 'EmailEngine:admin', issuer: 'EmailEngine' }));
+    assert.match(url, /^data:image\/gif;base64,[A-Za-z0-9+/]+=*$/);
+
+    const image = Buffer.from(url.slice(url.indexOf(',') + 1), 'base64');
+    assert.equal(image.subarray(0, 6).toString(), 'GIF87a');
+    // square, and no smaller than the 21-module version 1 code with its 4-module quiet zone at 4 px per module
+    assert.equal(image.readUInt16LE(6), image.readUInt16LE(8));
+    assert.ok(image.readUInt16LE(6) >= (21 + 8) * 4, `${image.readUInt16LE(6)} px`);
 });

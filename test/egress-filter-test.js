@@ -85,6 +85,21 @@ test('isBlockedAddress', async t => {
         }
     });
 
+    await t.test('unwraps the IPv4-compatible form, which classified as plain unicast', () => {
+        assert.strictEqual(isBlockedAddress('::a9fe:a9fe', POLICY_LINK_LOCAL), true);
+        assert.strictEqual(isBlockedAddress('::a9fe:a9fe', POLICY_PRIVATE), true);
+        assert.strictEqual(isBlockedAddress('::a00:1', POLICY_PRIVATE), true, '::10.0.0.1');
+        assert.strictEqual(isBlockedAddress('::5db8:d822', POLICY_PRIVATE), false, 'a public embedded address stays reachable');
+        // The two addresses inside ::/96 that are not transition forms keep their own meaning
+        assert.strictEqual(isBlockedAddress('::1', POLICY_LINK_LOCAL), false);
+        assert.strictEqual(isBlockedAddress('::1', POLICY_PRIVATE), true);
+    });
+
+    await t.test('blocks the deprecated site-local range under the private policy', () => {
+        assert.strictEqual(isBlockedAddress('fec0::1', POLICY_PRIVATE), true);
+        assert.strictEqual(isBlockedAddress('fec0::1', POLICY_LINK_LOCAL), false);
+    });
+
     await t.test('judges the embedded address under the private policy too', () => {
         assert.strictEqual(isBlockedAddress('64:ff9b::10.0.0.1', POLICY_PRIVATE), true);
         assert.strictEqual(isBlockedAddress('64:ff9b::10.0.0.1', POLICY_LINK_LOCAL), false);
