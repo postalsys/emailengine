@@ -54,9 +54,10 @@ const serverFields = Object.assign({ email: 'user@example.com', imap_disabled: '
 const authed = supertest.agent(baseUrl).auth(ACCESS_TOKEN, { type: 'bearer' });
 
 // The setup endpoints answer with an HTML redirect page rather than a Location header, so the created
-// account id has to come out of the rendered link.
+// account id has to come out of the rendered link. The link is an escaped attribute value (`=` is
+// rendered as an entity), so decode the page before looking for the parameter.
 function extractAccountId(text) {
-    const m = /account=([^&"'<>\s]+)/.exec(text || '');
+    const m = /account=([^&"'<>\s]+)/.exec(he.decode(text || ''));
     return m ? m[1] : null;
 }
 
