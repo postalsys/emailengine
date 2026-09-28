@@ -465,8 +465,10 @@ test.describe('admin shell', () => {
         const accountId = url.split('/').pop();
         await page.goto(`${url}/browse`);
 
-        const sessionToken = (await page.content()).match(/accessToken:\s*'(sess_[0-9a-f]{64})'/)?.[1];
-        expect(sessionToken, 'the browse page should embed a session token').toBeTruthy();
+        // The page hands the token to the widget through a hidden input rather than a script
+        // literal (HTML escaping is not JS escaping), which any script on the page can still read
+        const sessionToken = await page.locator('#browse-session-token').inputValue();
+        expect(sessionToken, 'the browse page should embed a session token').toMatch(/^sess_[0-9a-f]{64}$/);
 
         // Called from inside the page, which is the only place this credential works at all: its
         // HMAC key is the session id sealed in the HttpOnly `ee` cookie, so a copy carried
