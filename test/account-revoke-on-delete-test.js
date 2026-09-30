@@ -124,7 +124,6 @@ test('OAuth2 revoke on account delete', async t => {
         return new Account({
             redis,
             account: accountId,
-            documentsQueue: { add: async () => {} },
             secret: undefined,
             call: async () => 0,
             logger: makeStubLogger()

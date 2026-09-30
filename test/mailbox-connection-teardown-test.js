@@ -198,7 +198,6 @@ test('Mailbox.processNew() when the connection goes away mid-enrichment', async 
                 account: 'test-account',
                 imapClient,
                 notifyFrom: false,
-                syncFrom: false,
                 // The arrival checks live on the connection; none of these messages is a report
                 mightBeDSNResponse: () => false,
                 mightBeABounce: () => false,
@@ -230,7 +229,7 @@ test('Mailbox.processNew() when the connection goes away mid-enrichment', async 
         const { ctx } = makeProcessNewCtx({ imapClient: null, messageInfo });
 
         await assert.rejects(
-            () => ctx.processNew({ uid: messageInfo.uid, flags: new Set() }, {}, false, {}),
+            () => ctx.processNew({ uid: messageInfo.uid, flags: new Set() }, {}, {}),
             err => {
                 assert.equal(err.code, 'IMAPConnectionClosing', 'the failure has to reach the caller as a connection error');
                 return true;
@@ -260,7 +259,7 @@ test('Mailbox.processNew() when the connection goes away mid-enrichment', async 
         const { ctx } = makeProcessNewCtx({ imapClient, messageInfo });
 
         await assert.rejects(
-            () => ctx.processNew({ uid: messageInfo.uid, flags: new Set() }, {}, false, {}),
+            () => ctx.processNew({ uid: messageInfo.uid, flags: new Set() }, {}, {}),
             err => {
                 assert.equal(err.code, 'NoConnection', "ImapFlow's own code is passed on, not re-wrapped");
                 return true;
@@ -287,7 +286,7 @@ test('Mailbox.processNew() when the connection goes away mid-enrichment', async 
         const imapClient = { download: failing, downloadMany: failing };
         const { ctx, notifications, logged } = makeProcessNewCtx({ imapClient, messageInfo });
 
-        await ctx.processNew({ uid: messageInfo.uid, flags: new Set() }, {}, false, {});
+        await ctx.processNew({ uid: messageInfo.uid, flags: new Set() }, {}, {});
 
         assert.equal(notifications.length, 1, 'the message is still announced');
         assert.equal(notifications[0].event, 'messageNew');

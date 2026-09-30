@@ -37,19 +37,13 @@ const { mcpOptions } = require('../lib/api-routes/route-metadata');
 const { ENUM_DESCRIPTIONS } = require('../lib/enum-descriptions');
 const { IMPACT } = require('../lib/api-routes/operation-impact');
 
-// The complete, sorted set of routes registered by lib/api-routes/index.js, captured with the
-// Document Store feature gate ON (so the deprecated document-store endpoints are included; the
-// gate-off table is asserted below, in this same file).
+// The complete, sorted set of routes registered by lib/api-routes/index.js.
 //
 // Not covered here, and deliberately so: lib/api-routes/bull-board-routes.js. It is wired
 // separately from workers/api.js because it registers a third-party Hapi PLUGIN rather than
 // routes, and everything it mounts lives under /admin/bull-board (the admin session surface),
 // not /v1. Nothing else registers /v1 routes outside index.js - the 'no plugins are registered
 // during route setup' test below is what keeps that true.
-//
-// POST /admin/config/document-store/chat/test is an admin-UI route that happens to live in
-// chat-routes.js. It is under /admin, so it uses the session default like the rest of the
-// admin surface and is exempt from the /v1 auth check below.
 const GOLDEN_ROUTES = [
     'DELETE /mcp',
     'DELETE /v1/account/{account}',
@@ -106,7 +100,6 @@ const GOLDEN_ROUTES = [
     'GET /v1/tokens/{token}/log',
     'GET /v1/webhookRoutes',
     'GET /v1/webhookRoutes/webhookRoute/{webhookRoute}',
-    'POST /admin/config/document-store/chat/test',
     'POST /mcp',
     'POST /mcp/oauth/register',
     'POST /mcp/oauth/token',
@@ -120,7 +113,6 @@ const GOLDEN_ROUTES = [
     'POST /v1/authentication/form',
     'POST /v1/autoconfig',
     'POST /v1/blocklist/{listId}',
-    'POST /v1/chat/{account}',
     'POST /v1/delivery-test/account/{account}',
     'POST /v1/gateway',
     'POST /v1/license',
@@ -130,7 +122,6 @@ const GOLDEN_ROUTES = [
     'POST /v1/templates/template',
     'POST /v1/token',
     'POST /v1/tokens',
-    'POST /v1/unified/search',
     'POST /v1/verifyAccount',
     'PUT /v1/account/{account}',
     'PUT /v1/account/{account}/flush',
@@ -192,10 +183,6 @@ test('API route table and authentication', async t => {
         // Every entry here is a deliberate decision, so adding a non-/v1 route means adding a line
         // and thinking about which of the three it is.
         const EXPECTED_NON_V1_AUTH = {
-            // The Document Store chat test. Admin-surface route inside the /admin perimeter,
-            // session-gated whenever the instance is secured.
-            'POST /admin/config/document-store/chat/test': 'inherited',
-
             // The MCP endpoint proper. Everything else under /mcp is protocol discovery that a
             // client reads before it holds a credential.
             'POST /mcp': 'api-token/required',
@@ -347,8 +334,7 @@ test('API route table and authentication', async t => {
         // token mint is the other: a token that can mint tokens can widen itself. Listing,
         // inspecting and revoking tokens share the path prefix and are grantable, so the mint is
         // matched by method as well as by path.
-        const handsOutCredential = route =>
-            /oauth-token|\/v1\/(chat|unified)\//.test(route.path) || (route.method === 'post' && /^\/v1\/tokens?$/.test(route.path));
+        const handsOutCredential = route => /oauth-token/.test(route.path) || (route.method === 'post' && /^\/v1\/tokens?$/.test(route.path));
 
         const misfiled = v1Routes
             .filter(handsOutCredential)
@@ -363,8 +349,8 @@ test('API route table and authentication', async t => {
         );
 
         // The pattern has to actually match something, or the assertion above passes vacuously:
-        // the two mints, the oauth-token read and the two Document Store routes
-        assert.equal(v1Routes.filter(handsOutCredential).length, 5);
+        // the two mints and the oauth-token read
+        assert.equal(v1Routes.filter(handsOutCredential).length, 3);
     });
 
     await t.test('the management routes are grantable, and only in the groups made for them', () => {
@@ -587,24 +573,5 @@ test('API route table and authentication', async t => {
             'POST /mcp/oauth/token'
         ]);
         assert.ok(disabled.map(route => route.route).includes('GET /v1/accounts'), 'unrelated routes must still be registered');
-    });
-
-    await t.test('the document-store endpoints disappear when the feature gate is off', async () => {
-        // The gate is an argument to registerApiRoutes(), so the off state is captured directly.
-        // Nothing previously asserted the /v1 side of it: with the gate pinned on, removing or
-        // inverting the check in lib/api-routes/index.js was undetectable.
-        const { routes: disabled } = await captureApiRoutes({ documentStoreFeatureEnabled: false });
-        const paths = disabled.map(route => route.route);
-
-        const documentStoreRoutes = paths.filter(route => /\/v1\/chat\/|\/v1\/unified\/search|\/admin\/config\/document-store/.test(route));
-        assert.deepEqual(documentStoreRoutes, [], `expected no document-store routes with the gate off, got ${JSON.stringify(documentStoreRoutes)}`);
-
-        // and the rest of the API surface is untouched
-        assert.ok(paths.includes('GET /v1/accounts'), 'unrelated routes must still be registered');
-        assert.ok(paths.includes('GET /v1/changes'));
-        assert.ok(
-            captured.map(route => route.route).includes('POST /v1/chat/{account}'),
-            'sanity check: the gate-on capture really does include the document-store routes'
-        );
     });
 });

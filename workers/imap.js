@@ -18,17 +18,14 @@ const { OutlookClient } = require('../lib/email-client/outlook-client');
 const { BaseClient } = require('../lib/email-client/base-client');
 const { Account } = require('../lib/account');
 const { oauth2Apps, isApiBasedApp } = require('../lib/oauth2-apps');
-const { redis, notifyQueue, submitQueue, documentsQueue, getFlowProducer, watchRedisReconnect } = require('../lib/db');
+const { redis, notifyQueue, submitQueue, watchRedisReconnect } = require('../lib/db');
 const { sendToMessagePort, MessagePortWritable } = require('../lib/message-port-stream');
 const { packRpcError, unpackRpcError, describeRpcCommand } = require('../lib/worker-rpc-error');
 const { ImapFlowErrorCode } = require('imapflow');
-const { getESClient } = require('../lib/document-store');
 const settings = require('../lib/settings');
 const msgpack = require('../lib/msgpack');
 
 const getSecret = require('../lib/get-secret');
-
-const flowProducer = getFlowProducer();
 
 config.service = config.service || {};
 
@@ -232,8 +229,7 @@ class ConnectionHandler {
             secret,
             // Needed so Account.update() can dispatch reconnect/update commands back to
             // this worker (e.g. auto-reconnect after OAuth re-auth in an error state).
-            call: msg => this.call(msg),
-            esClient: await getESClient(logger)
+            call: msg => this.call(msg)
         });
 
         if (!isCurrent()) {
@@ -325,8 +321,6 @@ class ConnectionHandler {
 
                             notifyQueue,
                             submitQueue,
-                            documentsQueue,
-                            flowProducer,
 
                             call: msg => this.call(msg)
                         });
@@ -345,8 +339,6 @@ class ConnectionHandler {
 
                             notifyQueue,
                             submitQueue,
-                            documentsQueue,
-                            flowProducer,
 
                             call: msg => this.call(msg)
                         });
@@ -371,8 +363,6 @@ class ConnectionHandler {
 
                 notifyQueue,
                 submitQueue,
-                documentsQueue,
-                flowProducer,
 
                 call: msg => this.call(msg),
                 logRaw: EENGINE_LOG_RAW

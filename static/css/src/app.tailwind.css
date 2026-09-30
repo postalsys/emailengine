@@ -194,14 +194,13 @@
 }
 
 /* FlyonUI lays a tab strip out as a nowrap flex row with no overflow handling, so one
- * wider than its column pushes the whole page sideways instead of adapting: the Document
- * Store's four section tabs are 437px against a 390px phone, and an API reference operation
- * documents up to eight status codes. Wrapping rather than scrolling because these are
- * navigation - a second row keeps every tab reachable, where a scroller hides some behind an
- * interaction with no affordance for it. No strip in the app wraps at desktop width. Here
- * rather than on each strip: ui/tabs and the three hand-rolled link navs (oauth_tabs,
- * document_store_header, the auth-method strip in oauth_form) all need it. Un-layered on
- * purpose, like the rules around it: FlyonUI emits .tabs from @layer utilities. */
+ * wider than its column pushes the whole page sideways instead of adapting: an API reference
+ * operation documents up to eight status codes. Wrapping rather than scrolling because these
+ * are navigation - a second row keeps every tab reachable, where a scroller hides some behind
+ * an interaction with no affordance for it. No strip in the app wraps at desktop width. Here
+ * rather than on each strip: ui/tabs and the hand-rolled link navs (oauth_tabs, the
+ * auth-method strip in oauth_form) all need it. Un-layered on purpose, like the rules around
+ * it: FlyonUI emits .tabs from @layer utilities. */
 .tabs {
     flex-wrap: wrap;
 }

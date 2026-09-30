@@ -205,9 +205,7 @@ require.cache[dbPath] = {
         queueConf: { connection: {} },
         notifyQueue: { add: async () => ({}) },
         submitQueue: { add: async () => ({}) },
-        documentsQueue: { add: async () => ({}) },
         exportQueue: { add: async () => ({}) },
-        getFlowProducer: () => ({}),
         REDIS_CONF: {},
         getRedisURL: () => 'redis://mock'
     }

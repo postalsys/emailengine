@@ -65,9 +65,7 @@ require.cache[dbPath] = {
         queueConf: { connection: {} },
         notifyQueue: mockQueue,
         submitQueue: mockQueue,
-        documentsQueue: mockQueue,
         exportQueue: mockQueue,
-        getFlowProducer: () => ({}),
         REDIS_CONF: {},
         getRedisURL: () => 'redis://mock'
     }
@@ -118,7 +116,6 @@ function createBaseUploadCtx(overrides) {
         prepareRawMessage: async () => ({
             raw: Buffer.from('test message'),
             messageId: '<test@example.com>',
-            documentStoreUsed: false,
             referencedMessage: null
         }),
         packUid: async () => 'encodedId',

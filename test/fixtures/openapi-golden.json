@@ -7148,162 +7148,6 @@
           }
         }
       },
-      "RequestChat": {
-        "type": "object",
-        "properties": {
-          "question": {
-            "type": "string",
-            "description": "Chat message to use",
-            "example": "When did Jason last message me?",
-            "maxLength": 1024,
-            "x-convert": {
-              "trim": true
-            }
-          }
-        },
-        "required": [
-          "question"
-        ]
-      },
-      "EmailAddressResponse": {
-        "type": "object",
-        "description": "Email address with optional display name",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Display name for the email address",
-            "example": "Some Name",
-            "maxLength": 256,
-            "x-convert": {
-              "trim": true
-            }
-          },
-          "address": {
-            "type": "string",
-            "description": "Email address (can be empty for name-only entries)",
-            "example": "user@example.com"
-          }
-        }
-      },
-      "ChatToAddressList": {
-        "type": "array",
-        "description": "List of addresses",
-        "example": [
-          {
-            "address": "recipient@example.com"
-          }
-        ],
-        "x-constraint": {
-          "single": true
-        },
-        "items": {
-          "$ref": "#/components/schemas/EmailAddressResponse"
-        }
-      },
-      "ChatCcAddressList": {
-        "type": "array",
-        "description": "List of CC addresses",
-        "x-constraint": {
-          "single": true
-        },
-        "items": {
-          "$ref": "#/components/schemas/EmailAddressResponse"
-        }
-      },
-      "ChatBccAddressList": {
-        "type": "array",
-        "description": "List of BCC addresses",
-        "x-constraint": {
-          "single": true
-        },
-        "items": {
-          "$ref": "#/components/schemas/EmailAddressResponse"
-        }
-      },
-      "ChatResponseMessage": {
-        "type": "object",
-        "description": "Email that best matched the question",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Unique identifier for the message",
-            "example": "AAAAAgAACrI"
-          },
-          "path": {
-            "type": "string",
-            "description": "Folder this message was found from",
-            "example": "INBOX"
-          },
-          "date": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Date of the email",
-            "example": "2023-09-29T10:03:49.000Z"
-          },
-          "from": {
-            "$ref": "#/components/schemas/FromAddressResponse"
-          },
-          "to": {
-            "$ref": "#/components/schemas/ChatToAddressList"
-          },
-          "cc": {
-            "$ref": "#/components/schemas/ChatCcAddressList"
-          },
-          "bcc": {
-            "$ref": "#/components/schemas/ChatBccAddressList"
-          },
-          "subject": {
-            "type": "string",
-            "description": "Message subject",
-            "example": "What a wonderful message"
-          },
-          "messageSpecialUse": {
-            "$ref": "#/components/schemas/MessageSpecialUse"
-          }
-        }
-      },
-      "ChatResponseMessages": {
-        "type": "array",
-        "description": "Emails that best matched the question",
-        "items": {
-          "$ref": "#/components/schemas/ChatResponseMessage"
-        }
-      },
-      "ChatProcessPipelineStep": {
-        "type": "object"
-      },
-      "ChatProcessPipeline": {
-        "type": "array",
-        "description": "Diagnostic information about the chat processing steps, including timings and token usage",
-        "items": {
-          "$ref": "#/components/schemas/ChatProcessPipelineStep"
-        }
-      },
-      "ReturnChatResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "description": "Whether the LLM produced an answer. Can be false on a 200 response when no answer was found",
-            "example": true
-          },
-          "answer": {
-            "type": "string",
-            "description": "Chat response. Not present (or null) when no answer was produced",
-            "example": "Last tuesday",
-            "nullable": true,
-            "x-convert": {
-              "trim": true
-            }
-          },
-          "messages": {
-            "$ref": "#/components/schemas/ChatResponseMessages"
-          },
-          "processPipeline": {
-            "$ref": "#/components/schemas/ChatProcessPipeline"
-          }
-        }
-      },
       "DeliveryTestGateway": {
         "type": "string",
         "description": "Optional gateway ID",
@@ -10023,12 +9867,6 @@
             "example": false,
             "nullable": true
           },
-          "documentStorePassword": {
-            "type": "boolean",
-            "description": "Whether a value is set for this setting. Secret values are never returned, only a boolean marker",
-            "example": true,
-            "nullable": true
-          },
           "logs": {
             "$ref": "#/components/schemas/logsResponse"
           },
@@ -11090,14 +10928,12 @@
         "x-meta": {
           "enumDescriptions": {
             "notify": "Webhook delivery queue",
-            "submit": "Outbound email delivery queue",
-            "documents": "Document Store indexing queue (deprecated feature)"
+            "submit": "Outbound email delivery queue"
           }
         },
         "enum": [
           "notify",
-          "submit",
-          "documents"
+          "submit"
         ],
         "x-convert": {
           "trim": true
@@ -11163,8 +10999,7 @@
         "example": "notify",
         "enum": [
           "notify",
-          "submit",
-          "documents"
+          "submit"
         ],
         "x-convert": {
           "trim": true
@@ -11230,7 +11065,7 @@
       },
       "QueueStats": {
         "type": "object",
-        "description": "Job counters for the notify, submit, and documents queues"
+        "description": "Job counters for the notify and submit queues"
       },
       "ConnectionsStats": {
         "type": "object",
@@ -11966,7 +11801,7 @@
             "events": "Subscribe to the instance-wide change stream, which covers every account",
             "diagnostics": "Read statistics and service status",
             "logs": "Read the per-account connection log. Entries include the protocol or API trace, so they include folder names and message subjects",
-            "settings": "Read and change instance settings and pause or resume the queues. A write reaches the global webhook target. The keys that would widen a token beyond settings (operator scripts, the link signing secret, the authentication server, proxy trust and local addresses, proxies, the built-in listeners, TLS certificates and provisioning, the service URL, mail certificate checking, the AI key and endpoint, custom webhook headers, hosted page markup, the MCP and audit switches, the Document Store, and error reporting) are refused to a restricted token, on reads and writes alike",
+            "settings": "Read and change instance settings and pause or resume the queues. A write reaches the global webhook target. The keys that would widen a token beyond settings (operator scripts, the link signing secret, the authentication server, proxy trust and local addresses, proxies, the built-in listeners, TLS certificates and provisioning, the service URL, mail certificate checking, the AI key and endpoint, custom webhook headers, hosted page markup, the MCP and audit switches, and error reporting) are refused to a restricted token, on reads and writes alike",
             "oauth2": "Manage OAuth2 applications. Client secrets are write-only, and a change can move where the provider sends authorization codes",
             "license": "Read, apply and remove the license key",
             "token": "List, inspect and revoke access tokens and read their audit logs, which record who read which account. Cannot create tokens",
@@ -12607,226 +12442,6 @@
           },
           "entries": {
             "$ref": "#/components/schemas/TokenLogEntries"
-          }
-        }
-      },
-      "UnifiedSearchAccounts": {
-        "type": "array",
-        "description": "Optional list of account ID values",
-        "x-constraint": {
-          "single": true
-        },
-        "items": {
-          "type": "string",
-          "example": "example",
-          "maxLength": 256,
-          "x-convert": {
-            "trim": true
-          }
-        }
-      },
-      "UnifiedSearchPaths": {
-        "type": "array",
-        "description": "Optional list of mailbox folder paths or specialUse flags",
-        "x-constraint": {
-          "single": true
-        },
-        "items": {
-          "type": "string",
-          "example": "INBOX"
-        }
-      },
-      "UnifiedSearchQuery": {
-        "type": "object",
-        "properties": {
-          "accounts": {
-            "$ref": "#/components/schemas/UnifiedSearchAccounts"
-          },
-          "paths": {
-            "$ref": "#/components/schemas/UnifiedSearchPaths"
-          },
-          "search": {
-            "$ref": "#/components/schemas/SearchQuery"
-          }
-        },
-        "required": [
-          "search"
-        ]
-      },
-      "UnifiedSearchAccountsEcho": {
-        "type": "array",
-        "description": "Account filter used for the search, if provided",
-        "items": {
-          "type": "string",
-          "example": "example"
-        }
-      },
-      "UnifiedSearchPathsEcho": {
-        "type": "array",
-        "description": "Path filter used for the search, if provided",
-        "items": {
-          "type": "string",
-          "example": "INBOX"
-        }
-      },
-      "UnifiedMessageListEntry": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "EmailEngine message identifier",
-            "example": "AAAAAgAACrI"
-          },
-          "uid": {
-            "type": "integer",
-            "description": "IMAP UID (unique identifier within the mailbox). IMAP accounts only",
-            "example": 12345
-          },
-          "emailId": {
-            "type": "string",
-            "description": "Globally unique email identifier (when supported by the email server)",
-            "example": "1278455344230334865",
-            "maxLength": 256
-          },
-          "threadId": {
-            "type": "string",
-            "description": "Thread identifier for email conversations (when supported by the email server)",
-            "example": "1694936993596975454"
-          },
-          "path": {
-            "type": "string",
-            "description": "Mailbox folder path that contains this message. Returned when listing a virtual folder like \"\\\\All\" or when extended info is requested",
-            "example": "INBOX"
-          },
-          "date": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Date when the message was received by the mail server",
-            "example": "2021-03-22T13:13:31.000Z"
-          },
-          "draft": {
-            "type": "boolean",
-            "description": "Whether this message is a draft",
-            "example": false
-          },
-          "unseen": {
-            "type": "boolean",
-            "description": "Whether this message is unread",
-            "example": true
-          },
-          "flagged": {
-            "type": "boolean",
-            "description": "Whether this message is flagged/starred",
-            "example": true
-          },
-          "answered": {
-            "type": "boolean",
-            "description": "Whether this message has been answered (IMAP accounts only)",
-            "example": false
-          },
-          "size": {
-            "type": "integer",
-            "description": "Message size in bytes",
-            "example": 1040
-          },
-          "subject": {
-            "type": "string",
-            "description": "Message subject line",
-            "example": "What a wonderful message"
-          },
-          "from": {
-            "$ref": "#/components/schemas/FromAddressResponse"
-          },
-          "replyTo": {
-            "$ref": "#/components/schemas/AddressList2"
-          },
-          "to": {
-            "$ref": "#/components/schemas/AddressList2"
-          },
-          "cc": {
-            "$ref": "#/components/schemas/AddressList2"
-          },
-          "messageId": {
-            "type": "string",
-            "description": "Message-ID header value",
-            "example": "<test123@example.com>"
-          },
-          "inReplyTo": {
-            "type": "string",
-            "description": "Message-ID of the message this is replying to",
-            "example": "<7JBUMt0WOn+_==MOkaCOQ@mail.gmail.com>"
-          },
-          "flags": {
-            "$ref": "#/components/schemas/FlagList"
-          },
-          "labels": {
-            "$ref": "#/components/schemas/LabelList"
-          },
-          "attachments": {
-            "$ref": "#/components/schemas/AttachmentList"
-          },
-          "text": {
-            "$ref": "#/components/schemas/TextInfo"
-          },
-          "preview": {
-            "type": "string",
-            "description": "Short preview of the message content",
-            "example": "Hello, here is the report you asked for"
-          },
-          "category": {
-            "$ref": "#/components/schemas/MessageCategory"
-          },
-          "messageSpecialUse": {
-            "$ref": "#/components/schemas/MessageSpecialUse"
-          },
-          "isAutoReply": {
-            "type": "boolean",
-            "description": "Whether this message appears to be an automatic reply (out of office, vacation responder, etc.)",
-            "example": false
-          },
-          "account": {
-            "type": "string",
-            "description": "Account ID this message belongs to",
-            "example": "user123",
-            "maxLength": 256,
-            "x-convert": {
-              "trim": true
-            }
-          }
-        }
-      },
-      "UnifiedPageMessages": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/UnifiedMessageListEntry"
-        }
-      },
-      "UnifiedSearchResponse": {
-        "type": "object",
-        "properties": {
-          "total": {
-            "type": "integer",
-            "description": "Total number of matching messages (capped at 10000 by the Document Store)",
-            "example": 120
-          },
-          "page": {
-            "type": "integer",
-            "description": "Current page number (zero-based)",
-            "example": 0
-          },
-          "pages": {
-            "type": "integer",
-            "description": "Total number of pages available",
-            "example": 24
-          },
-          "accounts": {
-            "$ref": "#/components/schemas/UnifiedSearchAccountsEcho"
-          },
-          "paths": {
-            "$ref": "#/components/schemas/UnifiedSearchPathsEcho"
-          },
-          "messages": {
-            "$ref": "#/components/schemas/UnifiedPageMessages"
           }
         }
       },
@@ -14503,7 +14118,7 @@
       "put": {
         "summary": "Request account flush",
         "operationId": "putV1AccountAccountFlush",
-        "description": "Deletes all email indexes from Redis and ElasticSearch and re-creates the index for that account. You can only run a single flush operation at a time, so you must wait until the previous flush has finished before initiating a new one.<br/><br/>The request only schedules the work and returns before it finishes. Watch the account state, or the accountInitialized and authenticationError webhooks, for the result.",
+        "description": "Deletes all email indexes from Redis and re-creates the index for that account. You can only run a single flush operation at a time, so you must wait until the previous flush has finished before initiating a new one.<br/><br/>The request only schedules the work and returns before it finishes. Watch the account state, or the accountInitialized and authenticationError webhooks, for the result.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -17133,6 +16748,17 @@
             "required": true
           },
           {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "Mailbox folder path. Can use special use labels like \"\\Sent\". Special value \"\\All\" is available for Gmail IMAP, Gmail API, MS Graph API accounts.",
+              "example": "INBOX"
+            },
+            "description": "Mailbox folder path. Can use special use labels like \"\\Sent\". Special value \"\\All\" is available for Gmail IMAP, Gmail API, MS Graph API accounts.",
+            "required": true
+          },
+          {
             "name": "cursor",
             "in": "query",
             "schema": {
@@ -17186,16 +16812,6 @@
               }
             },
             "description": "MS Graph only. Use the $search parameter for search queries instead of $filter"
-          },
-          {
-            "name": "path",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "description": "Mailbox folder path. Can use special use labels like \"\\Sent\". Special value \"\\All\" is available for Gmail IMAP, Gmail API, MS Graph API accounts.",
-              "example": "INBOX"
-            },
-            "description": "Mailbox folder path. Can use special use labels like \"\\Sent\". Special value \"\\All\" is available for Gmail IMAP, Gmail API, MS Graph API accounts."
           }
         ],
         "tags": [
@@ -17467,16 +17083,6 @@
             },
             "description": "Unique identifier for the email account",
             "required": true
-          },
-          {
-            "name": "documentStore",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "description": "If enabled then fetch email used as a reference template from the Document Store",
-              "default": false
-            },
-            "description": "If enabled then fetch email used as a reference template from the Document Store"
           },
           {
             "name": "useStructuredFormat",
@@ -18937,128 +18543,6 @@
         ],
         "x-ee-action": "read",
         "x-ee-group": "events"
-      }
-    },
-    "/v1/chat/{account}": {
-      "post": {
-        "summary": "Chat with emails",
-        "operationId": "postV1ChatAccount",
-        "description": "Use OpenAI API and embeddings stored in the Document Store to \"chat\" with account emails. Requires Document Store indexing and the \"Chat with emails\" feature to be enabled.",
-        "parameters": [
-          {
-            "name": "x-ee-timeout",
-            "in": "header",
-            "schema": {
-              "type": "integer",
-              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
-              "example": 30000,
-              "minimum": 0,
-              "maximum": 7200000
-            },
-            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
-          },
-          {
-            "name": "account",
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "description": "Unique identifier for the email account",
-              "example": "user123",
-              "maxLength": 256,
-              "x-convert": {
-                "trim": true
-              }
-            },
-            "description": "Unique identifier for the email account",
-            "required": true
-          }
-        ],
-        "tags": [
-          "Deprecated endpoints (Document Store)"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RequestChat"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Returns the generated answer and the messages it was drawn from.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReturnChatResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ValidationErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found - the requested entity (account, message, mailbox, etc.) does not exist",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotFoundErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Rate limit exceeded - too many requests were made with this access token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RateLimitErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error - an unexpected error occurred while processing the request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "x-ee-action": "write",
-        "x-ee-group": "admin"
       }
     },
     "/v1/delivery-test/account/{account}": {
@@ -21492,14 +20976,6 @@
             }
           },
           {
-            "name": "documentStoreChatModel",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
             "name": "openAiTemperature",
             "in": "query",
             "schema": {
@@ -21677,62 +21153,6 @@
           },
           {
             "name": "documentStoreEnabled",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "documentStoreUrl",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "documentStoreIndex",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "documentStoreAuthEnabled",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "documentStoreUsername",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "documentStorePassword",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "documentStoreGenerateEmbeddings",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "documentStorePreProcessingEnabled",
             "in": "query",
             "schema": {
               "type": "boolean",
@@ -22291,8 +21711,7 @@
               "example": "notify",
               "enum": [
                 "notify",
-                "submit",
-                "documents"
+                "submit"
               ],
               "x-convert": {
                 "trim": true
@@ -22396,8 +21815,7 @@
               "example": "notify",
               "enum": [
                 "notify",
-                "submit",
-                "documents"
+                "submit"
               ],
               "x-convert": {
                 "trim": true
@@ -23892,130 +23310,6 @@
         "x-ee-impact": "readonly",
         "x-ee-action": "read",
         "x-ee-group": "token"
-      }
-    },
-    "/v1/unified/search": {
-      "post": {
-        "summary": "Unified search for messages",
-        "operationId": "postV1UnifiedSearch",
-        "description": "Filter messages from the Document Store for multiple accounts or paths. Document Store must be enabled for the unified search to work.",
-        "parameters": [
-          {
-            "name": "x-ee-timeout",
-            "in": "header",
-            "schema": {
-              "type": "integer",
-              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
-              "example": 30000,
-              "minimum": 0,
-              "maximum": 7200000
-            },
-            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "description": "Page number (zero indexed, so use 0 for first page)",
-              "example": 0,
-              "default": 0,
-              "minimum": 0,
-              "maximum": 1048576
-            },
-            "description": "Page number (zero indexed, so use 0 for first page)"
-          },
-          {
-            "name": "pageSize",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "description": "How many entries per page",
-              "example": 20,
-              "default": 20,
-              "minimum": 1,
-              "maximum": 1000
-            },
-            "description": "How many entries per page"
-          }
-        ],
-        "tags": [
-          "Deprecated endpoints (Document Store)"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UnifiedSearchQuery"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Returns matching messages across all indexed accounts.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UnifiedSearchResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ValidationErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Rate limit exceeded - too many requests were made with this access token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RateLimitErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error - an unexpected error occurred while processing the request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "x-ee-impact": "readonly",
-        "x-ee-action": "read",
-        "x-ee-group": "admin"
       }
     },
     "/v1/verifyAccount": {

@@ -286,7 +286,7 @@ test('API reference model', async t => {
 
         // A read says nothing at all, whether it is a GET or a POST that only searches
         assert.equal(allOperations.find(operation => operation.id === 'getV1Stats').tryImpact, null);
-        assert.equal(allOperations.find(operation => operation.id === 'postV1UnifiedSearch').tryImpact, null);
+        assert.equal(allOperations.find(operation => operation.id === 'postV1AccountAccountSearch').tryImpact, null);
 
         // An ordinary write gets the muted line, not a warning box
         const update = allOperations.find(operation => operation.id === 'putV1AccountAccount');

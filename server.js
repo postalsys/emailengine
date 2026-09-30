@@ -95,20 +95,13 @@ const {
     ACCOUNT_ADDED_NOTIFY,
     ACCOUNT_DELETED_NOTIFY,
     LIST_UNSUBSCRIBE_NOTIFY,
-    LIST_SUBSCRIBE_NOTIFY
+    LIST_SUBSCRIBE_NOTIFY,
+    LAST_DOCUMENT_STORE_VERSION
 } = require('./lib/consts');
 
 // Import core modules
 const { webhooks: Webhooks } = require('./lib/webhooks');
-const {
-    generateSummary,
-    generateEmbeddings,
-    getChunkEmbeddings,
-    embeddingsQuery,
-    questionQuery,
-    listModels: openAiListModels,
-    DEFAULT_USER_PROMPT: openAiDefaultPrompt
-} = require('@postalsys/email-ai-tools');
+const { generateSummary, generateEmbeddings, listModels: openAiListModels, DEFAULT_USER_PROMPT: openAiDefaultPrompt } = require('@postalsys/email-ai-tools');
 const { fetch: fetchCmd } = require('undici');
 
 const bounceClassifier = require('@postalsys/bounce-classifier');
@@ -121,7 +114,7 @@ initSentry('main');
 
 // Import additional dependencies
 const pathlib = require('path');
-const { redis, queueConf, notifyQueue, submitQueue, documentsQueue, exportQueue, logBullErrors } = require('./lib/db');
+const { redis, queueConf, notifyQueue, submitQueue, exportQueue, logBullErrors } = require('./lib/db');
 const { queueStats } = require('./lib/queue-stats');
 const { packRpcError, unpackRpcError } = require('./lib/worker-rpc-error');
 const promClient = require('prom-client');
@@ -134,7 +127,6 @@ const settings = require('./lib/settings');
 const { oauth2Apps } = require('./lib/oauth2-apps');
 const { backfillAuthFailureDisabled } = require('./lib/account/auth-failure-backfill');
 const { sweepBounceStore } = require('./lib/account/bounce-store-sweep');
-const { documentStoreFeatureEnabled } = require('./lib/document-store');
 const { attachBeacon, persistBeaconMarkers } = require('./lib/license-beacon');
 const tokens = require('./lib/tokens');
 
@@ -346,7 +338,6 @@ const THREAD_NAMES = {
     api: 'HTTP and API server',
     submit: 'Email sending worker',
     export: 'Export worker',
-    documents: 'Document store indexing worker',
     imapProxy: 'IMAP proxy server',
     smtp: 'SMTP proxy server'
 };
@@ -1094,7 +1085,7 @@ async function sendWebhook(account, event, data) {
 
 /**
  * Spawn a new worker thread of the specified type
- * @param {string} type - Worker type (imap, api, webhooks, submit, documents, smtp, imapProxy)
+ * @param {string} type - Worker type (imap, api, webhooks, submit, export, smtp, imapProxy)
  * @param {Object} [opts] - Optional spawn options
  * @param {Object} [opts.workerData] - Data passed to the worker thread (e.g. API worker index). The
  *                                      proxy in effect is added for every type, see lib/tools.js
@@ -2409,8 +2400,7 @@ async function updateQueueCounters() {
     // gauge is kept at the 0 the getter reports so existing dashboards keep their series.
     for (let [queue, queueObj] of [
         ['notify', notifyQueue],
-        ['submit', submitQueue],
-        ['documents', documentsQueue]
+        ['submit', submitQueue]
     ]) {
         let stats;
         try {
@@ -2746,129 +2736,6 @@ async function onCommand(worker, message) {
             }
 
             return embeddings;
-        }
-
-        case 'embeddingsQuery': {
-            let requestOpts = openAiRequestOpts();
-
-            let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
-
-            if (!openAiAPIKey) {
-                throw new Error(`OpenAI API key is not configured`);
-            }
-
-            let openAiAPIUrl = message.data.openAiAPIUrl || (await settings.get('openAiAPIUrl'));
-            if (openAiAPIUrl) {
-                requestOpts.baseApiUrl = openAiAPIUrl;
-            }
-
-            let openAiModel = message.data.openAiModel || (await settings.get('documentStoreChatModel')) || (await settings.get('openAiModel'));
-            if (openAiModel) {
-                requestOpts.gptModel = openAiModel;
-            }
-
-            // Set max tokens based on model
-            switch (openAiModel.substring(0, 5)) {
-                case 'gpt-3':
-                    requestOpts.maxTokens = 3000;
-                    break;
-                case 'gpt-4':
-                    requestOpts.maxTokens = 6500;
-                    break;
-                case 'gpt-5':
-                default:
-                    requestOpts.maxTokens = 18000;
-                    break;
-            }
-
-            requestOpts.user = message.data.account;
-            requestOpts.temperature = 0.4;
-
-            requestOpts.question = message.data.question;
-            requestOpts.contextChunks = message.data.contextChunks;
-            requestOpts.userData = message.data.userData;
-
-            let response = await embeddingsQuery(openAiAPIKey, requestOpts);
-
-            // Clean and format response
-            if (response?.['Message-ID']) {
-                response.messageId = response?.['Message-ID'];
-                delete response?.['Message-ID'];
-            }
-            if (response?.messageId) {
-                response.messageId = [].concat(response?.messageId || []).map(value => (value || '').toString().trim().replace(/^<?/, '<').replace(/>?$/, '>'));
-            }
-
-            if (response?.answer) {
-                if (typeof response.answer === 'object') {
-                    response.answer = JSON.stringify(response.answer);
-                } else {
-                    response.answer = response.answer.toString();
-                }
-            }
-
-            // Clean internal properties
-            for (const key of Object.keys(response)) {
-                if (/^_/.test(key)) {
-                    delete response[key];
-                }
-            }
-
-            return response;
-        }
-
-        case 'questionQuery': {
-            let requestOpts = openAiRequestOpts();
-
-            let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
-
-            if (!openAiAPIKey) {
-                throw new Error(`OpenAI API key is not configured`);
-            }
-
-            let openAiAPIUrl = message.data.openAiAPIUrl || (await settings.get('openAiAPIUrl'));
-            if (openAiAPIUrl) {
-                requestOpts.baseApiUrl = openAiAPIUrl;
-            }
-
-            let openAiModel = message.data.openAiModel || 'gpt-3.5-turbo-instruct';
-            if (openAiModel) {
-                requestOpts.gptModel = openAiModel;
-            }
-
-            requestOpts.user = message.data.account;
-
-            let response = await questionQuery(message.data.question, openAiAPIKey, requestOpts);
-
-            // Clean internal properties
-            for (const key of Object.keys(response)) {
-                if (/^_/.test(key)) {
-                    delete response[key];
-                }
-            }
-
-            return response;
-        }
-
-        case 'generateChunkEmbeddings': {
-            let requestOpts = openAiRequestOpts();
-
-            let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
-
-            if (!openAiAPIKey) {
-                throw new Error(`OpenAI API key is not configured`);
-            }
-
-            let openAiAPIUrl = message.data.openAiAPIUrl || (await settings.get('openAiAPIUrl'));
-            if (openAiAPIUrl) {
-                requestOpts.baseApiUrl = openAiAPIUrl;
-            }
-
-            requestOpts.user = message.data.account;
-
-            const data = await getChunkEmbeddings(message.data.message, openAiAPIKey, requestOpts);
-
-            return data;
         }
 
         case 'openAiListModels': {
@@ -3269,7 +3136,7 @@ const closeQueues = cb => {
         }
     }
 
-    for (let name of ['notify', 'submit', 'documents', 'export']) {
+    for (let name of ['notify', 'submit', 'export']) {
         if (queueEvents[name]) {
             proms.push(queueEvents[name].close());
         }
@@ -3735,9 +3602,14 @@ const startApplication = async () => {
         await spawnWorker('export');
     }
 
-    // Start document processing worker (deprecated Document Store feature; only when enabled)
-    if (documentStoreFeatureEnabled) {
-        await spawnWorker('documents');
+    // The Document Store was removed in 2.82.0. An instance upgraded with it still switched on
+    // is told where the feature went, here and on every admin page (workers/api.js), rather
+    // than losing its search index quietly
+    if (await settings.get('documentStoreEnabled')) {
+        logger.warn({
+            msg: 'The Document Store feature has been removed from EmailEngine. Downgrade if you still need it',
+            lastVersionWithDocumentStore: LAST_DOCUMENT_STORE_VERSION
+        });
     }
 
     // Start SMTP proxy if enabled
@@ -3816,7 +3688,7 @@ startApplication()
         startHealthMonitoring();
 
         // Initialize queue event listeners
-        for (let name of ['notify', 'submit', 'documents', 'export']) {
+        for (let name of ['notify', 'submit', 'export']) {
             queueEvents[name] = logBullErrors(new QueueEvents(name, Object.assign({}, queueConf)), `queueEvents:${name}`);
         }
 
@@ -3824,7 +3696,7 @@ startApplication()
         const QUEUE_CLEANUP_INTERVAL = 6 * 60 * 60 * 1000;
 
         async function cleanupQueues() {
-            const queues = [notifyQueue, submitQueue, documentsQueue, exportQueue];
+            const queues = [notifyQueue, submitQueue, exportQueue];
             for (const queue of queues) {
                 try {
                     // Clean completed jobs older than 24 hours

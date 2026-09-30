@@ -54,16 +54,22 @@
     {{/ui/stat-card}}
     {{/each}}
 
-    {{#if documentStoreUnavailable}}
-    {{#> ui/stat-card variant="error" title="Document Store unavailable" icon="icon-[tabler--database]" class="mt-6"}}
-    <p class="mb-0">The Document Store is enabled in the EmailEngine settings, but the feature is not
-        available because EmailEngine was not started with the Document Store enabled. The deprecated
-        Document Store only runs when started with the <code>--documentStore.enabled</code> command line
-        flag or the <code>EENGINE_DOCUMENT_STORE_ENABLED=true</code> environment variable. Until then the
-        document store worker is not running and all Document Store API and configuration endpoints
-        return 404. Either restart EmailEngine with the flag, or disable the <code>documentStoreEnabled</code>
-        setting to clear this warning.</p>
-    {{/ui/stat-card}}
+    {{!-- Shown while the removed Document Store is still switched on in the stored settings.
+          The close button clears that setting through /admin/config/clear-error. --}}
+    {{#if documentStoreRemoved}}
+    {{#> ui/clear-alert alert="document-store" class="mt-6"}}
+    <h4 class="text-lg font-bold mb-2">The Document Store is no longer available</h4>
+    <p class="mb-2">This instance still has the <strong>Document Store</strong> enabled in its settings, but the
+        feature has been removed from EmailEngine. Emails are no longer indexed into Elasticsearch, and the
+        endpoints that depended on it (chat with emails, unified search, the <code>documentStore</code>
+        request options) are gone.</p>
+    <p class="mb-2">If you still need the Document Store, downgrade this instance to
+        <strong>v{{lastDocumentStoreVersion}}</strong>, the last release that includes it. Be aware that a
+        frozen version does <strong>not receive security updates</strong>, so continuing to run it is entirely
+        at your own risk.</p>
+    <p class="mb-0">Otherwise close this notice to clear the setting and drop the indexing jobs still queued in
+        Redis. The rest of the stored Document Store configuration is left untouched.</p>
+    {{/ui/clear-alert}}
     {{/if}}
 
     {{#unless hasAccounts}}
@@ -149,17 +155,13 @@
 
     {{> ui/section-title label="System" class="mt-8 mb-3"}}
 
-    {{!-- auto-fit, so the tiles fill the row whether or not the Document Store adds a third
-          queue - a fixed four-column track left a quarter-width hole at the end without it --}}
+    {{!-- auto-fit, so the tiles fill the row however many there are - a fixed four-column track
+          left a quarter-width hole at the end --}}
     <div class="grid grid-cols-2 gap-4 xl:grid-cols-[repeat(auto-fit,minmax(15rem,1fr))]">
 
         {{> queueCard queue=stats.queues.notify href="/admin/bull-board/queue/Webhooks%20Queue%20-%20notify" label="Webhooks queue" tooltip="This queue processes webhook notifications" delayedTooltip="Delayed queue entries"}}
 
         {{> queueCard queue=stats.queues.submit href="/admin/bull-board/queue/Submission%20Queue%20-%20submit" label="Submission queue" tooltip="This queue processes outgoing emails" delayedTooltip="Delayed queue entries, including emails scheduled to be sent later"}}
-
-        {{#if showDocumentStore}}
-        {{> queueCard queue=stats.queues.documents href="/admin/bull-board/queue/Document%20Queue%20-%20documents" label="Documents queue" tooltip="This queue indexes mailbox changes to Elasticsearch" delayedTooltip="Delayed queue entries"}}
-        {{/if}}
 
         {{#> ui/stat-card variant=(eeColor redisPing.color) icon=redisPing.icon}}
         <div class="text-sm font-medium text-base-content/60 mb-1">

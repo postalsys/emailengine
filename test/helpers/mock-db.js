@@ -32,12 +32,10 @@ function installDbMock({ redis } = {}) {
             queueConf: { connection: {} },
             notifyQueue: mockQueue,
             submitQueue: mockQueue,
-            documentsQueue: mockQueue,
             exportQueue: mockQueue,
             // lib/tools.js destructures this at load
             QUEUES_BY_NAME: {},
             logBullErrors: emitter => emitter,
-            getFlowProducer: () => ({}),
             REDIS_CONF: {},
             watchRedisReconnect: () => {}
         }

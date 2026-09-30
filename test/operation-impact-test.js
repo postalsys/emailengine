@@ -15,7 +15,7 @@ describe('operation impact', () => {
         it('returns a declared impact unchanged', () => {
             assert.equal(resolveImpact(IMPACT.DESTRUCTIVE, 'put'), IMPACT.DESTRUCTIVE);
             assert.equal(resolveImpact(IMPACT.SENDS, 'post'), IMPACT.SENDS);
-            // The whole reason declarations exist: the method is a bad proxy for POST /v1/unified/search
+            // The whole reason declarations exist: the method is a bad proxy for POST /v1/account/{account}/search
             assert.equal(resolveImpact(IMPACT.READONLY, 'post'), IMPACT.READONLY);
         });
 

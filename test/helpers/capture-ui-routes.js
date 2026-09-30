@@ -5,13 +5,6 @@
 // de-duplication (so callers can detect duplicate registrations), using a bare mock Hapi
 // server. Route registration is synchronous and never touches Redis or the `call` RPC, so
 // the mock is sufficient.
-//
-// When run directly as a script it prints the captured routes as JSON to stdout and
-// force-exits (requiring routes-ui.js transitively opens Redis/BullMQ handles). The
-// document-store-disabled test runs this in a child process with
-// EENGINE_DOCUMENT_STORE_ENABLED=false to assert the document store routes are gated off.
-
-const fs = require('fs');
 
 // Registration runs once per process: routes-ui.js is required and invoked a single time, and
 // both accessors below read the same capture.
@@ -69,10 +62,3 @@ function captureRouteConfigs() {
 }
 
 module.exports = { captureRoutes, captureRouteConfigs };
-
-if (require.main === module) {
-    const routes = captureRoutes();
-    // Use writeSync so the output is fully flushed before the forced exit below.
-    fs.writeSync(1, JSON.stringify(routes));
-    process.exit(0);
-}

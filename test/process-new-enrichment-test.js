@@ -127,7 +127,7 @@ function createMailbox(messageInfo, { dsn = false, bounce = false } = {}) {
         getMessageInfo: async () => Object.assign({ id: 'AAAAAQAAAAI', uid: 42, messageSpecialUse: '\\Inbox' }, messageInfo),
         getSeenMessagesKey: () => 'seen:test-account:INBOX'
     });
-    return { ctx, notifications, downloads, run: () => ctx.processNew({ uid: 42, flags: new Set() }, {}, false, {}) };
+    return { ctx, notifications, downloads, run: () => ctx.processNew({ uid: 42, flags: new Set() }, {}, {}) };
 }
 
 const events = notifications => notifications.map(entry => entry.event);

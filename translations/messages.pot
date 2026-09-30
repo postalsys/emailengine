@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-09-30 14:08+0000\n"
+"POT-Creation-Date: 2026-09-30 20:19+0000\n"
 
 #: views/error.hbs:6
-#: workers/api.js:3143
+#: workers/api.js:3141
 msgid "Something went wrong"
 msgstr ""
 
@@ -153,38 +153,6 @@ msgstr ""
 msgid "Standard IMAP"
 msgstr ""
 
-#: views/accounts/register/validating.hbs:35
-msgid "Checking your mail server"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:40
-msgid "Still checking. This can take up to a minute."
-msgstr ""
-
-#: views/accounts/register/validating.hbs:47
-msgid "Enter server settings manually"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:53
-msgid "We couldn't sign in to your mail server"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:54
-msgid "Check the settings on the next page and try again."
-msgstr ""
-
-#: views/accounts/register/validating.hbs:61
-msgid "Continue to server settings"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:69
-msgid "Almost there"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:70
-msgid "Continue to review your mail server settings."
-msgstr ""
-
 #: views/accounts/register/imap-server.hbs:23
 msgid ""
 "Server settings could not be detected automatically for %s. Enter them "
@@ -289,6 +257,38 @@ msgstr ""
 msgid "We couldn't connect with these settings. Check the errors below."
 msgstr ""
 
+#: views/accounts/register/validating.hbs:35
+msgid "Checking your mail server"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:40
+msgid "Still checking. This can take up to a minute."
+msgstr ""
+
+#: views/accounts/register/validating.hbs:47
+msgid "Enter server settings manually"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:53
+msgid "We couldn't sign in to your mail server"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:54
+msgid "Check the settings on the next page and try again."
+msgstr ""
+
+#: views/accounts/register/validating.hbs:61
+msgid "Continue to server settings"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:69
+msgid "Almost there"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:70
+msgid "Continue to review your mail server settings."
+msgstr ""
+
 #: views/partials/public_test_labels.hbs:9
 msgid "Error"
 msgstr ""
@@ -351,14 +351,14 @@ msgstr ""
 msgid "Invalid input"
 msgstr ""
 
-#: lib/tools.js:2490
+#: lib/tools.js:2489
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:2513
-#: lib/tools.js:2519
-#: lib/tools.js:2524
-#: lib/ui-routes/account-routes.js:1323
+#: lib/tools.js:2512
+#: lib/tools.js:2518
+#: lib/tools.js:2523
+#: lib/ui-routes/account-routes.js:1322
 msgid "Invalid or expired account setup URL"
 msgstr ""
 
@@ -369,10 +369,10 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:935
 #: lib/ui-routes/account-routes.js:982
 #: lib/ui-routes/account-routes.js:1198
-#: lib/ui-routes/account-routes.js:1390
-#: lib/ui-routes/route-helpers.js:403
-#: workers/api.js:2312
-#: workers/api.js:2382
+#: lib/ui-routes/account-routes.js:1389
+#: lib/ui-routes/route-helpers.js:383
+#: workers/api.js:2311
+#: workers/api.js:2381
 msgid "Email Account Setup"
 msgstr ""
 
@@ -387,7 +387,7 @@ msgid "Too many attempts for this setup link. Request a new setup link to contin
 msgstr ""
 
 #: lib/ui-routes/account-routes.js:969
-#: lib/ui-routes/account-routes.js:1373
+#: lib/ui-routes/account-routes.js:1372
 msgid "Couldn't set up account. Try again."
 msgstr ""
 
@@ -439,11 +439,11 @@ msgstr ""
 msgid "Unexpected server response"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1311
+#: lib/ui-routes/account-routes.js:1310
 msgid "Temporary error, please try again"
 msgstr ""
 
-#: lib/ui-routes/admin-config-routes.js:193
+#: lib/ui-routes/admin-config-routes.js:192
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
@@ -455,33 +455,33 @@ msgstr ""
 msgid "Indefinite"
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:105
+#: lib/ui-routes/route-helpers.js:104
 msgid "The server unexpectedly closed the connection."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:107
+#: lib/ui-routes/route-helpers.js:106
 msgid ""
 "The server unexpectedly closed the connection. This usually happens when "
 "attempting to connect to a TLS port without TLS enabled."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:162
+#: lib/ui-routes/route-helpers.js:161
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:169
+#: lib/ui-routes/route-helpers.js:168
 msgid ""
 "The server refused the connection. This typically occurs if the server is "
 "not running, is overloaded, or you are connecting to the wrong host or port."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:223
+#: lib/ui-routes/route-helpers.js:222
 msgid "Delegated"
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:224
+#: lib/ui-routes/route-helpers.js:223
 msgid "Using credentials from \"%s\""
 msgstr ""
 
@@ -497,37 +497,37 @@ msgstr ""
 msgid "Couldn't process request. Try again."
 msgstr ""
 
-#: workers/api.js:2241
+#: workers/api.js:2240
 msgid ""
 "The sign-in was cancelled or the requested access was not granted. Open the "
 "account setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2250
+#: workers/api.js:2249
 msgid "Sign-in with the email provider failed: %s"
 msgstr ""
 
-#: workers/api.js:2254
+#: workers/api.js:2253
 msgid "Sign-in with the email provider failed: no authorization code was received"
 msgstr ""
 
-#: workers/api.js:2260
+#: workers/api.js:2259
 msgid "Sign-in with the email provider failed: the request state is not valid"
 msgstr ""
 
-#: workers/api.js:2266
+#: workers/api.js:2265
 msgid ""
 "The account setup session has expired or was already used. Open the account "
 "setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2273
+#: workers/api.js:2272
 msgid ""
 "Sign-in with the email provider failed: the stored setup session is not "
 "valid"
 msgstr ""
 
-#: workers/api.js:3142
-#: workers/api.js:3257
+#: workers/api.js:3140
+#: workers/api.js:3255
 msgid "Requested page not found"
 msgstr ""

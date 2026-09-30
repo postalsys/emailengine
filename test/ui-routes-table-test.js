@@ -54,11 +54,6 @@ const GOLDEN_ROUTES = [
     'GET /admin/accounts/suggestions',
     'GET /admin/config/ai',
     'GET /admin/config/branding',
-    'GET /admin/config/document-store',
-    'GET /admin/config/document-store/chat',
-    'GET /admin/config/document-store/mappings',
-    'GET /admin/config/document-store/mappings/new',
-    'GET /admin/config/document-store/pre-processing',
     'GET /admin/config/email-processing',
     'GET /admin/config/imap-proxy',
     'GET /admin/config/license',
@@ -134,11 +129,6 @@ const GOLDEN_ROUTES = [
     'POST /admin/config/branding/preview',
     'POST /admin/config/browser',
     'POST /admin/config/clear-error',
-    'POST /admin/config/document-store',
-    'POST /admin/config/document-store/chat',
-    'POST /admin/config/document-store/mappings/new',
-    'POST /admin/config/document-store/pre-processing',
-    'POST /admin/config/document-store/test',
     'POST /admin/config/email-processing',
     'POST /admin/config/imap-proxy',
     'POST /admin/config/license',
@@ -200,9 +190,8 @@ const GOLDEN_ROUTES = [
     'POST /unsubscribe/address'
 ];
 
-// Route capture (mock Hapi server) lives in test/helpers/capture-ui-routes.js so the
-// document-store-disabled test can reuse it in a child process. captureRoutes() returns the
-// raw registration list (with any duplicates), which lets this test detect duplicate
+// Route capture (mock Hapi server) lives in test/helpers/capture-ui-routes.js. captureRoutes()
+// returns the raw registration list (with any duplicates), which lets this test detect duplicate
 // registrations before comparing the de-duplicated set against the golden snapshot.
 
 test('UI route table is unchanged', async t => {

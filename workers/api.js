@@ -78,12 +78,11 @@ const tokenAuditLog = require('../lib/token-audit-log');
 const { routeGrant, perRequestSurfaceAdmits, sessionTokenAdmits } = require('../lib/api-routes/permission-map');
 const { mcpOptions } = require('../lib/api-routes/route-metadata');
 
-const { redis, documentsQueue } = require('../lib/db');
+const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
 
 const getSecret = require('../lib/get-secret');
-const { getESClient, documentStoreFeatureEnabled } = require('../lib/document-store');
 
 const sso = require('../lib/sso');
 
@@ -110,7 +109,8 @@ const {
     DEFAULT_EENGINE_TIMEOUT,
     DEFAULT_MAX_ATTACHMENT_SIZE,
     MAX_FORM_TTL,
-    NONCE_BYTES
+    NONCE_BYTES,
+    LAST_DOCUMENT_STORE_VERSION
 } = consts;
 
 const registerApiRoutes = require('../lib/api-routes');
@@ -590,7 +590,6 @@ const init = async () => {
     }
 
     let assertPreconditionResult;
-    server.decorate('toolkit', 'getESClient', async (...args) => await getESClient(...args));
 
     // A read-only view of the certificate store for routes. Ordering a certificate is the
     // reconciler's job - it owns the state a page follows, the retry pacing and the listener
@@ -2818,7 +2817,6 @@ const init = async () => {
         server,
         call,
         notify,
-        documentsQueue,
         metrics,
         CORS_CONFIG,
         FLAG_SORT_ORDER,
@@ -2826,7 +2824,6 @@ const init = async () => {
         MAX_ATTACHMENT_SIZE,
         MAX_BODY_SIZE,
         MAX_PAYLOAD_TIMEOUT,
-        documentStoreFeatureEnabled,
         mcpFeatureEnabled,
         oauth2Schema,
         imapSchema,
@@ -2914,7 +2911,11 @@ const init = async () => {
                 tract,
                 templateHeader: embeddedTemplateHeader,
                 templateHtmlHead: embeddedTemplateHtmlHead,
-                documentStoreEnabled: showDocumentStore,
+                // The Document Store was removed in 2.82.0. The setting that switched it on is
+                // read raw off the settings hash (it is no longer in the settings schema), so an
+                // instance upgraded with the feature still on is told where it went instead of
+                // losing it quietly
+                documentStoreEnabled: documentStoreRemoved,
                 serviceUrl,
                 language,
                 locale,
@@ -2925,10 +2926,6 @@ const init = async () => {
 
             let systemAlerts = [];
             let authData;
-
-            // Deprecated Document Store: enabled in settings but unavailable because EmailEngine
-            // was not started with the document store gate (--documentStore.enabled / EENGINE_DOCUMENT_STORE_ENABLED).
-            let documentStoreUnavailable = !documentStoreFeatureEnabled && !!showDocumentStore;
 
             switch (request.auth.artifacts && request.auth.artifacts.provider) {
                 case 'okta': {
@@ -3052,12 +3049,12 @@ const init = async () => {
                 });
             }
 
-            if (documentStoreUnavailable) {
+            if (documentStoreRemoved) {
                 systemAlerts.push({
                     url: '/admin',
                     level: 'danger',
                     icon: 'icon-[tabler--database]',
-                    message: `The Document Store is enabled in settings but unavailable. Start EmailEngine with the document store gate to use it, or disable the setting.`
+                    message: `The Document Store has been removed from EmailEngine. Downgrade to v${LAST_DOCUMENT_STORE_VERSION} if you still need it.`
                 });
             }
 
@@ -3094,8 +3091,8 @@ const init = async () => {
                 embeddedTemplateHeader,
                 embeddedTemplateHtmlHead,
                 currentYear: new Date().getFullYear(),
-                showDocumentStore: documentStoreFeatureEnabled && showDocumentStore,
-                documentStoreUnavailable,
+                documentStoreRemoved,
+                lastDocumentStoreVersion: LAST_DOCUMENT_STORE_VERSION,
                 updateBrowserInfo: !serviceUrl || !language || !timezone,
 
                 // Suppress large banner warnings when EENGINE_DISABLE_SETUP_WARNINGS is set

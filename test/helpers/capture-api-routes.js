@@ -19,8 +19,6 @@ const { routeKey } = require('../../lib/api-routes/permission-map');
 // Stand-ins for the values workers/api.js passes in. Only shape matters: these are read at
 // registration time to build Joi schemas and payload limits, never dereferenced deeply.
 function buildMockArgs(server, overrides) {
-    const noopQueue = { add: async () => ({}), getJob: async () => null, on: () => {}, off: () => {} };
-
     return Object.assign(
         {
             server,
@@ -30,7 +28,6 @@ function buildMockArgs(server, overrides) {
             // queue-shaped object to the mock invites a maintainer to "fix" production by passing
             // notifyQueue instead, which would break the settings fanout with nothing failing here.
             notify: async () => {},
-            documentsQueue: noopQueue,
             metrics: {},
 
             CORS_CONFIG: false,
@@ -41,10 +38,6 @@ function buildMockArgs(server, overrides) {
             MAX_ATTACHMENT_SIZE: DEFAULT_MAX_ATTACHMENT_SIZE,
             MAX_BODY_SIZE: DEFAULT_MAX_BODY_SIZE,
             MAX_PAYLOAD_TIMEOUT: DEFAULT_MAX_PAYLOAD_TIMEOUT,
-            // Defaults to the deprecated Document Store gate ON, so its endpoints appear in the
-            // table. The gate is a plain argument here (not an env read at module load like the
-            // UI side), so the off state is captured by passing it in - no child process needed.
-            documentStoreFeatureEnabled: true,
             // The MCP gate defaults on (it ships enabled in config/default.toml), so the golden
             // table includes the /mcp routes; the gate-off state is captured explicitly in
             // test/api-routes-table-test.js
@@ -96,7 +89,7 @@ function describeRoute(cfg, method) {
 /**
  * Registers the real API route table against a mock server and reports what it did.
  *
- * @param {Object} [overrides] - args passed to registerApiRoutes(), e.g. documentStoreFeatureEnabled
+ * @param {Object} [overrides] - args passed to registerApiRoutes(), e.g. mcpFeatureEnabled
  * @returns {Object} { routes, registeredPlugins } - the described routes, and the names of any
  *                   plugins registered during route setup. Plugin-registered routes never reach
  *                   server.route() on this mock, so they would be invisible to the auth and tag

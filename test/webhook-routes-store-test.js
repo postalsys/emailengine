@@ -20,12 +20,14 @@ registerRedisTeardown(redis, async () => {
     }
 });
 
-// Every job pushToQueue() would queue, without reaching BullMQ
+// Every job pushToQueue() would queue, without reaching BullMQ. The main webhook job carries no
+// _route, so the route deliveries can be told apart from it
 const queued = [];
 notifyQueue.add = async (name, data) => {
     queued.push({ name, data });
     return { id: String(queued.length) };
 };
+const routeJobs = () => queued.filter(job => job.data._route);
 
 async function resetRoutes() {
     const keys = await redis.keys(`${REDIS_PREFIX}wh:*`);
@@ -147,8 +149,8 @@ test('concurrent cache refreshes load a new route once', async () => {
     assert.strictEqual(second.length, 1);
     assert.strictEqual(webhooks.handlerCache.length, 1);
 
-    await webhooks.pushToQueue('messageNew', { account: 'acc', event: 'messageNew', data: {} }, { routesOnly: true });
-    assert.strictEqual(queued.length, 1, 'one event, one job for the route');
+    await webhooks.pushToQueue('messageNew', { account: 'acc', event: 'messageNew', data: {} });
+    assert.strictEqual(routeJobs().length, 1, 'one event, one job for the route');
 });
 
 test('a route with a map script sends the mapped payload or nothing', async t => {
@@ -157,31 +159,31 @@ test('a route with a map script sends the mapped payload or nothing', async t =>
     async function routeWithMap(map) {
         await resetRoutes();
         await webhooks.create({ name: 'Mapped', enabled: true, targetUrl: 'https://example.com/mapped' }, { fn: 'return true;', map });
-        await webhooks.pushToQueue('messageNew', payload, { routesOnly: true });
+        await webhooks.pushToQueue('messageNew', payload);
     }
 
     await t.test('a map that throws skips the route', async () => {
         await routeWithMap('throw new Error("map failed");');
-        assert.strictEqual(queued.length, 0, 'the unmapped payload must not be queued');
+        assert.strictEqual(routeJobs().length, 0, 'the unmapped payload must not be queued');
     });
 
     await t.test('a map that returns nothing skips the route', async () => {
         await routeWithMap('return null;');
-        assert.strictEqual(queued.length, 0);
+        assert.strictEqual(routeJobs().length, 0);
     });
 
     await t.test('a working map queues the mapped payload', async () => {
         await routeWithMap('return { id: payload.data.id };');
-        assert.strictEqual(queued.length, 1);
+        assert.strictEqual(routeJobs().length, 1);
         // the object comes from the script's own realm, so compare what gets serialized
-        assert.deepStrictEqual(JSON.parse(JSON.stringify(queued[0].data._route.mapping)), { id: 'm1' });
+        assert.deepStrictEqual(JSON.parse(JSON.stringify(routeJobs()[0].data._route.mapping)), { id: 'm1' });
     });
 
     await t.test('a route without a map queues the payload as before', async () => {
         await resetRoutes();
         await webhooks.create({ name: 'Plain', enabled: true, targetUrl: 'https://example.com/plain' }, { fn: 'return true;' });
-        await webhooks.pushToQueue('messageNew', payload, { routesOnly: true });
-        assert.strictEqual(queued.length, 1);
-        assert.ok(!('mapping' in queued[0].data._route));
+        await webhooks.pushToQueue('messageNew', payload);
+        assert.strictEqual(routeJobs().length, 1);
+        assert.ok(!('mapping' in routeJobs()[0].data._route));
     });
 });

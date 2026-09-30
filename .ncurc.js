@@ -47,10 +47,6 @@ module.exports = {
     // bump still needs a look at the generated document: test/openapi-golden-test.js fails if joi's
     // describe() output changes shape.
     reject: [
-        // 8.16+ pulls apache-arrow (ESM) into the pkg bundle; 9.x drops it but is a major bump for
-        // the deprecated, default-off Document Store. Even the 8.19 minor is unsafe to bundle.
-        '@elastic/elasticsearch',
-
         // @asamuzakjp/css-color >=4.1.2 pulls in @csstools/* v4 which are pure ESM and break pkg bundling
         // (transitive via @postalsys/email-text-tools -> jsdom -> cssstyle; also pinned in package.json "overrides").
         '@asamuzakjp/css-color'

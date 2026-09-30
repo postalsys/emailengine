@@ -34,10 +34,6 @@
     {{> ui/menu-item href="/admin/config/imap-proxy" label="IMAP Proxy" active=menuConfigImapProxy}}
     {{> ui/menu-item href="/admin/config/branding" label="Branding" active=menuConfigBranding}}
     {{> ui/menu-item href="/admin/config/logging" label="Logging" active=menuConfigLogging}}
-
-    {{#if showDocumentStore}}
-    {{> ui/menu-item href="/admin/config/document-store" label="Document Store" active=menuConfigDocumentStore}}
-    {{/if}}
     {{/ui/menu-section}}
 
     {{> ui/menu-item href="/admin/config/license" label="License" icon="icon-[tabler--license] size-4.5"

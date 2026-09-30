@@ -39,7 +39,6 @@ function createContext({ specialUse = '\\Inbox', headers = {}, labels } = {}) {
             account: 'test-account',
             imapClient: null,
             notifyFrom: false,
-            syncFrom: false,
             redis: { pfadd: async () => 1 },
             getImapConnection: async () => ({ fetchOne: async () => ({ uid: 42, flags: new Set() }) }),
             // The arrival checks live on the connection; each records what it was shown
@@ -68,7 +67,7 @@ function createContext({ specialUse = '\\Inbox', headers = {}, labels } = {}) {
     return { ctx, seen, notifications };
 }
 
-const processNew = (ctx, options = {}) => ctx.processNew({ uid: 42, flags: new Set() }, options, false, {});
+const processNew = (ctx, options = {}) => ctx.processNew({ uid: 42, flags: new Set() }, options, {});
 
 test('Mailbox.processNew() before the arrival checks', async t => {
     await t.test('the folder is decided before the checks run', async () => {

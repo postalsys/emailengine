@@ -44,8 +44,8 @@ test('boolean query flags accept the string forms of both values', async t => {
                 // The whole query schema, so sibling references resolve; only this key's own
                 // errors count, since another key may be required
                 const { value, error } = query.validate({ [key]: '0' }, { convert: true, abortEarly: false });
-                // `any.unknown` is a flag that only exists beside another one (exposeQuery needs
-                // documentStore), which is not what this checks
+                // `any.unknown` is a flag that only exists beside another one, which is not what
+                // this checks
                 const ownError = error && error.details.some(detail => detail.path[0] === key && detail.type !== 'any.unknown');
                 if (error && !ownError) {
                     continue;

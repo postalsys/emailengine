@@ -78,7 +78,6 @@ test('Outbox', async t => {
         const account = new Account({
             redis,
             account: accountId,
-            documentsQueue: { add: async () => {} },
             call: async () => 0,
             logger
         });

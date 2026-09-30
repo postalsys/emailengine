@@ -138,13 +138,6 @@ const GLOBAL_OPTIONS = [
     { name: '--smtp.proxy', description: 'Enable HAProxy PROXY protocol', type: 'boolean', default: false, group: 'SMTP server' },
     { name: '--smtp.maxMessageSize', description: 'Maximum email size', type: 'number/string', default: '25M', group: 'SMTP server' },
     {
-        name: '--documentStore.enabled',
-        description: 'Enable the deprecated Document Store (ElasticSearch) feature',
-        type: 'boolean',
-        default: false,
-        group: 'Document Store (deprecated)'
-    },
-    {
         name: '--mcp.enabled',
         description: 'Register the MCP endpoint at /mcp (the mcpEnabled runtime setting still has to be turned on)',
         type: 'boolean',

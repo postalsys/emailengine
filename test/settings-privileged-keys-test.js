@@ -98,7 +98,7 @@ test('privileged settings keys', async t => {
         }
 
         // Every URL a stored secret is sent to, beside the secret itself
-        for (const key of ['openAiAPIUrl', 'authServer', 'proxyUrl', 'httpProxyUrl', 'documentStoreUrl']) {
+        for (const key of ['openAiAPIUrl', 'authServer', 'proxyUrl', 'httpProxyUrl']) {
             assert.ok(settings.privilegedKeys.includes(key), `${key} names where a stored secret is sent, so it must be privileged`);
         }
 
