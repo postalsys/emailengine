@@ -56,4 +56,21 @@ test('submission payload bounds', async t => {
         }
         assert.ok(MAX_MESSAGE_ATTACHMENTS < 1000, 'stays below the MIME splitter node limit');
     });
+
+    // A client sending every documented field with its default passed forwardAttachments: false
+    // on a reply and got "not allowed" back
+    await t.test('reference.forwardAttachments is refused only when enabled outside a forward', () => {
+        const reference = (action, forwardAttachments) => ({ reference: { message: 'AAAAAQAACnA', action, forwardAttachments } });
+
+        for (const schema of [submit, upload]) {
+            assert.equal(errorsAt(schema, reference('forward', true), 'reference').length, 0);
+            assert.equal(errorsAt(schema, reference('forward', false), 'reference').length, 0);
+            assert.equal(errorsAt(schema, reference('reply', false), 'reference').length, 0);
+            assert.equal(errorsAt(schema, reference('reply-all', 'false'), 'reference').length, 0);
+
+            const enabled = errorsAt(schema, reference('reply', true), 'reference');
+            assert.equal(enabled.length, 1);
+            assert.match(enabled[0].message, /can only be enabled when action is "forward"/);
+        }
+    });
 });

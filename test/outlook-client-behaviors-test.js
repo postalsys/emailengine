@@ -255,6 +255,106 @@ test('OutlookClient.convertMessageToUploadObject() cid references', async t => {
     });
 });
 
+// Graph refuses the whole message over an internetMessageHeaders name without the x- prefix,
+// which made every draft reply fail with InvalidInternetMessageHeader
+test('OutlookClient.convertMessageToUploadObject() headers', async t => {
+    await t.test('threading headers of a structured reply become MAPI properties', () => {
+        const outlook = makeClient();
+        const upload = outlook.convertMessageToUploadObject({
+            subject: 'Re: hello',
+            headers: {
+                references: '<root@example.com> <orig@example.com>',
+                'in-reply-to': '<orig@example.com>',
+                'X-Custom': 'kept',
+                'List-Unsubscribe': '<https://example.com/u>'
+            }
+        });
+
+        assert.deepEqual(upload.singleValueExtendedProperties, [
+            { id: 'String 0x1039', value: '<root@example.com> <orig@example.com>' },
+            { id: 'String 0x1042', value: '<orig@example.com>' }
+        ]);
+        assert.deepEqual(upload.internetMessageHeaders, [{ name: 'x-custom', value: 'kept' }]);
+    });
+
+    await t.test('header lines of a parsed raw message are unfolded and filtered', () => {
+        const outlook = makeClient();
+        const upload = outlook.convertMessageToUploadObject({
+            headerLines: [
+                { key: 'from', line: 'From: a@example.com' },
+                { key: 'reply-to', line: 'Reply-To: r@example.com' },
+                { key: 'references', line: 'References: <root@example.com>\r\n <orig@example.com>' },
+                { key: 'in-reply-to', line: 'In-Reply-To: <orig@example.com>' },
+                { key: 'x-one', line: 'X-One: 1' }
+            ],
+            // getRawEmail() flattens the parsed address object into a list
+            replyTo: [{ address: 'r@example.com', name: 'R' }]
+        });
+
+        assert.deepEqual(upload.singleValueExtendedProperties, [
+            { id: 'String 0x1039', value: '<root@example.com> <orig@example.com>' },
+            { id: 'String 0x1042', value: '<orig@example.com>' }
+        ]);
+        assert.deepEqual(upload.internetMessageHeaders, [{ name: 'x-one', value: '1' }]);
+        assert.deepEqual(upload.replyTo, [{ emailAddress: { address: 'r@example.com', name: 'R' } }]);
+    });
+
+    await t.test('no more than five custom headers, the last ones kept', () => {
+        const outlook = makeClient();
+        const upload = outlook.convertMessageToUploadObject({
+            headerLines: [1, 2, 3, 4, 5, 6].map(i => ({ key: `x-h${i}`, line: `X-H${i}: ${i}` }))
+        });
+
+        assert.deepEqual(
+            upload.internetMessageHeaders.map(header => header.name),
+            ['x-h2', 'x-h3', 'x-h4', 'x-h5', 'x-h6']
+        );
+    });
+
+    await t.test('a threading header given twice in different case is set once', () => {
+        const outlook = makeClient();
+        const upload = outlook.convertMessageToUploadObject({
+            headers: { 'In-Reply-To': '<caller@example.com>', 'in-reply-to': '<orig@example.com>' }
+        });
+
+        assert.deepEqual(upload.singleValueExtendedProperties, [{ id: 'String 0x1042', value: '<orig@example.com>' }]);
+    });
+
+    await t.test('uploadMessage() keeps the threading properties next to the flags', async () => {
+        const outlook = makeClient();
+        outlook.resolveFolder = async () => ({ id: 'drafts', pathName: 'Drafts' });
+        outlook.prepareRawMessage = async () => ({
+            emailObject: { subject: 'Re: hello', headers: { 'in-reply-to': '<orig@example.com>' } },
+            messageId: '<new@example.com>'
+        });
+        let sent;
+        outlook.request = async (path, method, body) => {
+            sent = body;
+            return { id: 'm1', internetMessageId: '<new@example.com>' };
+        };
+
+        await outlook.uploadMessage({ path: 'Drafts', flags: ['\\Draft'] });
+
+        assert.deepEqual(sent.singleValueExtendedProperties, [
+            { id: 'String 0x1042', value: '<orig@example.com>' },
+            { id: 'Integer 0x0E07', value: '8' }
+        ]);
+    });
+
+    await t.test('a message Graph refuses is reported as a client error', async () => {
+        const outlook = makeClient();
+        outlook.resolveFolder = async () => ({ id: 'drafts', pathName: 'Drafts' });
+        outlook.prepareRawMessage = async () => ({ emailObject: { subject: 'x' }, messageId: '<new@example.com>' });
+        outlook.request = async () => {
+            throw Object.assign(new Error('Bad request'), {
+                oauthRequest: { status: 400, response: { error: { code: 'ErrorInvalidRecipients', message: 'Invalid recipients' } } }
+            });
+        };
+
+        await assert.rejects(outlook.uploadMessage({ path: 'Drafts' }), err => err.statusCode === 400 && err.code === 'ErrorInvalidRecipients');
+    });
+});
+
 test('OutlookClient.close()', async t => {
     // The worker catches and logs a rejected close(); the client itself no longer swallows the
     // state write failure, so a shutdown with Redis gone is visible in the worker log
