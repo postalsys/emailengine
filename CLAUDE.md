@@ -133,6 +133,7 @@ Path-scoped rules in `.claude/rules/` load automatically when you work with the 
 - `EENGINE_EXPORT_QC` - Export concurrency per worker (default: 1)
 - `EENGINE_EXPORT_TIMEOUT` - Export operation timeout (default: 5 minutes)
 - `EENGINE_NOTIFY_QC` - Webhook concurrency per worker (default: 1)
+- `EENGINE_IMAP_STALE_CHECK_INTERVAL` - Quiet period (e.g. `1h`) after which a resync pass checks the main mailbox over the command connection and reconnects an IMAP account whose primary connection has stopped seeing new messages (default: unset, disabled). See `checkStaleMainView()` in `lib/email-client/imap-client.js`
 - `EENGINE_SMTP_MAX_CLIENTS` - Maximum concurrent SMTP server connections (default: 100; also `[smtp] maxClients`). Each connection buffers its message in memory up to `EENGINE_MAX_SMTP_MESSAGE_SIZE`, so this bounds the SMTP worker's memory; excess connections are refused with a 421
 - `EENGINE_IMAPPROXY_MAX_CLIENTS` - Maximum concurrent IMAP proxy connections, counted from accept (default: 1000; also `[imap] maxClients`). Excess connections get `* BYE Too many connections` and are closed. Before login a command may carry at most 32 literals and the state rule runs before any literal is accepted, so an unauthenticated client cannot buffer APPEND data; with the PROXY protocol on, the header must arrive within `proxyHeaderTimeout` (10 s)
 - `EENGINE_DOCUMENT_STORE_ENABLED` - Enable the deprecated Document Store feature (default: false; also settable via `--documentStore.enabled` / `[documentStore] enabled`)
