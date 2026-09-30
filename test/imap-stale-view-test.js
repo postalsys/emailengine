@@ -12,22 +12,50 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { planStaleViewProbe, evaluateStaleViewProbe, STALE_CONFIRMATIONS } = require('../lib/email-client/imap/stale-view');
+const { knownUidNext, planStaleViewProbe, evaluateStaleViewProbe, STALE_CONFIRMATIONS } = require('../lib/email-client/imap/stale-view');
 
 const MINUTE = 60 * 1000;
 const INTERVAL = 60 * MINUTE;
 const UIDVALIDITY = 1717171717n;
 
-const stored = (uidNext, uidValidity = UIDVALIDITY) => ({ uidNext, uidValidity });
+const known = (uidNext, uidValidity = UIDVALIDITY) => ({ uidNext, uidValidity });
 const server = (uidNext, uidValidity = UIDVALIDITY) => ({ path: 'INBOX', uidNext, uidValidity });
 
 // Runs planStaleViewProbe() from a fresh connection until the first pass that probes
-const quietUntilProbe = (storedUidNext, start) => {
-    let first = planStaleViewProbe(null, storedUidNext, start, INTERVAL);
-    let second = planStaleViewProbe(first.state, storedUidNext, start + INTERVAL, INTERVAL);
+const quietUntilProbe = (uidNext, start) => {
+    let first = planStaleViewProbe(null, uidNext, start, INTERVAL);
+    let second = planStaleViewProbe(first.state, uidNext, start + INTERVAL, INTERVAL);
     assert.equal(second.probe, true);
     return second.state;
 };
+
+test('knownUidNext', async t => {
+    await t.test('a healthy session is ahead of the store by the message it just fetched', () => {
+        // A partial sync stores the snapshot it took before fetching, and ImapFlow moves the
+        // session's UIDNEXT once the FETCH returns the new UID. The arrival has to count, or a
+        // quiet account that received one message would keep being probed
+        assert.equal(knownUidNext(100, 101), 101);
+        const baseline = planStaleViewProbe(null, 100, 0, INTERVAL).state;
+        assert.equal(planStaleViewProbe(baseline, knownUidNext(100, 101), INTERVAL, INTERVAL).probe, false);
+    });
+
+    await t.test('a session that knows the server UIDNEXT is not behind a lagging store', () => {
+        // A message delivered and expunged before the primary fetched it leaves the stored
+        // UIDNEXT behind for good on a CONDSTORE server; the SELECT of the session after a
+        // reconnect reports the server's value, so the check must not reconnect again
+        const state = { checkedAt: 0, uidNext: 101, confirmations: 1 };
+        const result = evaluateStaleViewProbe(state, known(knownUidNext(100, 101)), server(101), INTERVAL);
+        assert.equal(result.ahead, false);
+        assert.equal(result.state.confirmations, 0);
+    });
+
+    await t.test('falls back to whichever value is available', () => {
+        assert.equal(knownUidNext(100, false), 100);
+        assert.equal(knownUidNext(false, 100), 100);
+        assert.equal(knownUidNext(false, false), false);
+        assert.equal(knownUidNext(0, undefined), false);
+    });
+});
 
 test('planStaleViewProbe', async t => {
     await t.test('does nothing while the check is disabled', () => {
@@ -36,7 +64,7 @@ test('planStaleViewProbe', async t => {
         }
     });
 
-    await t.test('does nothing without a stored UIDNEXT to compare against', () => {
+    await t.test('does nothing without a known UIDNEXT to compare against', () => {
         for (const uidNext of [false, 0, undefined]) {
             assert.deepEqual(planStaleViewProbe(null, uidNext, 0, INTERVAL), { probe: false, state: null });
         }
@@ -48,7 +76,7 @@ test('planStaleViewProbe', async t => {
         assert.deepEqual(result.state, { checkedAt: 1000, uidNext: 100, confirmations: 0 });
     });
 
-    await t.test('probes once the main mailbox has stored nothing new for the interval', () => {
+    await t.test('probes once the known UIDNEXT has not moved for the interval', () => {
         const baseline = planStaleViewProbe(null, 100, 0, INTERVAL).state;
         assert.equal(planStaleViewProbe(baseline, 100, INTERVAL - 1, INTERVAL).probe, false);
         assert.equal(planStaleViewProbe(baseline, 100, INTERVAL, INTERVAL).probe, true);
@@ -63,7 +91,7 @@ test('planStaleViewProbe', async t => {
         assert.equal(planStaleViewProbe(probed.state, 100, 2 * INTERVAL, INTERVAL).probe, true);
     });
 
-    await t.test('an arrival stored by the primary connection starts the quiet period over', () => {
+    await t.test('an arrival seen by the primary connection starts the quiet period over', () => {
         const baseline = planStaleViewProbe(null, 100, 0, INTERVAL).state;
         const result = planStaleViewProbe(baseline, 101, INTERVAL, INTERVAL);
         assert.equal(result.probe, false);
@@ -74,13 +102,13 @@ test('planStaleViewProbe', async t => {
 test('evaluateStaleViewProbe', async t => {
     await t.test('a server that is not ahead clears the confirmations', () => {
         const state = { checkedAt: 0, uidNext: 100, confirmations: 1 };
-        const result = evaluateStaleViewProbe(state, stored(100), 100, server(100), INTERVAL);
+        const result = evaluateStaleViewProbe(state, known(100), server(100), INTERVAL);
         assert.deepEqual(result, { stale: false, ahead: false, state: { checkedAt: INTERVAL, uidNext: 100, confirmations: 0 } });
     });
 
     await t.test('one probe finding the server ahead is not enough', () => {
         const state = quietUntilProbe(100, 0);
-        const result = evaluateStaleViewProbe(state, stored(100), 100, server(167), INTERVAL);
+        const result = evaluateStaleViewProbe(state, known(100), server(167), INTERVAL);
         assert.equal(result.ahead, true);
         assert.equal(result.stale, false);
         assert.equal(result.state.confirmations, 1);
@@ -91,7 +119,7 @@ test('evaluateStaleViewProbe', async t => {
         let now = INTERVAL;
         let result;
         for (let i = 0; i < STALE_CONFIRMATIONS; i++) {
-            result = evaluateStaleViewProbe(state, stored(100), 100, server(167), now);
+            result = evaluateStaleViewProbe(state, known(100), server(167), now);
             now += INTERVAL;
             state = planStaleViewProbe(result.state, 100, now, INTERVAL).state;
         }
@@ -100,50 +128,35 @@ test('evaluateStaleViewProbe', async t => {
         assert.equal(result.state.confirmations, 0);
     });
 
-    await t.test('an arrival stored while the probe was running proves the connection alive', () => {
+    await t.test('an arrival seen while the probe was running proves the connection alive', () => {
         const state = { checkedAt: 0, uidNext: 100, confirmations: 1 };
-        const result = evaluateStaleViewProbe(state, stored(101), 101, server(167), INTERVAL);
+        const result = evaluateStaleViewProbe(state, known(101), server(167), INTERVAL);
         assert.deepEqual(result, { stale: false, ahead: false, state: { checkedAt: INTERVAL, uidNext: 101, confirmations: 0 } });
     });
 
     await t.test('a frozen session is behind the server even when it agrees with the store', () => {
         // The stale session reports the UIDNEXT it had when its view stopped moving
         const state = { checkedAt: 0, uidNext: 236, confirmations: 1 };
-        assert.equal(evaluateStaleViewProbe(state, stored(236), 236, server(303), INTERVAL).stale, true);
-    });
-
-    await t.test('a session that knows the server UIDNEXT is not behind a lagging store', () => {
-        // A message delivered and expunged before the primary fetched it leaves the stored
-        // UIDNEXT behind for good on a CONDSTORE server; the SELECT of the session after a
-        // reconnect reports the server's value, so the check must not reconnect again
-        const state = { checkedAt: 0, uidNext: 100, confirmations: 1 };
-        const result = evaluateStaleViewProbe(state, stored(100), 101, server(101), INTERVAL);
-        assert.equal(result.ahead, false);
-        assert.equal(result.state.confirmations, 0);
-    });
-
-    await t.test('a session that reports no UIDNEXT falls back to the stored one', () => {
-        const state = { checkedAt: 0, uidNext: 100, confirmations: 0 };
-        assert.equal(evaluateStaleViewProbe(state, stored(100), false, server(101), INTERVAL).ahead, true);
+        assert.equal(evaluateStaleViewProbe(state, known(knownUidNext(236, 236)), server(303), INTERVAL).stale, true);
     });
 
     await t.test('UIDs of another folder incarnation are not compared', () => {
         const state = { checkedAt: 0, uidNext: 100, confirmations: 1 };
-        assert.equal(evaluateStaleViewProbe(state, stored(100), 100, server(167, 99n), INTERVAL).ahead, false);
-        assert.equal(evaluateStaleViewProbe(state, stored(100, false), 100, server(167), INTERVAL).ahead, false);
+        assert.equal(evaluateStaleViewProbe(state, known(100), server(167, 99n), INTERVAL).ahead, false);
+        assert.equal(evaluateStaleViewProbe(state, known(100, false), server(167), INTERVAL).ahead, false);
     });
 
     await t.test('a STATUS answer without UIDNEXT is not a finding', () => {
         const state = { checkedAt: 0, uidNext: 100, confirmations: 1 };
         for (const answer of [null, { path: 'INBOX', uidValidity: UIDVALIDITY }]) {
-            const result = evaluateStaleViewProbe(state, stored(100), 100, answer, INTERVAL);
+            const result = evaluateStaleViewProbe(state, known(100), answer, INTERVAL);
             assert.equal(result.ahead, false);
             assert.equal(result.state.confirmations, 0);
         }
     });
 
-    await t.test('without a stored UIDNEXT the check has no state', () => {
+    await t.test('without a known UIDNEXT the check has no state', () => {
         const state = { checkedAt: 0, uidNext: 100, confirmations: 1 };
-        assert.deepEqual(evaluateStaleViewProbe(state, stored(false), false, server(167), INTERVAL), { stale: false, ahead: false, state: null });
+        assert.deepEqual(evaluateStaleViewProbe(state, known(false), server(167), INTERVAL), { stale: false, ahead: false, state: null });
     });
 });
