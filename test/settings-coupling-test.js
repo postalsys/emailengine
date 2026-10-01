@@ -38,20 +38,10 @@ test('Settings AI text coupling', async t => {
         assert.ok(version >= 1, 'the OpenAI settings version must still be bumped');
     });
 
-    await t.test('enabling openAiGenerateEmbeddings also enables notifyText', async () => {
-        await redis.hdel(`${REDIS_PREFIX}settings`, 'notifyText');
-
-        await settings.set('openAiGenerateEmbeddings', true);
-
-        assert.strictEqual(await settings.get('openAiGenerateEmbeddings'), true);
-        assert.strictEqual(await settings.get('notifyText'), true);
-    });
-
-    await t.test('disabling the AI keys does not touch notifyText', async () => {
+    await t.test('disabling the AI key does not touch notifyText', async () => {
         await redis.hdel(`${REDIS_PREFIX}settings`, 'notifyText');
 
         await settings.set('generateEmailSummary', false);
-        await settings.set('openAiGenerateEmbeddings', false);
 
         assert.strictEqual(await redis.hget(`${REDIS_PREFIX}settings`, 'notifyText'), null, 'notifyText must stay unset');
         assert.strictEqual(await settings.get('generateEmailSummary'), false);

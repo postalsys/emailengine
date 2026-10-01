@@ -20,9 +20,8 @@ registerRedisTeardown(redis, async () => {
 });
 
 // Regression tests for the handler cache in getPreProcessHandler(). The version marker was never
-// assigned after a rebuild, so the comparison was always true and the handler (one hget plus four
-// settings reads and a script compile) was rebuilt for every message. lib/pre-process.js carries
-// the same cache; it is exercised through the same code shape.
+// assigned after a rebuild, so the comparison was always true and the handler (one hget plus three
+// settings reads and a script compile) was rebuilt for every message.
 test('LLM pre-process handler cache', async t => {
     const storedVersion = async () => Number(await redis.hget(`${REDIS_PREFIX}settings`, 'openAiSettingsVersion')) || 0;
 

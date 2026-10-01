@@ -250,7 +250,7 @@ test('the LLM step copes with a message that has no text part', async t => {
     t.beforeEach(reset);
 
     await t.test('BaseClient.processNew()', async () => {
-        llmDecision = { generateEmailSummary: true };
+        llmDecision = true;
         const { run, notifications } = createApiClient({ id: 'm1', messageSpecialUse: '\\Inbox' });
 
         await run();
@@ -259,7 +259,7 @@ test('the LLM step copes with a message that has no text part', async t => {
     });
 
     await t.test('Mailbox.processNew()', async () => {
-        llmDecision = { generateEmailSummary: true };
+        llmDecision = true;
         const { run, notifications } = createMailbox({});
 
         await run();

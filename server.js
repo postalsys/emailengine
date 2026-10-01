@@ -101,7 +101,7 @@ const {
 
 // Import core modules
 const { webhooks: Webhooks } = require('./lib/webhooks');
-const { generateSummary, generateEmbeddings, listModels: openAiListModels, DEFAULT_USER_PROMPT: openAiDefaultPrompt } = require('@postalsys/email-ai-tools');
+const { generateSummary, listModels: openAiListModels, DEFAULT_USER_PROMPT: openAiDefaultPrompt } = require('@postalsys/email-ai-tools');
 const { fetch: fetchCmd } = require('undici');
 
 const bounceClassifier = require('@postalsys/bounce-classifier');
@@ -2703,39 +2703,6 @@ async function onCommand(worker, message) {
             }
 
             return await generateSummary(message.data.message, openAiAPIKey, requestOpts);
-        }
-
-        case 'generateEmbeddings': {
-            let requestOpts = openAiRequestOpts();
-
-            let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
-
-            if (!openAiAPIKey) {
-                throw new Error(`OpenAI API key is not configured`);
-            }
-
-            let openAiAPIUrl = message.data.openAiAPIUrl || (await settings.get('openAiAPIUrl'));
-            if (openAiAPIUrl) {
-                requestOpts.baseApiUrl = openAiAPIUrl;
-            }
-
-            requestOpts.user = message.data.account;
-
-            const embeddings = await generateEmbeddings(message.data.message, openAiAPIKey, requestOpts);
-            if (!Array.isArray(embeddings?.embeddings)) {
-                return false;
-            }
-
-            // Clean internal properties
-            for (let value of embeddings.embeddings) {
-                for (const key of Object.keys(value)) {
-                    if (/^_/.test(key)) {
-                        delete value[key];
-                    }
-                }
-            }
-
-            return embeddings;
         }
 
         case 'openAiListModels': {

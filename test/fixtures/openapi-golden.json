@@ -9727,11 +9727,6 @@
             "nullable": true,
             "maxLength": 1048576
           },
-          "openAiGenerateEmbeddings": {
-            "type": "boolean",
-            "description": "Generate vector embeddings for semantic search and similarity matching",
-            "nullable": true
-          },
           "inboxNewOnly": {
             "type": "boolean",
             "description": "Trigger \"messageNew\" webhooks only for messages arriving in the Inbox folder",
@@ -10487,10 +10482,6 @@
             "description": "Custom system prompt to guide AI behavior when processing emails",
             "example": "You are an assistant scanning incoming emails…",
             "maxLength": 1048576
-          },
-          "openAiGenerateEmbeddings": {
-            "type": "boolean",
-            "description": "Generate vector embeddings for semantic search and similarity matching"
           },
           "inboxNewOnly": {
             "type": "boolean",

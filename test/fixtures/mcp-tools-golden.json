@@ -2259,10 +2259,6 @@
                     "type": "boolean",
                     "default": false
                 },
-                "openAiGenerateEmbeddings": {
-                    "type": "boolean",
-                    "default": false
-                },
                 "inboxNewOnly": {
                     "type": "boolean",
                     "default": false
@@ -4910,10 +4906,6 @@
                         "You are an assistant scanning incoming emails…"
                     ],
                     "maxLength": 1048576
-                },
-                "openAiGenerateEmbeddings": {
-                    "type": "boolean",
-                    "description": "Generate vector embeddings for semantic search and similarity matching"
                 },
                 "inboxNewOnly": {
                     "type": "boolean",
