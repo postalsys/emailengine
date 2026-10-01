@@ -1130,10 +1130,18 @@ test.describe('admin shell', () => {
         await expect(page.locator('#setPayloadModal.open')).toHaveCount(0);
 
         // the model picker: the card shows the default, the search finds a model by any part of
-        // its name, and the hidden input the form posts carries the picked id
+        // its name, ranks the best answer first (terms are matched one by one, so "gpt 6" reaches
+        // gpt-6-luna and puts it above gpt-5.6-luna), and the hidden input the form posts carries
+        // the picked id
         const picker = page.locator('[data-picker="model"]');
         await expect(picker.locator('[data-picker-card]')).toContainText('Default');
         await picker.locator('[data-picker-card] button').click();
+        await page.locator('#openAiModel-search').fill('gpt 6');
+        await expect(page.locator('#openAiModel-results button').first()).toContainText('GPT-6 Luna');
+        await page.locator('#openAiModel-search').fill('6 luna');
+        await expect(page.locator('#openAiModel-results button').first()).toContainText('GPT-6 Luna');
+        await page.locator('#openAiModel-search').fill('cheap');
+        await expect(page.locator('#openAiModel-results button').first()).toContainText('Nano');
         await page.locator('#openAiModel-search').fill('nano');
         await page.locator('#openAiModel-results button', { hasText: 'GPT-5.4 Nano' }).first().click();
         await expect(page.locator('#openAiModel')).toHaveValue('gpt-5.4-nano');

@@ -3,10 +3,12 @@
 
     A provider lists dozens of models, most of them unsuited to reading mail, and a <select> of
     bare names was a wall nobody could choose from. This is the account picker's shape over a list
-    the page already holds: type any part of a name or an id, pick from the suggestions, and the
-    box is replaced by a card naming the model, what it is for, and its id. Every entry carries a
-    one-line note and the recommended ones are listed first, so the sane choice is also the easy
-    one. The first entry is "Default", which follows the library's built-in model across upgrades.
+    the page already holds: type any part of a name, an id or a note ("gpt 6", "6 luna" and
+    "cheap" all work, matched term by term and ranked with the id counting most), pick from the
+    suggestions, and the box is replaced by a card naming the model, what it is for, and its id.
+    Every entry carries a one-line note and the recommended ones are listed first, so the sane
+    choice is also the easy one. The first entry is "Default", which follows the library's
+    built-in model across upgrades.
 
     The list travels in the data-models attribute and can be replaced after a refresh with
     window.uiModelPickerSetModels(); the card is painted from the entry the value names. The

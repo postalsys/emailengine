@@ -1363,18 +1363,75 @@ const uiAccountPickerAdapter = () => {
     };
 };
 
-// Models are the list the page holds, handed over through data-models and replaced after a
-// refresh with window.uiModelPickerSetModels(). With nothing typed, the recommended ones come
-// first under their own heading, so the sane choice is also the easy one
-const uiModelPickerAdapter = root => {
-    let models = [];
-    try {
-        models = JSON.parse(root.dataset.models || '[]');
-    } catch (err) {
-        models = [];
+// The terms of a model's id, name or note, and of what is typed to find it: lower-cased and split
+// on whitespace and punctuation, so "gpt 6", "gpt-6" and "6 luna" all reach gpt-6-luna
+const uiPickerTerms = value =>
+    String(value || '')
+        .toLowerCase()
+        .split(/[^\p{L}\p{N}]+/u)
+        .filter(Boolean);
+
+// A model entry with its terms worked out once, not on every keystroke
+const uiModelIndexEntry = entry => ({
+    entry,
+    id: uiPickerTerms(entry.id),
+    name: uiPickerTerms(entry.name),
+    description: uiPickerTerms(entry.description),
+    text: [entry.id, entry.name, entry.description].join(' ').toLowerCase()
+});
+
+// How well an indexed entry answers a query, 0 when it does not. Every typed term has to open a
+// term of the entry, and one found in the id outweighs one found in the name, which outweighs one
+// found in the note. Terms that follow the id's own order score extra, more so from its start
+// and when they cover all of it, which is what puts gpt-6-luna above gpt-5.6-luna for "gpt 6"
+// and an exact id above its dated snapshots. The whole query as a substring is the last resort,
+// for a fragment typed from the middle of a term
+const uiModelScore = (indexed, query, terms) => {
+    let score = 0;
+    for (const term of terms) {
+        const weight = [
+            [indexed.id, 4],
+            [indexed.name, 2],
+            [indexed.description, 1]
+        ].reduce((best, [field, value]) => (value > best && field.some(token => token.startsWith(term)) ? value : best), 0);
+        if (!weight) {
+            return indexed.text.includes(query) ? 1 : 0;
+        }
+        score += weight;
     }
 
-    const matches = query => models.filter(entry => !query || [entry.id, entry.name, entry.description].some(value => (value || '').toLowerCase().includes(query)));
+    for (let start = 0; start + terms.length <= indexed.id.length; start++) {
+        if (terms.every((term, i) => indexed.id[start + i].startsWith(term))) {
+            score += 3;
+            if (start === 0) {
+                score += 3;
+            }
+            if (terms.length === indexed.id.length) {
+                score += 3;
+            }
+            break;
+        }
+    }
+
+    return score + (indexed.entry.recommended ? 1 : 0);
+};
+
+// Models are the list the page holds, handed over through data-models and replaced after a
+// refresh with window.uiModelPickerSetModels(). With nothing typed, the recommended ones come
+// first under their own heading, so the sane choice is also the easy one; with something typed,
+// the best answers come first, scored by uiModelScore()
+const uiModelPickerAdapter = root => {
+    let models = [];
+    let index = [];
+    const setModels = list => {
+        models = Array.isArray(list) ? list : [];
+        index = models.map(uiModelIndexEntry);
+    };
+    try {
+        setModels(JSON.parse(root.dataset.models || '[]'));
+    } catch (err) {
+        setModels([]);
+    }
 
     return {
         value: entry => entry.id,
@@ -1388,16 +1445,20 @@ const uiModelPickerAdapter = root => {
         // is exactly the thing the person filling in the form needs to see
         resolve: value => models.find(entry => entry.id === value) || (value ? { id: value, name: value, description: 'Not in the list this API key can use' } : null),
         load: query => {
-            query = query.toLowerCase();
-            let shown = matches(query);
-            if (!shown.length) {
-                return [{ note: 'No model matches that.' }];
-            }
-            if (query) {
-                return shown.map(entry => ({ entry }));
+            const terms = uiPickerTerms(query);
+            if (terms.length) {
+                const ranked = index
+                    .map(indexed => ({ entry: indexed.entry, score: uiModelScore(indexed, query.toLowerCase(), terms) }))
+                    .filter(row => row.score > 0)
+                    // a stable sort, so equal scores keep the list's own order
+                    .sort((a, b) => b.score - a.score);
+                return ranked.length ? ranked.map(({ entry }) => ({ entry })) : [{ note: 'No model matches that.' }];
             }
 
-            shown = shown.filter(entry => entry.recommended).concat(shown.filter(entry => !entry.recommended));
+            if (!models.length) {
+                return [{ note: 'No model matches that.' }];
+            }
+            const shown = models.filter(entry => entry.recommended).concat(models.filter(entry => !entry.recommended));
             const rows = [];
             let heading = null;
             for (const entry of shown) {
@@ -1410,9 +1471,7 @@ const uiModelPickerAdapter = root => {
             }
             return rows;
         },
-        setModels: list => {
-            models = Array.isArray(list) ? list : [];
-        }
+        setModels
     };
 };
 
