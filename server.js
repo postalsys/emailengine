@@ -96,12 +96,14 @@ const {
     ACCOUNT_DELETED_NOTIFY,
     LIST_UNSUBSCRIBE_NOTIFY,
     LIST_SUBSCRIBE_NOTIFY,
-    LAST_DOCUMENT_STORE_VERSION
+    LAST_DOCUMENT_STORE_VERSION,
+    AI_REQUEST_TIMEOUT,
+    AI_SETTING_KEYS
 } = require('./lib/consts');
 
 // Import core modules
 const { webhooks: Webhooks } = require('./lib/webhooks');
-const { generateSummary, listModels: openAiListModels, DEFAULT_USER_PROMPT: openAiDefaultPrompt } = require('@postalsys/email-ai-tools');
+const { generateSummary, listModels: openAiListModels, DEFAULT_MODEL: openAiDefaultModel } = require('@postalsys/email-ai-tools');
 const { fetch: fetchCmd } = require('undici');
 
 const bounceClassifier = require('@postalsys/bounce-classifier');
@@ -599,6 +601,18 @@ const metrics = {
         name: 'events',
         help: 'Events fired',
         labelNames: ['event']
+    }),
+
+    aiRequests: new promClient.Counter({
+        name: 'ai_requests',
+        help: 'AI summary requests',
+        labelNames: ['model', 'status']
+    }),
+
+    aiTokens: new promClient.Counter({
+        name: 'ai_tokens',
+        help: 'Tokens billed for AI summary requests',
+        labelNames: ['model', 'type']
     }),
 
     webhookReq: new promClient.Histogram({
@@ -2488,6 +2502,59 @@ const openAiRequestOpts = () => ({
     dispatcher: httpAgent.fetch
 });
 
+const aiValueSet = value => value !== undefined && value !== null && value !== '';
+
+/**
+ * Options for one request to the AI provider. The configuration page's test sends every field as
+ * its form shows it, so the test runs with what the page shows; the sync path sends none and gets
+ * the stored settings. The key is the exception: the form leaves it blank to keep the stored one
+ * @param {Object} data - The command's data
+ * @returns {Promise<{openAiAPIKey: string, requestOpts: Object}>}
+ */
+async function aiRequestOptions(data) {
+    const stored = await settings.getMulti('openAiAPIKey', ...AI_SETTING_KEYS);
+    const values = data.options || stored;
+
+    const openAiAPIKey = (data.options && data.options.openAiAPIKey) || stored.openAiAPIKey;
+    if (!openAiAPIKey) {
+        throw new Error(`OpenAI API key is not configured`);
+    }
+
+    const requestOpts = openAiRequestOpts();
+    requestOpts.gptModel = aiValueSet(values.openAiModel) ? values.openAiModel : openAiDefaultModel;
+    for (const [key, name] of [
+        ['openAiAPIUrl', 'baseApiUrl'],
+        ['openAiTemperature', 'temperature'],
+        ['openAiTopP', 'topP'],
+        ['openAiMaxTokens', 'maxTokens'],
+        ['openAiReasoningEffort', 'reasoningEffort'],
+        ['openAiPrompt', 'instructions']
+    ]) {
+        if (aiValueSet(values[key])) {
+            requestOpts[name] = values[key];
+        }
+    }
+
+    return { openAiAPIKey, requestOpts };
+}
+
+/**
+ * Runs a provider request that is aborted when the RPC that asked for it has given up, so it does
+ * not outlive its caller. The timer is cleared as the request ends rather than left to fire later
+ * @param {Object} message - The RPC message, with the caller's timeout
+ * @param {Function} run - Receives the abort signal, returns the request promise
+ */
+async function withRequestDeadline(message, run) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(new Error('AI request timed out')), message.timeout || AI_REQUEST_TIMEOUT);
+    timer.unref();
+    try {
+        return await run(controller.signal);
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
 async function onCommand(worker, message) {
     switch (message.cmd) {
         case 'metrics':
@@ -2646,88 +2713,45 @@ async function onCommand(worker, message) {
             }
             return false;
 
-        // OpenAI integration commands - run in main process to avoid memory overhead
+        // OpenAI integration commands - run in the main process, where the metrics live
         case 'generateSummary': {
-            let requestOpts = openAiRequestOpts();
-
-            let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
-
-            if (!openAiAPIKey) {
-                throw new Error(`OpenAI API key is not configured`);
-            }
-
-            let openAiModel = message.data.openAiModel || (await settings.get('openAiModel'));
-            if (openAiModel) {
-                requestOpts.gptModel = openAiModel;
-            }
-
-            let openAiAPIUrl = message.data.openAiAPIUrl || (await settings.get('openAiAPIUrl'));
-            if (openAiAPIUrl) {
-                requestOpts.baseApiUrl = openAiAPIUrl;
-            }
-
-            let openAiTemperature = message.data.openAiTemperature || (await settings.get('openAiTemperature'));
-            if (openAiTemperature) {
-                requestOpts.temperature = openAiTemperature;
-            }
-
-            let openAiTopP = message.data.openAiTopP || (await settings.get('openAiTopP'));
-            if (openAiTopP) {
-                requestOpts.topP = openAiTopP;
-            }
-
-            let openAiMaxTokens = message.data.openAiMaxTokens || (await settings.get('openAiMaxTokens'));
-            if (openAiMaxTokens) {
-                requestOpts.maxTokens = openAiMaxTokens;
-            } else {
-                // Set max tokens based on model
-                switch (openAiModel.substring(0, 5)) {
-                    case 'gpt-3':
-                        requestOpts.maxTokens = 3000;
-                        break;
-                    case 'gpt-4':
-                        requestOpts.maxTokens = 6500;
-                        break;
-                    case 'gpt-5':
-                    default:
-                        requestOpts.maxTokens = 18000;
-                        break;
-                }
-            }
-
+            const { openAiAPIKey, requestOpts } = await aiRequestOptions(message.data);
             requestOpts.user = message.data.account;
 
-            let userPrompt = message.data.openAiPrompt || ((await settings.get('openAiPrompt')) || '').toString();
-            if (userPrompt.trim()) {
-                requestOpts.userPrompt = userPrompt;
-            }
+            // the configuration page's test runs are not production traffic
+            const counted = !message.data.options;
+            const model = requestOpts.gptModel;
 
-            return await generateSummary(message.data.message, openAiAPIKey, requestOpts);
+            try {
+                const { result, usage } = await withRequestDeadline(message, signal =>
+                    generateSummary(message.data.message, openAiAPIKey, Object.assign(requestOpts, { signal }))
+                );
+
+                // the fitted email text the verbose mode adds stays out of the RPC and the log
+                delete usage.text;
+
+                if (counted) {
+                    metrics.aiRequests.inc({ model, status: 'success' });
+                    for (const type of ['prompt', 'completion']) {
+                        const tokens = usage[`${type}Tokens`];
+                        if (tokens) {
+                            metrics.aiTokens.inc({ model, type }, tokens);
+                        }
+                    }
+                }
+
+                return { result, usage };
+            } catch (err) {
+                if (counted) {
+                    metrics.aiRequests.inc({ model, status: 'failure' });
+                }
+                throw err;
+            }
         }
 
         case 'openAiListModels': {
-            let requestOpts = openAiRequestOpts();
-
-            let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
-
-            if (!openAiAPIKey) {
-                throw new Error(`OpenAI API key is not configured`);
-            }
-
-            let openAiAPIUrl = message.data.openAiAPIUrl || (await settings.get('openAiAPIUrl'));
-            if (openAiAPIUrl) {
-                requestOpts.baseApiUrl = openAiAPIUrl;
-            }
-
-            requestOpts.user = message.data.account;
-
-            const data = await openAiListModels(openAiAPIKey, requestOpts);
-
-            return data;
-        }
-
-        case 'openAiDefaultPrompt': {
-            return openAiDefaultPrompt;
+            const { openAiAPIKey, requestOpts } = await aiRequestOptions(message.data);
+            return await withRequestDeadline(message, signal => openAiListModels(openAiAPIKey, Object.assign(requestOpts, { signal })));
         }
 
         case 'threads': {

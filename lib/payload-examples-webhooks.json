@@ -90,15 +90,16 @@
                 "category": "primary",
                 "messageSpecialUse": "\\Inbox",
                 "summary": {
-                    "id": "chatcmpl-7IzVIEp5UL3hdQ3aZJ8AHyrJrt3R0",
-                    "tokens": 2060,
-                    "model": "gpt-4",
                     "sentiment": "positive",
                     "summary": "Request to contribute 2 to 5 euros for flowers for choir teachers and concertmaster, with excess funds used for a bouquet for the class teacher at end of the year.",
                     "shouldReply": true,
+                    "riskAssessment": {
+                        "risk": 1
+                    },
                     "events": [
                         {
                             "description": "Flower bouquets for choir teachers and concertmaster",
+                            "type": "event",
                             "startTime": "2023-05-22"
                         }
                     ],
@@ -108,10 +109,6 @@
                             "dueDate": "2023-05-22"
                         }
                     ]
-                },
-                "riskAssessment": {
-                    "risk": 1,
-                    "assessment": "Sender information matches and authentication checks have passed."
                 },
                 "threadId": "617dd693-d78b-48df-bc20-6330a5b1fa85"
             }

@@ -48,9 +48,11 @@ test('routes-ui.js stays within the size budget', () => {
 // ask whether it should exist.
 const MODULE_BUDGETS = {
     'account-routes.js': 2505,
-    // 1553 -> 1567 for the clear-error case that dismisses the Document Store removal notice
-    'admin-config-routes.js': 1567,
+    // 1553 -> 1567 for the clear-error case that dismisses the Document Store removal notice,
+    // 1567 -> 1544 when the AI page's fields were derived from one list
+    'admin-config-routes.js': 1544,
     'admin-entities-routes.js': 2548,
+    'ai-options.js': 61,
     // 1649 -> 1650 for the require of the shared formBoolean() schema helper
     'auth-routes.js': 1650,
     'dashboard-routes.js': 175,
@@ -61,8 +63,9 @@ const MODULE_BUDGETS = {
     'oauth-config-routes.js': 998,
     'reference-routes.js': 198,
     // 658 -> 661 when windowedPageLinks grew a shared pageLink() builder, 661 -> 662 for the
-    // comment on getExampleDocumentsPayloads(), which outlived the Document Store
-    'route-helpers.js': 662,
+    // comment on getExampleDocumentsPayloads(), which outlived the Document Store, 662 -> 623
+    // when the AI page's model list and reasoning effort choices moved to ai-options.js
+    'route-helpers.js': 623,
     'settings-page.js': 117,
     'smtp-test-routes.js': 243,
     'suppression-list-routes.js': 310,

@@ -9446,6 +9446,21 @@
           "trim": true
         }
       },
+      "openAiReasoningEffortResponse": {
+        "type": "string",
+        "description": "Reasoning effort for reasoning models such as GPT-5 and later. Empty sends \"low\" to those models and nothing to others. A value the model refuses is dropped",
+        "example": "low",
+        "enum": [
+          "none",
+          "minimal",
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ],
+        "nullable": true
+      },
       "logsResponse": {
         "type": "object",
         "nullable": true,
@@ -9675,8 +9690,8 @@
           },
           "openAiModel": {
             "type": "string",
-            "description": "OpenAI model to use for text generation",
-            "example": "gpt-5-mini",
+            "description": "Model name for AI processing. Empty means the built-in default, gpt-6-luna",
+            "example": "gpt-6-luna",
             "nullable": true
           },
           "openAiAPIUrl": {
@@ -9699,7 +9714,7 @@
           },
           "openAiTemperature": {
             "type": "number",
-            "description": "Controls randomness in AI responses (0 = deterministic, 2 = very creative)",
+            "description": "Controls randomness in AI responses (0 = deterministic, 2 = very creative). Not sent to a reasoning model while it reasons",
             "example": 0.8,
             "nullable": true,
             "minimum": 0,
@@ -9707,23 +9722,26 @@
           },
           "openAiTopP": {
             "type": "number",
-            "description": "Nucleus sampling parameter for AI text generation (0-1, lower = more focused)",
+            "description": "Nucleus sampling parameter for AI text generation (0-1, lower = more focused). Not sent to a reasoning model while it reasons",
             "example": 0.1,
             "nullable": true,
             "minimum": 0,
             "maximum": 1
           },
+          "openAiReasoningEffort": {
+            "$ref": "#/components/schemas/openAiReasoningEffortResponse"
+          },
           "openAiMaxTokens": {
             "type": "number",
-            "description": "Maximum tokens limit for OpenAI API requests (defaults: GPT-5: 18000, GPT-4: 6500, GPT-3.5: 3000)",
-            "example": 3000,
+            "description": "Token budget for the prompt sent to the model, the instructions and the email together. The email text is cut to fit. Defaults to 30000",
+            "example": 30000,
             "nullable": true,
             "minimum": 0
           },
           "openAiPrompt": {
             "type": "string",
-            "description": "Custom system prompt to guide AI behavior when processing emails",
-            "example": "You are an assistant scanning incoming emails…",
+            "description": "Instructions for the AI, sent as the system message ahead of the email. They say which JSON properties to return. Empty means the built-in instructions",
+            "example": "Return a JSON object with the property \"language\", the ISO 639-1 code of the language the email is written in.",
             "nullable": true,
             "maxLength": 1048576
           },
@@ -10232,6 +10250,20 @@
           "trim": true
         }
       },
+      "OpenAiReasoningEffort": {
+        "type": "string",
+        "description": "Reasoning effort for reasoning models such as GPT-5 and later. Empty sends \"low\" to those models and nothing to others. A value the model refuses is dropped",
+        "example": "low",
+        "enum": [
+          "none",
+          "minimal",
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ]
+      },
       "LogSettings": {
         "type": "object",
         "properties": {
@@ -10437,8 +10469,8 @@
           },
           "openAiModel": {
             "type": "string",
-            "description": "OpenAI model to use for text generation",
-            "example": "gpt-5-mini"
+            "description": "Model name for AI processing. Empty means the built-in default, gpt-6-luna",
+            "example": "gpt-6-luna"
           },
           "openAiAPIUrl": {
             "type": "string",
@@ -10459,28 +10491,31 @@
           },
           "openAiTemperature": {
             "type": "number",
-            "description": "Controls randomness in AI responses (0 = deterministic, 2 = very creative)",
+            "description": "Controls randomness in AI responses (0 = deterministic, 2 = very creative). Not sent to a reasoning model while it reasons",
             "example": 0.8,
             "minimum": 0,
             "maximum": 2
           },
           "openAiTopP": {
             "type": "number",
-            "description": "Nucleus sampling parameter for AI text generation (0-1, lower = more focused)",
+            "description": "Nucleus sampling parameter for AI text generation (0-1, lower = more focused). Not sent to a reasoning model while it reasons",
             "example": 0.1,
             "minimum": 0,
             "maximum": 1
           },
+          "openAiReasoningEffort": {
+            "$ref": "#/components/schemas/OpenAiReasoningEffort"
+          },
           "openAiMaxTokens": {
             "type": "number",
-            "description": "Maximum tokens limit for OpenAI API requests (defaults: GPT-5: 18000, GPT-4: 6500, GPT-3.5: 3000)",
-            "example": 3000,
+            "description": "Token budget for the prompt sent to the model, the instructions and the email together. The email text is cut to fit. Defaults to 30000",
+            "example": 30000,
             "minimum": 0
           },
           "openAiPrompt": {
             "type": "string",
-            "description": "Custom system prompt to guide AI behavior when processing emails",
-            "example": "You are an assistant scanning incoming emails…",
+            "description": "Instructions for the AI, sent as the system message ahead of the email. They say which JSON properties to return. Empty means the built-in instructions",
+            "example": "Return a JSON object with the property \"language\", the ISO 639-1 code of the language the email is written in.",
             "maxLength": 1048576
           },
           "inboxNewOnly": {
@@ -20976,6 +21011,14 @@
           },
           {
             "name": "openAiTopP",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "openAiReasoningEffort",
             "in": "query",
             "schema": {
               "type": "boolean",

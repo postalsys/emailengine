@@ -7,7 +7,8 @@ const assert = require('node:assert').strict;
 // opens real Redis connections at load time. getMessageInfo() never reaches Redis.
 require('./helpers/mock-db').installDbMock();
 
-const { Mailbox, notificationHeaderFields } = require('../lib/email-client/imap/mailbox');
+const { Mailbox } = require('../lib/email-client/imap/mailbox');
+const { notificationHeaderFields, narrowHeaders } = require('../lib/utils/header-map');
 
 // Regression tests for the address fields Mailbox.getMessageInfo() exposes.
 //
@@ -226,6 +227,14 @@ test('notificationHeaderFields()', async t => {
         }
     });
 
+    await t.test('adds the extra headers it is given, once', () => {
+        const fields = notificationHeaderFields(['x-mailer'], ['authentication-results', 'to']);
+
+        assert.ok(fields.includes('authentication-results'));
+        assert.ok(fields.includes('x-mailer'));
+        assert.equal(fields.filter(key => key === 'to').length, 1);
+    });
+
     await t.test('does not duplicate an operator header that it also needs', () => {
         const fields = notificationHeaderFields(['to', 'content-type']);
 
@@ -237,5 +246,37 @@ test('notificationHeaderFields()', async t => {
         // notifyHeaders resolves to false when the setting is present but empty
         assert.ok(notificationHeaderFields(false).includes('to'));
         assert.ok(notificationHeaderFields(undefined).includes('to'));
+    });
+});
+
+// The headers fetched for the checks and the summary are narrowed back to what the caller asked
+// for right before the message is published
+test('narrowHeaders()', async t => {
+    await t.test('keeps the headers the caller asked for', () => {
+        const message = { headers: { to: ['a@example.com'], 'authentication-results': ['spf=pass'], subject: ['Hi'] } };
+        narrowHeaders(message, ['subject', 'to']);
+
+        assert.deepEqual(message.headers, { to: ['a@example.com'], subject: ['Hi'] });
+    });
+
+    await t.test('drops the block when none were asked for', () => {
+        const message = { headers: { to: ['a@example.com'] } };
+        narrowHeaders(message, false);
+
+        assert.ok(!('headers' in message));
+    });
+
+    await t.test('leaves the block alone when every header was asked for', () => {
+        const message = { headers: { to: ['a@example.com'] } };
+        narrowHeaders(message, true);
+
+        assert.deepEqual(message.headers, { to: ['a@example.com'] });
+    });
+
+    await t.test('copes with a message that has no headers', () => {
+        const message = {};
+        narrowHeaders(message, ['subject']);
+
+        assert.deepEqual(message.headers, {});
     });
 });

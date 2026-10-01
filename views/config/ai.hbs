@@ -1,7 +1,7 @@
 {{> ui/page-header title="AI Processing" icon="icon-[tabler--robot]" class="mb-1"}}
 
-<p class="mb-6">Analyze new Inbox emails with AI and include the results in <code>messageNew</code> webhooks.
-    EmailEngine sends email content to the AI provider configured below.
+<p class="mb-6">Analyze new Inbox emails with AI and include the model's answer as <code>summary</code> in
+    <code>messageNew</code> webhooks. EmailEngine sends email content to the AI provider configured below.
 </p>
 
 {{> ui/env-managed-alert}}
@@ -39,8 +39,8 @@
                 before enabling processing.
                 {{/ui/tooltip-rich}}
                 {{/ui/checkbox}}
-                <span class="helper-text">Process new emails with AI and include the results in
-                    <code>messageNew</code> webhooks.</span>
+                <span class="helper-text">Process new emails with AI and include the results as
+                    <code>summary</code> in <code>messageNew</code> webhooks.</span>
             </div>
 
             <div class="text-end space-y-1">
@@ -215,7 +215,7 @@
                 <input type="hidden" class="{{#if errors.openAiPromptElement}}is-invalid{{/if}}"
                     id="openAiPromptElement" name="openAiPrompt" value="{{values.openAiPrompt}}">
 
-                {{#> ui/code-editor id="editor-prompt" title="System prompt"}}
+                {{#> ui/code-editor id="editor-prompt" title="AI instructions"}}
                 <div class="editor-embed-content editor-embed-content-right">
                     <a href="#" id="prompt-try-btn">Test with email file</a>
                 </div>
@@ -226,8 +226,10 @@
                 <span class="helper-text text-error">{{errors.openAiPrompt}}</span>
                 {{/if}}
 
-                <span class="helper-text">Instructions for the AI. Must specify which JSON properties to return in the
-                    response.</span>
+                <span class="helper-text">Instructions for the AI, sent as the system message ahead of the email. They must
+                    say which JSON properties to return; the webhook carries the model's answer as it came. The built-in
+                    instructions ask for a summary, the sentiment, whether a reply is expected, a risk score, and the
+                    events and actions the email mentions.</span>
             </div>
 
             <div>
@@ -236,7 +238,8 @@
                 <input type="number" class="input text-list{{#if errors.openAiTemperature}} is-invalid{{/if}}"
                     id="settingsOpenAiTemperature" step="0.001" min="0" max="2" name="openAiTemperature"
                     value="{{values.openAiTemperature}}" />
-                <span class="helper-text">Controls randomness (0-2). Lower = more focused, higher = more creative. <a
+                <span class="helper-text">Controls randomness (0-2). Lower = more focused, higher = more creative. Not
+                    sent to a reasoning model while it reasons. <a
                         href="https://platform.openai.com/docs/api-reference/chat/create#temperature" target="_blank"
                         rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">Learn
                         more</a></span>
@@ -249,11 +252,32 @@
                 <input type="number" class="input text-list{{#if errors.openAiTopP}} is-invalid{{/if}}"
                     id="settingsOpenAiTopP" step="0.001" min="0" max="1" name="openAiTopP"
                     value="{{values.openAiTopP}}" />
-                <span class="helper-text">Alternative to temperature (0-1). Controls diversity of word choices. <a
+                <span class="helper-text">Alternative to temperature (0-1). Controls diversity of word choices. Not sent
+                    to a reasoning model while it reasons. <a
                         href="https://platform.openai.com/docs/api-reference/chat/create#top_p" target="_blank"
                         rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">Learn
                         more</a></span>
                 {{/ui/form-field}}
+            </div>
+
+            <div>
+                {{> ui/setting-ref name="openAiReasoningEffort"}}
+
+                <label class="label-text" for="settingsOpenAiReasoningEffort">Reasoning effort</label>
+
+                <select id="settingsOpenAiReasoningEffort"
+                    class="select max-w-md{{#if errors.openAiReasoningEffort}} is-invalid{{/if}}"
+                    name="openAiReasoningEffort">
+                    {{#each reasoningEffortOptions}}
+                    <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+                    {{/each}}
+                </select>
+                {{#if errors.openAiReasoningEffort}}
+                <span class="helper-text text-error">{{errors.openAiReasoningEffort}}</span>
+                {{/if}}
+                <span class="helper-text">How much a reasoning model, GPT-5 and later, thinks before answering. Default
+                    sends "low" to such a model and nothing to any other. A value the model does not support is
+                    dropped.</span>
             </div>
 
             <div>
@@ -262,9 +286,9 @@
                 <input type="number" class="input text-list{{#if errors.openAiMaxTokens}} is-invalid{{/if}}"
                     id="settingsOpenAiMaxTokens" step="1" min="0" name="openAiMaxTokens"
                     value="{{values.openAiMaxTokens}}" />
-                <span class="helper-text">Maximum tokens in the input prompt, including your instructions, the system prompt, the JSON schema,
-                    and email data. EmailEngine shortens the email content to fit this limit. Leave blank for
-                    EmailEngine's model-based default.</span>
+                <span class="helper-text">Maximum tokens in the input prompt: the instructions and the email together.
+                    EmailEngine shortens the email text to fit this limit. Leave blank for the default of
+                    {{aiDefaults.maxTokens}}.</span>
                 {{/ui/form-field}}
             </div>
 
@@ -371,7 +395,9 @@ defaultTestPayload='{"account":"test","path":"INBOX","subject":"test email"}'}}
                 openAiAPIUrl: document.getElementById('openAiAPIUrl').value,
                 openAiAPIKey: document.getElementById('openAiAPIKey').value,
                 openAiTemperature: document.getElementById('settingsOpenAiTemperature').value,
-                openAiTopP: document.getElementById('settingsOpenAiTopP').value
+                openAiTopP: document.getElementById('settingsOpenAiTopP').value,
+                openAiReasoningEffort: document.getElementById('settingsOpenAiReasoningEffort').value,
+                openAiMaxTokens: document.getElementById('settingsOpenAiMaxTokens').value
             };
 
             let data;

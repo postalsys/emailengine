@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-09-30 20:19+0000\n"
+"POT-Creation-Date: 2026-10-01 07:01+0000\n"
 
 #: views/error.hbs:6
-#: workers/api.js:3141
+#: workers/api.js:3140
 msgid "Something went wrong"
 msgstr ""
 
@@ -35,31 +35,6 @@ msgstr[1] ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:28
-#: views/account-identity-error.hbs:32
-msgid "Try Again"
 msgstr ""
 
 #: views/unsubscribe.hbs:7
@@ -114,6 +89,31 @@ msgid ""
 "received."
 msgstr ""
 
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:28
+#: views/account-identity-error.hbs:32
+msgid "Try Again"
+msgstr ""
+
 #: views/accounts/register/imap.hbs:13
 msgid "Your name"
 msgstr ""
@@ -143,14 +143,6 @@ msgstr ""
 #: views/accounts/register/imap.hbs:55
 #: views/accounts/register/validating.hbs:74
 msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/index.hbs:6
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:19
-msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:23
@@ -289,6 +281,14 @@ msgstr ""
 msgid "Continue to review your mail server settings."
 msgstr ""
 
+#: views/accounts/register/index.hbs:6
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:19
+msgid "Standard IMAP"
+msgstr ""
+
 #: views/partials/public_test_labels.hbs:9
 msgid "Error"
 msgstr ""
@@ -370,7 +370,7 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:982
 #: lib/ui-routes/account-routes.js:1198
 #: lib/ui-routes/account-routes.js:1389
-#: lib/ui-routes/route-helpers.js:383
+#: lib/ui-routes/route-helpers.js:367
 #: workers/api.js:2311
 #: workers/api.js:2381
 msgid "Email Account Setup"
@@ -443,7 +443,7 @@ msgstr ""
 msgid "Temporary error, please try again"
 msgstr ""
 
-#: lib/ui-routes/admin-config-routes.js:192
+#: lib/ui-routes/admin-config-routes.js:200
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
@@ -455,33 +455,33 @@ msgstr ""
 msgid "Indefinite"
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:104
+#: lib/ui-routes/route-helpers.js:68
 msgid "The server unexpectedly closed the connection."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:106
+#: lib/ui-routes/route-helpers.js:70
 msgid ""
 "The server unexpectedly closed the connection. This usually happens when "
 "attempting to connect to a TLS port without TLS enabled."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:161
+#: lib/ui-routes/route-helpers.js:125
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:168
+#: lib/ui-routes/route-helpers.js:132
 msgid ""
 "The server refused the connection. This typically occurs if the server is "
 "not running, is overloaded, or you are connecting to the wrong host or port."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:222
+#: lib/ui-routes/route-helpers.js:186
 msgid "Delegated"
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:223
+#: lib/ui-routes/route-helpers.js:187
 msgid "Using credentials from \"%s\""
 msgstr ""
 
@@ -527,7 +527,7 @@ msgid ""
 "valid"
 msgstr ""
 
-#: workers/api.js:3140
-#: workers/api.js:3255
+#: workers/api.js:3139
+#: workers/api.js:3254
 msgid "Requested page not found"
 msgstr ""
