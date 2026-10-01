@@ -17,7 +17,7 @@ const { useAdminSession, trackConsoleErrors } = require('./helpers/bootstrap');
 test.describe('Queue browser (bull-board)', () => {
     useAdminSession(test, 'bullboard');
 
-    test('renders the board with all three EmailEngine queues', async ({ page }) => {
+    test('renders the board with both EmailEngine queues', async ({ page }) => {
         const errors = trackConsoleErrors(page);
 
         const response = await page.goto('/admin/bull-board');
@@ -26,9 +26,10 @@ test.describe('Queue browser (bull-board)', () => {
         // The UI is a client-side app: wait for it to paint rather than for the HTML shell.
         await expect(page.locator('#root')).toBeVisible({ timeout: 15000 });
 
-        // The three queues registered in lib/api-routes/bull-board-routes.js. Their display names
-        // carry the prefixes set there, which is what proves our adapter config reached the UI.
-        for (const name of ['Webhooks Queue', 'Submission Queue', 'Document Queue']) {
+        // The two queues registered in lib/api-routes/bull-board-routes.js (the documents queue
+        // left with the Document Store in 2.82.0). Their display names carry the prefixes set
+        // there, which is what proves our adapter config reached the UI.
+        for (const name of ['Webhooks Queue', 'Submission Queue']) {
             await expect(page.getByText(name, { exact: false }).first()).toBeVisible({ timeout: 15000 });
         }
 
@@ -48,8 +49,9 @@ test.describe('Queue browser (bull-board)', () => {
         // The names carry the `prefix` set per adapter in lib/api-routes/bull-board-routes.js, so
         // this also pins that our adapter options still reach the API across a bull-board major.
         const names = (body.queues || []).map(q => q.name);
-        for (const name of ['Webhooks Queue - notify', 'Submission Queue - submit', 'Document Queue - documents']) {
+        for (const name of ['Webhooks Queue - notify', 'Submission Queue - submit']) {
             expect(names).toContain(name);
         }
+        expect(names).not.toContain('Document Queue - documents');
     });
 });

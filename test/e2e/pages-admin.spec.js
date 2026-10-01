@@ -345,11 +345,12 @@ test.describe('admin shell', () => {
         await page.waitForURL(/\/admin\/reference\/account#postV1Account$/, { timeout: 20000 });
         await expect(page.locator('#postV1Account')).toBeVisible();
 
-        // ...even when the tag in the old link has since been renamed: the Chat endpoints
-        // now sit under "Deprecated endpoints (Document Store)", so resolving by tag would
-        // strand this one
-        await page.goto('/admin/swagger#/Chat/postV1ChatAccount');
-        await page.waitForURL(/\/admin\/reference\/[a-z-]+#postV1ChatAccount$/, { timeout: 20000 });
+        // ...even when the tag in the old link no longer exists: tags have been renamed since
+        // those links were written, so resolving by tag would strand this one. The operation
+        // id alone decides where it lands
+        await page.goto('/admin/swagger#/Service%20Settings/getV1Settings');
+        await page.waitForURL(/\/admin\/reference\/[a-z-]+#getV1Settings$/, { timeout: 20000 });
+        await expect(page.locator('#getV1Settings')).toBeVisible();
 
         // a bare visit lands on the overview
         await page.goto('/admin/swagger');
