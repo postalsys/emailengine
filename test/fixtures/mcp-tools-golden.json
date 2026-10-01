@@ -2251,6 +2251,10 @@
                     "type": "boolean",
                     "default": false
                 },
+                "openAiTrustedAuthservIds": {
+                    "type": "boolean",
+                    "default": false
+                },
                 "openAiReasoningEffort": {
                     "type": "boolean",
                     "default": false
@@ -4894,6 +4898,17 @@
                     ],
                     "minimum": 0,
                     "maximum": 1
+                },
+                "openAiTrustedAuthservIds": {
+                    "type": "array",
+                    "description": "Names of the mail servers whose Authentication-Results header the AI risk assessment may believe, each matching itself and the hosts under it. Needed only for a mailbox on a server other than Gmail or Microsoft 365, and only when that server removes such headers sent by others before adding its own",
+                    "items": {
+                        "type": "string",
+                        "examples": [
+                            "mx1.example.com"
+                        ],
+                        "maxLength": 253
+                    }
                 },
                 "openAiReasoningEffort": {
                     "type": "string",

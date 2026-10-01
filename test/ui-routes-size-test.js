@@ -50,9 +50,9 @@ const MODULE_BUDGETS = {
     'account-routes.js': 2505,
     // 1553 -> 1567 for the clear-error case that dismisses the Document Store removal notice,
     // 1567 -> 1544 when the AI page's fields were derived from one list
-    'admin-config-routes.js': 1544,
+    'admin-config-routes.js': 1532,
     'admin-entities-routes.js': 2548,
-    'ai-options.js': 61,
+    'ai-options.js': 113,
     // 1649 -> 1650 for the require of the shared formBoolean() schema helper
     'auth-routes.js': 1650,
     'dashboard-routes.js': 175,

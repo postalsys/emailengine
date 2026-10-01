@@ -976,59 +976,47 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// The account picker (views/partials/ui/account-picker.hbs).
+// The pickers (views/partials/ui/picker.hbs): one control with two faces, a search box with
+// suggestions and a card naming what was picked, over whatever a page needs chosen from. Two
+// sources exist. The account picker asks the server as the person types, because the account
+// set is unbounded and every row costs a listing; the model picker filters a list the page
+// already holds, because a provider serves a hundred models at most.
 //
-// A free-text account id is a field only the person who already knows the id can fill in, so the
-// control is a search box: type any part of an id, a name or an address, pick from the
-// suggestions, and the box is replaced by a card naming what was picked.
+// The posted value never stops being a plain id in the hidden input the partial renders, and
+// every change to it fires `input` and `change` there - so a page that watches that field (the
+// MCP tool count follows the account on all three pages that mint a token) needs no knowledge of
+// this at all. Everything below is about which id is in that input, and nothing else reads it.
 //
-// The posted value never stops being a plain account id in the hidden input the partial renders,
-// and every change to it fires `input` and `change` there - so a page that watches that field (the
-// MCP tool count follows it on all three pages that mint a token) needs no knowledge of this at
-// all. Everything below is about which id is in that input, and nothing else reads the choice.
-const uiAccountPickerEndpoint = '/admin/accounts/suggestions';
-
-// How long a keystroke waits before it becomes a request. Long enough that typing an account id
-// costs one round trip rather than twenty, short enough to feel like the list is following along.
-const uiAccountPickerDebounce = 200;
-
 // Every row is built as DOM nodes with textContent - account names and addresses are attacker-set
-// (a display name arrives from a provider), and this list is rendered on an authenticated admin
-// page, which is the worst place to hand one an innerHTML.
-const uiAccountPickerLine = (className, text) => {
+// (a display name arrives from a provider), model names and notes arrive from an API, and these
+// rows are rendered on an authenticated admin page, which is the worst place to hand one an
+// innerHTML. The ee-account-picker-* classes are the one set of styles both pickers share.
+const uiPickerLine = (className, text) => {
     const elm = document.createElement('div');
     elm.className = className;
     elm.textContent = text;
     return elm;
 };
 
-// The name a person recognises. An account may carry none, in which case the address is the name,
-// and an account with neither is only ever its id.
-const uiAccountPickerTitle = entry => entry.name || entry.email || entry.account;
-
-const uiAccountPickerBadge = entry => {
-    if (!entry.state || !entry.state.name) {
-        return null;
-    }
+const uiPickerBadge = (text, className) => {
     const badge = document.createElement('span');
-    badge.className = 'badge badge-sm badge-' + (entry.state.type || 'neutral');
-    badge.textContent = entry.state.name;
+    badge.className = 'badge badge-sm ' + className;
+    badge.textContent = text;
     return badge;
 };
 
-// The title line: the name a person recognises, plus the connection state. Shared by the card and
-// by a result row, which differ only in the weight of the name - the two faces of the control are
-// meant to read as the same thing, and building them from one place is what keeps them that way.
-const uiAccountPickerTitleLine = (entry, nameClass) => {
+// The title line: the name a person recognises, plus a badge. Shared by the card and by a result
+// row, which differ only in the weight of the name - the two faces of the control are meant to
+// read as the same thing, and building them from one place is what keeps them that way.
+const uiPickerTitleLine = (name, badge, nameClass) => {
     const title = document.createElement('div');
     title.className = 'flex items-center gap-2 min-w-0';
 
-    const name = document.createElement('span');
-    name.className = nameClass;
-    name.textContent = uiAccountPickerTitle(entry);
-    title.append(name);
+    const elm = document.createElement('span');
+    elm.className = nameClass;
+    elm.textContent = name;
+    title.append(elm);
 
-    const badge = uiAccountPickerBadge(entry);
     if (badge) {
         title.append(badge);
     }
@@ -1036,47 +1024,64 @@ const uiAccountPickerTitleLine = (entry, nameClass) => {
     return title;
 };
 
-// The identifying line under the title: the address when it is not already the title, and the id,
-// which is the value actually being chosen and so is always shown. One line rather than two, so a
-// screenful of the dropdown is a useful number of accounts to choose between.
-const uiAccountPickerDetails = entry => {
-    const line = uiAccountPickerLine('text-base-content/60 truncate text-xs', '');
-    line.title = entry.account;
+// The identifying line under the title: a note or an address when there is one, and the id,
+// which is the value actually being chosen and so is always shown. One line rather than two, so
+// a screenful of the dropdown is a useful number of rows to choose between.
+const uiPickerDetails = (note, id) => {
+    const line = uiPickerLine('text-base-content/60 truncate text-xs', '');
+    line.title = id;
 
-    if (entry.email && entry.email !== uiAccountPickerTitle(entry)) {
-        line.append(entry.email + ' \u00b7 ');
+    if (note) {
+        line.append(note + (id ? ' · ' : ''));
     }
 
-    const id = document.createElement('span');
-    id.className = 'font-mono';
-    id.textContent = entry.account;
-    line.append(id);
+    if (id) {
+        const elm = document.createElement('span');
+        elm.className = 'font-mono';
+        elm.textContent = id;
+        line.append(elm);
+    }
 
     return line;
 };
 
-window.uiAccountPicker = root => {
+/**
+ * Wires one picker. The adapter says what an entry is and where entries come from:
+ *   value(entry)              the id the hidden input carries
+ *   title(entry, nameClass)   the title line element
+ *   details(entry)            the line under it
+ *   load(query, trigger)      a promise of rows for a query: [{ note }] for a heading or a remark,
+ *                             [{ entry }] for a choice; trigger is 'input' or 'focus'
+ *   cancel()                  called when the search is left, to stop a request in flight (optional)
+ *   resolve(value)            the entry for a stored value, when the adapter can tell (optional)
+ *   cardAction                'clear': the card's button empties the value; 'change': it reopens
+ *                             the search with the value kept until a new choice is made
+ *   cardLabel, cardIcon       the button's accessible label and icon class
+ *   failed                    the remark shown when load() rejects
+ *
+ * @param {Element} root - the [data-picker] element
+ * @param {Object} adapter
+ */
+window.uiPicker = (root, adapter) => {
     const input = document.getElementById(root.dataset.input);
     const card = root.querySelector('[data-picker-card]');
     const search = root.querySelector('[data-picker-search]');
     const results = root.querySelector('[data-picker-results]');
-    const box = search.querySelector('input');
+    const box = search && search.querySelector('input');
 
     if (!input || !card || !results || !box) {
         return;
     }
 
-    let entries = [];
-    // The rendered option nodes, so moving the highlight touches two of them rather than
-    // re-querying the list and rewriting every row
+    // The rendered option nodes and the entries behind them, in order, so moving the highlight
+    // touches two nodes rather than re-querying the list and rewriting every row
     let options = [];
+    let entries = [];
     let active = -1;
-    let timer = null;
-    let inflight = null;
-    // The last answered query and its result. A refocus on unchanged text repaints from this
-    // instead of asking the server for the same page again - every one of those costs an account
-    // listing, and tabbing through a form would otherwise pay for one per pass.
-    let cached = null;
+    // The entry the card shows, so leaving the search without a choice puts it back
+    let current = null;
+    // The load whose answer is still wanted; an older one that lands later is dropped
+    let generation = 0;
 
     const open = () => {
         results.classList.remove('hidden');
@@ -1088,14 +1093,15 @@ window.uiAccountPicker = root => {
         results.replaceChildren();
         box.setAttribute('aria-expanded', 'false');
         box.removeAttribute('aria-activedescendant');
-        entries = [];
         options = [];
+        entries = [];
         active = -1;
     };
 
     // Paints whichever of the two faces the control currently has. Called for every change of the
     // selection, so the card and the search box can never both be showing.
     const paint = selected => {
+        current = selected;
         card.replaceChildren();
 
         if (!selected) {
@@ -1106,20 +1112,30 @@ window.uiAccountPicker = root => {
 
         const text = document.createElement('div');
         text.className = 'min-w-0 grow';
-        text.append(uiAccountPickerTitleLine(selected, 'font-medium truncate'), uiAccountPickerDetails(selected));
+        text.append(adapter.title(selected, 'font-medium truncate'), adapter.details(selected));
 
-        const clear = document.createElement('button');
-        clear.type = 'button';
-        clear.className = 'btn btn-text btn-sm btn-circle shrink-0';
-        clear.setAttribute('aria-label', 'Clear the selected account');
-        const clearIcon = document.createElement('span');
-        clearIcon.className = 'icon-[tabler--x] size-4';
-        clear.append(clearIcon);
-        clear.addEventListener('click', () => clearSelection(true));
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn btn-text btn-sm btn-circle shrink-0';
+        button.setAttribute('aria-label', adapter.cardLabel);
+        const icon = document.createElement('span');
+        icon.className = adapter.cardIcon + ' size-4';
+        button.append(icon);
+        button.addEventListener('click', () => (adapter.cardAction === 'clear' ? clearSelection(true) : change()));
 
-        card.append(text, clear);
+        card.append(text, button);
         card.classList.remove('hidden');
         search.classList.add('hidden');
+    };
+
+    // The one writer of the hidden input. The events are what the rest of the page listens to, and
+    // a programmatic value assignment fires neither on its own.
+    const select = selected => {
+        close();
+        input.value = selected ? adapter.value(selected) : '';
+        paint(selected);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
     };
 
     // Back to empty: the hidden input, the card and the search box all have to agree, so this is
@@ -1132,14 +1148,11 @@ window.uiAccountPicker = root => {
         }
     };
 
-    // The one writer of the hidden input. The events are what the rest of the page listens to, and
-    // a programmatic value assignment fires neither on its own.
-    const select = selected => {
-        close();
-        input.value = selected ? selected.account : '';
-        paint(selected);
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
+    // Back to the search with the value kept: the card returns if nothing new is chosen
+    const change = () => {
+        paint(null);
+        box.value = '';
+        box.focus();
     };
 
     // Wraps at both ends, so ArrowUp from nothing selected lands on the last row
@@ -1163,93 +1176,60 @@ window.uiAccountPicker = root => {
         option.scrollIntoView({ block: 'nearest' });
     };
 
-    const render = data => {
+    const render = rows => {
         results.replaceChildren();
-        entries = data.accounts || [];
         options = [];
+        entries = [];
         active = -1;
 
-        if (!entries.length) {
-            results.append(uiAccountPickerLine('ee-account-picker-note', 'No account matches that.'));
-        }
+        for (const row of rows) {
+            if (!row.entry) {
+                results.append(uiPickerLine('ee-account-picker-note', row.note));
+                continue;
+            }
 
-        entries.forEach((entry, index) => {
+            const index = options.length;
             const option = document.createElement('button');
             option.type = 'button';
             option.id = box.id + '-option-' + index;
             option.className = 'ee-account-picker-option';
             option.setAttribute('role', 'option');
             option.setAttribute('aria-selected', 'false');
-            option.append(uiAccountPickerTitleLine(entry, 'truncate'), uiAccountPickerDetails(entry));
+            option.append(adapter.title(row.entry, 'truncate'), adapter.details(row.entry));
 
             // mousedown rather than click: the box loses focus first otherwise, and the blur
             // handler closes the list out from under the click that was choosing from it
             option.addEventListener('mousedown', event => {
                 event.preventDefault();
-                select(entry);
+                select(row.entry);
             });
             option.addEventListener('mouseenter', () => highlight(index));
 
             options.push(option);
+            entries.push(row.entry);
             results.append(option);
-        });
-
-        // Said out loud rather than left as a list that silently stops: the reader would otherwise
-        // read a capped list as the whole instance
-        if (data.more > 0) {
-            results.append(uiAccountPickerLine('ee-account-picker-note', data.more + ' more match. Type a little more to narrow it down.'));
         }
 
         open();
     };
 
-    const load = () => {
-        const query = box.value.trim();
-
-        if (cached && cached.query === query) {
-            render(cached.data);
-            return;
-        }
-
-        // A request the box has already moved on from is cancelled rather than left to finish:
-        // each one is a full account listing, and a typed word would otherwise leave several of
-        // them running server-side for a result nobody paints.
-        if (inflight) {
-            inflight.abort();
-        }
-        const controller = new AbortController();
-        inflight = controller;
-
-        fetch(uiAccountPickerEndpoint + (query ? '?query=' + encodeURIComponent(query) : ''), {
-            headers: { accept: 'application/json' },
-            signal: controller.signal
-        })
-            .then(res => (res.ok ? res.json() : Promise.reject(new Error('HTTP ' + res.status))))
-            .then(data => {
-                cached = { query, data };
-                render(data);
-            })
-            .catch(err => {
-                // An aborted request was superseded; its replacement is already on its way
-                if (err.name === 'AbortError') {
-                    return;
+    const load = trigger => {
+        const mine = ++generation;
+        Promise.resolve(adapter.load(box.value.trim(), trigger))
+            .then(rows => {
+                if (mine === generation) {
+                    render(rows);
                 }
-                results.replaceChildren(uiAccountPickerLine('ee-account-picker-note', 'The account list could not be loaded.'));
-                options = [];
-                active = -1;
-                open();
+            })
+            .catch(() => {
+                if (mine === generation) {
+                    render([{ note: adapter.failed }]);
+                }
             });
     };
 
-    const schedule = () => {
-        window.clearTimeout(timer);
-        timer = window.setTimeout(load, uiAccountPickerDebounce);
-    };
-
-    box.addEventListener('input', schedule);
-    // Reopening on an unchanged box repaints from the cache, so this is only a request when the
-    // text has actually moved on since the list was last filled in
-    box.addEventListener('focus', load);
+    box.addEventListener('input', () => load('input'));
+    box.addEventListener('focus', () => load('focus'));
 
     box.addEventListener('keydown', event => {
         switch (event.key) {
@@ -1268,41 +1248,178 @@ window.uiAccountPicker = root => {
                 }
                 break;
             case 'Escape':
-                close();
+                box.blur();
                 break;
         }
     });
 
+    // Leaving the search without a choice: nothing in flight is wanted any more, and the card
+    // comes back for a value that still stands
     box.addEventListener('blur', () => {
-        window.clearTimeout(timer);
-        if (inflight) {
-            inflight.abort();
-            inflight = null;
+        generation++;
+        if (adapter.cancel) {
+            adapter.cancel();
         }
         close();
+        paint(current);
     });
 
-    // Reached from the card's own clear button and, through window.uiAccountPickerClear() below,
-    // from a page resetting a form it did not build.
+    // Reached from the card's own button and, through window.uiPickerClear() below, from a page
+    // resetting a form it did not build
     root.uiPickerClear = clearSelection;
+    // For a page that replaced the adapter's list: the card follows the value into the new one
+    root.uiPickerRepaint = () => paint((adapter.resolve && adapter.resolve(input.value)) || null);
 
-    // A stored value the server could resolve renders as the account it names; one it could not is
-    // still shown, because an id pointing at a deleted account is exactly the thing the person
-    // filling in the form needs to see rather than an empty box.
+    // A stored value the server could resolve renders as what it names; one it could not is still
+    // shown, because an id pointing at a deleted account is exactly the thing the person filling
+    // in the form needs to see rather than an empty box
     let initial = null;
     try {
         initial = JSON.parse(root.dataset.selected || 'null');
     } catch (err) {
         initial = null;
     }
-    if (!initial && input.value) {
-        initial = { account: input.value, name: '', email: '', state: { type: 'error', name: 'No such account' } };
-    }
-    paint(initial);
+    paint(initial || (adapter.resolve && adapter.resolve(input.value)) || null);
 };
 
+// Accounts come from GET /admin/accounts/suggestions as the person types. A keystroke waits
+// 200 ms before it becomes a request, long enough that typing an id costs one round trip rather
+// than twenty, short enough to feel like the list is following along; the last answer is kept,
+// so a refocus on unchanged text repaints from it instead of paying for another listing
+const uiAccountPickerAdapter = () => {
+    const endpoint = '/admin/accounts/suggestions';
+    let timer = null;
+    let inflight = null;
+    let cached = null;
+
+    // The name a person recognises. An account may carry none, in which case the address is the
+    // name, and an account with neither is only ever its id
+    const title = entry => entry.name || entry.email || entry.account;
+
+    const badge = entry => (entry.state && entry.state.name ? uiPickerBadge(entry.state.name, 'badge-' + (entry.state.type || 'neutral')) : null);
+
+    const fetchRows = query =>
+        new Promise((resolve, reject) => {
+            if (inflight) {
+                inflight.abort();
+            }
+            const controller = new AbortController();
+            inflight = controller;
+
+            fetch(endpoint + (query ? '?query=' + encodeURIComponent(query) : ''), {
+                headers: { accept: 'application/json' },
+                signal: controller.signal
+            })
+                .then(res => (res.ok ? res.json() : Promise.reject(new Error('HTTP ' + res.status))))
+                .then(data => {
+                    const rows = (data.accounts || []).map(entry => ({ entry }));
+                    if (!rows.length) {
+                        rows.push({ note: 'No account matches that.' });
+                    }
+                    // Said out loud rather than left as a list that silently stops: the reader
+                    // would otherwise read a capped list as the whole instance
+                    if (data.more > 0) {
+                        rows.push({ note: data.more + ' more match. Type a little more to narrow it down.' });
+                    }
+                    cached = { query, rows };
+                    resolve(rows);
+                })
+                .catch(err => {
+                    // an aborted request was superseded; its replacement is already on its way
+                    if (err.name !== 'AbortError') {
+                        reject(err);
+                    }
+                });
+        });
+
+    return {
+        value: entry => entry.account,
+        title: (entry, nameClass) => uiPickerTitleLine(title(entry), badge(entry), nameClass),
+        details: entry => uiPickerDetails(entry.email && entry.email !== title(entry) ? entry.email : '', entry.account),
+        cardAction: 'clear',
+        cardLabel: 'Clear the selected account',
+        cardIcon: 'icon-[tabler--x]',
+        failed: 'The account list could not be loaded.',
+        resolve: value => (value ? { account: value, name: '', email: '', state: { type: 'error', name: 'No such account' } } : null),
+        load: (query, trigger) => {
+            window.clearTimeout(timer);
+            if (cached && cached.query === query) {
+                return cached.rows;
+            }
+            if (trigger !== 'input') {
+                return fetchRows(query);
+            }
+            return new Promise(resolve => {
+                timer = window.setTimeout(() => resolve(fetchRows(query)), 200);
+            });
+        },
+        cancel: () => {
+            window.clearTimeout(timer);
+            if (inflight) {
+                inflight.abort();
+                inflight = null;
+            }
+        }
+    };
+};
+
+// Models are the list the page holds, handed over through data-models and replaced after a
+// refresh with window.uiModelPickerSetModels(). With nothing typed, the recommended ones come
+// first under their own heading, so the sane choice is also the easy one
+const uiModelPickerAdapter = root => {
+    let models = [];
+    try {
+        models = JSON.parse(root.dataset.models || '[]');
+    } catch (err) {
+        models = [];
+    }
+
+    const matches = query => models.filter(entry => !query || [entry.id, entry.name, entry.description].some(value => (value || '').toLowerCase().includes(query)));
+
+    return {
+        value: entry => entry.id,
+        title: (entry, nameClass) => uiPickerTitleLine(entry.name || entry.id, entry.recommended ? uiPickerBadge('Recommended', 'badge-soft badge-success') : null, nameClass),
+        details: entry => uiPickerDetails(entry.description || '', entry.id),
+        cardAction: 'change',
+        cardLabel: 'Choose another model',
+        cardIcon: 'icon-[tabler--pencil]',
+        failed: 'The model list could not be shown.',
+        // a stored name the list does not carry is shown as it is: a model the key lost access to
+        // is exactly the thing the person filling in the form needs to see
+        resolve: value => models.find(entry => entry.id === value) || (value ? { id: value, name: value, description: 'Not in the list this API key can use' } : null),
+        load: query => {
+            query = query.toLowerCase();
+            let shown = matches(query);
+            if (!shown.length) {
+                return [{ note: 'No model matches that.' }];
+            }
+            if (query) {
+                return shown.map(entry => ({ entry }));
+            }
+
+            shown = shown.filter(entry => entry.recommended).concat(shown.filter(entry => !entry.recommended));
+            const rows = [];
+            let heading = null;
+            for (const entry of shown) {
+                const group = entry.recommended ? 'Recommended' : 'Other models';
+                if (group !== heading) {
+                    rows.push({ note: group });
+                    heading = group;
+                }
+                rows.push({ entry });
+            }
+            return rows;
+        },
+        setModels: list => {
+            models = Array.isArray(list) ? list : [];
+        }
+    };
+};
+
+const uiPickerAdapters = { account: uiAccountPickerAdapter, model: uiModelPickerAdapter };
+
 /**
- * Clears an account picker, given its hidden input.
+ * Clears a picker, given its hidden input.
  *
  * For pages that reset a form as a whole - the template page empties its "send test email" modal
  * every time it opens. Assigning '' to the input is not enough on its own: the card is painted from
@@ -1310,15 +1427,35 @@ window.uiAccountPicker = root => {
  *
  * @param {Element} input - the picker's hidden input
  */
-window.uiAccountPickerClear = input => {
-    const root = input && input.closest && input.closest('[data-account-picker]');
+window.uiPickerClear = input => {
+    const root = input && input.closest && input.closest('[data-picker]');
     if (root && root.uiPickerClear) {
         root.uiPickerClear();
     }
 };
+window.uiAccountPickerClear = window.uiPickerClear;
+
+/**
+ * Replaces a model picker's list, given its hidden input. The choice stands, repainted from the
+ * new entries.
+ *
+ * @param {Element} input - the picker's hidden input
+ * @param {Object[]} models - the new entries, "Default" first
+ */
+window.uiModelPickerSetModels = (input, models) => {
+    const root = input && input.closest && input.closest('[data-picker]');
+    if (root && root.uiPickerAdapter && root.uiPickerAdapter.setModels) {
+        root.uiPickerAdapter.setModels(models);
+        root.uiPickerRepaint();
+    }
+};
 
 document.addEventListener('DOMContentLoaded', () => {
-    for (let root of document.querySelectorAll('[data-account-picker]')) {
-        window.uiAccountPicker(root);
+    for (let root of document.querySelectorAll('[data-picker]')) {
+        const adapter = uiPickerAdapters[root.dataset.picker];
+        if (adapter) {
+            root.uiPickerAdapter = adapter(root);
+            window.uiPicker(root, root.uiPickerAdapter);
+        }
     }
 });

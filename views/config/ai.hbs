@@ -68,23 +68,14 @@
                 {{> ui/setting-ref name="openAiModel"}}
 
                 <div class="flex items-center gap-2">
-                    <label class="label-text" for="settingsServiceOpenAiModel">AI Model</label>
+                    <label class="label-text" for="openAiModel-search">AI Model</label>
 
                     {{> ui/btn label="Refresh models" style="text" size="sm" id="reload-models-btn"
                     icon="icon-[tabler--refresh] reload-icon"}}
                 </div>
 
-                <select id="settingsServiceOpenAiModel" class="select max-w-md{{#if errors.openAiModel}} is-invalid{{/if}}"
-                    name="openAiModel">
-                    {{#each openAiModels}}
-                    <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
-                    {{/each}}
-                </select>
-                {{#if errors.openAiModel}}
-                <span class="helper-text text-error">{{errors.openAiModel}}</span>
-                {{/if}}
-                <span class="helper-text">Choose the AI model for processing. Ensure your API key has access to the
-                    selected model.</span>
+                {{> ui/model-picker id="openAiModel" models=openAiModels value=values.openAiModel error=errors.openAiModel
+                hint="Type to search. Refresh models lists what your API key can use; the recommended entries suit reading mail, and Default follows the built-in model across upgrades."}}
             </div>
 
             <div>
@@ -95,6 +86,19 @@
                 <span class="helper-text">Custom API endpoint for OpenAI-compatible services. Leave empty for the default
                     OpenAI servers. Include the URL path if the service mounts the API under one - for Azure OpenAI, use
                     https://&lt;your-resource&gt;.openai.azure.com/openai/v1</span>
+                {{/ui/form-field}}
+            </div>
+
+            <div>
+                {{> ui/setting-ref name="openAiTrustedAuthservIds"}}
+                {{#> ui/form-field id="settingsOpenAiTrustedAuthservIds" label="Trusted authentication servers" error=errors.openAiTrustedAuthservIds}}
+                <textarea class="textarea w-full{{#if errors.openAiTrustedAuthservIds}} is-invalid{{/if}}"
+                    id="settingsOpenAiTrustedAuthservIds" name="openAiTrustedAuthservIds" rows="2" data-enable-grammarly="false"
+                    spellcheck="false" placeholder="mx1.example.com&#10;example.com">{{values.openAiTrustedAuthservIds}}</textarea>
+                <span class="helper-text">Mail servers whose Authentication-Results header the risk assessment may believe, one
+                    per line; a name covers the hosts under it. Gmail and Microsoft 365 mailboxes need nothing here. For
+                    any other server, list it only if it removes such headers sent by others before adding its own,
+                    otherwise a sender can write a passing one. Unlisted servers leave authentication unknown.</span>
                 {{/ui/form-field}}
             </div>
 
@@ -391,7 +395,7 @@ defaultTestPayload='{"account":"test","path":"INBOX","subject":"test email"}'}}
             let payload = {
                 emailFile,
                 openAiPrompt: editorPrompt.getValue(),
-                openAiModel: document.getElementById('settingsServiceOpenAiModel').value,
+                openAiModel: document.getElementById('openAiModel').value,
                 openAiAPIUrl: document.getElementById('openAiAPIUrl').value,
                 openAiAPIKey: document.getElementById('openAiAPIKey').value,
                 openAiTemperature: document.getElementById('settingsOpenAiTemperature').value,
@@ -431,21 +435,11 @@ defaultTestPayload='{"account":"test","path":"INBOX","subject":"test email"}'}}
             runFileTest();
         });
 
+        const modelInput = document.getElementById('openAiModel');
+
+        // the server answers with the list in the shape the page first got it
         function redrawModelList(models) {
-            let selectElm = document.getElementById('settingsServiceOpenAiModel');
-            let selected = selectElm.value;
-
-            selectElm.innerHTML = '';
-
-            for (let model of models) {
-                let elm = document.createElement('option');
-                elm.setAttribute('value', model.id);
-                elm.textContent = model.name;
-                if (model.id === selected) {
-                    elm.selected = true
-                }
-                selectElm.appendChild(elm);
-            }
+            uiModelPickerSetModels(modelInput, models);
         }
 
         let reloadBtn = document.getElementById('reload-models-btn');
@@ -453,7 +447,8 @@ defaultTestPayload='{"account":"test","path":"INBOX","subject":"test email"}'}}
         const requestReload = async () => {
             const data = await uiPostJson('/admin/config/ai/reload-models', {
                 openAiAPIUrl: document.getElementById('openAiAPIUrl').value,
-                openAiAPIKey: document.getElementById('openAiAPIKey').value
+                openAiAPIKey: document.getElementById('openAiAPIKey').value,
+                openAiModel: modelInput.value
             });
 
             return data;

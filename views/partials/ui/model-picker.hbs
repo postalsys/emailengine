@@ -1,0 +1,29 @@
+{{!--
+    ui/model-picker - the "which model" field of the AI page.
+
+    A provider lists dozens of models, most of them unsuited to reading mail, and a <select> of
+    bare names was a wall nobody could choose from. This is the account picker's shape over a list
+    the page already holds: type any part of a name or an id, pick from the suggestions, and the
+    box is replaced by a card naming the model, what it is for, and its id. Every entry carries a
+    one-line note and the recommended ones are listed first, so the sane choice is also the easy
+    one. The first entry is "Default", which follows the library's built-in model across upgrades.
+
+    The list travels in the data-models attribute and can be replaced after a refresh with
+    window.uiModelPickerSetModels(); the card is painted from the entry the value names. The
+    markup is ui/picker.
+      {{> ui/model-picker id="openAiModel" models=openAiModels value=values.openAiModel}}
+    Params:
+      id          - hidden input id, also the default posted name and what page scripts read (required)
+      name        - posted field name (defaults to id)
+      label       - field label (optional)
+      hint        - muted helper text under the control (optional)
+      error       - validation error message (optional)
+      value       - current model name, empty for the default (optional)
+      models      - the list: {id, name, description, recommended} entries, "Default" first (required)
+      placeholder - search box placeholder (optional)
+--}}
+{{#if placeholder}}
+{{> ui/picker kind="model" id=id name=name label=label hint=hint error=error value=value models=models placeholder=placeholder}}
+{{else}}
+{{> ui/picker kind="model" id=id name=name label=label hint=hint error=error value=value models=models placeholder="Search models by name or id"}}
+{{/if}}

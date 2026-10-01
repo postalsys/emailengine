@@ -818,7 +818,7 @@ test.describe('admin shell', () => {
         // This template was created above with no account, so the picker always renders here -
         // asserted rather than branched on, or a change that stopped rendering it would leave the
         // rest of this block silently doing nothing
-        await expect(page.locator('#sendTestModal [data-account-picker]')).toHaveCount(1);
+        await expect(page.locator('#sendTestModal [data-picker="account"]')).toHaveCount(1);
 
         await page.locator('#inputAccount-search').click();
         const results = page.locator('#inputAccount-results');
@@ -1128,6 +1128,16 @@ test.describe('admin shell', () => {
         await expectModalOpen(page, 'setPayloadModal');
         await page.keyboard.press('Escape');
         await expect(page.locator('#setPayloadModal.open')).toHaveCount(0);
+
+        // the model picker: the card shows the default, the search finds a model by any part of
+        // its name, and the hidden input the form posts carries the picked id
+        const picker = page.locator('[data-picker="model"]');
+        await expect(picker.locator('[data-picker-card]')).toContainText('Default');
+        await picker.locator('[data-picker-card] button').click();
+        await page.locator('#openAiModel-search').fill('nano');
+        await page.locator('#openAiModel-results button', { hasText: 'GPT-5.4 Nano' }).first().click();
+        await expect(page.locator('#openAiModel')).toHaveValue('gpt-5.4-nano');
+        await expect(picker.locator('[data-picker-card]')).toContainText('gpt-5.4-nano');
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });

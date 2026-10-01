@@ -2535,6 +2535,13 @@ async function aiRequestOptions(data) {
         }
     }
 
+    // which Authentication-Results header the summary may believe, decided by the worker that
+    // knows the account
+    if (data.trust) {
+        requestOpts.trustedAuthservIds = data.trust.trustedAuthservIds;
+        requestOpts.acceptUnnamedAuthentication = !!data.trust.acceptUnnamedAuthentication;
+    }
+
     return { openAiAPIKey, requestOpts };
 }
 
@@ -2723,9 +2730,10 @@ async function onCommand(worker, message) {
             const model = requestOpts.gptModel;
 
             try {
-                const { result, usage } = await withRequestDeadline(message, signal =>
+                const response = await withRequestDeadline(message, signal =>
                     generateSummary(message.data.message, openAiAPIKey, Object.assign(requestOpts, { signal }))
                 );
+                const { usage } = response;
 
                 // the fitted email text the verbose mode adds stays out of the RPC and the log
                 delete usage.text;
@@ -2740,7 +2748,7 @@ async function onCommand(worker, message) {
                     }
                 }
 
-                return { result, usage };
+                return response;
             } catch (err) {
                 if (counted) {
                     metrics.aiRequests.inc({ model, status: 'failure' });
