@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.82.0](https://github.com/postalsys/emailengine/compare/v2.81.2...v2.82.0) (2026-10-01)
+
+
+### Features
+
+* check incoming mail in code before the AI reads it, and pick the model from a list that says what each is for ([cf6f3a6](https://github.com/postalsys/emailengine/commit/cf6f3a6fda2d7c67a7f178b9c10e5014fc497e48))
+* deliver the AI summary as the model returned it, and count its usage ([854ef18](https://github.com/postalsys/emailengine/commit/854ef18f1f8969bdcabe34b5a3a99c6ee2fc71e8))
+* remove embeddings generation ([f4ddd90](https://github.com/postalsys/emailengine/commit/f4ddd908326bf6489ebbbdbf3421a291043ce8f0))
+* remove the Document Store ([56df159](https://github.com/postalsys/emailengine/commit/56df159e4838d7b3052dadb8c30d8ac1e85f4e12))
+
+
+### Bug Fixes
+
+* assert the literal cap on the continuations sent before the refusal ([1aa24dc](https://github.com/postalsys/emailengine/commit/1aa24dc9d6cbd2a2b8b33b4dc8f5fd328ab435bb))
+* close the findings of the 2026-09-28 codebase audit ([2db748f](https://github.com/postalsys/emailengine/commit/2db748fc9879d577d3a9634fd6676149c91c1219))
+* count announced literals against the IMAP proxy cap at continuation time ([51b73d2](https://github.com/postalsys/emailengine/commit/51b73d2f498e2d1fcd85861104ad89f65f184879))
+* **deps:** update libmime, mailsplit, imapflow, mailparser and email-ai-tools ([943d2f5](https://github.com/postalsys/emailengine/commit/943d2f5891a88ff040fc2b7b3eb590c16cc498c6))
+* **deps:** update nodemailer, smtp-server, mailparser, email-content and email-ai-tools ([af7aa9f](https://github.com/postalsys/emailengine/commit/af7aa9f5a46fb20409c9d8a3bd64be63c6593700))
+* drop the trusted authentication servers setting from the AI page ([0b01c7e](https://github.com/postalsys/emailengine/commit/0b01c7e04c80e4dc60bf3bcf6b11e3114e9bd9ff))
+* **imap:** measure the stale view quiet period from the UIDNEXT the primary knows ([a3044a1](https://github.com/postalsys/emailengine/commit/a3044a1ddbdae50298ebc3f61a909102360548dd))
+* **imap:** reconnect a primary connection whose view of the main mailbox stopped moving ([442955c](https://github.com/postalsys/emailengine/commit/442955c41ef2f0fa4898e089056d2ee9fa7a2fdd))
+* match the model picker's search term by term and rank the answers ([632754e](https://github.com/postalsys/emailengine/commit/632754e3e2110431caedb6f6ba391a3367b58df9))
+* **outlook:** keep draft replies threaded on MS Graph accounts ([1ec3c6a](https://github.com/postalsys/emailengine/commit/1ec3c6a1485ee4fd649060e6fd2f137b01d87975))
+* read the browse page session token from its hidden input in the e2e spec ([eea4a58](https://github.com/postalsys/emailengine/commit/eea4a58d5d15779c322fa52b9cc03b14284f2104))
+* update ImapFlow to 2.2.1 ([a007b46](https://github.com/postalsys/emailengine/commit/a007b46ab68add12486ad11e6bef84db53777974))
+* use only FIPS-approved primitives, so an instance runs on a host whose OpenSSL is in FIPS mode ([5070de0](https://github.com/postalsys/emailengine/commit/5070de07d5ac4c64bfa252766b965e9602407497))
+
 ## [2.81.2](https://github.com/postalsys/emailengine/compare/v2.81.1...v2.81.2) (2026-09-27)
 
 
