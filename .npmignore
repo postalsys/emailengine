@@ -6,6 +6,14 @@ CLAUDE.md
 
 # Test files
 test/
+playwright.config.js
+playwright-report/
+test-results/
+blob-report/
+
+# Repository tooling - CI workflows and git hooks are not needed to run the package
+.github/
+.githooks/
 
 # Distribution builds
 dist/
