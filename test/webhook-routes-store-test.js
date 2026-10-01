@@ -55,8 +55,8 @@ test('webhook route credentials are encrypted at rest', async t => {
 
     await t.test('stored as ciphertext', async () => {
         const meta = await storedMeta(id);
-        assert.ok(meta.targetUrl.startsWith('$wd01$'));
-        assert.ok(typeof meta.customHeaders === 'string' && meta.customHeaders.startsWith('$wd01$'));
+        assert.ok(meta.targetUrl.startsWith('$wd02$'));
+        assert.ok(typeof meta.customHeaders === 'string' && meta.customHeaders.startsWith('$wd02$'));
         assert.strictEqual(meta.name, 'Encrypted route', 'the rest of the entry stays readable');
     });
 
@@ -81,7 +81,7 @@ test('webhook route credentials are encrypted at rest', async t => {
     await t.test('an update that leaves the credentials out keeps them encrypted and intact', async () => {
         await webhooks.update(id, { name: 'Renamed route' });
         const meta = await storedMeta(id);
-        assert.ok(meta.targetUrl.startsWith('$wd01$'));
+        assert.ok(meta.targetUrl.startsWith('$wd02$'));
         const full = await webhooks.get(id);
         assert.strictEqual(full.name, 'Renamed route');
         assert.strictEqual(full.targetUrl, targetUrl);

@@ -266,8 +266,8 @@ test('API tests', async t => {
         let imapData = JSON.parse(accountData.imap);
         let smtpData = JSON.parse(accountData.smtp);
 
-        assert.ok(imapData.auth.pass.indexOf('$wd01$') === 0);
-        assert.ok(smtpData.auth.pass.indexOf('$wd01$') === 0);
+        assert.ok(imapData.auth.pass.indexOf('$wd02$') === 0);
+        assert.ok(smtpData.auth.pass.indexOf('$wd02$') === 0);
     });
 
     await t.test('list mailboxes for an account', async () => {

@@ -63,7 +63,7 @@ test('Settings AI text coupling', async t => {
 
         for (const key of ['webhooks', 'webhooksCustomHeaders', 'proxyUrl', 'authServer']) {
             const raw = await redis.hget(`${REDIS_PREFIX}settings`, key);
-            assert.ok(raw.startsWith('$wd01$'), `${key} must be stored encrypted, got ${raw.slice(0, 12)}`);
+            assert.ok(raw.startsWith('$wd02$'), `${key} must be stored encrypted, got ${raw.slice(0, 12)}`);
             assert.ok(!raw.includes('s3cret') && !raw.includes('Bearer') && !raw.includes('pass@'), `${key} must not be stored in the clear`);
             assert.ok(settings.encryptedKeys.includes(key), `${key} must be on the list a secret rotation re-encrypts`);
             assert.ok(!settings.secretKeys.includes(key), `${key} must keep being returned by the settings API, not masked to a boolean`);

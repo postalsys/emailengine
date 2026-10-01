@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-10-01 08:05+0000\n"
+"POT-Creation-Date: 2026-10-01 08:39+0000\n"
 
 #: views/error.hbs:6
 #: workers/api.js:3140
@@ -114,14 +114,6 @@ msgid ""
 "received."
 msgstr ""
 
-#: views/accounts/register/index.hbs:6
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:19
-msgid "Standard IMAP"
-msgstr ""
-
 #: views/accounts/register/imap.hbs:13
 msgid "Your name"
 msgstr ""
@@ -151,6 +143,46 @@ msgstr ""
 #: views/accounts/register/imap.hbs:55
 #: views/accounts/register/validating.hbs:74
 msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/index.hbs:6
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:19
+msgid "Standard IMAP"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:35
+msgid "Checking your mail server"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:40
+msgid "Still checking. This can take up to a minute."
+msgstr ""
+
+#: views/accounts/register/validating.hbs:47
+msgid "Enter server settings manually"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:53
+msgid "We couldn't sign in to your mail server"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:54
+msgid "Check the settings on the next page and try again."
+msgstr ""
+
+#: views/accounts/register/validating.hbs:61
+msgid "Continue to server settings"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:69
+msgid "Almost there"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:70
+msgid "Continue to review your mail server settings."
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:23
@@ -257,38 +289,6 @@ msgstr ""
 msgid "We couldn't connect with these settings. Check the errors below."
 msgstr ""
 
-#: views/accounts/register/validating.hbs:35
-msgid "Checking your mail server"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:40
-msgid "Still checking. This can take up to a minute."
-msgstr ""
-
-#: views/accounts/register/validating.hbs:47
-msgid "Enter server settings manually"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:53
-msgid "We couldn't sign in to your mail server"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:54
-msgid "Check the settings on the next page and try again."
-msgstr ""
-
-#: views/accounts/register/validating.hbs:61
-msgid "Continue to server settings"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:69
-msgid "Almost there"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:70
-msgid "Continue to review your mail server settings."
-msgstr ""
-
 #: views/partials/public_test_labels.hbs:9
 msgid "Error"
 msgstr ""
@@ -345,19 +345,19 @@ msgid ""
 "connect your account."
 msgstr ""
 
-#: lib/tools.js:1608
+#: lib/tools.js:1609
 #: lib/ui-routes/unsubscribe-routes.js:31
 #: lib/ui-routes/unsubscribe-routes.js:99
 msgid "Invalid input"
 msgstr ""
 
-#: lib/tools.js:2489
+#: lib/tools.js:2490
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:2512
-#: lib/tools.js:2518
-#: lib/tools.js:2523
+#: lib/tools.js:2513
+#: lib/tools.js:2519
+#: lib/tools.js:2524
 #: lib/ui-routes/account-routes.js:1322
 msgid "Invalid or expired account setup URL"
 msgstr ""

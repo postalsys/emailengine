@@ -126,7 +126,7 @@ test('credential-bearing account fields are encrypted at rest', async t => {
 
     await t.test('stored as ciphertext', () => {
         for (const key of ENCRYPTED_ACCOUNT_FIELDS) {
-            assert.ok(stored[key].startsWith('$wd01$'), `${key} must be stored encrypted`);
+            assert.ok(stored[key].startsWith('$wd02$'), `${key} must be stored encrypted`);
             assert.ok(!/s3cret|Bearer|pass@/.test(stored[key]), `${key} must not be stored in the clear`);
         }
     });

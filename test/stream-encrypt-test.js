@@ -362,7 +362,7 @@ test('Stream encryption tests', async t => {
 
     await t.test('exported constants have expected values', async () => {
         assert.deepStrictEqual(MAGIC, Buffer.from('EE01'));
-        assert.strictEqual(VERSION, 1);
+        assert.strictEqual(VERSION, 2);
         assert.strictEqual(CHUNK_SIZE, 64 * 1024);
         assert.strictEqual(HEADER_SIZE, 4 + 4 + 4 + 16); // magic + version + chunkSize + salt
     });
@@ -393,5 +393,50 @@ test('Stream encryption tests', async t => {
 
         const decrypted = await decryptedPromise;
         assert.deepStrictEqual(decrypted, originalData);
+    });
+});
+
+// Version 2 derives the key with PBKDF2-HMAC-SHA256; version 1 did so with scrypt, which an
+// OpenSSL FIPS provider does not offer. A version 1 file written by an earlier release still
+// decrypts, and the version 2 parameters are pinned through a file built by hand
+test('Stream encryption versions', async t => {
+    const secret = 'pinned-export-secret';
+    const salt = Buffer.from('101112131415161718191a1b1c1d1e1f', 'hex');
+    const pbkdf2Key = crypto.pbkdf2Sync(secret, salt, 600000, 32, 'sha256');
+
+    const build = (version, key, cleartext) => {
+        const header = Buffer.alloc(HEADER_SIZE);
+        MAGIC.copy(header, 0);
+        header.writeUInt32LE(version, MAGIC.length);
+        header.writeUInt32LE(CHUNK_SIZE, MAGIC.length + 4);
+        salt.copy(header, MAGIC.length + 8);
+
+        const iv = crypto.randomBytes(12);
+        const cipher = crypto.createCipheriv('aes-256-gcm', key, iv, { authTagLength: 16 });
+        const encrypted = Buffer.concat([cipher.update(cleartext), cipher.final()]);
+        const chunkHeader = Buffer.alloc(16);
+        iv.copy(chunkHeader, 0);
+        chunkHeader.writeUInt32LE(encrypted.length, 12);
+        return Buffer.concat([header, chunkHeader, encrypted, cipher.getAuthTag()]);
+    };
+
+    const decryptAll = async buffer => (await streamToBuffer(bufferToStream(buffer).pipe(await createDecryptStream(secret)))).toString();
+
+    await t.test('writes version 2', async () => {
+        const encrypted = await streamToBuffer(bufferToStream(Buffer.from('hello')).pipe(await createEncryptStream(secret)));
+        assert.strictEqual(encrypted.readUInt32LE(MAGIC.length), 2);
+    });
+
+    await t.test('a version 1 file still decrypts', async () => {
+        assert.strictEqual(await decryptAll(build(1, crypto.scryptSync(secret, salt, 32), 'written by scrypt')), 'written by scrypt');
+    });
+
+    await t.test('a version 2 file decrypts with the pinned PBKDF2 parameters', async () => {
+        assert.strictEqual(await decryptAll(build(2, pbkdf2Key, 'written by pbkdf2')), 'written by pbkdf2');
+    });
+
+    await t.test('an unknown version is refused', async () => {
+        // refused at the header, before any key is derived
+        await assert.rejects(() => decryptAll(build(3, Buffer.alloc(32), 'x')), /Unsupported encryption version: 3/);
     });
 });

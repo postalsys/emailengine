@@ -4,7 +4,14 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 const crypto = require('crypto');
 
-const { encrypt, decrypt, encryptField, decryptField, parseEncryptedData } = require('../lib/encrypt');
+const { encrypt, decrypt, encryptField, decryptField, parseEncryptedData, isCurrentScheme, reencrypt } = require('../lib/encrypt');
+
+// A value sealed by hand: the stored format, under a key, salt and iv of the test's choosing
+function sealed(scheme, key, salt, iv, cleartext) {
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv, { authTagLength: 16 });
+    const ciphertext = Buffer.concat([cipher.update(cleartext), cipher.final()]);
+    return ['', scheme, 'aes-256-gcm', cipher.getAuthTag(), iv, salt, ciphertext].map(part => (Buffer.isBuffer(part) ? part.toString('hex') : part)).join('$');
+}
 
 test('Encryption tests', async t => {
     const testSecret = 'test-secret-password-123';
@@ -147,7 +154,7 @@ test('Encryption tests', async t => {
         const parts = encrypted.split('$');
         assert.strictEqual(parts.length, 7);
         assert.strictEqual(parts[0], ''); // Leading $
-        assert.strictEqual(parts[1], 'wd01'); // Format version
+        assert.strictEqual(parts[1], 'wd02'); // Format version
         assert.strictEqual(parts[2], 'aes-256-gcm'); // Cipher
         assert.strictEqual(parts[3].length, 32); // Auth tag (16 bytes = 32 hex)
         assert.strictEqual(parts[4].length, 24); // IV (12 bytes = 24 hex)
@@ -160,7 +167,7 @@ test('Encryption tests', async t => {
         const encrypted = encrypt(cleartext, testSecret);
         const parsed = parseEncryptedData(encrypted);
 
-        assert.strictEqual(parsed.format, 'wd01');
+        assert.strictEqual(parsed.format, 'wd02');
         assert.strictEqual(parsed.cipher, 'aes-256-gcm');
         assert.ok(Buffer.isBuffer(parsed.authTag));
         assert.strictEqual(parsed.authTag.length, 16);
@@ -233,13 +240,7 @@ test('Encryption tests', async t => {
         // salt of its own. Built by hand, since encrypt() no longer writes one.
         const cleartext = 'legacy value';
         const salt = crypto.randomBytes(16);
-        const iv = crypto.randomBytes(12);
-        const key = crypto.scryptSync(testSecret, salt, 32);
-        const cipher = crypto.createCipheriv('aes-256-gcm', key, iv, { authTagLength: 16 });
-        const ciphertext = Buffer.concat([cipher.update(cleartext), cipher.final()]);
-        const legacy = ['', 'wd01', 'aes-256-gcm', cipher.getAuthTag(), iv, salt, ciphertext]
-            .map(part => (Buffer.isBuffer(part) ? part.toString('hex') : part))
-            .join('$');
+        const legacy = sealed('wd01', crypto.scryptSync(testSecret, salt, 32), salt, crypto.randomBytes(12), cleartext);
 
         assert.strictEqual(decrypt(legacy, testSecret), cleartext);
         assert.ok(!parseEncryptedData(encrypt(cleartext, testSecret)).salt.equals(salt), 'and the next write uses the process salt');
@@ -249,7 +250,7 @@ test('Encryption tests', async t => {
         assert.strictEqual(encryptField('', testSecret), '', 'the empty string is a cleared marker and stays as it is');
         assert.strictEqual(encryptField('value', ''), 'value', 'nothing to encrypt with without a secret');
         const stored = encryptField('value', testSecret);
-        assert.ok(stored.startsWith('$wd01$'));
+        assert.ok(stored.startsWith('$wd02$'));
 
         assert.strictEqual(decryptField(stored, testSecret), 'value');
         assert.strictEqual(decryptField('cleartext', testSecret), 'cleartext', 'a value stored before its field was encrypted passes through');
@@ -338,5 +339,45 @@ test('Encryption tests', async t => {
                 return true;
             }
         );
+    });
+});
+
+// Pinned fixtures: a value sealed by hand under each scheme, with a fixed secret and salt, so a
+// change to either derivation fails loudly rather than making stored credentials unreadable
+test('Encryption schemes', async t => {
+    const secret = 'pinned-secret';
+    const salt = Buffer.from('000102030405060708090a0b0c0d0e0f', 'hex');
+    const iv = Buffer.from('0a0b0c0d0e0f101112131415', 'hex');
+    const wd01 = sealed('wd01', crypto.scryptSync(secret, salt, 32), salt, iv, 'pinned cleartext');
+    const wd02 = sealed('wd02', crypto.pbkdf2Sync(secret, salt, 600000, 32, 'sha256'), salt, iv, 'pinned cleartext');
+
+    await t.test('a wd01 value written by an earlier release still decrypts', () => {
+        assert.strictEqual(decrypt(wd01, secret), 'pinned cleartext');
+        assert.strictEqual(isCurrentScheme(wd01), false);
+    });
+
+    await t.test('a wd02 value decrypts with the pinned PBKDF2 parameters', () => {
+        // after the wd01 case on purpose: the same secret and salt under the other scheme must not
+        // be served the key cached for wd01
+        assert.strictEqual(decrypt(wd02, secret), 'pinned cleartext');
+        assert.strictEqual(isCurrentScheme(wd02), true);
+    });
+
+    await t.test('an unknown scheme is read as cleartext, as before', () => {
+        assert.strictEqual(decrypt('$wd09$aes-256-gcm$00$00$00$00', secret), '$wd09$aes-256-gcm$00$00$00$00');
+    });
+
+    await t.test('reencrypt() moves a value to the current secret and scheme, and only then', () => {
+        const stale = sealed('wd01', crypto.scryptSync('old-secret', salt, 32), salt, iv, 'pinned cleartext');
+        const moved = reencrypt(stale, ['old-secret'], secret);
+        assert.ok(moved.startsWith('$wd02$'), 'read with the old secret, written with the new one');
+        assert.strictEqual(decrypt(moved, secret), 'pinned cleartext');
+
+        assert.strictEqual(reencrypt(wd02, ['old-secret'], secret), wd02, 'already current: stored as it is');
+        assert.ok(reencrypt(wd01, [], secret).startsWith('$wd02$'), 'the current secret under the old scheme is rewritten');
+        assert.ok(reencrypt('cleartext', [], secret).startsWith('$wd02$'), 'cleartext is encrypted');
+        assert.strictEqual(reencrypt(wd02, [secret], ''), 'pinned cleartext', 'no secret to write with removes the encryption');
+        assert.throws(() => reencrypt(stale, ['another-secret'], secret), /Failed to decrypt/);
+        assert.throws(() => reencrypt('$wd09$aes-256-gcm$00$00$00$00', [], secret), /Could not decrypt/);
     });
 });

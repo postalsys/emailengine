@@ -13,7 +13,7 @@ try {
 
 const { redis } = require('./lib/db');
 const config = require('@zone-eu/wild-config');
-const { encrypt, decrypt, parseEncryptedData } = require('./lib/encrypt');
+const { reencrypt } = require('./lib/encrypt');
 const { encryptedKeys } = require('./lib/settings');
 const { ENCRYPTED_ACCOUNT_FIELDS } = require('./lib/account');
 const { ENCRYPTED_ROUTE_FIELDS } = require('./lib/webhooks');
@@ -26,47 +26,7 @@ const { TLS_KEY } = require('./lib/tls/store');
 
 const DECRYPT_PASSWORDS = [].concat(config.decrypt || []);
 
-async function processSecret(value, encryptSecret) {
-    let lastErr = false;
-    let decrypted = value;
-
-    for (let password of DECRYPT_PASSWORDS) {
-        try {
-            decrypted = decrypt(value, password);
-            if (password === encryptSecret) {
-                // nothing was changed
-                return value;
-            }
-            break;
-        } catch (err) {
-            lastErr = err;
-        }
-    }
-
-    let parsed = parseEncryptedData(decrypted);
-    if (parsed.format !== 'cleartext') {
-        // was not able to decrypt
-        if (encryptSecret) {
-            try {
-                decrypted = decrypt(value, encryptSecret);
-                // did not throw, so the value is already encrypted with the new password
-                return value;
-            } catch (err) {
-                // ignore
-            }
-        }
-
-        throw lastErr || new Error('Could not decrypt encrypted password');
-    }
-
-    if (encryptSecret) {
-        // encrypt
-        return encrypt(decrypted, encryptSecret);
-    }
-
-    // return plaintext
-    return decrypted;
-}
+const processSecret = (value, encryptSecret) => reencrypt(value, DECRYPT_PASSWORDS, encryptSecret);
 
 async function main() {
     console.error('EmailEngine account encryption tool');

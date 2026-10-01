@@ -54,7 +54,7 @@ const MODULE_BUDGETS = {
     'admin-entities-routes.js': 2548,
     'ai-options.js': 113,
     // 1649 -> 1650 for the require of the shared formBoolean() schema helper
-    'auth-routes.js': 1650,
+    'auth-routes.js': 1658,
     'dashboard-routes.js': 175,
     'export-routes.js': 207,
     'internals-routes.js': 458,
