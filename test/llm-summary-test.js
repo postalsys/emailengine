@@ -105,9 +105,9 @@ test('authenticationTrust', async t => {
         assert.equal(authenticationTrust('outlook', {}).acceptUnnamedAuthentication, false);
     });
 
-    await t.test('any other mailbox trusts only the servers the setting names, nothing by default', () => {
+    await t.test('any other mailbox trusts no server, so its authentication stays unknown', () => {
         assert.deepEqual(authenticationTrust(null, { received: ['from a by mx.example.net with ESMTP'] }), { trustedAuthservIds: [] });
-        assert.deepEqual(authenticationTrust(null, {}, ['mx1.example.com']), { trustedAuthservIds: ['mx1.example.com'] });
+        assert.deepEqual(authenticationTrust('imap', {}), { trustedAuthservIds: [] });
     });
 });
 

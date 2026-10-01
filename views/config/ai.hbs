@@ -89,19 +89,6 @@
                 {{/ui/form-field}}
             </div>
 
-            <div>
-                {{> ui/setting-ref name="openAiTrustedAuthservIds"}}
-                {{#> ui/form-field id="settingsOpenAiTrustedAuthservIds" label="Trusted authentication servers" error=errors.openAiTrustedAuthservIds}}
-                <textarea class="textarea w-full{{#if errors.openAiTrustedAuthservIds}} is-invalid{{/if}}"
-                    id="settingsOpenAiTrustedAuthservIds" name="openAiTrustedAuthservIds" rows="2" data-enable-grammarly="false"
-                    spellcheck="false" placeholder="mx1.example.com&#10;example.com">{{values.openAiTrustedAuthservIds}}</textarea>
-                <span class="helper-text">Mail servers whose Authentication-Results header the risk assessment may believe, one
-                    per line; a name covers the hosts under it. Gmail and Microsoft 365 mailboxes need nothing here. For
-                    any other server, list it only if it removes such headers sent by others before adding its own,
-                    otherwise a sender can write a passing one. Unlisted servers leave authentication unknown.</span>
-                {{/ui/form-field}}
-            </div>
-
         </div>
     </div>
 

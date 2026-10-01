@@ -9446,19 +9446,6 @@
           "trim": true
         }
       },
-      "openAiTrustedAuthservIdsResponse": {
-        "type": "array",
-        "description": "Names of the mail servers whose Authentication-Results header the AI risk assessment may believe, each matching itself and the hosts under it. Needed only for a mailbox on a server other than Gmail or Microsoft 365, and only when that server removes such headers sent by others before adding its own",
-        "nullable": true,
-        "items": {
-          "type": "string",
-          "example": "mx1.example.com",
-          "maxLength": 253,
-          "x-format": {
-            "hostname": true
-          }
-        }
-      },
       "openAiReasoningEffortResponse": {
         "type": "string",
         "description": "Reasoning effort for reasoning models such as GPT-5 and later. Empty sends \"low\" to those models and nothing to others. A value the model refuses is dropped",
@@ -9740,9 +9727,6 @@
             "nullable": true,
             "minimum": 0,
             "maximum": 1
-          },
-          "openAiTrustedAuthservIds": {
-            "$ref": "#/components/schemas/openAiTrustedAuthservIdsResponse"
           },
           "openAiReasoningEffort": {
             "$ref": "#/components/schemas/openAiReasoningEffortResponse"
@@ -10266,18 +10250,6 @@
           "trim": true
         }
       },
-      "OpenAiTrustedAuthservIds": {
-        "type": "array",
-        "description": "Names of the mail servers whose Authentication-Results header the AI risk assessment may believe, each matching itself and the hosts under it. Needed only for a mailbox on a server other than Gmail or Microsoft 365, and only when that server removes such headers sent by others before adding its own",
-        "items": {
-          "type": "string",
-          "example": "mx1.example.com",
-          "maxLength": 253,
-          "x-format": {
-            "hostname": true
-          }
-        }
-      },
       "OpenAiReasoningEffort": {
         "type": "string",
         "description": "Reasoning effort for reasoning models such as GPT-5 and later. Empty sends \"low\" to those models and nothing to others. A value the model refuses is dropped",
@@ -10530,9 +10502,6 @@
             "example": 0.1,
             "minimum": 0,
             "maximum": 1
-          },
-          "openAiTrustedAuthservIds": {
-            "$ref": "#/components/schemas/OpenAiTrustedAuthservIds"
           },
           "openAiReasoningEffort": {
             "$ref": "#/components/schemas/OpenAiReasoningEffort"
@@ -21042,14 +21011,6 @@
           },
           {
             "name": "openAiTopP",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "openAiTrustedAuthservIds",
             "in": "query",
             "schema": {
               "type": "boolean",
