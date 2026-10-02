@@ -6,6 +6,7 @@ const assert = require('node:assert').strict;
 const { redis, submitQueue } = require('../lib/db');
 const { REDIS_PREFIX } = require('../lib/consts');
 const outbox = require('../lib/outbox');
+const { outboxEntrySchema } = require('../lib/schemas');
 const msgpack = require('../lib/msgpack');
 const { Account } = require('../lib/account');
 const registerRedisTeardown = require('./helpers/redis-teardown');
@@ -295,5 +296,35 @@ test('Outbox', async t => {
             await submitQueue.remove('outbox-del-failing-id').catch(() => false);
             await redis.unlink(`${REDIS_PREFIX}iaq:${account}`);
         }
+    });
+});
+
+// The submit worker records the route a failed attempt took with
+//   job.updateProgress({ status: 'error', error: { message, code, statusCode }, networkRouting })
+// (workers/submit.js), and formatQueueEntry() passes job.progress through verbatim. The schema used
+// to declare networkRouting one level deeper, inside `error`, so a client reading the documented
+// location found nothing and response validation logged the real field as unknown.
+test('outboxEntrySchema matches the progress object the submit worker writes', async t => {
+    const failedProgress = {
+        status: 'error',
+        error: { message: 'Authentication failed', code: 'EAUTH', statusCode: 535 },
+        networkRouting: { localAddress: '198.51.100.24', name: 'relay.example.com' }
+    };
+
+    await t.test('networkRouting is declared beside error, not inside it', () => {
+        const { error, value } = outboxEntrySchema.validate(
+            { account: 'acc-1', queueId: 'q-1', progress: failedProgress },
+            { stripUnknown: false, abortEarly: false, convert: true }
+        );
+        assert.ifError(error);
+        assert.deepEqual(value.progress.networkRouting, failedProgress.networkRouting);
+    });
+
+    await t.test('the same object nested inside error is not what the schema describes', () => {
+        const { error } = outboxEntrySchema.validate(
+            { account: 'acc-1', queueId: 'q-1', progress: { status: 'error', error: Object.assign({}, failedProgress.error, { networkRouting: {} }) } },
+            { stripUnknown: false, abortEarly: false, convert: true }
+        );
+        assert.ok(error, 'progress.error has no networkRouting field');
     });
 });

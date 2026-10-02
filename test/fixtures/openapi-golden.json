@@ -9118,15 +9118,6 @@
           "error"
         ]
       },
-      "OutboxErrorNetworkRouting": {
-        "type": "object",
-        "description": "Network routing information for the failed delivery attempt",
-        "example": {
-          "localAddress": "198.51.100.24",
-          "name": "relay.example.com"
-        },
-        "nullable": true
-      },
       "OutboxListProgressError": {
         "type": "object",
         "description": "Error details (when status is \"error\")",
@@ -9145,11 +9136,17 @@
             "type": "integer",
             "description": "SMTP response code",
             "example": 502
-          },
-          "networkRouting": {
-            "$ref": "#/components/schemas/OutboxErrorNetworkRouting"
           }
         }
+      },
+      "OutboxErrorNetworkRouting": {
+        "type": "object",
+        "description": "Network routing information for the failed delivery attempt (when status is \"error\")",
+        "example": {
+          "localAddress": "198.51.100.24",
+          "name": "relay.example.com"
+        },
+        "nullable": true
       },
       "OutboxEntryProgress": {
         "type": "object",
@@ -9174,6 +9171,9 @@
           },
           "error": {
             "$ref": "#/components/schemas/OutboxListProgressError"
+          },
+          "networkRouting": {
+            "$ref": "#/components/schemas/OutboxErrorNetworkRouting"
           }
         }
       },
