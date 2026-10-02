@@ -199,6 +199,10 @@ test('SmtpConfigBuilder.loadGateway', async t => {
         await assert.rejects(builder.loadGateway('no-such-gateway-for-test', '<m@x>'), err => {
             assert.strictEqual(err.code, 'GatewayNotFound');
             assert.match(err.message, /no-such-gateway-for-test/);
+            // Boom serializes output.payload only, so an in-process API caller sees the code
+            // just as it sees MessageNotFound and FolderNotFound
+            assert.strictEqual(err.output.payload.code, 'GatewayNotFound');
+            assert.strictEqual(err.output.statusCode, 404);
             return true;
         });
     });
