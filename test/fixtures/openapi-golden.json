@@ -1591,7 +1591,8 @@
         "example": "refresh_token",
         "enum": [
           "refresh_token",
-          "authorization_code"
+          "authorization_code",
+          "client_credentials"
         ]
       },
       "OAuthTokenErrorFlag": {
@@ -1710,6 +1711,16 @@
             "type": "string",
             "description": "Value of the authorization code or error code related to the failure",
             "example": "AAABhaBPHscAAAAH"
+          },
+          "error": {
+            "type": "string",
+            "description": "Transport failure message, set when the token endpoint could not be reached at all",
+            "example": "fetch failed"
+          },
+          "errorCode": {
+            "type": "string",
+            "description": "Transport failure code, set when the token endpoint could not be reached at all",
+            "example": "ECONNREFUSED"
           },
           "flag": {
             "$ref": "#/components/schemas/OAuthTokenErrorFlag"

@@ -69,6 +69,7 @@ test('fetchTokenRequest()', async t => {
             assert.equal(err.tokenRequest.provider, 'gmail');
             assert.equal(err.tokenRequest.grant, 'refresh_token');
             assert.equal(err.tokenRequest.errorCode, 'ECONNREFUSED');
+            assert.equal(err.tokenRequest.status, undefined, 'there is no response, so no status is recorded');
             assert.equal(err.tokenRequest.error, 'fetch failed', 'the original message is kept');
             return true;
         });
