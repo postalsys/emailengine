@@ -1798,7 +1798,7 @@
     {
         "name": "get_account_logs",
         "title": "Get account connection log",
-        "description": "Read the stored connection log of an account: the raw IMAP or provider API trace, which names folders, message ids and subjects. Use it to find out why an account fails to connect or sync. Only kept while logging is enabled for the account or for the whole instance.",
+        "description": "Read the stored connection log of an account: the raw IMAP or provider API trace, which names folders, message ids and subjects. Use it to find out why an account fails to connect or sync. Only kept while logging is enabled for the account or for the whole instance. A long log is cut to its most recent entries.",
         "inputSchema": {
             "type": "object",
             "properties": {

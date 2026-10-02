@@ -18,6 +18,7 @@ const assert = require('node:assert').strict;
 
 const Hapi = require('@hapi/hapi');
 const Joi = require('joi');
+const { PassThrough } = require('node:stream');
 
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
@@ -446,6 +447,35 @@ test('MCP tool executor', async t => {
         options: { plugins: { mcp: { name: 'demo_huge_utf8', title: 'Demo huge utf8', description: 'demo' } } }
     });
 
+    // A plain-text response, which the executor used to return whole: the cap was applied to JSON
+    // results only, so an account log or a raw message source had no bound at all
+    server.route({
+        method: 'GET',
+        path: '/v1/demo/huge-text',
+        handler: (request, h) => h.response('y'.repeat(MAX_TOOL_RESULT_BYTES + 1024)).type('text/plain'),
+        options: { plugins: { mcp: { name: 'demo_huge_text', title: 'Demo huge text', description: 'demo' } } }
+    });
+
+    // Mirrors the account log download (getLogs() in lib/tools.js): a stream of one JSON entry per
+    // line, oldest first, declared `tail` so an oversized log keeps its most recent entries
+    server.route({
+        method: 'GET',
+        path: '/v1/demo/log',
+        handler(request) {
+            const stream = new PassThrough();
+            stream.headers = { 'content-type': 'text/plain' };
+            for (let i = 0; i < request.query.lines; i++) {
+                stream.write(JSON.stringify({ n: i, pad: 'p'.repeat(200) }) + '\n');
+            }
+            stream.end();
+            return stream;
+        },
+        options: {
+            validate: { query: Joi.object({ lines: Joi.number().integer().default(10) }) },
+            plugins: { mcp: { name: 'demo_log', title: 'Demo log', description: 'demo', tail: true } }
+        }
+    });
+
     server.route({
         method: 'GET',
         path: '/v1/demo/binary/{size}',
@@ -577,6 +607,47 @@ test('MCP tool executor', async t => {
         );
         // and the cut never splits a code point into a replacement character
         assert.ok(!result.content[0].text.includes('�'), 'truncation must not split a multibyte character');
+    });
+
+    await t.test('a text result is held to the same cap as a JSON one', async () => {
+        const result = await callTool({ server, tool: byName.get('demo_huge_text'), args: {}, request: outerRequest() });
+
+        assert.ok(!result.isError);
+        assert.match(result.content[0].text, /Result truncated by EmailEngine/);
+        assert.ok(
+            Buffer.byteLength(result.content[0].text) < MAX_TOOL_RESULT_BYTES + 1024,
+            `expected the text result to respect the byte cap, got ${Buffer.byteLength(result.content[0].text)} bytes`
+        );
+    });
+
+    await t.test('a tail result keeps its most recent lines, whole', async () => {
+        // A connection log is one JSON entry per line with the newest last, so keeping the first
+        // 128KB would answer "why is this account failing now" with its oldest traffic
+        const lines = 2000;
+        const result = await callTool({ server, tool: byName.get('demo_log'), args: { lines }, request: outerRequest() });
+        const text = result.content[0].text;
+
+        assert.ok(!result.isError);
+        assert.ok(Buffer.byteLength(text) < MAX_TOOL_RESULT_BYTES + 1024, `got ${Buffer.byteLength(text)} bytes`);
+        assert.match(text, /^\[Earlier output dropped by EmailEngine/, 'the notice leads, so the kept text still ends on the newest line');
+
+        const kept = text
+            .split('\n')
+            .slice(2)
+            .filter(line => line);
+        assert.equal(JSON.parse(kept[kept.length - 1]).n, lines - 1, 'the newest entry survives');
+        assert.ok(JSON.parse(kept[0]).n > 0, 'the oldest entries are the ones dropped');
+        // Every kept line is a whole entry: a cut landing mid-line would hand the reader a fragment
+        for (const line of kept) {
+            JSON.parse(line);
+        }
+    });
+
+    await t.test('a short tail result is returned untouched', async () => {
+        const result = await callTool({ server, tool: byName.get('demo_log'), args: { lines: 3 }, request: outerRequest() });
+        const kept = result.content[0].text.split('\n').filter(line => line);
+        assert.equal(kept.length, 3);
+        assert.equal(JSON.parse(kept[0]).n, 0);
     });
 
     await t.test('a missing required argument is named, rather than becoming a bare 404', async () => {
