@@ -8,7 +8,7 @@ const logger = require('../lib/logger');
 const Path = require('path');
 const Gettext = require('@postalsys/gettext');
 const { loadTranslations, gt, joiLocales, locales } = require('../lib/translations');
-const { accountStateLabel, formatServerState, identityErrorView, isClientError } = require('../lib/ui-routes/route-helpers');
+const { accountStateLabel, formatServerState, identityErrorView, workspaceErrorView, isClientError } = require('../lib/ui-routes/route-helpers');
 const { boundRouteBinding } = require('../lib/api-routes/account-binding');
 const util = require('util');
 const { webhooks: Webhooks } = require('../lib/webhooks');
@@ -134,7 +134,7 @@ const SUPPORTED_LOCALES = locales.map(locale => locale.locale);
 
 const FLAG_SORT_ORDER = ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', '\\Archive', '\\Junk', '\\Trash'];
 
-const { GMAIL_SCOPES, OPENID_SCOPES } = require('../lib/oauth/gmail');
+const { GMAIL_SCOPES, OPENID_SCOPES, workspaceDomainOf } = require('../lib/oauth/gmail');
 const { MAIL_RU_SCOPES } = require('../lib/oauth/mail-ru');
 
 const GMAIL_SCOPE_DESCRIPTIONS = {
@@ -2330,6 +2330,11 @@ const init = async () => {
             // fills this in; one that does not leaves it empty, and an empty list fails the check closed.
             const providerIdentities = [];
 
+            // The Workspace or Cloud organization domain the provider reported, for an application
+            // restricted to Google Workspace accounts. Only the Gmail case fills it in; the
+            // restriction is a Google setting and no other provider has the notion.
+            let workspaceDomain = null;
+
             // The token to revoke if the setup is rejected after the code was already exchanged, set by
             // each provider case because the token response is scoped to the switch. Prefer the refresh
             // token: revoking either invalidates the grant, but the access token may already be expired.
@@ -2398,6 +2403,10 @@ const init = async () => {
                         userName = idTokenPayload.name || null;
                         request.logger.info({ msg: 'Extracted user info from ID token', userEmail, userName });
                     }
+
+                    // Back channel, so this is the claim the restriction can actually be enforced on;
+                    // the hd argument on the authorization URL only filters the chooser Google shows
+                    workspaceDomain = workspaceDomainOf(idTokenPayload);
 
                     // If ID token didn't provide email, fall back to Gmail API profile endpoint
                     // This should rarely happen since we now request openid/email/profile scopes
@@ -2646,6 +2655,38 @@ const init = async () => {
                 account: accountData.account,
                 blobExpectation: pendingSetupExpectation(accountData, accountMeta)
             });
+
+            // "Accept only Google Workspace accounts" used to be advisory: generateAuthUrl() sets hd=*,
+            // which filters the account chooser Google shows and nothing else, so a link assembled
+            // without that argument - or a user who switches account inside the chooser - completed the
+            // setup with a consumer account. The hosted-domain claim of the ID token is checked here
+            // instead, and a token that names no domain is refused rather than trusted: for the Gmail
+            // provider the OpenID scopes are always requested (GmailOauth's constructor adds them), so
+            // a missing claim means the account has no Workspace domain, not that the claim was never
+            // asked for.
+            if (oauth2App.googleWorkspaceAccounts && oauth2App.provider === 'gmail' && !workspaceDomain) {
+                request.logger.warn({
+                    msg: 'OAuth2 sign-in used a personal account for a Workspace-only application',
+                    account: accountData.account,
+                    provider: oauth2App.provider
+                });
+
+                // The code was already exchanged, so we are holding a grant we will never use. Best
+                // effort, and the same duck-typing guard as the identity mismatch below.
+                if (grantToken && typeof oAuth2Client.revokeToken === 'function') {
+                    try {
+                        await oAuth2Client.revokeToken(grantToken);
+                    } catch (err) {
+                        request.logger.warn({ msg: 'Failed to revoke the OAuth2 grant after a Workspace check', err });
+                    }
+                }
+
+                // select_account for the same reason as the identity mismatch: they are signed in to the
+                // account that just failed, and without it Google would hand back the same one
+                const retryUrl = await startOAuthRetry(accountData.email, 'select_account consent');
+
+                return workspaceErrorView(request, h, { actualEmail: providerIdentities[0], retryUrl });
+            }
 
             if (expectedEmail && !matchesExpectedIdentity(expectedEmail, providerIdentities)) {
                 // Neither address is logged: the expectation and the authenticated identity both belong to

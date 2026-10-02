@@ -81,9 +81,9 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
         {{#if activeGmail}}
         <div>
             {{> ui/checkbox id="googleWorkspaceAccounts" name="googleWorkspaceAccounts"
-            label="Show only Google Workspace accounts on the OAuth2 login page"
+            label="Accept only Google Workspace accounts"
             checked=values.googleWorkspaceAccounts error=errors.googleWorkspaceAccounts
-            hint="When enabled, only Google Workspace accounts will be available on the Gmail OAuth2 login screen."}}
+            hint="Shows only Google Workspace accounts on the Gmail sign-in screen, and refuses the setup if a personal account signs in anyway."}}
         </div>
         {{/if}}
 

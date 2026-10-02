@@ -1,10 +1,37 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-10-01 10:42+0000\n"
+"POT-Creation-Date: 2026-10-02 08:19+0000\n"
+
+#: views/account-workspace-error.hbs:7
+msgid "Work Account Required"
+msgstr ""
+
+#: views/account-workspace-error.hbs:12
+msgid ""
+"This setup accepts only a Google Workspace account, and a personal Google "
+"account was used."
+msgstr ""
+
+#: views/account-workspace-error.hbs:17
+#: views/account-identity-error.hbs:21
+msgid "Account used"
+msgstr ""
+
+#: views/account-workspace-error.hbs:23
+msgid ""
+"Try again and sign in with your work or school account. If you believe this "
+"is a mistake, contact the service that sent you this link."
+msgstr ""
+
+#: views/account-workspace-error.hbs:28
+#: views/oauth-scope-error.hbs:28
+#: views/account-identity-error.hbs:32
+msgid "Try Again"
+msgstr ""
 
 #: views/error.hbs:6
-#: workers/api.js:3140
+#: workers/api.js:3175
 msgid "Something went wrong"
 msgstr ""
 
@@ -32,31 +59,6 @@ msgid "%d certificate"
 msgid_plural "%d certificates"
 msgstr[0] ""
 msgstr[1] ""
-
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:28
-#: views/account-identity-error.hbs:32
-msgid "Try Again"
-msgstr ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
@@ -114,6 +116,26 @@ msgid ""
 "received."
 msgstr ""
 
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
+
 #: views/accounts/register/imap.hbs:13
 msgid "Your name"
 msgstr ""
@@ -143,6 +165,38 @@ msgstr ""
 #: views/accounts/register/imap.hbs:55
 #: views/accounts/register/validating.hbs:74
 msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:35
+msgid "Checking your mail server"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:40
+msgid "Still checking. This can take up to a minute."
+msgstr ""
+
+#: views/accounts/register/validating.hbs:47
+msgid "Enter server settings manually"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:53
+msgid "We couldn't sign in to your mail server"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:54
+msgid "Check the settings on the next page and try again."
+msgstr ""
+
+#: views/accounts/register/validating.hbs:61
+msgid "Continue to server settings"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:69
+msgid "Almost there"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:70
+msgid "Continue to review your mail server settings."
 msgstr ""
 
 #: views/accounts/register/index.hbs:6
@@ -257,38 +311,6 @@ msgstr ""
 msgid "We couldn't connect with these settings. Check the errors below."
 msgstr ""
 
-#: views/accounts/register/validating.hbs:35
-msgid "Checking your mail server"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:40
-msgid "Still checking. This can take up to a minute."
-msgstr ""
-
-#: views/accounts/register/validating.hbs:47
-msgid "Enter server settings manually"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:53
-msgid "We couldn't sign in to your mail server"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:54
-msgid "Check the settings on the next page and try again."
-msgstr ""
-
-#: views/accounts/register/validating.hbs:61
-msgid "Continue to server settings"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:69
-msgid "Almost there"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:70
-msgid "Continue to review your mail server settings."
-msgstr ""
-
 #: views/partials/public_test_labels.hbs:9
 msgid "Error"
 msgstr ""
@@ -325,10 +347,6 @@ msgstr ""
 
 #: views/account-identity-error.hbs:18
 msgid "Expected account"
-msgstr ""
-
-#: views/account-identity-error.hbs:21
-msgid "Account used"
 msgstr ""
 
 #: views/account-identity-error.hbs:27
@@ -370,9 +388,9 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:982
 #: lib/ui-routes/account-routes.js:1198
 #: lib/ui-routes/account-routes.js:1389
-#: lib/ui-routes/route-helpers.js:367
-#: workers/api.js:2311
-#: workers/api.js:2381
+#: lib/ui-routes/route-helpers.js:362
+#: workers/api.js:2305
+#: workers/api.js:2380
 msgid "Email Account Setup"
 msgstr ""
 
@@ -497,37 +515,37 @@ msgstr ""
 msgid "Couldn't process request. Try again."
 msgstr ""
 
-#: workers/api.js:2240
+#: workers/api.js:2234
 msgid ""
 "The sign-in was cancelled or the requested access was not granted. Open the "
 "account setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2249
+#: workers/api.js:2243
 msgid "Sign-in with the email provider failed: %s"
 msgstr ""
 
-#: workers/api.js:2253
+#: workers/api.js:2247
 msgid "Sign-in with the email provider failed: no authorization code was received"
 msgstr ""
 
-#: workers/api.js:2259
+#: workers/api.js:2253
 msgid "Sign-in with the email provider failed: the request state is not valid"
 msgstr ""
 
-#: workers/api.js:2265
+#: workers/api.js:2259
 msgid ""
 "The account setup session has expired or was already used. Open the account "
 "setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2272
+#: workers/api.js:2266
 msgid ""
 "Sign-in with the email provider failed: the stored setup session is not "
 "valid"
 msgstr ""
 
-#: workers/api.js:3139
-#: workers/api.js:3254
+#: workers/api.js:3174
+#: workers/api.js:3289
 msgid "Requested page not found"
 msgstr ""
