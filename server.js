@@ -2127,7 +2127,10 @@ let licenseCheckHandler = async opts => {
 
         // Handle no active license - suspend workers
         if (!licenseInfo.active && !suspendedWorkerTypes.size) {
-            logger.info({ msg: 'No active license. Workers will be suspended after 15 minutes of inactivity.' });
+            // Said in the present tense, because that is what the loop below does. The line used to
+            // promise a 15 minute grace period that nothing anywhere implements, so an operator
+            // reading it waited for a window that had already closed.
+            logger.info({ msg: 'No active license. Suspending every worker except the API server.' });
 
             // Suspend all worker types except API
             for (let type of ['imap', 'submit', 'smtp', 'webhooks', 'imapProxy']) {
