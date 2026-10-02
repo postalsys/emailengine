@@ -37,6 +37,10 @@ const {
     resolveUsingSRV,
     timedFunction,
     MAX_AUTODISCOVERY_BODY,
+    MAX_AUTODISCOVER_REDIRECTS,
+    autodiscoverRedirectOrigin,
+    poxRedirectUrl,
+    resolveUsingAutodiscovery,
     hasResolvedHost,
     getAppPassword,
     escapeXml
@@ -1212,5 +1216,210 @@ test('resolver cuts off hosts that never stop sending', async t => {
         // Refused on size, not on the ten second budget
         assert.ok(Date.now() - started < 5000);
         assert.ok(await waitFor(() => closed.length === opened(), 2000), `every response was cut off (${closed.length}/${opened()})`);
+    });
+});
+
+// Three steps of Microsoft's documented autodiscovery sequence used to be missing, and a provider can
+// publish only the ones that were missing: IONOS/1&1 points autodiscover.<domain> at a redirector that
+// listens on port 80 only, so the single https POST could not connect and the whole Exchange branch
+// failed for every domain on that provider.
+test('autodiscovery reaches the endpoints the sequence names', async t => {
+    const POX = '/autodiscover/autodiscover.xml';
+    const SOAP = '/autodiscover/autodiscover.svc';
+
+    const poxWithImap = pox(`<Account>
+      <AccountType>email</AccountType>
+      <Protocol><Type>IMAP</Type><Server>imap.example.com</Server><Port>993</Port><SSL>on</SSL></Protocol>
+    </Account>`);
+
+    const poxWebOnly = pox(`<Account>
+      <AccountType>email</AccountType>
+      <Protocol><Type>WEB</Type></Protocol>
+    </Account>`);
+
+    // Keyed by `METHOD origin+path` rather than by path alone, because which ORIGIN is asked is the
+    // whole question here. `redirectsTo` is what fetch reports after following a redirect: the final
+    // URL, which is all the http GET reads.
+    const stubFetch = handlers => {
+        const calls = [];
+        const fetchResource = async (url, opts) => {
+            const method = (opts.method || 'get').toLowerCase();
+            const key = `${method} ${url}`;
+            calls.push(key);
+            const answer = (await (typeof handlers[key] === 'function' ? handlers[key]() : handlers[key])) || { status: 404 };
+            if (answer.error) {
+                throw Object.assign(new Error(answer.error), { code: answer.code });
+            }
+            return {
+                ok: answer.status >= 200 && answer.status < 300,
+                status: answer.status,
+                url: answer.redirectsTo || url,
+                headers: { get: () => (answer.status === 401 ? 'Basic realm="test"' : null) },
+                text: async () => answer.body || ''
+            };
+        };
+        return { calls, fetchResource };
+    };
+
+    // No SRV record, so the subdomain is the candidate the old code built on its own
+    const noSrvDns = { resolveSrv: async () => [] };
+
+    await t.test('poxRedirectUrl reads only a response that says it is a redirect', () => {
+        const redirecting = pox(
+            '<Account><Action>redirectUrl</Action><RedirectUrl>https://real.example.net/autodiscover/autodiscover.xml</RedirectUrl></Account>'
+        );
+        assert.strictEqual(poxRedirectUrl(redirecting), 'https://real.example.net/autodiscover/autodiscover.xml');
+
+        // A stray RedirectUrl without the action is not a redirect
+        assert.strictEqual(poxRedirectUrl(pox('<Account><RedirectUrl>https://real.example.net/x</RedirectUrl></Account>')), false);
+        // A RedirectAddr names another ADDRESS, and following it would offer that mailbox's host the
+        // password supplied for this one
+        assert.strictEqual(poxRedirectUrl(pox('<Account><Action>redirectAddr</Action><RedirectAddr>other@example.net</RedirectAddr></Account>')), false);
+        assert.strictEqual(poxRedirectUrl(poxWithImap), false);
+        assert.strictEqual(poxRedirectUrl('not xml at all'), false);
+    });
+
+    await t.test('the plain-http GET names the endpoint its redirect points at', async () => {
+        const { calls, fetchResource } = stubFetch({
+            'get http://autodiscover.example.com/autodiscover/autodiscover.xml': {
+                status: 200,
+                redirectsTo: 'https://autodiscover.1and1.info/Autodiscover/Autodiscover.xml'
+            }
+        });
+
+        assert.strictEqual(await autodiscoverRedirectOrigin('example.com', { fetchResource }), 'https://autodiscover.1and1.info');
+        assert.deepStrictEqual(calls, ['get http://autodiscover.example.com/autodiscover/autodiscover.xml']);
+    });
+
+    await t.test('a plain http-to-https upgrade on the same host names nothing new', async () => {
+        // That origin is already one of the raced candidates, so returning it would only duplicate work
+        const { fetchResource } = stubFetch({
+            'get http://autodiscover.example.com/autodiscover/autodiscover.xml': {
+                status: 200,
+                redirectsTo: 'https://autodiscover.example.com/autodiscover/autodiscover.xml'
+            }
+        });
+
+        assert.strictEqual(await autodiscoverRedirectOrigin('example.com', { fetchResource }), false);
+    });
+
+    await t.test('a redirect that lands on http names nothing, so no password can follow it', async () => {
+        const { fetchResource } = stubFetch({
+            'get http://autodiscover.example.com/autodiscover/autodiscover.xml': {
+                status: 200,
+                redirectsTo: 'http://cleartext.example.net/autodiscover/autodiscover.xml'
+            }
+        });
+
+        assert.strictEqual(await autodiscoverRedirectOrigin('example.com', { fetchResource }), false);
+    });
+
+    await t.test('a refused http GET is a loss rather than a throw', async () => {
+        const { fetchResource } = stubFetch({
+            'get http://autodiscover.example.com/autodiscover/autodiscover.xml': { error: 'connect ECONNREFUSED', code: 'ECONNREFUSED' }
+        });
+
+        assert.strictEqual(await autodiscoverRedirectOrigin('example.com', { fetchResource }), false);
+    });
+
+    await t.test('the IONOS shape resolves: https refused, the http redirect answers', async () => {
+        // Exactly what cabinet-courtillat.fr publishes - the subdomain is a CNAME to a redirector on
+        // port 80, so the only request the resolver used to make could not connect
+        const { calls, fetchResource } = stubFetch({
+            [`post https://autodiscover.example.com${POX}`]: { error: 'connect ECONNREFUSED 195.20.225.174:443', code: 'ECONNREFUSED' },
+            [`post https://example.com${POX}`]: { error: 'connect ECONNREFUSED', code: 'ECONNREFUSED' },
+            'get http://autodiscover.example.com/autodiscover/autodiscover.xml': {
+                status: 200,
+                redirectsTo: 'https://autodiscover.1and1.info/Autodiscover/Autodiscover.xml'
+            },
+            [`post https://autodiscover.1and1.info${POX}`]: { status: 200, body: poxWithImap }
+        });
+
+        const res = await resolveUsingAutodiscovery('user@example.com', { fetchResource, dns: noSrvDns }, undefined);
+
+        assert.strictEqual(res.imap.host, 'imap.example.com');
+        assert.ok(calls.includes('get http://autodiscover.example.com/autodiscover/autodiscover.xml'), 'the http GET is made');
+        assert.ok(calls.includes(`post https://autodiscover.1and1.info${POX}`), 'the endpoint the redirect named is asked');
+    });
+
+    await t.test('the root domain is tried as well as the subdomain', async () => {
+        // Microsoft lists https://<domain>/autodiscover/autodiscover.xml first, and only the
+        // subdomain was ever built
+        const { calls, fetchResource } = stubFetch({
+            [`post https://autodiscover.example.com${POX}`]: { status: 404 },
+            [`post https://example.com${POX}`]: { status: 200, body: poxWithImap },
+            'get http://autodiscover.example.com/autodiscover/autodiscover.xml': { status: 404 }
+        });
+
+        const res = await resolveUsingAutodiscovery('user@example.com', { fetchResource, dns: noSrvDns }, undefined);
+
+        assert.strictEqual(res.imap.host, 'imap.example.com');
+        assert.ok(calls.includes(`post https://example.com${POX}`), 'the root domain endpoint is asked');
+    });
+
+    await t.test('an in-response redirect is followed to the endpoint it names', async () => {
+        const redirecting = pox(`<Account>
+          <Action>redirectUrl</Action>
+          <RedirectUrl>https://real.example.net/autodiscover/autodiscover.xml</RedirectUrl>
+        </Account>`);
+
+        const { calls, fetchResource } = stubFetch({
+            [`post https://autodiscover.example.com${POX}`]: { status: 200, body: redirecting },
+            [`post https://real.example.net${POX}`]: { status: 200, body: poxWithImap }
+        });
+
+        const res = await runAutodiscovery('https://autodiscover.example.com', 'user@example.com', undefined, { fetchResource });
+
+        assert.strictEqual(res.imap.host, 'imap.example.com');
+        assert.deepStrictEqual(calls, [`post https://autodiscover.example.com${POX}`, `post https://real.example.net${POX}`]);
+    });
+
+    await t.test('a redirect loop is bounded rather than followed forever', async () => {
+        const to = url => pox(`<Account><Action>redirectUrl</Action><RedirectUrl>${url}</RedirectUrl></Account>`);
+        const { calls, fetchResource } = stubFetch({
+            [`post https://a.example.com${POX}`]: { status: 200, body: to(`https://b.example.com${POX}`) },
+            [`post https://b.example.com${POX}`]: { status: 200, body: to(`https://a.example.com${POX}`) }
+        });
+
+        await assert.rejects(() => runAutodiscovery('https://a.example.com', 'user@example.com', undefined, { fetchResource }), /Invalid response/);
+        // The first request plus MAX_AUTODISCOVER_REDIRECTS hops, and no more
+        assert.strictEqual(calls.length, MAX_AUTODISCOVER_REDIRECTS + 1);
+    });
+
+    await t.test('an answer naming no server is still a loss, whichever candidate gave it', async () => {
+        const { fetchResource } = stubFetch({
+            [`post https://autodiscover.example.com${POX}`]: { status: 200, body: poxWebOnly },
+            [`post https://example.com${POX}`]: { status: 200, body: poxWebOnly },
+            'get http://autodiscover.example.com/autodiscover/autodiscover.xml': { status: 404 },
+            [`post https://autodiscover.example.com${SOAP}`]: { status: 404 }
+        });
+
+        await assert.rejects(() => resolveUsingAutodiscovery('user@example.com', { fetchResource, dns: noSrvDns }, undefined), /Invalid response/);
+    });
+
+    await t.test('no credential is ever attached to the http GET', async () => {
+        const seen = [];
+        const fetchResource = async (url, opts) => {
+            seen.push({ url, headers: opts.headers || {} });
+            if (url.startsWith('http://')) {
+                return {
+                    ok: true,
+                    status: 200,
+                    url: 'https://autodiscover.1and1.info/Autodiscover/Autodiscover.xml',
+                    headers: { get: () => null },
+                    text: async () => ''
+                };
+            }
+            return { ok: false, status: 404, url, headers: { get: () => null }, text: async () => '' };
+        };
+
+        await assert.rejects(
+            () => resolveUsingAutodiscovery('user@example.com', { fetchResource, dns: noSrvDns }, { user: 'user@example.com', pass: 'secret' }),
+            /Invalid response/
+        );
+
+        for (const call of seen.filter(entry => entry.url.startsWith('http://'))) {
+            assert.ok(!call.headers.Authorization, `${call.url} must carry no Authorization header`);
+        }
     });
 });
