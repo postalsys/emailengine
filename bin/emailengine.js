@@ -126,10 +126,13 @@ const GLOBAL_OPTIONS = [
         group: 'API server'
     },
     {
+        // The effective default, not the flag's own: server.js seeds the enableApiProxy setting to true
+        // when neither --api.proxy nor EENGINE_API_PROXY is given, which is the historical behavior.
+        // Printing the option's default told operators the header was ignored unless they opted in.
         name: '--api.proxy',
         description: 'Trust X-Forwarded-For from the reverse proxy in front of the API (restrict the peers with EENGINE_API_PROXY_ADDRESSES)',
         type: 'boolean',
-        default: false,
+        default: true,
         group: 'API server'
     },
     { name: '--api.tls.certPath', description: 'Path to the TLS certificate; setting it serves the API over HTTPS', type: 'string', group: 'API server' },

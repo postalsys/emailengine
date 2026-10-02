@@ -36,6 +36,17 @@ test('an unknown tokens subcommand exits with usage', () => {
     assert.match(result.stderr, /issue/, 'the tokens usage is shown');
 });
 
+// server.js seeds the enableApiProxy setting to true when neither --api.proxy nor EENGINE_API_PROXY
+// is given, which is the historical behavior. The help printed the option's own default instead, so
+// operators read that the forwarding header was ignored unless they opted in.
+test('--help prints the default the server actually applies for --api.proxy', () => {
+    const result = runCli(['--help']);
+    assert.equal(result.status, 0, result.stderr);
+
+    const help = (result.stdout + result.stderr).replace(/\s+/g, ' ');
+    assert.match(help, /--api\.proxy .*\[default: true\]/);
+});
+
 test('a tokens import that cannot be decoded exits with an error', () => {
     // 0xc1 is the one byte msgpack never assigns, so decoding it always throws
     const result = runCli(['tokens', 'import', '--token', Buffer.from([0xc1]).toString('base64url')]);
