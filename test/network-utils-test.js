@@ -390,12 +390,22 @@ test('Network Utilities tests', async t => {
         fakeNet.reverse.set('192.0.2.12', ['mail.example.com']);
         fakeNet.reverse.set('192.0.2.13', ['notbarracuda.com.example.org']);
         fakeNet.reverse.set('192.0.2.14', []);
+        // An address may hold several PTR records in any order, and only the first used to be read
+        fakeNet.reverse.set('192.0.2.15', ['host.customer.example.net', 'scan02.barracuda.com']);
+        fakeNet.reverse.set('192.0.2.16', ['one.example.com', 'two.example.net']);
         try {
             assert.strictEqual(await detectAutomatedRequest('192.0.2.10'), true);
             assert.strictEqual(await detectAutomatedRequest('192.0.2.11'), true, 'hostname is trimmed and lowercased');
             assert.strictEqual(await detectAutomatedRequest('192.0.2.12'), false);
             assert.strictEqual(await detectAutomatedRequest('192.0.2.13'), false, 'suffix match only');
             assert.strictEqual(await detectAutomatedRequest('192.0.2.14'), false, 'no PTR record');
+            assert.strictEqual(await detectAutomatedRequest('192.0.2.15'), true, 'a scanner name behind another PTR record still counts');
+            assert.strictEqual(await detectAutomatedRequest('192.0.2.16'), false, 'several records, none of them a scanner');
+
+            // A repeated check gives the same answer: a shared /g/ regex would advance lastIndex and
+            // miss every other match
+            assert.strictEqual(await detectAutomatedRequest('192.0.2.10'), true);
+            assert.strictEqual(await detectAutomatedRequest('192.0.2.11'), true);
         } finally {
             fakeNet.reverse.clear();
         }
