@@ -111,6 +111,33 @@ test('isTransientCredentialError', async t => {
         assert.equal(isTransientCredentialError(new Error('Failed to renew token')), false);
         assert.equal(isTransientCredentialError(null), false);
     });
+
+    await t.test('a transport failure a caller wrapped in its own error is still transient', () => {
+        // The Workload Identity Federation signer wraps each of its three requests in an error with a
+        // code of its own (ESTSExchange, ESubjectTokenRead, ESignJwt), which pushes undici's cause one
+        // level deeper. Looking only at err.cause classified an unreachable Google STS endpoint as a
+        // refused credential, which parks the account - the one outcome this check exists to prevent.
+        const undiciFailure = Object.assign(new TypeError('fetch failed'), { cause: { code: 'ECONNREFUSED' } });
+        const wrapped = Object.assign(new Error('STS token exchange request failed: fetch failed'), { code: 'ESTSExchange', cause: undiciFailure });
+
+        assert.equal(isTransientCredentialError(wrapped), true);
+        // and one more level, in case a caller wraps the wrapper
+        assert.equal(isTransientCredentialError(Object.assign(new Error('signJwt failed'), { code: 'ESignJwt', cause: wrapped })), true);
+    });
+
+    await t.test('a cause chain that cites itself is walked, not followed forever', () => {
+        const looping = Object.assign(new Error('wrapped'), { code: 'ESTSExchange' });
+        looping.cause = looping;
+
+        assert.equal(isTransientCredentialError(looping), false, 'no transient code anywhere in it');
+    });
+
+    await t.test('a wrapper over a refused credential stays an authentication failure', () => {
+        // The walk must not turn every wrapped error transient: a 400 invalid_grant underneath is
+        // still the credential being rejected
+        const refused = Object.assign(new Error('invalid_grant'), { statusCode: 400 });
+        assert.equal(isTransientCredentialError(Object.assign(new Error('STS exchange failed'), { code: 'ESTSExchange', cause: refused })), false);
+    });
 });
 
 test('BaseClient.setErrorState records which event wrote the error state', async t => {

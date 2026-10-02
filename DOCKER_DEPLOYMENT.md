@@ -159,6 +159,8 @@ server {
     # No extra location is needed for the live updates. EmailEngine streams account state changes as
     # Server-Sent Events over the ordinary path (/v1/changes and the admin UI's own stream) and sends
     # `X-Accel-Buffering: no` with them, which nginx honours, so the events are not held in a buffer.
+    # The read timeout above does apply to them: an idle feed is cut after 600s. A browser EventSource
+    # reconnects on its own; a /v1/changes consumer written by hand has to do the same.
 }
 
 server {
