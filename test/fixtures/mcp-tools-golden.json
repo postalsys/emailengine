@@ -2803,7 +2803,7 @@
     {
         "name": "list_tokens",
         "title": "List access tokens",
-        "description": "List the access tokens on this instance, paged: description, scopes, restrictions, the account each is bound to and when it was last used. Token values are never shown. Filter with query, or with account for the tokens bound to one account.",
+        "description": "List the access tokens on this instance, paged: description, scopes, restrictions, the account each is bound to and when it was last used. Token values are never shown. Filter with query, or with account for the tokens bound to one account. A credential that is itself bound to an account sees only that account's tokens, not the instance.",
         "inputSchema": {
             "type": "object",
             "properties": {

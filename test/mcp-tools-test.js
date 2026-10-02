@@ -329,12 +329,34 @@ test('MCP tool registry', async t => {
         }
     });
 
+    await t.test('a tool whose account argument is not a binding is not advertised as account-scoped', () => {
+        // toolVisibleTo() reads "takes an account argument" as "is about one account", which is what
+        // the binding is checked and filled in from. verify_oauth2_app's account is a mailbox address
+        // for the delegation check, so the tool was offered to an account-bound credential and every
+        // call died on the inner request's bare "Unauthorized account" - the route has no {account}
+        // path parameter for the binding to match.
+        const verify = byName.get('verify_oauth2_app');
+        assert.ok(verify.sources.has('account'), 'the tool still offers the mailbox argument');
+        assert.equal(verify.accountScoped, false);
+        assert.equal(toolVisibleTo(verify, { tokenData: mcpGrantsFor({ manage: 'administer' }), boundAccount: 'acct-1' }), false);
+
+        // and an unbound management credential still gets it
+        assert.equal(toolVisibleTo(verify, { tokenData: mcpGrantsFor({ manage: 'administer' }), boundAccount: null }), true);
+
+        // The one declaration in the tree. Everything else with an account argument is about that
+        // account, so a second one has to be a deliberate edit rather than a copied line.
+        assert.deepEqual(
+            tools.filter(tool => byName.get(tool.name).sources.has('account') && !byName.get(tool.name).accountScoped).map(tool => tool.name),
+            ['verify_oauth2_app']
+        );
+    });
+
     await t.test('a bound credential is offered tools that take no account argument', () => {
         // The endpoint already knows which account the credential reaches. Asking the model for it
         // anyway asks for a value it cannot look up - the same credential is refused list_accounts.
         for (const tool of tools) {
             const entry = byName.get(tool.name);
-            if (!entry.sources.has('account')) {
+            if (!entry.accountScoped) {
                 continue;
             }
 
