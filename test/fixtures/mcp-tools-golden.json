@@ -1075,17 +1075,19 @@
     {
         "name": "create_gateway",
         "title": "Create SMTP gateway",
-        "description": "Register an SMTP gateway, a relay server messages can be sent through. Needs an id, a name, the host and the port; a password can be written but never read back.",
+        "description": "Register an SMTP gateway, a relay server messages can be sent through. Needs an id (or null to have one generated), a name, the host and the port; a password can be written but never read back.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "gateway": {
-                    "type": "string",
-                    "description": "Gateway ID",
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Gateway ID. If set to `null`, a unique ID will be generated automatically",
                     "examples": [
                         "sendgun"
                     ],
-                    "default": null,
                     "maxLength": 256
                 },
                 "name": {

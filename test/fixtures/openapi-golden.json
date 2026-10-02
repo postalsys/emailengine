@@ -7263,9 +7263,9 @@
         "properties": {
           "gateway": {
             "type": "string",
-            "description": "Gateway ID",
+            "description": "Gateway ID. If set to `null`, a unique ID will be generated automatically",
             "example": "sendgun",
-            "default": null,
+            "nullable": true,
             "maxLength": 256,
             "x-convert": {
               "trim": true

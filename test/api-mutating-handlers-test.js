@@ -75,6 +75,34 @@ test('PUT /v1/gateway/edit/{gateway}', async t => {
     });
 });
 
+test('POST /v1/gateway', async t => {
+    const find = await capture(gatewayRoutes);
+    const route = find('POST', '/v1/gateway');
+
+    // Gateway.create() generates an id for a null gateway, the same way POST /v1/account does for
+    // a null account. The schema used to declare the field as required without allowing null, so
+    // the generation branch was unreachable over the API.
+    await t.test('a null gateway id is generated and returned', async () => {
+        const payload = validated(route, 'payload', { gateway: null, name: 'Generated', host: 'smtp.example.com', port: '465' });
+        assert.equal(payload.gateway, null);
+
+        const result = await route.handler({ payload, logger });
+        t.after(() => new Gateway({ redis, gateway: result.gateway }).delete().catch(() => {}));
+
+        assert.equal(result.state, 'new');
+        assert.ok(result.gateway, 'the response carries the generated id');
+
+        const stored = await new Gateway({ redis, gateway: result.gateway, secret: await getSecret() }).loadGatewayData();
+        assert.equal(stored.gateway, result.gateway);
+        assert.equal(stored.name, 'Generated');
+    });
+
+    await t.test('an omitted gateway id is still a validation error', () => {
+        const { error } = route.options.validate.payload.validate({ name: 'Generated', host: 'smtp.example.com', port: 465 }, route.options.validate.options);
+        assert.ok(error, 'the field has to be sent, as null if no id is chosen');
+    });
+});
+
 test('PUT /v1/settings/queue/{queue}', async t => {
     const find = await capture(settingsRoutes);
     const route = find('PUT', '/v1/settings/queue/{queue}');
