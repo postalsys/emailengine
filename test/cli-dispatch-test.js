@@ -42,3 +42,62 @@ test('a tokens import that cannot be decoded exits with an error', () => {
     assert.equal(result.status, 1);
     assert.match(result.stderr, /Unable to decode token data/);
 });
+
+// `tokens issue` used to accept only `mcp` of the two MCP scopes, and minted it with no permissions
+// record - the "full = no record" level the admin form and the consent prompt both dropped, because a
+// consent given for today's tools must not grow to include a tool shipped next release.
+test('tokens issue mints an MCP scope with the explicit grants the UI mints', async t => {
+    const { mcpGrantsFor } = require('../lib/token-permission-view');
+    const msgpack = require('../lib/msgpack');
+
+    const issue = args => {
+        const result = runCli(['tokens', 'issue', '--description', 'cli-scope-test', ...args]);
+        assert.equal(result.status, 0, result.stderr);
+        return result.stdout.trim();
+    };
+
+    const stored = token => {
+        const result = runCli(['tokens', 'export', '--token', token]);
+        assert.equal(result.status, 0, result.stderr);
+        return msgpack.decode(Buffer.from(result.stdout.trim(), 'base64url'));
+    };
+
+    await t.test('mcp-manage is accepted and defaults to the widest level', () => {
+        const tokenData = stored(issue(['--scope', 'mcp-manage']));
+        assert.deepEqual(tokenData.scopes, ['mcp-manage']);
+        assert.deepEqual(tokenData.permissions, mcpGrantsFor({ manage: 'administer' }).permissions);
+    });
+
+    await t.test('a level after a colon mints that level, management first', () => {
+        const tokenData = stored(issue(['--scope', 'mcp:read', '--scope', 'mcp-manage:observe']));
+        assert.deepEqual(tokenData.scopes, ['mcp-manage', 'mcp']);
+        assert.deepEqual(tokenData.permissions, mcpGrantsFor({ manage: 'observe', mail: 'read' }).permissions);
+    });
+
+    await t.test('an unknown level is refused by name', () => {
+        const result = runCli(['tokens', 'issue', '--scope', 'mcp-manage:root']);
+        assert.equal(result.status, 1);
+        assert.match(result.stderr, /Unknown mcp-manage access level: root/);
+        assert.match(result.stderr, /observe/);
+    });
+
+    await t.test('a level on a scope that has none is refused', () => {
+        const result = runCli(['tokens', 'issue', '--scope', 'api:read']);
+        assert.equal(result.status, 1);
+        assert.match(result.stderr, /does not take an access level/);
+    });
+
+    await t.test('an MCP scope cannot ride along with a REST scope', () => {
+        // One permissions record covers the whole token, so a level's pair list would narrow the
+        // REST API too. The admin form hides the level editor for the same reason.
+        const result = runCli(['tokens', 'issue', '--scope', 'api', '--scope', 'mcp']);
+        assert.equal(result.status, 1);
+        assert.match(result.stderr, /cannot be combined/);
+    });
+
+    await t.test('a non-MCP scope is unchanged and carries no permissions record', () => {
+        const tokenData = stored(issue(['--scope', 'api']));
+        assert.deepEqual(tokenData.scopes, ['api']);
+        assert.equal(tokenData.permissions, undefined);
+    });
+});

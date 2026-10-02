@@ -63,7 +63,13 @@ const COMMANDS = {
                 description: 'Create a new access token',
                 options: [
                     { name: '--description, -d', description: 'Token description', type: 'string' },
-                    { name: '--scope, -s', description: 'Access scope', type: 'string', default: '*' },
+                    {
+                        name: '--scope, -s',
+                        description:
+                            'Access scope, repeatable: "*", "api", "metrics", "smtp", "imap-proxy", "mcp-manage" or "mcp". An MCP scope takes an access level after a colon ("mcp-manage:observe", levels observe/operate/administer; "mcp:read", levels read/mail/full) and defaults to the widest one. MCP scopes cannot be combined with the others',
+                        type: 'string',
+                        default: '*'
+                    },
                     { name: '--account, -a', description: 'Limit token to specific account', type: 'string' }
                 ]
             },
@@ -513,22 +519,76 @@ function run() {
                 switch (tokensCmd) {
                     case 'issue':
                         {
-                            let allowedScopes = ['*', 'api', 'metrics', 'smtp', 'imap-proxy', 'mcp'];
-                            let scopes = []
+                            const { MCP_SECTIONS, mcpGrantsFor } = require('../lib/token-permission-view');
+
+                            // The two MCP scopes, by the name typed on the command line. A token
+                            // holding one of them always carries the pair list of a named access
+                            // level, exactly as the admin form and the consent prompt mint it: a
+                            // credential issued for the tools of today must not grow to include a
+                            // tool shipped next release. The level is appended to the scope with a
+                            // colon (`--scope mcp-manage:observe`); without one the widest level is
+                            // used, since there is no prompt here to narrow it and every other
+                            // scope this command issues is unnarrowed too.
+                            const mcpScopes = new Map(Object.entries(MCP_SECTIONS).map(([key, section]) => [section.scope, { key, section }]));
+
+                            let allowedScopes = ['*', 'api', 'metrics', 'smtp', 'imap-proxy'].concat([...mcpScopes.keys()]);
+                            let requestedScopes = []
                                 .concat(argv.scope || [])
                                 .concat(argv.s || [])
                                 .map(entry => (entry || '').toString().toLowerCase());
 
-                            if (!scopes.length) {
-                                scopes = ['*'];
+                            if (!requestedScopes.length) {
+                                requestedScopes = ['*'];
                             }
 
-                            for (let scope of scopes) {
+                            let scopes = [];
+                            let mcpChoice = {};
+
+                            for (let entry of requestedScopes) {
+                                let separator = entry.indexOf(':');
+                                let scope = separator < 0 ? entry : entry.slice(0, separator);
+                                let level = separator < 0 ? null : entry.slice(separator + 1);
+
                                 if (!allowedScopes.includes(scope)) {
                                     console.error(`Unknown scope: ${scope}`);
                                     console.error(`Allowed scopes: "${allowedScopes.join('", "')}"`);
                                     process.exit(1);
                                 }
+
+                                if (!mcpScopes.has(scope)) {
+                                    if (level !== null) {
+                                        console.error(`Scope "${scope}" does not take an access level`);
+                                        process.exit(1);
+                                    }
+                                    scopes.push(scope);
+                                    continue;
+                                }
+
+                                const { key, section } = mcpScopes.get(scope);
+                                const levelNames = section.levels.map(sectionLevel => sectionLevel.value);
+                                // Declining a scope that was asked for by name is a contradiction, so
+                                // `none` is not offered here even though the form posts it
+                                if (level !== null && !levelNames.includes(level)) {
+                                    console.error(`Unknown ${scope} access level: ${level}`);
+                                    console.error(`Allowed levels: "${levelNames.join('", "')}"`);
+                                    process.exit(1);
+                                }
+                                mcpChoice[key] = level || levelNames[levelNames.length - 1];
+                            }
+
+                            let permissions;
+                            if (Object.keys(mcpChoice).length) {
+                                // The admin form hides the level editor as soon as a non-MCP scope is
+                                // ticked, because one permissions record covers the whole token and a
+                                // level's pair list would narrow the REST API too. There is no way to
+                                // type a custom record here, so the combination is refused rather
+                                // than silently resolved one way or the other.
+                                if (scopes.length) {
+                                    console.error(`An MCP scope cannot be combined with "${scopes.join('", "')}" on the command line`);
+                                    console.error('Issue separate tokens, or use POST /v1/tokens to set an explicit permissions record');
+                                    process.exit(1);
+                                }
+                                ({ scopes, permissions } = mcpGrantsFor(mcpChoice));
                             }
 
                             let description = (argv.description || argv.d || '').toString();
@@ -541,6 +601,7 @@ function run() {
                                     account,
                                     description,
                                     scopes,
+                                    permissions,
                                     nolog: true
                                 })
                                 .then(token => {
