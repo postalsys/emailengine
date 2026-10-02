@@ -81,6 +81,13 @@ test('nextAttemptOfStoredJob() reads a job as it is stored', async t => {
         assert.equal(nextAttemptOfStoredJob(job(0, { timestamp: 900000, delay: 60000 }), 960000), 960000);
     });
 
+    await t.test('a job the worker ended for good has no next attempt', () => {
+        // A permanent SMTP rejection ends the job with UnrecoverableError, which sets finishedOn while
+        // leaving attempts over. The outbox lists failed jobs, so it used to report a retry time for a
+        // delivery that will never be retried.
+        assert.equal(nextAttemptOfStoredJob(Object.assign(job(1), { finishedOn: 1000001 }), 900000), false);
+    });
+
     await t.test('a job that has used up every attempt has no next one', () => {
         assert.equal(nextAttemptOfStoredJob(job(3, { attempts: 3 }), 900000), false);
         assert.equal(nextAttemptOfStoredJob(job(4, { attempts: 3 }), 900000), false);

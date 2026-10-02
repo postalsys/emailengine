@@ -66,7 +66,7 @@ const COMMANDS = {
                     {
                         name: '--scope, -s',
                         description:
-                            'Access scope, repeatable: "*", "api", "metrics", "smtp", "imap-proxy", "mcp-manage" or "mcp". An MCP scope takes an access level after a colon ("mcp-manage:observe", levels observe/operate/administer; "mcp:read", levels read/mail/full) and defaults to the widest one. MCP scopes cannot be combined with the others',
+                            'Access scope, repeatable: "*", "api", "metrics", "smtp", "imap-proxy", "mcp-manage" or "mcp". An MCP scope requires an access level after a colon ("mcp-manage:observe", levels observe/operate/administer; "mcp:read", levels read/mail/full), and cannot be combined with the others',
                         type: 'string',
                         default: '*'
                     },
@@ -519,16 +519,16 @@ function run() {
                 switch (tokensCmd) {
                     case 'issue':
                         {
-                            const { MCP_SECTIONS, mcpGrantsFor } = require('../lib/token-permission-view');
+                            const { MCP_SECTIONS, mcpGrantsFor, mcpLevel } = require('../lib/token-permission-view');
 
                             // The two MCP scopes, by the name typed on the command line. A token
                             // holding one of them always carries the pair list of a named access
                             // level, exactly as the admin form and the consent prompt mint it: a
                             // credential issued for the tools of today must not grow to include a
                             // tool shipped next release. The level is appended to the scope with a
-                            // colon (`--scope mcp-manage:observe`); without one the widest level is
-                            // used, since there is no prompt here to narrow it and every other
-                            // scope this command issues is unnarrowed too.
+                            // colon (`--scope mcp-manage:observe`) and is REQUIRED: there is no
+                            // consent prompt here to show what a level allows, and the one thing an
+                            // implicit default must not do is pick the widest one.
                             const mcpScopes = new Map(Object.entries(MCP_SECTIONS).map(([key, section]) => [section.scope, { key, section }]));
 
                             let allowedScopes = ['*', 'api', 'metrics', 'smtp', 'imap-proxy'].concat([...mcpScopes.keys()]);
@@ -565,15 +565,21 @@ function run() {
                                 }
 
                                 const { key, section } = mcpScopes.get(scope);
-                                const levelNames = section.levels.map(sectionLevel => sectionLevel.value);
-                                // Declining a scope that was asked for by name is a contradiction, so
-                                // `none` is not offered here even though the form posts it
-                                if (level !== null && !levelNames.includes(level)) {
-                                    console.error(`Unknown ${scope} access level: ${level}`);
-                                    console.error(`Allowed levels: "${levelNames.join('", "')}"`);
+                                // mcpLevel() is the shared vocabulary, and it answers null both for a
+                                // name the section does not have and for `none` - which is what makes
+                                // `--scope mcp:none`, asking for a scope and declining it in the same
+                                // breath, an error here rather than a token that grants nothing
+                                if (!mcpLevel(section, level)) {
+                                    const levelNames = section.levels.map(sectionLevel => sectionLevel.value).join('", "');
+                                    console.error(
+                                        level === null
+                                            ? `Scope "${scope}" needs an access level, as "${scope}:<level>"`
+                                            : `Unknown ${scope} access level: ${level}`
+                                    );
+                                    console.error(`Allowed levels: "${levelNames}"`);
                                     process.exit(1);
                                 }
-                                mcpChoice[key] = level || levelNames[levelNames.length - 1];
+                                mcpChoice[key] = level;
                             }
 
                             let permissions;

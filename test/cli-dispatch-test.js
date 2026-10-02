@@ -62,10 +62,26 @@ test('tokens issue mints an MCP scope with the explicit grants the UI mints', as
         return msgpack.decode(Buffer.from(result.stdout.trim(), 'base64url'));
     };
 
-    await t.test('mcp-manage is accepted and defaults to the widest level', () => {
-        const tokenData = stored(issue(['--scope', 'mcp-manage']));
+    await t.test('mcp-manage is accepted, with the grants of the level named', () => {
+        const tokenData = stored(issue(['--scope', 'mcp-manage:administer']));
         assert.deepEqual(tokenData.scopes, ['mcp-manage']);
         assert.deepEqual(tokenData.permissions, mcpGrantsFor({ manage: 'administer' }).permissions);
+    });
+
+    // There is no consent prompt here to show what a level allows, so the one thing an implicit
+    // default must not do is pick the widest one
+    await t.test('an MCP scope with no level is refused rather than defaulted', () => {
+        for (const scope of ['mcp-manage', 'mcp']) {
+            const result = runCli(['tokens', 'issue', '--scope', scope]);
+            assert.equal(result.status, 1, scope);
+            assert.match(result.stderr, new RegExp(`Scope "${scope}" needs an access level`), scope);
+        }
+    });
+
+    await t.test('asking for a scope and declining it in the same breath is refused', () => {
+        const result = runCli(['tokens', 'issue', '--scope', 'mcp:none']);
+        assert.equal(result.status, 1);
+        assert.match(result.stderr, /Unknown mcp access level: none/);
     });
 
     await t.test('a level after a colon mints that level, management first', () => {
@@ -90,7 +106,7 @@ test('tokens issue mints an MCP scope with the explicit grants the UI mints', as
     await t.test('an MCP scope cannot ride along with a REST scope', () => {
         // One permissions record covers the whole token, so a level's pair list would narrow the
         // REST API too. The admin form hides the level editor for the same reason.
-        const result = runCli(['tokens', 'issue', '--scope', 'api', '--scope', 'mcp']);
+        const result = runCli(['tokens', 'issue', '--scope', 'api', '--scope', 'mcp:read']);
         assert.equal(result.status, 1);
         assert.match(result.stderr, /cannot be combined/);
     });

@@ -9,6 +9,7 @@ const Path = require('path');
 const Gettext = require('@postalsys/gettext');
 const { loadTranslations, gt, joiLocales, locales } = require('../lib/translations');
 const { accountStateLabel, formatServerState, identityErrorView, isClientError } = require('../lib/ui-routes/route-helpers');
+const { boundRouteBinding } = require('../lib/api-routes/account-binding');
 const util = require('util');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const { lists } = require('../lib/lists');
@@ -1007,25 +1008,23 @@ const init = async () => {
 
                 let accountIdSource;
 
-                // allow specific routes that have an account component but not in the URL params section
-                switch (request.route.path) {
-                    // The two listings that take the account as a query argument. `/v1/tokens` is
-                    // here because it replaced GET /v1/tokens/account/{account}, which carried the
-                    // account in the path and so reached a bound token's own tokens through the
-                    // default branch below - as its deprecated alias registration still does.
-                    // Both stay under the same rule as everything else: the argument has to name the
-                    // token's own account, and omitting it still refuses, because a bound credential
-                    // must not enumerate the instance.
-                    case '/v1/templates':
-                    case '/v1/tokens':
-                        switch (request.method) {
-                            case 'get':
-                                accountIdSource = queryAccount;
-                                break;
-                        }
+                // Routes that carry an account component somewhere other than their URL params, named
+                // by lib/api-routes/account-binding.js. The table is shared with the MCP tool registry,
+                // which has to advertise exactly the tools a bound credential can actually call; the
+                // resolution of each kind stays here, where the request is.
+                switch (boundRouteBinding(request.method, request.route.path)) {
+                    case 'query':
+                        // `/v1/tokens` is in the table because it replaced
+                        // GET /v1/tokens/account/{account}, which carried the account in the path and so
+                        // reached a bound token's own tokens through the default branch below - as its
+                        // deprecated alias registration still does. Both stay under the same rule as
+                        // everything else: the argument has to name the token's own account, and
+                        // omitting it still refuses, because a bound credential must not enumerate the
+                        // instance.
+                        accountIdSource = queryAccount;
                         break;
 
-                    case '/v1/templates/template/{template}': {
+                    case 'record': {
                         let isAccountTemplate =
                             request.params.template && (await redis.sismember(`${REDIS_PREFIX}tpl:${tokenData.account}:i`, request.params.template));
                         if (isAccountTemplate) {
@@ -1034,15 +1033,10 @@ const init = async () => {
                         break;
                     }
 
-                    case '/v1/templates/template': {
-                        switch (request.method) {
-                            case 'post':
-                                request.app.enforceAccount = tokenData.account;
-                                accountIdSource = tokenData.account;
-                                break;
-                        }
+                    case 'token':
+                        request.app.enforceAccount = tokenData.account;
+                        accountIdSource = tokenData.account;
                         break;
-                    }
 
                     default:
                         accountIdSource = request.params && request.params.account;

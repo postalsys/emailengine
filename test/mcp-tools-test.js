@@ -27,6 +27,7 @@ const { buildToolRegistry, callTool, toolVisibleTo, toolDefinitionFor, toolGrant
 const { surfaceAdmits, perRequestSurfaceAdmits, PER_REQUEST_SURFACES, routeGrant, ACTION, GROUP } = require('../lib/api-routes/permission-map');
 const { MCP_MAX_PAGE_SIZE } = require('../lib/consts');
 const { MCP_SECTIONS, mcpGrantsFor, mcpLevelNames } = require('../lib/token-permission-view');
+const { routeAdmitsBoundToken } = require('../lib/api-routes/account-binding');
 const { walkJson: walk } = require('./helpers/walk-json');
 
 const GOLDEN_PATH = path.join(__dirname, 'fixtures', 'mcp-tools-golden.json');
@@ -329,36 +330,50 @@ test('MCP tool registry', async t => {
         }
     });
 
-    await t.test('a tool whose account argument is not a binding is not advertised as account-scoped', () => {
-        // toolVisibleTo() reads "takes an account argument" as "is about one account", which is what
-        // the binding is checked and filled in from. verify_oauth2_app's account is a mailbox address
-        // for the delegation check, so the tool was offered to an account-bound credential and every
-        // call died on the inner request's bare "Unauthorized account" - the route has no {account}
-        // path parameter for the binding to match.
-        const verify = byName.get('verify_oauth2_app');
-        assert.ok(verify.sources.has('account'), 'the tool still offers the mailbox argument');
-        assert.equal(verify.accountScoped, false);
-        assert.equal(toolVisibleTo(verify, { tokenData: mcpGrantsFor({ manage: 'administer' }), boundAccount: 'acct-1' }), false);
+    await t.test('a bound credential is offered exactly the tools its binding can reach', () => {
+        // This used to be answered from "the route takes an `account` argument", which is a different
+        // question from the one the api-token strategy asks when it checks the binding. Four tools take
+        // one in the payload or the query and are still refused - verify_oauth2_app's is a mailbox
+        // address for a delegation check - so they were advertised to a credential whose every call
+        // died on a bare "Unauthorized account", while the template routes a bound token really can
+        // reach were hidden because they name no account at all.
+        const boundVisible = tools
+            .filter(tool => toolVisibleTo(byName.get(tool.name), { tokenData: mcpGrantsFor({ manage: 'administer', mail: 'full' }), boundAccount: 'acct-1' }))
+            .map(tool => tool.name);
 
-        // and an unbound management credential still gets it
-        assert.equal(toolVisibleTo(verify, { tokenData: mcpGrantsFor({ manage: 'administer' }), boundAccount: null }), true);
+        for (const name of ['verify_oauth2_app', 'create_account', 'create_account_setup_link', 'add_to_blocklist']) {
+            const entry = byName.get(name);
+            assert.ok(entry.sources.has('account'), `${name} still offers its account argument`);
+            assert.equal(entry.accountScoped, false, name);
+            assert.ok(!boundVisible.includes(name), `${name} must not be offered to a bound credential`);
+            // and an unbound management credential still gets it
+            assert.equal(toolVisibleTo(entry, { tokenData: mcpGrantsFor({ manage: 'administer' }), boundAccount: null }), true, name);
+        }
 
-        // The one declaration in the tree. Everything else with an account argument is about that
-        // account, so a second one has to be a deliberate edit rather than a copied line.
-        assert.deepEqual(
-            tools.filter(tool => byName.get(tool.name).sources.has('account') && !byName.get(tool.name).accountScoped).map(tool => tool.name),
-            ['verify_oauth2_app']
-        );
+        // The exceptions the strategy admits without an {account} path parameter, from the shared table
+        for (const name of ['list_templates', 'list_tokens', 'create_template', 'update_template', 'delete_template']) {
+            assert.ok(boundVisible.includes(name), `${name} is reachable by a bound token and has to be offered`);
+        }
+
+        // Every tool a bound credential is offered is one the strategy would admit
+        for (const name of boundVisible) {
+            const entry = byName.get(name);
+            assert.ok(routeAdmitsBoundToken(entry.method, entry.path), `${name} ${entry.method} ${entry.path}`);
+        }
     });
 
-    await t.test('a bound credential is offered tools that take no account argument', () => {
+    await t.test('a bound credential does not have to send the account its tools take', () => {
         // The endpoint already knows which account the credential reaches. Asking the model for it
         // anyway asks for a value it cannot look up - the same credential is refused list_accounts.
+        let stripped = 0;
         for (const tool of tools) {
             const entry = byName.get(tool.name);
-            if (!entry.accountScoped) {
+            // A tool a bound credential can reach does not have to NAME the account: the template
+            // routes carry the binding in the template id, which the strategy checks for membership
+            if (!entry.accountScoped || !entry.sources.has('account')) {
                 continue;
             }
+            stripped++;
 
             const bound = toolDefinitionFor(entry, { boundAccount: 'acct-1' });
 
@@ -374,6 +389,7 @@ test('MCP tool registry', async t => {
             );
             assert.ok('account' in toolDefinitionFor(entry, {}).inputSchema.properties, `${tool.name}: the unbound definition was mutated`);
         }
+        assert.ok(stripped > 10, `expected most tools to be account-scoped, only ${stripped} had their account stripped`);
     });
 
     await t.test('destructive and sending tools carry honest annotations', () => {

@@ -216,8 +216,6 @@ const submitWorker = new Worker(
                 // ignore
             }
 
-            // The ongoing attempt is not yet counted in job.attemptsMade, which is why this is not the
-            // exponent the outbox listing uses for a stored job (lib/delivery-error.js owns both)
             let nextAttempt = nextAttemptWhileProcessing(job);
 
             queueEntry.job = {
