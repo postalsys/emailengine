@@ -9241,7 +9241,7 @@
           },
           "useStructuredFormat": {
             "type": "boolean",
-            "description": "Whether delivery errors for this message are reported in a structured format"
+            "description": "Whether this message is sent to MS Graph as structured JSON instead of raw MIME"
           },
           "created": {
             "type": "string",
@@ -9959,7 +9959,7 @@
           },
           "smtpServerTLSEnabled": {
             "type": "boolean",
-            "description": "Enable TLS/STARTTLS support for the SMTP server",
+            "description": "Serve the SMTP submission server over implicit TLS. STARTTLS is never offered",
             "nullable": true
           },
           "tlsProvisioning": {
@@ -10725,7 +10725,7 @@
           },
           "smtpServerTLSEnabled": {
             "type": "boolean",
-            "description": "Enable TLS/STARTTLS support for the SMTP server"
+            "description": "Serve the SMTP submission server over implicit TLS. STARTTLS is never offered"
           },
           "tlsProvisioning": {
             "$ref": "#/components/schemas/TlsProvisioning"
@@ -14824,7 +14824,7 @@
       "post": {
         "summary": "Upload message",
         "operationId": "postV1AccountAccountMessage",
-        "description": "Upload a message structure, compile it into an EML file and store it into selected mailbox.<br/><br/>For MS Graph accounts only drafts can be uploaded, and the draft flag cannot be changed afterwards.",
+        "description": "Upload a message structure, compile it into an EML file and store it into selected mailbox.<br/><br/>For MS Graph accounts only drafts can be uploaded, and the draft flag cannot be changed afterwards.<br/><br/>For Gmail API accounts the flags and internalDate fields are ignored. The message is inserted with the target label only, and its internal date is taken from the Date header of the message itself.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -14949,7 +14949,8 @@
           }
         },
         "x-ee-behavior": [
-          "For MS Graph accounts only drafts can be uploaded, and the draft flag cannot be changed afterwards."
+          "For MS Graph accounts only drafts can be uploaded, and the draft flag cannot be changed afterwards.",
+          "For Gmail API accounts the flags and internalDate fields are ignored. The message is inserted with the target label only, and its internal date is taken from the Date header of the message itself."
         ],
         "x-ee-action": "write",
         "x-ee-group": "message"
@@ -20940,14 +20941,6 @@
             }
           },
           {
-            "name": "trackSentMessages",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
             "name": "trackClicks",
             "in": "query",
             "schema": {
@@ -20989,14 +20982,6 @@
           },
           {
             "name": "generateEmailSummary",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "generateRiskAssessment",
             "in": "query",
             "schema": {
               "type": "boolean",
@@ -21061,14 +21046,6 @@
           },
           {
             "name": "openAiPrompt",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "openAiGenerateEmbeddings",
             "in": "query",
             "schema": {
               "type": "boolean",
@@ -21205,14 +21182,6 @@
           },
           {
             "name": "mcpOAuthEnabled",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "documentStoreEnabled",
             "in": "query",
             "schema": {
               "type": "boolean",

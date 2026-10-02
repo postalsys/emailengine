@@ -10,6 +10,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const {
+    applyTemplate,
     NetworkRoutingBuilder,
     NotificationBuilder,
     ProviderMessageIdHandler,
@@ -225,5 +226,37 @@ test('SmtpConfigBuilder.loadGateway', async t => {
         const brokenRedis = { hgetallBuffer: async () => Promise.reject(failing) };
         const builder = new SmtpConfigBuilder({ redis: brokenRedis, logger: silentLogger, account: 'a' });
         await assert.rejects(builder.loadGateway('gw1', '<m@x>'), err => err === failing);
+    });
+});
+
+test('applyTemplate()', async t => {
+    const template = { format: 'markdown', content: { subject: 'Hi {{name}}', html: '# {{name}}', text: 'plain' } };
+
+    await t.test('merges the template content and applies its format', () => {
+        const data = applyTemplate({ template: 'tpl-1', render: { params: { name: 'Nyan' } } }, template);
+
+        assert.deepEqual(data.render, { params: { name: 'Nyan' }, format: 'markdown' });
+        assert.equal(data.subject, 'Hi {{name}}');
+        assert.equal(data.html, '# {{name}}');
+        assert.ok(!('template' in data), 'the template id is consumed');
+    });
+
+    await t.test('a template with no render options still gets its format', () => {
+        assert.deepEqual(applyTemplate({ template: 'tpl-1' }, template).render, { format: 'markdown' });
+    });
+
+    // The documented way to send a stored template as-is. `data.render = data.render || {}` turned the
+    // explicit false into an empty options object, and an options object renders - so the one value
+    // that asked for no rendering was the one value that could not be expressed.
+    await t.test('render false survives, so the template is sent as-is', () => {
+        const data = applyTemplate({ template: 'tpl-1', render: false }, template);
+
+        assert.equal(data.render, false);
+        assert.equal(data.html, '# {{name}}', 'the content is still merged');
+    });
+
+    await t.test('a template with no html or no format is merged without render options', () => {
+        assert.equal(applyTemplate({ template: 'tpl-1' }, { format: 'markdown', content: { text: 'plain' } }).render, undefined);
+        assert.equal(applyTemplate({ template: 'tpl-1' }, { content: { html: '<p>x</p>' } }).render, undefined);
     });
 });
