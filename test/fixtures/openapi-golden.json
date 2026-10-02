@@ -6423,7 +6423,7 @@
           },
           "hasMore": {
             "type": "boolean",
-            "description": "Is the current text output capped or not. Always false for Gmail API and MS Graph API accounts",
+            "description": "Whether the returned text was capped by maxBytes. On an IMAP account the cap also decides how much is downloaded; on a Gmail API or MS Graph account the provider returns the whole text in one response and the cap decides how much of it is passed on",
             "example": false
           }
         }
