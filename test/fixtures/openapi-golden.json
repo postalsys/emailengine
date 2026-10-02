@@ -10201,6 +10201,20 @@
             "nullable": true,
             "minimum": 1
           },
+          "exportMaxMessageSize": {
+            "type": "integer",
+            "description": "Maximum size of a single message included in an export, in bytes. Larger messages are skipped (default: 50MB)",
+            "example": 52428800,
+            "nullable": true,
+            "minimum": 1
+          },
+          "exportMaxAge": {
+            "type": "integer",
+            "description": "How long a finished export is kept before it is deleted, in milliseconds (default: 24 hours)",
+            "example": 86400000,
+            "nullable": true,
+            "minimum": 60000
+          },
           "eventTypes": {
             "$ref": "#/components/schemas/EventTypesList"
           }
@@ -10928,6 +10942,18 @@
             "description": "Maximum export file size in bytes (default: 10GB)",
             "example": 10737418240,
             "minimum": 1
+          },
+          "exportMaxMessageSize": {
+            "type": "integer",
+            "description": "Maximum size of a single message included in an export, in bytes. Larger messages are skipped (default: 50MB)",
+            "example": 52428800,
+            "minimum": 1
+          },
+          "exportMaxAge": {
+            "type": "integer",
+            "description": "How long a finished export is kept before it is deleted, in milliseconds (default: 24 hours)",
+            "example": 86400000,
+            "minimum": 60000
           }
         }
       },
@@ -21547,6 +21573,22 @@
           },
           {
             "name": "exportMaxSize",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "exportMaxMessageSize",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "exportMaxAge",
             "in": "query",
             "schema": {
               "type": "boolean",

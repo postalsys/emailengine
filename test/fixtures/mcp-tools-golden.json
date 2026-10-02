@@ -2372,6 +2372,14 @@
                 "exportMaxSize": {
                     "type": "boolean",
                     "default": false
+                },
+                "exportMaxMessageSize": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "exportMaxAge": {
+                    "type": "boolean",
+                    "default": false
                 }
             },
             "additionalProperties": false
@@ -5164,6 +5172,22 @@
                         10737418240
                     ],
                     "minimum": 1
+                },
+                "exportMaxMessageSize": {
+                    "type": "integer",
+                    "description": "Maximum size of a single message included in an export, in bytes. Larger messages are skipped (default: 50MB)",
+                    "examples": [
+                        52428800
+                    ],
+                    "minimum": 1
+                },
+                "exportMaxAge": {
+                    "type": "integer",
+                    "description": "How long a finished export is kept before it is deleted, in milliseconds (default: 24 hours)",
+                    "examples": [
+                        86400000
+                    ],
+                    "minimum": 60000
                 }
             },
             "additionalProperties": false

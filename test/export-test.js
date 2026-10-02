@@ -1031,3 +1031,38 @@ test('Export truncation limits', async t => {
         assert.strictEqual(isExportLimitReached(maxExportSize, maxExportSize), true);
     });
 });
+
+// exportMaxAge and exportMaxMessageSize were read through settings.get() without being declared in
+// settingsSchema, so neither POST /v1/settings nor the admin UI could write them and both reads always
+// answered their default. test/settings-keys-guardrail-test.js now fails on a key in that state.
+test('Export retention is settable', async t => {
+    const settings = require('../lib/settings');
+    const { getExportMaxAge } = require('../lib/export');
+    const { DEFAULT_EXPORT_MAX_AGE } = require('../lib/consts');
+
+    t.afterEach(async () => {
+        await settings.set('exportMaxAge', null);
+        delete process.env.EENGINE_EXPORT_MAX_AGE;
+    });
+
+    await t.test('an unwritten setting falls back to the default', async () => {
+        assert.strictEqual(await getExportMaxAge(), DEFAULT_EXPORT_MAX_AGE);
+    });
+
+    await t.test('a stored value is used, and outranks the environment', async () => {
+        process.env.EENGINE_EXPORT_MAX_AGE = String(2 * 60 * 60 * 1000);
+        assert.strictEqual(await getExportMaxAge(), 2 * 60 * 60 * 1000, 'the environment applies while nothing is stored');
+
+        await settings.set('exportMaxAge', 3 * 60 * 60 * 1000);
+        assert.strictEqual(await getExportMaxAge(), 3 * 60 * 60 * 1000);
+    });
+
+    await t.test('the settings schema accepts both new keys', () => {
+        const { settingsSchema } = require('../lib/schemas');
+        const Joi = require('joi');
+        const { value, error } = Joi.object(settingsSchema).validate({ exportMaxAge: '86400000', exportMaxMessageSize: '52428800' }, { convert: true });
+        assert.ifError(error);
+        assert.strictEqual(value.exportMaxAge, 86400000);
+        assert.strictEqual(value.exportMaxMessageSize, 52428800);
+    });
+});
