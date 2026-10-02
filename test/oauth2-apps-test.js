@@ -95,6 +95,19 @@ test('formatExtraScopes', async t => {
         assert.deepStrictEqual(result, ['https://graph.microsoft.com/Mail.Send', 'https://graph.microsoft.com/User.Read']);
     });
 
+    // The scope presets on the OAuth2 app form write short names, while an application on GCC High,
+    // DoD or China requests its default scopes under that cloud's own Graph host. Matching only
+    // graph.microsoft.com left every default scope of such an application in place.
+    await t.test('should filter Graph scopes on every Microsoft cloud', async () => {
+        for (const host of ['graph.microsoft.com', 'graph.microsoft.us', 'dod-graph.microsoft.us', 'microsoftgraph.chinacloudapi.cn']) {
+            const defaultScopes = [`https://${host}/Mail.ReadWrite`, `https://${host}/Mail.Send`, `https://${host}/User.Read`];
+
+            const result = formatExtraScopes([], null, defaultScopes, ['Mail.ReadWrite'], null);
+
+            assert.deepStrictEqual(result, [`https://${host}/Mail.Send`, `https://${host}/User.Read`], host);
+        }
+    });
+
     await t.test('should filter out full URL Outlook scopes', async () => {
         const defaultScopes = ['https://outlook.office.com/IMAP.AccessAsUser.All', 'https://outlook.office.com/SMTP.Send'];
 
@@ -133,6 +146,22 @@ test('formatExtraScopes', async t => {
         const result = formatExtraScopes(['scope1', 'scope3'], null, defaultScopes, [], 'prefix');
 
         assert.deepStrictEqual(result, ['scope3', 'prefix/scope1', 'prefix/scope2']);
+    });
+
+    await t.test('should keep a scope whose short name only resembles the skipped one', async () => {
+        const defaultScopes = ['https://graph.microsoft.com/Mail.ReadWrite', 'https://graph.microsoft.com/Mail.ReadWrite.Shared'];
+
+        const result = formatExtraScopes([], null, defaultScopes, ['Mail.ReadWrite'], null);
+
+        assert.deepStrictEqual(result, ['https://graph.microsoft.com/Mail.ReadWrite.Shared']);
+    });
+
+    await t.test('should ignore an empty skip entry rather than drop a scope ending in a slash', async () => {
+        const defaultScopes = ['https://mail.google.com/', 'https://www.googleapis.com/auth/gmail.send'];
+
+        const result = formatExtraScopes([], null, defaultScopes, ['', null], null);
+
+        assert.deepStrictEqual(result, defaultScopes);
     });
 });
 
