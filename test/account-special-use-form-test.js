@@ -1,15 +1,15 @@
 'use strict';
 
-// The five special-use folder overrides of an IMAP account (sent, drafts, junk, trash, archive).
+// The special-use folder overrides of an IMAP account (sent, drafts, junk, trash, archive).
 //
-// The IMAP client reads them as one uniform set - a loop over the five names builds the
-// specialUseHints it passes to LIST - but the admin edit form offered only sentMailPath, so the other
-// four were settable over PUT /v1/account/{account} alone. Four places have to name the same five now:
-// the account schema, the form's own validation schema, the update loop that copies the submitted
-// values onto the account, and the form markup.
+// The IMAP client reads them as one uniform set - a loop over the types builds the specialUseHints it
+// passes to LIST - but the admin edit form offered only sentMailPath, so the other four were settable
+// over PUT /v1/account/{account} alone. Four places have to agree on the set now, and all four derive
+// it from SPECIAL_USE_PATH_TYPES in lib/consts.js rather than repeating it: the account schemas, the
+// edit form's own validation schema, the update loop, and the two templates.
 //
-// Pure filesystem read plus the schema modules - no Redis, no server. The route module is captured
-// rather than booted, the templates are read as text.
+// Pure filesystem read plus the schema modules - no Redis, no server. The write behavior is exercised
+// against the real handler in test/ui-routes-handlers-test.js.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -17,28 +17,24 @@ const fs = require('fs');
 const pathlib = require('path');
 
 const { imapSchema, imapUpdateSchema } = require('../lib/schemas');
+const { SPECIAL_USE_PATH_TYPES } = require('../lib/consts');
 
 const ROOT = pathlib.join(__dirname, '..');
 const read = (...parts) => fs.readFileSync(pathlib.join(ROOT, ...parts), 'utf-8');
 
-const ROUTES = read('lib', 'ui-routes', 'account-routes.js');
-const EDIT_FORM = read('views', 'accounts', 'edit.hbs');
-const ACCOUNT_PAGE = read('views', 'accounts', 'account.hbs');
-
-// The names as the client consumes them, derived from the loop that builds the hints rather than
-// listed again here: a sixth override added to the client has to reach the form too
-const CLIENT_TYPES = (() => {
-    const client = read('lib', 'email-client', 'imap-client.js');
-    const loop = client.match(/for \(let type of (\[[^\]]*\])\) \{\s*\n\s*if \(accountData\.imap && accountData\.imap\[`\$\{type\}MailPath`\]\)/);
-    assert.ok(loop, 'the specialUseHints loop was not found in imap-client.js');
-    return JSON.parse(loop[1].replace(/'/g, '"'));
-})();
-
-const EXPECTED = CLIENT_TYPES.map(type => `${type}MailPath`);
+const EXPECTED = SPECIAL_USE_PATH_TYPES.map(type => `${type}MailPath`);
 
 test('the special-use folder overrides are offered everywhere they apply', async t => {
-    await t.test('the client reads five of them', () => {
+    await t.test('the shared list is the five the account stores', () => {
         assert.deepEqual(EXPECTED, ['sentMailPath', 'draftsMailPath', 'junkMailPath', 'trashMailPath', 'archiveMailPath']);
+    });
+
+    await t.test('the IMAP client derives its hints from the shared list', () => {
+        // Rather than from a copy of the names. The client's loop is what makes an override take
+        // effect, so a type the form offers and the client does not read would do nothing at all.
+        const client = read('lib', 'email-client', 'imap-client.js');
+        assert.match(client, /for \(let type of SPECIAL_USE_PATH_TYPES\)/);
+        assert.match(client, /accountData\.imap\[`\$\{type\}MailPath`\]/);
     });
 
     await t.test('the account schemas declare every one', () => {
@@ -48,28 +44,50 @@ test('the special-use folder overrides are offered everywhere they apply', async
         }
     });
 
-    await t.test('the route module names every one in one place', () => {
-        const declared = [...ROUTES.matchAll(/\{ key: '([a-zA-Z]+MailPath)'/g)].map(match => match[1]);
-        assert.deepEqual(declared, EXPECTED, 'SPECIAL_USE_PATH_FIELDS has to carry the client set, in order');
+    await t.test('the UI field table is derived from the shared list, and labels every type', () => {
+        // Imported rather than scraped: the module is pure, so the shape the templates and the schema
+        // consume can simply be asserted
+        const { SPECIAL_USE_PATH_FIELDS, SPECIAL_USE_PATH_LABELS } = require('../lib/ui-routes/special-use-paths');
 
-        // The update loop and the form schema both derive from that list rather than repeating it
-        assert.match(ROUTES, /for \(let key of \['host', 'port', 'disabled', \.\.\.SPECIAL_USE_PATH_FIELDS\.map/);
-        assert.match(ROUTES, /SPECIAL_USE_PATH_FIELDS\.map\(field => \[\s*`imap_\$\{field\.key\}`/);
+        assert.deepEqual(
+            SPECIAL_USE_PATH_FIELDS.map(field => field.type),
+            SPECIAL_USE_PATH_TYPES,
+            'the table carries the shared list, in order'
+        );
+
+        for (const field of SPECIAL_USE_PATH_FIELDS) {
+            assert.equal(field.key, `${field.type}MailPath`, 'the account field name');
+            assert.equal(field.inputId, `imap_${field.key}`, 'the form input id');
+            // A type with no words renders an unlabelled input
+            assert.ok(field.label, `${field.type} has no label`);
+            assert.ok(field.description, `${field.type} has no description`);
+        }
+
+        assert.deepEqual(Object.keys(SPECIAL_USE_PATH_LABELS).sort(), [...SPECIAL_USE_PATH_TYPES].sort(), 'no label for a type that does not exist');
     });
 
-    await t.test('the edit form offers an input for every one', () => {
-        for (const key of EXPECTED) {
-            assert.match(EDIT_FORM, new RegExp(`id="imap_${key}"`), `the edit form is missing imap_${key}`);
-            // The value and the error have to come from the matching key, or the field shows another
-            // field's content - the kind of slip five near-identical lines invite
-            assert.match(EDIT_FORM, new RegExp(`id="imap_${key}" [^\\n]*value=values\\.imap_${key} error=errors\\.imap_${key}`), `imap_${key} is wired wrong`);
+    await t.test('both templates render the list rather than naming the fields', () => {
+        // Five hand-written blocks per template is how four of the five came to be missing from one
+        for (const [view, file] of [
+            ['the edit form', ['views', 'accounts', 'edit.hbs']],
+            ['the account page', ['views', 'accounts', 'account.hbs']]
+        ]) {
+            const template = read(...file);
+            assert.match(template, /\{\{#each specialUsePathFields\}\}/, `${view} does not iterate the list`);
+            assert.ok(!/MailPath/.test(template), `${view} still names a field by hand`);
         }
     });
 
-    await t.test('the account page shows every one that is set', () => {
-        for (const key of EXPECTED) {
-            assert.match(ACCOUNT_PAGE, new RegExp(`\\{\\{#if account\\.imap\\.${key}\\}\\}`), `the account page is missing ${key}`);
-            assert.match(ACCOUNT_PAGE, new RegExp(`<dd>\\{\\{account\\.imap\\.${key}\\}\\}</dd>`), `${key} is rendered from the wrong key`);
+    await t.test('every render of those templates is handed the list', () => {
+        // A render that forgets it shows no overrides at all, and the form would lose five inputs
+        const routes = read('lib', 'ui-routes', 'account-routes.js');
+        const renders = [...routes.matchAll(/'accounts\/(edit|account)',/g)];
+        assert.ok(renders.length >= 4, `expected every accounts/edit and accounts/account render, found ${renders.length}`);
+        for (const render of renders) {
+            // The context object follows the view name; a generous window rather than a brace match,
+            // which would couple this test to the formatting of a handler it only has to count
+            const context = routes.slice(render.index, render.index + 900);
+            assert.match(context, /specialUsePathFields/, `the accounts/${render[1]} render at offset ${render.index} is missing the list`);
         }
     });
 });

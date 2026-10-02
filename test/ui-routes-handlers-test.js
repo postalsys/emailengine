@@ -324,9 +324,23 @@ test('worker account page', async t => {
 // loop that copies the submitted values onto the account, so the other four were settable over
 // PUT /v1/account/{account} alone - and a form that offered them while the loop ignored four would
 // have been worse than not offering them at all.
+//
+// Every payload here goes through the route's OWN joi schema first, as hapi does. That is not a detail:
+// the first version of these fields carried `.default(null)`, so joi inserted a null for every input
+// the browser had not sent, and a save made from a page that does not show them - the IMAP section is
+// hidden for an account whose IMAP the operator switched off - wiped all five. A test that handed the
+// handler a raw payload could not see it.
 test('account edit form stores every special-use folder override', async t => {
     const account = `edit-paths-${RUN}`;
     const route = capture('../lib/ui-routes/account-routes', async ({ cmd }) => (cmd === 'runIndex' ? 1 : {}));
+    const editRoute = route('POST', '/admin/accounts/{account}/edit');
+
+    // What hapi hands the handler after validation
+    const validated = payload => {
+        const { value, error } = editRoute.options.validate.payload.validate(payload, editRoute.options.validate.options);
+        assert.ifError(error);
+        return value;
+    };
 
     // The same field-encryption secret the handler resolves through getSecret(), or the stored
     // password it reads back cannot be decrypted and every load logs a failure
@@ -348,30 +362,26 @@ test('account edit form stores every special-use folder override', async t => {
         archiveMailPath: 'Archive/2026'
     };
 
-    const h = makeToolkit();
-    await route('POST', '/admin/accounts/{account}/edit').handler(
-        makeRequest({
-            params: { account },
-            payload: Object.assign(
-                {
-                    name: 'Folders',
-                    email: 'folders@example.com',
-                    customHeaders: '',
-                    imap: true,
-                    imap_auth_user: 'u',
-                    imap_host: 'imap.example.com',
-                    imap_port: 993,
-                    imap_secure: true,
-                    imap_tls_ignoreCertErrors: false,
-                    imap_disableIMAP4rev2: false,
-                    imap_disabled: false
-                },
-                Object.fromEntries(Object.entries(submitted).map(([key, value]) => [`imap_${key}`, value]))
-            )
-        }),
-        h
-    );
+    // What the browser posts for an account whose IMAP section is shown
+    const formFields = {
+        name: 'Folders',
+        email: 'folders@example.com',
+        customHeaders: '',
+        imap: 'on',
+        imap_auth_user: 'u',
+        imap_host: 'imap.example.com',
+        imap_port: 993,
+        imap_secure: 'on',
+        imap_disabled: ''
+    };
 
+    const save = async payload => {
+        const h = makeToolkit();
+        await editRoute.handler(makeRequest({ params: { account }, payload: validated(payload) }), h);
+        return h;
+    };
+
+    const h = await save(Object.assign({}, formFields, Object.fromEntries(Object.entries(submitted).map(([key, value]) => [`imap_${key}`, value]))));
     assert.deepEqual(h.answers.redirects, [`/admin/accounts/${account}`], 'the save redirects to the account page');
 
     const stored = await accountObject.loadAccountData();
@@ -379,31 +389,27 @@ test('account edit form stores every special-use folder override', async t => {
         assert.equal(stored.imap[key], value, `imap.${key} was not stored`);
     }
 
-    // And clearing a field unsets it, which is what the empty-string-to-null default is for
-    await route('POST', '/admin/accounts/{account}/edit').handler(
-        makeRequest({
-            params: { account },
-            payload: {
-                name: 'Folders',
-                email: 'folders@example.com',
-                customHeaders: '',
-                imap: true,
-                imap_auth_user: 'u',
-                imap_host: 'imap.example.com',
-                imap_port: 993,
-                imap_secure: true,
-                imap_tls_ignoreCertErrors: false,
-                imap_disableIMAP4rev2: false,
-                imap_disabled: false,
-                imap_junkMailPath: null
-            }
-        }),
-        makeToolkit()
+    // An emptied input unsets the override, which is the only way to remove one from the form
+    await save(
+        Object.assign({}, formFields, Object.fromEntries(Object.keys(submitted).map(key => [`imap_${key}`, key === 'junkMailPath' ? '' : submitted[key]])))
     );
 
     const cleared = await accountObject.loadAccountData();
-    assert.ok(!cleared.imap.junkMailPath, 'a cleared override is unset');
-    assert.equal(cleared.imap.sentMailPath, submitted.sentMailPath, 'a field the form did not send is left alone');
+    assert.ok(!cleared.imap.junkMailPath, 'an emptied override is unset');
+    assert.equal(cleared.imap.sentMailPath, submitted.sentMailPath, 'the others are untouched');
+
+    // A save from a page that never showed the inputs leaves every override alone. This is the case
+    // `.default(null)` broke: joi filled in five nulls and an unrelated save wiped the lot.
+    await save(Object.assign({}, formFields, { name: 'Renamed', imap_disabled: 'on' }));
+
+    const afterUnrelatedSave = await accountObject.loadAccountData();
+    for (const [key, value] of Object.entries(submitted)) {
+        if (key === 'junkMailPath') {
+            continue;
+        }
+        assert.equal(afterUnrelatedSave.imap[key], value, `imap.${key} was wiped by a save that never showed it`);
+    }
+    assert.equal(afterUnrelatedSave.name, 'Renamed', 'the save itself went through');
 });
 
 test('unsubscribe form', async t => {

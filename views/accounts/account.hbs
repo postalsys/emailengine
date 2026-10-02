@@ -484,33 +484,15 @@
             <dd>{{account.imap.resyncDelay}}</dd>
             {{/if}}
 
-            {{!-- The special-use folder overrides, shown only where one is set. EmailEngine detects
-            these folders from the server's own flags, so an absent row means it detected the folder
-            rather than that there is none. --}}
-            {{#if account.imap.sentMailPath}}
-            <dt>Sent Mail folder</dt>
-            <dd>{{account.imap.sentMailPath}}</dd>
-            {{/if}}
-
-            {{#if account.imap.draftsMailPath}}
-            <dt>Drafts folder</dt>
-            <dd>{{account.imap.draftsMailPath}}</dd>
-            {{/if}}
-
-            {{#if account.imap.junkMailPath}}
-            <dt>Junk folder</dt>
-            <dd>{{account.imap.junkMailPath}}</dd>
-            {{/if}}
-
-            {{#if account.imap.trashMailPath}}
-            <dt>Trash folder</dt>
-            <dd>{{account.imap.trashMailPath}}</dd>
-            {{/if}}
-
-            {{#if account.imap.archiveMailPath}}
-            <dt>Archive folder</dt>
-            <dd>{{account.imap.archiveMailPath}}</dd>
-            {{/if}}
+            {{!-- The special-use folder overrides, from the same list the edit form renders, and each
+            shown only where one is set: EmailEngine detects these folders from the server's own flags,
+            so an absent row means it detected the folder rather than that there is none. --}}
+            {{#each specialUsePathFields}}
+            {{#with (lookup ../account.imap this.key)}}
+            <dt>{{../this.label}} folder</dt>
+            <dd>{{this}}</dd>
+            {{/with}}
+            {{/each}}
 
             {{#if account.path}}
             <dt>Syncing paths
