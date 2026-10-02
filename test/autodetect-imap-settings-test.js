@@ -1357,6 +1357,37 @@ test('autodiscovery reaches the endpoints the sequence names', async t => {
         assert.ok(calls.includes(`post https://example.com${POX}`), 'the root domain endpoint is asked');
     });
 
+    await t.test('an in-response redirect is followed anonymously, never with the password', async () => {
+        // The origin comes out of the body of a server that answered 200 without asking for anything.
+        // Letting it collect the password would make the host the address domain points at the one
+        // that decides where that password goes.
+        const redirecting = pox(
+            '<Account><Action>redirectUrl</Action><RedirectUrl>https://real.example.net/autodiscover/autodiscover.xml</RedirectUrl></Account>'
+        );
+        const seen = [];
+        const fetchResource = async (url, opts) => {
+            seen.push({ url, authorization: (opts.headers || {}).Authorization });
+            if (url.startsWith('https://autodiscover.example.com')) {
+                return { ok: true, status: 200, url, headers: { get: () => null }, text: async () => redirecting };
+            }
+            // The endpoint the redirect named asks for a password, and does not get one
+            return { ok: false, status: 401, url, headers: { get: () => 'Basic realm="test"' }, text: async () => '' };
+        };
+
+        await assert.rejects(
+            () => runAutodiscovery('https://autodiscover.example.com', 'user@example.com', { user: 'user@example.com', pass: 'secret' }, { fetchResource }),
+            /Invalid response/
+        );
+
+        assert.ok(
+            seen.some(call => call.url.startsWith('https://real.example.net')),
+            'the named endpoint is asked'
+        );
+        for (const call of seen) {
+            assert.ok(!call.authorization, `${call.url} must carry no Authorization header`);
+        }
+    });
+
     await t.test('an in-response redirect is followed to the endpoint it names', async () => {
         const redirecting = pox(`<Account>
           <Action>redirectUrl</Action>
