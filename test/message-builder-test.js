@@ -109,17 +109,30 @@ test('SmtpErrorBuilder.buildStatus', async t => {
         assert.match(status.description, /timed out/i);
     });
 
-    await t.test('returns null for an unknown error code', () => {
-        assert.strictEqual(SmtpErrorBuilder.buildStatus({ code: 'ESOMETHINGELSE' }, settings, null), null);
+    // The description table turns a known code into a sentence an operator can act on; a code it
+    // does not cover still has to be recorded, or the gateway's lastError and the account's
+    // smtpStatus keep showing the previous attempt.
+    await t.test('an unknown error code falls back to the error message', () => {
+        const status = SmtpErrorBuilder.buildStatus({ code: 'ESOMETHINGELSE', message: '550 mailbox unavailable' }, settings, null);
+        assert.ok(status);
+        assert.strictEqual(status.status, 'error');
+        assert.strictEqual(status.code, 'ESOMETHINGELSE');
+        assert.strictEqual(status.description, '550 mailbox unavailable');
     });
 
-    await t.test('returns null when the description builder yields nothing', () => {
-        // EMESSAGE maps to a builder that returns null -> no status.
-        assert.strictEqual(SmtpErrorBuilder.buildStatus({ code: 'EMESSAGE' }, settings, null), null);
+    await t.test('a code whose description builder yields nothing falls back the same way', () => {
+        // EMESSAGE, ESTREAM and EENVELOPE map to builders that return null on purpose
+        const status = SmtpErrorBuilder.buildStatus({ code: 'EENVELOPE', message: 'No recipients defined' }, settings, null);
+        assert.ok(status);
+        assert.strictEqual(status.description, 'No recipients defined');
     });
 
-    await t.test('ESOCKET only produces a status when it is a cert failure', () => {
-        assert.strictEqual(SmtpErrorBuilder.buildStatus({ code: 'ESOCKET' }, settings, null), null);
+    await t.test('a message-less error still gets a description', () => {
+        assert.strictEqual(SmtpErrorBuilder.buildStatus({ code: 'EMESSAGE' }, settings, null).description, 'Failed to send email');
+    });
+
+    await t.test('ESOCKET describes the certificate failure and falls back otherwise', () => {
+        assert.strictEqual(SmtpErrorBuilder.buildStatus({ code: 'ESOCKET', message: 'socket hang up' }, settings, null).description, 'socket hang up');
         const certStatus = SmtpErrorBuilder.buildStatus({ code: 'ESOCKET', cert: {}, reason: 'self signed' }, settings, null);
         assert.ok(certStatus);
         assert.match(certStatus.description, /Certificate check/);

@@ -87,6 +87,35 @@ test('BaseClient.handleSubmitError()', async t => {
         );
         assert.equal(notifications[0].payload.smtpResponseCode, 535);
     });
+
+    // SmtpErrorBuilder's description table covers a handful of nodemailer codes. Anything else used
+    // to produce no status at all, so the gateway and the account kept showing the previous attempt.
+    await t.test('an SMTP failure the description table does not cover is still recorded', async () => {
+        const { client, feedback } = makeSubmitClient();
+        const gatewayUpdates = [];
+        const err = Object.assign(new Error('550 5.7.1 Message rejected'), { code: 'ESOMETHINGNEW', responseCode: 550 });
+
+        await client.handleSubmitError(
+            err,
+            Object.assign(
+                {
+                    smtpSettings: { host: 'smtp.example.com', port: 587 },
+                    gatewayData: { gateway: 'gw-1' },
+                    gatewayObject: { update: async update => gatewayUpdates.push(update) }
+                },
+                context
+            )
+        );
+
+        const stored = client.redis.writes.find(write => write.key === client.getAccountKey() && write.field === 'smtpStatus');
+        assert.ok(stored, 'the account SMTP status is recorded');
+        assert.equal(JSON.parse(stored.value).description, '550 5.7.1 Message rejected');
+
+        assert.equal(gatewayUpdates.length, 1);
+        assert.equal(gatewayUpdates[0].lastError.description, '550 5.7.1 Message rejected');
+        assert.ok(gatewayUpdates[0].lastError.created, 'the time of the attempt is recorded');
+        assert.deepEqual(feedback, [['fb-1', false, '550 5.7.1 Message rejected']]);
+    });
 });
 
 test('BaseClient.detectBounce()', async t => {
