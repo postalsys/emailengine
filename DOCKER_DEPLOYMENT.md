@@ -156,13 +156,9 @@ server {
         proxy_read_timeout 600;
     }
 
-    # WebSocket support
-    location /socket.io/ {
-        proxy_pass http://127.0.0.1:3000/socket.io/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
+    # No extra location is needed for the live updates. EmailEngine streams account state changes as
+    # Server-Sent Events over the ordinary path (/v1/changes and the admin UI's own stream) and sends
+    # `X-Accel-Buffering: no` with them, which nginx honours, so the events are not held in a buffer.
 }
 
 server {
@@ -288,8 +284,9 @@ docker-compose logs --tail=50 emailengine
 #### Rollback if Needed
 
 ```bash
-# Specify previous version in .env
-EMAILENGINE_VERSION=2.40.0
+# Specify previous version in .env. The published image tags carry the `v` prefix the git tags
+# carry (v2.82.0, v2.82, v2, latest), so a bare 2.40.0 resolves to no image at all.
+EMAILENGINE_VERSION=v2.40.0
 docker-compose up -d --no-deps emailengine
 ```
 
@@ -392,9 +389,11 @@ docker-compose logs --tail=100 emailengine
 #### Performance Issues
 
 ```bash
-# Enable debug logging temporarily
-docker-compose exec emailengine sh -c 'export EENGINE_LOG_LEVEL=debug'
-docker-compose restart emailengine
+# Enable debug logging. The level is read from the environment at startup, so it has to be set on
+# the container rather than exported inside it - `exec ... export` sets it in a shell that then
+# exits, and `restart` reuses the container's existing environment either way.
+echo 'EENGINE_LOG_LEVEL=debug' >> .env
+docker-compose up -d --no-deps --force-recreate emailengine
 
 # Check slow operations
 docker-compose exec redis redis-cli -a "$REDIS_PASSWORD" SLOWLOG GET 10
