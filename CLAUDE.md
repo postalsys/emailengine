@@ -126,6 +126,7 @@ Path-scoped rules in `.claude/rules/` load automatically when you work with the 
 - `EENGINE_WORKERS_API` - API/HTTP worker count (default: 1; values >1 need `SO_REUSEPORT`/Linux, otherwise falls back to 1)
 - `EENGINE_WORKERS_WEBHOOKS` - Webhook worker count (default: 1)
 - `EENGINE_WORKERS_SUBMIT` - Submit worker count (default: 1)
+- `EENGINE_WORKERS_EXPORT` - Export worker count (default: 1; also `--workers.export` / `[workers] export`)
 - `EENGINE_EXPORT_QC` - Export concurrency per worker (default: 1)
 - `EENGINE_EXPORT_TIMEOUT` - Export operation timeout (default: 5 minutes)
 - `EENGINE_NOTIFY_QC` - Webhook concurrency per worker (default: 1)

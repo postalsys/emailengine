@@ -223,6 +223,9 @@ config.dbs.redis = readEnvValue('EENGINE_REDIS') || readEnvValue('REDIS_URL') ||
 config.workers.imap = getWorkerCount(readEnvValue('EENGINE_WORKERS') || config.workers.imap) || 4;
 config.workers.webhooks = Number(readEnvValue('EENGINE_WORKERS_WEBHOOKS')) || config.workers.webhooks || 1;
 config.workers.submit = Number(readEnvValue('EENGINE_WORKERS_SUBMIT')) || config.workers.submit || 1;
+// The Workers page has labelled this row EENGINE_WORKERS_EXPORT since the export worker shipped, while
+// only --workers.export and [workers] export were read, so an operator who set it saw no effect
+config.workers.export = Number(readEnvValue('EENGINE_WORKERS_EXPORT')) || config.workers.export || 1;
 // API worker count. Values >1 require SO_REUSEPORT (Linux); on unsupported platforms it falls back to 1 at startup.
 // Uses getWorkerCount() for parity with EENGINE_WORKERS (supports "cpus"); Math.floor avoids a fractional
 // count over-spawning, Math.max keeps at least one API worker.
@@ -353,7 +356,7 @@ const THREAD_CONFIG_VALUES = {
     api: { key: 'EENGINE_WORKERS_API', value: config.workers.api },
     submit: { key: 'EENGINE_WORKERS_SUBMIT', value: config.workers.submit },
     webhooks: { key: 'EENGINE_WORKERS_WEBHOOKS', value: config.workers.webhooks },
-    export: { key: 'EENGINE_WORKERS_EXPORT', value: config.workers.export || 1 }
+    export: { key: 'EENGINE_WORKERS_EXPORT', value: config.workers.export }
 };
 
 // Queue event handlers for different job queues
@@ -3600,7 +3603,7 @@ const startApplication = async () => {
     }
 
     // Start export workers
-    for (let i = 0; i < (config.workers.export || 1); i++) {
+    for (let i = 0; i < config.workers.export; i++) {
         await spawnWorker('export');
     }
 

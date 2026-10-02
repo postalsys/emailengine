@@ -140,7 +140,7 @@
     <p class="mb-4">EmailEngine spreads its work across worker threads - account sync, the API and web server, webhook
         delivery, message submission, and exports. Their counts are set at startup with environment variables such as
         <code>EENGINE_WORKERS</code> (account sync), <code>EENGINE_WORKERS_API</code>, <code>EENGINE_WORKERS_WEBHOOKS</code>,
-        and <code>EENGINE_WORKERS_SUBMIT</code>.</p>
+        <code>EENGINE_WORKERS_SUBMIT</code> and <code>EENGINE_WORKERS_EXPORT</code>.</p>
     <p class="mb-4">Most worker types can be scaled to several threads with those variables. The HTTP and API server is
         the exception: running more than one API worker requires <code>SO_REUSEPORT</code>, which is available only on
         Linux with Node.js 23.1 or newer. On macOS, Windows, or older Node.js versions EmailEngine falls back to a
