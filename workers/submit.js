@@ -42,7 +42,7 @@ const SUBMIT_QC = (readEnvValue('EENGINE_SUBMIT_QC') && Number(readEnvValue('EEN
 
 const SUBMIT_DELAY = getDuration(readEnvValue('EENGINE_SUBMIT_DELAY') || config.submitDelay) || null;
 
-const { shouldDiscardJob, willBeFinalAttempt, isFinalFailedAttempt } = require('../lib/delivery-error');
+const { shouldDiscardJob, willBeFinalAttempt, isFinalFailedAttempt, nextAttemptWhileProcessing } = require('../lib/delivery-error');
 const { isAlreadySent } = require('../lib/submit-progress');
 const { packRpcError, unpackRpcError } = require('../lib/worker-rpc-error');
 
@@ -216,10 +216,9 @@ const submitWorker = new Worker(
                 // ignore
             }
 
-            let backoffDelay = Number(job.opts.backoff && job.opts.backoff.delay) || 0;
-            // job.attemptsMade is not yet incremented for the ongoing attempt, so the
-            // next retry (if this attempt fails) is delayed by 2^attemptsMade * base
-            let nextAttempt = !willBeFinalAttempt(job) ? Math.round(job.processedOn + Math.pow(2, job.attemptsMade) * backoffDelay) : false;
+            // The ongoing attempt is not yet counted in job.attemptsMade, which is why this is not the
+            // exponent the outbox listing uses for a stored job (lib/delivery-error.js owns both)
+            let nextAttempt = nextAttemptWhileProcessing(job);
 
             queueEntry.job = {
                 id: job.id,
