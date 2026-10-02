@@ -24,6 +24,7 @@ const { templates } = require('../lib/templates');
 const { lists } = require('../lib/lists');
 const { oauth2Apps } = require('../lib/oauth2-apps');
 const { gt } = require('../lib/translations');
+const getSecret = require('../lib/get-secret');
 const { redis } = require('../lib/db');
 const { REDIS_PREFIX, NONCE_BYTES } = require('../lib/consts');
 const registerRedisTeardown = require('./helpers/redis-teardown');
@@ -317,6 +318,92 @@ test('worker account page', async t => {
         );
         assert.equal(rows[1].stateLabel.name, 'Unknown');
     });
+});
+
+// All five special-use folder overrides have to survive the edit form. Only sentMailPath was in the
+// loop that copies the submitted values onto the account, so the other four were settable over
+// PUT /v1/account/{account} alone - and a form that offered them while the loop ignored four would
+// have been worse than not offering them at all.
+test('account edit form stores every special-use folder override', async t => {
+    const account = `edit-paths-${RUN}`;
+    const route = capture('../lib/ui-routes/account-routes', async ({ cmd }) => (cmd === 'runIndex' ? 1 : {}));
+
+    // The same field-encryption secret the handler resolves through getSecret(), or the stored
+    // password it reads back cannot be decrypted and every load logs a failure
+    const accountObject = new Account({ redis, account, secret: await getSecret(), call: async ({ cmd }) => (cmd === 'runIndex' ? 1 : {}), logger });
+    await accountObject.create({
+        account,
+        name: 'Folders',
+        email: 'folders@example.com',
+        imap: { host: 'imap.example.com', port: 993, secure: true, auth: { user: 'u', pass: 'p' } },
+        smtp: { host: 'smtp.example.com', port: 465, secure: true, auth: { user: 'u', pass: 'p' } }
+    });
+    t.after(() => accountObject.delete().catch(() => false));
+
+    const submitted = {
+        sentMailPath: 'Sent Items',
+        draftsMailPath: 'Drafts/Mine',
+        junkMailPath: 'Spam',
+        trashMailPath: 'Deleted Items',
+        archiveMailPath: 'Archive/2026'
+    };
+
+    const h = makeToolkit();
+    await route('POST', '/admin/accounts/{account}/edit').handler(
+        makeRequest({
+            params: { account },
+            payload: Object.assign(
+                {
+                    name: 'Folders',
+                    email: 'folders@example.com',
+                    customHeaders: '',
+                    imap: true,
+                    imap_auth_user: 'u',
+                    imap_host: 'imap.example.com',
+                    imap_port: 993,
+                    imap_secure: true,
+                    imap_tls_ignoreCertErrors: false,
+                    imap_disableIMAP4rev2: false,
+                    imap_disabled: false
+                },
+                Object.fromEntries(Object.entries(submitted).map(([key, value]) => [`imap_${key}`, value]))
+            )
+        }),
+        h
+    );
+
+    assert.deepEqual(h.answers.redirects, [`/admin/accounts/${account}`], 'the save redirects to the account page');
+
+    const stored = await accountObject.loadAccountData();
+    for (const [key, value] of Object.entries(submitted)) {
+        assert.equal(stored.imap[key], value, `imap.${key} was not stored`);
+    }
+
+    // And clearing a field unsets it, which is what the empty-string-to-null default is for
+    await route('POST', '/admin/accounts/{account}/edit').handler(
+        makeRequest({
+            params: { account },
+            payload: {
+                name: 'Folders',
+                email: 'folders@example.com',
+                customHeaders: '',
+                imap: true,
+                imap_auth_user: 'u',
+                imap_host: 'imap.example.com',
+                imap_port: 993,
+                imap_secure: true,
+                imap_tls_ignoreCertErrors: false,
+                imap_disableIMAP4rev2: false,
+                imap_disabled: false,
+                imap_junkMailPath: null
+            }
+        }),
+        makeToolkit()
+    );
+
+    const cleared = await accountObject.loadAccountData();
+    assert.ok(!cleared.imap.junkMailPath, 'a cleared override is unset');
+    assert.equal(cleared.imap.sentMailPath, submitted.sentMailPath, 'a field the form did not send is left alone');
 });
 
 test('unsubscribe form', async t => {

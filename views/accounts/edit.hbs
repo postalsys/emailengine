@@ -51,7 +51,19 @@
 
             {{/unless}}
 
-            {{> ui/form-field id="imap_sentMailPath" label="Sent Mail folder" value=values.imap_sentMailPath error=errors.imap_sentMailPath lpignore=true placeholder='Folder path like "Sent Mail"' list="available-paths-list" hint='Store copies of sent emails in this folder. Leave blank to use the default "Sent Mail" folder for this account.'}}
+            {{!-- The five special-use folder overrides. EmailEngine detects these folders from the
+            server's own flags; an override is for a server that flags none, or flags the wrong one.
+            Kept in step with SPECIAL_USE_PATH_FIELDS in lib/ui-routes/account-routes.js, which owns
+            the schema and the update loop (test/account-special-use-form-test.js). --}}
+            {{> ui/form-field id="imap_sentMailPath" label="Sent Mail folder" value=values.imap_sentMailPath error=errors.imap_sentMailPath lpignore=true placeholder='Folder path like "Sent Mail"' list="available-paths-list" hint='Store copies of sent emails in this folder. Leave blank to use the folder EmailEngine detects for this account.'}}
+
+            {{> ui/form-field id="imap_draftsMailPath" label="Drafts folder" value=values.imap_draftsMailPath error=errors.imap_draftsMailPath lpignore=true placeholder='Folder path like "Drafts"' list="available-paths-list" hint='Treat this folder as the Drafts folder. Leave blank to use the folder EmailEngine detects for this account.'}}
+
+            {{> ui/form-field id="imap_junkMailPath" label="Junk folder" value=values.imap_junkMailPath error=errors.imap_junkMailPath lpignore=true placeholder='Folder path like "Junk"' list="available-paths-list" hint='Treat this folder as the Junk folder. Leave blank to use the folder EmailEngine detects for this account.'}}
+
+            {{> ui/form-field id="imap_trashMailPath" label="Trash folder" value=values.imap_trashMailPath error=errors.imap_trashMailPath lpignore=true placeholder='Folder path like "Trash"' list="available-paths-list" hint='Treat this folder as the Trash folder, where deleted messages are moved. Leave blank to use the folder EmailEngine detects for this account.'}}
+
+            {{> ui/form-field id="imap_archiveMailPath" label="Archive folder" value=values.imap_archiveMailPath error=errors.imap_archiveMailPath lpignore=true placeholder='Folder path like "Archive"' list="available-paths-list" hint='Treat this folder as the Archive folder. Leave blank to use the folder EmailEngine detects for this account.'}}
 
             {{> ui/form-field id="imap_resyncDelay" type="number" label="Resync interval (seconds)" value=values.imap_resyncDelay error=errors.imap_resyncDelay lpignore=true hint="Time between full mailbox syncs. Leave blank to keep the current interval."}}
 
@@ -143,7 +155,7 @@
 <script data-cfasync="false" nonce="{{cspNonce}}">
     document.addEventListener('DOMContentLoaded', () => {
         let availablePaths = JSON.parse(document.getElementById('availablePaths').value);
-        // native datalist suggestions for the Sent Mail folder input (the
+        // native datalist suggestions for the special-use folder inputs (the
         // form-field markup references the list id directly)
         uiDatalist('available-paths-list', availablePaths);
     })

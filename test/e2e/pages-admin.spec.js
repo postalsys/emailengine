@@ -1952,9 +1952,14 @@ test.describe('admin shell', () => {
         const nameField = page.locator('#name');
         const origName = await nameField.inputValue();
 
-        // the Sent Mail folder input carries native datalist suggestions built
-        // from the account's real folder listing (uiDatalist)
-        await expect(page.locator('#imap_sentMailPath')).toHaveAttribute('list', 'available-paths-list');
+        // All five special-use folder overrides are offered, each carrying native datalist suggestions
+        // built from the account's real folder listing (uiDatalist). Only sentMailPath used to be on
+        // the form, so the other four were settable over PUT /v1/account/{account} alone. What a save
+        // then stores is covered hermetically in test/ui-routes-handlers-test.js, because writing one
+        // here would be an imap diff and reconnect the account the later specs share.
+        for (const field of ['sentMailPath', 'draftsMailPath', 'junkMailPath', 'trashMailPath', 'archiveMailPath']) {
+            await expect(page.locator(`#imap_${field}`), field).toHaveAttribute('list', 'available-paths-list');
+        }
         expect(await page.locator('#available-paths-list option').count()).toBeGreaterThan(0);
 
         await nameField.fill('E2E Renamed Account');
