@@ -1,0 +1,16 @@
+{{!-- The Gmail API scopes an app in `baseScopes: api` mode requests, as list items. Shared by the
+interactive `gmail` block and the `gmailService` one: what an app asks Google for follows from its own
+scope selection, not from whether a person or a service account presents it. A service-account app
+listing gmail.modify here while it had deliberately skipped it is the bug this partial exists to stop
+coming back. --}}
+
+{{#unless disabledScopes.Gmail_Modify}}
+<li><code>"https://www.googleapis.com/auth/gmail.modify"</code></li>
+{{else}}
+{{#if isSendOnlyGmail}}
+<li><code>"https://www.googleapis.com/auth/gmail.send"</code></li>
+{{else}}
+<li><code>"https://www.googleapis.com/auth/gmail.readonly"</code></li>
+<li><code>"https://www.googleapis.com/auth/gmail.labels"</code></li>
+{{/if}}
+{{/unless}}

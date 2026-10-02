@@ -1281,17 +1281,39 @@ test.describe('admin shell', () => {
         await expect(page.locator('#create-app-dropdown ~ ul .dropdown-item', { hasText: 'Gmail Service Accounts' })).toBeVisible();
         await page.keyboard.press('Escape');
 
-        // create a Gmail app with dummy credentials through the converted form;
-        // base-scope radios gate the pubsub select + account-type helper
+        // create a Gmail app with dummy credentials through the converted form; the base-scope radios
+        // reveal the section that declares the scope they select (data-base-scopes) plus the
+        // account-type helper
         await page.goto('/admin/config/oauth/new?provider=gmail');
-        expect(await page.evaluate(() => document.getElementById('select-pubsub-app').classList.contains('hidden'))).toBe(true);
+        await expect(page.locator('[data-base-scopes="api"]')).toBeHidden();
         await page.locator('#baseScopesAPI').check();
-        expect(await page.evaluate(() => document.getElementById('account-type-card-gmail').classList.contains('hidden'))).toBe(false);
+        await expect(page.locator('[data-base-scopes="api"]')).toBeVisible();
+        await expect(page.locator('#account-type-card-gmail')).toBeVisible();
+        await expect(page.locator('#pubSubApp')).toBeEnabled();
+        await page.locator('#baseScopesImap').check();
+        await expect(page.locator('[data-base-scopes="api"]')).toBeHidden();
+        await expect(page.locator('#pubSubApp')).toBeDisabled();
+
+        // A service account reaches Gmail over the HTTP API the same way an interactive app does, so it
+        // offers the same choice - and its block is the one carrying two toggled sections, the Pub/Sub
+        // service account for `api` and the topic/subscription names for `pubsub`.
+        await page.goto('/admin/config/oauth/new?provider=gmailService');
+        await expect(page.locator('#baseScopesAPI')).toBeVisible();
+        await page.locator('#baseScopesAPI').check();
+        await expect(page.locator('[data-base-scopes="api"]')).toBeVisible();
+        await expect(page.locator('[data-base-scopes="pubsub"]')).toBeHidden();
+        await expect(page.locator('#account-type-card-gmail')).toBeVisible();
+        await expect(page.locator('#pubSubApp')).toBeEnabled();
+
+        await page.locator('#baseScopesPubsub').check();
+        await expect(page.locator('[data-base-scopes="pubsub"]')).toBeVisible();
+        await expect(page.locator('[data-base-scopes="api"]')).toBeHidden();
+        await expect(page.locator('#googleTopicName')).toBeVisible();
+        await expect(page.locator('#pubSubApp')).toBeDisabled();
         await page.locator('#baseScopesImap').check();
 
         // the service-account form carries its own auth-method tab strip (not a
         // FlyonUI data-tabs instance): it marks the selection and swaps sections
-        await page.goto('/admin/config/oauth/new?provider=gmailService');
         await expectSelectedTab(page, 'auth-method-tab-serviceKey', ['auth-method-tab-externalAccount']);
         await expect(page.locator('.auth-method-section-externalAccount').first()).toBeHidden();
         await page.locator('#auth-method-tab-externalAccount').click();
@@ -1857,8 +1879,10 @@ test.describe('admin shell', () => {
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
 
+        // registered in API mode, because that is the base scope whose extra sections the edit page has
+        // to keep showing
         await page.goto('/admin/config/oauth/new?provider=gmail');
-        await page.locator('#baseScopesImap').check();
+        await page.locator('#baseScopesAPI').check();
         await page.fill('#name', 'E2E OAuth Edit App');
         await page.fill('#clientId', '1234567890-e2e-edit.apps.googleusercontent.com');
         await page.fill('#clientSecret', 'GOCSPX-e2e-edit-dummy');
@@ -1869,6 +1893,14 @@ test.describe('admin shell', () => {
         await page.goto(`/admin/config/oauth/edit/${appId}`);
         await expect(page.locator('#name')).toHaveValue('E2E OAuth Edit App');
         await expect(page.locator('#clientId')).toHaveValue('1234567890-e2e-edit.apps.googleusercontent.com');
+
+        // A stored app's base scope cannot be changed, so this form renders it as a static row and
+        // carries no radios - and the section the stored scope reveals has to stay as the server
+        // rendered it. Driving visibility from "which radio is checked" hid every one of them, which on
+        // this page is the only way to change an API-mode app's Pub/Sub service account.
+        await expect(page.locator('.base-scopes-radio')).toHaveCount(0);
+        await expect(page.locator('[data-base-scopes="api"]')).toBeVisible();
+        await expect(page.locator('#pubSubApp')).toBeEnabled();
         await page.fill('#name', 'E2E OAuth Edited App');
         await page.locator('button[type="submit"]', { hasText: 'Update app' }).click();
         await page.waitForURL(/\/admin\/config\/oauth\/app\//);

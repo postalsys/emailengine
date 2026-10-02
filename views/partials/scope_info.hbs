@@ -11,18 +11,7 @@
     {{/if}}
 
     {{#if baseScopesApi}}
-
-    {{#unless disabledScopes.Gmail_Modify}}
-    <li><code>"https://www.googleapis.com/auth/gmail.modify"</code></li>
-    {{else}}
-    {{#if isSendOnlyGmail}}
-    <li><code>"https://www.googleapis.com/auth/gmail.send"</code></li>
-    {{else}}
-    <li><code>"https://www.googleapis.com/auth/gmail.readonly"</code></li>
-    <li><code>"https://www.googleapis.com/auth/gmail.labels"</code></li>
-    {{/if}}
-    {{/unless}}
-
+    {{> gmail_api_scopes}}
     {{/if}}
 
     {{#if baseScopesPubsub}}
@@ -30,15 +19,6 @@
     {{/if}}
 
 </ul>
-
-{{#if isSendOnlyGmail}}
-<div class="alert alert-soft alert-warning mt-4 block">
-    <strong>Send-only account limitation:</strong> Messages sent through this app cannot be tracked by EmailEngine.
-    The Gmail API modifies the Message-ID header when sending emails, and without read permissions,
-    EmailEngine cannot resolve the new Message-ID assigned by Gmail. Delivery status and bounce
-    notifications may not be accurately associated with the sent message.
-</div>
-{{/if}}
 
 <div>Read about setting up the OAuth2 project in Google Cloud from
 
@@ -68,9 +48,9 @@
 {{/if}}
 
 {{#if baseScopesApi}}
-<div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
+<div>The service account's domain-wide delegation <strong>must</strong> list the following scopes:</div>
 <ul class="list-disc ps-6 my-2">
-    <li><code>"https://www.googleapis.com/auth/gmail.modify"</code></li>
+    {{> gmail_api_scopes}}
 </ul>
 {{/if}}
 
@@ -141,4 +121,15 @@
 <div class="alert alert-soft alert-info block"><strong>Note:</strong> The required "mail.imap" scope might not be
     available for your <a href="https://oauth.mail.ru/app/" target="_blank" rel="noopener noreferrer"
         referrerpolicy="no-referrer" class="link link-animated">OAuth2 apps</a> by default.</div>
+{{/if}}
+
+{{!-- A send-only app is only ever an API-based Gmail app, whichever of the two providers it is, so this
+needs no provider guard - see isSendOnlyGmailApp() in lib/oauth/scope-checker.js. --}}
+{{#if isSendOnlyGmail}}
+<div class="alert alert-soft alert-warning mt-4 block">
+    <strong>Send-only account limitation:</strong> Messages sent through this app cannot be tracked by EmailEngine.
+    The Gmail API modifies the Message-ID header when sending emails, and without read permissions,
+    EmailEngine cannot resolve the new Message-ID assigned by Gmail. Delivery status and bounce
+    notifications may not be accurately associated with the sent message.
+</div>
 {{/if}}

@@ -446,6 +446,20 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
                     <td>
                         <div class="flex items-center gap-2">
                             <input class="radio radio-sm base-scopes-radio" type="radio" name="baseScopes"
+                                id="baseScopesAPI" value="api" {{#if baseScopesApi}}checked{{/if}}>
+                            <label class="label-text p-0" for="baseScopesAPI">
+                                Gmail API {{> ui/badge label="beta" variant="neutral"}}
+                            </label>
+                        </div>
+                    </td>
+                    <td>Gmail HTTP API, through domain-wide delegation</td>
+                    <td><code>"/auth/gmail.modify"</code> delegated scope</td>
+
+                </tr>
+                <tr>
+                    <td>
+                        <div class="flex items-center gap-2">
+                            <input class="radio radio-sm base-scopes-radio" type="radio" name="baseScopes"
                                 id="baseScopesPubsub" value="pubsub" {{#if baseScopesPubsub}}checked{{/if}}>
                             <label class="label-text p-0" for="baseScopesPubsub">
                                 Cloud Pub/Sub {{> ui/badge label="beta" variant="neutral"}}
@@ -469,6 +483,17 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
                 </tr>
                 {{/if}}
 
+                {{#if baseScopesApi}}
+                <tr>
+                    <td>
+                        <strong>Gmail API</strong> {{> ui/badge label="beta" variant="neutral"}}
+                    </td>
+                    <td>Gmail HTTP API, through domain-wide delegation</td>
+                    <td><code>"/auth/gmail.modify"</code> delegated scope</td>
+
+                </tr>
+                {{/if}}
+
                 {{#if baseScopesPubsub}}
                 <tr>
                     <td>
@@ -486,8 +511,10 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
         </table>
     </div>
 
-    <div id="select-pubsub-app"
-        class="card-footer border-base-content/10 border-t px-6 py-4{{#unless baseScopesPubsub}} hidden{{/unless}}">
+    {{> oauth_pubsub_app_select}}
+
+    <div class="card-footer border-base-content/10 border-t px-6 py-4{{#unless baseScopesPubsub}} hidden{{/unless}}"
+        data-base-scopes="pubsub">
 
         {{#if actionCreate}}
 
@@ -624,40 +651,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
         </table>
     </div>
 
-    <div id="select-pubsub-app"
-        class="card-footer border-base-content/10 border-t px-6 py-4{{#unless baseScopesApi}} hidden{{/unless}}">
-
-        <p class="mb-2">
-            For faster webhook notifications, select a Gmail service account with the Pub/Sub Admin role.
-            EmailEngine uses it to set up Google Cloud Pub/Sub for accounts managed by this app.
-        </p>
-
-        <p class="mb-2">
-            <strong>Note:</strong> This is optional but recommended. With a Pub/Sub service account, EmailEngine
-            receives changes in near real time. Without one, it falls back to polling each account about every 10
-            minutes, so webhooks for new, updated, or deleted emails (and bounce detection) still fire, just with up
-            to a 10-minute delay. Send-only accounts don't require this.
-        </p>
-
-        <label class="label-text" for="pubSubApp">Select service account to manage webhooks (optional). The service
-            account must be for the same Google Cloud Project.</label>
-        <select class="select w-full{{#if errors.pubSubApp}} is-invalid{{/if}}" id="pubSubApp"
-            name="pubSubApp" {{#unless baseScopesApi}}disabled{{/unless}}>
-
-            <option value="">Select the service account for your project</option>
-
-            {{#each pubSubApps}}
-            <option value="{{id}}" data-project="{{googleProjectId}}" {{#if selected}}selected{{/if}} {{#unless
-                baseScopesApi}}disabled{{/unless}}>{{name}}{{#if
-                description}} -
-                {{description}}{{/if}} [{{googleProjectId}}]</option>
-            {{/each}}
-
-        </select>
-        {{#if errors.pubSubApp}}
-        <span class="helper-text text-error">{{errors.pubSubApp}}</span>
-        {{/if}}
-    </div>
+    {{> oauth_pubsub_app_select}}
 
 </div>
 {{/if}}
@@ -744,8 +738,8 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
         </table>
     </div>
 
-    <div id="select-pubsub-app"
-        class="card-footer border-base-content/10 border-t px-6 py-4{{#unless baseScopesApi}} hidden{{/unless}}">
+    <div class="card-footer border-base-content/10 border-t px-6 py-4{{#unless baseScopesApi}} hidden{{/unless}}"
+        data-base-scopes="api">
 
         <p class="mb-2">Microsoft Graph delivers change notifications to EmailEngine at these two endpoints:</p>
 
@@ -815,7 +809,9 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
 
 {{/if}}
 
-{{#if activeGmail}}
+{{!-- Guarded on providerData.gmailApi, not on one provider: a service account in Gmail API mode takes
+the same delegated scopes an interactive app takes, so the presets apply to it too. --}}
+{{#if providerData.gmailApi}}
 <div class="card bg-base-100 shadow-md mb-6{{#unless baseScopesApi}} hidden{{/unless}}" id="account-type-card-gmail">
     <div class="card-header">
         <h6 class="card-title text-primary">Scope presets</h6>
@@ -911,22 +907,13 @@ open=values.extraScopes}}
 <p class="mb-4">Request additional OAuth2 scopes, for example when your application uses the provider access tokens
                 for services beyond email.</p>
 
-{{#if activeGmail}}
+{{#if providerData.gmailApi}}
 <div class="alert alert-soft alert-info mb-4 block">
     <p>When adding new scopes, ensure that related APIs are
         enabled for your OAuth2 app (look for <em>Enabled APIs & services</em> in <a
             href="https://console.cloud.google.com/apis/dashboard" target="_blank" rel="noopener noreferrer"
             referrerpolicy="no-referrer" class="link link-animated">Google Cloud Console</a>)
         before registering accounts with these permissions. Otherwise, token generation will fail.</p>
-</div>
-{{/if}}
-
-{{#if activeGmailService}}
-<div class="alert alert-soft alert-info mb-4"><span>When adding new scopes, ensure that related APIs are
-        enabled for your OAuth2 app (look for <em>Enabled APIs & services</em> in <a
-            href="https://console.cloud.google.com/apis/dashboard" target="_blank" rel="noopener noreferrer"
-            referrerpolicy="no-referrer" class="link link-animated">Google Cloud Console</a>)
-        before registering accounts with these permissions. Otherwise, token generation will fail.</span>
 </div>
 {{/if}}
 
@@ -986,57 +973,43 @@ open=values.skipScopes}}
         const pubSubAppElm = document.getElementById('pubSubApp');
 
         /**
-         * Checks and updates the visibility of scope-related UI elements based on selected base scopes radio button.
-         * Handles both API and Pub/Sub scope selections, showing/hiding relevant configuration sections.
+         * Shows the configuration sections that belong to the selected base scope.
+         *
+         * Each toggled section declares the value that reveals it with `data-base-scopes`, rather than
+         * being looked up by element id: a service-account app offers both `api` and `pubsub` and so
+         * carries two of them in one block, which two hardcoded id lookups could not express - they
+         * both reached for the same element and fought over it.
          */
         function checkScopesRadio() {
-            let baseScopesAPIElm = document.getElementById('baseScopesAPI');
-            let baseScopesPubsubElm = document.getElementById('baseScopesPubsub');
-            let selectPubsubAppElm = document.getElementById('select-pubsub-app');
-            let accountTypeCardGmail = document.getElementById('account-type-card-gmail');
-            let accountTypeCardOutlook = document.getElementById('account-type-card-outlook');
-
-            if (baseScopesAPIElm && selectPubsubAppElm) {
-                if (baseScopesAPIElm.checked) {
-                    selectPubsubAppElm.classList.remove('hidden');
-                    if (pubSubAppElm) {
-                        pubSubAppElm.disabled = false;
-                    }
-                } else {
-                    selectPubsubAppElm.classList.add('hidden');
-                    if (pubSubAppElm) {
-                        pubSubAppElm.disabled = true;
-                    }
-                }
+            let selected = document.querySelector('.base-scopes-radio:checked');
+            if (!selected) {
+                // A stored app's page renders its base scope as a static row and carries no radios at
+                // all, so the server already decided what is visible. Toggling against "nothing
+                // selected" would hide every section, including the Pub/Sub topic names and the
+                // Microsoft notification endpoints that page exists to show.
+                return;
             }
 
-            if (baseScopesPubsubElm && selectPubsubAppElm) {
-                if (baseScopesPubsubElm.checked) {
-                    selectPubsubAppElm.classList.remove('hidden');
-                } else {
-                    selectPubsubAppElm.classList.add('hidden');
+            let shownElm = null;
+            document.querySelectorAll('[data-base-scopes]').forEach(sectionElm => {
+                let shown = sectionElm.dataset.baseScopes === selected.value;
+                sectionElm.classList.toggle('hidden', !shown);
+                if (shown) {
+                    shownElm = sectionElm;
                 }
+            });
+
+            if (pubSubAppElm) {
+                // A disabled control is left out of the submitted form, which is how a hidden Pub/Sub
+                // selection stays out of the payload instead of riding along. Only the select is touched
+                // here - which options are selectable belongs to filterPubSubApps() alone.
+                pubSubAppElm.disabled = !shownElm || !shownElm.contains(pubSubAppElm);
             }
 
-            // Show/hide account type card based on API mode selection
-            if (baseScopesAPIElm) {
-                if (baseScopesAPIElm.checked) {
-                    if (accountTypeCardGmail) {
-                        accountTypeCardGmail.classList.remove('hidden');
-                    }
-                    if (accountTypeCardOutlook) {
-                        accountTypeCardOutlook.classList.remove('hidden');
-                    }
-                } else {
-                    if (accountTypeCardGmail) {
-                        accountTypeCardGmail.classList.add('hidden');
-                    }
-                    if (accountTypeCardOutlook) {
-                        accountTypeCardOutlook.classList.add('hidden');
-                    }
-                }
-            }
-
+            // The account type card describes what an API-based app can do with an account
+            document.querySelectorAll('#account-type-card-gmail, #account-type-card-outlook').forEach(cardElm => {
+                cardElm.classList.toggle('hidden', selected.value !== 'api');
+            });
         }
 
         document.querySelectorAll('.base-scopes-radio').forEach(radioElm => {

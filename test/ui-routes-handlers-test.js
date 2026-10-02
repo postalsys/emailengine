@@ -476,6 +476,26 @@ test('OAuth2 app forms', async t => {
         assert.equal(context.actionCreate, true);
     });
 
+    // The detection itself is covered in test/oauth-gmail-api-mode-test.js against the pure
+    // isSendOnlyGmailApp(); what this asserts is that the page actually carries the answer
+    await t.test('the app page reports a send-only service account', async t => {
+        stub(t, oauth2Apps, {
+            async get(id) {
+                // What the form's send-only preset stores: the send scope, and a skipScopes entry that
+                // takes the api-mode default (gmail.modify) back out of the requested list
+                return { id, provider: 'gmailService', baseScopes: 'api', extraScopes: ['gmail.send'], skipScopes: ['gmail.modify'], name: 'App' };
+            },
+            async listAccounts() {
+                return { accounts: [], total: 0, pages: 0, page: 0 };
+            }
+        });
+
+        const h = makeToolkit();
+        await route('GET', '/admin/config/oauth/app/{app}').handler(makeRequest({ params: { app: 'app-1' }, query: {} }), h);
+
+        assert.equal(h.answers.views[0].context.isSendOnlyGmail, true);
+    });
+
     await t.test('the edit form keeps the authentication method locked on a validation error', async t => {
         stub(t, oauth2Apps, {
             async get(id) {

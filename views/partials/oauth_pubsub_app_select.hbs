@@ -1,0 +1,43 @@
+{{!-- The Pub/Sub service account an API-based Gmail app uses to arm watches, shared by the
+interactive `gmail` block and the `gmailService` one: both reach Gmail over the HTTP API, so both want
+the same control, and the server-side `pubSubApp` field was never provider-specific.
+
+`data-base-scopes="api"` is what reveals it - see checkScopesRadio() at the bottom of oauth_form.hbs. --}}
+
+<div class="card-footer border-base-content/10 border-t px-6 py-4{{#unless baseScopesApi}} hidden{{/unless}}"
+    data-base-scopes="api">
+
+    <p class="mb-2">
+        For faster webhook notifications, select a Gmail service account with the Pub/Sub Admin role.
+        EmailEngine uses it to set up Google Cloud Pub/Sub for accounts managed by this app.
+    </p>
+
+    <p class="mb-2">
+        <strong>Note:</strong> This is optional but recommended. With a Pub/Sub service account, EmailEngine
+        receives changes in near real time. Without one, it falls back to polling each account about every 10
+        minutes, so webhooks for new, updated, or deleted emails (and bounce detection) still fire, just with up
+        to a 10-minute delay. Send-only accounts don't require this.
+    </p>
+
+    <label class="label-text" for="pubSubApp">Select service account to manage webhooks (optional). The service
+        account must be for the same Google Cloud Project.</label>
+    <select class="select w-full{{#if errors.pubSubApp}} is-invalid{{/if}}" id="pubSubApp"
+        name="pubSubApp" {{#unless baseScopesApi}}disabled{{/unless}}>
+
+        <option value="">Select the service account for your project</option>
+
+        {{!-- Nothing disables an option here: the select carries that for the whole control, and
+        filterPubSubApps() in oauth_form.hbs owns the per-option state so the two cannot fight. An
+        {{#unless baseScopesApi}} inside this {{#each}} resolved against the ITEM rather than the page,
+        so it shipped `disabled` on every option in every mode. --}}
+        {{#each pubSubApps}}
+        <option value="{{id}}" data-project="{{googleProjectId}}" {{#if selected}}selected{{/if}}>{{name}}{{#if
+            description}} -
+            {{description}}{{/if}} [{{googleProjectId}}]</option>
+        {{/each}}
+
+    </select>
+    {{#if errors.pubSubApp}}
+    <span class="helper-text text-error">{{errors.pubSubApp}}</span>
+    {{/if}}
+</div>
