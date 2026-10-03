@@ -11,7 +11,26 @@ module.exports = {
     // is a major we are deliberately soaking. Using 'minor' instead of a blanket reject so these
     // still receive security/patch updates within the safe major instead of being frozen at one
     // exact version. Verified against Node 20 (Docker) 2026-06-17.
-    target: name => (['nanoid', 'gettext-parser', 'xgettext-template', 'chai', 'undici', 'marked', '@sentry/node-core'].includes(name) ? 'minor' : 'latest'),
+    //
+    // `pino` is capped harder than the rest, at 'patch', because the break arrived in a MINOR and a
+    // major cap would not have stopped it. See its entry below.
+    target: name =>
+        name === 'pino'
+            ? 'patch'
+            : ['nanoid', 'gettext-parser', 'xgettext-template', 'chai', 'undici', 'marked', '@sentry/node-core'].includes(name)
+              ? 'minor'
+              : 'latest',
+    //   pino              - held on 10.3.x. 10.4.0 took PR #2294, which makes lib/caller.js prefer
+    //                       util.getCallSites() over the Error.prepareStackTrace dance. Inside a pkg
+    //                       binary that API aborts the PROCESS, not the call: V8 fails the CHECK in
+    //                       Script::GetPositionInfo() for a script that has no position info in the
+    //                       snapshot, and the binary dies on startup with SIGTRAP (exit 133) before
+    //                       main() does anything. `emailengine --version` is enough to trigger it.
+    //                       Reproduced on node24-macos-arm64 and caught by the linux-x64 binary build
+    //                       job, which exists for exactly this. Nothing in EmailEngine calls the API:
+    //                       pino reaches it whenever a logger is constructed. Lift only once a pino
+    //                       release guards the getCallSites path, or pkg ships position info for
+    //                       snapshotted scripts, and only with a binary built and run to prove it.
     //   nanoid            - 4.x dropped the CommonJS require export (ESM-only)
     //   gettext-parser    - 8.x is ESM-only
     //   xgettext-template - 6.x is ESM-only (translation build tool)
