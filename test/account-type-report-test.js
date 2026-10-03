@@ -31,9 +31,9 @@ const suffix = crypto.randomBytes(4).toString('hex');
 // stored "connected" state belongs to this run. Nothing in this file depends on the answer.
 const call = async message => (message.cmd === 'runIndex' ? 1 : null);
 
-async function captureGetRoute() {
+async function captureGetRoute(routeCall) {
     const routes = [];
-    await accountRoutes(buildMockArgs({ route: cfg => routes.push(cfg) }));
+    await accountRoutes(buildMockArgs({ route: cfg => routes.push(cfg) }, routeCall ? { call: routeCall } : undefined));
     const route = routes.find(r => r.method === 'GET' && r.path === '/v1/account/{account}');
     assert.ok(route, 'GET /v1/account/{account} is registered');
     return route;
@@ -106,5 +106,106 @@ test('the account getter reports the same type as the accounts listing', async t
         assert.equal(result.type, 'imap');
         assert.ok(!result.sendOnly);
         assert.equal((await listed(account)).type, 'imap');
+    });
+});
+
+// `?quota=true` is the one field of this record read off the live connection, and a lookup that
+// cannot answer used to fail the whole response with a 503 rather than leaving the field out.
+// getQuota() loads the account with requireValid, and only connected, connecting and syncing pass
+// that, so every ordinary IMAP account that happened to be disconnected, backing off after a connect
+// error, parked or paused answered 503 for its entire record - as did one carrying no IMAP, SMTP or
+// OAuth2 configuration at all. The skips in front of the call are a short-circuit; the thing that
+// makes the field optional is that a failure is caught.
+test('the account getter never lets the quota lookup fail the account', async t => {
+    let quotaCalls = 0;
+    let quotaFails = false;
+    // Counted rather than refused, so the positive case can assert the request is still made
+    const route = await captureGetRoute(async message => {
+        if (message.cmd === 'getQuota') {
+            quotaCalls++;
+            if (quotaFails) {
+                throw Object.assign(new Error('Quota request failed'), { statusCode: 400 });
+            }
+            return { usage: 1, limit: 2 };
+        }
+        return message.cmd === 'runIndex' ? 1 : {};
+    });
+
+    const get = account => route.handler({ params: { account }, query: { quota: true }, headers: {}, logger });
+
+    const accounts = [];
+    t.after(async () => {
+        for (const account of accounts) {
+            await new Account({ redis, account, secret: await getSecret(), logger, call }).delete().catch(() => false);
+        }
+    });
+
+    // getQuota() refuses an account that has never connected, and the run index has to match or the
+    // stored state reads as "init" again
+    const markConnected = account => redis.hmset(`${REDIS_PREFIX}iad:${account}`, { state: 'connected', runIndex: '1' });
+
+    await t.test('a connected IMAP account reports one', async () => {
+        const account = `quota-imap-${suffix}`;
+        accounts.push(account);
+        await seedImapAccount(account);
+        await markConnected(account);
+
+        const result = await get(account);
+        assert.equal(quotaCalls, 1);
+        assert.deepEqual(result.quota, { usage: 1, limit: 2 });
+    });
+
+    await t.test('an IMAP account that is not connected still returns its record', async () => {
+        // The broad case: nothing is wrong with this account's configuration, it simply is not
+        // connected right now, which is a state every account passes through
+        const account = `quota-disconnected-${suffix}`;
+        accounts.push(account);
+        await seedImapAccount(account);
+        await redis.hmset(`${REDIS_PREFIX}iad:${account}`, { state: 'disconnected', runIndex: '1' });
+
+        const result = await get(account);
+        assert.equal(result.type, 'imap');
+        assert.ok(!('quota' in result), 'the field is left out rather than failing the response');
+    });
+
+    await t.test('a failed quota request leaves the field out rather than the record', async () => {
+        const account = `quota-failing-${suffix}`;
+        accounts.push(account);
+        await seedImapAccount(account);
+        await markConnected(account);
+
+        quotaFails = true;
+        t.after(() => {
+            quotaFails = false;
+        });
+
+        const before = quotaCalls;
+        const result = await get(account);
+        assert.equal(quotaCalls, before + 1, 'the request was made');
+        assert.equal(result.type, 'imap');
+        assert.ok(!('quota' in result));
+    });
+
+    await t.test('an account with no IMAP, SMTP or OAuth2 configuration is not even asked', async () => {
+        const account = `quota-unconfigured-${suffix}`;
+        accounts.push(account);
+        await new Account({ redis, account, secret: await getSecret(), logger, call }).create({ account, name: 'Unconfigured' });
+
+        const before = quotaCalls;
+        const result = await get(account);
+        assert.equal(result.type, 'sending', 'nothing to connect with');
+        assert.ok(!result.sendOnly, 'and a broken configuration is not a send-only one');
+        assert.equal(quotaCalls, before, 'no worker round trip for a request that could never answer');
+        assert.ok(!('quota' in result));
+    });
+
+    await t.test('an account the operator switched off is not even asked', async () => {
+        const account = `quota-sendonly-${suffix}`;
+        accounts.push(account);
+        await seedImapAccount(account, { disabled: true });
+
+        const before = quotaCalls;
+        await get(account);
+        assert.equal(quotaCalls, before);
     });
 });
