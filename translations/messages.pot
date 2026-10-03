@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-10-02 08:19+0000\n"
+"POT-Creation-Date: 2026-10-03 06:01+0000\n"
 
 #: views/account-workspace-error.hbs:7
 msgid "Work Account Required"
@@ -48,7 +48,7 @@ msgid "Dashboard"
 msgstr ""
 
 #: views/config/license.hbs:20
-#: lib/ui-routes/oauth-config-routes.js:282
+#: lib/ui-routes/oauth-config-routes.js:283
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
@@ -62,6 +62,26 @@ msgstr[1] ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
 msgstr ""
 
 #: views/unsubscribe.hbs:7
@@ -116,26 +136,6 @@ msgid ""
 "received."
 msgstr ""
 
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
-msgstr ""
-
 #: views/accounts/register/imap.hbs:13
 msgid "Your name"
 msgstr ""
@@ -165,38 +165,6 @@ msgstr ""
 #: views/accounts/register/imap.hbs:55
 #: views/accounts/register/validating.hbs:74
 msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:35
-msgid "Checking your mail server"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:40
-msgid "Still checking. This can take up to a minute."
-msgstr ""
-
-#: views/accounts/register/validating.hbs:47
-msgid "Enter server settings manually"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:53
-msgid "We couldn't sign in to your mail server"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:54
-msgid "Check the settings on the next page and try again."
-msgstr ""
-
-#: views/accounts/register/validating.hbs:61
-msgid "Continue to server settings"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:69
-msgid "Almost there"
-msgstr ""
-
-#: views/accounts/register/validating.hbs:70
-msgid "Continue to review your mail server settings."
 msgstr ""
 
 #: views/accounts/register/index.hbs:6
@@ -311,6 +279,38 @@ msgstr ""
 msgid "We couldn't connect with these settings. Check the errors below."
 msgstr ""
 
+#: views/accounts/register/validating.hbs:35
+msgid "Checking your mail server"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:40
+msgid "Still checking. This can take up to a minute."
+msgstr ""
+
+#: views/accounts/register/validating.hbs:47
+msgid "Enter server settings manually"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:53
+msgid "We couldn't sign in to your mail server"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:54
+msgid "Check the settings on the next page and try again."
+msgstr ""
+
+#: views/accounts/register/validating.hbs:61
+msgid "Continue to server settings"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:69
+msgid "Almost there"
+msgstr ""
+
+#: views/accounts/register/validating.hbs:70
+msgid "Continue to review your mail server settings."
+msgstr ""
+
 #: views/partials/public_test_labels.hbs:9
 msgid "Error"
 msgstr ""
@@ -355,7 +355,7 @@ msgid ""
 "contact the service that sent you this link."
 msgstr ""
 
-#: lib/autodetect-imap-settings.js:155
+#: lib/autodetect-imap-settings.js:160
 msgid ""
 "Microsoft has disabled password-based sign-ins (including app passwords) "
 "for Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To "
@@ -376,88 +376,88 @@ msgstr ""
 #: lib/tools.js:2513
 #: lib/tools.js:2519
 #: lib/tools.js:2524
-#: lib/ui-routes/account-routes.js:1322
+#: lib/ui-routes/account-routes.js:1324
 msgid "Invalid or expired account setup URL"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:481
-#: lib/ui-routes/account-routes.js:525
-#: lib/ui-routes/account-routes.js:845
-#: lib/ui-routes/account-routes.js:922
-#: lib/ui-routes/account-routes.js:935
-#: lib/ui-routes/account-routes.js:982
-#: lib/ui-routes/account-routes.js:1198
-#: lib/ui-routes/account-routes.js:1389
+#: lib/ui-routes/account-routes.js:483
+#: lib/ui-routes/account-routes.js:527
+#: lib/ui-routes/account-routes.js:847
+#: lib/ui-routes/account-routes.js:924
+#: lib/ui-routes/account-routes.js:937
+#: lib/ui-routes/account-routes.js:984
+#: lib/ui-routes/account-routes.js:1200
+#: lib/ui-routes/account-routes.js:1391
 #: lib/ui-routes/route-helpers.js:362
 #: workers/api.js:2305
 #: workers/api.js:2380
 msgid "Email Account Setup"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:550
-#: lib/ui-routes/account-routes.js:582
+#: lib/ui-routes/account-routes.js:552
+#: lib/ui-routes/account-routes.js:584
 #: lib/ui-routes/unsubscribe-routes.js:71
 msgid "Invalid request. Check your input and try again."
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:726
+#: lib/ui-routes/account-routes.js:728
 msgid "Too many attempts for this setup link. Request a new setup link to continue."
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:969
-#: lib/ui-routes/account-routes.js:1372
+#: lib/ui-routes/account-routes.js:971
+#: lib/ui-routes/account-routes.js:1374
 msgid "Couldn't set up account. Try again."
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1057
-#: lib/ui-routes/account-routes.js:1097
+#: lib/ui-routes/account-routes.js:1059
+#: lib/ui-routes/account-routes.js:1099
 #: lib/ui-routes/admin-entities-routes.js:1941
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1060
-#: lib/ui-routes/account-routes.js:1100
+#: lib/ui-routes/account-routes.js:1062
+#: lib/ui-routes/account-routes.js:1102
 #: lib/ui-routes/admin-entities-routes.js:1944
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1065
-#: lib/ui-routes/account-routes.js:1117
+#: lib/ui-routes/account-routes.js:1067
+#: lib/ui-routes/account-routes.js:1119
 #: lib/ui-routes/admin-entities-routes.js:1961
 msgid "Connection timed out"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1071
-#: lib/ui-routes/account-routes.js:1120
+#: lib/ui-routes/account-routes.js:1073
+#: lib/ui-routes/account-routes.js:1122
 #: lib/ui-routes/admin-entities-routes.js:1964
 msgid "Could not connect to server"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1084
-#: lib/ui-routes/account-routes.js:1088
-#: lib/ui-routes/account-routes.js:1109
-#: lib/ui-routes/account-routes.js:1113
+#: lib/ui-routes/account-routes.js:1086
+#: lib/ui-routes/account-routes.js:1090
+#: lib/ui-routes/account-routes.js:1111
+#: lib/ui-routes/account-routes.js:1115
 #: lib/ui-routes/admin-entities-routes.js:1953
 #: lib/ui-routes/admin-entities-routes.js:1957
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1103
+#: lib/ui-routes/account-routes.js:1105
 #: lib/ui-routes/admin-entities-routes.js:1947
 msgid "Authentication credentials were not provided"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1106
+#: lib/ui-routes/account-routes.js:1108
 #: lib/ui-routes/admin-entities-routes.js:1950
 msgid "OAuth2 authentication failed"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1123
+#: lib/ui-routes/account-routes.js:1125
 #: lib/ui-routes/admin-entities-routes.js:1967
 msgid "Unexpected server response"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1310
+#: lib/ui-routes/account-routes.js:1312
 msgid "Temporary error, please try again"
 msgstr ""
 
@@ -465,11 +465,11 @@ msgstr ""
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/ui-routes/oauth-config-routes.js:275
+#: lib/ui-routes/oauth-config-routes.js:276
 msgid "Unknown"
 msgstr ""
 
-#: lib/ui-routes/oauth-config-routes.js:284
+#: lib/ui-routes/oauth-config-routes.js:285
 msgid "Indefinite"
 msgstr ""
 
