@@ -6401,6 +6401,12 @@
             "type": "boolean",
             "description": "Only sync if true",
             "default": false
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Outlook (MS Graph) accounts only, ignored for other account types. Look for messages received since this time that were never announced, instead of the usual recovery window of the last few hours. Messages announced before EmailEngine stopped remembering them (about six hours) are announced again with a new messageNew webhook. At most 30 days back.",
+            "example": "2026-10-02T13:00:00.000Z"
           }
         }
       },

@@ -43,7 +43,8 @@ The IMAP worker (`workers/imap.js`) manages all email account connections and sy
 **Connection types:**
 - **IMAP**: Native IMAP via ImapFlow library with IDLE for real-time sync
 - **Gmail API**: OAuth2-based, uses Pub/Sub for notifications (10-min polling fallback)
-- **Outlook API**: Microsoft Graph with subscription webhooks (3-day auto-renewal). The hourly `renewOrCreateSubscription()` recreates a missing subscription even after the capped fast retries are spent, clearing their counters first - it is the account's only slow retry and there is no polling fallback, so an account left unsubscribed syncs nothing at all
+- **Outlook API**: Microsoft Graph with subscription webhooks (3-day auto-renewal). The hourly `renewOrCreateSubscription()` recreates a missing subscription even after the capped fast retries are spent, clearing their counters first - it is the account's only slow retry, and an account left unsubscribed syncs nothing at all, because the periodic recovery pass below only runs while the account is `connected` and a failed subscription reports `connectError`
+- **Outlook periodic recovery**: every connected full-access Graph account runs a missed-notification recovery pass every `EENGINE_OUTLOOK_FALLBACK_POLL_INTERVAL` (default 10 minutes, `0` off), because Graph drops notifications without a `missed` lifecycle event; `setupFallbackPollTimer()` has the reasoning. The request is an in-memory flag the drain picks up, not a deferred-store entry, and a failed periodic pass is not retried. The announced set (`iam:<account>:announced-in`, members keyed by message ID and folder, so a sent draft is still announced in Sent Items) is the only `created` dedupe. Run sync accepts `since` (Graph only, at most 30 days) to look past the window
 
 **Synchronization:**
 - IMAP: Persistent IDLE connection for real-time change detection

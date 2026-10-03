@@ -239,7 +239,6 @@ test('OutlookClient.processHistory()', async t => {
     await t.test('a message is marked seen only once it was announced, so a failed one is not skipped on its retry', async () => {
         const outlook = makeOutlook(stubStore());
         const emailId = `lock-test-${process.pid}`;
-        const dedupeKey = `${emailId}:created`;
         outlook.prepareNewMessage = async () => ({ id: emailId, path: 'INBOX' });
         const announced = [];
         let fail = true;
@@ -251,14 +250,13 @@ test('OutlookClient.processHistory()', async t => {
         });
 
         await assert.rejects(outlook.processChangeEvent({ type: 'created', message: emailId }, {}), /OAuth2 request failed/);
-        assert.equal(await outlook.isRecentlySeen(dedupeKey, 'INBOX'), false);
+        assert.deepEqual(await outlook.getAnnounced([{ id: emailId, path: 'INBOX' }]), new Set(), 'not marked before it was announced');
 
         fail = false;
         await outlook.processChangeEvent({ type: 'created', message: emailId }, {});
         await outlook.processChangeEvent({ type: 'created', message: emailId }, {});
         assert.deepEqual(announced, [emailId], 'announced once, the repeat is skipped as recently seen');
 
-        await redis.hdel(outlook.dedupeBucketKeys()[1], dedupeKey);
         await redis.del(outlook.getAnnouncedKey());
     });
 
@@ -276,7 +274,8 @@ test('OutlookClient.processHistory()', async t => {
         const store = stubStore();
         const outlook = makeOutlook(store);
         outlook.request = async () => ({ value: [{ id: 'm1', parentFolderId: 'f1' }] });
-        outlook.getCachedMailboxListing = async () => null;
+        // a folder missing from the listing is resolved by the fetch
+        outlook.getCachedMailboxListing = async () => [];
         outlook.prepareNewMessage = async () => {
             throw apiError(503);
         };
@@ -295,6 +294,7 @@ test('OutlookClient.processHistory()', async t => {
         outlook.account = `recovery-unmarked-${process.pid}`;
         const emailId = `recovery-lock-${process.pid}`;
         outlook.request = async () => ({ value: [{ id: emailId, parentFolderId: 'f1' }] });
+        outlook.getCachedMailboxListing = async () => [{ id: 'f1', pathName: 'INBOX' }];
         outlook.prepareNewMessage = async () => {
             throw apiError(503);
         };
@@ -302,7 +302,7 @@ test('OutlookClient.processHistory()', async t => {
         await outlook.syncMissedMessages({ since: Date.now() - 60 * 1000 });
 
         assert.equal(store.deferred.length, 1);
-        assert.deepEqual(await outlook.getAnnounced([emailId]), new Set());
+        assert.deepEqual(await outlook.getAnnounced([{ id: emailId, path: 'INBOX' }]), new Set());
         assert.equal(await redis.exists(outlook.getAccountKey()), 0, 'a pass does not recreate a deleted account record');
     });
 });
@@ -370,7 +370,12 @@ test('Outlook missed-notification recovery', async t => {
                       '@odata.nextLink': 'https://graph.example/next'
                   };
         };
-        outlook.prepareNewMessage = async id => ({ id, path: 'INBOX' });
+        outlook.getCachedMailboxListing = async () => [{ id: 'f1', pathName: 'INBOX' }];
+        let fetched = [];
+        outlook.prepareNewMessage = async id => {
+            fetched.push(id);
+            return { id, path: 'INBOX' };
+        };
         const announced = [];
         outlook.processNew = clearsPath(async messageData => announced.push(messageData.id));
 
@@ -383,14 +388,15 @@ test('Outlook missed-notification recovery', async t => {
         assert.equal(queries[0].payload.$orderby, 'receivedDateTime asc');
         assert.equal(queries[1].payload, null, 'the next page link carries the query');
         assert.deepEqual(announced, [ids[0], ids[2]]);
-        assert.deepEqual(await outlook.getAnnounced(ids), new Set(ids), 'recovered messages are remembered too');
-        assert.equal(await redis.hget(outlook.dedupeBucketKeys()[1], `${ids[0]}:created`), 'INBOX', 'with the path processNew() cleared');
+        assert.deepEqual(fetched, [ids[0], ids[2]], 'an announced message is skipped without a fetch');
+        assert.deepEqual(
+            await outlook.getAnnounced(ids.map(id => ({ id, path: 'INBOX' }))),
+            new Set(ids),
+            'recovered messages are remembered too, in the folder processNew() cleared'
+        );
         assert.ok(Number(await redis.hget(outlook.getAccountKey(), 'outlookRecoveredUntil')) >= before, 'the next pass starts here');
 
         await redis.del(outlook.getAnnouncedKey(), outlook.getAccountKey());
-        for (const id of ids) {
-            await redis.hdel(outlook.dedupeBucketKeys()[1], `${id}:created`);
-        }
     });
 
     await t.test('a failed page fails the recovery, so it is retried as a whole', async () => {
@@ -459,13 +465,34 @@ test('Outlook missed-notification recovery', async t => {
         const [fresh, old] = [`fresh-${process.pid}`, `old-${process.pid}`];
 
         await outlook.markAnnounced(fresh, 'INBOX');
-        await redis.zadd(outlook.getAnnouncedKey(), Date.now() - OUTLOOK_ANNOUNCED_RETENTION - 1000, old);
+        await redis.zadd(outlook.getAnnouncedKey(), Date.now() - OUTLOOK_ANNOUNCED_RETENTION - 1000, outlook.announcedMember(old, 'INBOX'));
 
-        assert.deepEqual(await outlook.getAnnounced([fresh, old, 'never']), new Set([fresh]));
+        assert.deepEqual(await outlook.getAnnounced([fresh, old, 'never'].map(id => ({ id, path: 'INBOX' }))), new Set([fresh]));
         assert.ok((await redis.pttl(outlook.getAnnouncedKey())) > 0, 'the set expires with the account idle');
 
         await redis.del(outlook.getAnnouncedKey());
-        await redis.hdel(outlook.dedupeBucketKeys()[1], `${fresh}:created`);
+    });
+
+    // Graph keeps a draft's immutable ID when it is sent, so the sent copy is the same ID in
+    // another folder. It was announced as new in Sent Items before the set existed, and still is
+    await t.test('a message announced in one folder is announced again in another', async () => {
+        const outlook = makeOutlook(stubStore());
+        outlook.account = `announced-folders-${process.pid}`;
+        const emailId = `draft-${process.pid}`;
+        let path = 'Drafts';
+        outlook.prepareNewMessage = async id => ({ id, path });
+        const announced = [];
+        outlook.processNew = clearsPath(async messageData => announced.push(messageData.id));
+
+        try {
+            await outlook.processChangeEvent({ type: 'created', message: emailId }, {});
+            path = 'Sent Items';
+            await outlook.processChangeEvent({ type: 'created', message: emailId }, {});
+            await outlook.processChangeEvent({ type: 'created', message: emailId }, {});
+            assert.deepEqual(announced, [emailId, emailId], 'once per folder');
+        } finally {
+            await redis.del(outlook.getAnnouncedKey());
+        }
     });
 });
 
@@ -495,15 +522,97 @@ test('OutlookClient retried created event', async t => {
         outlook.processNew = clearsPath(async messageData => announced.push(messageData.id));
 
         try {
-            await outlook.markAnnounced(emailId, 'Archive');
-            // the dedupe bucket entry has long expired by the time a later attempt runs
-            await redis.hdel(outlook.dedupeBucketKeys()[1], `${emailId}:created`);
+            await outlook.markAnnounced(emailId, 'INBOX');
 
             await outlook.processChangeEvent({ type: 'created', message: emailId, attempt: 3 }, {});
             assert.deepEqual(announced, []);
         } finally {
             await redis.del(outlook.getAnnouncedKey());
         }
+    });
+
+    // Graph keeps retrying an undelivered notification for up to four hours, so its first attempt
+    // can reach us long after a recovery pass announced the message. Only `attempt` used to send
+    // the event to the announced set, and that late first delivery was announced a second time
+    await t.test('a first delivery is skipped too once a recovery pass announced the message', async () => {
+        const outlook = makeOutlook(stubStore());
+        outlook.account = `late-first-${process.pid}`;
+        const emailId = `late-${process.pid}`;
+        outlook.prepareNewMessage = async id => ({ id, path: 'INBOX' });
+        const announced = [];
+        outlook.processNew = clearsPath(async messageData => announced.push(messageData.id));
+
+        try {
+            await outlook.markAnnounced(emailId, 'INBOX');
+
+            await outlook.processChangeEvent({ type: 'created', message: emailId }, {});
+            assert.deepEqual(announced, []);
+
+            const fresh = `fresh-${process.pid}`;
+            await outlook.processChangeEvent({ type: 'created', message: fresh }, {});
+            assert.deepEqual(announced, [fresh], 'a message nobody announced still is');
+        } finally {
+            await redis.del(outlook.getAnnouncedKey());
+        }
+    });
+});
+
+test('Account.pushQueueEvents()', async t => {
+    const makeAccount = (call, overrides = {}) =>
+        new Account({ redis: Object.assign(Object.create(redis), overrides), account: `push-${process.pid}`, logger: noopLogger, call });
+
+    await t.test('answers without waiting for the worker', { timeout: 5000 }, async () => {
+        let release;
+        const calls = [];
+        const account = makeAccount(message => {
+            calls.push(message);
+            return new Promise(resolve => (release = resolve));
+        });
+
+        try {
+            // would never settle if the worker call were awaited
+            await account.pushQueueEvents([{ type: 'created', message: 'm1' }]);
+            await new Promise(resolve => setImmediate(resolve));
+            assert.deepEqual(calls, [{ cmd: 'externalNotify', accounts: [account.account] }]);
+            assert.deepEqual(await account.pullQueueEvent(), { type: 'created', message: 'm1' });
+        } finally {
+            release?.();
+            await redis.del(account.getExternalQueueKey());
+        }
+    });
+
+    await t.test('a failing worker call does not fail the delivery', async () => {
+        const account = makeAccount(() => {
+            throw new Error('no worker');
+        });
+        const asyncFailure = makeAccount(async () => {
+            throw new Error('timeout');
+        });
+
+        try {
+            await account.pushQueueEvents([{ type: 'created', message: 'm2' }]);
+            await asyncFailure.pushQueueEvents([{ type: 'created', message: 'm3' }]);
+            await new Promise(resolve => setImmediate(resolve));
+        } finally {
+            await redis.del(account.getExternalQueueKey());
+        }
+    });
+
+    await t.test('a failed write still fails it, so Graph delivers the notification again', async () => {
+        let called = false;
+        const account = makeAccount(
+            async () => {
+                called = true;
+            },
+            {
+                lpush: async () => {
+                    throw new Error('READONLY');
+                }
+            }
+        );
+
+        await assert.rejects(account.pushQueueEvents([{ type: 'created', message: 'm4' }]), /READONLY/);
+        assert.equal(called, false, 'the worker is not told about events that were not stored');
     });
 });
 
@@ -848,7 +957,6 @@ test('Account deferred change store', async t => {
             assert.deepEqual(announced, [emailId]);
             assert.deepEqual(await account.listDueChangeEvents(), { due: [], next: null });
         } finally {
-            await redis.hdel(outlook.dedupeBucketKeys()[1], `${emailId}:created`);
             await redis.del(outlook.getAnnouncedKey());
         }
     });

@@ -588,6 +588,18 @@ const metrics = {
         labelNames: ['status', 'provider', 'statusCode']
     }),
 
+    outlookMissedRecovery: new promClient.Counter({
+        name: 'outlook_missed_recovery',
+        help: 'MS Graph missed-notification recovery passes, by what asked for them and whether they found unannounced messages',
+        labelNames: ['reason', 'outcome']
+    }),
+
+    outlookMissedRecoveredMessages: new promClient.Counter({
+        name: 'outlook_missed_recovered_messages',
+        help: 'New messages announced by MS Graph missed-notification recovery instead of by a change notification',
+        labelNames: ['reason']
+    }),
+
     outlookSubscriptions: new promClient.Gauge({
         name: 'outlook_subscriptions',
         help: 'MS Graph webhook subscription states',

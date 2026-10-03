@@ -158,6 +158,26 @@ test('Run sync for Outlook accounts', async t => {
         assert.strictEqual(recovered, 1, 'and picked up right away');
     });
 
+    await t.test('queues a manual recovery, carrying how far back to look when asked', async () => {
+        const queued = [];
+        const ctx = {
+            closed: false,
+            logger: createMockLogger(),
+            accountObject: { queueMissedRecovery: async opts => queued.push(opts) },
+            renewMailboxFolderCache: async () => {},
+            recoverMissedNotifications: () => true
+        };
+        const since = Date.now() - 24 * 60 * 60 * 1000;
+
+        await OutlookClient.prototype.syncMailboxes.call(ctx);
+        await OutlookClient.prototype.syncMailboxes.call(ctx, { since });
+
+        assert.deepStrictEqual(queued, [
+            { reason: 'manual', since: undefined },
+            { reason: 'manual', since }
+        ]);
+    });
+
     await t.test('continues to recovery even if folder cache refresh throws', async () => {
         let queued = 0;
         let ctx = {

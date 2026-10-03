@@ -57,7 +57,10 @@ const TIERS = {
             // Short Gmail fallback-poll interval so gmail-polling-test can exercise the poller
             // quickly. Harmless for push-based Gmail accounts in api-test: notifications keep
             // resetting the timer, and a stray fallback sync is coalesced/idempotent.
-            EENGINE_GMAIL_FALLBACK_POLL_INTERVAL: '15000'
+            EENGINE_GMAIL_FALLBACK_POLL_INTERVAL: '15000',
+            // The same for the Graph periodic recovery pass and outlook-polling-test. A pass that
+            // finds a message api-test's Outlook account already saw does not announce it again
+            EENGINE_OUTLOOK_FALLBACK_POLL_INTERVAL: '15000'
         }
     },
     dovecot: {

@@ -446,7 +446,7 @@ class ConnectionHandler {
         }
     }
 
-    async syncConnection(account) {
+    async syncConnection(account, opts = {}) {
         logger.info({ msg: 'Account sync requested', account });
         if (this.accounts.has(account)) {
             let accountObject = this.accounts.get(account);
@@ -458,7 +458,8 @@ class ConnectionHandler {
                     msg: 'Account sync requested'
                 });
 
-                await accountObject.connection.syncMailboxes();
+                // only the Graph client reads the options, the others sync their own way
+                await accountObject.connection.syncMailboxes(opts);
 
                 return true;
             }
@@ -994,10 +995,12 @@ class ConnectionHandler {
                 await this.closeConnections();
                 return true;
 
+            case 'sync':
+                return await this.syncConnection(message.account, { since: message.since });
+
             case 'delete':
             case 'unassign':
             case 'update':
-            case 'sync':
             case 'pause':
             case 'resume':
             case 'reconnect':
