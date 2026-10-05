@@ -17,7 +17,7 @@ module.exports = {
     target: name =>
         name === 'pino'
             ? 'patch'
-            : ['nanoid', 'gettext-parser', 'xgettext-template', 'chai', 'undici', 'marked', '@sentry/node-core'].includes(name)
+            : ['nanoid', 'gettext-parser', 'xgettext-template', 'chai', 'undici', 'marked', '@sentry/node-core', 'he'].includes(name)
               ? 'minor'
               : 'latest',
     //   pino              - held on 10.3.x. 10.4.0 took PR #2294, which makes lib/caller.js prefer
@@ -40,6 +40,9 @@ module.exports = {
     //   marked            - 16.x dropped the CommonJS build (ESM-only, needs require(esm)/Node >=20.19); 15.x is the
     //                       last require()-compatible line. 15.0.12 verified on Node 20-24 and in a yao/pkg node24 build.
     //                       Permanent while the Node 20 floor above stands.
+    //   he                - 2.x is ESM-only (exports only src/he.mjs) and requires Node >=22; require('he') throws
+    //                       ERR_REQUIRE_ESM on Node 20 before 20.19. 1.2.0 is the last CommonJS release. mailparser,
+    //                       which reaches EmailEngine through the same require, rejects 2.x for the same reason.
     //   @sentry/node-core - held on the 10.x line for the reasons @sentry/node (which it replaced, through its
     //                       `light` entry) was held there: @sentry/node 11.x requires Node >=20.19 (the DigitalOcean
     //                       images are not guaranteed to be on a 20.x that new), and it depends on
