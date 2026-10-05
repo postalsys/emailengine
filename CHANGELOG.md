@@ -1,5 +1,49 @@
 # Changelog
 
+## [2.82.1](https://github.com/postalsys/emailengine/compare/v2.82.0...v2.82.1) (2026-10-05)
+
+
+### Bug Fixes
+
+* carry the GatewayNotFound code in the 404 response body ([43af659](https://github.com/postalsys/emailengine/commit/43af65915bc6daa77bbf1612860eb40e62ed93ef))
+* check every PTR record when filtering scanner opens and clicks ([ebcd78b](https://github.com/postalsys/emailengine/commit/ebcd78b7957c925b5dc454415f7d9706b17d4a21))
+* classify a wrapped transport failure as the outage it is ([a8d63a8](https://github.com/postalsys/emailengine/commit/a8d63a841fcdb55faa619656bb43d2008c0ce3e2))
+* correct the descriptions and comments that disagreed with the behavior ([dcdc3e9](https://github.com/postalsys/emailengine/commit/dcdc3e9b994ab137afe5769790d8c9cd5a227233))
+* declare the token-request fields the error record actually carries ([23fd0e4](https://github.com/postalsys/emailengine/commit/23fd0e4f8ad2de79bb251cc72eefb2736f1a541e))
+* **deps:** hold pino at 10.3.x, which 10.4.0 made unbundlable ([4c4e7e3](https://github.com/postalsys/emailengine/commit/4c4e7e32bfde6a079bce796a15b2b85f6374c312))
+* **deps:** update @sentry/node-core, pino, eslint and supertest ([9c5b9d5](https://github.com/postalsys/emailengine/commit/9c5b9d51c7a1e8ffd11adecd5181c9b4461bb34c))
+* **deps:** update imapflow, mailparser, nodemailer and smtp-server ([ef14661](https://github.com/postalsys/emailengine/commit/ef1466115acc3dc727e1b46b08fd194dd3f90beb))
+* **deps:** update imapflow, nodemailer, mailparser and the libbase64 chain ([9c8971e](https://github.com/postalsys/emailengine/commit/9c8971e345cfada10f875ca1086ea010b10ada91))
+* describe hasMore the way both backends behave ([8b0bc19](https://github.com/postalsys/emailengine/commit/8b0bc19b32adf8fdb3c5095551ad75417430ba8a))
+* document progress.networkRouting where the outbox entry carries it ([593e390](https://github.com/postalsys/emailengine/commit/593e390e38964e8f57359b421a2d2825a50be1cb))
+* follow an autodiscovery in-response redirect anonymously ([554068e](https://github.com/postalsys/emailengine/commit/554068e322bc7f2daf67ad1841900c420e9d3da1))
+* hold MCP text results to the result cap, newest-first for a log ([d44c648](https://github.com/postalsys/emailengine/commit/d44c64834bf86b36ee0ffe4cdd56da96a8733718))
+* let POST /v1/gateway generate the gateway id ([6901349](https://github.com/postalsys/emailengine/commit/6901349bcfb25fe2c3995a1c0d2a8fe54fd10ba7))
+* let the CLI issue the mcp-manage scope, with explicit grants ([84565d1](https://github.com/postalsys/emailengine/commit/84565d149d7661390c8c75e8a737fa14a628f238))
+* make the export retention and per-message size limits settable ([c6e6930](https://github.com/postalsys/emailengine/commit/c6e6930d6619ae8ceb96a70ac151707db86de7d6))
+* move the nextAttempt retry timing into the module that owns the job phase ([24defb8](https://github.com/postalsys/emailengine/commit/24defb839c725f0f6abdee3bd7f08a395f92aa77))
+* name the token endpoint when a credential request cannot reach it ([a0748bc](https://github.com/postalsys/emailengine/commit/a0748bc61943f107fdaf18d01cf02e9f1b899c8b))
+* offer all five special-use folder overrides on the account form ([d7faa2d](https://github.com/postalsys/emailengine/commit/d7faa2d6a39984fb4ccbf0e41026abcc279aec13))
+* offer the Gmail API base scope to a service-account app ([fc23ea2](https://github.com/postalsys/emailengine/commit/fc23ea2a39142c0cb561d687b4d0be862068a6bc))
+* **outlook:** recover messages whose Graph notification was silently dropped ([f0ea5c1](https://github.com/postalsys/emailengine/commit/f0ea5c19fd6835d23a6665c1431bc3f0a054dde2))
+* perform the autodiscovery steps that name another endpoint ([83a4f6c](https://github.com/postalsys/emailengine/commit/83a4f6cd43ad523062acfed4674a0e8bde194891))
+* print the api.proxy default the server actually applies ([c611661](https://github.com/postalsys/emailengine/commit/c6116611b607dd0e7011e3ed93eefaa45e80c4f4))
+* read EENGINE_WORKERS_EXPORT, which the Workers page already named ([f397492](https://github.com/postalsys/emailengine/commit/f397492cbfd6a05a55b31ce1c1e0518f6a7e7743))
+* read every EENGINE_ variable through the one helper ([b58bfec](https://github.com/postalsys/emailengine/commit/b58bfeccfc18ff39ec841e4e737a4a1299cc499d))
+* record a delivery failure the SMTP error table cannot describe ([01d749f](https://github.com/postalsys/emailengine/commit/01d749f7c3d67d54af0a5abbdfab0f52ec69e233))
+* report a parked IMAP account as an IMAP account ([0be8f56](https://github.com/postalsys/emailengine/commit/0be8f568719143919c2fa67300969a300050a15c))
+* run the Docker Compose command setup-production.sh checked for ([e0e7272](https://github.com/postalsys/emailengine/commit/e0e7272bd481ca5ce6362ee559fdaca04f3730b1))
+* say that a Graph subscription failure is what connectError can mean ([a073622](https://github.com/postalsys/emailengine/commit/a0736226cdb4b7ef59bbb6f1b9221035575280f7))
+* say what happens to the workers when there is no active license ([0b97e05](https://github.com/postalsys/emailengine/commit/0b97e056bda19904b385b8441c5c72eca74d8392))
+* say what makes an OAuth2 app API-based ([d54f8eb](https://github.com/postalsys/emailengine/commit/d54f8eb51ada78844418ee0d09509339f8a2f2ae))
+* say when a file-backed secret resolves differently than it used to ([f4712fa](https://github.com/postalsys/emailengine/commit/f4712fa1b58608a4141f0b3e8c9c7231307db477))
+* stop a failed quota lookup from failing the account it belongs to ([dd45dac](https://github.com/postalsys/emailengine/commit/dd45dac933dbb11f27eb2ad41b6eba2ca2e4985d))
+* stop advertising verify_oauth2_app to an account-bound MCP credential ([441dc3f](https://github.com/postalsys/emailengine/commit/441dc3f00b3290355e49e295795c36b576fe2f04))
+* stop the account form wiping the folder overrides it does not show ([fc3d5eb](https://github.com/postalsys/emailengine/commit/fc3d5eb7ccc74ef3d3a2d01416fce0641828ef1a))
+* strip skipped scopes on every Microsoft cloud, not just the global one ([d74ab26](https://github.com/postalsys/emailengine/commit/d74ab260347424d9cd3b95954ddd09a18a06d513))
+* tighten the MCP account binding, result cap, outbox retry time and CLI scopes ([a54a448](https://github.com/postalsys/emailengine/commit/a54a448294b17eaa84635ffc1ebb6e7f03561b37))
+* verify the hd claim for a Workspace-only OAuth2 application ([5fbb322](https://github.com/postalsys/emailengine/commit/5fbb3228d634f65dab654bd9370d54611e2f0981))
+
 ## [2.82.0](https://github.com/postalsys/emailengine/compare/v2.81.2...v2.82.0) (2026-10-01)
 
 
