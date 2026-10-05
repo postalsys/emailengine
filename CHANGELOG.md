@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.82.2](https://github.com/postalsys/emailengine/compare/v2.82.1...v2.82.2) (2026-10-05)
+
+
+### Bug Fixes
+
+* **outlook:** keep polling an account whose subscription fails but whose mailbox can be read ([a563624](https://github.com/postalsys/emailengine/commit/a563624137b14c66b0c10bf431139656c5da0c7c))
+
 ## [2.82.1](https://github.com/postalsys/emailengine/compare/v2.82.0...v2.82.1) (2026-10-05)
 
 
