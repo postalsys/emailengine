@@ -29,6 +29,13 @@ const { LAST_ERROR_EVENT_FIELD, OUTLOOK_MAX_RETRY_ATTEMPTS } = require('../lib/c
 // AADSTS500014 as Graph reports it, which is the text an operator has to be shown.
 const SP_DISABLED = 'The service principal for resource https://outlook.office365.com is disabled.';
 
+// The mailbox probe reportSubscriptionFailure() makes before parking an account. A tenant with a
+// disabled service principal fails every Graph mail call, which is what the clients below default
+// to; a test about a readable mailbox swaps in one that answers.
+const refusedMailbox = async () => {
+    throw new Error(SP_DISABLED);
+};
+
 // lib/lua/h-del-if-equals.lua against a Map: the delete applies only while the guard field still
 // holds the value the caller judged. Shared by both hand-rolled clients below, so they cannot
 // prove different things about the same script.
@@ -87,6 +94,7 @@ function makeClient({ state = 'connected', storedError } = {}) {
     outlook.notify = async (mailbox, event, data) => {
         notifications.push({ event, data });
     };
+    outlook.request = refusedMailbox;
 
     return { outlook, notifications, hash };
 }
@@ -121,6 +129,118 @@ test('OutlookClient.reportSubscriptionFailure()', async t => {
         await outlook.reportSubscriptionFailure('renewal', null);
 
         assert.match(notifications[0].data.response, /subscription renewal failed/i);
+    });
+});
+
+test('a subscription failure on an account whose mailbox can still be read', async t => {
+    // The periodic recovery pass finds new messages without a subscription, so parking such an
+    // account would switch off the one sync it still has and answer its API calls with 503. It
+    // stays connected, as a Gmail account with a dead Pub/Sub watch does, and the failure stays on
+    // the stored subscription state for the API and the account page to report.
+    function readable(outlook) {
+        const requests = [];
+        outlook.oauth2UserPath = 'me';
+        outlook.request = async (...args) => {
+            requests.push(args);
+            return { value: [] };
+        };
+        return requests;
+    }
+
+    await t.test('keeps the account connected and announces nothing', async () => {
+        const client = makeClient();
+        const requests = readable(client.outlook);
+
+        await client.outlook.reportSubscriptionFailure('creation', { error: 'Subscription validation request failed' }, 3);
+
+        assert.deepEqual(client.notifications, [], 'not a connection error while new mail still arrives');
+        assert.equal(client.outlook.state, 'connected');
+        assert.deepEqual(requests, [['/me/messages', 'get', { $select: 'id', $top: 1 }]], 'one listing request decides it');
+    });
+
+    await t.test('lifts an earlier report once the mailbox can be read', async () => {
+        // The hourly pass comes back through here while the subscription keeps failing, which is
+        // the only way an account parked while its tenant refused mail access gets its sync back
+        const { outlook, delivered, hash } = makeLiveClient();
+
+        await outlook.reportSubscriptionFailure('creation', { error: `Subscription failed: ${SP_DISABLED}` }, 3);
+        assert.equal(outlook.state, 'connectError');
+
+        readable(outlook);
+        await outlook.reportSubscriptionFailure('creation', { error: 'Subscription validation request failed' }, 3);
+
+        assert.equal(outlook.state, 'connected');
+        assert.equal(hash.has('lastErrorState'), false, 'the error must not outlive the condition');
+        assert.equal(delivered.length, 1, 'only the original report was announced');
+    });
+
+    await t.test('still parks the account when the periodic pass is switched off', async () => {
+        const client = makeClient();
+        const requests = readable(client.outlook);
+        client.outlook.fallbackPollInterval = 0;
+
+        await client.outlook.reportSubscriptionFailure('creation', { error: 'Subscription validation request failed' }, 3);
+
+        assert.equal(client.notifications.length, 1);
+        assert.equal(client.notifications[0].event, 'connectError', 'with no poller the account syncs nothing at all');
+        assert.deepEqual(requests, [], 'and there is nothing to probe for');
+    });
+});
+
+test('OutlookClient.recordMissingServiceUrl()', async t => {
+    function makeUrlClient(storedSubscription) {
+        const client = makeClient();
+        let stored = storedSubscription;
+        let saves = 0;
+        client.outlook.getStoredSubscription = async () => structuredClone(stored);
+        client.outlook.saveStoredSubscription = async value => {
+            saves++;
+            stored = value;
+        };
+        return { ...client, stored: () => stored, saves: () => saves };
+    }
+
+    await t.test('records the failure on the subscription state, without reporting the account', async () => {
+        // It used to be a log line and nothing else, so the account page showed no subscription
+        // problem at all. It is one instance-wide setting, so it must not put every Outlook account
+        // into connectError at once while the periodic pass keeps finding their new mail
+        const { outlook, notifications, stored } = makeUrlClient({});
+
+        await outlook.recordMissingServiceUrl();
+
+        assert.equal(stored().state.state, 'error');
+        assert.match(stored().state.error, /Service URL is not set/);
+        assert.deepEqual(notifications, []);
+        assert.equal(outlook.state, 'connected');
+    });
+
+    await t.test('does not rewrite an unchanged record on every hourly pass', async () => {
+        const { outlook, saves } = makeUrlClient({});
+
+        await outlook.recordMissingServiceUrl();
+        await outlook.recordMissingServiceUrl();
+
+        assert.equal(saves(), 1);
+    });
+
+    await t.test('leaves an existing subscription alone', async () => {
+        // It keeps notifying the address it was created with, and renewing it needs no Service URL
+        const subscription = { id: 'sub-1', state: { state: 'created' } };
+        const { outlook, saves } = makeUrlClient(subscription);
+
+        await outlook.recordMissingServiceUrl();
+
+        assert.equal(saves(), 0);
+    });
+
+    await t.test('does not reject when the stored subscription cannot be read', async () => {
+        // init() awaits ensureSubscription(), so a Redis hiccup here would fail the whole setup
+        const { outlook } = makeClient();
+        outlook.getStoredSubscription = async () => {
+            throw new Error('READONLY You can not write against a read only replica');
+        };
+
+        await outlook.recordMissingServiceUrl();
     });
 });
 
@@ -207,6 +327,7 @@ function makeLiveClient() {
             delivered.push({ event, data });
         }
     };
+    outlook.request = refusedMailbox;
 
     return { outlook, delivered, hash };
 }
@@ -477,8 +598,8 @@ test('OutlookClient.getTokenData() recovery', async t => {
 test('OutlookClient.renewOrCreateSubscription()', async t => {
     // The hourly pass behind setupRenewWatchTimer(), extracted so it can be run without waiting an
     // hour. It is the account's only slow retry: the fast ones ensureSubscription() schedules are
-    // capped, and there is no poller behind a Graph account, so an account that stops recreating
-    // its subscription stops syncing entirely until something reconnects it.
+    // capped, and the periodic recovery pass only finds new messages, so an account that stops
+    // recreating its subscription never hears about a change or a deletion again.
     function makeTicker({ renewalResult = { success: true }, storedSubscription = {}, ensureError } = {}) {
         const calls = [];
         const errors = [];

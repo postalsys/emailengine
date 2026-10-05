@@ -67,8 +67,10 @@ const MODULE_BUDGETS = {
     'reference-routes.js': 198,
     // 658 -> 661 when windowedPageLinks grew a shared pageLink() builder, 661 -> 662 for the
     // comment on getExampleDocumentsPayloads(), which outlived the Document Store, 662 -> 623
-    // when the AI page's model list and reasoning effort choices moved to ai-options.js
-    'route-helpers.js': 623,
+    // when the AI page's model list and reasoning effort choices moved to ai-options.js, 623 -> 611
+    // when the Graph subscription view model moved to outlook-subscription-view.js
+    'route-helpers.js': 611,
+    'outlook-subscription-view.js': 36,
     'settings-page.js': 117,
     'smtp-test-routes.js': 243,
     'suppression-list-routes.js': 310,

@@ -351,7 +351,7 @@
             <dd>
 
                 {{#*inline "outlookWatchBadge"}}
-                <span class="badge badge-{{#if account.outlookSubscription.isValid}}success{{else}}{{#if account.outlookSubscription.state.error}}error{{else}}warning{{/if}}{{/if}}">
+                <span class="badge badge-{{account.outlookSubscription.variant}}">
                     {{account.outlookSubscription.stateLabel}}
                 </span>
                 {{/inline}}
@@ -368,8 +368,11 @@
                 {{/if}}
 
                 {{#if account.outlookSubscription.state.error}}
-                <div class="alert alert-soft alert-error">
+                <div class="alert alert-soft alert-{{account.outlookSubscription.variant}}">
                     {{account.outlookSubscription.state.error}}
+                    {{#if account.outlookSubscription.polling}}
+                    <p class="mt-1">New messages are still found by a periodic check, but changes to and deletions of existing messages are not reported until a subscription can be created.</p>
+                    {{/if}}
 
                     {{#if account.outlookSubscription.state.time}}
                     <small>(last checked <span class="local-date-time"

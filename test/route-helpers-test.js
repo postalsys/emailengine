@@ -537,6 +537,45 @@ test('formatAccountData reports an invalidated access token', async t => {
     });
 });
 
+test('formatAccountData says when an Outlook account syncs without its subscription', async t => {
+    const gt = { gettext: s => s };
+
+    // OutlookClient.reportSubscriptionFailure() keeps an account whose mailbox can still be read
+    // connected, with the periodic recovery pass (on by default) as its only sync, and parks the rest
+    const failed = state => ({
+        account: 'acct',
+        state,
+        oauth2: { provider: 'outlook' },
+        outlookSubscription: { state: { state: 'error', error: 'Subscription failed: the Service URL is not set' } }
+    });
+
+    await t.test('a connected account with a failed subscription is polling', () => {
+        const account = failed('connected');
+        formatAccountData(account, gt);
+        assert.equal(account.outlookSubscription.polling, true);
+        assert.equal(account.outlookSubscription.variant, 'warning', 'a failure the poller stands in for');
+    });
+
+    await t.test('a reported account is not', () => {
+        const account = failed('connectError');
+        formatAccountData(account, gt);
+        assert.equal(account.outlookSubscription.polling, false);
+        assert.equal(account.outlookSubscription.variant, 'error');
+    });
+
+    await t.test('nor is one whose subscription works', () => {
+        const account = {
+            account: 'acct',
+            state: 'connected',
+            oauth2: { provider: 'outlook' },
+            outlookSubscription: { expirationDateTime: new Date(Date.now() + 3600 * 1000), state: { state: 'created' } }
+        };
+        formatAccountData(account, gt);
+        assert.equal(account.outlookSubscription.polling, false);
+        assert.equal(account.outlookSubscription.variant, 'success');
+    });
+});
+
 // The two partials a page renders again after it has loaded are compiled outside vision
 // (compiledFragments), so nothing but these tests proves they still compile and that the
 // helpers they call are the ones workers/api.js registers.
