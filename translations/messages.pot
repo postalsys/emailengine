@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-10-05 12:02+0000\n"
+"POT-Creation-Date: 2026-10-06 18:51+0000\n"
 
 #: views/account-workspace-error.hbs:7
 msgid "Work Account Required"
@@ -136,6 +136,14 @@ msgid ""
 "received."
 msgstr ""
 
+#: views/accounts/register/index.hbs:6
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:19
+msgid "Standard IMAP"
+msgstr ""
+
 #: views/accounts/register/imap.hbs:13
 msgid "Your name"
 msgstr ""
@@ -165,14 +173,6 @@ msgstr ""
 #: views/accounts/register/imap.hbs:55
 #: views/accounts/register/validating.hbs:74
 msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/index.hbs:6
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:19
-msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:23
@@ -388,7 +388,7 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:984
 #: lib/ui-routes/account-routes.js:1200
 #: lib/ui-routes/account-routes.js:1391
-#: lib/ui-routes/route-helpers.js:362
+#: lib/ui-routes/route-helpers.js:350
 #: workers/api.js:2305
 #: workers/api.js:2380
 msgid "Email Account Setup"
@@ -473,33 +473,33 @@ msgstr ""
 msgid "Indefinite"
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:68
+#: lib/ui-routes/route-helpers.js:69
 msgid "The server unexpectedly closed the connection."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:70
+#: lib/ui-routes/route-helpers.js:71
 msgid ""
 "The server unexpectedly closed the connection. This usually happens when "
 "attempting to connect to a TLS port without TLS enabled."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:125
+#: lib/ui-routes/route-helpers.js:126
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:132
+#: lib/ui-routes/route-helpers.js:133
 msgid ""
 "The server refused the connection. This typically occurs if the server is "
 "not running, is overloaded, or you are connecting to the wrong host or port."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:186
+#: lib/ui-routes/route-helpers.js:187
 msgid "Delegated"
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:187
+#: lib/ui-routes/route-helpers.js:188
 msgid "Using credentials from \"%s\""
 msgstr ""
 
