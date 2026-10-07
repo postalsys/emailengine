@@ -56,7 +56,7 @@
                 {{> ui/setting-ref name="smtpServerProxy"}}
                 {{> ui/checkbox id="smtpServerProxy" name="smtpServerProxy" label="Enable PROXY Protocol"
                 checked=values.smtpServerProxy error=errors.smtpServerProxy}}
-                <span class="helper-text">Required when using HAProxy with <code>send-proxy</code>.</span>
+                <span class="helper-text">Required when using HAProxy with <code>send-proxy</code>. The PROXY header is trusted from any peer, so only enable this when the port is reachable through the load balancer alone.</span>
             </div>
         </div>
     </div>

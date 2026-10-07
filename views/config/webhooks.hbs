@@ -106,7 +106,7 @@ class="mb-1"}}
     {{#> ui/details summary="Custom Headers" summarySmall="(Default webhook only)"
     class="card bg-base-100 shadow-md mb-6" open=values.customHeaders}}
 
-    <p class="mb-4">Add authentication tokens or other headers to webhook requests.</p>
+    <p class="mb-4">Add authentication tokens or other headers to requests sent to the webhook URL above. An account that overrides the URL is sent its own account-level headers instead of these.</p>
 
     <div>
         {{> ui/setting-ref name="webhooksCustomHeaders"}}

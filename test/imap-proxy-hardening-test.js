@@ -345,3 +345,80 @@ test('handoff: a client that disconnects during LOGIN gets its upstream closed',
         await closeServer(server);
     }
 });
+
+test('an internal fault during authentication is not reflected to the client', async () => {
+    // AUTHENTICATE PLAIN used to hand an onAuth error straight back, which imap-core sent as
+    // `BAD <message>`: an upstream or Redis error text reached a client that had not logged in,
+    // and the BAD counted against the connection's bad-command budget. Both commands now answer
+    // an error that names no IMAP response with a bare NO [TEMPFAIL], and one that does with
+    // exactly that response.
+    const faults = {
+        fault: new Error('Connection to 10.0.0.5:6379 lost'),
+        response: Object.assign(new Error('[UNAVAILABLE] Temporary failure, try again later'), { response: 'NO' })
+    };
+    const { server, port } = await startServer({}, (login, session, callback) => callback(faults[login.username] || null, null));
+    try {
+        const client = connectClient(port);
+        await client.waitFor(/\* OK /);
+
+        client.send(`A1 AUTHENTICATE PLAIN ${Buffer.from('\0fault\0pass').toString('base64')}\r\n`);
+        await client.waitFor(/^A1 /m);
+        assert.match(client.buffer, /^A1 NO \[TEMPFAIL\]/m);
+
+        client.send('A2 LOGIN fault pass\r\n');
+        await client.waitFor(/^A2 /m);
+        assert.match(client.buffer, /^A2 NO \[TEMPFAIL\]/m);
+
+        client.send(`A3 AUTHENTICATE PLAIN ${Buffer.from('\0response\0pass').toString('base64')}\r\n`);
+        await client.waitFor(/^A3 /m);
+        assert.match(client.buffer, /^A3 NO \[UNAVAILABLE\] Temporary failure, try again later/m);
+
+        assert.doesNotMatch(client.buffer, /10\.0\.0\.5|BAD/, 'the fault text must stay in the log');
+        client.socket.destroy();
+    } finally {
+        await closeServer(server);
+    }
+});
+
+test('handoff: an internal fault is answered with a generic NO, its text stays in the log', async () => {
+    // The proxy's own auth boundary used to hand a fault (a Redis error, a missing OAuth2 app,
+    // an unreachable upstream) back to imap-core as it was, so its message reached the client.
+    const records = [];
+    const handler = createProxyAuthHandler({
+        onAuth: async login => {
+            if (login.username === 'fault') {
+                throw new Error('Connection to 10.0.0.5:6379 lost');
+            }
+            return { accountData: { account: 'acct-123' }, imapConfig: { host: 'upstream' } };
+        },
+        createProxy: async () => {
+            throw new Error('connect ECONNREFUSED 192.0.2.10:993');
+        },
+        logger: fakeLogger(records),
+        serverLogger: fakeLogger(records),
+        metrics: () => false,
+        logRaw: false
+    });
+    const { server, port } = await startServer({}, handler);
+    try {
+        const client = connectClient(port);
+        await client.waitFor(/\* OK /);
+
+        // the credential check itself failed
+        client.send(`A1 AUTHENTICATE PLAIN ${Buffer.from('\0fault\0pass').toString('base64')}\r\n`);
+        await client.waitFor(/^A1 /m);
+        assert.match(client.buffer, /^A1 NO \[UNAVAILABLE\] Temporary failure, try again later\r\n/m);
+
+        // the upstream connection failed
+        client.send('A2 LOGIN user pass\r\n');
+        await client.waitFor(/^A2 /m);
+        assert.match(client.buffer, /^A2 NO \[UNAVAILABLE\] Temporary failure, try again later\r\n/m);
+
+        assert.doesNotMatch(client.buffer, /10\.0\.0\.5|192\.0\.2\.10|BAD/);
+        assert.ok(records.some(r => r.level === 'error' && r.err && /10\.0\.0\.5/.test(r.err.message)));
+        assert.ok(records.some(r => r.level === 'error' && r.err && /192\.0\.2\.10/.test(r.err.message)));
+        client.socket.destroy();
+    } finally {
+        await closeServer(server);
+    }
+});

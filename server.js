@@ -3508,8 +3508,14 @@ const startApplication = async () => {
         }
     }
 
-    // Renew encryption secret if needed
-    await getSecret();
+    if (!(await getSecret())) {
+        // Every consumer of the secret stores the value as it is when there is none, so without
+        // it the account passwords, OAuth2 tokens, webhook secrets and TLS keys sit in Redis in
+        // clear text. Nothing else says so: the instance works exactly the same either way
+        logger.warn({
+            msg: 'No encryption secret is configured, account passwords, OAuth2 tokens, webhook secrets and TLS keys are stored in Redis unencrypted. Set EENGINE_SECRET to encrypt them'
+        });
+    }
 
     // Ensure cookie password
     let cookiePassword = await settings.get('cookiePassword');

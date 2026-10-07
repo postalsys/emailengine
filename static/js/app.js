@@ -340,7 +340,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        for (let stateInfoElm of document.querySelectorAll(`.state-info[data-account="${account}"]`)) {
+        // an account id is any string up to 256 characters, so it is escaped rather than trusted to form a selector
+        for (let stateInfoElm of document.querySelectorAll(`.state-info[data-account="${CSS.escape(account)}"]`)) {
             repaintStateBadge(stateInfoElm, stateLabel);
         }
     }

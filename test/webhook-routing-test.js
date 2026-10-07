@@ -97,7 +97,10 @@ test('Webhook routing tests', async t => {
     });
 
     await t.test('describeEffectiveRouting() summarizes custom headers per level', async () => {
+        const globalWebhooks = 'https://global.example.com/hook';
+
         let described = describeEffectiveRouting({
+            globalWebhooks,
             globalCustomHeaders: [{ key: 'X-One', value: '1' }],
             accountCustomHeaders: [
                 { key: 'X-Two', value: '2' },
@@ -106,14 +109,45 @@ test('Webhook routing tests', async t => {
         });
         assert.strictEqual(described.defaultRoute.customHeadersLabel, '1 global, 2 account-specific');
 
-        described = describeEffectiveRouting({ globalCustomHeaders: [{ key: 'X-One', value: '1' }] });
+        described = describeEffectiveRouting({ globalWebhooks, globalCustomHeaders: [{ key: 'X-One', value: '1' }] });
         assert.strictEqual(described.defaultRoute.customHeadersLabel, '1 global');
 
-        described = describeEffectiveRouting({ accountCustomHeaders: [{ key: 'X-Two', value: '2' }] });
+        described = describeEffectiveRouting({ globalWebhooks, accountCustomHeaders: [{ key: 'X-Two', value: '2' }] });
         assert.strictEqual(described.defaultRoute.customHeadersLabel, '1 account-specific');
 
-        described = describeEffectiveRouting({});
+        described = describeEffectiveRouting({ globalWebhooks });
         assert.strictEqual(described.defaultRoute.customHeadersLabel, null);
+
+        // nothing is delivered without a target, so no headers apply either
+        described = describeEffectiveRouting({ globalCustomHeaders: [{ key: 'X-One', value: '1' }], accountCustomHeaders: [{ key: 'X-Two', value: '2' }] });
+        assert.strictEqual(described.defaultRoute.source, null);
+        assert.strictEqual(described.defaultRoute.customHeadersLabel, null);
+
+        // the global headers stay with the global target, so an account that overrides the URL
+        // is shown its own headers alone (and none at all when it has none)
+        described = describeEffectiveRouting({
+            globalWebhooks: 'https://global.example.com/hook',
+            accountWebhooks: 'https://account.example.com/hook',
+            globalCustomHeaders: [{ key: 'X-One', value: '1' }],
+            accountCustomHeaders: [{ key: 'X-Two', value: '2' }]
+        });
+        assert.strictEqual(described.defaultRoute.source, 'account');
+        assert.strictEqual(described.defaultRoute.customHeadersLabel, '1 account-specific');
+
+        described = describeEffectiveRouting({
+            globalWebhooks: 'https://global.example.com/hook',
+            accountWebhooks: 'https://account.example.com/hook',
+            globalCustomHeaders: [{ key: 'X-One', value: '1' }]
+        });
+        assert.strictEqual(described.defaultRoute.customHeadersLabel, null);
+
+        described = describeEffectiveRouting({
+            globalWebhooks: 'https://global.example.com/hook',
+            globalCustomHeaders: [{ key: 'X-One', value: '1' }],
+            accountCustomHeaders: [{ key: 'X-Two', value: '2' }]
+        });
+        assert.strictEqual(described.defaultRoute.source, 'global');
+        assert.strictEqual(described.defaultRoute.customHeadersLabel, '1 global, 1 account-specific');
     });
 
     await t.test('describeEffectiveRouting() lists only usable custom routes', async () => {
@@ -152,26 +186,43 @@ test('Webhook routing tests', async t => {
     });
 });
 
-test('deliveryCustomHeaders keeps account headers off custom routes', () => {
-    const { deliveryCustomHeaders } = require('../lib/webhook-routing');
-    const globalHeaders = [{ key: 'X-Global', value: 'g' }];
-    const accountHeaders = [
+test('deliveryCustomHeaders sends each level its own headers', () => {
+    const { deliveryCustomHeaders, headerLevels } = require('../lib/webhook-routing');
+    const global = [
+        { key: 'Authorization', value: 'Bearer operator-secret' },
+        { key: 'X-Global', value: 'g' }
+    ];
+    const account = [
         { key: 'Authorization', value: 'Bearer account-secret' },
         { key: 'X-Account', value: 'a' }
     ];
-    const route = { id: 'r1', customHeaders: [{ key: 'Authorization', value: 'Bearer route-token' }] };
+    const route = [{ key: 'Authorization', value: 'Bearer route-token' }];
 
     // A custom route gets exactly its own headers
-    assert.deepStrictEqual(deliveryCustomHeaders(route, globalHeaders, accountHeaders), { Authorization: 'Bearer route-token' });
-    assert.deepStrictEqual(deliveryCustomHeaders({ id: 'r2' }, globalHeaders, accountHeaders), {});
+    assert.deepStrictEqual(headerLevels('route'), ['route']);
+    assert.deepStrictEqual(deliveryCustomHeaders('route', { route, global, account }), { Authorization: 'Bearer route-token' });
+    assert.deepStrictEqual(deliveryCustomHeaders('route', { route: null, global, account }), {});
 
-    // The default target gets the global headers, then the account's on top
-    assert.deepStrictEqual(deliveryCustomHeaders(null, [{ key: 'Authorization', value: 'global' }].concat(globalHeaders), accountHeaders), {
+    // The global target gets the global headers, then the account's on top
+    assert.deepStrictEqual(headerLevels('global'), ['global', 'account']);
+    assert.deepStrictEqual(deliveryCustomHeaders('global', { route, global, account }), {
         Authorization: 'Bearer account-secret',
         'X-Global': 'g',
         'X-Account': 'a'
     });
-    assert.deepStrictEqual(deliveryCustomHeaders(null, null, null), {});
+
+    // An account's own target gets the account's headers only: the operator's credential must not
+    // travel to a URL an account-scoped token can set
+    assert.deepStrictEqual(headerLevels('account'), ['account']);
+    assert.deepStrictEqual(deliveryCustomHeaders('account', { route, global, account }), {
+        Authorization: 'Bearer account-secret',
+        'X-Account': 'a'
+    });
+    assert.deepStrictEqual(deliveryCustomHeaders('account', { route, global, account: null }), {});
+
+    assert.deepStrictEqual(deliveryCustomHeaders('global', { route: null, global: null, account: null }), {});
+    assert.deepStrictEqual(headerLevels(null), []);
+    assert.deepStrictEqual(deliveryCustomHeaders(null, { route, global, account }), {});
 });
 
 test('isRouteMappingMissing drops a legacy job queued with a failed mapping', () => {

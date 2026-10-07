@@ -153,4 +153,30 @@ test('bounce-detect text heuristics', async t => {
         assert.strictEqual(bounce.response.status, '4.4.1');
         assert.strictEqual(bounce.action, 'failed');
     });
+
+    await t.test('parses the "following message to <addr> was undeliverable" and "could not be delivered" forms', async () => {
+        let bounce = await bounceDetect(
+            buildBounce({}, 'The following message to <ivan@example.com> was undeliverable.\r\nThe reason for the problem: user unknown\r\n')
+        );
+        assert.strictEqual(bounce.recipient, 'ivan@example.com');
+
+        bounce = await bounceDetect(
+            buildBounce({}, 'Your message could not be delivered to the following address: <judy@example.com>\r\n\r\nRemote host said: 550 No such user\r\n')
+        );
+        assert.strictEqual(bounce.recipient, 'judy@example.com');
+        assert.match(bounce.response.message, /No such user/);
+    });
+
+    await t.test('an unterminated address in either form is not scanned to the end of the text', async () => {
+        // The address classes exclude '<' and whitespace and are bounded, so every anchor fails
+        // within a few hundred characters instead of backtracking through the rest of the body
+        // (the body is capped at 50 KB, which was tens of milliseconds per anchor before)
+        for (const anchor of ['The following message to <', 'Your message could not be delivered to the following address: <']) {
+            const body = `${anchor}a@`.repeat(Math.ceil(50000 / (anchor.length + 2)));
+            const started = Date.now();
+            const bounce = await bounceDetect(buildBounce({}, body));
+            assert.strictEqual(bounce.recipient, undefined);
+            assert.ok(Date.now() - started < 2000, `took ${Date.now() - started} ms`);
+        }
+    });
 });

@@ -10,7 +10,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { sendWebhookRequest, isUnrecoverableWebhookError } = require('../lib/webhook-request');
+const { sendWebhookRequest, isUnrecoverableWebhookError, MAX_DRAIN_BYTES } = require('../lib/webhook-request');
 
 // The delivery timeout is an unref'd AbortSignal.timeout timer. On Node 20 the event loop can
 // drain before it fires, which the test runner reports as a pending promise; a real worker always
@@ -220,4 +220,40 @@ test('isUnrecoverableWebhookError ends the retries only for egress refusals and 
     }
     assert.strictEqual(isUnrecoverableWebhookError(null), false);
     assert.strictEqual(isUnrecoverableWebhookError(undefined), false);
+});
+
+test('sendWebhookRequest stops draining a response body past the cap', async () => {
+    // A receiver streaming an endless (or inflated) body used to be buffered whole by res.text()
+    // until the delivery timeout. The drain now reads at most MAX_DRAIN_BYTES and cancels the
+    // stream, and the delivery itself is still reported by its status
+    const chunk = new Uint8Array(64 * 1024);
+    let reads = 0;
+    let cancelled = false;
+    const res = {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        body: {
+            getReader() {
+                return {
+                    async read() {
+                        reads++;
+                        return { done: false, value: chunk };
+                    },
+                    async cancel() {
+                        cancelled = true;
+                    }
+                };
+            }
+        },
+        async text() {
+            throw new Error('text() must not be used on a streaming body');
+        }
+    };
+
+    const status = await sendWebhookRequest(async () => res, 'http://webhook.test/hook', { method: 'post' });
+
+    assert.strictEqual(status, 200);
+    assert.strictEqual(cancelled, true, 'the stream must be cancelled once the cap is reached');
+    assert.ok(reads <= MAX_DRAIN_BYTES / chunk.byteLength + 1, `read ${reads} chunks, the drain must stop at the cap`);
 });

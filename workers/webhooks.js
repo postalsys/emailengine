@@ -14,7 +14,7 @@ const { readEnvValue, threadStats, getDuration, httpAgent, getServiceSecret, red
 const { sendWebhookRequest, isUnrecoverableWebhookError } = require('../lib/webhook-request');
 const { willBeFinalAttempt, isFinalFailedAttempt } = require('../lib/delivery-error');
 const { validateWebhookTarget } = require('../lib/webhook-egress');
-const { resolveTargetUrl, isDeliverableRoute, eventAllowed, deliveryCustomHeaders, isRouteMappingMissing } = require('../lib/webhook-routing');
+const { resolveTargetUrl, isDeliverableRoute, eventAllowed, headerLevels, deliveryCustomHeaders, isRouteMappingMissing } = require('../lib/webhook-routing');
 
 const { initSentry } = require('../lib/sentry');
 initSentry('webhooks');
@@ -272,7 +272,11 @@ const notifyWorker = new Worker(
         let accountWebhooks = await openAccountField('webhooks', storedWebhooks, job.data.account);
 
         // the global setting is only fetched when neither a custom route nor the account override decides the target
-        let webhooks = resolveTargetUrl(customRoute && customRoute.targetUrl, accountWebhooks, null).url || (await settings.get('webhooks'));
+        let target = resolveTargetUrl(customRoute && customRoute.targetUrl, accountWebhooks, null);
+        if (!target.url) {
+            target = resolveTargetUrl(null, null, await settings.get('webhooks'));
+        }
+        let webhooks = target.url;
         if (!webhooks) {
             // A skipped delivery still reports the job as completed, so without this line a
             // missing target is indistinguishable from a successful delivery - it reads as the
@@ -289,11 +293,14 @@ const notifyWorker = new Worker(
             return;
         }
 
+        // Only the header lists that travel to this target are loaded; lib/webhook-routing.js
+        // holds the rule and the reasons
+        let levels = headerLevels(target.source);
+
         let accountWebhooksCustomHeaders;
-        // The account's headers belong to the account's (or the global) target. A custom route is
-        // an operator-defined endpoint with headers of its own: the account's secrets must not
-        // travel there, nor override the route's own Authorization.
-        let accountWebhooksCustomHeadersJson = customRoute ? null : await openAccountField('webhooksCustomHeaders', storedCustomHeaders, job.data.account);
+        let accountWebhooksCustomHeadersJson = levels.includes('account')
+            ? await openAccountField('webhooksCustomHeaders', storedCustomHeaders, job.data.account)
+            : null;
         if (accountWebhooksCustomHeadersJson) {
             try {
                 accountWebhooksCustomHeaders = JSON.parse(accountWebhooksCustomHeadersJson);
@@ -425,7 +432,11 @@ const notifyWorker = new Worker(
         }
         Object.assign(
             headers,
-            deliveryCustomHeaders(customRoute, customRoute ? null : await settings.get('webhooksCustomHeaders'), accountWebhooksCustomHeaders)
+            deliveryCustomHeaders(target.source, {
+                route: customRoute && customRoute.customHeaders,
+                global: levels.includes('global') ? await settings.get('webhooksCustomHeaders') : null,
+                account: accountWebhooksCustomHeaders
+            })
         );
 
         let start = Date.now();

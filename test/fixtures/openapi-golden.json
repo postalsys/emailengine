@@ -589,7 +589,7 @@
       },
       "AccountWebhooksCustomHeaders": {
         "type": "array",
-        "description": "Additional HTTP headers to include with every webhook request for authentication or tracking",
+        "description": "Additional HTTP headers to include with webhook requests for authentication or tracking. The global list is sent to the global webhook URL only, an account-level list accompanies that account's deliveries",
         "items": {
           "$ref": "#/components/schemas/WebhooksCustomHeader"
         }
@@ -9427,7 +9427,7 @@
       },
       "webhooksCustomHeadersResponse": {
         "type": "array",
-        "description": "Additional HTTP headers to include with every webhook request for authentication or tracking",
+        "description": "Additional HTTP headers to include with webhook requests for authentication or tracking. The global list is sent to the global webhook URL only, an account-level list accompanies that account's deliveries",
         "nullable": true,
         "items": {
           "$ref": "#/components/schemas/WebhooksCustomHeader"
@@ -9960,7 +9960,7 @@
           },
           "smtpServerProxy": {
             "type": "boolean",
-            "description": "Enable PROXY protocol support for the SMTP server",
+            "description": "Enable PROXY protocol support for the SMTP server. The PROXY header is accepted from any peer, so the port must only be reachable through the proxy",
             "nullable": true
           },
           "smtpServerAuthEnabled": {
@@ -10039,7 +10039,7 @@
           },
           "imapProxyServerProxy": {
             "type": "boolean",
-            "description": "Enable PROXY protocol support for the IMAP proxy",
+            "description": "Enable PROXY protocol support for the IMAP proxy. The PROXY header is accepted from any peer, so the port must only be reachable through the proxy",
             "nullable": true
           },
           "imapProxyServerPassword": {
@@ -10248,7 +10248,7 @@
       },
       "WebhooksCustomHeaders": {
         "type": "array",
-        "description": "Additional HTTP headers to include with every webhook request for authentication or tracking",
+        "description": "Additional HTTP headers to include with webhook requests for authentication or tracking. The global list is sent to the global webhook URL only, an account-level list accompanies that account's deliveries",
         "items": {
           "$ref": "#/components/schemas/WebhooksCustomHeader"
         }
@@ -10727,7 +10727,7 @@
           },
           "smtpServerProxy": {
             "type": "boolean",
-            "description": "Enable PROXY protocol support for the SMTP server"
+            "description": "Enable PROXY protocol support for the SMTP server. The PROXY header is accepted from any peer, so the port must only be reachable through the proxy"
           },
           "smtpServerAuthEnabled": {
             "type": "boolean",
@@ -10801,7 +10801,7 @@
           },
           "imapProxyServerProxy": {
             "type": "boolean",
-            "description": "Enable PROXY protocol support for the IMAP proxy"
+            "description": "Enable PROXY protocol support for the IMAP proxy. The PROXY header is accepted from any peer, so the port must only be reachable through the proxy"
           },
           "imapProxyServerPassword": {
             "type": "string",
