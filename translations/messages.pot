@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-10-06 18:53+0000\n"
+"POT-Creation-Date: 2026-10-07 11:26+0000\n"
 
 #: views/account-workspace-error.hbs:7
 msgid "Work Account Required"
@@ -64,26 +64,6 @@ msgstr[1] ""
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
 
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
-msgstr ""
-
 #: views/unsubscribe.hbs:7
 #: views/unsubscribe.hbs:60
 #: views/unsubscribe.hbs:76
@@ -136,6 +116,57 @@ msgid ""
 "received."
 msgstr ""
 
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
+
+#: views/accounts/register/imap.hbs:13
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:19
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:35
+msgid "This setup link is restricted to this email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:43
+#: views/accounts/register/imap-server.hbs:58
+#: views/accounts/register/imap-server.hbs:165
+msgid "Password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:49
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:55
+#: views/accounts/register/validating.hbs:74
+msgid "Continue"
+msgstr ""
+
 #: views/accounts/register/imap-server.hbs:23
 msgid ""
 "Server settings could not be detected automatically for %s. Enter them "
@@ -155,12 +186,6 @@ msgstr ""
 #: views/accounts/register/imap-server.hbs:44
 #: views/accounts/register/imap-server.hbs:151
 msgid "Username"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:58
-#: views/accounts/register/imap-server.hbs:165
-#: views/accounts/register/imap.hbs:43
-msgid "Password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:70
@@ -284,31 +309,6 @@ msgstr ""
 
 #: views/accounts/register/validating.hbs:70
 msgid "Continue to review your mail server settings."
-msgstr ""
-
-#: views/accounts/register/validating.hbs:74
-#: views/accounts/register/imap.hbs:55
-msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:13
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:19
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:35
-msgid "This setup link is restricted to this email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:49
-msgid "Enter your account password"
 msgstr ""
 
 #: views/partials/public_test_labels.hbs:9
