@@ -5018,7 +5018,7 @@
                 },
                 "imapStrategy": {
                     "type": "string",
-                    "description": "IP address selection strategy for outbound IMAP connections when multiple local addresses are available. \"default\" - Let the operating system pick the source address; \"dedicated\" - Reuse the same local address for an account, so the remote server sees a stable IP; \"random\" - Pick a random local address for every connection",
+                    "description": "IP address selection strategy for mailbox access when multiple local addresses are available: IMAP sessions, Gmail API and MS Graph requests, and the OAuth2 token requests of every account. The key keeps its historical name. \"default\" - Let the operating system pick the source address; \"dedicated\" - Reuse the same local address for an account, so the remote server sees a stable IP; \"random\" - Pick a random local address for every connection",
                     "enum": [
                         "default",
                         "dedicated",
@@ -5027,7 +5027,7 @@
                 },
                 "smtpStrategy": {
                     "type": "string",
-                    "description": "IP address selection strategy for outbound SMTP connections when multiple local addresses are available. \"default\" - Let the operating system pick the source address; \"dedicated\" - Reuse the same local address for an account, so the remote server sees a stable IP; \"random\" - Pick a random local address for every connection",
+                    "description": "IP address selection strategy for sending over SMTP when multiple local addresses are available. \"default\" - Let the operating system pick the source address; \"dedicated\" - Reuse the same local address for an account, so the remote server sees a stable IP; \"random\" - Pick a random local address for every connection",
                     "enum": [
                         "default",
                         "dedicated",

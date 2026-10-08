@@ -86,19 +86,20 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Protocol</th>
+                        <th>Traffic</th>
                         <th>Selection Method</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td>
-                            <span>IMAP</span>
+                            <span class="block">Mailbox access</span>
+                            <small class="text-base-content/60">IMAP sessions, Gmail API and MS Graph requests, and OAuth2 token requests. One address per account under Dedicated</small>
                         </td>
                         <td>
                             {{> ui/setting-ref name="imapStrategy"}}
                             <select class="select max-w-xs{{#if errors.imapStrategy}} is-invalid{{/if}}"
-                                name="imapStrategy" aria-label="IMAP IP selection method">
+                                name="imapStrategy" aria-label="Mailbox access IP selection method">
                                 {{#each imapStrategies}}
                                 <option value="{{key}}" {{#if selected}}selected{{/if}}>{{title}}</option>
                                 {{/each}}
@@ -111,12 +112,13 @@
 
                     <tr>
                         <td>
-                            <span>SMTP</span>
+                            <span class="block">Sending over SMTP</span>
+                            <small class="text-base-content/60">SMTP delivery of submitted messages</small>
                         </td>
                         <td>
                             {{> ui/setting-ref name="smtpStrategy"}}
                             <select class="select max-w-xs{{#if errors.smtpStrategy}} is-invalid{{/if}}"
-                                name="smtpStrategy" aria-label="SMTP IP selection method">
+                                name="smtpStrategy" aria-label="Sending over SMTP IP selection method">
                                 {{#each smtpStrategies}}
                                 <option value="{{key}}" {{#if selected}}selected{{/if}}>{{title}}</option>
                                 {{/each}}

@@ -9540,7 +9540,7 @@
       },
       "imapStrategyResponse": {
         "type": "string",
-        "description": "IP address selection strategy for outbound IMAP connections when multiple local addresses are available",
+        "description": "IP address selection strategy for mailbox access when multiple local addresses are available: IMAP sessions, Gmail API and MS Graph requests, and the OAuth2 token requests of every account. The key keeps its historical name",
         "x-meta": {
           "enumDescriptions": {
             "default": "Let the operating system pick the source address",
@@ -9557,7 +9557,7 @@
       },
       "smtpStrategyResponse": {
         "type": "string",
-        "description": "IP address selection strategy for outbound SMTP connections when multiple local addresses are available",
+        "description": "IP address selection strategy for sending over SMTP when multiple local addresses are available",
         "x-meta": {
           "enumDescriptions": {
             "default": "Let the operating system pick the source address",
@@ -10356,7 +10356,7 @@
       },
       "ImapStrategy": {
         "type": "string",
-        "description": "IP address selection strategy for outbound IMAP connections when multiple local addresses are available",
+        "description": "IP address selection strategy for mailbox access when multiple local addresses are available: IMAP sessions, Gmail API and MS Graph requests, and the OAuth2 token requests of every account. The key keeps its historical name",
         "x-meta": {
           "enumDescriptions": {
             "default": "Let the operating system pick the source address",
@@ -10372,7 +10372,7 @@
       },
       "SmtpStrategy": {
         "type": "string",
-        "description": "IP address selection strategy for outbound SMTP connections when multiple local addresses are available",
+        "description": "IP address selection strategy for sending over SMTP when multiple local addresses are available",
         "x-meta": {
           "enumDescriptions": {
             "default": "Let the operating system pick the source address",
