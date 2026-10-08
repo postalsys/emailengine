@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-10-07 11:26+0000\n"
+"POT-Creation-Date: 2026-10-08 08:39+0000\n"
 
 #: views/account-workspace-error.hbs:7
 msgid "Work Account Required"
@@ -48,7 +48,7 @@ msgid "Dashboard"
 msgstr ""
 
 #: views/config/license.hbs:20
-#: lib/ui-routes/oauth-config-routes.js:283
+#: lib/ui-routes/oauth-config-routes.js:275
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
@@ -59,6 +59,26 @@ msgid "%d certificate"
 msgid_plural "%d certificates"
 msgstr[0] ""
 msgstr[1] ""
+
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
@@ -116,26 +136,6 @@ msgid ""
 "received."
 msgstr ""
 
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
-msgstr ""
-
 #: views/accounts/register/imap.hbs:13
 msgid "Your name"
 msgstr ""
@@ -165,6 +165,14 @@ msgstr ""
 #: views/accounts/register/imap.hbs:55
 #: views/accounts/register/validating.hbs:74
 msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/index.hbs:6
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:19
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:23
@@ -269,14 +277,6 @@ msgstr ""
 
 #: views/accounts/register/imap-server.hbs:293
 msgid "We couldn't connect with these settings. Check the errors below."
-msgstr ""
-
-#: views/accounts/register/index.hbs:6
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:19
-msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/validating.hbs:35
@@ -465,11 +465,11 @@ msgstr ""
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/ui-routes/oauth-config-routes.js:276
+#: lib/ui-routes/oauth-config-routes.js:268
 msgid "Unknown"
 msgstr ""
 
-#: lib/ui-routes/oauth-config-routes.js:285
+#: lib/ui-routes/oauth-config-routes.js:277
 msgid "Indefinite"
 msgstr ""
 
