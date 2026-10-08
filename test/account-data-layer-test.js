@@ -267,6 +267,7 @@ test('listAccounts decrypts no credential', async () => {
 test('token renewal writes only the token fields, and only over the grant it used', async t => {
     const stored = {
         account: 'acc',
+        proxy: 'socks5://account-proxy.example.com:1080',
         oauth2: {
             provider: 'app',
             auth: { user: 'u@example.com' },
@@ -281,9 +282,11 @@ test('token renewal writes only the token fields, and only over the grant it use
     t.after(() => {
         oauth2Apps.getClient = origGetClient;
     });
-    oauth2Apps.getClient = async () => ({
+    oauth2Apps.getClient = async (id, opts) => ({
         refreshToken: async ({ refreshToken }) => {
             assert.strictEqual(refreshToken, 'RT-1');
+            // the client is bound to the account's own proxy, as its IMAP connection would be
+            assert.deepStrictEqual(opts.route, { proxy: stored.proxy, localAddress: null });
             return { access_token: 'NEW-AT', expires_in: 3600 };
         }
     });

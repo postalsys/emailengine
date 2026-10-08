@@ -700,7 +700,7 @@
           },
           "proxy": {
             "type": "string",
-            "description": "Proxy server URL for outbound connections",
+            "description": "Proxy for this account, used instead of the instance-wide proxy: its IMAP and SMTP connections and, for an OAuth2 account, its token requests and Gmail API or MS Graph API calls",
             "example": "socks5://proxy.example.com:1080",
             "x-format": {
               "uri": {
@@ -1846,7 +1846,7 @@
           },
           "proxy": {
             "type": "string",
-            "description": "Proxy server URL for outbound connections",
+            "description": "Proxy for this account, used instead of the instance-wide proxy: its IMAP and SMTP connections and, for an OAuth2 account, its token requests and Gmail API or MS Graph API calls",
             "example": "socks5://proxy.example.com:1080",
             "x-format": {
               "uri": {
@@ -2393,7 +2393,7 @@
           },
           "proxy": {
             "type": "string",
-            "description": "Proxy server URL for outbound connections",
+            "description": "Proxy for this account, used instead of the instance-wide proxy: its IMAP and SMTP connections and, for an OAuth2 account, its token requests and Gmail API or MS Graph API calls",
             "example": "socks5://proxy.example.com:1080",
             "x-format": {
               "uri": {
@@ -6561,7 +6561,7 @@
           },
           "proxy": {
             "type": "string",
-            "description": "Proxy server URL for outbound connections",
+            "description": "Proxy for this account, used instead of the instance-wide proxy: its IMAP and SMTP connections and, for an OAuth2 account, its token requests and Gmail API or MS Graph API calls",
             "example": "socks5://proxy.example.com:1080",
             "x-format": {
               "uri": {

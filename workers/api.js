@@ -44,7 +44,7 @@ const {
     setAdminSession,
     isEndedSession
 } = require('../lib/tools');
-const { matchIp, resolveClientIp, detectAutomatedRequest } = require('../lib/utils/network');
+const { matchIp, resolveClientIp, detectAutomatedRequest, getAccountHttpRoute } = require('../lib/utils/network');
 
 const { initSentry } = require('../lib/sentry');
 initSentry('api');
@@ -2295,7 +2295,9 @@ const init = async () => {
                 throw error;
             }
 
-            const oAuth2Client = await oauth2Apps.getClient(oauth2App.id);
+            // The code exchange, the profile lookups and any revoke already speak for the account being
+            // set up, so they leave through its route (its own proxy, if the setup named one)
+            const oAuth2Client = await oauth2Apps.getClient(oauth2App.id, { route: await getAccountHttpRoute(redis, accountData) });
 
             // have to use HTML redirect, otherwise samesite=strict cookies are not passed on
             const renderRedirect = httpRedirectUrl =>

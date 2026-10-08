@@ -108,7 +108,7 @@
 
         <div class="card-body space-y-4">
 
-            {{#> ui/form-field id="proxy" label="Proxy URL" error=errors.proxy hint="Use a custom proxy for this account. Start the URL with http://, https://, socks://, socks4://, or socks5://."}}
+            {{#> ui/form-field id="proxy" label="Proxy URL" error=errors.proxy hint="Use a custom proxy for this account, instead of the instance-wide proxy. It carries the IMAP and SMTP connections and, for an OAuth2 account, its token requests and Gmail API or MS Graph API calls. Start the URL with http://, https://, socks://, socks4://, or socks5://."}}
             <input type="text" class="input or-else-all{{#if errors.proxy}} is-invalid{{/if}}" id="proxy"
                 placeholder="Connection URL like &quot;socks://localhost:1080&quot;&mldr;" value="{{values.proxy}}"
                 name="proxy" data-target="proxy-status">
