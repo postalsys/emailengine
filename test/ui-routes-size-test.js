@@ -65,8 +65,10 @@ const MODULE_BUDGETS = {
     'mcp-consent-routes.js': 381,
     'network-config-routes.js': 437,
     // 998 -> 987 when the send-only app detection moved to lib/oauth/scope-checker.js, which is where
-    // the scope check it delegates to already lives
-    'oauth-config-routes.js': 987,
+    // the scope check it delegates to already lives, 987 -> 977 when the base scope render context
+    // moved to oauth-form-context.js
+    'oauth-config-routes.js': 977,
+    'oauth-form-context.js': 19,
     'reference-routes.js': 198,
     // 658 -> 661 when windowedPageLinks grew a shared pageLink() builder, 661 -> 662 for the
     // comment on getExampleDocumentsPayloads(), which outlived the Document Store, 662 -> 623
