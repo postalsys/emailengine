@@ -476,6 +476,27 @@ test('OAuth2 app forms', async t => {
         assert.equal(context.actionCreate, true);
     });
 
+    // The Gmail API forms link here to register a Pub/Sub app, and the link has to land on that mode
+    await t.test('the new app form preselects the Pub/Sub base scope for a service account only', async () => {
+        const newRoute = route('GET', '/admin/config/oauth/new');
+        const query = q => newRoute.options.validate.query.validate(q, newRoute.options.validate.options);
+
+        const pubsub = query({ provider: 'gmailService', baseScopes: 'pubsub' });
+        assert.ifError(pubsub.error);
+        let h = makeToolkit();
+        await newRoute.handler(makeRequest({ query: pubsub.value }), h);
+        assert.equal(h.answers.views[0].context.baseScopesPubsub, true);
+        assert.equal(h.answers.views[0].context.baseScopesImap, false);
+
+        // an interactive Gmail app has no Pub/Sub mode, so the hint is ignored there
+        h = makeToolkit();
+        await newRoute.handler(makeRequest({ query: query({ provider: 'gmail', baseScopes: 'pubsub' }).value }), h);
+        assert.equal(h.answers.views[0].context.baseScopesPubsub, false);
+        assert.equal(h.answers.views[0].context.baseScopesImap, true);
+
+        assert.ok(query({ provider: 'gmailService', baseScopes: 'imap' }).error, 'only the Pub/Sub preselect is accepted');
+    });
+
     // The detection itself is covered in test/oauth-gmail-api-mode-test.js against the pure
     // isSendOnlyGmailApp(); what this asserts is that the page actually carries the answer
     await t.test('the app page reports a send-only service account', async t => {

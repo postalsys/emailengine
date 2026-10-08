@@ -37,6 +37,10 @@ the same control, and the server-side `pubSubApp` field was never provider-speci
         {{/each}}
 
     </select>
+    <span class="helper-text">No Pub/Sub app yet?
+        <a href="/admin/config/oauth/new?provider=gmailService&amp;baseScopes=pubsub" target="_blank"
+            rel="noopener" class="link link-animated">Register one</a> in a new tab, then reload this page to
+        select it.</span>
     {{#if errors.pubSubApp}}
     <span class="helper-text text-error">{{errors.pubSubApp}}</span>
     {{/if}}

@@ -1312,24 +1312,22 @@ test.describe('admin shell', () => {
         await expect(page.locator('#pubSubApp')).toBeDisabled();
         await page.locator('#baseScopesImap').check();
 
-        // the service-account form carries its own auth-method tab strip (not a
-        // FlyonUI data-tabs instance): it marks the selection and swaps sections
-        await expectSelectedTab(page, 'auth-method-tab-serviceKey', ['auth-method-tab-externalAccount']);
+        // the authentication method is a radio group that swaps the method's sections
+        await expect(page.locator('#authMethodServiceKey')).toBeChecked();
         await expect(page.locator('.auth-method-section-externalAccount').first()).toBeHidden();
-        await page.locator('#auth-method-tab-externalAccount').click();
-        await expectSelectedTab(page, 'auth-method-tab-externalAccount', ['auth-method-tab-serviceKey']);
+        await page.locator('#authMethodExternalAccount').check();
         await expect(page.locator('.auth-method-section-externalAccount').first()).toBeVisible();
         await expect(page.locator('.auth-method-section-serviceKey').first()).toBeHidden();
 
-        // The attached service account is a Pub/Sub-only method: its tab follows the base scope, its
-        // section hides and disables the service account fields it does not use (a hidden required
-        // field would block the submit), and leaving Pub/Sub while it is selected falls back to the key
-        await expect(page.locator('#auth-method-tab-metadataServer')).toBeHidden();
+        // The attached service account is a Pub/Sub-only method: it is always listed but only
+        // selectable for that base scope, its section hides and disables the service account fields it
+        // does not use (a hidden required field would block the submit), and leaving Pub/Sub while it
+        // is selected falls back to the key and says so
+        await expect(page.locator('#authMethodMetadataServer')).toBeVisible();
+        await expect(page.locator('#authMethodMetadataServer')).toBeDisabled();
         await page.locator('#baseScopesPubsub').check();
-        await expect(page.locator('#auth-method-tab-metadataServer')).toBeVisible();
-        await page.locator('#auth-method-tab-metadataServer').click();
-        await expectSelectedTab(page, 'auth-method-tab-metadataServer', ['auth-method-tab-serviceKey', 'auth-method-tab-externalAccount']);
-        await expect(page.locator('#authMethod')).toHaveValue('metadataServer');
+        await expect(page.locator('#authMethodMetadataServer')).toBeEnabled();
+        await page.locator('#authMethodMetadataServer').check();
         await expect(page.locator('#serviceClientEmail')).toBeHidden();
         await expect(page.locator('#serviceClientEmail')).toBeDisabled();
         await expect(page.locator('#serviceClient')).toBeDisabled();
@@ -1341,10 +1339,15 @@ test.describe('admin shell', () => {
         await expect(page.locator('#metadataProbe')).toBeEnabled();
 
         await page.locator('#baseScopesImap').check();
-        await expect(page.locator('#auth-method-tab-metadataServer')).toBeHidden();
-        await expectSelectedTab(page, 'auth-method-tab-serviceKey', ['auth-method-tab-metadataServer', 'auth-method-tab-externalAccount']);
-        await expect(page.locator('#authMethod')).toHaveValue('serviceKey');
+        await expect(page.locator('#authMethodMetadataServer')).toBeDisabled();
+        await expect(page.locator('#authMethodServiceKey')).toBeChecked();
+        await expect(page.locator('#authMethodNotice')).toBeVisible();
         await expect(page.locator('#serviceClientEmail')).toBeEnabled();
+
+        // the Gmail API mode's "Register one" link opens the form with Pub/Sub preselected
+        await page.goto('/admin/config/oauth/new?provider=gmailService&baseScopes=pubsub');
+        await expect(page.locator('#baseScopesPubsub')).toBeChecked();
+        await expect(page.locator('#authMethodMetadataServer')).toBeEnabled();
 
         await page.goto('/admin/config/oauth/new?provider=gmail');
         await page.locator('#baseScopesImap').check();

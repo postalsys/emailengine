@@ -12,21 +12,18 @@ Read about setting up {{providerData.comment}} OAuth2 project from <a href="{{pr
 
 {{#if activeGmailService}}
 {{#> ui/stat-card variant="info" icon="icon-[tabler--info-circle]" class="mb-6"}}
-<strong>Service accounts</strong> let EmailEngine access any mailbox in your Google Workspace
-organization without an interactive user login. The service account must have domain-wide
-delegation enabled in Workspace. Use this for automated integrations where you cannot perform
-interactive logins.
-<p class="mt-2 mb-0">
-    Two authentication methods are supported: a downloaded <strong>service account key</strong>
-    (classic) or <strong>Workload Identity Federation</strong> (keyless, for GKE, EKS, AKS, or
-    any OIDC-emitting workload). Pick one below.
-</p>
+<strong>Service accounts</strong> let EmailEngine reach Google without an interactive user login. An
+<strong>IMAP and SMTP</strong> or <strong>Gmail API</strong> app accesses any mailbox in your Google Workspace
+organization through domain-wide delegation, which must be enabled for the service account in Workspace. A
+<strong>Cloud Pub/Sub</strong> app accesses no mailboxes: it sets up the real-time change notifications your
+Gmail API apps use.{{#if actionCreate}} Choose what the app is for first, then how EmailEngine
+authenticates.{{/if}}
 <p class="mt-2 mb-0">
     Accounts using service access can only be added via the
     <a href="/admin/reference/account#postV1Account" class="link link-animated">REST API</a>, not through the hosted
     authentication form.{{#if providerData.tutorialUrl}} Read the
     <a href="{{providerData.tutorialUrl}}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"
-        class="link link-animated">setup guide</a> for both methods.{{/if}}
+        class="link link-animated">setup guide</a>.{{/if}}
 </p>
 {{/ui/stat-card}}
 {{/if}}
@@ -98,6 +95,174 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
     </div>
 </div>
 
+{{#if activeGmailService}}
+{{!-- Ahead of the credentials on the service account form, unlike the other providers: the base scope
+      decides which authentication methods can be offered (the attached service account is Pub/Sub
+      only), so it is asked first --}}
+
+<div class="card bg-base-100 shadow-md mb-6">
+
+    <div class="card-header">
+        <h6 class="card-title text-primary">Base scopes</h6>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="table ee-table-stack">
+
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Requirements</th>
+
+                </tr>
+
+            </thead>
+            <tbody>
+
+                {{#if actionCreate}}
+                <tr>
+                    <td>
+                        <div class="flex items-center gap-2">
+                            <input class="radio radio-sm base-scopes-radio" type="radio" name="baseScopes"
+                                id="baseScopesImap" value="imap" {{#if baseScopesImap}}checked{{/if}}>
+                            <label class="label-text p-0" for="baseScopesImap">
+                                IMAP and SMTP
+                            </label>
+                        </div>
+                    </td>
+                    <td data-label="Description">Regular email protocols</td>
+                    <td data-label="Requirements"><code>"https://mail.google.com/"</code> consent screen scope</td>
+
+                </tr>
+                <tr>
+                    <td>
+                        <div class="flex items-center gap-2">
+                            <input class="radio radio-sm base-scopes-radio" type="radio" name="baseScopes"
+                                id="baseScopesAPI" value="api" {{#if baseScopesApi}}checked{{/if}}>
+                            <label class="label-text p-0" for="baseScopesAPI">
+                                Gmail API {{> ui/badge label="beta" variant="neutral"}}
+                            </label>
+                        </div>
+                    </td>
+                    <td data-label="Description">Gmail HTTP API, through domain-wide delegation</td>
+                    <td data-label="Requirements"><code>"/auth/gmail.modify"</code> delegated scope</td>
+
+                </tr>
+                <tr>
+                    <td>
+                        <div class="flex items-center gap-2">
+                            <input class="radio radio-sm base-scopes-radio" type="radio" name="baseScopes"
+                                id="baseScopesPubsub" value="pubsub" {{#if baseScopesPubsub}}checked{{/if}}>
+                            <label class="label-text p-0" for="baseScopesPubsub">
+                                Cloud Pub/Sub {{> ui/badge label="beta" variant="neutral"}}
+                            </label>
+                        </div>
+                    </td>
+                    <td data-label="Description">Real-time change notifications for Gmail API apps</td>
+                    <td data-label="Requirements"><code>"Pub/Sub Admin"</code> service credentials role</td>
+
+                </tr>
+
+                {{else}}
+                {{#if baseScopesImap}}
+                <tr>
+                    <td>
+                        <strong>IMAP and SMTP</strong>
+                    </td>
+                    <td data-label="Description">Regular email protocols</td>
+                    <td data-label="Requirements"><code>"https://mail.google.com/"</code> consent screen scope</td>
+
+                </tr>
+                {{/if}}
+
+                {{#if baseScopesApi}}
+                <tr>
+                    <td>
+                        <strong>Gmail API</strong> {{> ui/badge label="beta" variant="neutral"}}
+                    </td>
+                    <td data-label="Description">Gmail HTTP API, through domain-wide delegation</td>
+                    <td data-label="Requirements"><code>"/auth/gmail.modify"</code> delegated scope</td>
+
+                </tr>
+                {{/if}}
+
+                {{#if baseScopesPubsub}}
+                <tr>
+                    <td>
+                        <strong>Cloud Pub/Sub</strong> {{> ui/badge label="beta" variant="neutral"}}
+                    </td>
+                    <td data-label="Description">Real-time change notifications for Gmail API apps</td>
+                    <td data-label="Requirements"><code>"Pub/Sub Admin"</code> service credentials role</td>
+
+                </tr>
+                {{/if}}
+
+                {{/if}}
+            </tbody>
+
+        </table>
+    </div>
+
+    {{> oauth_pubsub_app_select}}
+
+    <div class="card-footer border-base-content/10 border-t px-6 py-4{{#unless baseScopesPubsub}} hidden{{/unless}}"
+        data-base-scopes="pubsub">
+
+        {{#if actionCreate}}
+
+        <div class="mb-4">
+            {{#> ui/form-field id="googleTopicName" label="Google Pub/Sub Topic Name" error=errors.googleTopicName}}
+            <input type="text" class="input{{#if errors.googleTopicName}} is-invalid{{/if}}" id="googleTopicName"
+                name="googleTopicName" value="{{values.googleTopicName}}"
+                placeholder="Enter the Topic Name for the Google Pub/Sub subscription, for example &quot;ee-pub-12345&quot;" />
+            <span class="helper-text">OAuth2 Pub/Sub Topic Name. Automatically generated if not set.</span>
+            {{/ui/form-field}}
+        </div>
+
+        <div>
+            {{#> ui/form-field id="googleSubscriptionName" label="Google Pub/Sub Subscription Name"
+            error=errors.googleSubscriptionName}}
+            <input type="text" class="input{{#if errors.googleSubscriptionName}} is-invalid{{/if}}"
+                id="googleSubscriptionName" name="googleSubscriptionName" value="{{values.googleSubscriptionName}}"
+                placeholder="Enter the Subscription Name for the Google Pub/Sub subscription, for example &quot;ee-sub-12345&quot;" />
+            <span class="helper-text">OAuth2 Pub/Sub Subscription Name. Automatically generated if not set.</span>
+            {{/ui/form-field}}
+        </div>
+
+        {{else}}
+
+        <dl class="ee-dl">
+
+            <dt>Pub/Sub Topic</dt>
+            <dd>
+                {{#if appData.pubSubTopic}}
+
+                <code>{{lastVal appData.pubSubTopic "/"}}</code>
+                {{else}}
+                Not initialized
+                {{/if}}
+            </dd>
+
+
+            <dt>Pub/Sub Subscription</dt>
+            <dd>
+                {{#if appData.pubSubSubscription}}
+                <code>{{lastVal appData.pubSubSubscription "/"}}</code>
+                {{else}}
+                Not initialized
+                {{/if}}
+            </dd>
+        </dl>
+
+
+        {{/if}}
+
+    </div>
+
+</div>
+{{/if}}
+
 <div class="card bg-base-100 shadow-md mb-6">
 
     <div class="card-header">
@@ -108,11 +273,11 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
 
         {{#if activeGmailService}}
 
+        {{#if authMethodLocked}}
         <div>
             <label class="label-text block">Authentication method</label>
             <input type="hidden" name="authMethod" id="authMethod"
                 value="{{#if authMethodIsExternalAccount}}externalAccount{{else if authMethodIsMetadataServer}}metadataServer{{else}}serviceKey{{/if}}" />
-            {{#if authMethodLocked}}
             <p class="mb-1">
                 <strong>{{#if authMethodIsExternalAccount}}Workload Identity Federation (keyless){{else if
                     authMethodIsMetadataServer}}Attached service account (Google Cloud){{else}}Service
@@ -120,38 +285,31 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
             </p>
             <span class="helper-text">The authentication method is fixed once the application has been created and
                 cannot be changed.</span>
-            {{else}}
-            {{!-- custom tab behavior: the script at the end of this partial
-                  toggles tab-active and the auth-method sections; not a FlyonUI
-                  data-tabs instance, deliberately - each method toggles two
-                  .auth-method-section blocks that are interleaved with fields
-                  shared by both methods, and HSTabs maps one toggle to exactly
-                  one content element. The script also syncs the hidden
-                  #authMethod input submitted with the form. --}}
-            <nav class="tabs tabs-bordered" id="auth-method-tabs" role="tablist" aria-label="Authentication method">
-                <button type="button" class="tab auth-method-tab{{#if authMethodIsServiceKey}} tab-active{{/if}}"
-                    id="auth-method-tab-serviceKey" data-auth-method="serviceKey" role="tab"
-                    aria-selected="{{#if authMethodIsServiceKey}}true{{else}}false{{/if}}">Service account key</button>
-                <button type="button" class="tab auth-method-tab{{#if authMethodIsExternalAccount}} tab-active{{/if}}"
-                    id="auth-method-tab-externalAccount" data-auth-method="externalAccount" role="tab"
-                    aria-selected="{{#if authMethodIsExternalAccount}}true{{else}}false{{/if}}">Workload Identity
-                    Federation (keyless)</button>
-                {{!-- Pub/Sub only: the metadata server's token is the service account's own and
-                      cannot impersonate a Workspace user. The script at the end of this partial
-                      shows it while the Cloud Pub/Sub base scope is selected --}}
-                <button type="button"
-                    class="tab auth-method-tab{{#if authMethodIsMetadataServer}} tab-active{{/if}}{{#unless baseScopesPubsub}} hidden{{/unless}}"
-                    id="auth-method-tab-metadataServer" data-auth-method="metadataServer" data-auth-method-scope="pubsub"
-                    role="tab" aria-selected="{{#if authMethodIsMetadataServer}}true{{else}}false{{/if}}">Attached
-                    service account (Google Cloud)</button>
-            </nav>
-            <span class="helper-text">"Service account key" expects a downloaded JSON key file.
-                "Workload Identity Federation" authenticates without a long-lived key, using a credential issued
-                by your runtime environment. For a Cloud Pub/Sub application running on Google Cloud, "Attached
-                service account" uses the service account of the VM, GKE workload or Cloud Run service itself,
-                with nothing to store.</span>
-            {{/if}}
         </div>
+        {{else}}
+        {{!-- A radio group: this is one submitted choice that is fixed once the app exists, not a view
+              switcher, and a radio can stay visible while it is unavailable. The
+              attached service account is Pub/Sub only (the metadata server's token is the service
+              account's own and cannot impersonate a Workspace user), so it is disabled for the other
+              base scopes, which this form asks first. The script at the end of this partial follows
+              the base scope and swaps the .auth-method-section blocks, which are interleaved with
+              fields shared by the methods. --}}
+        <fieldset class="space-y-3" id="auth-method-options">
+            <legend class="label-text mb-2">Authentication method</legend>
+            {{> ui/radio id="authMethodServiceKey" name="authMethod" value="serviceKey" class="auth-method-radio"
+            label="Service account key" checked=authMethodIsServiceKey
+            hint="A JSON key file downloaded from the Google Cloud console."}}
+            {{> ui/radio id="authMethodExternalAccount" name="authMethod" value="externalAccount"
+            class="auth-method-radio" label="Workload Identity Federation (keyless)" checked=authMethodIsExternalAccount
+            hint="No long-lived key. EmailEngine exchanges a credential issued by its runtime (GKE, EKS, AKS or any OIDC-emitting workload) for Google access tokens."}}
+            {{> ui/radio id="authMethodMetadataServer" name="authMethod" value="metadataServer"
+            class="auth-method-radio" label="Attached service account (Google Cloud)" checked=authMethodIsMetadataServer
+            disabled=(when baseScopesPubsub "" "disabled")
+            hint="Uses the service account of the VM, GKE workload or Cloud Run service EmailEngine runs on, so there is nothing to store. Cloud Pub/Sub apps only."}}
+            <span class="helper-text">Cannot be changed after the app is created.</span>
+            <span class="helper-text text-warning hidden" id="authMethodNotice" aria-live="polite"></span>
+        </fieldset>
+        {{/if}}
 
         <div class="auth-method-section auth-method-section-serviceKey{{#unless authMethodIsServiceKey}} hidden{{/unless}}">
             <div>
@@ -172,10 +330,9 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
 
         <div class="auth-method-section auth-method-section-metadataServer{{#unless authMethodIsMetadataServer}} hidden{{/unless}}">
             <div class="space-y-2">
-                <p class="text-sm">EmailEngine requests access tokens for the service account attached to the
-                    machine it runs on, from the Google Cloud metadata server. Nothing is stored. Grant that service
-                    account the <code>Pub/Sub Admin</code> role, and on Compute Engine give the VM the
-                    <code>cloud-platform</code> access scope.</p>
+                <p class="text-sm">EmailEngine asks the Google Cloud metadata server for the attached service
+                    account's access tokens. Grant that service account the <code>Pub/Sub Admin</code> role, and on
+                    Compute Engine give the VM the <code>cloud-platform</code> access scope.</p>
                 {{#if actionCreate}}
                 <div class="flex flex-wrap items-center gap-3">
                     {{> ui/btn label="Detect from this host" variant="info" id="metadataProbe"
@@ -437,171 +594,6 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
 
     </div>
 </div>
-
-{{#if activeGmailService}}
-
-<div class="card bg-base-100 shadow-md mb-6">
-
-    <div class="card-header">
-        <h6 class="card-title text-primary">Base scopes</h6>
-    </div>
-
-    <div class="overflow-x-auto">
-        <table class="table">
-
-            <thead>
-                <tr>
-                    <th>Type</th>
-                    <th>Description</th>
-                    <th>Requirements</th>
-
-                </tr>
-
-            </thead>
-            <tbody>
-
-                {{#if actionCreate}}
-                <tr>
-                    <td>
-                        <div class="flex items-center gap-2">
-                            <input class="radio radio-sm base-scopes-radio" type="radio" name="baseScopes"
-                                id="baseScopesImap" value="imap" {{#if baseScopesImap}}checked{{/if}}>
-                            <label class="label-text p-0" for="baseScopesImap">
-                                IMAP and SMTP
-                            </label>
-                        </div>
-                    </td>
-                    <td>Regular email protocols</td>
-                    <td><code>"https://mail.google.com/"</code> consent screen scope</td>
-
-                </tr>
-                <tr>
-                    <td>
-                        <div class="flex items-center gap-2">
-                            <input class="radio radio-sm base-scopes-radio" type="radio" name="baseScopes"
-                                id="baseScopesAPI" value="api" {{#if baseScopesApi}}checked{{/if}}>
-                            <label class="label-text p-0" for="baseScopesAPI">
-                                Gmail API {{> ui/badge label="beta" variant="neutral"}}
-                            </label>
-                        </div>
-                    </td>
-                    <td>Gmail HTTP API, through domain-wide delegation</td>
-                    <td><code>"/auth/gmail.modify"</code> delegated scope</td>
-
-                </tr>
-                <tr>
-                    <td>
-                        <div class="flex items-center gap-2">
-                            <input class="radio radio-sm base-scopes-radio" type="radio" name="baseScopes"
-                                id="baseScopesPubsub" value="pubsub" {{#if baseScopesPubsub}}checked{{/if}}>
-                            <label class="label-text p-0" for="baseScopesPubsub">
-                                Cloud Pub/Sub {{> ui/badge label="beta" variant="neutral"}}
-                            </label>
-                        </div>
-                    </td>
-                    <td>Webhook management</td>
-                    <td><code>"Pub/Sub Admin"</code> service credentials role</td>
-
-                </tr>
-
-                {{else}}
-                {{#if baseScopesImap}}
-                <tr>
-                    <td>
-                        <strong>IMAP and SMTP</strong>
-                    </td>
-                    <td>Regular email protocols</td>
-                    <td><code>"https://mail.google.com/"</code> consent screen scope</td>
-
-                </tr>
-                {{/if}}
-
-                {{#if baseScopesApi}}
-                <tr>
-                    <td>
-                        <strong>Gmail API</strong> {{> ui/badge label="beta" variant="neutral"}}
-                    </td>
-                    <td>Gmail HTTP API, through domain-wide delegation</td>
-                    <td><code>"/auth/gmail.modify"</code> delegated scope</td>
-
-                </tr>
-                {{/if}}
-
-                {{#if baseScopesPubsub}}
-                <tr>
-                    <td>
-                        <strong>Cloud Pub/Sub</strong> {{> ui/badge label="beta" variant="neutral"}}
-                    </td>
-                    <td>Webhook management</td>
-                    <td><code>"Pub/Sub Admin"</code> service credentials role</td>
-
-                </tr>
-                {{/if}}
-
-                {{/if}}
-            </tbody>
-
-        </table>
-    </div>
-
-    {{> oauth_pubsub_app_select}}
-
-    <div class="card-footer border-base-content/10 border-t px-6 py-4{{#unless baseScopesPubsub}} hidden{{/unless}}"
-        data-base-scopes="pubsub">
-
-        {{#if actionCreate}}
-
-        <div class="mb-4">
-            {{#> ui/form-field id="googleTopicName" label="Google Pub/Sub Topic Name" error=errors.googleTopicName}}
-            <input type="text" class="input{{#if errors.googleTopicName}} is-invalid{{/if}}" id="googleTopicName"
-                name="googleTopicName" value="{{values.googleTopicName}}"
-                placeholder="Enter the Topic Name for the Google Pub/Sub subscription, for example &quot;ee-pub-12345&quot;" />
-            <span class="helper-text">OAuth2 Pub/Sub Topic Name. Automatically generated if not set.</span>
-            {{/ui/form-field}}
-        </div>
-
-        <div>
-            {{#> ui/form-field id="googleSubscriptionName" label="Google Pub/Sub Subscription Name"
-            error=errors.googleSubscriptionName}}
-            <input type="text" class="input{{#if errors.googleSubscriptionName}} is-invalid{{/if}}"
-                id="googleSubscriptionName" name="googleSubscriptionName" value="{{values.googleSubscriptionName}}"
-                placeholder="Enter the Subscription Name for the Google Pub/Sub subscription, for example &quot;ee-sub-12345&quot;" />
-            <span class="helper-text">OAuth2 Pub/Sub Subscription Name. Automatically generated if not set.</span>
-            {{/ui/form-field}}
-        </div>
-
-        {{else}}
-
-        <dl class="ee-dl">
-
-            <dt>Pub/Sub Topic</dt>
-            <dd>
-                {{#if appData.pubSubTopic}}
-
-                <code>{{lastVal appData.pubSubTopic "/"}}</code>
-                {{else}}
-                Not initialized
-                {{/if}}
-            </dd>
-
-
-            <dt>Pub/Sub Subscription</dt>
-            <dd>
-                {{#if appData.pubSubSubscription}}
-                <code>{{lastVal appData.pubSubSubscription "/"}}</code>
-                {{else}}
-                Not initialized
-                {{/if}}
-            </dd>
-        </dl>
-
-
-        {{/if}}
-
-    </div>
-
-</div>
-{{/if}}
 
 {{#if activeGmail}}
 
@@ -1345,7 +1337,7 @@ open=values.skipScopes}}
 
                     if (data.type !== 'external_account') {
                         if (data.type === 'service_account') {
-                            return showToast('This is a service account key file, not a Workload Identity Federation config. Switch to the "Service account key" tab to load it.', 'alert-triangle');
+                            return showToast('This is a service account key file, not a Workload Identity Federation config. Choose "Service account key" as the authentication method to load it.', 'alert-triangle');
                         }
                         return showToast(`Selected file is not an external_account credential config (type: ${data.type || 'missing'})`, 'alert-triangle');
                     }
@@ -1369,10 +1361,13 @@ open=values.skipScopes}}
             });
         }
 
-        let authMethodTabs = document.querySelectorAll('.auth-method-tab');
-        let authMethodInput = document.getElementById('authMethod');
-        if (authMethodTabs.length && authMethodInput) {
-            let updateSections = selected => {
+        let authMethodRadios = document.querySelectorAll('.auth-method-radio');
+        if (authMethodRadios.length) {
+            let noticeElm = document.getElementById('authMethodNotice');
+            let metadataServerRadio = document.getElementById('authMethodMetadataServer');
+
+            let updateSections = () => {
+                let selected = document.querySelector('.auth-method-radio:checked').value;
                 document.querySelectorAll('.auth-method-section').forEach(section => {
                     let active = section.classList.contains('auth-method-section-' + selected);
                     section.classList.toggle('hidden', !active);
@@ -1382,51 +1377,38 @@ open=values.skipScopes}}
                     });
                 });
             };
-            let selectTab = tab => {
-                let selected = tab.getAttribute('data-auth-method');
-                authMethodTabs.forEach(other => {
-                    let isActive = other === tab;
-                    other.classList.toggle('tab-active', isActive);
-                    other.setAttribute('aria-selected', isActive ? 'true' : 'false');
-                });
-                authMethodInput.value = selected;
-                updateSections(selected);
-            };
-            authMethodTabs.forEach(tab => {
-                tab.addEventListener('click', e => {
-                    e.preventDefault();
-                    if (tab.classList.contains('disabled') || tab.classList.contains('tab-active')) {
-                        return;
-                    }
-                    selectTab(tab);
-                });
-            });
-            // the rendered selection, so a re-rendered form disables the sections it hides from the start
-            updateSections(authMethodInput.value);
 
-            // A method tied to a base scope (the attached service account, Pub/Sub only) is offered
-            // while that scope is selected. Switching away from it while its tab is active falls back
-            // to the key tab, so the form never submits a method the schema refuses for the scope
-            let scopedTabs = document.querySelectorAll('.auth-method-tab[data-auth-method-scope]');
-            let checkScopedTabs = () => {
+            // The attached service account is offered for Pub/Sub apps only. Leaving Pub/Sub while it is
+            // selected falls back to the key, and says so, because the form must never submit a method the
+            // schema refuses for the scope - and a choice that changes by itself has to be announced
+            let checkScopedMethod = () => {
                 let scopeElm = document.querySelector('.base-scopes-radio:checked');
                 if (!scopeElm) {
                     return;
                 }
-                scopedTabs.forEach(tab => {
-                    let offered = tab.getAttribute('data-auth-method-scope') === scopeElm.value;
-                    tab.classList.toggle('hidden', !offered);
-                    if (!offered && tab.classList.contains('tab-active')) {
-                        selectTab(document.getElementById('auth-method-tab-serviceKey'));
-                    }
-                });
+                let offered = scopeElm.value === 'pubsub';
+                metadataServerRadio.disabled = !offered;
+                if (!offered && metadataServerRadio.checked) {
+                    document.getElementById('authMethodServiceKey').checked = true;
+                    noticeElm.textContent = 'The attached service account is only available for Cloud Pub/Sub apps, so the method was switched to Service account key.';
+                    noticeElm.classList.remove('hidden');
+                    updateSections();
+                }
             };
-            if (scopedTabs.length) {
-                document.querySelectorAll('.base-scopes-radio').forEach(radioElm => {
-                    radioElm.addEventListener('change', checkScopedTabs);
+
+            authMethodRadios.forEach(radioElm => {
+                radioElm.addEventListener('change', () => {
+                    noticeElm.classList.add('hidden');
+                    updateSections();
                 });
-                checkScopedTabs();
-            }
+            });
+            document.querySelectorAll('.base-scopes-radio').forEach(radioElm => {
+                radioElm.addEventListener('change', checkScopedMethod);
+            });
+
+            checkScopedMethod();
+            // the rendered selection, so a re-rendered form disables the sections it hides from the start
+            updateSections();
         }
 
         let metadataProbeElm = document.getElementById('metadataProbe');

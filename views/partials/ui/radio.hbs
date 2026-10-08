@@ -22,9 +22,9 @@
 --}}
 <div class="w-full">
     <div class="flex items-center gap-2">
-        <input type="radio" class="radio radio-sm{{#if error}} is-invalid{{/if}}{{#if class}} {{class}}{{/if}}" id="{{id}}" name="{{name}}" value="{{value}}"
+        <input type="radio" class="peer radio radio-sm{{#if error}} is-invalid{{/if}}{{#if class}} {{class}}{{/if}}" id="{{id}}" name="{{name}}" value="{{value}}"
             {{#if checked}}checked {{else}}{{#equals selected value}}checked {{/equals}}{{/if}}{{#if disabled}}disabled {{/if}}>
-        <label class="label-text p-0" for="{{id}}" {{#if labelTitle}}title="{{labelTitle}}" {{/if}}>{{label}}</label>
+        <label class="label-text p-0 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed" for="{{id}}" {{#if labelTitle}}title="{{labelTitle}}" {{/if}}>{{label}}</label>
         {{#if tooltip}}
         {{!-- class="" blocks this partial's own class param (meant for the
               input) from falling through onto the tooltip wrapper --}}

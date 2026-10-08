@@ -1,10 +1,10 @@
 'use strict';
 
 // The admin form's third authentication method for gmailService apps, the attached service account.
-// Rendered against the real templates and partials, because what matters is markup: the tab is
-// offered for Pub/Sub apps only, the service account fields it does not use are hidden AND disabled
-// (a hidden required field blocks the browser's submit, and a disabled one is left out of it), and a
-// saved app shows its locked method instead of the tabs.
+// Rendered against the real templates and partials, because what matters is markup: the option is
+// always listed but only selectable for Pub/Sub apps, the service account fields it does not use are
+// hidden AND disabled (a hidden required field blocks the browser's submit, and a disabled one is left
+// out of it), and a saved app shows its locked method instead of the options.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -47,25 +47,30 @@ const serviceFieldsWrapper = html =>
     html.match(/<div\s+class="(auth-method-section auth-method-section-serviceKey auth-method-section-externalAccount[^"]*)"/)[1];
 
 test('the attached service account on the gmailService form', async t => {
-    await t.test('is offered as a tab while the Pub/Sub base scope is selected', () => {
-        const tab = openingTag(render('pubsub', 'serviceKey'), 'auth-method-tab-metadataServer');
-        assert.ok(tab, 'the tab is rendered');
-        assert.doesNotMatch(tab, /\bhidden\b/);
-        assert.match(tab, /data-auth-method="metadataServer"/);
-        assert.match(tab, /data-auth-method-scope="pubsub"/, 'the script hides it for other scopes');
+    await t.test('is selectable while the Pub/Sub base scope is selected', () => {
+        const radio = openingTag(render('pubsub', 'serviceKey'), 'authMethodMetadataServer');
+        assert.ok(radio, 'the option is rendered');
+        assert.match(radio, /name="authMethod"/);
+        assert.match(radio, /value="metadataServer"/);
+        assert.doesNotMatch(radio, /\bdisabled\b/);
     });
 
-    await t.test('is rendered hidden for IMAP and API apps', () => {
+    await t.test('is listed but disabled for IMAP and API apps', () => {
         for (const scope of ['imap', 'api']) {
-            assert.match(openingTag(render(scope, 'serviceKey'), 'auth-method-tab-metadataServer'), /\bhidden\b/, scope);
+            assert.match(openingTag(render(scope, 'serviceKey'), 'authMethodMetadataServer'), /\bdisabled\b/, scope);
         }
+    });
+
+    await t.test('the base scope is asked before the credentials', () => {
+        const html = render('imap', 'serviceKey');
+        assert.ok(html.indexOf('id="baseScopesPubsub"') < html.indexOf('id="auth-method-options"'));
     });
 
     await t.test('when selected, submits its method and hides and disables the fields it does not use', () => {
         const html = render('pubsub', 'metadataServer');
 
-        assert.match(openingTag(html, 'authMethod'), /value="metadataServer"/);
-        assert.match(openingTag(html, 'auth-method-tab-metadataServer'), /tab-active/);
+        assert.match(openingTag(html, 'authMethodMetadataServer'), /\bchecked\b/);
+        assert.doesNotMatch(openingTag(html, 'authMethodServiceKey'), /\bchecked\b/);
         assert.match(serviceFieldsWrapper(html), /\bhidden\b/);
         for (const id of ['serviceClientEmail', 'serviceClient']) {
             assert.match(openingTag(html, id), /\bdisabled\b/, id);
@@ -83,10 +88,10 @@ test('the attached service account on the gmailService form', async t => {
         }
     });
 
-    await t.test('a saved app shows its method instead of the tabs, with no detect button', () => {
+    await t.test('a saved app shows its method instead of the options, with no detect button', () => {
         const html = render('pubsub', 'metadataServer', { actionCreate: false, locked: true });
 
-        assert.equal(openingTag(html, 'auth-method-tabs'), null);
+        assert.equal(openingTag(html, 'auth-method-options'), null);
         assert.match(html, /<strong>Attached service account \(Google Cloud\)<\/strong>/);
         assert.match(openingTag(html, 'authMethod'), /value="metadataServer"/);
         assert.match(openingTag(html, 'serviceClient'), /\bdisabled\b/, 'the edit form can be saved without the fields');
