@@ -170,6 +170,10 @@ Path-scoped rules in `.claude/rules/` load automatically when you work with the 
 
 - `EENGINE_DISABLE_THREAD_COLLAPSE` - Set to `true` to stop web-safe HTML from folding quoted thread history into a collapsed `<details class="ee-collapsed-thread">` block (default: folding enabled). The marker carries class names only - its `<summary>` is empty on purpose, so a renderer that does not know about it shows nothing extra. See `lib/web-safe-html.js`
 
+**Message submission:**
+
+- `EENGINE_IGNORE_ADDRESS_LENGTH` - Set to `true` to stop the sender and recipient fields of the submit, draft and upload routes (`from`, `to`, `cc`, `bcc`, `replyTo` and the SMTP `envelope`) from enforcing the RFC 5321 size limits of 64 octets for the local part and 254 for the address (default: limits enforced). Some services issue longer addresses that their own MX accepts, ClickUp's per-task addresses among them. The address syntax is still checked, and the receiving server may still refuse an address over the limit. Read once at load by `lib/schemas.js`
+
 **Prepared configuration** (applied on startup):
 
 - `EENGINE_SETTINGS` - JSON settings object, re-applied through `settings.set()` on every boot, so a value saved for one of its keys in the admin UI reverts at the next restart. The key list is recorded as the `preparedSettingsKeys` setting, which `lib/ui-routes/settings-page.js` turns into `envManagedKeys` in every settings-form view context so the page can flag those fields
