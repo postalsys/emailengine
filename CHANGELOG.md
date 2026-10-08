@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.83.0](https://github.com/postalsys/emailengine/compare/v2.82.2...v2.83.0) (2026-10-08)
+
+
+### Features
+
+* **oauth2:** authenticate Cloud Pub/Sub apps as the attached Google Cloud service account ([0b3e433](https://github.com/postalsys/emailengine/commit/0b3e43345c905b5f8afa5eea716bd56ec703d60b))
+
+
+### Bug Fixes
+
+* accept sender and recipient addresses with a local part over 64 octets ([96e813d](https://github.com/postalsys/emailengine/commit/96e813dae325648e954b607276471e87789cf3cd))
+* **deps:** update imapflow to 2.3.0 ([a2a0097](https://github.com/postalsys/emailengine/commit/a2a00970ba93a88bdd3da337eb225ec192b569a4))
+* **deps:** update imapflow, nodemailer, mailparser, smtp-server and templates ([27b1690](https://github.com/postalsys/emailengine/commit/27b169034c5743303daca354f0b30c1805d8a0e9))
+* label the local address strategies by the traffic they cover ([a116220](https://github.com/postalsys/emailengine/commit/a1162205bb3365ac997b5d5830631eb643fbf375))
+* route API account HTTP traffic through the account proxy and local address ([a3884e1](https://github.com/postalsys/emailengine/commit/a3884e15e6c7e7cf747f515ebb647785d01007e8))
+* **security:** keep the global webhook headers off account-level targets, and close the other findings of the 2026-10-06 review ([8b89a61](https://github.com/postalsys/emailengine/commit/8b89a612b85f0d645d16fde56452719a4dd68f6a))
+* show the TLS page's Check reachability and Request buttons as busy while they run ([173b72c](https://github.com/postalsys/emailengine/commit/173b72c5712ff89bc167630334241803b4c1d844))
+
 ## [2.82.2](https://github.com/postalsys/emailengine/compare/v2.82.1...v2.82.2) (2026-10-05)
 
 
