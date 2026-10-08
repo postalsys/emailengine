@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.83.1](https://github.com/postalsys/emailengine/compare/v2.83.0...v2.83.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* ask a service account app's purpose before its authentication method ([42ac521](https://github.com/postalsys/emailengine/commit/42ac521021fabe8976fd86f13da6e8c6d1707ac3))
+* close the attached service account review findings ([d567ad8](https://github.com/postalsys/emailengine/commit/d567ad866f90e0ced6b2b1d8fa722e7a74d6ac25))
+* drop the beta label from the export API ([21df0b0](https://github.com/postalsys/emailengine/commit/21df0b0e4ad5bb1ef18ce3eb916fa77e9028075d))
+* keep the OAuth2 app routes inside their size budget ([8a72c20](https://github.com/postalsys/emailengine/commit/8a72c20188aad62d7cb32401d98869c1ed96a75a))
+* rework the OAuth2 app form around what each app connects with ([a000412](https://github.com/postalsys/emailengine/commit/a000412ecc2c233f9fb4cc50fe8486904692a8ba))
+
 ## [2.83.0](https://github.com/postalsys/emailengine/compare/v2.82.2...v2.83.0) (2026-10-08)
 
 
