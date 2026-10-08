@@ -3283,9 +3283,10 @@
             "type": "string",
             "description": "Email address",
             "example": "user@example.com",
+            "maxLength": 254,
             "x-format": {
               "email": {
-                "ignoreLength": false
+                "ignoreLength": true
               }
             }
           }
@@ -3311,9 +3312,10 @@
             "type": "string",
             "description": "Email address",
             "example": "user@example.com",
+            "maxLength": 254,
             "x-format": {
               "email": {
-                "ignoreLength": false
+                "ignoreLength": true
               }
             }
           }
@@ -4362,8 +4364,11 @@
         "items": {
           "type": "string",
           "example": "recipient@example.com",
+          "maxLength": 254,
           "x-format": {
-            "email": true
+            "email": {
+              "ignoreLength": true
+            }
           }
         }
       },
@@ -4377,8 +4382,11 @@
           "from": {
             "type": "string",
             "example": "sender@example.com",
+            "maxLength": 254,
             "x-format": {
-              "email": true
+              "email": {
+                "ignoreLength": true
+              }
             }
           },
           "to": {
@@ -4451,8 +4459,11 @@
             "type": "string",
             "description": "The email address the DSN should be sent (ORCPT)",
             "example": "bounces@example.com",
+            "maxLength": 254,
             "x-format": {
-              "email": true
+              "email": {
+                "ignoreLength": true
+              }
             },
             "x-convert": {
               "trim": true
@@ -5552,8 +5563,11 @@
             "type": "string",
             "description": "Email address associated with the signature",
             "example": "user@example.com",
+            "maxLength": 254,
             "x-format": {
-              "email": true
+              "email": {
+                "ignoreLength": true
+              }
             }
           },
           "signature": {
@@ -5603,9 +5617,10 @@
             "type": "string",
             "description": "Email address",
             "example": "user@example.com",
+            "maxLength": 254,
             "x-format": {
               "email": {
-                "ignoreLength": false
+                "ignoreLength": true
               }
             }
           }
@@ -5647,9 +5662,10 @@
             "type": "string",
             "description": "Email address",
             "example": "user@example.com",
+            "maxLength": 254,
             "x-format": {
               "email": {
-                "ignoreLength": false
+                "ignoreLength": true
               }
             }
           }
@@ -5711,8 +5727,11 @@
         "items": {
           "type": "string",
           "example": "recipient@example.com",
+          "maxLength": 254,
           "x-format": {
-            "email": true
+            "email": {
+              "ignoreLength": true
+            }
           }
         }
       },
@@ -5726,8 +5745,11 @@
           "from": {
             "type": "string",
             "example": "sender@example.com",
+            "maxLength": 254,
             "x-format": {
-              "email": true
+              "email": {
+                "ignoreLength": true
+              }
             }
           },
           "to": {
@@ -5767,9 +5789,10 @@
             "type": "string",
             "description": "Email address",
             "example": "user@example.com",
+            "maxLength": 254,
             "x-format": {
               "email": {
-                "ignoreLength": false
+                "ignoreLength": true
               }
             }
           }
@@ -5805,9 +5828,10 @@
             "type": "string",
             "description": "Email address",
             "example": "user@example.com",
+            "maxLength": 254,
             "x-format": {
               "email": {
-                "ignoreLength": false
+                "ignoreLength": true
               }
             }
           }
@@ -5963,8 +5987,11 @@
             "type": "string",
             "description": "The email address the DSN should be sent (ORCPT)",
             "example": "bounces@example.com",
+            "maxLength": 254,
             "x-format": {
-              "email": true
+              "email": {
+                "ignoreLength": true
+              }
             },
             "x-convert": {
               "trim": true
@@ -6263,9 +6290,10 @@
             "type": "string",
             "description": "Email address",
             "example": "user@example.com",
+            "maxLength": 254,
             "x-format": {
               "email": {
-                "ignoreLength": false
+                "ignoreLength": true
               }
             }
           }
@@ -6962,8 +6990,11 @@
             "type": "string",
             "description": "Listed email address",
             "example": "user@example.com",
+            "maxLength": 254,
             "x-format": {
-              "email": true
+              "email": {
+                "ignoreLength": true
+              }
             }
           },
           "account": {
@@ -7076,8 +7107,11 @@
             "type": "string",
             "description": "Email address to add to the list",
             "example": "user@example.com",
+            "maxLength": 254,
             "x-format": {
-              "email": true
+              "email": {
+                "ignoreLength": true
+              }
             }
           },
           "reason": {
@@ -9085,8 +9119,11 @@
         "items": {
           "type": "string",
           "example": "recipient@example.com",
+          "maxLength": 254,
           "x-format": {
-            "email": true
+            "email": {
+              "ignoreLength": true
+            }
           }
         }
       },
@@ -9097,8 +9134,11 @@
           "from": {
             "type": "string",
             "example": "sender@example.com",
+            "maxLength": 254,
             "x-format": {
-              "email": true
+              "email": {
+                "ignoreLength": true
+              }
             }
           },
           "to": {
@@ -18332,8 +18372,11 @@
               "type": "string",
               "description": "Email address to remove from the list",
               "example": "user@example.com",
+              "maxLength": 254,
               "x-format": {
-                "email": true
+                "email": {
+                  "ignoreLength": true
+                }
               }
             },
             "description": "Email address to remove from the list",

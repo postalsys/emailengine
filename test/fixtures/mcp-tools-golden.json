@@ -26,7 +26,8 @@
                     "description": "Email address to add to the list",
                     "examples": [
                         "user@example.com"
-                    ]
+                    ],
+                    "maxLength": 254
                 },
                 "reason": {
                     "type": "string",
@@ -860,7 +861,8 @@
                             "description": "Email address",
                             "examples": [
                                 "user@example.com"
-                            ]
+                            ],
+                            "maxLength": 254
                         }
                     },
                     "required": [
@@ -894,7 +896,8 @@
                                 "description": "Email address",
                                 "examples": [
                                     "user@example.com"
-                                ]
+                                ],
+                                "maxLength": 254
                             }
                         },
                         "required": [
@@ -922,7 +925,8 @@
                                 "description": "Email address",
                                 "examples": [
                                     "user@example.com"
-                                ]
+                                ],
+                                "maxLength": 254
                             }
                         },
                         "required": [
@@ -950,7 +954,8 @@
                                 "description": "Email address",
                                 "examples": [
                                     "user@example.com"
-                                ]
+                                ],
+                                "maxLength": 254
                             }
                         },
                         "required": [
@@ -2996,7 +3001,8 @@
                     "description": "Email address to remove from the list",
                     "examples": [
                         "user@example.com"
-                    ]
+                    ],
+                    "maxLength": 254
                 }
             },
             "additionalProperties": false,
@@ -3436,7 +3442,8 @@
                             "description": "Email address",
                             "examples": [
                                 "user@example.com"
-                            ]
+                            ],
+                            "maxLength": 254
                         }
                     },
                     "required": [
@@ -3471,7 +3478,8 @@
                                 "description": "Email address",
                                 "examples": [
                                     "user@example.com"
-                                ]
+                                ],
+                                "maxLength": 254
                             }
                         },
                         "required": [
@@ -3538,7 +3546,8 @@
                                 "description": "Email address",
                                 "examples": [
                                     "user@example.com"
-                                ]
+                                ],
+                                "maxLength": 254
                             }
                         },
                         "required": [
@@ -3566,7 +3575,8 @@
                                 "description": "Email address",
                                 "examples": [
                                     "user@example.com"
-                                ]
+                                ],
+                                "maxLength": 254
                             }
                         },
                         "required": [
@@ -3594,7 +3604,8 @@
                                 "description": "Email address",
                                 "examples": [
                                     "user@example.com"
-                                ]
+                                ],
+                                "maxLength": 254
                             }
                         },
                         "required": [

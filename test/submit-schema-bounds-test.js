@@ -5,6 +5,7 @@
 //     the uncapped exponential retry backoff then kept a failing message queued indefinitely
 //   - the attachment list (audit DELIV-3): each attachment is a MIME node, and a message with more
 //     nodes than the MIME splitter accepts could be queued but never delivered
+//   - sender and recipient addresses: no 64 octet local part limit, only the overall cap (see mailboxAddressSchema)
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -71,6 +72,31 @@ test('submission payload bounds', async t => {
             const enabled = errorsAt(schema, reference('reply', true), 'reference');
             assert.equal(enabled.length, 1);
             assert.match(enabled[0].message, /can only be enabled when action is "forward"/);
+        }
+    });
+
+    await t.test('addresses are not refused for a long local part', () => {
+        // 65 octet local part
+        const long = 'A.t.123456789012.u-123456789.00000000-0000-4000-8000-000000000000@tasks.clickup.com';
+        const tooLong = `${'a'.repeat(250)}@example.com`;
+        const malformed = 'name.@example.com';
+
+        const removeQuery = routes.find(r => r.route === 'DELETE /v1/blocklist/{listId}').settings.validate.query;
+        const cases = [
+            [submit, 'to', address => ({ to: [{ address }] })],
+            [submit, 'from', address => ({ from: { address } })],
+            [submit, 'envelope', address => ({ envelope: { from: address, to: [address] } })],
+            [submit, 'dsn', address => ({ dsn: { id: 'x', return: 'headers', notify: ['failure'], recipient: address } })],
+            [draftSubmit, 'envelope', address => ({ envelope: { from: address, to: [address] } })],
+            [upload, 'cc', address => ({ cc: [{ address }] })],
+            [payloadOf('POST /v1/blocklist/{listId}'), 'recipient', recipient => ({ account: 'example', recipient })],
+            [removeQuery, 'recipient', recipient => ({ recipient })]
+        ];
+
+        for (const [schema, key, build] of cases) {
+            assert.equal(errorsAt(schema, build(long), key).length, 0, `${key} accepts a 65 octet local part`);
+            assert.ok(errorsAt(schema, build(tooLong), key).length > 0, `${key} still caps the whole address`);
+            assert.ok(errorsAt(schema, build(malformed), key).length > 0, `${key} still checks the syntax`);
         }
     });
 });
