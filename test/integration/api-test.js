@@ -1231,25 +1231,41 @@ test('API tests', async t => {
         }
     );
 
-    await t.test('Graph API pagination returns @odata.nextLink', { skip: outlookSkip, timeout: testConfig.OUTLOOK_TIMEOUT }, async () => {
+    await t.test('Graph API pagination returns @odata.nextLink', { skip: outlookSkip, timeout: testConfig.OUTLOOK_TIMEOUT }, async t => {
         let graphToken = await getGraphToken();
         let email = process.env.OUTLOOK_SERVICE_ACCOUNT_EMAIL;
+        let messagesUrl = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(email)}/messages`;
+        let headers = {
+            Authorization: `Bearer ${graphToken}`,
+            Prefer: 'IdType="ImmutableId"'
+        };
+
+        // The same filtered, ordered listing syncMissedMessages pages through, over a window wide
+        // enough to always hold several messages. It used to be the last 30 minutes, which in a run
+        // with no other run shortly before held a single message: the run sends one message to this
+        // mailbox and the delete test above removes the Inbox copy, leaving only the Sent Items
+        // copy. Graph still attaches a nextLink to a full page whether or not anything follows, so
+        // the second page came back empty and the test failed, and passed again on a re-run made
+        // within the half hour, which found the previous run's copy as well.
+        let sinceTime = new Date(Date.now() - 90 * 24 * 3600 * 1000).toISOString();
+        let listing = top =>
+            new URLSearchParams({
+                $filter: `receivedDateTime gt ${sinceTime}`,
+                $select: 'id',
+                $top: String(top),
+                $orderby: 'receivedDateTime desc'
+            });
+
+        // Pagination can only be shown with at least two messages; say so rather than fail on an
+        // emptied mailbox
+        let precheck = await (await fetchCmd(`${messagesUrl}?${listing(2)}`, { headers })).json();
+        if (!Array.isArray(precheck.value) || precheck.value.length < 2) {
+            t.skip(`the test mailbox holds ${precheck.value ? precheck.value.length : 0} message(s) from the last 90 days, pagination needs two`);
+            return;
+        }
 
         // Query with $top=1 to force pagination
-        let sinceTime = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-        let queryParams = new URLSearchParams({
-            $filter: `receivedDateTime gt ${sinceTime}`,
-            $select: 'id',
-            $top: '1',
-            $orderby: 'receivedDateTime desc'
-        });
-
-        let page1Res = await fetchCmd(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(email)}/messages?${queryParams}`, {
-            headers: {
-                Authorization: `Bearer ${graphToken}`,
-                Prefer: 'IdType="ImmutableId"'
-            }
-        });
+        let page1Res = await fetchCmd(`${messagesUrl}?${listing(1)}`, { headers });
         assert.equal(page1Res.status, 200);
 
         let page1Data = await page1Res.json();
@@ -1258,12 +1274,7 @@ test('API tests', async t => {
         assert.ok(page1Data['@odata.nextLink'], 'Should have @odata.nextLink for more results');
 
         // Follow the nextLink
-        let page2Res = await fetchCmd(page1Data['@odata.nextLink'], {
-            headers: {
-                Authorization: `Bearer ${graphToken}`,
-                Prefer: 'IdType="ImmutableId"'
-            }
-        });
+        let page2Res = await fetchCmd(page1Data['@odata.nextLink'], { headers });
         assert.equal(page2Res.status, 200);
 
         let page2Data = await page2Res.json();
