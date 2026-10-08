@@ -15,7 +15,7 @@ module.exports = {
     // `pino` is capped harder than the rest, at 'patch', because the break arrived in a MINOR and a
     // major cap would not have stopped it. See its entry below.
     target: name =>
-        name === 'pino'
+        ['pino', '@playwright/test'].includes(name)
             ? 'patch'
             : ['nanoid', 'gettext-parser', 'xgettext-template', 'chai', 'undici', 'marked', '@sentry/node-core', 'he'].includes(name)
               ? 'minor'
@@ -31,6 +31,13 @@ module.exports = {
     //                       pino reaches it whenever a logger is constructed. Lift only once a pino
     //                       release guards the getCallSites path, or pkg ships position info for
     //                       snapshotted scripts, and only with a binary built and run to prove it.
+    //   @playwright/test  - held on 1.63.x (dev only, the e2e tier). Under 1.64.0 the busy-state spec
+    //                       (test/e2e/pages-ui-busy-state.spec.js) hangs: it answers a form's navigation
+    //                       POST with route.fulfill({ status: 204 }) so the page stays put, and after that
+    //                       click 1.64 never resolves a locator assertion on the same page (toBeDisabled
+    //                       times out with "Received: undefined" while the page snapshot shows the button).
+    //                       Same spec passes in 3.8 s on 1.63.0; nothing in the 1.64 release notes covers
+    //                       it. Lift once a 1.64.x or later passes that spec unchanged.
     //   nanoid            - 4.x dropped the CommonJS require export (ESM-only)
     //   gettext-parser    - 8.x is ESM-only
     //   xgettext-template - 6.x is ESM-only (translation build tool)

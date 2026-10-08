@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-10-08 08:52+0000\n"
+"POT-Creation-Date: 2026-10-08 09:14+0000\n"
 
 #: views/account-workspace-error.hbs:7
 msgid "Work Account Required"
@@ -64,6 +64,26 @@ msgstr[1] ""
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
 
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
+
 #: views/unsubscribe.hbs:7
 #: views/unsubscribe.hbs:60
 #: views/unsubscribe.hbs:76
@@ -114,26 +134,6 @@ msgstr ""
 msgid ""
 "This link is not valid. Use the unsubscribe link from the email you "
 "received."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
 msgstr ""
 
 #: views/accounts/register/imap.hbs:13

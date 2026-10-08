@@ -116,7 +116,7 @@
         "@eslint/js": "10.0.1",
         "@iconify-json/tabler": "1.2.42",
         "@iconify/tailwind4": "1.2.3",
-        "@playwright/test": "1.64.0",
+        "@playwright/test": "1.63.0",
         "@postalsys/ee-client": "1.8.1",
         "@simplewebauthn/browser": "14.0.0",
         "@tailwindcss/cli": "4.3.3",
