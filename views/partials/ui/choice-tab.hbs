@@ -1,0 +1,23 @@
+{{!--
+    ui/choice-tab - one option of a ui/choice-tabs strip: a radio input laid over
+    a tab, so the whole tab is the input's hit target and the tab looks selected
+    while the input is checked.
+    Params:
+      id         - input id (required)
+      name       - radio group name (required)
+      value      - submitted value (required)
+      label      - tab text (required)
+      checked    - true when selected
+      class      - extra classes on the input, e.g. a page script hook (optional)
+      badgeLabel - short badge after the label, e.g. "Pub/Sub only" (optional)
+      badgeId    - id of that badge, for a script that shows or hides it (optional)
+      badgeHidden - true to render the badge hidden (optional)
+    There is no disabled state: the tab styling keys on the label, so a disabled
+    checked input would still look selected. Add one before a caller needs it.
+--}}
+<label class="tab relative gap-2 whitespace-nowrap has-checked:tab-active has-focus-visible:outline-2 has-focus-visible:outline-primary has-focus-visible:-outline-offset-2" for="{{id}}">
+    <input type="radio" class="absolute inset-0 m-0 cursor-pointer appearance-none opacity-0{{#if class}} {{class}}{{/if}}" id="{{id}}" name="{{name}}"
+        value="{{value}}" {{#if checked}}checked {{/if}}/>
+    {{label}}
+    {{#if badgeLabel}}{{> ui/badge label=badgeLabel variant="neutral" soft=true class=(concat "badge-sm" (when badgeHidden " hidden" "")) elId=badgeId icon="" title="" dataName="" dataValue=""}}{{/if}}
+</label>

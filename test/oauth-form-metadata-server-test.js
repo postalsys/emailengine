@@ -1,10 +1,10 @@
 'use strict';
 
 // The admin form's third authentication method for gmailService apps, the attached service account.
-// Rendered against the real templates and partials, because what matters is markup: the option is
-// always listed but only selectable for Pub/Sub apps, the service account fields it does not use are
-// hidden AND disabled (a hidden required field blocks the browser's submit, and a disabled one is left
-// out of it), and a saved app shows its locked method instead of the options.
+// Rendered against the real templates and partials, because what matters is markup: the tab is
+// always shown and badged as Pub/Sub only outside that base scope, the service account fields it does
+// not use are hidden AND disabled (a hidden required field blocks the browser's submit, and a disabled
+// one is left out of it), and a saved app shows its locked method instead of the tabs.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -47,23 +47,23 @@ const serviceFieldsWrapper = html =>
     html.match(/<div\s+class="(auth-method-section auth-method-section-serviceKey auth-method-section-externalAccount[^"]*)"/)[1];
 
 test('the attached service account on the gmailService form', async t => {
-    await t.test('is selectable while the Pub/Sub base scope is selected', () => {
-        const radio = openingTag(render('pubsub', 'serviceKey'), 'authMethodMetadataServer');
-        assert.ok(radio, 'the option is rendered');
-        assert.match(radio, /name="authMethod"/);
-        assert.match(radio, /value="metadataServer"/);
-        assert.doesNotMatch(radio, /\bdisabled\b/);
-    });
-
-    await t.test('is listed but disabled for IMAP and API apps', () => {
-        for (const scope of ['imap', 'api']) {
-            assert.match(openingTag(render(scope, 'serviceKey'), 'authMethodMetadataServer'), /\bdisabled\b/, scope);
+    await t.test('is always a tab, badged as Pub/Sub only outside that base scope', () => {
+        for (const scope of ['imap', 'api', 'pubsub']) {
+            const html = render(scope, 'serviceKey');
+            const radio = openingTag(html, 'authMethodMetadataServer');
+            assert.ok(radio, scope);
+            assert.match(radio, /name="authMethod"/);
+            assert.match(radio, /value="metadataServer"/);
+            assert.doesNotMatch(radio, /\bdisabled\b/, `${scope}: always selectable, choosing it picks Pub/Sub`);
+            const badge = openingTag(html, 'authMethodScopeBadge');
+            assert.ok(badge, scope);
+            assert.equal(/\bhidden\b/.test(badge), scope === 'pubsub', scope);
         }
     });
 
     await t.test('the base scope is asked before the credentials', () => {
         const html = render('imap', 'serviceKey');
-        assert.ok(html.indexOf('id="baseScopesPubsub"') < html.indexOf('id="auth-method-options"'));
+        assert.ok(html.indexOf('id="baseScopesPubsub"') < html.indexOf('id="auth-method-tabs"'));
     });
 
     await t.test('when selected, submits its method and hides and disables the fields it does not use', () => {
@@ -88,11 +88,11 @@ test('the attached service account on the gmailService form', async t => {
         }
     });
 
-    await t.test('a saved app shows its method instead of the options, with no detect button', () => {
+    await t.test('a saved app shows its method instead of the tabs, with no detect button', () => {
         const html = render('pubsub', 'metadataServer', { actionCreate: false, locked: true });
 
-        assert.equal(openingTag(html, 'auth-method-options'), null);
-        assert.match(html, /<strong>Attached service account \(Google Cloud\)<\/strong>/);
+        assert.equal(openingTag(html, 'auth-method-tabs'), null);
+        assert.match(html, /<strong>Attached service account<\/strong>/);
         assert.match(openingTag(html, 'authMethod'), /value="metadataServer"/);
         assert.match(openingTag(html, 'serviceClient'), /\bdisabled\b/, 'the edit form can be saved without the fields');
         assert.equal(openingTag(html, 'metadataProbe'), null, 'nothing on the edit form asks the metadata server');

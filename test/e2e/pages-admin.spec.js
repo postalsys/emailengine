@@ -1294,6 +1294,23 @@ test.describe('admin shell', () => {
         await expect(page.locator('[data-base-scopes="api"]')).toBeHidden();
         await expect(page.locator('#pubSubApp')).toBeDisabled();
 
+        // a scope preset writes the custom scope lists and opens their card so the result can be reviewed
+        await page.locator('#baseScopesAPI').check();
+        await page.locator('.account-type-btn[data-type="sendonly"]').click();
+        await expect(page.locator('#setupScopes')).toHaveAttribute('open', '');
+        await expect(page.locator('#extraScopes')).toHaveValue(/gmail\.send/);
+        await expect(page.locator('#skipScopesList')).toHaveValue(/gmail\.modify/);
+
+        // the Outlook tenant ID appears, and becomes required, for the single-tenant choice only
+        await page.goto('/admin/config/oauth/new?provider=outlook');
+        await expect(page.locator('#tenant')).toBeHidden();
+        await page.selectOption('#authority', 'tenant');
+        await expect(page.locator('#tenant')).toBeVisible();
+        await expect(page.locator('#tenant')).toBeEnabled();
+        await page.selectOption('#authority', 'common');
+        await expect(page.locator('#tenant')).toBeHidden();
+        await expect(page.locator('#tenant')).toBeDisabled();
+
         // A service account reaches Gmail over the HTTP API the same way an interactive app does, so it
         // offers the same choice - and its block is the one carrying two toggled sections, the Pub/Sub
         // service account for `api` and the topic/subscription names for `pubsub`.
@@ -1312,22 +1329,24 @@ test.describe('admin shell', () => {
         await expect(page.locator('#pubSubApp')).toBeDisabled();
         await page.locator('#baseScopesImap').check();
 
-        // the authentication method is a radio group that swaps the method's sections
+        // the authentication method is a ui/choice-tabs strip: radios drawn as tabs, each swapping
+        // in its own sections
         await expect(page.locator('#authMethodServiceKey')).toBeChecked();
         await expect(page.locator('.auth-method-section-externalAccount').first()).toBeHidden();
         await page.locator('#authMethodExternalAccount').check();
         await expect(page.locator('.auth-method-section-externalAccount').first()).toBeVisible();
         await expect(page.locator('.auth-method-section-serviceKey').first()).toBeHidden();
 
-        // The attached service account is a Pub/Sub-only method: it is always listed but only
-        // selectable for that base scope, its section hides and disables the service account fields it
-        // does not use (a hidden required field would block the submit), and leaving Pub/Sub while it
-        // is selected falls back to the key and says so
-        await expect(page.locator('#authMethodMetadataServer')).toBeVisible();
-        await expect(page.locator('#authMethodMetadataServer')).toBeDisabled();
-        await page.locator('#baseScopesPubsub').check();
-        await expect(page.locator('#authMethodMetadataServer')).toBeEnabled();
+        // The attached service account is a Pub/Sub-only method: its tab is always shown, badged
+        // outside that scope, and choosing it selects the Pub/Sub base scope and says so. Its section
+        // hides and disables the service account fields it does not use (a hidden required field would
+        // block the submit)
+        await expect(page.locator('#authMethodScopeBadge')).toBeVisible();
         await page.locator('#authMethodMetadataServer').check();
+        await expect(page.locator('#baseScopesPubsub')).toBeChecked();
+        await expect(page.locator('#authMethodNotice')).toContainText('base scope was set to Cloud Pub/Sub');
+        await expect(page.locator('#authMethodScopeBadge')).toBeHidden();
+        await expect(page.locator('[data-base-scopes="pubsub"]')).toBeVisible();
         await expect(page.locator('#serviceClientEmail')).toBeHidden();
         await expect(page.locator('#serviceClientEmail')).toBeDisabled();
         await expect(page.locator('#serviceClient')).toBeDisabled();
@@ -1338,16 +1357,17 @@ test.describe('admin shell', () => {
         await expect(page.locator('#metadataProbeResult')).toContainText('metadata server', { timeout: 20000 });
         await expect(page.locator('#metadataProbe')).toBeEnabled();
 
+        // leaving Pub/Sub while it is selected falls back to the key, and says so
         await page.locator('#baseScopesImap').check();
-        await expect(page.locator('#authMethodMetadataServer')).toBeDisabled();
+        await expect(page.locator('#authMethodScopeBadge')).toBeVisible();
         await expect(page.locator('#authMethodServiceKey')).toBeChecked();
-        await expect(page.locator('#authMethodNotice')).toBeVisible();
+        await expect(page.locator('#authMethodNotice')).toContainText('switched to Service account key');
         await expect(page.locator('#serviceClientEmail')).toBeEnabled();
 
         // the Gmail API mode's "Register one" link opens the form with Pub/Sub preselected
         await page.goto('/admin/config/oauth/new?provider=gmailService&baseScopes=pubsub');
         await expect(page.locator('#baseScopesPubsub')).toBeChecked();
-        await expect(page.locator('#authMethodMetadataServer')).toBeEnabled();
+        await expect(page.locator('#authMethodScopeBadge')).toBeHidden();
 
         await page.goto('/admin/config/oauth/new?provider=gmail');
         await page.locator('#baseScopesImap').check();

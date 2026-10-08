@@ -1,0 +1,21 @@
+{{!-- The scope presets of an API-mode app: each button rewrites the managed entries of the custom
+scope lists at the bottom of the form (updateScopesFromAccountType() in oauth_form.hbs) and leaves any
+other scope there alone.
+Params:
+  provider - "gmail" or "outlook", the preset table the buttons use (required) --}}
+<div id="account-type-card-{{provider}}">
+    <span class="label-text block mb-2">Scope preset</span>
+    <div class="flex flex-wrap gap-2" role="group" aria-label="Scope preset">
+        <button type="button" class="btn btn-outline btn-primary btn-sm account-type-btn" data-type="normal"
+            data-provider="{{provider}}">Full access</button>
+        <button type="button" class="btn btn-outline btn-primary btn-sm account-type-btn"
+            data-type="readonly" data-provider="{{provider}}">Read-only</button>
+        <button type="button" class="btn btn-outline btn-primary btn-sm account-type-btn"
+            data-type="readonlysend" data-provider="{{provider}}">Read-only + send</button>
+        <button type="button" class="btn btn-outline btn-primary btn-sm account-type-btn"
+            data-type="sendonly" data-provider="{{provider}}">Send-only</button>
+    </div>
+    <span class="helper-text">Fills in the custom scopes at the bottom of the form, where the exact scopes can
+        be reviewed.{{#equals provider "gmail"}} Send-only needs no restricted-scope verification from Google, but
+        EmailEngine cannot track what such an account sends.{{/equals}}</span>
+</div>

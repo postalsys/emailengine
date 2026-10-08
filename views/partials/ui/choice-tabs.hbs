@@ -1,0 +1,32 @@
+{{!--
+    ui/choice-tabs - a radio group drawn as a tab strip, for a form choice whose
+    options each reveal their own fields. Block form only; the block holds
+    ui/choice-tab items:
+      {{#> ui/choice-tabs label="Base scope" heading="What the app connects with" note="Fixed once the app is created"}}
+      {{> ui/choice-tab id="scopeImap" name="baseScopes" value="imap" label="IMAP and SMTP" checked=true}}
+      {{> ui/choice-tab id="scopeApi" name="baseScopes" value="api" label="Gmail API"}}
+      {{/ui/choice-tabs}}
+    Unlike ui/tabs (a FlyonUI data-tabs view switcher), the selection is a real
+    radio input submitted with the form, so there is no hidden field to keep in
+    sync, arrow keys move between options natively and a test can .check() the
+    input. Showing the fields of the selected option is the page's job: listen
+    for `change` on the radios.
+    Params:
+      label   - aria-label of the group (required)
+      heading - visible heading above the strip (optional)
+      note    - muted note next to the heading, e.g. a constraint (optional)
+      elId    - element id (optional)
+      class   - extra classes on the strip (optional)
+--}}
+<div>
+    {{#if heading}}
+    <div class="flex flex-wrap items-baseline gap-x-2 mb-1">
+        <span class="label-text">{{heading}}</span>
+        {{#if note}}<span class="text-xs text-base-content/60">{{note}}</span>{{/if}}
+    </div>
+    {{/if}}
+    <div class="tabs tabs-bordered{{#if class}} {{class}}{{/if}}" role="radiogroup" aria-label="{{label}}"{{#if elId}} id="{{elId}}"{{/if}}>
+        {{!-- own hash params neutralized against fallthrough into the block --}}
+        {{> @partial-block label="" heading="" note="" elId="" class=""}}
+    </div>
+</div>

@@ -2,29 +2,16 @@
 interactive `gmail` block and the `gmailService` one: both reach Gmail over the HTTP API, so both want
 the same control, and the server-side `pubSubApp` field was never provider-specific.
 
-`data-base-scopes="api"` is what reveals it - see checkScopesRadio() at the bottom of oauth_form.hbs. --}}
+It sits in the API panel of the base scope card, and checkScopesRadio() at the bottom of oauth_form.hbs
+disables it while that panel is hidden, so a hidden selection is never submitted. --}}
 
-<div class="card-footer border-base-content/10 border-t px-6 py-4{{#unless baseScopesApi}} hidden{{/unless}}"
-    data-base-scopes="api">
-
-    <p class="mb-2">
-        For faster webhook notifications, select a Gmail service account with the Pub/Sub Admin role.
-        EmailEngine uses it to set up Google Cloud Pub/Sub for accounts managed by this app.
-    </p>
-
-    <p class="mb-2">
-        <strong>Note:</strong> This is optional but recommended. With a Pub/Sub service account, EmailEngine
-        receives changes in near real time. Without one, it falls back to polling each account about every 10
-        minutes, so webhooks for new, updated, or deleted emails (and bounce detection) still fire, just with up
-        to a 10-minute delay. Send-only accounts don't require this.
-    </p>
-
-    <label class="label-text" for="pubSubApp">Select service account to manage webhooks (optional). The service
-        account must be for the same Google Cloud Project.</label>
-    <select class="select w-full{{#if errors.pubSubApp}} is-invalid{{/if}}" id="pubSubApp"
+<div>
+    <label class="label-text" for="pubSubApp">Pub/Sub app for real-time notifications <span
+            class="text-base-content/60">(optional)</span></label>
+    <select class="select max-w-xl{{#if errors.pubSubApp}} is-invalid{{/if}}" id="pubSubApp"
         name="pubSubApp" {{#unless baseScopesApi}}disabled{{/unless}}>
 
-        <option value="">Select the service account for your project</option>
+        <option value="">No Pub/Sub app - poll for changes</option>
 
         {{!-- Nothing disables an option here: the select carries that for the whole control, and
         filterPubSubApps() in oauth_form.hbs owns the per-option state so the two cannot fight. An
@@ -37,11 +24,11 @@ the same control, and the server-side `pubSubApp` field was never provider-speci
         {{/each}}
 
     </select>
-    <span class="helper-text">No Pub/Sub app yet?
-        <a href="/admin/config/oauth/new?provider=gmailService&amp;baseScopes=pubsub" target="_blank"
-            rel="noopener" class="link link-animated">Register one</a> in a new tab, then reload this page to
-        select it.</span>
     {{#if errors.pubSubApp}}
     <span class="helper-text text-error">{{errors.pubSubApp}}</span>
     {{/if}}
+    <span class="helper-text">Without one, EmailEngine polls each account about every 10 minutes, so webhooks
+        still fire, only later. The Pub/Sub app must belong to the same Google Cloud project. No Pub/Sub app yet?
+        <a href="/admin/config/oauth/new?provider=gmailService&amp;baseScopes=pubsub" target="_blank"
+            rel="noopener" class="link link-animated">Register one</a> in a new tab, then reload this page.</span>
 </div>

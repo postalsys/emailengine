@@ -56,7 +56,7 @@ function requiredScopes(provider, baseScopes, extra) {
     };
 }
 
-// Each toggled section declares the base scope that reveals it; returns { api: 'shown'|'hidden', ... }
+// Each base scope panel declares the scope that reveals it; returns { imap: 'shown'|'hidden', ... }
 function toggledSections(html) {
     const sections = {};
     for (const match of html.matchAll(/class="([^"]*)"\s*\n?\s*data-base-scopes="(\w+)"/g)) {
@@ -64,6 +64,12 @@ function toggledSections(html) {
     }
     return sections;
 }
+
+// The opening tag of the base scope radio for a value, from the choice-tab strip
+const scopeRadio = (html, value) => {
+    const match = html.match(new RegExp(`<input[^>]*name="baseScopes"[^>]*value="${value}"[^>]*>`, 's'));
+    return match && match[0];
+};
 
 test('the Gmail API mode is offered to both Gmail providers', async t => {
     await t.test('the mode is a property of baseScopes, not of the provider', () => {
@@ -125,9 +131,9 @@ test('the Gmail API mode is offered to both Gmail providers', async t => {
     await t.test('the create form offers the Gmail API radio to a service account', () => {
         const html = render('gmailService', 'imap');
 
-        assert.match(html, /id="baseScopesAPI" value="api"/, 'the API radio is offered');
-        assert.match(html, /id="baseScopesImap" value="imap"/, 'IMAP is still offered');
-        assert.match(html, /id="baseScopesPubsub" value="pubsub"/, 'Pub/Sub is still offered');
+        assert.match(scopeRadio(html, 'api') || '', /id="baseScopesAPI"/, 'the API radio is offered');
+        assert.match(scopeRadio(html, 'imap') || '', /id="baseScopesImap"/, 'IMAP is still offered');
+        assert.match(scopeRadio(html, 'pubsub') || '', /id="baseScopesPubsub"/, 'Pub/Sub is still offered');
         assert.match(html, /\/auth\/gmail\.modify/, 'the delegated scope it needs is named');
     });
 
@@ -163,12 +169,12 @@ test('the Gmail API mode is offered to both Gmail providers', async t => {
     });
 
     await t.test('one section is revealed per base scope, and the selector follows it', () => {
-        // The service-account block carries TWO toggled sections - the Pub/Sub service account for
-        // `api` and the topic/subscription names for `pubsub` - which is why visibility is driven by
-        // data-base-scopes rather than by one element id, as it was when only one could exist
-        assert.deepEqual(toggledSections(render('gmailService', 'api')), { api: 'shown', pubsub: 'hidden' });
-        assert.deepEqual(toggledSections(render('gmailService', 'pubsub')), { api: 'hidden', pubsub: 'shown' });
-        assert.deepEqual(toggledSections(render('gmailService', 'imap')), { api: 'hidden', pubsub: 'hidden' });
+        // One panel per base scope - the Pub/Sub service account lives in `api`, the topic and
+        // subscription names in `pubsub` - which is why visibility is driven by data-base-scopes rather
+        // than by element ids
+        assert.deepEqual(toggledSections(render('gmailService', 'api')), { imap: 'hidden', api: 'shown', pubsub: 'hidden' });
+        assert.deepEqual(toggledSections(render('gmailService', 'pubsub')), { imap: 'hidden', api: 'hidden', pubsub: 'shown' });
+        assert.deepEqual(toggledSections(render('gmailService', 'imap')), { imap: 'shown', api: 'hidden', pubsub: 'hidden' });
 
         // A hidden selector is disabled, so it is left out of the submitted form rather than riding along
         for (const baseScopes of ['imap', 'pubsub']) {
@@ -204,18 +210,20 @@ test('the Gmail API mode is offered to both Gmail providers', async t => {
 
     await t.test('the other providers are unchanged', () => {
         const gmail = render('gmail', 'api');
-        assert.match(gmail, /id="baseScopesAPI" value="api"/);
+        assert.match(scopeRadio(gmail, 'api') || '', /id="baseScopesAPI"/);
         assert.match(gmail, /id="pubSubApp"/);
         assert.doesNotMatch(gmail, /id="baseScopesPubsub"/, 'an interactive app has no Pub/Sub base scope');
-        assert.deepEqual(toggledSections(gmail), { api: 'shown' });
+        assert.deepEqual(toggledSections(gmail), { imap: 'hidden', api: 'shown' });
 
         // Microsoft keeps its own API row and gains no Gmail control
         const outlook = render('outlook', 'api');
-        assert.match(outlook, /id="baseScopesAPI" value="api"/);
+        assert.match(scopeRadio(outlook, 'api') || '', /id="baseScopesAPI"/);
         assert.doesNotMatch(outlook, /id="pubSubApp"/);
         assert.doesNotMatch(outlook, /id="account-type-card-gmail"/);
 
+        // Application access has the one mode: its panel is always shown, and there is no strip
         const outlookService = render('outlookService', 'imap');
-        assert.doesNotMatch(outlookService, /data-base-scopes=/, 'nothing to toggle');
+        assert.deepEqual(toggledSections(outlookService), { api: 'shown' });
+        assert.doesNotMatch(outlookService, /class="base-scopes-radio/, 'nothing to choose');
     });
 });

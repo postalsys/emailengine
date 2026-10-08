@@ -1,0 +1,12 @@
+{{!-- Where Microsoft Graph posts change notifications, shown by both Microsoft providers in their MS
+Graph API mode. mainServiceUrl comes from the page context. --}}
+<div class="space-y-2">
+    <p class="text-sm">Microsoft Graph posts change notifications to these two endpoints, which must accept anonymous
+        HTTPS <strong>POST</strong> requests from the internet:</p>
+    <pre class="ee-code-block"><code>{{mainServiceUrl}}/oauth/msg/lifecycle
+{{mainServiceUrl}}/oauth/msg/notification</code></pre>
+    <span class="helper-text">If this instance cannot be reached directly, set <a href="/admin/reference/settings#postV1Settings"
+            target="_blank" rel="noopener noreferrer" class="link link-animated"><code>notificationBaseUrl</code></a>
+        to a public proxy domain, and Graph posts to <code>https://&lt;proxy-domain&gt;/oauth/msg/...</code>
+        instead.</span>
+</div>

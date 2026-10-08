@@ -15,8 +15,7 @@
     app.tailwind.css, because the three hand-rolled link navs need it too.
     Panels are the caller's responsibility: each ui/tab target must match a
     tabpanel element with that id (role="tabpanel" aria-labelledby="<target>-tab").
-    The auth-method tabs in oauth_form.hbs intentionally do NOT use this partial -
-    they run a custom script instead of the FlyonUI data-tabs plugin.
+    For a form choice submitted as a radio, use ui/choice-tabs instead.
 --}}
 <nav class="tabs {{#equals variant 'segment'}}tabs-segment{{else}}tabs-bordered{{/equals}}{{#if class}} {{class}}{{/if}}" aria-label="{{label}}" role="tablist"{{#if elId}} id="{{elId}}"{{/if}} data-tabs>
     {{!-- own hash params neutralized against fallthrough into the block --}}

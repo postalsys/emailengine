@@ -66,8 +66,8 @@ const MODULE_BUDGETS = {
     'network-config-routes.js': 437,
     // 998 -> 987 when the send-only app detection moved to lib/oauth/scope-checker.js, which is where
     // the scope check it delegates to already lives, 987 -> 977 when the base scope render context
-    // moved to oauth-form-context.js
-    'oauth-config-routes.js': 977,
+    // moved to oauth-form-context.js, 977 -> 978 for a new app's form starting out enabled
+    'oauth-config-routes.js': 978,
     'oauth-form-context.js': 19,
     'reference-routes.js': 198,
     // 658 -> 661 when windowedPageLinks grew a shared pageLink() builder, 661 -> 662 for the
