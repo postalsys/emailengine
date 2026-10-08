@@ -10,7 +10,7 @@ const assert = require('node:assert').strict;
 const http = require('node:http');
 const { Headers } = require('undici');
 
-const { resolveMetadataOrigin, fetchAccessToken, describeAttachedIdentity } = require('../lib/oauth/gcp-metadata');
+const { resolveMetadataOrigin, fetchAccessToken, describeAttachedIdentity, isTransientMetadataError } = require('../lib/oauth/gcp-metadata');
 const { withInstantTimers } = require('./helpers/instant-timers');
 
 const TOKEN_PATH = '/computeMetadata/v1/instance/service-accounts/default/token';
@@ -54,6 +54,33 @@ test('resolveMetadataOrigin()', async t => {
         assert.equal(resolveMetadataOrigin({ GCE_METADATA_HOST: '10.0.0.2' }), 'http://10.0.0.2');
         assert.equal(resolveMetadataOrigin({ GCE_METADATA_HOST: '10.0.0.2', EENGINE_GCP_METADATA_HOST: '10.0.0.3' }), 'http://10.0.0.3');
         assert.equal(resolveMetadataOrigin({ EENGINE_GCP_METADATA_HOST: '', GCE_METADATA_HOST: '10.0.0.2' }), 'http://10.0.0.2');
+    });
+
+    await t.test('reads the process environment through readEnvValue(), so the _FILE form works', async t => {
+        const fs = require('node:fs');
+        const os = require('node:os');
+        const pathlib = require('node:path');
+        const file = pathlib.join(fs.mkdtempSync(pathlib.join(os.tmpdir(), 'ee-gcp-metadata-')), 'host');
+        fs.writeFileSync(file, '10.0.0.9:8080\n');
+
+        const saved = {};
+        for (const key of ['EENGINE_GCP_METADATA_HOST', 'EENGINE_GCP_METADATA_HOST_FILE', 'GCE_METADATA_HOST']) {
+            saved[key] = process.env[key];
+            delete process.env[key];
+        }
+        t.after(() => {
+            for (const [key, value] of Object.entries(saved)) {
+                if (value === undefined) {
+                    delete process.env[key];
+                } else {
+                    process.env[key] = value;
+                }
+            }
+            fs.rmSync(pathlib.dirname(file), { recursive: true, force: true });
+        });
+
+        process.env.EENGINE_GCP_METADATA_HOST_FILE = file;
+        assert.equal(resolveMetadataOrigin(), 'http://10.0.0.9:8080');
     });
 
     await t.test('refuses anything but a host, rather than falling back to the default', () => {
@@ -153,6 +180,17 @@ test('fetchAccessToken()', async t => {
         }
     });
 
+    await t.test('an error answer without the Metadata-Flavor header is the wrong server, not a missing account', async () => {
+        // a parking host or a cluster search domain answering metadata.google.internal with a 404
+        const { fetchImpl } = stubFetch({ status: 404, body: 'not found', headers: {} });
+        await assert.rejects(fetchAccessToken({ fetchImpl, env: EMPTY_ENV }), err => {
+            assert.equal(err.code, 'EMetadataServer');
+            assert.equal(err.wrongFlavor, true);
+            assert.equal(err.statusCode, undefined);
+            return true;
+        });
+    });
+
     await t.test('a network failure is EMetadataUnreachable naming the cause', async () => {
         const dnsError = Object.assign(new TypeError('fetch failed'), { cause: Object.assign(new Error('getaddrinfo ENOTFOUND'), { code: 'ENOTFOUND' }) });
         const { fetchImpl } = stubFetch(dnsError);
@@ -176,6 +214,39 @@ test('fetchAccessToken()', async t => {
         await assert.rejects(fetchAccessToken({ fetchImpl, env: { EENGINE_GCP_METADATA_HOST: 'https://x' } }), { code: 'EMetadataConfig' });
         assert.equal(calls.length, 0);
     });
+});
+
+test('isTransientMetadataError() separates a blip from a misconfiguration', async () => {
+    const failure = async answers => {
+        const { fetchImpl } = stubFetch(answers);
+        return (await withInstantTimers(() => fetchAccessToken({ fetchImpl, env: EMPTY_ENV }))).error;
+    };
+    const fetchFailed = code => Object.assign(new TypeError('fetch failed'), { cause: Object.assign(new Error(code), { code }) });
+    const timeout = Object.assign(new Error('The operation was aborted due to timeout'), { name: 'TimeoutError' });
+
+    for (const answers of [
+        { status: 503, body: 'x' },
+        { status: 500, body: 'x' },
+        timeout,
+        fetchFailed('ECONNRESET'),
+        fetchFailed('UND_ERR_HEADERS_TIMEOUT')
+    ]) {
+        const err = await failure(answers);
+        assert.equal(isTransientMetadataError(err), true, err.message);
+    }
+
+    for (const answers of [
+        { status: 404, body: 'x' },
+        { status: 403, body: 'x' },
+        { status: 503, body: 'x', headers: {} },
+        fetchFailed('ENOTFOUND'),
+        fetchFailed('ECONNREFUSED'),
+        { body: 'not json' }
+    ]) {
+        const err = await failure(answers);
+        assert.equal(isTransientMetadataError(err), false, err.message);
+    }
+    assert.equal(isTransientMetadataError(null), false);
 });
 
 test('describeAttachedIdentity() reads the service account and project', async () => {

@@ -401,33 +401,41 @@ test('assertNoNetworkOverride keeps a narrowed token off the connection route', 
 // The attached service account brings no credential of its creator's: the app runs as the
 // deployment's own cloud identity. A token narrowed to `oauth2` manages applications, it does not
 // get to lend itself that identity.
-test('assertNoAttachedIdentity keeps a narrowed token from creating an attached service account app', async t => {
+test('assertNoAttachedIdentity keeps a narrowed token from lending itself the attached service account', async t => {
     const narrowed = { permissions: { actions: ['write'], groups: ['oauth2'] } };
-    const payload = { provider: 'gmailService', baseScopes: 'pubsub', authMethod: 'metadataServer', name: 'x' };
 
     await t.test('refuses a narrowed token, a session token and an unreadable record', () => {
         for (const request of [
-            { payload, auth: { artifacts: narrowed } },
-            { payload, app: { sessionToken: true }, auth: { artifacts: {} } },
-            { payload, auth: { artifacts: { permissions: {} } } }
+            { auth: { artifacts: narrowed } },
+            { app: { sessionToken: true }, auth: { artifacts: {} } },
+            { auth: { artifacts: { permissions: {} } } }
         ]) {
             assert.throws(
-                () => assertNoAttachedIdentity(request),
-                err => Boom.isBoom(err) && err.output.statusCode === 403 && /metadataServer/.test(err.message)
+                () => assertNoAttachedIdentity(request, 'metadataServer', 'create'),
+                err => Boom.isBoom(err) && err.output.statusCode === 403 && /can not create/.test(err.message) && /metadataServer/.test(err.message)
             );
         }
     });
 
     await t.test('leaves an unnarrowed token alone', () => {
-        assertNoAttachedIdentity({ payload, auth: { artifacts: {} } });
-        assertNoAttachedIdentity({ payload, auth: {} });
+        assertNoAttachedIdentity({ auth: { artifacts: {} } }, 'metadataServer', 'create');
+        assertNoAttachedIdentity({ auth: {} }, 'metadataServer', 'modify');
     });
 
-    await t.test('never refuses an app that brings its own credential', () => {
-        for (const authMethod of ['serviceKey', 'externalAccount', undefined]) {
-            assertNoAttachedIdentity({ payload: { ...payload, authMethod }, auth: { artifacts: narrowed } });
+    await t.test('never refuses an app that brings its own credential, or no app at all', () => {
+        for (const authMethod of ['serviceKey', 'externalAccount', undefined, false]) {
+            assertNoAttachedIdentity({ auth: { artifacts: narrowed } }, authMethod, 'create');
+            assertNoAttachedIdentity({ auth: { artifacts: narrowed } }, authMethod, 'modify');
         }
-        assertNoAttachedIdentity({ auth: { artifacts: narrowed } });
+    });
+
+    // An update re-runs the Pub/Sub setup as the attached identity, so moving the project or
+    // subscription of a saved app lends it just like creating one would
+    await t.test('refuses a narrowed token modifying a saved attached service account app', () => {
+        assert.throws(
+            () => assertNoAttachedIdentity({ payload: { googleProjectId: 'other-project' }, auth: { artifacts: narrowed } }, 'metadataServer', 'modify'),
+            err => Boom.isBoom(err) && err.output.statusCode === 403 && /can not modify/.test(err.message)
+        );
     });
 });
 

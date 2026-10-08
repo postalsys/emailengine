@@ -154,6 +154,27 @@ test('GmailOauth with the attached service account', async t => {
         assert.match(flags[0].message, /HTTP 404/);
     });
 
+    await t.test('a transient failure is rethrown without flagging the app', async () => {
+        // the classification itself is pinned in test/gcp-metadata-test.js
+        for (const failure of [
+            Object.assign(new Error('HTTP 503'), { code: 'EMetadataServer', statusCode: 503, transient: true }),
+            Object.assign(new Error('no answer'), { code: 'EMetadataUnreachable', transient: true })
+        ]) {
+            flags.length = 0;
+            const client = build({
+                fetchAccessToken: async () => {
+                    throw failure;
+                }
+            });
+            await assert.rejects(client.refreshToken({ isPrincipal: true }), err => {
+                assert.equal(err, failure);
+                assert.equal(err.tokenRequest.flag, undefined);
+                return true;
+            });
+            assert.equal(flags.length, 0, failure.message);
+        }
+    });
+
     await t.test('the key-signed method is unchanged', () => {
         const client = new GmailOauth({
             provider: 'gmailService',
@@ -237,6 +258,17 @@ test('a stored app using the attached service account', async t => {
         assert.equal(stored.externalAccount, undefined);
     });
 
+    await t.test('stores no service account address, which the metadata server alone decides', async () => {
+        const id = await createMetadataApp({ serviceClient: '1234567890', serviceClientEmail: 'old-sa@proj.iam.gserviceaccount.com' });
+        let stored = await oauth2Apps.get(id);
+        assert.equal(stored.serviceClient, undefined);
+        assert.equal(stored.serviceClientEmail, undefined);
+
+        await oauth2Apps.update(id, { serviceClientEmail: 'other-sa@proj.iam.gserviceaccount.com' });
+        stored = await oauth2Apps.get(id);
+        assert.equal(stored.serviceClientEmail, undefined);
+    });
+
     await t.test('a key-signed app keeps its method and does not take on another credential', async () => {
         const id = await createApp({
             provider: 'gmailService',
@@ -288,6 +320,20 @@ test('verifying an app that uses the attached service account', async t => {
         assert.equal(pubsubCalls.length, 1);
         assert.equal(pubsubCalls[0].url, `https://pubsub.googleapis.com/v1/projects/proj-meta-1/topics/ee-pub-${id}`);
         assert.equal(pubsubCalls[0].method, 'get');
+    });
+
+    await t.test('probes the topic the app actually uses, not one rebuilt from an edited project', async () => {
+        metadata.mode = 'ok';
+        pubsubCalls.length = 0;
+        pubsubAnswer = async () => ({});
+        const id = await createMetadataApp();
+        await oauth2Apps.update(id, { googleProjectId: 'proj-meta-new', pubSubTopic: 'projects/proj-meta-old/topics/ee-pub-kept' }, { partial: true });
+
+        const report = await verifyOAuth2App(id);
+
+        assert.equal(report.ok, true, JSON.stringify(report.steps));
+        assert.equal(pubsubCalls.length, 1);
+        assert.equal(pubsubCalls[0].url, 'https://pubsub.googleapis.com/v1/projects/proj-meta-old/topics/ee-pub-kept');
     });
 
     await t.test('names a missing service account', async () => {
@@ -361,11 +407,13 @@ test('verifying an app that uses the attached service account', async t => {
             metadataServerHint({ code: 'EMetadataServer', statusCode: 404 }),
             metadataServerHint({ code: 'EMetadataServer', statusCode: 403 }),
             metadataServerHint({ code: 'EMetadataServer', statusCode: 500 }),
-            metadataServerHint({ code: 'EMetadataResponse' })
+            metadataServerHint({ code: 'EMetadataResponse' }),
+            metadataServerHint({ code: 'EMetadataUnreachable', transient: true })
         ];
         assert.equal(new Set(hints).size, hints.length);
         assert.match(hints[0], /EENGINE_GCP_METADATA_HOST/);
         assert.match(hints[1], /not running on Google Cloud/);
+        assert.match(hints[7], /Retry in a moment/, 'a timeout on Google Cloud is not "not on Google Cloud"');
     });
 });
 
