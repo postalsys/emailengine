@@ -498,7 +498,7 @@ Generate a self-signed certificate for every configured name now, instead of the
                 let hostname = rowHostname(btn);
                 showReason(hostname, 'info', `Checking whether ${hostname} reaches this server...`);
 
-                uiBusyAction(btn, uiPostJson('/admin/config/tls/preflight', { hostname }).then(data => {
+                uiBusyAction(btn, () => uiPostJson('/admin/config/tls/preflight', { hostname }).then(data => {
                     showReason(hostname, data && data.success ? 'success' : 'error', (data && (data.message || data.error)) || 'The check failed');
                 }).catch(err => {
                     showReason(hostname, 'error', err.message);
@@ -513,7 +513,7 @@ Generate a self-signed certificate for every configured name now, instead of the
                 showReason(hostname, 'info', `Requesting a certificate for ${hostname}...`);
             }
 
-            uiBusyAction(btn, uiPostJson('/admin/config/tls/request', hostname ? { hostname } : {}).then(data => {
+            uiBusyAction(btn, () => uiPostJson('/admin/config/tls/request', hostname ? { hostname } : {}).then(data => {
                 if (hostname) {
                     if (!data || !data.success) {
                         showReason(hostname, 'error', (data && data.error) || 'The request failed');

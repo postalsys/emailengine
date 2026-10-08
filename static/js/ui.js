@@ -686,8 +686,13 @@ window.addEventListener('pageshow', event => {
 // twice, and the reset runs however the action ends - the shape every action
 // button that posts with fetch() needs, and the one that used to be spelled
 // out (and occasionally forgotten) per page. `run` returns a promise; a
-// rejection it does not handle itself is reported as a toast.
+// rejection it does not handle itself is reported as a toast. Handing it the
+// promise instead would start the request at the call site and drop the busy
+// state on the next tick, so that is refused rather than tolerated.
 window.uiBusyAction = (btn, run) => {
+    if (typeof run !== 'function') {
+        throw new TypeError('uiBusyAction(btn, run): run must be a function that returns a promise');
+    }
     if (btn.disabled || btn.getAttribute('aria-disabled') === 'true') {
         return;
     }
