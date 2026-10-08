@@ -98,8 +98,8 @@
       "description": "Perform bulk operations on multiple messages simultaneously, such as marking as read, moving, or deleting"
     },
     {
-      "name": "Export (Beta)",
-      "description": "Bulk export messages from email accounts. This feature is in beta and the API may change in future releases. Export files are encrypted at rest when a service secret is configured."
+      "name": "Export",
+      "description": "Bulk export messages from email accounts. Export files are encrypted at rest when a service secret is configured."
     }
   ],
   "x-logo": {
@@ -13620,7 +13620,7 @@
           }
         ],
         "tags": [
-          "Export (Beta)"
+          "Export"
         ],
         "requestBody": {
           "content": {
@@ -13757,7 +13757,7 @@
           }
         ],
         "tags": [
-          "Export (Beta)"
+          "Export"
         ],
         "responses": {
           "200": {
@@ -13880,7 +13880,7 @@
           }
         ],
         "tags": [
-          "Export (Beta)"
+          "Export"
         ],
         "responses": {
           "200": {
@@ -14006,7 +14006,7 @@
           }
         ],
         "tags": [
-          "Export (Beta)"
+          "Export"
         ],
         "responses": {
           "200": {
@@ -14155,7 +14155,7 @@
           }
         ],
         "tags": [
-          "Export (Beta)"
+          "Export"
         ],
         "responses": {
           "200": {

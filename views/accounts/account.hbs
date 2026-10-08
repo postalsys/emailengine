@@ -903,11 +903,6 @@ submitLabel="Delete account"}}
 
 {{#> ui/modal id="exportModal" title="Export Messages"}}
 <div class="modal-body">
-    <div class="alert alert-soft alert-info mb-4 flex items-start gap-2">
-        <span class="icon-[tabler--flask] size-5 shrink-0"></span>
-        <span><strong>Beta Feature:</strong> The export feature is currently in beta. If you encounter any issues,
-            please contact <a href="mailto:support@postalsys.com" class="link link-animated">support@postalsys.com</a>.</span>
-    </div>
     <div id="export-form-view" class="space-y-4">
         {{> ui/form-field id="export-start-date" type="date" label="Start Date"}}
         {{> ui/form-field id="export-end-date" type="date" label="End Date"}}
