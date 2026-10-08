@@ -130,6 +130,8 @@
             <dd>
                 {{#if authMethodIsExternalAccount}}
                 Workload Identity Federation
+                {{else if authMethodIsMetadataServer}}
+                Attached service account (metadata server)
                 {{else}}
                 Service account key
                 {{/if}}

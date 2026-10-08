@@ -60,6 +60,7 @@ const MODULE_BUDGETS = {
     'auth-routes.js': 1661,
     'dashboard-routes.js': 175,
     'export-routes.js': 207,
+    'gmail-service-auth.js': 64,
     'internals-routes.js': 458,
     'mcp-consent-routes.js': 381,
     'network-config-routes.js': 437,

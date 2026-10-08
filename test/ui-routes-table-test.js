@@ -143,6 +143,7 @@ const GOLDEN_ROUTES = [
     'POST /admin/config/oauth/app/{app}/add-account',
     'POST /admin/config/oauth/delete',
     'POST /admin/config/oauth/edit',
+    'POST /admin/config/oauth/metadata-probe',
     'POST /admin/config/oauth/new',
     'POST /admin/config/oauth/subscriptions',
     'POST /admin/config/oauth/verify/{app}',

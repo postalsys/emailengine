@@ -111,10 +111,11 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
         <div>
             <label class="label-text block">Authentication method</label>
             <input type="hidden" name="authMethod" id="authMethod"
-                value="{{#if authMethodIsExternalAccount}}externalAccount{{else}}serviceKey{{/if}}" />
+                value="{{#if authMethodIsExternalAccount}}externalAccount{{else if authMethodIsMetadataServer}}metadataServer{{else}}serviceKey{{/if}}" />
             {{#if authMethodLocked}}
             <p class="mb-1">
-                <strong>{{#if authMethodIsExternalAccount}}Workload Identity Federation (keyless){{else}}Service
+                <strong>{{#if authMethodIsExternalAccount}}Workload Identity Federation (keyless){{else if
+                    authMethodIsMetadataServer}}Attached service account (Google Cloud){{else}}Service
                     account key{{/if}}</strong>
             </p>
             <span class="helper-text">The authentication method is fixed once the application has been created and
@@ -135,10 +136,20 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
                     id="auth-method-tab-externalAccount" data-auth-method="externalAccount" role="tab"
                     aria-selected="{{#if authMethodIsExternalAccount}}true{{else}}false{{/if}}">Workload Identity
                     Federation (keyless)</button>
+                {{!-- Pub/Sub only: the metadata server's token is the service account's own and
+                      cannot impersonate a Workspace user. The script at the end of this partial
+                      shows it while the Cloud Pub/Sub base scope is selected --}}
+                <button type="button"
+                    class="tab auth-method-tab{{#if authMethodIsMetadataServer}} tab-active{{/if}}{{#unless baseScopesPubsub}} hidden{{/unless}}"
+                    id="auth-method-tab-metadataServer" data-auth-method="metadataServer" data-auth-method-scope="pubsub"
+                    role="tab" aria-selected="{{#if authMethodIsMetadataServer}}true{{else}}false{{/if}}">Attached
+                    service account (Google Cloud)</button>
             </nav>
             <span class="helper-text">"Service account key" expects a downloaded JSON key file.
                 "Workload Identity Federation" authenticates without a long-lived key, using a credential issued
-                by your runtime environment.</span>
+                by your runtime environment. For a Cloud Pub/Sub application running on Google Cloud, "Attached
+                service account" uses the service account of the VM, GKE workload or Cloud Run service itself,
+                with nothing to store.</span>
             {{/if}}
         </div>
 
@@ -159,6 +170,22 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
             </div>
         </div>
 
+        <div class="auth-method-section auth-method-section-metadataServer{{#unless authMethodIsMetadataServer}} hidden{{/unless}}">
+            <div class="space-y-2">
+                <p class="text-sm">EmailEngine requests access tokens for the service account attached to the
+                    machine it runs on, from the Google Cloud metadata server. Nothing is stored. Grant that service
+                    account the <code>Pub/Sub Admin</code> role, and on Compute Engine give the VM the
+                    <code>cloud-platform</code> access scope.</p>
+                {{#if actionCreate}}
+                <div class="flex flex-wrap items-center gap-3">
+                    {{> ui/btn label="Detect from this host" variant="info" id="metadataProbe"
+                    icon="icon-[tabler--cloud-search]"}}
+                    <span class="helper-text" id="metadataProbeResult" aria-live="polite"></span>
+                </div>
+                {{/if}}
+            </div>
+        </div>
+
         <div>
             {{#> ui/form-field id="googleProjectId" label="Google Cloud Project ID" error=errors.googleProjectId}}
             <input type="text" class="input{{#if errors.googleProjectId}} is-invalid{{/if}}" id="googleProjectId"
@@ -169,23 +196,29 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
             {{/ui/form-field}}
         </div>
 
-        <div>
-            {{#> ui/form-field id="serviceClientEmail" label="Service account email" error=errors.serviceClientEmail}}
-            <input type="email" class="input{{#if errors.serviceClientEmail}} is-invalid{{/if}}" id="serviceClientEmail"
-                name="serviceClientEmail" value="{{values.serviceClientEmail}}"
-                placeholder="Enter the principal of the service, for example &quot;name@project-123.iam.gserviceaccount.com&quot;"
-                required />
-            <span class="helper-text">Email address of the Google service account.</span>
-            {{/ui/form-field}}
-        </div>
+        {{!-- Not used by the attached service account, which the metadata server identifies. The
+              inputs of a hidden auth-method section are disabled, so their required attribute cannot
+              block the form and their values are not submitted --}}
+        <div
+            class="auth-method-section auth-method-section-serviceKey auth-method-section-externalAccount space-y-4{{#if authMethodIsMetadataServer}} hidden{{/if}}">
+            <div>
+                {{#> ui/form-field id="serviceClientEmail" label="Service account email" error=errors.serviceClientEmail}}
+                <input type="email" class="input{{#if errors.serviceClientEmail}} is-invalid{{/if}}" id="serviceClientEmail"
+                    name="serviceClientEmail" value="{{values.serviceClientEmail}}"
+                    placeholder="Enter the principal of the service, for example &quot;name@project-123.iam.gserviceaccount.com&quot;"
+                    required {{#if authMethodIsMetadataServer}}disabled{{/if}} />
+                <span class="helper-text">Email address of the Google service account.</span>
+                {{/ui/form-field}}
+            </div>
 
-        <div>
-            {{#> ui/form-field id="serviceClient" label="Service account client ID" error=errors.serviceClient}}
-            <input type="text" class="input{{#if errors.serviceClient}} is-invalid{{/if}}" id="serviceClient"
-                name="serviceClient" value="{{values.serviceClient}}" placeholder="Enter service client ID&mldr;"
-                required />
-            <span class="helper-text">Numeric client ID used to configure domain-wide delegation.</span>
-            {{/ui/form-field}}
+            <div>
+                {{#> ui/form-field id="serviceClient" label="Service account client ID" error=errors.serviceClient}}
+                <input type="text" class="input{{#if errors.serviceClient}} is-invalid{{/if}}" id="serviceClient"
+                    name="serviceClient" value="{{values.serviceClient}}" placeholder="Enter service client ID&mldr;"
+                    required {{#if authMethodIsMetadataServer}}disabled{{/if}} />
+                <span class="helper-text">Numeric client ID used to configure domain-wide delegation.</span>
+                {{/ui/form-field}}
+            </div>
         </div>
 
         <div class="auth-method-section auth-method-section-serviceKey{{#unless authMethodIsServiceKey}} hidden{{/unless}}">
@@ -1343,7 +1376,21 @@ open=values.skipScopes}}
                 document.querySelectorAll('.auth-method-section').forEach(section => {
                     let active = section.classList.contains('auth-method-section-' + selected);
                     section.classList.toggle('hidden', !active);
+                    // a hidden section's required fields must not block the form, nor its values ride along
+                    section.querySelectorAll('input, textarea').forEach(field => {
+                        field.disabled = !active;
+                    });
                 });
+            };
+            let selectTab = tab => {
+                let selected = tab.getAttribute('data-auth-method');
+                authMethodTabs.forEach(other => {
+                    let isActive = other === tab;
+                    other.classList.toggle('tab-active', isActive);
+                    other.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                });
+                authMethodInput.value = selected;
+                updateSections(selected);
             };
             authMethodTabs.forEach(tab => {
                 tab.addEventListener('click', e => {
@@ -1351,15 +1398,57 @@ open=values.skipScopes}}
                     if (tab.classList.contains('disabled') || tab.classList.contains('tab-active')) {
                         return;
                     }
-                    let selected = tab.getAttribute('data-auth-method');
-                    authMethodTabs.forEach(other => {
-                        let isActive = other === tab;
-                        other.classList.toggle('tab-active', isActive);
-                        other.setAttribute('aria-selected', isActive ? 'true' : 'false');
-                    });
-                    authMethodInput.value = selected;
-                    updateSections(selected);
+                    selectTab(tab);
                 });
+            });
+            // the rendered selection, so a re-rendered form disables the sections it hides from the start
+            updateSections(authMethodInput.value);
+
+            // A method tied to a base scope (the attached service account, Pub/Sub only) is offered
+            // while that scope is selected. Switching away from it while its tab is active falls back
+            // to the key tab, so the form never submits a method the schema refuses for the scope
+            let scopedTabs = document.querySelectorAll('.auth-method-tab[data-auth-method-scope]');
+            let checkScopedTabs = () => {
+                let scopeElm = document.querySelector('.base-scopes-radio:checked');
+                if (!scopeElm) {
+                    return;
+                }
+                scopedTabs.forEach(tab => {
+                    let offered = tab.getAttribute('data-auth-method-scope') === scopeElm.value;
+                    tab.classList.toggle('hidden', !offered);
+                    if (!offered && tab.classList.contains('tab-active')) {
+                        selectTab(document.getElementById('auth-method-tab-serviceKey'));
+                    }
+                });
+            };
+            if (scopedTabs.length) {
+                document.querySelectorAll('.base-scopes-radio').forEach(radioElm => {
+                    radioElm.addEventListener('change', checkScopedTabs);
+                });
+                checkScopedTabs();
+            }
+        }
+
+        let metadataProbeElm = document.getElementById('metadataProbe');
+        if (metadataProbeElm) {
+            let resultElm = document.getElementById('metadataProbeResult');
+            metadataProbeElm.addEventListener('click', e => {
+                e.preventDefault();
+                resultElm.textContent = 'Asking the metadata server...';
+                uiBusyAction(metadataProbeElm, () =>
+                    uiPostJson('/admin/config/oauth/metadata-probe', {})
+                        .then(data => {
+                            if (!data || !data.success) {
+                                resultElm.textContent = (data && data.error) || 'The metadata server could not be reached';
+                                return;
+                            }
+                            document.getElementById('googleProjectId').value = data.projectId || '';
+                            resultElm.textContent = `Service account ${data.serviceAccountEmail}, project ${data.projectId}`;
+                        })
+                        .catch(err => {
+                            resultElm.textContent = err.message;
+                        })
+                );
             });
         }
 

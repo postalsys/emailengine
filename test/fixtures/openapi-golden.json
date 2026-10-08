@@ -8037,7 +8037,7 @@
           },
           "authMethod": {
             "type": "string",
-            "description": "Authentication method for Gmail service accounts",
+            "description": "Authentication method for Gmail service accounts: serviceKey, externalAccount or metadataServer",
             "example": "serviceKey"
           },
           "cloud": {
@@ -8185,17 +8185,19 @@
       },
       "authMethod": {
         "type": "string",
-        "description": "How token requests for the Gmail service account are signed",
+        "description": "How the Gmail service account authenticates",
         "example": "externalAccount",
         "x-meta": {
           "enumDescriptions": {
             "serviceKey": "Sign token requests with an uploaded service account key",
-            "externalAccount": "Sign token requests through Workload Identity Federation, with no key to store"
+            "externalAccount": "Sign token requests through Workload Identity Federation, with no key to store",
+            "metadataServer": "Use the service account attached to the Google Cloud VM, GKE workload or Cloud Run service EmailEngine runs on, read from the metadata server. Cloud Pub/Sub applications only, and not available to a token with restricted permissions"
           }
         },
         "enum": [
           "serviceKey",
-          "externalAccount"
+          "externalAccount",
+          "metadataServer"
         ]
       },
       "CreateOAuth2App": {
@@ -8404,9 +8406,7 @@
         },
         "required": [
           "name",
-          "provider",
-          "serviceClient",
-          "serviceClientEmail"
+          "provider"
         ]
       },
       "CreateAppResponse": {
@@ -8606,7 +8606,7 @@
           },
           "authMethod": {
             "type": "string",
-            "description": "Authentication method for Gmail service accounts",
+            "description": "Authentication method for Gmail service accounts: serviceKey, externalAccount or metadataServer",
             "example": "serviceKey"
           },
           "cloud": {

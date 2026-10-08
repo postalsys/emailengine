@@ -13,12 +13,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
-const fs = require('node:fs');
-const pathlib = require('node:path');
-const handlebars = require('handlebars');
-
-const { listFiles } = require('./helpers/list-files');
-const { registerHandlebarsHelpers } = require('../lib/handlebars-helpers');
+const { compileView } = require('./helpers/admin-templates');
 const { oauth2ProviderData, isApiBasedApp } = require('../lib/oauth2-apps');
 const { isSendOnlyGmailApp } = require('../lib/oauth/scope-checker');
 const { redis } = require('../lib/db');
@@ -26,25 +21,8 @@ const registerRedisTeardown = require('./helpers/redis-teardown');
 
 registerRedisTeardown(redis);
 
-const ROOT = pathlib.join(__dirname, '..');
-const PARTIALS_DIR = pathlib.join(ROOT, 'views', 'partials');
-
-// Own environment rather than the require('handlebars') singleton, so registering ~45 partials here
-// cannot reach another test file
-const hbs = handlebars.create();
-registerHandlebarsHelpers(hbs, { gt: { gettext: s => s, ngettext: (a, b, n) => (n === 1 ? a : b) } });
-
-for (const file of listFiles(PARTIALS_DIR, '.hbs')) {
-    const name = pathlib
-        .relative(PARTIALS_DIR, file)
-        .replace(/\.hbs$/, '')
-        .split(pathlib.sep)
-        .join('/');
-    hbs.registerPartial(name, fs.readFileSync(file, 'utf-8'));
-}
-
-const formTemplate = hbs.compile(fs.readFileSync(pathlib.join(PARTIALS_DIR, 'oauth_form.hbs'), 'utf-8'));
-const scopeInfoTemplate = hbs.compile(fs.readFileSync(pathlib.join(PARTIALS_DIR, 'scope_info.hbs'), 'utf-8'));
+const formTemplate = compileView('partials/oauth_form.hbs');
+const scopeInfoTemplate = compileView('partials/scope_info.hbs');
 
 // The view context the OAuth2 app routes build, reduced to what these templates read
 function context(provider, baseScopes, extra = {}) {

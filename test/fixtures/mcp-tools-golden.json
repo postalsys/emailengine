@@ -1365,13 +1365,14 @@
                 },
                 "authMethod": {
                     "type": "string",
-                    "description": "How token requests for the Gmail service account are signed. \"serviceKey\" - Sign token requests with an uploaded service account key; \"externalAccount\" - Sign token requests through Workload Identity Federation, with no key to store",
+                    "description": "How the Gmail service account authenticates. \"serviceKey\" - Sign token requests with an uploaded service account key; \"externalAccount\" - Sign token requests through Workload Identity Federation, with no key to store; \"metadataServer\" - Use the service account attached to the Google Cloud VM, GKE workload or Cloud Run service EmailEngine runs on, read from the metadata server. Cloud Pub/Sub applications only, and not available to a token with restricted permissions",
                     "examples": [
                         "externalAccount"
                     ],
                     "enum": [
                         "serviceKey",
-                        "externalAccount"
+                        "externalAccount",
+                        "metadataServer"
                     ]
                 },
                 "externalAccount": {
@@ -1408,9 +1409,7 @@
             "additionalProperties": false,
             "required": [
                 "name",
-                "provider",
-                "serviceClient",
-                "serviceClientEmail"
+                "provider"
             ]
         },
         "annotations": {

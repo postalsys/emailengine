@@ -17,6 +17,7 @@ const {
     containsMaskedSecret,
     isMaskedRoundTrip,
     assertNoNetworkOverride,
+    assertNoAttachedIdentity,
     MASKED
 } = require('../lib/api-routes/route-helpers');
 const { submittedValues, formatAccountData, windowedPageLinks, buildPagingView } = require('../lib/ui-routes/route-helpers');
@@ -394,6 +395,39 @@ test('assertNoNetworkOverride keeps a narrowed token off the connection route', 
         assertNoNetworkOverride({ payload: { to: [{ address: 'x@example.com' }] }, auth: { artifacts: narrowed } });
         assertNoNetworkOverride({ payload: {}, auth: { artifacts: narrowed } });
         assertNoNetworkOverride({ auth: { artifacts: narrowed } });
+    });
+});
+
+// The attached service account brings no credential of its creator's: the app runs as the
+// deployment's own cloud identity. A token narrowed to `oauth2` manages applications, it does not
+// get to lend itself that identity.
+test('assertNoAttachedIdentity keeps a narrowed token from creating an attached service account app', async t => {
+    const narrowed = { permissions: { actions: ['write'], groups: ['oauth2'] } };
+    const payload = { provider: 'gmailService', baseScopes: 'pubsub', authMethod: 'metadataServer', name: 'x' };
+
+    await t.test('refuses a narrowed token, a session token and an unreadable record', () => {
+        for (const request of [
+            { payload, auth: { artifacts: narrowed } },
+            { payload, app: { sessionToken: true }, auth: { artifacts: {} } },
+            { payload, auth: { artifacts: { permissions: {} } } }
+        ]) {
+            assert.throws(
+                () => assertNoAttachedIdentity(request),
+                err => Boom.isBoom(err) && err.output.statusCode === 403 && /metadataServer/.test(err.message)
+            );
+        }
+    });
+
+    await t.test('leaves an unnarrowed token alone', () => {
+        assertNoAttachedIdentity({ payload, auth: { artifacts: {} } });
+        assertNoAttachedIdentity({ payload, auth: {} });
+    });
+
+    await t.test('never refuses an app that brings its own credential', () => {
+        for (const authMethod of ['serviceKey', 'externalAccount', undefined]) {
+            assertNoAttachedIdentity({ payload: { ...payload, authMethod }, auth: { artifacts: narrowed } });
+        }
+        assertNoAttachedIdentity({ auth: { artifacts: narrowed } });
     });
 });
 
