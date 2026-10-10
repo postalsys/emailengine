@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.83.2](https://github.com/postalsys/emailengine/compare/v2.83.1...v2.83.2) (2026-10-10)
+
+
+### Bug Fixes
+
+* close connection and error handling gaps from the TLS/TCP audit ([c858c05](https://github.com/postalsys/emailengine/commit/c858c059eb26be91f485ba0841c306e2fcfae232))
+* **deps:** update nodemailer, imapflow, mailparser and smtp-server ([5e9ef89](https://github.com/postalsys/emailengine/commit/5e9ef89e3a2bb2ff56f8a4b2c355470d2adff171))
+* **deps:** update smtp-server to 3.19.21 ([c53de63](https://github.com/postalsys/emailengine/commit/c53de63f025281ba64e740895a9076097a15c8ae))
+* treat a stalled response body as a transient network failure ([a33a161](https://github.com/postalsys/emailengine/commit/a33a161a71bb795bf8bf8de49d2afd9cac52fe92))
+
 ## [2.83.1](https://github.com/postalsys/emailengine/compare/v2.83.0...v2.83.1) (2026-10-08)
 
 
