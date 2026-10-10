@@ -1,24 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-10-08 14:37+0000\n"
-
-#: views/error.hbs:6
-#: workers/api.js:3177
-msgid "Something went wrong"
-msgstr ""
-
-#: views/error.hbs:8
-msgid "Error code: %s"
-msgstr ""
-
-#: views/error.hbs:20
-msgid "Go back"
-msgstr ""
-
-#: views/error.hbs:28
-msgid "Dashboard"
-msgstr ""
+"POT-Creation-Date: 2026-10-10 07:48+0000\n"
 
 #: views/account-workspace-error.hbs:7
 msgid "Work Account Required"
@@ -47,8 +30,25 @@ msgstr ""
 msgid "Try Again"
 msgstr ""
 
+#: views/error.hbs:6
+#: workers/api.js:3177
+msgid "Something went wrong"
+msgstr ""
+
+#: views/error.hbs:8
+msgid "Error code: %s"
+msgstr ""
+
+#: views/error.hbs:20
+msgid "Go back"
+msgstr ""
+
+#: views/error.hbs:28
+msgid "Dashboard"
+msgstr ""
+
 #: views/config/license.hbs:20
-#: lib/ui-routes/oauth-config-routes.js:275
+#: lib/ui-routes/oauth-config-routes.js:274
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
@@ -59,10 +59,6 @@ msgid "%d certificate"
 msgid_plural "%d certificates"
 msgstr[0] ""
 msgstr[1] ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
 
 #: views/oauth-scope-error.hbs:5
 msgid "Insufficient Permissions"
@@ -134,6 +130,10 @@ msgstr ""
 msgid ""
 "This link is not valid. Use the unsubscribe link from the email you "
 "received."
+msgstr ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:13
@@ -363,19 +363,19 @@ msgid ""
 "connect your account."
 msgstr ""
 
-#: lib/tools.js:1658
+#: lib/tools.js:1672
 #: lib/ui-routes/unsubscribe-routes.js:31
 #: lib/ui-routes/unsubscribe-routes.js:99
 msgid "Invalid input"
 msgstr ""
 
-#: lib/tools.js:2539
+#: lib/tools.js:2553
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:2562
-#: lib/tools.js:2568
-#: lib/tools.js:2573
+#: lib/tools.js:2576
+#: lib/tools.js:2582
+#: lib/tools.js:2587
 #: lib/ui-routes/account-routes.js:1324
 msgid "Invalid or expired account setup URL"
 msgstr ""
@@ -465,11 +465,11 @@ msgstr ""
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/ui-routes/oauth-config-routes.js:268
+#: lib/ui-routes/oauth-config-routes.js:267
 msgid "Unknown"
 msgstr ""
 
-#: lib/ui-routes/oauth-config-routes.js:277
+#: lib/ui-routes/oauth-config-routes.js:276
 msgid "Indefinite"
 msgstr ""
 
