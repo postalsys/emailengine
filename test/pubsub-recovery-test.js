@@ -419,6 +419,25 @@ test('Pub/Sub subscription recovery tests', async t => {
         )();
     });
 
+    // undici reports a stalled response body as TypeError('terminated') with the code on err.cause
+    await t.test('a pull whose body stalls is a transient error', async () => {
+        await withMockedOauth2Apps({}, async () => {
+            let instance = createTestInstance({
+                client: {
+                    request: async () => {
+                        let cause = Object.assign(new Error('Body Timeout Error'), { code: 'UND_ERR_BODY_TIMEOUT' });
+                        throw new TypeError('terminated', { cause });
+                    }
+                }
+            });
+
+            await assert.rejects(
+                () => instance.run(),
+                err => err.retryDelay === 5000 && err.eeLogged === true
+            );
+        })();
+    });
+
     await t.test('403 error sets pubSubFlag and throws without calling ensurePubsub', async () => {
         let ensurePubsubCalls = [];
         let setMetaCalls = [];

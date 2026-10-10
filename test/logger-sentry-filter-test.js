@@ -57,6 +57,16 @@ test('logger Sentry forwarding filter', async t => {
         assert.equal(forwarded.length, 0);
     });
 
+    await t.test('does not forward an undici "terminated" failure caused by a stalled body', () => {
+        // A Pub/Sub pull whose response stalled reached error tracking this way
+        let cause = new Error('Body Timeout Error');
+        cause.code = 'UND_ERR_BODY_TIMEOUT';
+        let err = new TypeError('terminated');
+        err.cause = cause;
+        logger.error({ msg: 'Failed to pull subscription messages', err });
+        assert.equal(forwarded.length, 0);
+    });
+
     await t.test('forwards a fetch failure with a non-network cause', () => {
         // A TypeError whose cause is not a transient network errno is still a real
         // bug worth reporting.
