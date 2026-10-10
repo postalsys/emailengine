@@ -37,3 +37,5 @@ core.*
 
 # Local logs
 *.log
+# intermediate output of npm run gettext
+translations/messages.pot.tmp

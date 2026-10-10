@@ -29,8 +29,9 @@ Refresh the template first, whenever source strings have been added or changed:
 npm run gettext
 ```
 
-That rewrites `messages.pot` from the views and JS. It also reorders entries as it goes, so expect a
-diff even when no string actually changed - compare the `msgid` lines rather than the line count.
+That rewrites `messages.pot` from the views and JS. The output is canonical (entries in source
+order, references sorted, the creation date kept unless the content changed), so a diff means a
+string or a reference actually changed.
 
 Then merge the template into each catalog and see what is missing:
 

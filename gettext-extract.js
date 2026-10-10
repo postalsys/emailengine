@@ -1,8 +1,15 @@
 'use strict';
 
 // Extracts translatable strings from JS sources into translations/messages.pot.
-// Run via `npm run gettext` after xgettext-template has generated the POT from the
-// Handlebars views - this script joins the strings found in JS files into that file.
+// Run via `npm run gettext` after xgettext-template has written the strings of the Handlebars
+// views to translations/messages.pot.tmp - this script joins the strings found in JS files into
+// that catalog and writes the result to translations/messages.pot.
+//
+// The output is canonical: an unchanged source tree produces a byte-identical file. That takes
+// two things xgettext-template does not do. It parses the views in the order their reads
+// complete (async.parallel over fs.readFile), so both the entry order and the order of the
+// reference lines of a string used in several views changed from run to run; both are sorted
+// here. And the creation date is only stamped when the catalog content actually changed.
 //
 // Replaces jsxgettext, which bundled acorn 5 and crashed on post-ES2018 syntax
 // (optional chaining, nullish coalescing, etc.). Files are discovered dynamically,
@@ -16,6 +23,8 @@ const Path = require('path');
 
 const ROOT_DIR = __dirname;
 const POT_PATH = Path.join(ROOT_DIR, 'translations', 'messages.pot');
+// The catalog of the Handlebars views, as written by xgettext-template
+const TEMPLATES_POT_PATH = `${POT_PATH}.tmp`;
 
 // All server-side code that may contain gettext()/ngettext() calls
 const SCAN_DIRS = ['bin', 'lib', 'workers'];
@@ -114,6 +123,65 @@ function extractFromFile(filePath) {
     return entries;
 }
 
+// "views/a.hbs:12" -> ['views/a.hbs', 12], so line 9 sorts before line 10
+function parseReference(reference) {
+    let separator = reference.lastIndexOf(':');
+    return [reference.slice(0, separator), Number(reference.slice(separator + 1))];
+}
+
+function compareReferences(a, b) {
+    let [pathA, lineA] = parseReference(a);
+    let [pathB, lineB] = parseReference(b);
+    if (pathA !== pathB) {
+        return pathA < pathB ? -1 : 1;
+    }
+    return lineA - lineB;
+}
+
+// One reference per line as written here, but several to a line in catalogs from GNU tools
+function getReferences(entry) {
+    let reference = entry.comments && entry.comments.reference;
+    return reference ? reference.split(/\s+/).filter(value => value) : [];
+}
+
+const compareStrings = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+
+// Entries in source order: by their first reference, so a file's strings stay together in the
+// order they appear in it. Context, then msgid, break ties (several strings on one line)
+function compareEntries(a, b) {
+    let refA = getReferences(a)[0] || '';
+    let refB = getReferences(b)[0] || '';
+    if (refA !== refB) {
+        return compareReferences(refA, refB);
+    }
+    return compareStrings(a.msgctxt || '', b.msgctxt || '') || compareStrings(a.msgid, b.msgid);
+}
+
+/**
+ * Compiles a parsed catalog in canonical form: every entry's references sorted, and the entries
+ * sorted by their first one. Mutates the reference comments of `pot`
+ * @param {Object} pot - Catalog as returned by po.parse()
+ * @returns {Buffer} The compiled POT file
+ */
+function compileCanonical(pot) {
+    for (let entries of Object.values(pot.translations)) {
+        for (let entry of Object.values(entries)) {
+            let references = getReferences(entry);
+            if (references.length) {
+                entry.comments.reference = references.sort(compareReferences).join('\n');
+            }
+        }
+    }
+    return po.compile(pot, { sort: compareEntries });
+}
+
+function formatCreationDate(date) {
+    return date
+        .toISOString()
+        .replace(/T/, ' ')
+        .replace(/:\d+\.\d+Z$/, '+0000');
+}
+
 function main() {
     let files = listScanFiles();
 
@@ -122,15 +190,8 @@ function main() {
         extracted = extracted.concat(extractFromFile(filePath));
     }
 
-    let pot = po.parse(fs.readFileSync(POT_PATH));
+    let pot = po.parse(fs.readFileSync(TEMPLATES_POT_PATH));
     let translations = (pot.translations[''] = pot.translations[''] || {});
-
-    // xgettext-template does not stamp a creation date, so set it here (jsxgettext used to)
-    pot.headers = pot.headers || {};
-    pot.headers['POT-Creation-Date'] = new Date()
-        .toISOString()
-        .replace(/T/, ' ')
-        .replace(/:\d+\.\d+Z$/, '+0000');
 
     for (let { msgid, msgidPlural, reference } of extracted) {
         let entry = translations[msgid];
@@ -144,20 +205,39 @@ function main() {
         }
 
         entry.comments = entry.comments || {};
-        let references = entry.comments.reference ? entry.comments.reference.split('\n') : [];
+        let references = getReferences(entry);
         if (!references.includes(reference)) {
             references.push(reference);
         }
         entry.comments.reference = references.join('\n');
     }
 
-    fs.writeFileSync(POT_PATH, po.compile(pot));
-    console.log(`Extracted ${extracted.length} gettext strings from ${files.length} JS files into ${Path.relative(ROOT_DIR, POT_PATH)}`);
+    // xgettext-template does not stamp a creation date (jsxgettext used to). The previous date is
+    // kept unless the content changed, so an unchanged tree leaves the file as it was
+    let existing = fs.existsSync(POT_PATH) ? fs.readFileSync(POT_PATH) : Buffer.alloc(0);
+    pot.headers = pot.headers || {};
+    pot.headers['POT-Creation-Date'] = existing.length ? po.parse(existing).headers['POT-Creation-Date'] : '';
+    let output = compileCanonical(pot);
+
+    let changed = !output.equals(existing);
+    if (changed) {
+        pot.headers['POT-Creation-Date'] = formatCreationDate(new Date());
+        fs.writeFileSync(POT_PATH, compileCanonical(pot));
+    }
+
+    console.log(
+        `Extracted ${extracted.length} gettext strings from ${files.length} JS files into ${Path.relative(ROOT_DIR, POT_PATH)}${changed ? '' : ' (unchanged)'}`
+    );
 }
 
 if (require.main === module) {
-    main();
+    try {
+        main();
+    } finally {
+        // Also on failure, so a broken run does not leave the intermediate file behind
+        fs.rmSync(TEMPLATES_POT_PATH, { force: true });
+    }
 }
 
 // Exported for the gettext coverage test, which walks the same scan set with the same helpers
-module.exports = { listScanFiles, parseFile, calleeName, extractFromFile };
+module.exports = { listScanFiles, parseFile, calleeName, extractFromFile, compareReferences, compileCanonical };
