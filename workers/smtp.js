@@ -32,6 +32,10 @@ config.service = config.service || {};
 
 const { DEFAULT_MAX_SMTP_MESSAGE_SIZE } = require('../lib/consts');
 
+// On shutdown, how long open sessions get before they are told 421 and closed. Shorter than
+// WORKER_DRAIN_TIMEOUT in server.js, so the 421 goes out before the thread is terminated
+const SMTP_CLOSE_TIMEOUT = 5 * 1000;
+
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 
 const MAX_SMTP_MESSAGE_SIZE = getByteSize(readEnvValue('EENGINE_MAX_SMTP_MESSAGE_SIZE') || config.smtp.maxMessageSize) || DEFAULT_MAX_SMTP_MESSAGE_SIZE;
@@ -133,7 +137,8 @@ async function init() {
         banner: 'EmailEngine MSA',
         size: MAX_SMTP_MESSAGE_SIZE,
         maxClients: SMTP_MAX_CLIENTS,
-        useProxy: await settings.get('smtpServerProxy')
+        useProxy: await settings.get('smtpServerProxy'),
+        closeTimeout: SMTP_CLOSE_TIMEOUT
     };
 
     // Reads what the API worker provisioned; this one never orders a certificate itself.
@@ -326,6 +331,16 @@ async function onCommand(command) {
 
         case 'smtpReloadCertificates':
             return await reloadCertificates();
+
+        // Shutdown drain. Signals reach the main thread only, so server.js forwards them here.
+        // Stops accepting connections and lets a submission halfway through DATA be queued and
+        // answered, instead of cutting it at process exit: a client that never sees the 250 for
+        // a message that was already queued sends it again
+        case 'close':
+            if (smtpServer) {
+                await new Promise(resolve => smtpServer.close(resolve));
+            }
+            return true;
         default:
             logger.debug({ msg: 'Unhandled command', command });
             return 999;

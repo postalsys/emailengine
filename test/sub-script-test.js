@@ -8,7 +8,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { SubScript } = require('../lib/sub-script');
+const { SubScript, fnCache } = require('../lib/sub-script');
 const settings = require('../lib/settings');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
@@ -114,4 +114,16 @@ test('SubScript sandbox', async t => {
         // fresh successful compile).
         assert.throws(() => SubScript.create('bad', badCode));
     });
+});
+
+test('the compiled script cache is bounded', async () => {
+    // Every edit of a script compiles a new source, so an unbounded cache grew in every thread for
+    // as long as the process lived
+    for (let i = 0; i < fnCache.maxSize + 10; i++) {
+        SubScript.create('cache-test', `return ${i};`);
+    }
+    assert.ok(fnCache.size <= fnCache.maxSize, `cache holds ${fnCache.size} entries`);
+
+    // a script whose compiled form was evicted still runs: it is compiled again
+    assert.strictEqual(await SubScript.create('cache-test', 'return 0;').exec({}), 0);
 });

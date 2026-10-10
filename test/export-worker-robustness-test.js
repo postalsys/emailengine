@@ -19,6 +19,7 @@ const pathlib = require('path');
 const zlib = require('zlib');
 
 const { redis } = require('../lib/db');
+const { REDIS_PREFIX } = require('../lib/consts');
 const { Export, openExportOutput, generateExportId, getExportKey, getExportQueueKey, buildActiveEntry, ACTIVE_EXPORTS_KEY } = require('../lib/export');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
@@ -130,6 +131,39 @@ test('Export.markInterruptedAsFailed() unlinks only the export file itself', asy
         assert.strictEqual(await fs.promises.readFile(foreignPath, 'utf8'), 'keep', 'a foreign stored path is left alone');
         assert.strictEqual(await redis.hget(getExportKey(ACCOUNT, foreign), 'status'), 'failed', 'the record is still failed');
     } finally {
+        await fs.promises.rm(dir, { recursive: true, force: true });
+    }
+});
+
+test('Export.create() gives the concurrency slot back when a step after taking it fails', async () => {
+    // Only a failed queue add released the slot. An unwritable export path failed earlier and left
+    // an entry in the active set on every attempt, so the account's exports answered 429 until the
+    // sweeper caught up.
+    const accountKey = `${REDIS_PREFIX}iad:${ACCOUNT}`;
+    createdKeys.add(accountKey);
+    await redis.hset(accountKey, 'account', ACCOUNT);
+
+    const dir = await fs.promises.mkdtemp(pathlib.join(os.tmpdir(), 'ee-export-create-'));
+    const blocker = pathlib.join(dir, 'not-a-directory');
+    await fs.promises.writeFile(blocker, 'x');
+
+    const previous = process.env.EENGINE_EXPORT_PATH;
+    process.env.EENGINE_EXPORT_PATH = pathlib.join(blocker, 'exports');
+    try {
+        await assert.rejects(Export.create(ACCOUNT, { folders: ['INBOX'], startDate: Date.now() - 1000, endDate: Date.now() }));
+
+        const members = await redis.smembers(ACTIVE_EXPORTS_KEY);
+        assert.deepStrictEqual(
+            members.filter(entry => entry.startsWith(`${ACCOUNT}:`)),
+            [],
+            'no active entry is left behind for the account'
+        );
+    } finally {
+        if (previous === undefined) {
+            delete process.env.EENGINE_EXPORT_PATH;
+        } else {
+            process.env.EENGINE_EXPORT_PATH = previous;
+        }
         await fs.promises.rm(dir, { recursive: true, force: true });
     }
 });

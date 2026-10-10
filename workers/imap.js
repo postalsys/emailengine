@@ -418,10 +418,17 @@ class ConnectionHandler {
         this.assignTokens.delete(account);
         if (this.accounts.has(account)) {
             let accountObject = this.accounts.get(account);
-            if (accountObject.connection) {
-                await accountObject.connection.delete();
+            try {
+                if (accountObject.connection) {
+                    await accountObject.connection.delete();
+                }
+            } finally {
+                // The account record is already gone and nothing retries the delete, so an entry
+                // left behind by a failed teardown would stay registered for the worker's lifetime
+                if (this.accounts.get(account) === accountObject) {
+                    this.accounts.delete(account);
+                }
             }
-            this.accounts.delete(account);
         }
     }
 

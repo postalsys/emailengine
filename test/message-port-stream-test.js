@@ -639,3 +639,117 @@ test('the reader returns credit in batches rather than one ack per chunk', async
         port2.close();
     }
 });
+
+test('a consumer that stops reading is abandoned once the stall timeout passes', async () => {
+    // A client that keeps its HTTP connection open but never reads sends no cancel, so the write
+    // waiting for credit used to wait forever - and the IMAP download behind it kept the
+    // account's mailbox lock for as long as the socket lived.
+    const { port1, port2 } = new MessageChannel();
+    const window = 16 * 1024;
+
+    try {
+        const writable = new MessagePortWritable(port2, { creditWindow: window, stallTimeout: 50 });
+        // A reader that is never consumed: it takes the chunks off the port but returns no credit
+        const reader = new MessagePortReadable(port1, { creditWindow: window });
+        const readerError = new Promise(resolve => reader.once('error', resolve));
+
+        const source = new Readable({
+            read() {
+                this.push(Buffer.alloc(4 * 1024, 1));
+            }
+        });
+
+        let warned = null;
+        pipeToMessagePort(source, writable, {
+            error() {},
+            debug() {},
+            warn(entry) {
+                warned = entry;
+            }
+        });
+
+        await new Promise(resolve => source.once('close', resolve));
+
+        assert.strictEqual(writable.destroyed, true, 'the stalled writer is torn down');
+        assert.strictEqual(source.destroyed, true, 'the source is released, and with it the mailbox lock');
+        assert.ok(warned && warned.err && warned.err.code === 'ConsumerStalled', 'the stall is logged as a warning');
+        assert.match((await readerError).message, /stopped reading/, 'the reader learns the transfer was cut short');
+    } finally {
+        port1.close();
+        port2.close();
+    }
+});
+
+test('a write that gets its credit back in time is not timed out', async () => {
+    const { port1, port2 } = new MessageChannel();
+    const window = 16 * 1024;
+    const chunkSize = 4 * 1024;
+    const total = 32;
+
+    try {
+        const writable = new MessagePortWritable(port2, { creditWindow: window, stallTimeout: 200 });
+        const reader = new MessagePortReadable(port1, { creditWindow: window });
+
+        let produced = 0;
+        const source = new Readable({
+            read() {
+                if (produced >= total) {
+                    return this.push(null);
+                }
+                produced++;
+                this.push(Buffer.alloc(chunkSize, 1));
+            }
+        });
+        let warned = false;
+        pipeToMessagePort(source, writable, {
+            error() {},
+            debug() {},
+            warn() {
+                warned = true;
+            }
+        });
+
+        // Slow but steady: every chunk is read, each after a pause shorter than the stall timeout
+        let received = 0;
+        await new Promise((resolve, reject) => {
+            reader.on('data', chunk => {
+                received += chunk.length;
+                reader.pause();
+                setTimeout(() => reader.resume(), 10);
+            });
+            reader.on('end', resolve);
+            reader.on('error', reject);
+        });
+
+        assert.strictEqual(received, total * chunkSize, 'every byte is delivered');
+        assert.strictEqual(warned, false, 'the transfer was never reported as stalled');
+    } finally {
+        port1.close();
+        port2.close();
+    }
+});
+
+test('a partial ack counts as progress for the stall timeout', async () => {
+    // Credit taken back in amounts too small to unblock a large write still means the consumer is
+    // reading; only a reader that returns nothing at all is abandoned.
+    const { port1, port2 } = new MessageChannel();
+    try {
+        const writable = new MessagePortWritable(port2, { creditWindow: 1000, stallTimeout: 150 });
+        let destroyed = false;
+        writable.on('error', () => {
+            destroyed = true;
+        });
+        writable.write(Buffer.alloc(4000, 1));
+
+        // Trickle 100 bytes of credit back every 50 ms: never enough to unblock, always progress
+        for (let i = 0; i < 8; i++) {
+            await new Promise(r => setTimeout(r, 50));
+            port1.postMessage({ ack: 100 });
+        }
+        assert.equal(destroyed, false, 'the writer is still waiting, not abandoned');
+        writable.destroy();
+    } finally {
+        port1.close();
+        port2.close();
+    }
+});

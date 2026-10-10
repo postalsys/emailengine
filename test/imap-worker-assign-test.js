@@ -6,55 +6,18 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
-const Path = require('path');
-const { Worker, SHARE_ENV } = require('node:worker_threads');
 
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
 const getSecret = require('../lib/get-secret');
 const { REDIS_PREFIX } = require('../lib/consts');
 const registerRedisTeardown = require('./helpers/redis-teardown');
+const { startWorker } = require('./helpers/worker-rpc');
 
 registerRedisTeardown(redis);
 
-function startWorker() {
-    const worker = new Worker(Path.join(__dirname, '..', 'workers', 'imap.js'), { env: SHARE_ENV, argv: [] });
-    let mids = 0;
-    const pending = new Map();
-
-    const ready = new Promise((resolve, reject) => {
-        worker.on('error', reject);
-        worker.on('message', message => {
-            if (!message) {
-                return;
-            }
-            if (message.cmd === 'ready') {
-                return resolve();
-            }
-            if (message.cmd === 'resp' && pending.has(message.mid)) {
-                const { resolve: done } = pending.get(message.mid);
-                pending.delete(message.mid);
-                return done(message);
-            }
-            if (message.cmd === 'call') {
-                // Worker-initiated calls (runIndex and the like): answer with nothing
-                worker.postMessage({ cmd: 'resp', mid: message.mid, response: null });
-            }
-        });
-    });
-
-    const call = message =>
-        new Promise(resolve => {
-            const mid = `test:${++mids}`;
-            pending.set(mid, { resolve });
-            worker.postMessage({ cmd: 'call', mid, message });
-        });
-
-    return { worker, ready, call };
-}
-
 test('IMAP worker assignment bookkeeping', async t => {
-    const { worker, ready, call } = startWorker();
+    const { worker, ready, call } = startWorker('imap.js');
     t.after(() => worker.terminate());
     await ready;
 

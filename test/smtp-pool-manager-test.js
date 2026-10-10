@@ -17,6 +17,7 @@ const {
     closePooledConnection,
     getPoolSize,
     generatePoolKey,
+    cleanupIdlePools,
     SMTP_POOL_MAX_IDLE,
     SMTP_POOL_CLEANUP_INTERVAL
 } = require('../lib/email-client/smtp-pool-manager');
@@ -143,4 +144,52 @@ test('exported metadata', () => {
     assert.strictEqual(typeof getPoolSize(), 'number');
     assert.strictEqual(SMTP_POOL_MAX_IDLE, 10 * 60 * 1000);
     assert.strictEqual(SMTP_POOL_CLEANUP_INTERVAL, 2 * 60 * 1000);
+});
+
+test('the idle sweep does not close a pool while a message is on the wire', async () => {
+    // The sweep used to check a property nodemailer never had, so a transmission that outlasted
+    // the idle window (measured from when the message was handed over) was cut off mid-send
+    const { SMTPServer } = require('smtp-server');
+    let releaseData;
+    const dataStarted = new Promise(resolve => {
+        releaseData = resolve;
+    });
+    let finishData;
+    const server = new SMTPServer({
+        authOptional: true,
+        disabledCommands: ['STARTTLS'],
+        logger: false,
+        onData(stream, session, callback) {
+            stream.on('data', () => false);
+            stream.on('end', () => {
+                releaseData();
+                // hold the reply until the test has run the sweep
+                finishData = () => callback();
+            });
+        }
+    });
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+
+    const settings = { host: '127.0.0.1', port: server.server.address().port, secure: false, ignoreTLS: true, auth: false };
+    const transport = transportFor(settings);
+    const key = generatePoolKey(settings);
+    try {
+        const sent = transport.sendMail({ from: 'a@example.com', to: 'b@example.com', subject: 'x', text: 'y' });
+        await dataStarted;
+
+        // Other tests' pools are idle too and go in the same sweep, so the pool is checked by identity
+        cleanupIdlePools(Date.now() + SMTP_POOL_MAX_IDLE + 1000);
+        assert.strictEqual(getMailTransport(settings), transport, 'the busy pool is kept');
+
+        finishData();
+        await sent;
+
+        // once nothing is in flight, the same sweep removes it
+        await new Promise(resolve => setImmediate(resolve));
+        cleanupIdlePools(Date.now() + 2 * SMTP_POOL_MAX_IDLE + 1000);
+        assert.notStrictEqual(getMailTransport(settings), transport, 'an idle pool is closed');
+    } finally {
+        closePooledConnection(key);
+        await new Promise(resolve => server.close(resolve));
+    }
 });

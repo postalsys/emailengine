@@ -422,3 +422,83 @@ test('handoff: an internal fault is answered with a generic NO, its text stays i
         await closeServer(server);
     }
 });
+
+test('handoff: an upstream opened for a login that then fails is closed', async () => {
+    // The upstream session is opened before the CAPABILITY untagged response is compiled, and a
+    // failure there refused the client while the upstream stayed open until the server idled it out
+    const records = [];
+    let closed = 0;
+    const handler = createProxyAuthHandler({
+        onAuth: async () => ({ accountData: { account: 'acct-123' }, imapConfig: { host: 'upstream' } }),
+        createProxy: async () => ({
+            readSocket: new PassThrough(),
+            writeSocket: new PassThrough(),
+            imapClient: {
+                // a capability list the compiler can not render
+                get rawCapabilities() {
+                    throw new Error('unexpected capability response');
+                },
+                close() {
+                    closed++;
+                }
+            }
+        }),
+        logger: fakeLogger(records),
+        serverLogger: fakeLogger(records),
+        metrics: () => false,
+        logRaw: false
+    });
+    const { server, port } = await startServer({}, handler);
+    try {
+        const client = connectClient(port);
+        await client.waitFor(/\* OK /);
+        client.send('A1 LOGIN user pass\r\n');
+        await client.waitFor(/^A1 /m);
+        assert.match(client.buffer, /^A1 NO /m);
+        assert.equal(closed, 1, 'the upstream session is closed');
+        client.socket.destroy();
+    } finally {
+        await closeServer(server);
+    }
+});
+
+test('an error on a freshly accepted socket is absorbed until a handler takes over', () => {
+    // Without the PROXY protocol the accepted socket is handed over a tick later, and until then
+    // nothing listened for errors on it: a reset landing in that window was an uncaught 'error'
+    // that took down the worker and every session it was proxying.
+    const { EventEmitter } = require('node:events');
+    const server = new IMAPServer({ secure: false, disableSTARTTLS: true, proxyMode: true, logger: false });
+    const socket = Object.assign(new EventEmitter(), { remoteAddress: '192.0.2.1' });
+
+    assert.equal(server._acceptSocket(socket), true);
+    assert.doesNotThrow(() => socket.emit('error', Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' })));
+    socket.emit('close');
+    assert.equal(server._socketCount, 0);
+});
+
+test('implicit TLS: a client that never completes the handshake is disconnected', async () => {
+    // The PROXY header timeout is cleared once the header is read and the session's own socket
+    // timeout only starts after the handshake, so a client that connected and sent nothing held
+    // its socket and its maxConnections slot for good.
+    const { createSelfSignedCertificate } = require('../lib/tls/self-signed');
+    const { cert, privateKey } = await createSelfSignedCertificate({ hostnames: ['localhost'], keyType: 'ec' });
+    const { server, port } = await startServer({ secure: true, key: privateKey, cert, tlsHandshakeTimeout: 200 });
+    const errors = [];
+    server.on('error', err => errors.push(err));
+    try {
+        const silent = connectClient(port);
+        await silent.waitClosed(2000);
+        assert.ok(
+            errors.some(err => /TLS handshake timed out/.test(err.message) && err.report === false),
+            'the timeout is reported as a quiet client-side failure'
+        );
+
+        const deadline = Date.now() + 2000;
+        while (server._socketCount && Date.now() < deadline) {
+            await new Promise(r => setTimeout(r, 20));
+        }
+        assert.equal(server._socketCount, 0, 'the connection slot is released');
+    } finally {
+        await closeServer(server);
+    }
+});

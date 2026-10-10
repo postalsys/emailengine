@@ -112,3 +112,58 @@ test('pipelined plaintext after STARTTLS is not executed', async () => {
         await closeServer(server);
     }
 });
+
+test('STARTTLS: a failing SNI lookup falls back to the default certificate', async () => {
+    // The upgrade wraps the configured SNICallback so a lookup failure is logged and answered with
+    // the default context, but the options copy that followed replaced the wrapper with the raw
+    // callback, so a failed lookup aborted the handshake instead.
+    const tls = require('node:tls');
+    const { createSelfSignedCertificate } = require('../lib/tls/self-signed');
+    const { cert, privateKey } = await createSelfSignedCertificate({ hostnames: ['localhost'], keyType: 'ec' });
+
+    let sniCalls = 0;
+    const { server, port } = await startServer({
+        disableSTARTTLS: false,
+        key: privateKey,
+        cert,
+        SNICallback: (servername, cb) => {
+            sniCalls++;
+            cb(new Error('no certificate for ' + servername));
+        }
+    });
+
+    try {
+        const socket = net.connect({ port, host: '127.0.0.1' });
+        socket.on('error', () => false);
+        let buffer = '';
+        const waitFor = re =>
+            new Promise((resolve, reject) => {
+                const timer = setTimeout(() => reject(new Error(`timed out waiting for ${re}; got: ${buffer}`)), 3000);
+                const check = chunk => {
+                    buffer += chunk.toString();
+                    if (re.test(buffer)) {
+                        clearTimeout(timer);
+                        socket.removeListener('data', check);
+                        resolve();
+                    }
+                };
+                socket.on('data', check);
+            });
+
+        await waitFor(/\* OK /);
+        socket.write('A1 STARTTLS\r\n');
+        await waitFor(/^A1 OK/m);
+        socket.removeAllListeners('data');
+
+        const secureSocket = tls.connect({ socket, servername: 'unknown.example', rejectUnauthorized: false });
+        await new Promise((resolve, reject) => {
+            secureSocket.once('secureConnect', resolve);
+            secureSocket.once('error', reject);
+        });
+        assert.strictEqual(sniCalls, 1, 'the configured callback is still consulted');
+        assert.match(secureSocket.getPeerCertificate().subject.CN, /localhost/, 'the default certificate is served');
+        secureSocket.destroy();
+    } finally {
+        await closeServer(server);
+    }
+});

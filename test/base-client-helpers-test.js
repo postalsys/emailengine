@@ -116,6 +116,42 @@ test('BaseClient.handleSubmitError()', async t => {
         assert.ok(gatewayUpdates[0].lastError.created, 'the time of the attempt is recorded');
         assert.deepEqual(feedback, [['fb-1', false, '550 5.7.1 Message rejected']]);
     });
+
+    // The caller rethrows the delivery error once this returns. A Redis failure escaping from the
+    // feedback or notification step used to replace it, so a permanent 550 was retried as whatever
+    // the Redis error looked like and the final webhook reported that instead of the rejection
+    await t.test('a failing feedback update or notification does not replace the delivery error', async () => {
+        const client = makeClient();
+        let notifyCalls = 0;
+        client.updateFeedbackKey = async () => {
+            throw new Error('Redis feedback write failed');
+        };
+        client.notify = async () => {
+            notifyCalls++;
+            throw new Error('Redis queue write failed');
+        };
+        const err = Object.assign(new Error('550 5.1.1 No such user'), { code: 'EENVELOPE', responseCode: 550 });
+
+        await client.handleSubmitError(err, Object.assign({ smtpSettings: { host: 'smtp.example.com', port: 587 } }, context));
+
+        assert.equal(notifyCalls, 1, 'the notification is still attempted after the feedback write failed');
+        assert.equal(err.statusCode, 550, 'the error is still enriched for the caller');
+        assert.equal(err.code, 'EENVELOPE');
+    });
+
+    await t.test('a failure anywhere in the bookkeeping never escapes', async () => {
+        const client = makeClient();
+        client.recordSubmitError = async () => {
+            throw new TypeError('unexpected status shape');
+        };
+        const err = Object.assign(new Error('550 5.1.1 No such user'), { responseCode: 550 });
+
+        await client.handleSubmitError(err, Object.assign({ networkRouting: { localAddress: '192.0.2.1' } }, context));
+
+        assert.equal(err.statusCode, 550);
+        assert.equal(err.code, 'SubmitFail');
+        assert.deepEqual(err.info.networkRouting, { localAddress: '192.0.2.1' });
+    });
 });
 
 test('BaseClient.detectBounce()', async t => {
