@@ -550,10 +550,12 @@ test('certificate provisioning', async t => {
         const gate = new Promise(resolve => {
             release = resolve;
         });
+        let ordered;
         const certs = stubCerts({
             async onAcquire(hostname) {
                 await gate;
-                return await issued(hostname);
+                ordered = await issued(hostname);
+                return ordered;
             }
         });
         const call = async () => {};
@@ -571,9 +573,11 @@ test('certificate provisioning', async t => {
         assert.deepEqual(timerPass.results, [], 'the timer did not start a second order');
 
         release();
+        // Matched on the certificate this order issued: other test files run in parallel on the
+        // same Redis database, and tls-status-test.js records a valid state for this hostname too
         await waitFor(async () => {
             const record = (await provision.getProvisioningStatus())[hostname];
-            return record && record.state === 'valid' ? record : false;
+            return ordered && record && record.state === 'valid' && record.fingerprint === ordered.fingerprint ? record : false;
         }, 'the background order to finish');
 
         assert.equal(certs.calls.filter(entry => entry.skipAcquire === false).length, 1, 'one order reached the certificate authority');
