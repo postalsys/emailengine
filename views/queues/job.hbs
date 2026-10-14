@@ -31,11 +31,20 @@
 
 {{#> ui/card}}
 {{#> ui/detail-toolbar label="Entry actions"}}
+{{!-- Plain POST forms: they work before the page script has run and without it --}}
 {{#if entry.canPromote}}
-{{> ui/btn label="Send now" variant="primary" size="sm" icon="icon-[tabler--send]" class="queue-action-btn" dataName="action" dataValue=(concat entry.url "/promote")}}
+<form method="post" action="{{entry.url}}/promote">
+    <input type="hidden" name="crumb" value="{{crumb}}">
+    <input type="hidden" name="next" value="{{currentUrl}}">
+    {{> ui/btn label="Send now" type="submit" variant="primary" size="sm" icon="icon-[tabler--send]"}}
+</form>
 {{/if}}
 {{#if entry.canRetry}}
-{{> ui/btn label="Retry" variant="primary" size="sm" icon="icon-[tabler--refresh]" class="queue-action-btn" dataName="action" dataValue=(concat entry.url "/retry")}}
+<form method="post" action="{{entry.url}}/retry">
+    <input type="hidden" name="crumb" value="{{crumb}}">
+    <input type="hidden" name="next" value="{{currentUrl}}">
+    {{> ui/btn label="Retry" type="submit" variant="primary" size="sm" icon="icon-[tabler--refresh]"}}
+</form>
 {{/if}}
 {{#if entry.isActive}}
 {{#> ui/tooltip text="A worker is processing this entry right now"}}

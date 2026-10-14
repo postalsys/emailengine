@@ -1,20 +1,12 @@
-{{!-- The shared machinery behind the per-entry actions on the queue pages: a hidden POST form
-      the .queue-action-btn handler in static/js/queues.js aims at the action URL of the entry
-      clicked (retry, send now), and the confirmation dialog a removal goes through. On a listing
-      page the dialog is filled in per row by the shared .list-delete-btn handler (static/js/ui.js);
-      the detail page renders it for its one entry through the params. The forms return to
-      `currentUrl`.
+{{!-- The confirmation dialog a queue entry's removal goes through. On a listing page it is filled
+      in per row by the shared .list-delete-btn handler (static/js/ui.js); the detail page renders
+      it for its one entry through the params. The form returns to `currentUrl`.
         {{> queue_job_actions}}
         {{> queue_job_actions removeAction="/admin/queues/submit/jobs/x/remove" removeName="Hello"}}
       Params:
         removeAction - the removal URL, when the page is about one entry (optional)
         removeName   - what to call that entry in the dialog (optional)
       Expects `crumb` and `currentUrl` in the view context. --}}
-<form method="post" action="/admin/queues" id="queueActionForm" class="hidden" aria-hidden="true">
-    <input type="hidden" name="crumb" value="{{crumb}}">
-    <input type="hidden" name="next" value="{{currentUrl}}">
-</form>
-
 {{#> ui/confirm-modal id="removeJob" title="Remove from the queue" action=(when removeAction removeAction "/admin/queues") formId="removeJobForm" submitLabel="Remove"}}
 <p class="mb-2">Remove <strong class="delete-target-name">{{removeName}}</strong> from the queue?</p>
 <p class="mb-0 text-base-content/70 text-sm">It will not run and cannot be brought back. A message removed here is gone for good; a webhook delivery removed here is never sent.</p>

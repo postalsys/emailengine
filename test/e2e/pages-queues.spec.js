@@ -107,7 +107,10 @@ test.describe('queue browser pages', () => {
 
             await request.delete(`/v1/account/${ACCOUNT_ID}`, { headers: auth }).catch(() => {});
             // An SMTP-only account: queuing a message needs no mailbox, and a sendAt a year out
-            // means nothing ever tries to deliver it
+            // means nothing tries to deliver it until the test says so. The outgoing server is a
+            // closed local port, so an attempt fails at once with a refused connection rather
+            // than hanging in a DNS lookup or a TCP timeout, which left the entry Active for
+            // minutes on one run
             const created = await request.post('/v1/account', {
                 headers: auth,
                 data: {
@@ -115,7 +118,7 @@ test.describe('queue browser pages', () => {
                     name: 'Queue browser',
                     email: 'queue-browser@example.com',
                     imap: false,
-                    smtp: { auth: { user: 'queue-browser@example.com', pass: 'secret' }, host: 'smtp.example.com', port: 587, secure: false }
+                    smtp: { auth: { user: 'queue-browser@example.com', pass: 'secret' }, host: '127.0.0.1', port: 1, secure: false }
                 }
             });
             expect(created.ok(), `POST /v1/account -> ${created.status()} ${await created.text()}`).toBeTruthy();
@@ -123,7 +126,8 @@ test.describe('queue browser pages', () => {
             const queueMessage = async subject => {
                 const res = await request.post(`/v1/account/${ACCOUNT_ID}/submit`, {
                     headers: auth,
-                    data: { to: [{ address: 'nobody@example.com' }], subject, text: 'queued by the e2e suite', sendAt: SEND_AT }
+                    // one attempt, so the message is Failed rather than waiting out a backoff once sent
+                    data: { to: [{ address: 'nobody@example.com' }], subject, text: 'queued by the e2e suite', sendAt: SEND_AT, deliveryAttempts: 1 }
                 });
                 expect(res.ok(), `POST submit -> ${res.status()} ${await res.text()}`).toBeTruthy();
                 return (await res.json()).queueId;
@@ -154,36 +158,44 @@ test.describe('queue browser pages', () => {
                 // The row leads to the entry's page
                 await row.getByRole('link', { name: 'Open message' }).click();
                 await expect(page).toHaveURL(new RegExp(`/admin/queues/submit/jobs/${queueId}$`));
+                await page.waitForLoadState('load');
                 await expect(page.locator('h1')).toContainText(subject);
                 await expect(page.locator('#queue-id')).toHaveValue(queueId);
 
-                // Send now moves it out of the delayed set. The attempt that follows fails at
-                // once (the account's SMTP host does not resolve), so by the time anyone looks
-                // the message is waiting, being tried, or waiting out the backoff - anything but
-                // a scheduled send that has not been attempted
+                // Send now moves it out of the delayed set; the one attempt that follows is
+                // refused at once, so the message ends up Failed with its content kept
                 await page.getByRole('button', { name: 'Send now' }).click();
                 await expect(page).toHaveURL(new RegExp(`/admin/queues/submit/jobs/${queueId}$`));
                 await expect(page.getByText('runs at the next opportunity')).toBeVisible();
 
-                const entry = await request.get(`/v1/outbox/${queueId}`, { headers: auth });
-                expect(entry.status()).toBe(200);
-                const promoted = await entry.json();
-                expect(promoted.state === 'delayed' && promoted.attemptsMade === 0).toBe(false);
-
-                // Remove it through the row menu, which asks first. The row is looked up under
-                // whichever state the outbox API reports, with the search the page offers
-                await page.goto(`${BASE_URL}/admin/queues/submit?state=${promoted.state}&query=${encodeURIComponent(subject)}`);
-                const listed = page.locator('tbody tr', { hasText: subject });
-                if (await listed.count()) {
-                    await openRowMenu(listed, 'Entry actions');
-                    await listed.getByRole('button', { name: 'Remove' }).click();
-                    const modal = page.locator('#removeJob');
-                    await expect(modal).toBeVisible();
-                    await expect(modal).toContainText(subject);
-                    await modal.getByRole('button', { name: 'Remove' }).click();
-                    await expect(page.getByText('Removed the message from the queue')).toBeVisible();
-                    expect((await request.get(`/v1/outbox/${queueId}`, { headers: auth })).status()).toBe(404);
+                let promoted;
+                for (let i = 0; i < 60; i++) {
+                    const entry = await request.get(`/v1/outbox/${queueId}`, { headers: auth });
+                    expect(entry.status()).toBe(200);
+                    promoted = await entry.json();
+                    if (promoted.state === 'failed') {
+                        break;
+                    }
+                    await page.waitForTimeout(500);
                 }
+                expect(promoted.state).toBe('failed');
+                expect(promoted.attemptsMade).toBe(1);
+
+                // The failed list offers a retry (the content is still kept) and the removal,
+                // which asks first. Found through the search the page offers
+                await page.goto(`${BASE_URL}/admin/queues/submit?state=failed&query=${encodeURIComponent(subject)}`);
+                const listed = page.locator('tbody tr', { hasText: subject });
+                await expect(listed).toBeVisible();
+                await expect(listed).toContainText('Unreachable');
+                await openRowMenu(listed, 'Entry actions');
+                await expect(listed.getByRole('button', { name: 'Retry' })).toBeVisible();
+                await listed.getByRole('button', { name: 'Remove' }).click();
+                const modal = page.locator('#removeJob');
+                await expect(modal).toBeVisible();
+                await expect(modal).toContainText(subject);
+                await modal.getByRole('button', { name: 'Remove' }).click();
+                await expect(page.getByText('Removed the message from the queue')).toBeVisible();
+                expect((await request.get(`/v1/outbox/${queueId}`, { headers: auth })).status()).toBe(404);
 
                 expect(errors).toHaveLength(0);
             } finally {

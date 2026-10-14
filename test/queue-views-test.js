@@ -51,15 +51,22 @@ test('queue entry actions menu', async t => {
         assert.doesNotMatch(waiting, /\/promote"/);
         assert.doesNotMatch(waiting, /\/retry"/);
 
-        const delayed = actionsTemplate(entry({ canPromote: true }));
-        assert.match(delayed, /\/promote">Send now</);
+        // the actions are plain forms carrying the page's crumb and return target, so they work
+        // before the page script has run and without it
+        const delayed = actionsTemplate(entry({ canPromote: true }), { data: { root: { crumb: 'c1', currentUrl: '/admin/queues/submit' } } });
+        assert.match(
+            delayed,
+            /<form method="post" action="\/admin\/queues\/submit\/jobs\/q1\/promote">\s*<input type="hidden" name="crumb" value="c1">\s*<input type="hidden" name="next" value="\/admin\/queues\/submit">/
+        );
+        assert.match(delayed, />Send now</);
 
         const failed = actionsTemplate(entry({ state: 'failed', canRetry: true }));
-        assert.match(failed, /\/retry">Retry</);
+        assert.match(failed, /action="\/admin\/queues\/submit\/jobs\/q1\/retry"/);
+        assert.match(failed, />Retry</);
 
         const active = actionsTemplate(entry({ state: 'active', canRemove: false }));
         assert.match(active, />Open</);
-        assert.doesNotMatch(active, /queue-action-btn|list-delete-btn/, 'an entry a worker is running offers nothing');
+        assert.doesNotMatch(active, /<form|list-delete-btn/, 'an entry a worker is running offers nothing');
     });
 
     await t.test('the removal names the entry, escaped', () => {
@@ -90,7 +97,7 @@ test('queue listing rows', async t => {
         assert.match(html, /Rejected 550/);
         assert.match(html, /550 No such user/);
         assert.doesNotMatch(html, /Content discarded/);
-        assert.match(html, /\/retry">Retry</);
+        assert.match(html, /action="\/admin\/queues\/submit\/jobs\/q1\/retry"/);
         assert.match(html, /data-delete-action="\/admin\/queues\/submit\/jobs\/q1\/remove"/);
         assert.match(html, /Failed<\/span> <span class="relative-time" data-time="2026-10-14T10:05:00.000Z">/);
     });

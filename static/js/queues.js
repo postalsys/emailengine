@@ -5,9 +5,9 @@
 // The pages arrive as finished HTML. This file only adds what needs a browser: the counts and
 // the paused badges are repainted from /admin/queues/counts every few seconds (polling, on
 // purpose - a busy instance fans out thousands of queue events a minute, and none of them is
-// worth pushing to a page that only shows totals), the retry and send-now actions post through
-// one shared form, and the clean action fills in its dialog. A removal goes through the shared
-// .list-delete-btn flow in ui.js, like every other list page.
+// worth pushing to a page that only shows totals), and the clean action fills in its dialog.
+// Retry and send-now are plain forms, and a removal goes through the shared .list-delete-btn
+// flow in ui.js, like every other list page; neither needs anything from here.
 
 (() => {
     const POLL_INTERVAL = 10 * 1000;
@@ -72,26 +72,6 @@
         if (!document.hidden) {
             poll();
         }
-    });
-
-    // Retry and send-now post straight away through the shared hidden form; the action URL is
-    // on the button
-    document.addEventListener('click', e => {
-        const btn = e.target.closest('.queue-action-btn');
-        if (!btn || !btn.dataset.action) {
-            return;
-        }
-        e.preventDefault();
-
-        const form = document.getElementById('queueActionForm');
-        if (!form) {
-            return;
-        }
-        if (typeof window.uiButtonBusy === 'function') {
-            window.uiButtonBusy(btn, true);
-        }
-        form.setAttribute('action', btn.dataset.action);
-        form.submit();
     });
 
     // Cleaning a state: the one dialog on the page is filled in from the button that opened it

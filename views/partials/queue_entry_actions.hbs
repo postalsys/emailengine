@@ -1,20 +1,34 @@
 {{!-- The kebab menu of one queue entry: open, and whichever of send now / retry / remove apply
       to its state. Rendered inside an ee-stack-actions cell of a listing row, and nowhere else;
       the detail page lays the same actions out as toolbar buttons. Context: a formatted entry
-      (url, canPromote, canRetry, canRemove, title).
+      (url, canPromote, canRetry, canRemove, title), with the page's crumb and currentUrl read
+      off the root context because a row's own context is the entry.
 
-      Remove goes through the shared .list-delete-btn flow of ui/row-actions, which fills the
-      page's #removeJob dialog (queue_job_actions) with the entry's name and action. The Open
-      item is rendered here rather than through the partial's openHref on purpose: a partial
-      block whose content is nothing but {{#if}} wrappers loses it to the Handlebars
-      program-association bug (see .claude/rules/admin-ui.md), so the block's first token has
-      to be a static element. --}}
+      Send now and Retry are plain POST forms, so they work before the page script has run and
+      without it; the busy state comes from the shared form latch in ui.js. Remove goes through
+      the shared .list-delete-btn flow of ui/row-actions, which fills the page's #removeJob dialog
+      (queue_job_actions) with the entry's name and action. The Open item is rendered here rather
+      than through the partial's openHref on purpose: a partial block whose content is nothing
+      but {{#if}} wrappers loses it to the Handlebars program-association bug (see
+      .claude/rules/admin-ui.md), so the block's first token has to be a static element. --}}
 {{#> ui/row-actions label="Entry actions" deleteModal=(when canRemove "#removeJob" "") deleteName=title deleteAction=(concat url "/remove") deleteLabel="Remove"}}
 <li><a class="dropdown-item" href="{{url}}">Open</a></li>
 {{#if canPromote}}
-<li><button type="button" class="dropdown-item queue-action-btn" data-action="{{url}}/promote">Send now</button></li>
+<li>
+    <form method="post" action="{{url}}/promote">
+        <input type="hidden" name="crumb" value="{{@root.crumb}}">
+        <input type="hidden" name="next" value="{{@root.currentUrl}}">
+        <button type="submit" class="dropdown-item w-full">Send now</button>
+    </form>
+</li>
 {{/if}}
 {{#if canRetry}}
-<li><button type="button" class="dropdown-item queue-action-btn" data-action="{{url}}/retry">Retry</button></li>
+<li>
+    <form method="post" action="{{url}}/retry">
+        <input type="hidden" name="crumb" value="{{@root.crumb}}">
+        <input type="hidden" name="next" value="{{@root.currentUrl}}">
+        <button type="submit" class="dropdown-item w-full">Retry</button>
+    </form>
+</li>
 {{/if}}
 {{/ui/row-actions}}
