@@ -159,9 +159,9 @@
           left a quarter-width hole at the end --}}
     <div class="grid grid-cols-2 gap-4 xl:grid-cols-[repeat(auto-fit,minmax(15rem,1fr))]">
 
-        {{> queueCard queue=stats.queues.notify href="/admin/bull-board/queue/Webhooks%20Queue%20-%20notify" label="Webhooks queue" tooltip="This queue processes webhook notifications" delayedTooltip="Delayed queue entries"}}
+        {{> queueCard queue=stats.queues.notify href="/admin/queues/notify" label="Webhooks queue" tooltip="This queue processes webhook notifications" delayedTooltip="Delayed queue entries"}}
 
-        {{> queueCard queue=stats.queues.submit href="/admin/bull-board/queue/Submission%20Queue%20-%20submit" label="Submission queue" tooltip="This queue processes outgoing emails" delayedTooltip="Delayed queue entries, including emails scheduled to be sent later"}}
+        {{> queueCard queue=stats.queues.submit href="/admin/queues/submit" label="Submission queue" tooltip="This queue processes outgoing emails" delayedTooltip="Delayed queue entries, including emails scheduled to be sent later"}}
 
         {{#> ui/stat-card variant=(eeColor redisPing.color) icon=redisPing.icon}}
         <div class="text-sm font-medium text-base-content/60 mb-1">

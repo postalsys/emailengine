@@ -701,6 +701,37 @@
 
 {{/unless}}
 
+{{!-- The account's share of the queues: what it still has to send, and the failed messages
+     kept for a retry. Links go to the queue browser filtered to this account. --}}
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="card-header flex flex-wrap items-center justify-between gap-3">
+        <h6 class="card-title text-primary mb-0">Queues</h6>
+        <a href="{{queuedMessages.url}}" class="link link-animated text-sm">Open in the queue browser</a>
+    </div>
+    <div class="card-body">
+        <dl class="ee-dl">
+            <dt>Messages to send</dt>
+            <dd>
+                {{#if queuedMessages.pending}}
+                <a href="{{queuedMessages.url}}" class="link link-animated">{{formatInteger queuedMessages.pending userLocale}} waiting or scheduled</a>
+                {{else}}
+                <span class="text-base-content/60">None waiting</span>
+                {{/if}}
+            </dd>
+            <dt>Failed messages</dt>
+            <dd>
+                {{#if queuedMessages.failed}}
+                <a href="{{queuedMessages.failedUrl}}" class="link link-animated">{{formatInteger queuedMessages.failed userLocale}} kept for a retry</a>
+                {{else}}
+                <span class="text-base-content/60">None kept</span>
+                {{/if}}
+            </dd>
+            <dt>Webhooks</dt>
+            <dd><a href="{{queuedMessages.webhooksUrl}}" class="link link-animated">Failed deliveries for this account</a></dd>
+        </dl>
+    </div>
+</div>
+
 {{#if showAdvanced}}
 <div class="card bg-base-100 shadow-md mb-6">
     <div class="card-header"><h6 class="card-title text-primary">Advanced</h6>

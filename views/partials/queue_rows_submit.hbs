@@ -1,0 +1,70 @@
+{{!-- Listing rows of the outgoing messages queue. Context: the queue page (listing.entries are
+      formatted submit entries, see lib/queue-browser/format.js). The "When" column is the one
+      timestamp the formatter picked for the state: when a delayed message is due, when a
+      failed one failed. --}}
+<table class="table ee-table-stack">
+    <thead>
+        <tr>
+            <th>Message</th>
+            <th>Account</th>
+            <th>When</th>
+            <th>Attempts</th>
+            <th>Outcome</th>
+            <th class="w-12"><span class="sr-only">Actions</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        {{#each listing.entries}}
+        <tr class="hover:bg-base-200/60">
+            <td class="relative">
+                {{> ui/row-link href=url label="Open message"}}
+                <div class="font-medium truncate max-w-md">{{title}}</div>
+                <div class="text-base-content/60 text-xs truncate max-w-md">{{#if from}}From {{from}}{{/if}}{{#if toFirst}} to {{toFirst}}{{#if toMore}} and {{toMore}} more{{/if}}{{/if}}</div>
+                {{> ui/entity-id id=id label="Queue ID"}}
+            </td>
+
+            <td class="relative align-top" data-label="Account">
+                {{> ui/row-link href=url}}
+                {{> queue_cell_account account=account accountKnown=accountKnown}}
+            </td>
+
+            <td class="relative align-top whitespace-nowrap" data-label="When">
+                {{> ui/row-link href=url}}
+                <span class="text-base-content/60">{{when.label}}</span> <span class="relative-time" data-time="{{when.time}}"></span>
+            </td>
+
+            <td class="relative align-top whitespace-nowrap" data-label="Attempts">
+                {{> ui/row-link href=url}}
+                {{attemptsLabel}}
+            </td>
+
+            <td class="relative align-top" data-label="Outcome">
+                {{> ui/row-link href=url}}
+                {{#if failure}}
+                {{> queue_cell_failure}}
+                {{#equals state "failed"}}
+                {{#unless hasContent}}
+                {{> ui/badge label="Content discarded" variant="neutral" soft=true class="mt-1" title="The message content is no longer stored, so it cannot be retried from here"}}
+                {{/unless}}
+                {{/equals}}
+                {{else}}
+                {{#equals state "completed"}}
+                {{> ui/badge label="Delivered" variant="success" soft=true}}
+                {{#if outcome.response}}<div class="text-base-content/60 text-xs md:max-w-xs whitespace-normal break-words line-clamp-2" title="{{outcome.response}}">{{outcome.response}}</div>{{/if}}
+                {{else}}
+                {{#if isScheduledSend}}
+                {{> ui/badge label="Scheduled send" variant="neutral" soft=true}}
+                {{else}}
+                <span class="text-base-content/40">-</span>
+                {{/if}}
+                {{/equals}}
+                {{/if}}
+            </td>
+
+            <td class="ee-stack-actions relative text-end">
+                {{> queue_entry_actions}}
+            </td>
+        </tr>
+        {{/each}}
+    </tbody>
+</table>

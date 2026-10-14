@@ -104,6 +104,20 @@ describe('token permissions', () => {
         });
     });
 
+    describe('write access to the outbox', () => {
+        // Retrying a failed message and sending a scheduled one now are the first write
+        // operations the outbox section ever had. They landed on an existing section on purpose,
+        // so a token minted with `write` before they existed reaches them on upgrade: such a token
+        // already held `send`, and a credential that can send any message can retry one it sent.
+        // Pinned so that widening stays a decision and not a side effect of the route map.
+        it('is held by a record that names write, including one minted before retry existed', () => {
+            const retry = { action: ACTION.WRITE, group: GROUP.OUTBOX };
+            assert.ok(allow({ actions: [ACTION.READ, ACTION.WRITE] }, retry).allowed, 'an actions-only record');
+            assert.ok(allow({ actions: [ACTION.WRITE], groups: [GROUP.OUTBOX] }, retry).allowed);
+            assert.ok(!allow({ actions: [ACTION.READ], groups: [GROUP.OUTBOX] }, retry).allowed, 'a read-only outbox record cannot retry');
+        });
+    });
+
     describe('an absent groups axis', () => {
         // Reaches the sections that existed when the two-axis form shipped and not the ones the
         // admin split added, so a record minted before the split keeps exactly the reach it had

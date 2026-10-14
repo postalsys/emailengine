@@ -19,7 +19,7 @@ const { redis, queueConf, submitQueue, logBullErrors } = require('../lib/db');
 const { Worker, UnrecoverableError } = require('bullmq');
 const { Account } = require('../lib/account');
 const getSecret = require('../lib/get-secret');
-const { decodeQueueEntry } = require('../lib/outbox');
+const { decodeQueueEntry, retainFailedContent } = require('../lib/outbox');
 
 const { EMAIL_FAILED_NOTIFY } = require('../lib/consts');
 
@@ -296,7 +296,11 @@ const submitWorker = new Worker(
                     error: {
                         message: err.message,
                         code: err.code,
-                        statusCode: err.statusCode
+                        statusCode: err.statusCode,
+                        // the SMTP reply code, when there was a reply: what decides whether the
+                        // failure is permanent (lib/delivery-error.js), kept so the queue browser
+                        // can say so without a rule of its own
+                        responseCode: err.responseCode
                     },
                     networkRouting: err.info?.networkRouting
                 });
@@ -399,16 +403,26 @@ submitWorker.on('failed', async job => {
     // BullMQ sets finishedOn only when the job is done for good, which covers both exhausting its
     // attempts and being ended early by the UnrecoverableError thrown for a permanent rejection.
     if (job.finishedOn) {
-        // this was final attempt, remove it
+        // this was the final attempt
         if (!job.data.queueId && job.data.qId) {
             // this value was used to be called qId
             job.data.queueId = job.data.qId;
         }
         if (job.data && job.data.account && job.data.queueId) {
+            // The content stays stored, within the failed-content bounds, so the message can be
+            // retried from the queue browser or the outbox API. It used to be deleted here, which
+            // left a failed job that a retry could put back into the queue but that then found
+            // nothing to send.
             try {
-                await redis.hdel(`${REDIS_PREFIX}iaq:${job.data.account}`, job.data.queueId);
+                await retainFailedContent({ account: job.data.account, queueId: job.data.queueId, finishedOn: job.finishedOn, logger });
             } catch (err) {
-                logger.error({ msg: 'Failed to remove queue entry', account: job.data.account, queueId: job.data.queueId, messageId: job.data.messageId, err });
+                logger.error({
+                    msg: 'Failed to retain the content of a failed message',
+                    account: job.data.account,
+                    queueId: job.data.queueId,
+                    messageId: job.data.messageId,
+                    err
+                });
             }
             // report as failed
             try {

@@ -34,7 +34,7 @@ const { captureRoutes, captureRouteConfigs } = require('./helpers/capture-ui-rou
 const { OAUTH_REDIRECT_FORM_DIRECTIVES } = require('../lib/security-headers');
 
 // The complete, sorted set of routes registered by lib/routes-ui.js (including the
-// already-extracted admin-entities-routes.js it wires in). 158 routes.
+// already-extracted admin-entities-routes.js it wires in). 165 routes.
 const GOLDEN_ROUTES = [
     'DELETE /admin/accounts/{account}/export/{exportId}',
     'GET /.well-known/acme-challenge/{token}',
@@ -44,6 +44,7 @@ const GOLDEN_ROUTES = [
     'GET /admin/account/password',
     'GET /admin/account/security',
     'GET /admin/accounts',
+    'GET /admin/accounts/suggestions',
     'GET /admin/accounts/{account}',
     'GET /admin/accounts/{account}/browse',
     'GET /admin/accounts/{account}/edit',
@@ -51,7 +52,8 @@ const GOLDEN_ROUTES = [
     'GET /admin/accounts/{account}/export/{exportId}/download',
     'GET /admin/accounts/{account}/exports',
     'GET /admin/accounts/{account}/logs.txt',
-    'GET /admin/accounts/suggestions',
+    'GET /admin/bull-board',
+    'GET /admin/bull-board/{path*}',
     'GET /admin/config/ai',
     'GET /admin/config/branding',
     'GET /admin/config/email-processing',
@@ -82,6 +84,10 @@ const GOLDEN_ROUTES = [
     'GET /admin/login',
     'GET /admin/logout',
     'GET /admin/mcp/authorize',
+    'GET /admin/queues',
+    'GET /admin/queues/counts',
+    'GET /admin/queues/{queue}',
+    'GET /admin/queues/{queue}/jobs/{jobId}',
     'GET /admin/reference',
     'GET /admin/reference/token',
     'GET /admin/reference/{tag}',
@@ -171,6 +177,12 @@ const GOLDEN_ROUTES = [
     'POST /admin/mcp/authorize',
     'POST /admin/passkey/auth/options',
     'POST /admin/passkey/auth/verify',
+    'POST /admin/queues/{queue}/clean',
+    'POST /admin/queues/{queue}/jobs/{jobId}/promote',
+    'POST /admin/queues/{queue}/jobs/{jobId}/remove',
+    'POST /admin/queues/{queue}/jobs/{jobId}/retry',
+    'POST /admin/queues/{queue}/pause',
+    'POST /admin/queues/{queue}/resume',
     'POST /admin/reference/token',
     'POST /admin/reference/token/revoke',
     'POST /admin/smtp/check-test',

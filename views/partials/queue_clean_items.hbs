@@ -1,0 +1,9 @@
+{{!-- The two "remove every ... entry" items of a queue's overflow menu. Each opens the page's
+      #cleanQueue dialog (queue_clean_modal), filled in by static/js/queues.js from the button.
+        {{> queue_clean_items name=name title=title nounPlural=nounPlural}}
+      Params:
+        name       - queue name
+        title      - queue title, for the dialog
+        nounPlural - what the queue's entries are called, for the dialog --}}
+<li><button type="button" class="dropdown-item queue-clean-btn" data-queue="{{name}}" data-queue-label="{{title}}" data-state="completed" data-noun="{{nounPlural}}">Remove completed entries</button></li>
+<li><button type="button" class="dropdown-item text-error queue-clean-btn" data-queue="{{name}}" data-queue-label="{{title}}" data-state="failed" data-noun="{{nounPlural}}">Remove failed entries</button></li>

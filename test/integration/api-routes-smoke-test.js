@@ -74,6 +74,8 @@ const AUTH_REQUIRED_ROUTES = [
     // outbox-routes.js
     ['get', '/v1/outbox'],
     ['get', '/v1/outbox/test-queue-id'],
+    ['post', '/v1/outbox/test-queue-id/retry'],
+    ['post', '/v1/outbox/test-queue-id/promote'],
     ['delete', '/v1/outbox/test-queue-id'],
 
     // webhook-route-routes.js

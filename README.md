@@ -142,7 +142,7 @@ EmailEngine relies on Redis as its data store. Redis stores everything in RAM, s
 
 To diagnose problems:
 
-1. **Check the job queues:** Use the built-in Bull Board UI to monitor queue states at [http://127.0.0.1:3000/admin/bull-board](http://127.0.0.1:3000/admin/bull-board) (requires an admin session).
+1. **Check the job queues:** Open the queue browser at [http://127.0.0.1:3000/admin/queues](http://127.0.0.1:3000/admin/queues) (requires an admin session) to see what is waiting, running and failed in the webhook, submission and export queues.
 2. **Scan Keyspace:** Run the following to group Redis keys by type and generate a report:
 
     ```bash

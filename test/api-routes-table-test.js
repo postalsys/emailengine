@@ -37,13 +37,9 @@ const { mcpOptions } = require('../lib/api-routes/route-metadata');
 const { ENUM_DESCRIPTIONS } = require('../lib/enum-descriptions');
 const { IMPACT } = require('../lib/api-routes/operation-impact');
 
-// The complete, sorted set of routes registered by lib/api-routes/index.js.
-//
-// Not covered here, and deliberately so: lib/api-routes/bull-board-routes.js. It is wired
-// separately from workers/api.js because it registers a third-party Hapi PLUGIN rather than
-// routes, and everything it mounts lives under /admin/bull-board (the admin session surface),
-// not /v1. Nothing else registers /v1 routes outside index.js - the 'no plugins are registered
-// during route setup' test below is what keeps that true.
+// The complete, sorted set of routes registered by lib/api-routes/index.js. Nothing registers
+// /v1 routes outside index.js - the 'no plugins are registered during route setup' test below
+// is what keeps that true.
 const GOLDEN_ROUTES = [
     'DELETE /mcp',
     'DELETE /v1/account/{account}',
@@ -118,6 +114,8 @@ const GOLDEN_ROUTES = [
     'POST /v1/license',
     'POST /v1/oauth2',
     'POST /v1/oauth2/{app}/verify',
+    'POST /v1/outbox/{queueId}/promote',
+    'POST /v1/outbox/{queueId}/retry',
     'POST /v1/settings',
     'POST /v1/templates/template',
     'POST /v1/token',
@@ -413,7 +411,13 @@ test('API route table and authentication', async t => {
                 'POST /v1/account/{account}/message/{message}/submit',
                 'POST /v1/delivery-test/account/{account}'
             ],
-            [GROUP.OUTBOX]: ['GET /v1/outbox', 'GET /v1/outbox/{queueId}', 'DELETE /v1/outbox/{queueId}'],
+            [GROUP.OUTBOX]: [
+                'GET /v1/outbox',
+                'GET /v1/outbox/{queueId}',
+                'POST /v1/outbox/{queueId}/retry',
+                'POST /v1/outbox/{queueId}/promote',
+                'DELETE /v1/outbox/{queueId}'
+            ],
             [GROUP.EXPORT]: [
                 'POST /v1/account/{account}/export',
                 'GET /v1/account/{account}/exports',

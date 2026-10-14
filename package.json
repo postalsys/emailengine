@@ -51,8 +51,6 @@
     },
     "homepage": "https://emailengine.app/",
     "dependencies": {
-        "@bull-board/api": "9.10.4",
-        "@bull-board/hapi": "9.10.4",
         "@hapi/accept": "6.0.3",
         "@hapi/bell": "13.2.0",
         "@hapi/boom": "10.0.1",

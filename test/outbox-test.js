@@ -42,9 +42,11 @@ async function queueMessage(account, queueId, { delay = DEFAULT_DELAY } = {}) {
     );
 }
 
-test('Outbox', async t => {
-    registerRedisTeardown(redis, () => submitQueue.obliterate({ force: true }).catch(() => false));
+// Module level, never inside a test: a root hook registered while a test runs fires once that
+// test is over, which closed Redis under the second test block of this file
+registerRedisTeardown(redis, () => submitQueue.obliterate({ force: true }).catch(() => false));
 
+test('Outbox', async t => {
     await t.test('removeJobs() removes a scheduled message and leaves other accounts alone', async () => {
         const account = 'outbox-delete-account';
         const otherAccount = 'outbox-other-account';
@@ -326,5 +328,235 @@ test('outboxEntrySchema matches the progress object the submit worker writes', a
             { stripUnknown: false, abortEarly: false, convert: true }
         );
         assert.ok(error, 'progress.error has no networkRouting field');
+    });
+});
+
+// The content retained for failed messages, and the retry and promote actions over it. In this
+// file rather than one of its own because every test here shares the one `submit` queue, and the
+// teardown above obliterates it: a sibling file running in parallel would lose its jobs to that.
+//
+// A job is failed the way a worker fails it: fetched into the active list through a worker with
+// no processor and moved to failed with a single attempt configured. Nothing else in the unit tier
+// adds a waiting submit job (the ones above are delayed by a year), so the fetch returns the job
+// this test just added.
+test('Outbox failed content', async t => {
+    const { Worker } = require('bullmq');
+    const { queueConf } = require('../lib/db');
+
+    const worker = new Worker('submit', null, Object.assign({ autorun: false }, queueConf));
+    await worker.waitUntilReady();
+
+    const account = 'outbox-failed-account';
+    const limits = outbox.FAILED_CONTENT_LIMITS;
+    const hasContent = async queueId => !!(await redis.hexists(`${REDIS_PREFIX}iaq:${account}`, queueId));
+    const originalLimits = Object.assign({}, limits);
+
+    let token = 0;
+
+    async function failJob(queueId, content = 'failed-message') {
+        await redis.hsetBuffer(`${REDIS_PREFIX}iaq:${account}`, queueId, Buffer.from(content));
+        await submitQueue.add(
+            'queued',
+            { account, queueId, messageId: `<${queueId}@example.com>`, envelope: { from: 'a@example.com', to: ['b@example.com'] }, subject: 'Failing' },
+            { jobId: queueId, attempts: 1, removeOnComplete: true, removeOnFail: false }
+        );
+
+        const lock = `lock-${++token}`;
+        const job = await worker.getNextJob(lock, { block: false });
+        assert.ok(job, 'the fetch must return a job');
+        assert.equal(job.id, queueId, 'the fetched job must be the one just added');
+        await job.moveToFailed(new Error('550 No such user'), lock, false);
+
+        assert.equal(await submitQueue.getJobState(queueId), 'failed');
+        return job;
+    }
+
+    async function cleanup(...queueIds) {
+        for (const queueId of queueIds) {
+            await submitQueue.remove(queueId).catch(() => false);
+        }
+        await redis.unlink(`${REDIS_PREFIX}iaq:${account}`, outbox.FAILED_CONTENT_KEY);
+    }
+
+    t.after(async () => {
+        Object.assign(limits, originalLimits);
+        await worker.close();
+    });
+
+    await t.test('the worker keeps the content of a failed message and the retry sends it again', async () => {
+        try {
+            const job = await failJob('outbox-failed-retry');
+
+            // what the submit worker's failed handler does once finishedOn is set
+            assert.equal(await outbox.retainFailedContent({ account, queueId: job.id, finishedOn: job.finishedOn, logger }), true);
+            assert.equal(await hasContent(job.id), true);
+
+            const retained = await outbox.listRetainedFailedContent();
+            const entry = retained.find(item => item.queueId === job.id);
+            assert.ok(entry, 'the content is listed as retained');
+            assert.equal(entry.account, account);
+            assert.equal(entry.size, Buffer.byteLength('failed-message'));
+
+            // the API surfaces the state and the entry while the content is there
+            const got = await outbox.get({ queueId: job.id, logger });
+            assert.equal(got.state, 'failed');
+            assert.equal(got.nextAttempt, false);
+
+            const result = await outbox.retry({ queueId: job.id, logger });
+            assert.deepEqual(result, { retried: true, queueId: job.id, messageId: `<${job.id}@example.com>` });
+
+            assert.equal(await submitQueue.getJobState(job.id), 'waiting');
+            const retried = await submitQueue.getJob(job.id);
+            assert.equal(retried.attemptsMade, 0, 'a retry starts over with a full set of attempts');
+            assert.equal(retried.finishedOn, undefined);
+            assert.deepEqual(retried.progress, { status: 'queued' });
+            assert.equal(await hasContent(job.id), true, 'the content stays for the worker');
+            assert.ok(!(await outbox.listRetainedFailedContent()).some(item => item.queueId === job.id), 'a live message is no longer retained');
+
+            await assert.rejects(outbox.retry({ queueId: job.id, logger }), err => err.code === 'NotFailed' && err.statusCode === 409);
+        } finally {
+            await cleanup('outbox-failed-retry');
+        }
+    });
+
+    await t.test('a failed message whose content was dropped cannot be retried', async () => {
+        try {
+            const job = await failJob('outbox-failed-gone');
+            await outbox.retainFailedContent({ account, queueId: job.id, finishedOn: job.finishedOn, logger });
+
+            // the worker's own path for a message with nothing to send: the content is gone
+            await redis.hdel(`${REDIS_PREFIX}iaq:${account}`, job.id);
+
+            await assert.rejects(outbox.retry({ queueId: job.id, logger }), err => err.code === 'ContentGone' && err.statusCode === 409);
+            assert.equal(await submitQueue.getJobState(job.id), 'failed', 'the job is left where it was');
+            assert.equal(await outbox.get({ queueId: job.id, logger }), false, 'and the API no longer returns it');
+        } finally {
+            await cleanup('outbox-failed-gone');
+        }
+    });
+
+    await t.test('retry() and promote() answer false for an unknown message', async () => {
+        assert.equal(await outbox.retry({ queueId: 'outbox-no-such-job', logger }), false);
+        assert.equal(await outbox.promote({ queueId: 'outbox-no-such-job', logger }), false);
+    });
+
+    await t.test('promote() sends a scheduled message now and refuses one that is not waiting for a time', async () => {
+        try {
+            await queueMessage(account, 'outbox-promote-id');
+            assert.equal(await submitQueue.getJobState('outbox-promote-id'), 'delayed');
+
+            const result = await outbox.promote({ queueId: 'outbox-promote-id', logger });
+            assert.deepEqual(result, { promoted: true, queueId: 'outbox-promote-id', messageId: undefined });
+            assert.equal(await submitQueue.getJobState('outbox-promote-id'), 'waiting');
+
+            await assert.rejects(outbox.promote({ queueId: 'outbox-promote-id', logger }), err => err.code === 'NotDelayed' && err.statusCode === 409);
+        } finally {
+            await cleanup('outbox-promote-id');
+        }
+    });
+
+    await t.test('retainFailedContent() applies the count and size bounds, oldest first', async () => {
+        try {
+            limits.maxCount = 2;
+            limits.maxBytes = 1024;
+
+            // recent failures, a second apart: the age bound must not be what drops them
+            const base = Date.now() - 10000;
+            const first = await failJob('outbox-bound-1', 'one');
+            assert.equal(await outbox.retainFailedContent({ account, queueId: first.id, finishedOn: base + 1000, logger }), true);
+            const second = await failJob('outbox-bound-2', 'two');
+            assert.equal(await outbox.retainFailedContent({ account, queueId: second.id, finishedOn: base + 2000, logger }), true);
+            const third = await failJob('outbox-bound-3', 'three');
+            assert.equal(await outbox.retainFailedContent({ account, queueId: third.id, finishedOn: base + 3000, logger }), true);
+
+            // the oldest went to make room
+            assert.equal(await hasContent(first.id), false);
+            assert.equal(await hasContent(second.id), true);
+            assert.equal(await hasContent(third.id), true);
+            assert.deepEqual((await outbox.listRetainedFailedContent()).map(entry => entry.queueId).sort(), ['outbox-bound-2', 'outbox-bound-3']);
+
+            // a message larger than the whole size bound is never kept, and takes nothing with it
+            const huge = await failJob('outbox-bound-huge', 'x'.repeat(2048));
+            assert.equal(await outbox.retainFailedContent({ account, queueId: huge.id, finishedOn: base + 4000, logger }), false);
+            assert.equal(await hasContent(huge.id), false);
+            assert.equal(await hasContent(third.id), true);
+
+            // nothing to retain for a message whose content is already gone
+            assert.equal(await outbox.retainFailedContent({ account, queueId: 'outbox-bound-missing', finishedOn: base + 5000, logger }), false);
+        } finally {
+            Object.assign(limits, originalLimits);
+            await cleanup('outbox-bound-1', 'outbox-bound-2', 'outbox-bound-3', 'outbox-bound-huge');
+        }
+    });
+
+    await t.test('pruneFailedContent() follows the job: dropped when it is gone, released when it is live again', async () => {
+        try {
+            const gone = await failJob('outbox-prune-gone');
+            await outbox.retainFailedContent({ account, queueId: gone.id, finishedOn: gone.finishedOn, logger });
+            const live = await failJob('outbox-prune-live');
+            await outbox.retainFailedContent({ account, queueId: live.id, finishedOn: live.finishedOn, logger });
+            const kept = await failJob('outbox-prune-kept');
+            await outbox.retainFailedContent({ account, queueId: kept.id, finishedOn: kept.finishedOn, logger });
+
+            // a clean of the failed set removes the job record without this module hearing of it
+            await submitQueue.remove(gone.id);
+            // a retry through BullMQ itself, as the queue browser does for webhooks
+            await live.retry('failed', { resetAttemptsMade: true });
+
+            const pruned = await outbox.pruneFailedContent({ logger });
+            assert.equal(pruned.dropped, 1);
+            assert.equal(pruned.released, 1);
+
+            assert.equal(await hasContent(gone.id), false, 'content without a job is memory');
+            assert.equal(await hasContent(live.id), true, 'the worker owns a live message again');
+            assert.deepEqual(
+                (await outbox.listRetainedFailedContent()).map(entry => entry.queueId),
+                [kept.id]
+            );
+        } finally {
+            await cleanup('outbox-prune-gone', 'outbox-prune-live', 'outbox-prune-kept');
+        }
+    });
+
+    await t.test('removeJobs() forgets the retained failed messages of the account', async () => {
+        try {
+            const job = await failJob('outbox-remove-retained');
+            await outbox.retainFailedContent({ account, queueId: job.id, finishedOn: job.finishedOn, logger });
+
+            // the account deletion path: the outbox hash keys, then the hash itself
+            assert.equal(await outbox.removeJobs([job.id], { account, logger }), 1);
+            assert.ok(!(await outbox.listRetainedFailedContent()).some(entry => entry.queueId === job.id));
+        } finally {
+            await cleanup('outbox-remove-retained');
+        }
+    });
+
+    await t.test('del() of a failed message takes its retained content with it', async () => {
+        try {
+            const job = await failJob('outbox-failed-del');
+            await outbox.retainFailedContent({ account, queueId: job.id, finishedOn: job.finishedOn, logger });
+
+            assert.deepEqual(await outbox.del({ queueId: job.id, logger }), { deleted: true });
+            assert.equal(await hasContent(job.id), false);
+            assert.equal(await submitQueue.getJob(job.id), undefined);
+            assert.ok(!(await outbox.listRetainedFailedContent()).some(item => item.queueId === job.id));
+        } finally {
+            await cleanup('outbox-failed-del');
+        }
+    });
+
+    await t.test('list() reports the state each entry was read from', async () => {
+        try {
+            await queueMessage(account, 'outbox-state-delayed');
+            const failed = await failJob('outbox-state-failed');
+            await outbox.retainFailedContent({ account, queueId: failed.id, finishedOn: failed.finishedOn, logger });
+
+            const listing = await outbox.list({ logger, pageSize: 100 });
+            const byId = new Map(listing.messages.map(message => [message.queueId, message]));
+            assert.equal(byId.get('outbox-state-delayed').state, 'delayed');
+            assert.equal(byId.get('outbox-state-failed').state, 'failed');
+        } finally {
+            await cleanup('outbox-state-delayed', 'outbox-state-failed');
+        }
     });
 });

@@ -6,7 +6,7 @@
 // unit and integration tiers assert the header text; what only a browser can show is that the
 // nonce in the Content-Security-Policy is the one the parsed <script> elements hold, that the
 // admin shell renders under the enforced policy without a violation, and that the surfaces
-// with their own policy (bull-board, the public pages, the API) get theirs.
+// with their own policy (the public pages, the API) get theirs.
 //
 // Shares the Playwright webServer and Redis db 14 with the other specs. The filename has to sort
 // after happy-path.spec.js: files run alphabetically with one worker, and happy-path asserts
@@ -79,20 +79,6 @@ test.describe('Security headers', () => {
         const first = (await page.goto('/admin')).headers()['content-security-policy'].match(NONCE_RE)[1];
         const second = (await page.goto('/admin/accounts')).headers()['content-security-policy'].match(NONCE_RE)[1];
         expect(second).not.toBe(first);
-    });
-
-    test('bull-board gets its own policy', async ({ page }) => {
-        const errors = trackConsoleErrors(page);
-
-        const response = await page.goto('/admin/bull-board');
-        expect(response.status()).toBe(200);
-        const csp = response.headers()['content-security-policy'];
-        expect(csp).toContain('https://fonts.googleapis.com');
-        expect(csp).not.toMatch(/nonce/);
-        expect(csp).toContain("frame-ancestors 'self'");
-
-        await expect(page.locator('#root')).toBeVisible({ timeout: 15000 });
-        expect(errors).toHaveLength(0);
     });
 
     test('a public page gets the relaxed policy and no framing header', async ({ page }) => {

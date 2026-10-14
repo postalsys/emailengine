@@ -47,8 +47,9 @@ test('routes-ui.js stays within the size budget', () => {
 // raise one only as a reviewed decision. A new module needs an entry, which is the prompt to
 // ask whether it should exist.
 const MODULE_BUDGETS = {
-    // 2505 -> 2507 for wiring the IDLE restart interval, whose form logic lives in imap-idle-field.js
-    'account-routes.js': 2507,
+    // 2505 -> 2507 for wiring the IDLE restart interval, whose form logic lives in imap-idle-field.js,
+    // 2507 -> 2509 for the queue card on the account page, whose counting lives in lib/queue-browser
+    'account-routes.js': 2509,
     // 1553 -> 1567 for the clear-error case that dismisses the Document Store removal notice,
     // 1567 -> 1544 when the AI page's fields were derived from one list
     'admin-config-routes.js': 1532,
@@ -70,6 +71,7 @@ const MODULE_BUDGETS = {
     // the scope check it delegates to already lives, 987 -> 977 when the base scope render context
     // moved to oauth-form-context.js, 977 -> 978 for a new app's form starting out enabled
     'oauth-config-routes.js': 978,
+    'queue-routes.js': 355,
     'oauth-form-context.js': 19,
     'reference-routes.js': 198,
     // 658 -> 661 when windowedPageLinks grew a shared pageLink() builder, 661 -> 662 for the

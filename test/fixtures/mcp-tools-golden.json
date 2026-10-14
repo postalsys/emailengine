@@ -3028,6 +3028,34 @@
         }
     },
     {
+        "name": "retry_queued_message",
+        "title": "Retry failed message",
+        "description": "Retry a message whose delivery failed for good, by the queue id from get_outbox. Only a message in the failed state whose content is still stored can be retried; the error says when it cannot. A retried message starts over with a full set of delivery attempts.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "queueId": {
+                    "type": "string",
+                    "description": "Queue identifier for scheduled email",
+                    "examples": [
+                        "d41f0423195f271f"
+                    ],
+                    "maxLength": 100
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "queueId"
+            ]
+        },
+        "annotations": {
+            "title": "Retry failed message",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
         "name": "revoke_token",
         "title": "Revoke access token",
         "description": "Revoke an access token by its id. Every client using it is cut off immediately and there is no undo. Confirm with the user before calling this.",
@@ -3748,6 +3776,34 @@
             "readOnlyHint": false,
             "destructiveHint": false,
             "openWorldHint": true
+        }
+    },
+    {
+        "name": "send_queued_message_now",
+        "title": "Send queued message now",
+        "description": "Deliver a queued message at the next opportunity instead of waiting for its scheduled time or for the backoff before its next attempt, by the queue id from get_outbox. Only a message in the delayed state can be promoted.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "queueId": {
+                    "type": "string",
+                    "description": "Queue identifier for scheduled email",
+                    "examples": [
+                        "d41f0423195f271f"
+                    ],
+                    "maxLength": 100
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "queueId"
+            ]
+        },
+        "annotations": {
+            "title": "Send queued message now",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
         }
     },
     {

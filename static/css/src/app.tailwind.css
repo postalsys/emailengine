@@ -72,6 +72,8 @@
 @source inline('[--placement:top] [--placement:bottom] [--placement:left] [--placement:right]');
 /* server-driven dashboard icons (lib/ui-routes/dashboard-routes.js is not scanned) */
 @source inline('icon-[tabler--mail] icon-[tabler--webhook] icon-[tabler--mail-forward] icon-[tabler--file-code] icon-[tabler--clock]');
+/* queue icons named in lib/queue-browser/definitions.js and rendered through {{queue.icon}} */
+@source inline('icon-[tabler--package-export]');
 /* client-side rendered delivery-test status icons (built by browser JS) */
 @source inline('icon-[tabler--circle-check] icon-[tabler--circle-off] icon-[tabler--alert-triangle]');
 /* server-driven icon classes emitted by lib/ui-routes/route-helpers.js,

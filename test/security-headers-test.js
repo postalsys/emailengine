@@ -85,8 +85,6 @@ async function buildServer({ errorPage = true, cspMode = 'enforce', secureOrigin
         options: { plugins: { securityHeaders: { directives: { 'form-action': null } } } }
     });
     server.route({ method: 'GET', path: '/admin/changes', handler: (request, h) => h.response('data').header('Cache-Control', 'no-cache') });
-    server.route({ method: 'GET', path: '/admin/bull-board', handler: () => '<html>board</html>' });
-    server.route({ method: 'GET', path: '/admin/bull-board/static/main.js', handler: () => 'js' });
     server.route({ method: 'GET', path: '/v1/thing', handler: () => ({ ok: true }) });
     server.route({
         method: 'GET',
@@ -148,9 +146,7 @@ test('security header helpers', async t => {
     await t.test('profileNameFor picks the surface from path and tags', () => {
         assert.equal(profileNameFor('/static/js/app.js', ['static']), 'static');
         assert.equal(profileNameFor('/health', ['static', 'health']), 'static');
-        assert.equal(profileNameFor('/admin/bull-board/static/main.js'), 'static', 'bull-board ships its own assets');
-        assert.equal(profileNameFor('/admin/bull-board'), 'bullBoard');
-        assert.equal(profileNameFor('/admin/bull-board/api/queues'), 'bullBoard');
+        assert.equal(profileNameFor('/admin/queues'), 'admin', 'the queue browser is an ordinary admin page');
         assert.equal(profileNameFor('/admin'), 'admin');
         assert.equal(profileNameFor('/admin/accounts'), 'admin');
         assert.equal(profileNameFor('/v1/account'), 'api');
@@ -230,19 +226,6 @@ test('policyFor resolves the header matrix', async t => {
         assert.equal(directives(headers[CSP_HEADER])['script-src'], "'self'");
         assert.equal(directives(headers[CSP_HEADER])['style-src-elem'], "'self'");
         assert.doesNotMatch(headers[CSP_HEADER], /nonce/);
-    });
-
-    await t.test('bull-board: third-party markup, no nonce, its font hosts allowed', () => {
-        const { headers } = policyFor({ path: '/admin/bull-board', nonce });
-        const csp = directives(headers[CSP_HEADER]);
-
-        assert.equal(csp['script-src'], "'self'");
-        assert.doesNotMatch(headers[CSP_HEADER], /nonce/);
-        assert.equal(csp['style-src'], "'self' 'unsafe-inline' https://fonts.googleapis.com");
-        assert.equal(csp['font-src'], "'self' https://fonts.gstatic.com");
-        assert.equal(csp['base-uri'], "'self'", 'the board shell carries a <base href>');
-        assert.equal(csp['frame-ancestors'], "'self'");
-        assert.equal(headers['x-frame-options'], 'SAMEORIGIN');
     });
 
     await t.test('public: relaxed for operator markup, no nonce, frameable', () => {
@@ -368,16 +351,6 @@ test('security headers extension', async t => {
         const res = await server.inject('/admin/changes');
         assert.equal(res.headers['cache-control'], 'no-cache');
         assert.ok(res.headers[CSP_HEADER]);
-    });
-
-    await t.test('bull-board gets its own policy and its assets get none', async () => {
-        const board = await server.inject('/admin/bull-board');
-        assert.match(board.headers[CSP_HEADER], /fonts\.googleapis\.com/);
-        assert.doesNotMatch(board.headers[CSP_HEADER], /nonce/);
-
-        const asset = await server.inject('/admin/bull-board/static/main.js');
-        assert.equal(asset.headers[CSP_HEADER], undefined);
-        assert.equal(asset.headers['x-content-type-options'], 'nosniff');
     });
 
     await t.test('the API carries the machine-facing set', async () => {

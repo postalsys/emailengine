@@ -1,0 +1,9 @@
+{{!-- Confirmation for removing every completed or failed entry of a queue. One dialog per page,
+      filled in by static/js/queues.js from the .queue-clean-btn that opened it: the form action
+      names the queue, the hidden field the state, and the heading says which. Expects `crumb`
+      and (optionally) `currentUrl` in the view context. --}}
+{{#> ui/confirm-modal id="cleanQueue" title="Remove entries" titleId="clean-queue-title" action="/admin/queues" fieldName="state" fieldId="clean-state" formId="cleanQueueForm" submitLabel="Remove entries"}}
+<p class="mb-2">Remove every <strong class="clean-state-name"></strong> entry from the <strong class="clean-queue-name"></strong>?</p>
+<p class="mb-0 text-base-content/70 text-sm clean-queue-note" data-note-completed="Completed entries are kept only as history; removing them frees Redis memory and loses nothing else." data-note-failed="A failed entry is the only record that a delivery was given up on, and for an outgoing message it is also what a retry needs. This cannot be undone."></p>
+<input type="hidden" name="next" form="cleanQueueForm" value="{{#if currentUrl}}{{currentUrl}}{{else}}/admin/queues{{/if}}">
+{{/ui/confirm-modal}}

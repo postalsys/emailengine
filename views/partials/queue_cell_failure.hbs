@@ -1,0 +1,6 @@
+{{!-- The failure of a queue entry as a listing row shows it: the short label as a badge (the
+      full sentence in its tooltip), warning-coloured while the entry is waiting to retry, with
+      the worker's reason under it, clamped to two lines. Context: a formatted entry with
+      `failure` set. --}}
+{{> ui/badge label=failure.shortLabel variant=(when isRetryWait "warning" "error") soft=true title=failure.label}}
+<div class="text-base-content/60 text-xs md:max-w-xs whitespace-normal break-words line-clamp-2" title="{{failure.reason}}">{{failure.reason}}</div>

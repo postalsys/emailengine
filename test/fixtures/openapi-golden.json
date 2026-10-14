@@ -9183,6 +9183,25 @@
         "description": "Next delivery attempt time (approximate, computed from the retry backoff without jitter). False when all delivery attempts have been used up",
         "example": "2021-02-17T13:43:18.860Z"
       },
+      "OutboxState": {
+        "type": "string",
+        "description": "Where the message is in the queue",
+        "example": "waiting",
+        "x-meta": {
+          "enumDescriptions": {
+            "delayed": "Waiting for its scheduled time, or for the backoff before its next delivery attempt",
+            "waiting": "Ready to be delivered as soon as a submit worker is free",
+            "active": "A delivery attempt is running right now",
+            "failed": "Every delivery attempt failed, or the receiving server rejected the message for good. Listed while the job record is retained, and retryable while its content is"
+          }
+        },
+        "enum": [
+          "delayed",
+          "waiting",
+          "active",
+          "failed"
+        ]
+      },
       "OutboxStatus": {
         "type": "string",
         "description": "Current delivery status",
@@ -9224,6 +9243,11 @@
             "type": "integer",
             "description": "SMTP response code",
             "example": 502
+          },
+          "responseCode": {
+            "type": "integer",
+            "description": "The SMTP reply code when the receiving server answered. A 5xx other than 503 is a permanent rejection that is not retried",
+            "example": 550
           }
         }
       },
@@ -9366,6 +9390,9 @@
             "description": "Maximum delivery attempts before marking as failed",
             "example": 3
           },
+          "state": {
+            "$ref": "#/components/schemas/OutboxState"
+          },
           "progress": {
             "$ref": "#/components/schemas/OutboxEntryProgress"
           }
@@ -9415,6 +9442,74 @@
             "type": "boolean",
             "description": "Present when the message was not deleted because a delivery attempt is running for it right now. Retry once the attempt has finished",
             "example": true
+          }
+        }
+      },
+      "PromoteOutboxEntryResponse": {
+        "type": "object",
+        "properties": {
+          "promoted": {
+            "type": "boolean",
+            "description": "Was the message moved out of the delayed set",
+            "default": true
+          },
+          "queueId": {
+            "type": "string",
+            "description": "Queue identifier of the message",
+            "example": "d41f0423195f271f"
+          },
+          "messageId": {
+            "type": "string",
+            "description": "Message-ID header value",
+            "example": "<test123@example.com>",
+            "nullable": true
+          }
+        }
+      },
+      "ConflictErrorResponse": {
+        "type": "object",
+        "description": "Conflict error",
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "description": "HTTP status code",
+            "example": 409
+          },
+          "error": {
+            "type": "string",
+            "description": "HTTP status text",
+            "example": "Conflict"
+          },
+          "message": {
+            "type": "string",
+            "description": "Error message",
+            "example": "Only a message whose delivery has failed can be retried"
+          },
+          "code": {
+            "type": "string",
+            "description": "Machine-readable error code",
+            "example": "NotFailed"
+          }
+        }
+      },
+      "RetryOutboxEntryResponse": {
+        "type": "object",
+        "properties": {
+          "retried": {
+            "type": "boolean",
+            "description": "Was the message put back into the queue",
+            "default": true
+          },
+          "queueId": {
+            "type": "string",
+            "description": "Queue identifier of the message",
+            "example": "d41f0423195f271f"
+          },
+          "messageId": {
+            "type": "string",
+            "description": "Message-ID header value",
+            "example": "<test123@example.com>",
+            "nullable": true
           }
         }
       },
@@ -20832,6 +20927,246 @@
         },
         "x-ee-impact": "destructive",
         "x-ee-action": "destructive",
+        "x-ee-group": "outbox"
+      }
+    },
+    "/v1/outbox/{queueId}/promote": {
+      "post": {
+        "summary": "Send a queued message now",
+        "operationId": "postV1OutboxQueueidPromote",
+        "description": "Moves a message out of the delayed set so it is delivered at the next opportunity instead of at its scheduled time, or instead of after the backoff before its next attempt. Any other state answers 409 with `code` NotDelayed.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
+          },
+          {
+            "name": "queueId",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Queue identifier for scheduled email",
+              "example": "d41f0423195f271f",
+              "maxLength": 100
+            },
+            "description": "Queue identifier for scheduled email",
+            "required": true
+          }
+        ],
+        "tags": [
+          "Outbox"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns a promotion marker. The message is waiting for a delivery attempt.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromoteOutboxEntryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - the requested entity (account, message, mailbox, etc.) does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - the entity is not in a state the operation applies to",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "outbox"
+      }
+    },
+    "/v1/outbox/{queueId}/retry": {
+      "post": {
+        "summary": "Retry a failed message",
+        "operationId": "postV1OutboxQueueidRetry",
+        "description": "Puts a message whose delivery failed for good back into the queue with a fresh set of delivery attempts. Only a failed message whose content is still stored can be retried: the content of the most recent failures is kept for this, within the bounds set by EENGINE_QUEUE_KEEP_FAILED_CONTENT and EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE. A message that cannot be retried answers 409 with `code` NotFailed (the message is not in the failed state) or ContentGone (its content is no longer stored).",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
+          },
+          {
+            "name": "queueId",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Queue identifier for scheduled email",
+              "example": "d41f0423195f271f",
+              "maxLength": 100
+            },
+            "description": "Queue identifier for scheduled email",
+            "required": true
+          }
+        ],
+        "tags": [
+          "Outbox"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns a retry marker. The message is waiting for a delivery attempt again.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetryOutboxEntryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - the requested entity (account, message, mailbox, etc.) does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - the entity is not in a state the operation applies to",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-action": "write",
         "x-ee-group": "outbox"
       }
     },

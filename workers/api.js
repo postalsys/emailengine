@@ -115,7 +115,6 @@ const {
 } = consts;
 
 const registerApiRoutes = require('../lib/api-routes');
-const bullBoardRoutes = require('../lib/api-routes/bull-board-routes');
 const { securityHeadersExt, attachSecurityContext, isAdminPath, isMachineRoute, isSecureOrigin, CSP_MODES } = require('../lib/security-headers');
 const { registerHandlebarsHelpers } = require('../lib/handlebars-helpers');
 
@@ -3262,9 +3261,6 @@ const init = async () => {
 
     // setup web UI
     routesUi(server, call);
-
-    // setup "Bull board" routes
-    await bullBoardRoutes({ server });
 
     server.route({
         method: 'GET',

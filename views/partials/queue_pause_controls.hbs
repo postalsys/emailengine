@@ -1,0 +1,18 @@
+{{!-- The pause and resume buttons of a queue, one of which is hidden by the paused state; the
+      page script keeps them in step with the live counts through the data-queue-* attributes.
+        {{> queue_pause_controls name=name isPaused=isPaused next="/admin/queues"}}
+      Params:
+        name     - queue name
+        isPaused - whether the queue is paused now
+        next     - where the action returns to
+      The buttons pass id="" so they cannot inherit a row's id when rendered inside {{#each}}. --}}
+<form method="post" action="/admin/queues/{{name}}/pause" data-queue-active-only="{{name}}" class="{{#if isPaused}}hidden{{/if}}">
+    <input type="hidden" name="crumb" value="{{crumb}}">
+    <input type="hidden" name="next" value="{{next}}">
+    {{> ui/btn label="Pause" type="submit" bare=true style="soft" size="sm" icon="icon-[tabler--player-pause]" id=""}}
+</form>
+<form method="post" action="/admin/queues/{{name}}/resume" data-queue-paused="{{name}}" class="{{#unless isPaused}}hidden{{/unless}}">
+    <input type="hidden" name="crumb" value="{{crumb}}">
+    <input type="hidden" name="next" value="{{next}}">
+    {{> ui/btn label="Resume" type="submit" variant="warning" size="sm" icon="icon-[tabler--player-play]" id=""}}
+</form>

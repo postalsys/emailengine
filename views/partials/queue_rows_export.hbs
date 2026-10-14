@@ -1,0 +1,58 @@
+{{!-- Listing rows of the exports queue. Read-only: an export is managed from its account page,
+      which the row links to. Context: the queue page (listing.entries are formatted export
+      entries, see lib/queue-browser/format.js). --}}
+<table class="table ee-table-stack">
+    <thead>
+        <tr>
+            <th>Export</th>
+            <th>Account</th>
+            <th>When</th>
+            <th>Attempts</th>
+            <th>Outcome</th>
+            <th class="w-12"><span class="sr-only">Actions</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        {{#each listing.entries}}
+        <tr class="hover:bg-base-200/60">
+            <td class="relative">
+                {{> ui/row-link href=url label="Open export entry"}}
+                <div class="font-medium">{{title}}</div>
+                {{> ui/entity-id id=exportId label="Export ID"}}
+            </td>
+
+            <td class="relative align-top" data-label="Account">
+                {{> ui/row-link href=url}}
+                {{> queue_cell_account account=account accountKnown=accountKnown}}
+            </td>
+
+            <td class="relative align-top whitespace-nowrap" data-label="When">
+                {{> ui/row-link href=url}}
+                <span class="text-base-content/60">{{when.label}}</span> <span class="relative-time" data-time="{{when.time}}"></span>
+            </td>
+
+            <td class="relative align-top whitespace-nowrap" data-label="Attempts">
+                {{> ui/row-link href=url}}
+                {{attemptsLabel}}
+            </td>
+
+            <td class="relative align-top" data-label="Outcome">
+                {{> ui/row-link href=url}}
+                {{#if failure}}
+                {{> queue_cell_failure}}
+                {{else}}
+                <span class="text-base-content/40">-</span>
+                {{/if}}
+            </td>
+
+            <td class="ee-stack-actions relative text-end">
+                {{#> ui/row-actions openHref=url label="Entry actions"}}
+                {{#if accountKnown}}
+                <li><a class="dropdown-item" href="/admin/accounts/{{urlpart account}}">Open account</a></li>
+                {{/if}}
+                {{/ui/row-actions}}
+            </td>
+        </tr>
+        {{/each}}
+    </tbody>
+</table>

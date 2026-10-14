@@ -46,6 +46,9 @@
                 {{#> ui/tooltip text="How many times this route has been triggered"}}
                 {{> ui/badge label=webhook.tcount variant="neutral" soft=true}}
                 {{/ui/tooltip}}
+                <a href="/admin/queues/notify?state=failed&amp;route={{urlpart webhook.id}}" class="link link-animated text-sm ms-2">Failed deliveries</a>
+                <span class="text-base-content/40 text-sm">|</span>
+                <a href="/admin/queues/notify?route={{urlpart webhook.id}}" class="link link-animated text-sm">Waiting</a>
             </dd>
 
             {{#if webhook.customHeaders}}

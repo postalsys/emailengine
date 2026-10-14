@@ -1,0 +1,92 @@
+{{!-- One queue, one state at a time. The state tabs are links (the page is server-rendered per
+      state), the listing is the rows of that state, and the search is a bounded scan of it -
+      the notice under the toolbar says how far it looked. --}}
+{{> ui/breadcrumb parentHref="/admin/queues" parentLabel="Queues" current=queue.label class="mb-6"}}
+
+{{#> ui/page-header title=queue.title icon=queue.icon subtitle=queue.description class="mb-6"}}
+<span data-queue-paused="{{queue.name}}" class="{{#unless queue.isPaused}}hidden{{/unless}}">
+    {{> ui/badge label="Paused" variant="warning" title="Workers take nothing new from this queue until it is resumed"}}
+</span>
+{{> ui/btn label="Refresh" href=currentUrl bare=true style="soft" size="sm" icon="icon-[tabler--refresh]"}}
+{{> queue_pause_controls name=queue.name isPaused=queue.isPaused next=currentUrl}}
+{{#> ui/overflow-menu label="More queue actions"}}
+<li><a class="dropdown-item" href="/admin/queues">All queues</a></li>
+{{> queue_clean_items name=queue.name title=queue.title nounPlural=queue.nounPlural}}
+{{/ui/overflow-menu}}
+{{/ui/page-header}}
+
+<div data-queue-paused="{{queue.name}}" class="{{#unless queue.isPaused}}hidden{{/unless}}">
+    {{#> ui/alert-banner variant="warning" title="This queue is paused" icon="icon-[tabler--player-pause]"}}
+    <div class="text-sm">New entries keep arriving and wait here until the queue is resumed. An attempt that was already running finishes.</div>
+    {{/ui/alert-banner}}
+</div>
+
+<nav class="tabs tabs-bordered mb-6" aria-label="Entries by state">
+    {{#each states}}
+    <a class="tab{{#if active}} tab-active{{/if}}" href="{{url}}" title="{{description}}">{{label}}
+        <span class="badge badge-sm badge-soft ms-1 {{#if active}}badge-{{eeColor variant}}{{else}}badge-neutral{{/if}}" data-queue-count="{{@root.queue.name}}:{{name}}">{{formatInteger count @root.userLocale}}</span></a>
+    {{/each}}
+</nav>
+
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="card-header flex flex-wrap items-center justify-between gap-3">
+        <div class="min-w-0">
+            <h6 class="card-title text-primary mb-0">{{state.label}}</h6>
+            <p class="text-base-content/60 text-sm mt-1 mb-0">{{state.description}}.</p>
+        </div>
+        <form method="get" action="/admin/queues/{{queue.name}}" class="flex items-center gap-2" role="search">
+            <input type="hidden" name="state" value="{{state.name}}">
+            {{#if filter.account}}<input type="hidden" name="account" value="{{filter.account}}">{{/if}}
+            {{#if filter.route}}<input type="hidden" name="route" value="{{filter.route}}">{{/if}}
+            {{> ui/search-input name="query" value=filter.query placeholder=queue.searchHint class="w-72"}}
+            {{> ui/btn label="Search" type="submit" variant="neutral" style="soft" size="sm"}}
+        </form>
+    </div>
+
+    {{#if filter.active}}
+    {{!-- What was searched, in numbers the reader can trust: the scan is bounded, and a search
+          that stopped short of the oldest entries says so instead of reporting zero matches as
+          if there were none --}}
+    <div class="border-base-content/10 flex flex-wrap items-center justify-between gap-2 border-b px-6 py-3 text-sm">
+        <span>
+            {{#if filter.label}}{{filter.label}}{{else}}Entries{{/if}}{{#if filter.query}} matching <strong>&ldquo;{{filter.query}}&rdquo;</strong>{{/if}}:
+            <strong>{{formatInteger listing.total userLocale}}</strong> of the {{formatInteger listing.scanned userLocale}} {{state.label}} entries searched{{#if listing.scanLimited}}.
+            Only the {{formatInteger scanLimit userLocale}} newest of {{formatInteger listing.stateTotal userLocale}} were searched{{/if}}.
+        </span>
+        <a href="{{clearHref}}" class="link link-animated">Clear search</a>
+    </div>
+    {{/if}}
+
+    {{#if listing.entries}}
+    <div class="overflow-x-auto">
+        {{#equals queue.name "submit"}}
+        {{> queue_rows_submit}}
+        {{else}}
+        {{#equals queue.name "notify"}}
+        {{> queue_rows_notify}}
+        {{else}}
+        {{> queue_rows_export}}
+        {{/equals}}
+        {{/equals}}
+    </div>
+
+    {{> ui/pagination showPaging=showPaging prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
+    {{else}}
+    <div class="card-body">
+        {{#if filter.active}}
+        {{#> ui/empty-state icon="icon-[tabler--search-off]" title=(concat "No " state.name " " queue.nounPlural " match")}}
+        Try another search, or <a href="{{clearHref}}" class="link link-animated">show every {{state.name}} entry</a>.
+        {{/ui/empty-state}}
+        {{else}}
+        {{#> ui/empty-state icon=queue.icon title=(concat "No " state.name " " queue.nounPlural)}}
+        {{state.description}}.
+        {{/ui/empty-state}}
+        {{/if}}
+    </div>
+    {{/if}}
+</div>
+
+{{> queue_job_actions}}
+{{> queue_clean_modal}}
+
+<script data-cfasync="false" src="/static/js/queues.js" defer></script>

@@ -1,0 +1,73 @@
+{{!-- Listing rows of the webhooks queue. Context: the queue page (listing.entries are formatted
+      notify entries, see lib/queue-browser/format.js). --}}
+<table class="table ee-table-stack">
+    <thead>
+        <tr>
+            <th>Event</th>
+            <th>Account</th>
+            <th>When</th>
+            <th>Attempts</th>
+            <th>Outcome</th>
+            <th class="w-12"><span class="sr-only">Actions</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        {{#each listing.entries}}
+        <tr class="hover:bg-base-200/60">
+            <td class="relative">
+                {{> ui/row-link href=url label="Open webhook delivery"}}
+                <div class="flex flex-wrap items-center gap-2">
+                    <code class="font-medium">{{event}}</code>
+                    {{#if routeId}}
+                    {{#if routeKnown}}
+                    <a href="/admin/webhooks/webhook/{{urlpart routeId}}" class="link link-animated relative z-[1] text-sm">{{routeName}}</a>
+                    {{else}}
+                    {{> ui/badge label="Route deleted" variant="warning" soft=true title="The webhook route this delivery was queued for no longer exists, so it is skipped"}}
+                    {{/if}}
+                    {{else}}
+                    <span class="text-base-content/60 text-sm">default webhook</span>
+                    {{/if}}
+                </div>
+                {{#if about}}<div class="text-base-content/60 text-xs truncate max-w-md">{{about}}</div>{{/if}}
+                {{> ui/entity-id id=id label="Job ID"}}
+            </td>
+
+            <td class="relative align-top" data-label="Account">
+                {{> ui/row-link href=url}}
+                {{> queue_cell_account account=account accountKnown=accountKnown instance="Instance"}}
+            </td>
+
+            <td class="relative align-top whitespace-nowrap" data-label="When">
+                {{> ui/row-link href=url}}
+                <span class="text-base-content/60">{{when.label}}</span> <span class="relative-time" data-time="{{when.time}}"></span>
+            </td>
+
+            <td class="relative align-top whitespace-nowrap" data-label="Attempts">
+                {{> ui/row-link href=url}}
+                {{attemptsLabel}}
+            </td>
+
+            <td class="relative align-top" data-label="Outcome">
+                {{> ui/row-link href=url}}
+                {{#if failure}}
+                {{> queue_cell_failure}}
+                {{else}}
+                {{#equals state "completed"}}
+                {{#equals outcome.status "delivered"}}
+                {{> ui/badge label=(concat "Delivered " outcome.statusCode) variant="success" soft=true}}
+                {{else}}
+                {{> ui/badge label="Finished" variant="success" soft=true title="Completed without a request: no webhook target applied to this event, or the event is not allowlisted"}}
+                {{/equals}}
+                {{else}}
+                <span class="text-base-content/40">-</span>
+                {{/equals}}
+                {{/if}}
+            </td>
+
+            <td class="ee-stack-actions relative text-end">
+                {{> queue_entry_actions}}
+            </td>
+        </tr>
+        {{/each}}
+    </tbody>
+</table>

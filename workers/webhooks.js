@@ -505,9 +505,22 @@ const notifyWorker = new Worker(
                 event: job.name,
                 status: 'success'
             });
+
+            // Stored by BullMQ as the job's return value in the same write that completes it, so
+            // a retained completed job shows what the endpoint answered and how long it took
+            return { status: 'delivered', statusCode: status, duration };
         } catch (err) {
             // egress and redirect failures are thrown as UnrecoverableError below, so they are final as well
             let isFinalAttempt = willBeFinalAttempt(job) || isUnrecoverableWebhookError(err);
+
+            // BullMQ keeps only the message of a failure on the job. The code and the HTTP status
+            // are what explain it, so they are recorded the way the submit worker records its own
+            // delivery errors, for the queue browser to read back
+            try {
+                await job.updateProgress({ status: 'error', error: { message: err.message, code: err.code, statusCode: err.statusCode }, duration });
+            } catch (progressErr) {
+                // ignore
+            }
 
             logger[isFinalAttempt ? 'error' : 'warn']({
                 msg: 'Failed posting webhook',

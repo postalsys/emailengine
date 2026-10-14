@@ -118,6 +118,7 @@ initSentry('main');
 const pathlib = require('path');
 const { redis, queueConf, notifyQueue, submitQueue, exportQueue, logBullErrors } = require('./lib/db');
 const { queueStats } = require('./lib/queue-stats');
+const { pruneFailedContent } = require('./lib/outbox');
 const { packRpcError, unpackRpcError } = require('./lib/worker-rpc-error');
 const promClient = require('prom-client');
 const fs = require('fs').promises;
@@ -3730,6 +3731,15 @@ startApplication()
                 } catch (err) {
                     logger.error({ msg: 'Queue cleanup failed', queue: queue.name, err });
                 }
+            }
+
+            // The content kept for retrying failed messages follows the failed jobs it belongs
+            // to: whatever the clean above removed, and whatever aged out, is dropped here
+            try {
+                const pruned = await pruneFailedContent({ logger });
+                logger.trace({ msg: 'Failed message content pruned', ...pruned });
+            } catch (err) {
+                logger.error({ msg: 'Failed to prune the content of failed messages', err });
             }
         }
 

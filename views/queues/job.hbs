@@ -1,0 +1,213 @@
+{{!-- One queue entry. Leads with what it is and what happened to it; the raw BullMQ record is
+      at the bottom, collapsed, for support cases. --}}
+{{> ui/breadcrumb parentHref="/admin/queues" parentLabel="Queues" midHref=listHref midLabel=queue.label current=entry.title class="mb-6"}}
+
+{{#> ui/page-header title=entry.title icon=queue.icon badgeLabel=entry.stateInfo.label badgeVariant=entry.stateInfo.variant class="mb-6"}}
+{{> ui/btn label="Back to list" href=listHref bare=true style="soft" size="sm" icon="icon-[tabler--arrow-left]"}}
+{{/ui/page-header}}
+
+{{#if entry.failure}}
+{{#if entry.isRetryWait}}
+{{#> ui/alert-banner variant="warning" title=(concat "Last attempt failed: " entry.failure.label)}}
+<div class="break-words text-sm"><code>{{entry.failure.reason}}</code></div>
+<div class="text-sm mt-1">Attempt {{entry.attemptsLabel}}. The next one runs <span class="relative-time" data-time="{{entry.dueAt}}"></span>, or now if you promote it.</div>
+{{/ui/alert-banner}}
+{{else}}
+{{#> ui/alert-banner variant="error" title=entry.failure.label}}
+<div class="break-words text-sm"><code>{{entry.failure.reason}}</code></div>
+<div class="text-sm mt-1">
+    {{#equals entry.state "failed"}}
+    {{#if entry.failure.permanent}}Given up on without using the remaining attempts, because retrying could not have helped.{{else}}Given up on after {{entry.attemptsLabel}} attempts.{{/if}}
+    {{#equals queue.name "submit"}}
+    {{#if entry.hasContent}}The message content is still stored, so it can be retried from here.{{else}}The message content is no longer stored, so it cannot be retried from here; submit the message again instead.{{/if}}
+    {{/equals}}
+    {{else}}
+    Attempt {{entry.attemptsLabel}}.
+    {{/equals}}
+</div>
+{{/ui/alert-banner}}
+{{/if}}
+{{/if}}
+
+{{#> ui/card}}
+{{#> ui/detail-toolbar label="Entry actions"}}
+{{#if entry.canPromote}}
+{{> ui/btn label="Send now" variant="primary" size="sm" icon="icon-[tabler--send]" class="queue-action-btn" dataName="action" dataValue=(concat entry.url "/promote")}}
+{{/if}}
+{{#if entry.canRetry}}
+{{> ui/btn label="Retry" variant="primary" size="sm" icon="icon-[tabler--refresh]" class="queue-action-btn" dataName="action" dataValue=(concat entry.url "/retry")}}
+{{/if}}
+{{#if entry.isActive}}
+{{#> ui/tooltip text="A worker is processing this entry right now"}}
+{{> ui/badge label="Running" variant="primary" icon="icon-[tabler--loader-2] animate-spin"}}
+{{/ui/tooltip}}
+{{/if}}
+{{#if entry.canRemove}}
+{{> ui/overflow-menu label="More entry actions" deleteLabel="Remove from queue" deleteModal="#removeJob"}}
+{{/if}}
+{{/ui/detail-toolbar}}
+
+<dl class="ee-dl">
+    {{#equals queue.name "submit"}}
+    <dt>Account</dt>
+    <dd>{{> queue_cell_account account=entry.account accountKnown=entry.accountKnown}}</dd>
+
+    {{#if entry.from}}
+    <dt>From</dt>
+    <dd>{{entry.from}}</dd>
+    {{/if}}
+
+    {{#if entry.to}}
+    <dt>To</dt>
+    <dd>{{#each entry.to}}<div>{{this}}</div>{{/each}}</dd>
+    {{/if}}
+
+    <dt>Subject</dt>
+    <dd>{{#if entry.subject}}{{entry.subject}}{{else}}<span class="text-base-content/60">(no subject)</span>{{/if}}</dd>
+
+    {{#if entry.messageId}}
+    <dt>Message-ID</dt>
+    <dd><code class="break-all">{{entry.messageId}}</code></dd>
+    {{/if}}
+
+    <dt>Queue ID</dt>
+    <dd>{{> ui/copy-field id="queue-id" value=entry.id ariaLabel="Queue ID" small=true join=true class="max-w-md"}}</dd>
+
+    {{#if entry.gateway}}
+    <dt>Gateway</dt>
+    <dd><a href="/admin/gateways/gateway/{{urlpart entry.gateway}}" class="link link-animated">{{entry.gateway}}</a></dd>
+    {{/if}}
+
+    {{#if entry.source}}
+    <dt>Submitted through</dt>
+    <dd>{{entry.source}}</dd>
+    {{/if}}
+
+    {{#if entry.idempotencyKey}}
+    <dt>Idempotency key</dt>
+    <dd><code>{{entry.idempotencyKey}}</code></dd>
+    {{/if}}
+    {{else}}
+    {{#equals queue.name "notify"}}
+    <dt>Event</dt>
+    <dd><code>{{entry.event}}</code></dd>
+
+    <dt>Account</dt>
+    <dd>{{> queue_cell_account account=entry.account accountKnown=entry.accountKnown instance="Instance event"}}</dd>
+
+    <dt>Target</dt>
+    <dd>
+        {{#if entry.routeId}}
+        {{#if entry.routeKnown}}
+        Webhook route <a href="/admin/webhooks/webhook/{{urlpart entry.routeId}}" class="link link-animated">{{entry.routeName}}</a>{{#if entry.hasMapping}} <span class="text-base-content/60">(payload mapped by the route)</span>{{/if}}
+        {{else}}
+        {{> ui/badge label="Route deleted" variant="warning" soft=true}} <span class="text-base-content/60">The route this delivery was queued for no longer exists, so the worker skips it.</span>
+        {{/if}}
+        {{else}}
+        <span>The default webhook: the account's own URL if it has one, otherwise the instance setting. Resolved when the delivery runs.</span>
+        {{/if}}
+    </dd>
+
+    {{#if entry.about}}
+    <dt>About</dt>
+    <dd>{{entry.about}}</dd>
+    {{/if}}
+
+    {{#if entry.path}}
+    <dt>Folder</dt>
+    <dd><code>{{entry.path}}</code>{{#if entry.specialUse}} <span class="text-base-content/60">{{entry.specialUse}}</span>{{/if}}</dd>
+    {{/if}}
+
+    <dt>Payload</dt>
+    <dd>{{entry.payloadSizeLabel}}</dd>
+
+    <dt>Job ID</dt>
+    <dd><code>{{entry.id}}</code></dd>
+    {{else}}
+    <dt>Export</dt>
+    <dd><code>{{entry.exportId}}</code></dd>
+
+    <dt>Account</dt>
+    <dd>{{> queue_cell_account account=entry.account accountKnown=entry.accountKnown}}{{#if entry.accountKnown}} <span class="text-base-content/60">(manage the export from the account page)</span>{{/if}}</dd>
+    {{/equals}}
+    {{/equals}}
+</dl>
+
+<hr class="my-4">
+
+<dl class="ee-dl">
+    <dt>Queued</dt>
+    <dd><span class="local-date-time" data-time="{{entry.created}}"></span> <span class="text-base-content/60">(<span class="relative-time" data-time="{{entry.created}}"></span>)</span></dd>
+
+    {{#if entry.isScheduledSend}}
+    <dt>Scheduled for</dt>
+    <dd><span class="local-date-time" data-time="{{entry.scheduled}}"></span> <span class="text-base-content/60">(<span class="relative-time" data-time="{{entry.scheduled}}"></span>)</span></dd>
+    {{/if}}
+
+    {{#if entry.processedOn}}
+    <dt>Last attempt started</dt>
+    <dd><span class="local-date-time" data-time="{{entry.processedOn}}"></span> <span class="text-base-content/60">(<span class="relative-time" data-time="{{entry.processedOn}}"></span>)</span></dd>
+    {{/if}}
+
+    {{#if entry.finishedOn}}
+    <dt>Finished</dt>
+    <dd><span class="local-date-time" data-time="{{entry.finishedOn}}"></span> <span class="text-base-content/60">(<span class="relative-time" data-time="{{entry.finishedOn}}"></span>)</span></dd>
+    {{/if}}
+
+    <dt>Attempts</dt>
+    <dd>{{entry.attemptsLabel}}{{#if entry.duration}} <span class="text-base-content/60">(last attempt took {{entry.duration}} ms)</span>{{/if}}</dd>
+
+    {{#if entry.isRetryWait}}
+    <dt>Next attempt</dt>
+    <dd><span class="local-date-time" data-time="{{entry.dueAt}}"></span> <span class="text-base-content/60">(<span class="relative-time" data-time="{{entry.dueAt}}"></span>, at the latest)</span></dd>
+    {{/if}}
+
+    {{#if entry.outcome.response}}
+    <dt>Server response</dt>
+    <dd><code class="break-all">{{entry.outcome.response}}</code></dd>
+    {{/if}}
+
+    {{#equals entry.outcome.status "delivered"}}
+    <dt>Delivered</dt>
+    <dd>The endpoint answered <code>{{entry.outcome.statusCode}}</code></dd>
+    {{/equals}}
+</dl>
+{{/ui/card}}
+
+{{#> ui/details summary="Raw queue record" summarySmall="the job as BullMQ stores it"}}
+<div class="space-y-4 text-sm">
+    <div>
+        <div class="label-text mb-1">Job name: <code>{{raw.name}}</code></div>
+    </div>
+    <div>
+        <div class="label-text mb-1">Data</div>
+        <pre class="ee-code-block"><code>{{json raw.data}}</code></pre>
+    </div>
+    <div>
+        <div class="label-text mb-1">Options</div>
+        <pre class="ee-code-block"><code>{{json raw.opts}}</code></pre>
+    </div>
+    {{#if raw.progress}}
+    <div>
+        <div class="label-text mb-1">Progress</div>
+        <pre class="ee-code-block"><code>{{json raw.progress}}</code></pre>
+    </div>
+    {{/if}}
+    {{#if raw.returnvalue}}
+    <div>
+        <div class="label-text mb-1">Return value</div>
+        <pre class="ee-code-block"><code>{{json raw.returnvalue}}</code></pre>
+    </div>
+    {{/if}}
+    {{#if raw.stacktrace}}
+    <div>
+        <div class="label-text mb-1">Stack traces of the failed attempts</div>
+        <pre class="ee-code-block"><code>{{raw.stacktrace}}</code></pre>
+    </div>
+    {{/if}}
+</div>
+{{/ui/details}}
+
+{{> queue_job_actions removeAction=(concat entry.url "/remove") removeName=entry.title}}
+
+<script data-cfasync="false" src="/static/js/queues.js" defer></script>

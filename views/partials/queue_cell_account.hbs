@@ -1,0 +1,20 @@
+{{!-- The account a queue entry belongs to: a link while the account exists, the bare id with a
+      badge once it is gone (the workers skip the entries of a deleted account, which is worth
+      saying), and a muted word for an entry that has no account at all.
+        {{> queue_cell_account account=account accountKnown=accountKnown}}
+        {{> queue_cell_account account=account accountKnown=accountKnown instance="Instance"}}
+      Params:
+        account      - account id (optional)
+        accountKnown - whether the account still exists
+        instance     - what to show when there is no account (optional; nothing when omitted)
+      Inside a listing row the link is lifted above the ui/row-link overlay. --}}
+{{#if account}}
+{{#if accountKnown}}
+<a href="/admin/accounts/{{urlpart account}}" class="link link-animated relative z-[1]">{{account}}</a>
+{{else}}
+<div>{{account}}</div>
+{{> ui/badge label="Account deleted" variant="warning" soft=true class="mt-1" title="The entries of an account that no longer exists are skipped by the worker"}}
+{{/if}}
+{{else}}
+{{#if instance}}<span class="text-base-content/60">{{instance}}</span>{{/if}}
+{{/if}}
