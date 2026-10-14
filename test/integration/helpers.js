@@ -118,8 +118,10 @@ function extractCrumb(setCookie) {
 // fires its callback only after every socket has ended, and accounts keep retrying against the
 // mock until they are deleted. phantom-folder-test.js keeps its own richer inline mock on
 // purpose (a stateful SELECT/STATUS machine with per-folder failure scripting that would bloat
-// this helper); fold it in only if a third test needs that depth.
-function startMockImapServer({ capabilities = 'IMAP4rev1 IDLE ID UIDPLUS', onCommand } = {}) {
+// this helper). With `inbox: true` the mock also serves an empty INBOX - LIST, STATUS, SELECT
+// and IDLE/DONE - so a connection gets as far as idling, counted in `session.idles` and
+// `session.dones`.
+function startMockImapServer({ capabilities = 'IMAP4rev1 IDLE ID UIDPLUS', onCommand, inbox = false } = {}) {
     const sockets = new Set();
 
     const mockServer = net.createServer(socket => {
@@ -143,6 +145,12 @@ function startMockImapServer({ capabilities = 'IMAP4rev1 IDLE ID UIDPLUS', onCom
         const handle = line => {
             const m = line.match(/^(\S+)\s+(\S+)(?:\s+(.*))?$/);
             if (!m) {
+                // The line that ends IDLE carries no tag
+                if (session.idleTag && /^DONE$/i.test(line.trim())) {
+                    session.dones = (session.dones || 0) + 1;
+                    send(`${session.idleTag} OK Idle completed.`);
+                    session.idleTag = null;
+                }
                 return;
             }
             const [, tag, cmdRaw, args] = m;
@@ -150,6 +158,33 @@ function startMockImapServer({ capabilities = 'IMAP4rev1 IDLE ID UIDPLUS', onCom
 
             if (onCommand && onCommand({ tag, cmd, args, send, drop, session }) === true) {
                 return;
+            }
+
+            if (inbox) {
+                switch (cmd) {
+                    case 'LIST':
+                    case 'LSUB':
+                        send(`* ${cmd} (\\HasNoChildren) "/" "INBOX"`);
+                        send(`${tag} OK ${cmd} completed.`);
+                        return;
+                    case 'STATUS':
+                        send('* STATUS "INBOX" (MESSAGES 0 UIDNEXT 1 UIDVALIDITY 1751000000)');
+                        send(`${tag} OK Status completed.`);
+                        return;
+                    case 'SELECT':
+                    case 'EXAMINE':
+                        send('* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)');
+                        send('* 0 EXISTS');
+                        send('* OK [UIDVALIDITY 1751000000] UIDs valid');
+                        send('* OK [UIDNEXT 1] Predicted next UID');
+                        send(`${tag} OK [READ-WRITE] Select completed.`);
+                        return;
+                    case 'IDLE':
+                        session.idles = (session.idles || 0) + 1;
+                        session.idleTag = tag;
+                        send('+ idling');
+                        return;
+                }
             }
 
             switch (cmd) {

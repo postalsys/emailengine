@@ -300,6 +300,16 @@
             "example": 900,
             "default": 900
           },
+          "maxIdleTime": {
+            "type": "integer",
+            "description": "Restart IDLE after this many milliseconds. Also caps the polling interval for servers without IDLE support.",
+            "example": 120000,
+            "x-meta": {
+              "usage": "Leave this unset unless the server, or something between it and EmailEngine, drops idle connections. Some providers close an IDLE session after a few minutes without saying BYE, which shows up as a reconnect every few minutes. Set a value below that limit, for instance 120000 for a connection that drops after about four and a half minutes, and EmailEngine ends and restarts IDLE that often, so the connection never looks idle.\n\nA handful of providers (Yahoo, Rambler, 163.com) already get a built-in value; one set here takes precedence over it. Unlike `disableIMAP4rev2` it also applies to accounts that authenticate with OAuth2. Changing it reconnects the account."
+            },
+            "minimum": 10000,
+            "maximum": 1800000
+          },
           "disabled": {
             "type": "boolean",
             "description": "Temporarily disable IMAP operations for this account",
@@ -1078,6 +1088,16 @@
             "description": "Delay in seconds between full mailbox resynchronizations",
             "example": 900,
             "default": 900
+          },
+          "maxIdleTime": {
+            "type": "integer",
+            "description": "Restart IDLE after this many milliseconds. Also caps the polling interval for servers without IDLE support.",
+            "example": 120000,
+            "x-meta": {
+              "usage": "Leave this unset unless the server, or something between it and EmailEngine, drops idle connections. Some providers close an IDLE session after a few minutes without saying BYE, which shows up as a reconnect every few minutes. Set a value below that limit, for instance 120000 for a connection that drops after about four and a half minutes, and EmailEngine ends and restarts IDLE that often, so the connection never looks idle.\n\nA handful of providers (Yahoo, Rambler, 163.com) already get a built-in value; one set here takes precedence over it. Unlike `disableIMAP4rev2` it also applies to accounts that authenticate with OAuth2. Changing it reconnects the account."
+            },
+            "minimum": 10000,
+            "maximum": 1800000
           },
           "disabled": {
             "type": "boolean",
@@ -2092,6 +2112,17 @@
             "type": "integer",
             "description": "Delay in seconds between full mailbox resynchronizations",
             "example": 900
+          },
+          "maxIdleTime": {
+            "type": "integer",
+            "description": "Restart IDLE after this many milliseconds. Also caps the polling interval for servers without IDLE support.",
+            "example": 120000,
+            "x-meta": {
+              "usage": "Leave this unset unless the server, or something between it and EmailEngine, drops idle connections. Some providers close an IDLE session after a few minutes without saying BYE, which shows up as a reconnect every few minutes. Set a value below that limit, for instance 120000 for a connection that drops after about four and a half minutes, and EmailEngine ends and restarts IDLE that often, so the connection never looks idle.\n\nA handful of providers (Yahoo, Rambler, 163.com) already get a built-in value; one set here takes precedence over it. Unlike `disableIMAP4rev2` it also applies to accounts that authenticate with OAuth2. Changing it reconnects the account."
+            },
+            "nullable": true,
+            "minimum": 10000,
+            "maximum": 1800000
           },
           "disabled": {
             "type": "boolean",

@@ -412,6 +412,58 @@ test('account edit form stores every special-use folder override', async t => {
     assert.equal(afterUnrelatedSave.name, 'Renamed', 'the save itself went through');
 });
 
+test('account edit form stores the IDLE restart interval in milliseconds', async t => {
+    const account = `edit-idle-${RUN}`;
+    const route = capture('../lib/ui-routes/account-routes', async ({ cmd }) => (cmd === 'runIndex' ? 1 : {}));
+    const editRoute = route('POST', '/admin/accounts/{account}/edit');
+
+    const validate = payload => editRoute.options.validate.payload.validate(payload, editRoute.options.validate.options);
+
+    const accountObject = new Account({ redis, account, secret: await getSecret(), call: async ({ cmd }) => (cmd === 'runIndex' ? 1 : {}), logger });
+    await accountObject.create({
+        account,
+        name: 'Idle',
+        email: 'idle@example.com',
+        imap: { host: 'imap.example.com', port: 993, secure: true, auth: { user: 'u', pass: 'p' } }
+    });
+    t.after(() => accountObject.delete().catch(() => false));
+
+    const formFields = {
+        name: 'Idle',
+        email: 'idle@example.com',
+        customHeaders: '',
+        imap: 'on',
+        imap_auth_user: 'u',
+        imap_host: 'imap.example.com',
+        imap_port: 993,
+        imap_secure: 'on',
+        imap_disabled: ''
+    };
+
+    const save = async payload => {
+        const { value, error } = validate(payload);
+        assert.ifError(error);
+        const h = makeToolkit();
+        await editRoute.handler(makeRequest({ params: { account }, payload: value }), h);
+        assert.deepEqual(h.answers.redirects, [`/admin/accounts/${account}`]);
+    };
+
+    await save(Object.assign({}, formFields, { imap_maxIdleTime: '120' }));
+    assert.equal((await accountObject.loadAccountData()).imap.maxIdleTime, 120 * 1000, 'seconds in the form, milliseconds stored');
+
+    // A save from a page that never showed the input leaves the interval alone
+    await save(Object.assign({}, formFields, { name: 'Renamed', imap_disabled: 'on' }));
+    assert.equal((await accountObject.loadAccountData()).imap.maxIdleTime, 120 * 1000);
+
+    // An emptied input goes back to the default
+    await save(Object.assign({}, formFields, { imap_maxIdleTime: '' }));
+    assert.ok(!(await accountObject.loadAccountData()).imap.maxIdleTime, 'an emptied input unsets the interval');
+
+    // The same bounds as the API field
+    assert.ok(validate(Object.assign({}, formFields, { imap_maxIdleTime: '5' })).error, 'below the floor is refused');
+    assert.ok(validate(Object.assign({}, formFields, { imap_maxIdleTime: '3600' })).error, 'above the ceiling is refused');
+});
+
 test('unsubscribe form', async t => {
     const route = capture('../lib/ui-routes/unsubscribe-routes');
     stub(t, tools, { getServiceSecret: async () => SECRET });

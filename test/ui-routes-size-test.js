@@ -47,13 +47,15 @@ test('routes-ui.js stays within the size budget', () => {
 // raise one only as a reviewed decision. A new module needs an entry, which is the prompt to
 // ask whether it should exist.
 const MODULE_BUDGETS = {
-    'account-routes.js': 2505,
+    // 2505 -> 2507 for wiring the IDLE restart interval, whose form logic lives in imap-idle-field.js
+    'account-routes.js': 2507,
     // 1553 -> 1567 for the clear-error case that dismisses the Document Store removal notice,
     // 1567 -> 1544 when the AI page's fields were derived from one list
     'admin-config-routes.js': 1532,
     'admin-entities-routes.js': 2548,
     'ai-options.js': 113,
     'special-use-paths.js': 33,
+    'imap-idle-field.js': 42,
     // 1649 -> 1650 for the require of the shared formBoolean() schema helper, 1658 -> 1661 for
     // verifying the password hash before the username is compared, so the login's response time
     // does not say which of the two was wrong

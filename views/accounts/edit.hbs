@@ -64,6 +64,8 @@
 
             {{> ui/form-field id="imap_resyncDelay" type="number" label="Resync interval (seconds)" value=values.imap_resyncDelay error=errors.imap_resyncDelay lpignore=true hint="Time between full mailbox syncs. Leave blank to keep the current interval."}}
 
+            {{> ui/form-field id="imap_maxIdleTime" type="number" label="IDLE restart interval (seconds)" value=values.imap_maxIdleTime error=errors.imap_maxIdleTime lpignore=true hint="Restart IDLE this often to keep a connection alive that the server or a firewall drops when idle, without a BYE. Between 10 and 1800. Leave blank for the default."}}
+
             {{/unless}}
 
             {{> ui/checkbox id="imap_disabled" label="Disable IMAP" checked=values.imap_disabled error=errors.imap_disabled tooltip="Stop syncing this mailbox while keeping the account available for sending email."}}

@@ -355,6 +355,15 @@
                                     ],
                                     "default": 900
                                 },
+                                "maxIdleTime": {
+                                    "type": "integer",
+                                    "description": "Restart IDLE after this many milliseconds. Also caps the polling interval for servers without IDLE support.",
+                                    "examples": [
+                                        120000
+                                    ],
+                                    "minimum": 10000,
+                                    "maximum": 1800000
+                                },
                                 "disabled": {
                                     "type": "boolean",
                                     "description": "Temporarily disable IMAP operations for this account",
@@ -4060,6 +4069,18 @@
                                         900
                                     ]
                                 },
+                                "maxIdleTime": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "description": "Restart IDLE after this many milliseconds. Also caps the polling interval for servers without IDLE support.",
+                                    "examples": [
+                                        120000
+                                    ],
+                                    "minimum": 10000,
+                                    "maximum": 1800000
+                                },
                                 "disabled": {
                                     "type": "boolean",
                                     "description": "Temporarily disable IMAP operations for this account",
@@ -5417,6 +5438,15 @@
                                         900
                                     ],
                                     "default": 900
+                                },
+                                "maxIdleTime": {
+                                    "type": "integer",
+                                    "description": "Restart IDLE after this many milliseconds. Also caps the polling interval for servers without IDLE support.",
+                                    "examples": [
+                                        120000
+                                    ],
+                                    "minimum": 10000,
+                                    "maximum": 1800000
                                 },
                                 "disabled": {
                                     "type": "boolean",
