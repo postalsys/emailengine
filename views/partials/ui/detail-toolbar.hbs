@@ -11,10 +11,17 @@
           <li><button class="dropdown-item text-error" data-overlay="#deleteModal">Delete</button></li>
         {{/ui/overflow-menu}}
       {{/ui/detail-toolbar}}
+    A ui/overflow-menu hangs its menu off the toggle's right edge, which suits a
+    kebab that ends a row of buttons. When nothing applies to the resource but
+    the kebab's own items (a queue entry that can only be removed), it is the
+    first thing in the row and sits at the card's left edge, where a menu opening
+    leftward lands under the side menu; the toolbar therefore opens a leading
+    menu toward the content instead. FlyonUI reads --placement off computed
+    style, so a rule on the container is enough.
     Params:
       label - aria-label on the toolbar (default "Actions")
 --}}
-<div class="mb-4 flex flex-wrap items-center gap-2" role="toolbar"
+<div class="mb-4 flex flex-wrap items-center gap-2 [&>.dropdown:first-child]:[--placement:bottom-start]" role="toolbar"
     aria-label="{{#if label}}{{label}}{{else}}Actions{{/if}}">
     {{!-- own hash param neutralized so it does not fall through into nested ui/* calls --}}
     {{> @partial-block label=""}}

@@ -150,23 +150,33 @@ test('queue listing rows', async t => {
 });
 
 test('queue overview', async t => {
+    const queue = name => ({
+        name,
+        label: name,
+        title: `${name} queue`,
+        nounPlural: 'entries',
+        icon: 'icon-[tabler--webhook]',
+        description: 'd',
+        isPaused: name === 'submit',
+        concurrency: { workers: 1, perWorker: 2, total: 2, workersEnv: 'W', concurrencyEnv: 'C' },
+        stateCounts: [{ name: 'waiting', label: 'Waiting', variant: 'info', count: 0, url: `/admin/queues/${name}?state=waiting` }]
+    });
+
+    const overview = (context = {}) =>
+        overviewTemplate(
+            Object.assign(
+                {
+                    crumb: 'c',
+                    userLocale: 'en',
+                    queues: [queue('notify'), queue('submit')],
+                    failedContent: { count: 0, bytesLabel: '0 B', limits: { maxCount: 100, maxBytesLabel: '100 MB', maxAgeDays: 7 } },
+                    retention: { completedCount: 0, failedCount: 500, failedAgeDays: 7 }
+                },
+                context
+            )
+        );
     await t.test('every queue card carries its pause controls and both clean items', () => {
-        const queue = name => ({
-            name,
-            label: name,
-            title: `${name} queue`,
-            nounPlural: 'entries',
-            icon: 'icon-[tabler--webhook]',
-            description: 'd',
-            isPaused: name === 'submit',
-            concurrency: { workers: 1, perWorker: 2, total: 2, workersEnv: 'W', concurrencyEnv: 'C' },
-            stateCounts: [{ name: 'waiting', label: 'Waiting', variant: 'info', count: 0, url: `/admin/queues/${name}?state=waiting` }]
-        });
-        const html = overviewTemplate({
-            crumb: 'c',
-            queues: [queue('notify'), queue('submit')],
-            failedContent: { count: 0, bytesLabel: '0 B', limits: { maxCount: 100, maxBytesLabel: '100 MB', maxAgeDays: 7 } }
-        });
+        const html = overview();
 
         for (const name of ['notify', 'submit']) {
             assert.match(html, new RegExp(`action="/admin/queues/${name}/pause"`));
@@ -177,5 +187,19 @@ test('queue overview', async t => {
         // the paused queue shows its resume form and hides the pause form
         assert.match(html, /action="\/admin\/queues\/submit\/pause" data-queue-active-only="submit" class="hidden"/);
         assert.match(html, /action="\/admin\/queues\/notify\/resume" data-queue-paused="notify" class="hidden"/);
+    });
+
+    await t.test('the help panel lists the states in tile order and reports the live retention', () => {
+        const html = overview();
+        const states = [...html.matchAll(/<li><strong>([A-Za-z]+)<\/strong>:/g)].map(m => m[1]);
+        assert.deepEqual(states, ['Waiting', 'Active', 'Delayed', 'Failed', 'Completed']);
+        assert.match(html, /keep their most recent 500 failed\s+entries for 7 days/);
+        assert.match(html, /are removed as soon as they finish, as set by the completed job history limit/);
+        // paragraphs carry their own spacing, the way every other help panel does it
+        assert.match(html, /<p class="mb-2">Webhook deliveries/);
+
+        const kept = overview({ retention: { completedCount: 1250, failedCount: 2000, failedAgeDays: 1 } });
+        assert.match(kept, /keep their\s+most recent 1,250 for at most a day, as set by/);
+        assert.match(kept, /keep their most recent 2,000 failed\s+entries for 1 day\./);
     });
 });

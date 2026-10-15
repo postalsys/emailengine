@@ -1,6 +1,7 @@
 {{!-- The confirmation dialog a queue entry's removal goes through. On a listing page it is filled
       in per row by the shared .list-delete-btn handler (static/js/ui.js); the detail page renders
-      it for its one entry through the params. The form returns to `currentUrl`.
+      it for its one entry through the params. The form returns to `currentUrl`; the route sends
+      a removal that came from the entry's own page to its list instead.
         {{> queue_job_actions}}
         {{> queue_job_actions removeAction="/admin/queues/submit/jobs/x/remove" removeName="Hello"}}
       Params:

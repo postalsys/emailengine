@@ -60,11 +60,42 @@
 </div>
 {{/each}}
 
-{{#> ui/details summary="How the queues work"}}
-<div class="text-sm space-y-3">
-    <p class="mb-0">Every entry moves through the same states. <strong>Waiting</strong> entries run as soon as a worker is free; <strong>Active</strong> ones are being processed; <strong>Delayed</strong> ones wait for a scheduled time or for the backoff before their next attempt. An entry that succeeds is <strong>Completed</strong> and kept only as long as the completed job history limit on the <a href="/admin/config/service#queue_settings" class="link link-animated">General settings</a> page allows. One that is given up on, after its last attempt or on a permanent error, is <strong>Failed</strong> and kept for a week.</p>
-    <p class="mb-0">Pausing a queue stops the workers from taking new entries; running attempts finish and new entries keep arriving and wait. The counts on this page refresh on their own every few seconds.</p>
-    <p class="mb-0">The same information is available through the API as <code>GET /v1/settings/queue/{queue}</code>, and the outgoing messages through <code>GET /v1/outbox</code>, with retry and send-now calls beside it.</p>
+{{!-- The help panel reads top to bottom the way the page does: the states the tiles count, what
+      is kept and for how long (the live bounds, not the defaults), then the actions and the API.
+      Paragraphs carry their own bottom margin like every other help panel; ui/details puts no
+      spacing between its children. --}}
+{{#> ui/details summary="How the queues work" class="card bg-base-100 shadow-md mb-6"}}
+<div>
+    <p class="mb-2">Webhook deliveries, outgoing messages and exports each wait in a queue of their own until a worker
+        thread takes them. Every entry passes through the same states, which the tiles above count:</p>
+    <ul class="list-disc ps-6 space-y-1 mb-4">
+        <li><strong>Waiting</strong>: ready to run as soon as a worker is free. The top of the list is what runs next.</li>
+        <li><strong>Active</strong>: being processed by a worker right now.</li>
+        <li><strong>Delayed</strong>: waiting for its scheduled time, or for the backoff before the next attempt after a
+            failed one.</li>
+        <li><strong>Failed</strong>: given up on, after the last attempt or on an error that retrying could not fix. The
+            webhook and message queues keep their most recent {{formatInteger retention.failedCount userLocale}} failed
+            entries for {{ngettext '%d day' '%d days' retention.failedAgeDays}}.</li>
+        <li><strong>Completed</strong>: finished. {{#if retention.completedCount}}The webhook and message queues keep their
+            most recent {{formatInteger retention.completedCount userLocale}} for at most a day{{else}}Webhook deliveries
+            and messages are removed as soon as they finish{{/if}}, as set by the completed job history limit in
+            <a href="/admin/config/service#queue_settings" class="link link-animated">General settings</a>.</li>
+    </ul>
+    <p class="mb-2">An export leaves its queue the moment it is done, whatever the outcome; its result is on the
+        account's page.</p>
+    <p class="mb-2"><strong>Pause</strong> stops the workers from taking anything more out of a queue: an attempt that is
+        already running finishes, and new entries keep arriving and wait until the queue is resumed. <strong>Clean</strong>
+        removes every completed or every failed entry of a queue at once. On a queue's own page a single entry can be
+        opened, run now instead of waiting for its time, retried after it failed (a message only while its content is
+        still kept) or removed.</p>
+    <p class="mb-2">The counts on this page refresh on their own every few seconds.</p>
+    <p class="mb-2">The API reports the same counts through
+        <a href="/admin/reference/settings#getV1SettingsQueueQueue" class="link link-animated"><code>GET /v1/settings/queue/{queue}</code></a>
+        and lists the outgoing messages through
+        <a href="/admin/reference/outbox#getV1Outbox" class="link link-animated"><code>GET /v1/outbox</code></a>, with the
+        calls to retry, send now or remove a message beside it.</p>
+    <p class="mb-0"><a href="https://learn.emailengine.app/docs/advanced/queue-management" target="_blank"
+            rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">Learn more about the queues</a>.</p>
 </div>
 {{/ui/details}}
 

@@ -71,7 +71,7 @@ const MODULE_BUDGETS = {
     // the scope check it delegates to already lives, 987 -> 977 when the base scope render context
     // moved to oauth-form-context.js, 977 -> 978 for a new app's form starting out enabled
     'oauth-config-routes.js': 978,
-    'queue-routes.js': 355,
+    'queue-routes.js': 367,
     'oauth-form-context.js': 19,
     'reference-routes.js': 198,
     // 658 -> 661 when windowedPageLinks grew a shared pageLink() builder, 661 -> 662 for the

@@ -123,11 +123,14 @@ test.describe('queue browser pages', () => {
             });
             expect(created.ok(), `POST /v1/account -> ${created.status()} ${await created.text()}`).toBeTruthy();
 
-            const queueMessage = async subject => {
+            const queueMessage = async (subject, overrides) => {
                 const res = await request.post(`/v1/account/${ACCOUNT_ID}/submit`, {
                     headers: auth,
                     // one attempt, so the message is Failed rather than waiting out a backoff once sent
-                    data: { to: [{ address: 'nobody@example.com' }], subject, text: 'queued by the e2e suite', sendAt: SEND_AT, deliveryAttempts: 1 }
+                    data: Object.assign(
+                        { to: [{ address: 'nobody@example.com' }], subject, text: 'queued by the e2e suite', sendAt: SEND_AT, deliveryAttempts: 1 },
+                        overrides
+                    )
                 });
                 expect(res.ok(), `POST submit -> ${res.status()} ${await res.text()}`).toBeTruthy();
                 return (await res.json()).queueId;
@@ -173,7 +176,9 @@ test.describe('queue browser pages', () => {
                     const entry = await request.get(`/v1/outbox/${queueId}`, { headers: auth });
                     expect(entry.status()).toBe(200);
                     promoted = await entry.json();
-                    if (promoted.state === 'failed') {
+                    // the state and the attempt count are two reads, so a job seen the moment it
+                    // fails can report the new state with the old count; wait for both
+                    if (promoted.state === 'failed' && promoted.attemptsMade > 0) {
                         break;
                     }
                     await page.waitForTimeout(500);
@@ -181,24 +186,84 @@ test.describe('queue browser pages', () => {
                 expect(promoted.state).toBe('failed');
                 expect(promoted.attemptsMade).toBe(1);
 
-                // The failed list offers a retry (the content is still kept) and the removal,
-                // which asks first. Found through the search the page offers
+                // The failed list offers a retry (the content is still kept) and leads to the
+                // entry's page. Found through the search the page offers
                 await page.goto(`${BASE_URL}/admin/queues/submit?state=failed&query=${encodeURIComponent(subject)}`);
                 const listed = page.locator('tbody tr', { hasText: subject });
                 await expect(listed).toBeVisible();
                 await expect(listed).toContainText('Unreachable');
                 await openRowMenu(listed, 'Entry actions');
                 await expect(listed.getByRole('button', { name: 'Retry' })).toBeVisible();
-                await listed.getByRole('button', { name: 'Remove' }).click();
+                await listed.getByRole('link', { name: 'Open', exact: true }).click();
+                await expect(page).toHaveURL(new RegExp(`/admin/queues/submit/jobs/${queueId}$`));
+
+                // Removed from its own page, which asks first, it lands on the list of the state
+                // it was in rather than on the page of an entry that no longer exists
+                const toolbar = page.getByRole('toolbar', { name: 'Entry actions' });
+                await expect(toolbar.getByRole('button', { name: 'Retry' })).toBeVisible();
+                await openRowMenu(toolbar, 'More entry actions');
+                await toolbar.getByRole('button', { name: 'Remove from queue' }).click();
                 const modal = page.locator('#removeJob');
                 await expect(modal).toBeVisible();
                 await expect(modal).toContainText(subject);
                 await modal.getByRole('button', { name: 'Remove' }).click();
+                await expect(page).toHaveURL(/\/admin\/queues\/submit\?state=failed$/);
                 await expect(page.getByText('Removed the message from the queue')).toBeVisible();
                 expect((await request.get(`/v1/outbox/${queueId}`, { headers: auth })).status()).toBe(404);
 
                 expect(errors).toHaveLength(0);
             } finally {
+                await teardown();
+            }
+        });
+
+        test('a waiting entry leads its page with the kebab, and the list removes it', async ({ page, request }) => {
+            // Submitted without a send time while the queue is paused, so it stays Waiting. Its
+            // page then has nothing to offer but Remove: the kebab leads the toolbar, and has to
+            // open toward the content rather than off the card's left edge under the side menu
+            const errors = trackConsoleErrors(page);
+            const { auth, queueMessage, teardown } = await setup(page, request);
+            try {
+                await page.goto(`${BASE_URL}/admin/queues/submit`);
+                await page.getByRole('button', { name: 'Pause' }).click();
+                await expect(page.getByText('This queue is paused')).toBeVisible();
+
+                const subject = `e2e waiting ${Date.now()}`;
+                const queueId = await queueMessage(subject, { sendAt: undefined });
+                await page.goto(`${BASE_URL}/admin/queues/submit/jobs/${queueId}`);
+                await expect(page.locator('h1')).toContainText(subject);
+
+                const toolbar = page.getByRole('toolbar', { name: 'Entry actions' });
+                await expect(toolbar.getByRole('button', { name: 'Send now' })).toHaveCount(0);
+                const toggle = toolbar.getByRole('button', { name: 'More entry actions' });
+                await openRowMenu(toolbar, 'More entry actions');
+                const menu = toolbar.getByRole('menu');
+                // the fixed-position menu is placed a tick after it opens
+                const toggleBox = await toggle.boundingBox();
+                await expect
+                    .poll(async () => (await menu.boundingBox()).x, { message: 'the menu opens to the right of its toggle' })
+                    .toBeGreaterThanOrEqual(toggleBox.x - 1);
+
+                await page.keyboard.press('Escape');
+
+                // The list offers the same removal, which asks first
+                await page.goto(`${BASE_URL}/admin/queues/submit`);
+                const listed = page.locator('tbody tr', { hasText: subject });
+                await expect(listed).toBeVisible();
+                await openRowMenu(listed, 'Entry actions');
+                await listed.getByRole('button', { name: 'Remove' }).click();
+                const modal = page.locator('#removeJob');
+                await expect(modal).toBeVisible();
+                await expect(modal).toContainText(subject);
+                await modal.getByRole('button', { name: 'Remove' }).click();
+                await expect(page).toHaveURL(/\/admin\/queues\/submit$/);
+                await expect(page.getByText('Removed the message from the queue')).toBeVisible();
+                expect((await request.get(`/v1/outbox/${queueId}`, { headers: auth })).status()).toBe(404);
+
+                expect(errors).toHaveLength(0);
+            } finally {
+                // the later specs share this instance, so the queue must not stay paused
+                await request.put('/v1/settings/queue/submit', { headers: auth, data: { paused: false } });
                 await teardown();
             }
         });
