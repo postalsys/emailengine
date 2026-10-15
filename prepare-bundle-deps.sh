@@ -8,7 +8,7 @@
 # of our own files happened to pull the package in - which points at the wrong place
 # entirely. Fixed upstream in neither pkg 6.21 nor 6.22.
 #
-# Run from npm run build-source, after `npm ci --omit=dev` has produced the tree that
+# Run from npm run build-source, after `npm ci --omit=dev --omit=optional` has produced the tree that
 # actually gets bundled.
 
 set -e

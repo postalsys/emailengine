@@ -22,7 +22,7 @@
         "swagger": "./getswagger.sh",
         "build:css": "tailwindcss -i static/css/src/app.tailwind.css -o static/css/flyonui.css --minify",
         "build:icon": "node scripts/build-icon.js",
-        "build-source": "rm -rf node_modules && npm install && rm -rf node_modules && npm ci --omit=dev && ./prepare-bundle-deps.sh && ./update-info.sh",
+        "build-source": "rm -rf node_modules && npm install && rm -rf node_modules && npm ci --omit=dev --omit=optional && ./prepare-bundle-deps.sh && ./update-info.sh",
         "build-dist": "pkg --compress Brotli package.json && npm install && node winconf.js",
         "build-dist-fast": "pkg --debug package.json && npm install && node winconf.js",
         "licenses": "node list-generate.js",
