@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.84.0](https://github.com/postalsys/emailengine/compare/v2.83.2...v2.84.0) (2026-10-15)
+
+
+### Features
+
+* **admin:** replace bull-board with an in-house queue browser ([4215616](https://github.com/postalsys/emailengine/commit/4215616552c92762212c021ab2c0768884aa487b))
+* per-account IDLE restart interval (imap.maxIdleTime) ([25e5cb7](https://github.com/postalsys/emailengine/commit/25e5cb761d39a33304f9219dccad4f9bc0c336a6))
+
+
+### Bug Fixes
+
+* **admin:** format the queue help panel and keep a leading kebab menu on the page ([ed51305](https://github.com/postalsys/emailengine/commit/ed513050da555d195ba9937a82f216bff053cd9e))
+* **admin:** move a queue entry's actions to the page header and explain what the queues keep ([9ace194](https://github.com/postalsys/emailengine/commit/9ace19484818f6f0951bb53bbfb8ea0826a23f40))
+* **admin:** post queue entry actions as plain forms ([e335331](https://github.com/postalsys/emailengine/commit/e335331a56c994f08c2e051444378d93e1cefa67))
+* **admin:** say which bound decides the failed-entry count on the queue page ([7224cd7](https://github.com/postalsys/emailengine/commit/7224cd742cd3760bca46b4a748eb54bd73020ec8))
+* **deps:** update bullmq to 6.3.15 ([b58b632](https://github.com/postalsys/emailengine/commit/b58b63233aa0aedad57c4816ad3d937089161e56))
+* **deps:** update imapflow to 2.4.3 and dotenv to 18.0.8 ([c28955b](https://github.com/postalsys/emailengine/commit/c28955bbcedc20748745016fcec397e2603e85c3))
+* **deps:** update nodemailer to 10.1.1, imapflow to 2.4.2 and libmime to 5.4.8 ([ff766dd](https://github.com/postalsys/emailengine/commit/ff766dd89ea1de9cdb72673cec14adb7c9bb90ff))
+* skip DSN parsing when the message was expunged before it was downloaded ([44113d5](https://github.com/postalsys/emailengine/commit/44113d55fd2f89902536a3ef3074b9fa27a4838b))
+
 ## [2.83.2](https://github.com/postalsys/emailengine/compare/v2.83.1...v2.83.2) (2026-10-10)
 
 
