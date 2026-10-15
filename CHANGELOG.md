@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.84.1](https://github.com/postalsys/emailengine/compare/v2.84.0...v2.84.1) (2026-10-15)
+
+
+### Bug Fixes
+
+* assign accounts again when every IMAP worker restarts after a Redis reconnection ([2200319](https://github.com/postalsys/emailengine/commit/22003191c041f03346031518d3a5a8aec715ba91))
+
 ## [2.84.0](https://github.com/postalsys/emailengine/compare/v2.83.2...v2.84.0) (2026-10-15)
 
 
