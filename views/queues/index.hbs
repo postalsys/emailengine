@@ -46,12 +46,12 @@
         </div>
 
         <div class="mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 text-sm text-base-content/60">
-            {{#> ui/tooltip text=(concat concurrency.workersEnv "=" concurrency.workers " worker threads, " concurrency.concurrencyEnv "=" concurrency.perWorker " jobs each")}}
+            {{#> ui/tooltip multiline=true text=(concat (ngettext "%d worker thread" "%d worker threads" concurrency.workers) " (" concurrency.workersEnv ")" (newline) (ngettext "%d job at a time each" "%d jobs at a time each" concurrency.perWorker) " (" concurrency.concurrencyEnv ")")}}
             <span><span class="icon-[tabler--cpu] size-4 align-text-bottom"></span> Runs up to <strong class="text-base-content">{{concurrency.total}}</strong> at once</span>
             {{/ui/tooltip}}
 
             {{#equals name "submit"}}
-            {{#> ui/tooltip text=(concat "The most recent failed messages keep their content so they can be retried: up to " @root.failedContent.limits.maxCount " messages and " @root.failedContent.limits.maxBytesLabel " in total, for " @root.failedContent.limits.maxAgeDays " days (EENGINE_QUEUE_KEEP_FAILED_CONTENT, EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE)")}}
+            {{#> ui/tooltip multiline=true text=(concat "The most recent failed messages keep their content so they can be retried:" (newline) "up to " (formatInteger @root.failedContent.limits.maxCount @root.userLocale) " messages (EENGINE_QUEUE_KEEP_FAILED_CONTENT)" (newline) "up to " @root.failedContent.limits.maxBytesLabel " in total (EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE)" (newline) "for " (ngettext "%d day" "%d days" @root.failedContent.limits.maxAgeDays) " (EENGINE_QUEUE_KEEP_FAILED_AGE)")}}
             <span><span class="icon-[tabler--database] size-4 align-text-bottom"></span> Content kept for <strong class="text-base-content">{{@root.failedContent.count}}</strong> failed {{#equals @root.failedContent.count 1}}message{{else}}messages{{/equals}} ({{@root.failedContent.bytesLabel}} of {{@root.failedContent.limits.maxBytesLabel}})</span>
             {{/ui/tooltip}}
             {{/equals}}

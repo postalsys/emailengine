@@ -1,6 +1,6 @@
 {{!-- The kebab menu of one queue entry: open, and whichever of send now / retry / remove apply
       to its state. Rendered inside an ee-stack-actions cell of a listing row, and nowhere else;
-      the detail page lays the same actions out as toolbar buttons. Context: a formatted entry
+      the detail page lays the same actions out as page-header buttons. Context: a formatted entry
       (url, canPromote, canRetry, canRemove, title), with the page's crumb and currentUrl read
       off the root context because a row's own context is the entry.
 
@@ -29,6 +29,13 @@
         <input type="hidden" name="next" value="{{@root.currentUrl}}">
         <button type="submit" class="dropdown-item w-full">Retry</button>
     </form>
+</li>
+{{else if retryBlockedReason}}
+{{!-- A disabled item has its pointer events off, so the tooltip wrapper is what takes the hover --}}
+<li>
+    {{#> ui/tooltip text=retryBlockedReason placement="left" class="w-full"}}
+    <span class="dropdown-item dropdown-disabled w-full" aria-disabled="true">Retry</span>
+    {{/ui/tooltip}}
 </li>
 {{/if}}
 {{/ui/row-actions}}

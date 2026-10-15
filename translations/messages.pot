@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-10-14 05:38+0000\n"
+"POT-Creation-Date: 2026-10-15 06:31+0000\n"
 
 #: lib/autodetect-imap-settings.js:160
 msgid ""
@@ -24,88 +24,88 @@ msgstr ""
 #: lib/tools.js:2576
 #: lib/tools.js:2582
 #: lib/tools.js:2587
-#: lib/ui-routes/account-routes.js:1325
+#: lib/ui-routes/account-routes.js:1326
 msgid "Invalid or expired account setup URL"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:484
-#: lib/ui-routes/account-routes.js:528
-#: lib/ui-routes/account-routes.js:848
-#: lib/ui-routes/account-routes.js:925
-#: lib/ui-routes/account-routes.js:938
-#: lib/ui-routes/account-routes.js:985
-#: lib/ui-routes/account-routes.js:1201
-#: lib/ui-routes/account-routes.js:1392
+#: lib/ui-routes/account-routes.js:485
+#: lib/ui-routes/account-routes.js:529
+#: lib/ui-routes/account-routes.js:849
+#: lib/ui-routes/account-routes.js:926
+#: lib/ui-routes/account-routes.js:939
+#: lib/ui-routes/account-routes.js:986
+#: lib/ui-routes/account-routes.js:1202
+#: lib/ui-routes/account-routes.js:1393
 #: lib/ui-routes/route-helpers.js:350
-#: workers/api.js:2307
-#: workers/api.js:2382
+#: workers/api.js:2306
+#: workers/api.js:2381
 msgid "Email Account Setup"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:553
-#: lib/ui-routes/account-routes.js:585
+#: lib/ui-routes/account-routes.js:554
+#: lib/ui-routes/account-routes.js:586
 #: lib/ui-routes/unsubscribe-routes.js:71
 msgid "Invalid request. Check your input and try again."
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:729
+#: lib/ui-routes/account-routes.js:730
 msgid "Too many attempts for this setup link. Request a new setup link to continue."
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:972
-#: lib/ui-routes/account-routes.js:1375
+#: lib/ui-routes/account-routes.js:973
+#: lib/ui-routes/account-routes.js:1376
 msgid "Couldn't set up account. Try again."
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1060
-#: lib/ui-routes/account-routes.js:1100
+#: lib/ui-routes/account-routes.js:1061
+#: lib/ui-routes/account-routes.js:1101
 #: lib/ui-routes/admin-entities-routes.js:1941
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1063
-#: lib/ui-routes/account-routes.js:1103
+#: lib/ui-routes/account-routes.js:1064
+#: lib/ui-routes/account-routes.js:1104
 #: lib/ui-routes/admin-entities-routes.js:1944
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1068
-#: lib/ui-routes/account-routes.js:1120
+#: lib/ui-routes/account-routes.js:1069
+#: lib/ui-routes/account-routes.js:1121
 #: lib/ui-routes/admin-entities-routes.js:1961
 msgid "Connection timed out"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1074
-#: lib/ui-routes/account-routes.js:1123
+#: lib/ui-routes/account-routes.js:1075
+#: lib/ui-routes/account-routes.js:1124
 #: lib/ui-routes/admin-entities-routes.js:1964
 msgid "Could not connect to server"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1087
-#: lib/ui-routes/account-routes.js:1091
-#: lib/ui-routes/account-routes.js:1112
-#: lib/ui-routes/account-routes.js:1116
+#: lib/ui-routes/account-routes.js:1088
+#: lib/ui-routes/account-routes.js:1092
+#: lib/ui-routes/account-routes.js:1113
+#: lib/ui-routes/account-routes.js:1117
 #: lib/ui-routes/admin-entities-routes.js:1953
 #: lib/ui-routes/admin-entities-routes.js:1957
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1106
+#: lib/ui-routes/account-routes.js:1107
 #: lib/ui-routes/admin-entities-routes.js:1947
 msgid "Authentication credentials were not provided"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1109
+#: lib/ui-routes/account-routes.js:1110
 #: lib/ui-routes/admin-entities-routes.js:1950
 msgid "OAuth2 authentication failed"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1126
+#: lib/ui-routes/account-routes.js:1127
 #: lib/ui-routes/admin-entities-routes.js:1967
 msgid "Unexpected server response"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1313
+#: lib/ui-routes/account-routes.js:1314
 msgid "Temporary error, please try again"
 msgstr ""
 
@@ -119,6 +119,9 @@ msgstr ""
 
 #: lib/ui-routes/oauth-config-routes.js:274
 #: views/config/license.hbs:20
+#: views/partials/queue_retention_note.hbs:11
+#: views/queues/index.hbs:54
+#: views/queues/index.hbs:78
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
@@ -411,7 +414,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: views/error.hbs:6
-#: workers/api.js:3177
+#: workers/api.js:3176
 msgid "Something went wrong"
 msgstr ""
 
@@ -471,6 +474,18 @@ msgstr ""
 msgid "Request failed."
 msgstr ""
 
+#: views/queues/index.hbs:49
+msgid "%d job at a time each"
+msgid_plural "%d jobs at a time each"
+msgstr[0] ""
+msgstr[1] ""
+
+#: views/queues/index.hbs:49
+msgid "%d worker thread"
+msgid_plural "%d worker threads"
+msgstr[0] ""
+msgstr[1] ""
+
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
@@ -515,37 +530,37 @@ msgid ""
 "received."
 msgstr ""
 
-#: workers/api.js:2234
+#: workers/api.js:2233
 msgid ""
 "The sign-in was cancelled or the requested access was not granted. Open the "
 "account setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2243
+#: workers/api.js:2242
 msgid "Sign-in with the email provider failed: %s"
 msgstr ""
 
-#: workers/api.js:2247
+#: workers/api.js:2246
 msgid "Sign-in with the email provider failed: no authorization code was received"
 msgstr ""
 
-#: workers/api.js:2253
+#: workers/api.js:2252
 msgid "Sign-in with the email provider failed: the request state is not valid"
 msgstr ""
 
-#: workers/api.js:2259
+#: workers/api.js:2258
 msgid ""
 "The account setup session has expired or was already used. Open the account "
 "setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2266
+#: workers/api.js:2265
 msgid ""
 "Sign-in with the email provider failed: the stored setup session is not "
 "valid"
 msgstr ""
 
-#: workers/api.js:3176
-#: workers/api.js:3291
+#: workers/api.js:3175
+#: workers/api.js:3287
 msgid "Requested page not found"
 msgstr ""

@@ -1,0 +1,41 @@
+{{!-- What the Failed and Completed tabs keep, and where that is set: rendered under the state's
+      description in the queue page's card header, nothing for the other states. Context: the
+      page's `queue` (its `keepsFinished` picks the export wording), `state`, `retention`
+      (describeRetention) and `failedContent.limits`;
+      the route provides the last two for these states only. --}}
+{{#equals state.name "failed"}}
+<p class="text-base-content/60 text-sm mt-1 mb-0">
+    {{#if queue.keepsFinished}}
+    The most recent {{formatInteger retention.failedCount userLocale}} are kept for
+    {{ngettext '%d day' '%d days' retention.failedAgeDays}}, set with <code>EENGINE_QUEUE_KEEP_FAILED</code> and
+    <code>EENGINE_QUEUE_KEEP_FAILED_AGE</code>.
+    {{#equals queue.name "submit"}}
+    {{#if failedContent.limits.keepsContent}}
+    The content of the {{formatInteger failedContent.limits.maxCount userLocale}} most recent failed messages is kept
+    so they can be retried, up to {{failedContent.limits.maxBytesLabel}} in total, set with
+    <code>EENGINE_QUEUE_KEEP_FAILED_CONTENT</code> and <code>EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE</code>.
+    {{else}}
+    The content of a failed message is not kept, so none can be retried from here; set
+    <code>EENGINE_QUEUE_KEEP_FAILED_CONTENT</code> to keep some.
+    {{/if}}
+    {{/equals}}
+    {{else}}
+    Exports are not kept here once they fail; an export's outcome is on its account's page.
+    {{/if}}
+</p>
+{{/equals}}
+{{#equals state.name "completed"}}
+<p class="text-base-content/60 text-sm mt-1 mb-0">
+    {{#if queue.keepsFinished}}
+    {{#if retention.completedCount}}
+    The most recent {{formatInteger retention.completedCount userLocale}} are kept for at most a day, as set by
+    {{else}}
+    Removed as soon as they finish. To keep the most recent ones for a day, raise
+    {{/if}}
+    the completed job history limit in
+    <a href="/admin/config/service#queue_settings" class="link link-animated">General settings</a>.
+    {{else}}
+    Exports are not kept here once they finish; an export's result is on its account's page.
+    {{/if}}
+</p>
+{{/equals}}

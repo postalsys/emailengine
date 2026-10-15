@@ -14,6 +14,8 @@ const actionsTemplate = compileView('partials/queue_entry_actions.hbs');
 const submitRowsTemplate = compileView('partials/queue_rows_submit.hbs');
 const notifyRowsTemplate = compileView('partials/queue_rows_notify.hbs');
 const overviewTemplate = compileView('queues/index.hbs');
+const retentionNoteTemplate = compileView('partials/queue_retention_note.hbs');
+const jobTemplate = compileView('queues/job.hbs');
 
 function entry(overrides) {
     return Object.assign(
@@ -67,6 +69,13 @@ test('queue entry actions menu', async t => {
         const active = actionsTemplate(entry({ state: 'active', canRemove: false }));
         assert.match(active, />Open</);
         assert.doesNotMatch(active, /<form|list-delete-btn/, 'an entry a worker is running offers nothing');
+    });
+
+    await t.test('a failed message without content keeps Retry, disabled, with the reason', () => {
+        const html = actionsTemplate(entry({ state: 'failed', canRetry: false, retryBlockedReason: 'Nothing to send' }));
+        assert.match(html, /<span class="tooltip-body">Nothing to send<\/span>/);
+        assert.match(html, /<span class="dropdown-item dropdown-disabled w-full" aria-disabled="true">Retry<\/span>/);
+        assert.doesNotMatch(html, /\/retry"/);
     });
 
     await t.test('the removal names the entry, escaped', () => {
@@ -149,6 +158,112 @@ test('queue listing rows', async t => {
     });
 });
 
+test('queue retention note', async t => {
+    const note = (queueName, stateName, overrides) =>
+        retentionNoteTemplate(
+            Object.assign(
+                {
+                    userLocale: 'en',
+                    queue: { name: queueName, keepsFinished: queueName !== 'export' },
+                    state: { name: stateName },
+                    retention: { completedCount: 0, failedCount: 500, failedAgeDays: 7 },
+                    failedContent: { limits: { maxCount: 100, maxBytesLabel: '100 MB', keepsContent: true } }
+                },
+                overrides
+            )
+        );
+    const text = html =>
+        html
+            .replace(/<[^>]+>/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+    await t.test('says what the failed tab keeps and names the variables that set it', () => {
+        const webhooks = text(note('notify', 'failed'));
+        assert.match(webhooks, /^The most recent 500 are kept for 7 days, set with EENGINE_QUEUE_KEEP_FAILED and EENGINE_QUEUE_KEEP_FAILED_AGE\.$/);
+
+        const messages = text(note('submit', 'failed', { retention: { completedCount: 0, failedCount: 2000, failedAgeDays: 1 } }));
+        assert.match(messages, /The most recent 2,000 are kept for 1 day, set with/);
+        assert.match(
+            messages,
+            /The content of the 100 most recent failed messages is kept so they can be retried, up to 100 MB in total, set with EENGINE_QUEUE_KEEP_FAILED_CONTENT and EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE\./
+        );
+
+        const noContent = text(note('submit', 'failed', { failedContent: { limits: { maxCount: 100, maxBytesLabel: '0 B', keepsContent: false } } }));
+        assert.match(
+            noContent,
+            /The content of a failed message is not kept, so none can be retried from here; set EENGINE_QUEUE_KEEP_FAILED_CONTENT to keep some\./
+        );
+
+        assert.match(text(note('export', 'failed')), /^Exports are not kept here once they fail; an export's outcome is on its account's page\.$/);
+    });
+
+    await t.test('says what the completed tab keeps and links the setting that changes it', () => {
+        const none = note('notify', 'completed');
+        assert.match(
+            text(none),
+            /^Removed as soon as they finish\. To keep the most recent ones for a day, raise the completed job history limit in General settings\.$/
+        );
+        assert.match(none, /href="\/admin\/config\/service#queue_settings"/);
+
+        const some = text(note('submit', 'completed', { retention: { completedCount: 25, failedCount: 500, failedAgeDays: 7 } }));
+        assert.match(some, /^The most recent 25 are kept for at most a day, as set by the completed job history limit in General settings\.$/);
+
+        assert.match(text(note('export', 'completed')), /^Exports are not kept here once they finish; an export's result is on its account's page\.$/);
+    });
+
+    await t.test('renders nothing for the other states', () => {
+        for (const stateName of ['waiting', 'active', 'delayed']) {
+            assert.equal(text(note('submit', stateName)), '');
+        }
+    });
+});
+
+test('queue entry page', async t => {
+    const page = (overrides, root) =>
+        jobTemplate(
+            Object.assign(
+                {
+                    crumb: 'c1',
+                    currentUrl: '/admin/queues/submit/jobs/q1',
+                    listHref: '/admin/queues/submit?state=failed',
+                    userLocale: 'en',
+                    queue: { name: 'submit', label: 'Outgoing messages', icon: 'icon-[tabler--send]', noun: 'message' },
+                    entry: Object.assign(
+                        entry({
+                            state: 'failed',
+                            stateInfo: { name: 'failed', label: 'Failed', variant: 'error' },
+                            failure: { label: 'Rejected by the receiving server', reason: '550 No such user', permanent: true },
+                            attemptsLabel: '1 of 1',
+                            raw: '{}'
+                        }),
+                        overrides
+                    )
+                },
+                root
+            )
+        );
+
+    await t.test('offers Retry as a form while the content is kept, and disabled with the reason once it is gone', () => {
+        const kept = page({ hasContent: true, canRetry: true });
+        assert.match(
+            kept,
+            /<form method="post" action="\/admin\/queues\/submit\/jobs\/q1\/retry">\s*<input type="hidden" name="crumb" value="c1">\s*<input type="hidden" name="next" value="\/admin\/queues\/submit\/jobs\/q1">/
+        );
+        assert.doesNotMatch(kept, /disabled class="btn/);
+
+        const gone = page({ hasContent: false, canRetry: false, retryBlockedReason: 'Nothing to send' });
+        assert.doesNotMatch(gone, /\/retry"/);
+        // the button is inside the tooltip's trigger, disabled, and the tooltip carries the reason
+        assert.match(gone, /<span class="tooltip-toggle cursor-default">\s*<button type="button" disabled class="btn btn-primary btn-sm pointer-events-none">/);
+        assert.match(gone, /<span class="tooltip-body">Nothing to send<\/span>/);
+        // the actions sit in the page header, after Back to list, with the kebab last and the
+        // details card after all of them
+        const order = ['<h1', 'Back to list', '>Retry<', 'aria-label="More entry actions"', 'class="ee-dl"'].map(marker => gone.indexOf(marker));
+        assert.ok(order.every(index => index >= 0) && order.every((index, i) => i === 0 || index > order[i - 1]), `page order: ${order.join(' < ')}`);
+    });
+});
+
 test('queue overview', async t => {
     const queue = name => ({
         name,
@@ -184,6 +299,13 @@ test('queue overview', async t => {
             assert.match(html, new RegExp(`queue-clean-btn" data-queue="${name}"[^>]*data-state="completed"`));
             assert.match(html, new RegExp(`queue-clean-btn" data-queue="${name}"[^>]*data-state="failed"`));
         }
+        // the facts tooltips put one fact per line (the newline survives into the attribute-free body)
+        assert.match(html, /<span class="tooltip-body whitespace-pre-line text-start">1 worker thread \(W\)\n2 jobs at a time each \(C\)<\/span>/);
+        assert.match(
+            html,
+            /up to 100 messages \(EENGINE_QUEUE_KEEP_FAILED_CONTENT\)\nup to 100 MB in total \(EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE\)\nfor 7 days \(EENGINE_QUEUE_KEEP_FAILED_AGE\)/
+        );
+
         // the paused queue shows its resume form and hides the pause form
         assert.match(html, /action="\/admin\/queues\/submit\/pause" data-queue-active-only="submit" class="hidden"/);
         assert.match(html, /action="\/admin\/queues\/notify\/resume" data-queue-paused="notify" class="hidden"/);

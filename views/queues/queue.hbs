@@ -33,6 +33,7 @@
         <div class="min-w-0">
             <h6 class="card-title text-primary mb-0">{{state.label}}</h6>
             <p class="text-base-content/60 text-sm mt-1 mb-0">{{state.description}}.</p>
+            {{> queue_retention_note}}
         </div>
         <form method="get" action="/admin/queues/{{queue.name}}" class="flex items-center gap-2" role="search">
             <input type="hidden" name="state" value="{{state.name}}">

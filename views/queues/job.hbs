@@ -2,8 +2,36 @@
       at the bottom, collapsed, for support cases. --}}
 {{> ui/breadcrumb parentHref="/admin/queues" parentLabel="Queues" midHref=listHref midLabel=queue.label current=entry.title class="mb-6"}}
 
+{{!-- The actions sit in the page header, at the right, as on the queue page: the one that moves
+      the entry on (send now, retry) as a button, the removal in the kebab at the end of the row,
+      where its menu opens leftward over the content. They are plain POST forms, so they work
+      before the page script has run and without it. An entry a worker is running offers nothing;
+      its state badge says so. --}}
 {{#> ui/page-header title=entry.title icon=queue.icon badgeLabel=entry.stateInfo.label badgeVariant=entry.stateInfo.variant class="mb-6"}}
 {{> ui/btn label="Back to list" href=listHref bare=true style="soft" size="sm" icon="icon-[tabler--arrow-left]"}}
+{{#if entry.canPromote}}
+<form method="post" action="{{entry.url}}/promote">
+    <input type="hidden" name="crumb" value="{{crumb}}">
+    <input type="hidden" name="next" value="{{currentUrl}}">
+    {{> ui/btn label="Send now" type="submit" variant="primary" size="sm" icon="icon-[tabler--send]"}}
+</form>
+{{/if}}
+{{#if entry.canRetry}}
+<form method="post" action="{{entry.url}}/retry">
+    <input type="hidden" name="crumb" value="{{crumb}}">
+    <input type="hidden" name="next" value="{{currentUrl}}">
+    {{> ui/btn label="Retry" type="submit" variant="primary" size="sm" icon="icon-[tabler--refresh]"}}
+</form>
+{{else if entry.retryBlockedReason}}
+{{!-- A failed message whose content is gone keeps the button, disabled, so the reader learns why
+      from the tooltip rather than wondering where Retry went --}}
+{{#> ui/tooltip text=entry.retryBlockedReason placement="bottom"}}
+{{> ui/btn label="Retry" variant="primary" size="sm" icon="icon-[tabler--refresh]" disabled=true}}
+{{/ui/tooltip}}
+{{/if}}
+{{#if entry.canRemove}}
+{{> ui/overflow-menu label="More entry actions" deleteLabel="Remove from queue" deleteModal="#removeJob"}}
+{{/if}}
 {{/ui/page-header}}
 
 {{#if entry.failure}}
@@ -19,7 +47,7 @@
     {{#equals entry.state "failed"}}
     {{#if entry.failure.permanent}}Given up on without using the remaining attempts, because retrying could not have helped.{{else}}Given up on after {{entry.attemptsLabel}} attempts.{{/if}}
     {{#equals queue.name "submit"}}
-    {{#if entry.hasContent}}The message content is still stored, so it can be retried from here.{{else}}The message content is no longer stored, so it cannot be retried from here; submit the message again instead.{{/if}}
+    {{#if entry.hasContent}}The message content is still stored, so it can be retried from here.{{else}}{{entry.retryBlockedReason}}{{/if}}
     {{/equals}}
     {{else}}
     Attempt {{entry.attemptsLabel}}.
@@ -30,32 +58,6 @@
 {{/if}}
 
 {{#> ui/card}}
-{{#> ui/detail-toolbar label="Entry actions"}}
-{{!-- Plain POST forms: they work before the page script has run and without it --}}
-{{#if entry.canPromote}}
-<form method="post" action="{{entry.url}}/promote">
-    <input type="hidden" name="crumb" value="{{crumb}}">
-    <input type="hidden" name="next" value="{{currentUrl}}">
-    {{> ui/btn label="Send now" type="submit" variant="primary" size="sm" icon="icon-[tabler--send]"}}
-</form>
-{{/if}}
-{{#if entry.canRetry}}
-<form method="post" action="{{entry.url}}/retry">
-    <input type="hidden" name="crumb" value="{{crumb}}">
-    <input type="hidden" name="next" value="{{currentUrl}}">
-    {{> ui/btn label="Retry" type="submit" variant="primary" size="sm" icon="icon-[tabler--refresh]"}}
-</form>
-{{/if}}
-{{#if entry.isActive}}
-{{#> ui/tooltip text="A worker is processing this entry right now"}}
-{{> ui/badge label="Running" variant="primary" icon="icon-[tabler--loader-2] animate-spin"}}
-{{/ui/tooltip}}
-{{/if}}
-{{#if entry.canRemove}}
-{{> ui/overflow-menu label="More entry actions" deleteLabel="Remove from queue" deleteModal="#removeJob"}}
-{{/if}}
-{{/ui/detail-toolbar}}
-
 <dl class="ee-dl">
     {{#equals queue.name "submit"}}
     <dt>Account</dt>

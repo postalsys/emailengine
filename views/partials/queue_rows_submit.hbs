@@ -44,7 +44,7 @@
                 {{> queue_cell_failure}}
                 {{#equals state "failed"}}
                 {{#unless hasContent}}
-                {{> ui/badge label="Content discarded" variant="neutral" soft=true class="mt-1" title="The message content is no longer stored, so it cannot be retried from here"}}
+                {{> ui/badge label="Content discarded" variant="neutral" soft=true class="mt-1" title=retryBlockedReason}}
                 {{/unless}}
                 {{/equals}}
                 {{else}}

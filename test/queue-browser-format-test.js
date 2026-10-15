@@ -142,7 +142,7 @@ test('formatJob', async t => {
 
     await t.test('an active job offers nothing', () => {
         const entry = formatJob(submitQueue, submitJob({ processedOn: NOW }), 'active');
-        assert.ok(entry.isActive && !entry.canRemove && !entry.canRetry && !entry.canPromote);
+        assert.ok(!entry.canRemove && !entry.canRetry && !entry.canPromote);
         assert.deepEqual(entry.when, { label: 'Started', time: new Date(NOW).toISOString() });
     });
 

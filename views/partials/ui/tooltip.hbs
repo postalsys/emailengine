@@ -13,15 +13,17 @@
       placement - top|bottom|left|right (default top; the [--placement:*]
                   classes are safelisted in app.tailwind.css)
       class     - extra classes on the wrapper (optional)
+      multiline - true to keep the line breaks in text, one fact per line; put
+                  them in with the newline helper: (concat a (newline) b)
 --}}
 {{#if text}}
 <span class="tooltip [--placement:{{#if placement}}{{placement}}{{else}}top{{/if}}] inline-flex{{#if class}} {{class}}{{/if}}">
     {{!-- own hash params neutralized against fallthrough into the block --}}
-    <span class="tooltip-toggle cursor-default">{{> @partial-block text="" placement="" class=""}}</span>
+    <span class="tooltip-toggle cursor-default">{{> @partial-block text="" placement="" class="" multiline=""}}</span>
     <span class="tooltip-content tooltip-shown:opacity-100 tooltip-shown:visible" role="tooltip">
-        <span class="tooltip-body">{{text}}</span>
+        <span class="tooltip-body{{#if multiline}} whitespace-pre-line text-start{{/if}}">{{text}}</span>
     </span>
 </span>
 {{else}}
-{{> @partial-block text="" placement="" class=""}}
+{{> @partial-block text="" placement="" class="" multiline=""}}
 {{/if}}

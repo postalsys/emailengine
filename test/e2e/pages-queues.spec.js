@@ -198,11 +198,12 @@ test.describe('queue browser pages', () => {
                 await expect(page).toHaveURL(new RegExp(`/admin/queues/submit/jobs/${queueId}$`));
 
                 // Removed from its own page, which asks first, it lands on the list of the state
-                // it was in rather than on the page of an entry that no longer exists
-                const toolbar = page.getByRole('toolbar', { name: 'Entry actions' });
-                await expect(toolbar.getByRole('button', { name: 'Retry' })).toBeVisible();
-                await openRowMenu(toolbar, 'More entry actions');
-                await toolbar.getByRole('button', { name: 'Remove from queue' }).click();
+                // it was in rather than on the page of an entry that no longer exists. The actions
+                // are the page header's
+                await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
+                const kebab = page.locator('.dropdown', { has: page.getByRole('button', { name: 'More entry actions' }) });
+                await openRowMenu(kebab, 'More entry actions');
+                await kebab.getByRole('button', { name: 'Remove from queue' }).click();
                 const modal = page.locator('#removeJob');
                 await expect(modal).toBeVisible();
                 await expect(modal).toContainText(subject);
@@ -217,10 +218,10 @@ test.describe('queue browser pages', () => {
             }
         });
 
-        test('a waiting entry leads its page with the kebab, and the list removes it', async ({ page, request }) => {
+        test('a waiting entry offers only its removal, from a menu that opens over the content', async ({ page, request }) => {
             // Submitted without a send time while the queue is paused, so it stays Waiting. Its
-            // page then has nothing to offer but Remove: the kebab leads the toolbar, and has to
-            // open toward the content rather than off the card's left edge under the side menu
+            // page then has nothing to offer but Remove, so the header's action row is Back to
+            // list and the kebab: the menu has to open over the content, not off the page's edge
             const errors = trackConsoleErrors(page);
             const { auth, queueMessage, teardown } = await setup(page, request);
             try {
@@ -233,16 +234,24 @@ test.describe('queue browser pages', () => {
                 await page.goto(`${BASE_URL}/admin/queues/submit/jobs/${queueId}`);
                 await expect(page.locator('h1')).toContainText(subject);
 
-                const toolbar = page.getByRole('toolbar', { name: 'Entry actions' });
-                await expect(toolbar.getByRole('button', { name: 'Send now' })).toHaveCount(0);
-                const toggle = toolbar.getByRole('button', { name: 'More entry actions' });
-                await openRowMenu(toolbar, 'More entry actions');
-                const menu = toolbar.getByRole('menu');
-                // the fixed-position menu is placed a tick after it opens
-                const toggleBox = await toggle.boundingBox();
+                await expect(page.getByRole('button', { name: 'Send now' })).toHaveCount(0);
+                const toggle = page.getByRole('button', { name: 'More entry actions' });
+                const kebab = page.locator('.dropdown', { has: toggle });
+                await openRowMenu(kebab, 'More entry actions');
+                const menu = kebab.getByRole('menu');
+                // The kebab ends the header row, so the menu hangs off its right edge and lies
+                // over the content column, which the header row spans; the fixed-position menu is
+                // placed a tick after it opens
+                const [toggleBox, headerBox] = await Promise.all([toggle.boundingBox(), page.locator('h1').locator('..').boundingBox()]);
                 await expect
-                    .poll(async () => (await menu.boundingBox()).x, { message: 'the menu opens to the right of its toggle' })
-                    .toBeGreaterThanOrEqual(toggleBox.x - 1);
+                    .poll(
+                        async () => {
+                            const box = await menu.boundingBox();
+                            return box.x >= headerBox.x - 1 && box.x + box.width <= toggleBox.x + toggleBox.width + 1;
+                        },
+                        { message: 'the menu opens leftward from the kebab, over the content' }
+                    )
+                    .toBe(true);
 
                 await page.keyboard.press('Escape');
 
