@@ -7,8 +7,16 @@
 <p class="text-base-content/60 text-sm mt-1 mb-0">
     {{#if queue.keepsFinished}}
     The most recent {{formatInteger retention.failedCount userLocale}} are kept for
-    {{ngettext '%d day' '%d days' retention.failedAgeDays}}, set with <code>EENGINE_QUEUE_KEEP_FAILED</code> and
-    <code>EENGINE_QUEUE_KEEP_FAILED_AGE</code>.
+    {{ngettext '%d day' '%d days' retention.failedAgeDays}}.
+    {{#if retention.failedCountFromSetting}}
+    The count follows the completed job history limit in
+    <a href="/admin/config/service#queue_settings" class="link link-animated">General settings</a>, which is above the
+    floor of {{formatInteger retention.failedCountFloor userLocale}} set with <code>EENGINE_QUEUE_KEEP_FAILED</code>;
+    {{else}}
+    The count is set with <code>EENGINE_QUEUE_KEEP_FAILED</code>, or by the completed job history limit in
+    <a href="/admin/config/service#queue_settings" class="link link-animated">General settings</a> when that is higher;
+    {{/if}}
+    the age with <code>EENGINE_QUEUE_KEEP_FAILED_AGE</code>.
     {{#equals queue.name "submit"}}
     {{#if failedContent.limits.keepsContent}}
     The content of the {{formatInteger failedContent.limits.maxCount userLocale}} most recent failed messages is kept

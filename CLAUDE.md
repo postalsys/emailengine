@@ -165,7 +165,7 @@ Path-scoped rules in `.claude/rules/` load automatically when you work with the 
 **Queue retention:**
 
 - `EENGINE_QUEUE_REMOVE_AFTER` - Initial value for the `queueKeep` setting: completed entries to retain (default: 0)
-- `EENGINE_QUEUE_KEEP_FAILED` - Failed entries retained per queue, regardless of `queueKeep` (default: 500). Failures are the only record that a delivery was given up on, so they are never dropped on arrival; raise or lower this against Redis memory, remembering a `messageNew` payload can carry up to `notifyTextSize` of message text
+- `EENGINE_QUEUE_KEEP_FAILED` - Failed entries retained per queue, at least (default: 500); a `queueKeep` setting above it raises the count, so the queue page names whichever of the two applies. Failures are the only record that a delivery was given up on, so they are never dropped on arrival; raise or lower this against Redis memory, remembering a `messageNew` payload can carry up to `notifyTextSize` of message text
 - `EENGINE_QUEUE_KEEP_FAILED_AGE` - How long failed entries are retained, in seconds (default: 604800, 7 days)
 - `EENGINE_QUEUE_KEEP_FAILED_CONTENT` / `EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE` - How many of the most recent failed messages keep their raw content so they can be retried (default: 100), and how much content that may add up to in total (default: 100MB, a byte size). Content is dropped oldest first past either bound, past the failed-job age, and whenever the failed job itself is gone; `0` keeps none, which is how it was before failed messages could be retried. See `lib/outbox.js`
 

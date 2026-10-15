@@ -166,7 +166,7 @@ test('queue retention note', async t => {
                     userLocale: 'en',
                     queue: { name: queueName, keepsFinished: queueName !== 'export' },
                     state: { name: stateName },
-                    retention: { completedCount: 0, failedCount: 500, failedAgeDays: 7 },
+                    retention: { completedCount: 0, failedCount: 500, failedCountFloor: 500, failedCountFromSetting: false, failedAgeDays: 7 },
                     failedContent: { limits: { maxCount: 100, maxBytesLabel: '100 MB', keepsContent: true } }
                 },
                 overrides
@@ -178,12 +178,30 @@ test('queue retention note', async t => {
             .replace(/\s+/g, ' ')
             .trim();
 
-    await t.test('says what the failed tab keeps and names the variables that set it', () => {
+    await t.test('says what the failed tab keeps and names what sets the count, floor or setting', () => {
         const webhooks = text(note('notify', 'failed'));
-        assert.match(webhooks, /^The most recent 500 are kept for 7 days, set with EENGINE_QUEUE_KEEP_FAILED and EENGINE_QUEUE_KEEP_FAILED_AGE\.$/);
+        assert.match(
+            webhooks,
+            /^The most recent 500 are kept for 7 days\. The count is set with EENGINE_QUEUE_KEEP_FAILED, or by the completed job history limit in General settings when that is higher; the age with EENGINE_QUEUE_KEEP_FAILED_AGE\.$/
+        );
 
-        const messages = text(note('submit', 'failed', { retention: { completedCount: 0, failedCount: 2000, failedAgeDays: 1 } }));
-        assert.match(messages, /The most recent 2,000 are kept for 1 day, set with/);
+        // a history limit above the floor is what decides the count, and the note says so
+        const raised = text(
+            note('notify', 'failed', {
+                retention: { completedCount: 888, failedCount: 888, failedCountFloor: 500, failedCountFromSetting: true, failedAgeDays: 7 }
+            })
+        );
+        assert.match(
+            raised,
+            /^The most recent 888 are kept for 7 days\. The count follows the completed job history limit in General settings, which is above the floor of 500 set with EENGINE_QUEUE_KEEP_FAILED; the age with EENGINE_QUEUE_KEEP_FAILED_AGE\.$/
+        );
+
+        const messages = text(
+            note('submit', 'failed', {
+                retention: { completedCount: 0, failedCount: 2000, failedCountFloor: 2000, failedCountFromSetting: false, failedAgeDays: 1 }
+            })
+        );
+        assert.match(messages, /The most recent 2,000 are kept for 1 day\. The count is set with/);
         assert.match(
             messages,
             /The content of the 100 most recent failed messages is kept so they can be retried, up to 100 MB in total, set with EENGINE_QUEUE_KEEP_FAILED_CONTENT and EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE\./
