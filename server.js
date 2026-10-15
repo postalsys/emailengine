@@ -793,6 +793,7 @@ let workerAssigned = new WeakMap(); // Map of worker -> Set of accounts
 let onlineWorkers = new WeakSet(); // Set of workers that are online
 let reassignmentTimer = null; // Timer for failsafe reassignment
 let reassignmentPending = false; // Flag to track if reassignment is pending
+const REASSIGNMENT_FAILSAFE_DELAY = 10 * 1000; // How long an exited IMAP worker gets to restart before its accounts move
 let assignRetryCount = 0; // Counter for safety-net retries in assignAccounts
 const MAX_ASSIGN_RETRIES = 3; // Max consecutive safety-net retries before giving up
 
@@ -1155,7 +1156,7 @@ let spawnWorker = async (type, opts, slot) => {
 
     // A fresh spawn opens its own slot. Counting the crash streak per type made every short-lived
     // exit of ANY IMAP worker double the next respawn delay of all of them, so unrelated exits
-    // pushed a restart past the 10s failsafe reassignment.
+    // pushed a restart past the failsafe reassignment (REASSIGNMENT_FAILSAFE_DELAY).
     if (!slot) {
         slot = `${type}:${++spawnSlotCounter}`;
     }
@@ -1297,24 +1298,8 @@ let spawnWorker = async (type, opts, slot) => {
                 if (unassigned && unassigned.size > 0) {
                     reassignmentPending = true;
 
-                    // Clear any existing timer
-                    if (reassignmentTimer) {
-                        clearTimeout(reassignmentTimer);
-                    }
-
-                    // Set a failsafe timer - if worker doesn't restart in 10 seconds, reassign anyway
-                    reassignmentTimer = setTimeout(() => {
-                        if (reassignmentPending && unassigned && unassigned.size > 0) {
-                            logger.warn({
-                                msg: 'Failsafe reassignment triggered - worker restart timeout',
-                                unassignedAccounts: unassigned.size,
-                                currentWorkers: availableIMAPWorkers.size,
-                                expectedWorkers: config.workers.imap
-                            });
-                            reassignmentPending = false;
-                            assignAccounts().catch(err => logger.error({ msg: 'Unable to reassign accounts (failsafe)', err }));
-                        }
-                    }, 10000); // 10 second timeout
+                    // If the worker does not restart in time, its accounts go to the others anyway
+                    armReassignmentFailsafe();
 
                     logger[exitLevel]({
                         msg: 'Worker exited, waiting for restart before reassignment',
@@ -1658,6 +1643,11 @@ let spawnWorker = async (type, opts, slot) => {
                                     expectedWorkers: config.workers.imap,
                                     unassignedAccounts: unassigned.size
                                 });
+                                // The failsafe found no worker at all and stopped; give the rest
+                                // of the fleet the same time to come back from here
+                                if (!reassignmentTimer) {
+                                    armReassignmentFailsafe();
+                                }
                             }
                         } else if (imapInitialWorkersLoaded) {
                             // The failsafe timer already gave this worker's accounts to the
@@ -1792,6 +1782,43 @@ async function unassignFromWorker(worker, account) {
 }
 
 /**
+ * Starts (or restarts) the failsafe timer that gives the accounts an exited IMAP worker left behind
+ * to the remaining workers when it does not come back in time
+ */
+function armReassignmentFailsafe() {
+    clearTimeout(reassignmentTimer);
+
+    reassignmentTimer = setTimeout(() => {
+        reassignmentTimer = null;
+        if (!reassignmentPending || !unassigned || !unassigned.size) {
+            return;
+        }
+
+        if (!availableIMAPWorkers.size) {
+            // Every worker exited at once (the clean exit after a Redis reconnection) and none is
+            // back yet. A pass now would find no worker and clear the pending flag that makes the
+            // returning workers pick the accounts up, stranding them until a process restart. Keep
+            // it pending instead; the first worker to come back arms this timer again
+            logger.warn({
+                msg: 'Failsafe reassignment postponed - no IMAP worker is available yet',
+                unassignedAccounts: unassigned.size,
+                expectedWorkers: config.workers.imap
+            });
+            return;
+        }
+
+        logger.warn({
+            msg: 'Failsafe reassignment triggered - worker restart timeout',
+            unassignedAccounts: unassigned.size,
+            currentWorkers: availableIMAPWorkers.size,
+            expectedWorkers: config.workers.imap
+        });
+        reassignmentPending = false;
+        assignAccounts().catch(err => logger.error({ msg: 'Unable to reassign accounts (failsafe)', err }));
+    }, REASSIGNMENT_FAILSAFE_DELAY);
+}
+
+/**
  * Moves a fair share of accounts onto an IMAP worker that became ready while the rest of the fleet
  * already served every account. That is the normal outcome of a restart slower than the failsafe
  * reassignment timer, and nothing else ever gives such a worker any accounts
@@ -1809,9 +1836,6 @@ async function rebalanceOnto(worker) {
     }
 
     let moves = planRebalance({ workerAssigned, availableWorkers: availableIMAPWorkers }, worker);
-    if (!moves.length) {
-        return;
-    }
 
     assigning = true;
     let moved = 0;
@@ -1843,8 +1867,9 @@ async function rebalanceOnto(worker) {
         logger.info({ msg: 'Rebalancing accounts onto a restarted IMAP worker', threadId: worker.threadId, accounts: moved });
     }
     // Also run when nothing moved: an account added while this held the assignment lock found the
-    // pass refused and is waiting in unassigned. Every worker is available again, so the pass
-    // picks the least loaded one, which is the newcomer.
+    // pass refused and is waiting in unassigned, or nothing was there to move because every worker
+    // had exited and the accounts are all waiting. The pass picks the least loaded worker, which
+    // is the newcomer.
     if (moved || unassigned.size) {
         await assignAccounts();
     }
