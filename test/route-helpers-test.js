@@ -18,6 +18,10 @@ const {
     isMaskedRoundTrip,
     assertNoNetworkOverride,
     assertNoAttachedIdentity,
+    assertNoIdentityRetarget,
+    assertCredentialAllows,
+    isRestrictedCredential,
+    isBoundCredential,
     MASKED
 } = require('../lib/api-routes/route-helpers');
 const { submittedValues, formatAccountData, windowedPageLinks, buildPagingView } = require('../lib/ui-routes/route-helpers');
@@ -423,9 +427,35 @@ test('assertNoAttachedIdentity keeps a narrowed token from lending itself the at
     });
 
     await t.test('never refuses an app that brings its own credential, or no app at all', () => {
-        for (const authMethod of ['serviceKey', 'externalAccount', undefined, false]) {
+        for (const authMethod of ['serviceKey', undefined, false]) {
             assertNoAttachedIdentity({ auth: { artifacts: narrowed } }, authMethod, 'create');
             assertNoAttachedIdentity({ auth: { artifacts: narrowed } }, authMethod, 'modify');
+        }
+    });
+
+    await t.test('refuses a narrowed token an external account app, whose credential source is read from this host', () => {
+        // credential_source names a file the instance reads or a URL it fetches with the caller's
+        // headers, outside the proxy and the egress policy, and the verify report says how the
+        // read went - the same "acts with what the deployment holds" rule as the metadata server
+        for (const verb of ['create', 'modify']) {
+            assert.throws(
+                () => assertNoAttachedIdentity({ auth: { artifacts: narrowed } }, 'externalAccount', verb),
+                err => Boom.isBoom(err) && err.output.statusCode === 403 && /externalAccount/.test(err.message)
+            );
+        }
+        assertNoAttachedIdentity({ auth: { artifacts: {} } }, 'externalAccount', 'create');
+    });
+
+    await t.test('an unnarrowed token holding only an MCP surface scope counts as restricted', () => {
+        // Minted before every MCP token carried a grant list: no permissions record, so inspect()
+        // reads it as unnarrowed, but it reaches the API only through the surface its scope admits
+        for (const scopes of [['mcp-manage'], ['mcp'], ['mcp', 'mcp-manage']]) {
+            assert.equal(isRestrictedCredential({ auth: { artifacts: { scopes } } }), true, JSON.stringify(scopes));
+            assert.throws(() => assertNoAttachedIdentity({ auth: { artifacts: { scopes } } }, 'metadataServer', 'create'));
+        }
+        // and a token that also holds the full API, or every scope, is not
+        for (const scopes of [['api', 'mcp-manage'], ['*'], ['api'], undefined]) {
+            assert.equal(isRestrictedCredential({ auth: { artifacts: { scopes } } }), false, JSON.stringify(scopes));
         }
     });
 
@@ -435,6 +465,111 @@ test('assertNoAttachedIdentity keeps a narrowed token from lending itself the at
         assert.throws(
             () => assertNoAttachedIdentity({ payload: { googleProjectId: 'other-project' }, auth: { artifacts: narrowed } }, 'metadataServer', 'modify'),
             err => Boom.isBoom(err) && err.output.statusCode === 403 && /can not modify/.test(err.message)
+        );
+    });
+});
+
+test('assertNoIdentityRetarget keeps a bound or narrowed token on its own identity', async t => {
+    const bound = { account: 'acc-a', scopes: ['api'] };
+    const narrowed = { permissions: { actions: ['write'], groups: ['provisioning'] } };
+    const delegation = { oauth2: { provider: 'app-1', auth: { user: 'a@example.com', delegatedUser: 'b@example.com', delegatedAccount: 'acc-b' } } };
+    const is403 = err => Boom.isBoom(err) && err.output.statusCode === 403;
+
+    await t.test('refuses delegation to another account from a bound token', async () => {
+        // The binding promises the token sees one account; delegation would make that account
+        // authenticate with another account's stored token
+        await assert.rejects(() => assertNoIdentityRetarget({ payload: delegation, auth: { artifacts: bound } }), is403);
+        await assert.rejects(
+            () =>
+                assertNoIdentityRetarget({
+                    payload: { oauth2: { provider: 'app-1', auth: { user: 'a@example.com', delegatedUser: 'b@example.com' } } },
+                    auth: { artifacts: bound }
+                }),
+            is403
+        );
+    });
+
+    await t.test('refuses delegation from a narrowed token and from a session token', async () => {
+        await assert.rejects(() => assertNoIdentityRetarget({ payload: delegation, auth: { artifacts: narrowed } }), is403);
+        await assert.rejects(() => assertNoIdentityRetarget({ payload: delegation, app: { sessionToken: true }, auth: { artifacts: {} } }), is403);
+    });
+
+    await t.test('refuses a bound token retargeting the mailbox of an application-credentials account', async () => {
+        const payload = { oauth2: { provider: 'app-1', auth: { user: 'someone.else@example.com' } } };
+        let asked = 0;
+        await assert.rejects(
+            () =>
+                assertNoIdentityRetarget(
+                    { payload, auth: { artifacts: bound } },
+                    {
+                        isServiceApp: async () => {
+                            asked++;
+                            return true;
+                        }
+                    }
+                ),
+            is403
+        );
+        assert.equal(asked, 1);
+
+        // the same user change on a per-user app is the caller's own credential and passes
+        await assertNoIdentityRetarget({ payload, auth: { artifacts: bound } }, { isServiceApp: async () => false });
+    });
+
+    await t.test('does not look the app up for a credential the rule does not apply to', async () => {
+        const payload = { oauth2: { provider: 'app-1', auth: { user: 'x@example.com' } } };
+        await assertNoIdentityRetarget(
+            { payload, auth: { artifacts: {} } },
+            {
+                isServiceApp: async () => {
+                    throw new Error('must not be asked');
+                }
+            }
+        );
+        await assertNoIdentityRetarget({ payload: delegation, auth: { artifacts: {} } });
+        await assertNoIdentityRetarget({ payload: delegation, auth: {} });
+    });
+
+    await t.test('leaves a payload without an oauth2 auth block alone', async () => {
+        await assertNoIdentityRetarget({ payload: { name: 'x' }, auth: { artifacts: bound } });
+        await assertNoIdentityRetarget({ payload: { oauth2: { provider: 'app-1' } }, auth: { artifacts: bound } });
+        await assertNoIdentityRetarget({ auth: { artifacts: bound } });
+    });
+
+    await t.test('isBoundCredential reads the binding off the token record', () => {
+        assert.equal(isBoundCredential({ auth: { artifacts: bound } }), true);
+        assert.equal(isBoundCredential({ auth: { artifacts: { scopes: ['api'] } } }), false);
+        assert.equal(isBoundCredential({ auth: {} }), false);
+        assert.equal(isBoundCredential({}), false);
+    });
+});
+
+test('assertCredentialAllows asks for the extra grant a handler needs', async t => {
+    const operation = { action: 'write', group: 'message' };
+    const is403 = err => Boom.isBoom(err) && err.output.statusCode === 403;
+
+    await t.test('refuses a token narrowed to reading', () => {
+        const readOnly = { permissions: { actions: ['read'], groups: ['message'] } };
+        assert.throws(() => assertCredentialAllows({ auth: { artifacts: readOnly } }, operation, 'mark a message as seen'), is403);
+    });
+
+    await t.test('admits a token whose record holds the grant, and an unnarrowed one', () => {
+        assertCredentialAllows({ auth: { artifacts: { permissions: { actions: ['read', 'write'], groups: ['message'] } } } }, operation, 'x');
+        assertCredentialAllows({ auth: { artifacts: {} } }, operation, 'x');
+        assertCredentialAllows({ auth: {} }, operation, 'x');
+    });
+
+    await t.test('holds a session token to the session grant list', () => {
+        // write/message is in SESSION_TOKEN_GRANTS, write/account is not
+        assertCredentialAllows({ app: { sessionToken: true }, params: { account: 'a' }, auth: { artifacts: {} } }, operation, 'x');
+        assert.throws(
+            () =>
+                assertCredentialAllows(
+                    { app: { sessionToken: true }, params: { account: 'a' }, auth: { artifacts: {} } },
+                    { action: 'write', group: 'account' },
+                    'x'
+                ),
+            is403
         );
     });
 });
