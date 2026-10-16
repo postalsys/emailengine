@@ -763,8 +763,9 @@ test('Tools utility tests', async t => {
         // The read side of the passwordVersion setAdminSession() stamps. Two Hapi strategies in
         // workers/api.js ask it about the same cookie - the admin session and the browse page's
         // sess_ API token - so "log out all sessions" ends both or neither.
-        assert.strictEqual(tools.isEndedSession(2, { passwordVersion: 1 }), true);
-        assert.strictEqual(tools.isEndedSession(2, { passwordVersion: 2 }), false);
+        const now = Date.now();
+        assert.strictEqual(tools.isEndedSession(2, { passwordVersion: 1, issuedAt: now }), true);
+        assert.strictEqual(tools.isEndedSession(2, { passwordVersion: 2, issuedAt: now }), false);
 
         // A session stamped before the field existed, against an instance that has never bumped
         // the version, is not force-expired - but one bump ends it
@@ -778,6 +779,27 @@ test('Tools utility tests', async t => {
         // are what refuse it
         assert.strictEqual(tools.isEndedSession(0, undefined), false);
         assert.strictEqual(tools.isEndedSession(1, undefined), true);
+    });
+
+    await t.test('isEndedSession() ages a session out by the time it was issued', () => {
+        // The sealed cookie carries no expiry, so a cookie captured once used to stay valid until
+        // the next password change
+        const now = Date.now();
+        const day = 24 * 3600 * 1000;
+        assert.strictEqual(tools.isEndedSession(2, { passwordVersion: 2, issuedAt: now - 29 * day }, now), false);
+        assert.strictEqual(tools.isEndedSession(2, { passwordVersion: 2, issuedAt: now - 31 * day }, now), true);
+        // issued before the stamp existed: one sign-in at upgrade time rather than a cookie that
+        // never ages out
+        assert.strictEqual(tools.isEndedSession(2, { passwordVersion: 2 }, now), true);
+        assert.strictEqual(tools.isEndedSession(2, { passwordVersion: 2, issuedAt: 'soon' }, now), true);
+        // the stamp is what setAdminSession() writes, so a fresh session passes
+        const cookie = { set: [] };
+        tools.setAdminSession({ cookieAuth: { set: value => cookie.set.push(value) } }, { user: 'admin', passwordVersion: 2 });
+        assert.strictEqual(tools.isEndedSession(2, cookie.set[0]), false);
+        assert.ok(cookie.set[0].sid);
+        // and a caller re-stamping a session it means to keep carries the age over
+        tools.setAdminSession({ cookieAuth: { set: value => cookie.set.push(value) } }, { user: 'admin', passwordVersion: 2, issuedAt: now - 31 * day });
+        assert.strictEqual(tools.isEndedSession(2, cookie.set[1], now), true);
     });
 
     // splitUrlCredentials() feeds the Authorization header of webhook deliveries, the webhook test

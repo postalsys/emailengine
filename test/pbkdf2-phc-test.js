@@ -8,7 +8,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { hash, verify } = require('../lib/pbkdf2-phc');
+const { hash, verify, needsRehash } = require('../lib/pbkdf2-phc');
 const { PDKDF2_ITERATIONS, PDKDF2_SALT_SIZE, PDKDF2_DIGEST } = require('../lib/consts');
 
 const PASSWORD = 'correct horse battery staple';
@@ -126,4 +126,18 @@ test('verify() rejects a string that is not a pbkdf2 PHC hash rather than answer
 
     // well formed, but the stored key is simply not this password's: false, like the old package
     assert.equal(await verify('$pbkdf2-sha256$i=1000$YWJj$ZGVm', PASSWORD), false);
+});
+
+test('needsRehash() flags a hash written with weaker parameters than hash() uses today', async () => {
+    const current = await hash(PASSWORD);
+    assert.equal(needsRehash(current), false);
+
+    // fewer iterations, or an older digest, keep verifying but are due for an upgrade
+    assert.equal(needsRehash(await hash(PASSWORD, { iterations: 1000 })), true);
+    assert.equal(needsRehash(await hash(PASSWORD, { digest: 'sha1', iterations: PDKDF2_ITERATIONS })), true);
+    assert.equal(needsRehash(await hash(PASSWORD, { iterations: PDKDF2_ITERATIONS * 2 })), false, 'stronger than the default is not weaker');
+
+    // a string that is not a hash is the caller's problem elsewhere, not a reason to rewrite it
+    assert.equal(needsRehash('plain'), false);
+    assert.equal(needsRehash(undefined), false);
 });

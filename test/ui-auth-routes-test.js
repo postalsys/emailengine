@@ -17,7 +17,7 @@ const settings = require('../lib/settings');
 const passkeys = require('../lib/passkeys');
 const { isEndedSession } = require('../lib/tools');
 const { redis } = require('../lib/db');
-const { REDIS_PREFIX } = require('../lib/consts');
+const { REDIS_PREFIX, PDKDF2_ITERATIONS } = require('../lib/consts');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 const authRoutes = require('../lib/ui-routes/auth-routes');
 
@@ -269,6 +269,114 @@ test('admin sign-in routes', async t => {
         } finally {
             passkeys.deleteAllCredentials = originalDelete;
         }
+    });
+
+    await t.test('wrong passwords spend the sign-in budget of an account name, successful sign-ins do not', async () => {
+        // Counted on failure only, under its own key: the bucket used to count every attempt, so
+        // ten sign-ins a minute by the admin locked the admin out, and a username of
+        // `ip:<address>` landed on the per-address counter
+        const user = `login-budget-${RUN}`;
+        stored.authData = { user, password: await pbkdf2.hash('the-password', { iterations: 1000 }), passwordVersion: 1 };
+        const login = route('POST', '/admin/login');
+
+        const attempt = async password => {
+            const h = makeToolkit();
+            const req = makeRequest({ user, payload: { username: user, password } });
+            await login.handler(req, h);
+            return { h, req };
+        };
+
+        for (let i = 0; i < 10; i++) {
+            const { h } = await attempt('wrong-password');
+            assert.equal(h.answers.views.length, 1, `attempt ${i + 1} renders the login form again`);
+            assert.ok(h.answers.views[0].context.errors.password, 'a wrong password is reported as such');
+        }
+
+        // the budget is spent: the right password is refused as rate limited now
+        const refused = await attempt('the-password');
+        assert.equal(refused.h.answers.redirects.length, 0);
+        assert.match(refused.req.flashes[0].message, /Rate limited/);
+
+        // a fresh account name with a clean budget: twelve successful sign-ins in a row pass,
+        // since each gives its reservation back (the old attempt counter refused the eleventh)
+        const quiet = `login-quiet-${RUN}`;
+        stored.authData = { user: quiet, password: await pbkdf2.hash('the-password', { iterations: PDKDF2_ITERATIONS }), passwordVersion: 1 };
+        for (let i = 0; i < 12; i++) {
+            const h = makeToolkit();
+            await login.handler(makeRequest({ user: quiet, payload: { username: quiet, password: 'the-password' } }), h);
+            assert.deepEqual(h.answers.redirects, ['/admin'], `sign-in ${i + 1} succeeds`);
+        }
+    });
+
+    await t.test('a successful sign-in upgrades a hash written with weaker parameters', async () => {
+        // The one moment the password is known is the one moment the stored hash can be rewritten
+        const user = `login-rehash-${RUN}`;
+        const legacy = await pbkdf2.hash('the-password', { digest: 'sha1', iterations: 1000 });
+        stored.authData = { user, password: legacy, passwordVersion: 7 };
+        const login = route('POST', '/admin/login');
+
+        const h = makeToolkit();
+        const req = makeRequest({ user, payload: { username: user, password: 'the-password' } });
+        await login.handler(req, h);
+        assert.deepEqual(h.answers.redirects, ['/admin']);
+
+        const saved = written.find(([key]) => key === 'authData');
+        assert.ok(saved, 'the upgraded hash is stored');
+        assert.notEqual(saved[1].password, legacy);
+        assert.match(saved[1].password, /^\$pbkdf2-sha256\$i=600000\$/);
+        assert.equal(saved[1].passwordVersion, 7, 'not a password change: other sessions stay signed in');
+        assert.equal(await pbkdf2.verify(saved[1].password, 'the-password'), true);
+
+        // and the session carries the time it was issued, which is what ages it out
+        const session = req.cookie.set[0][0];
+        assert.ok(session.issuedAt > Date.now() - 5000);
+        assert.ok(session.sid);
+
+        // a hash already at the current parameters is left alone
+        written.length = 0;
+        const current = await pbkdf2.hash('the-password');
+        stored.authData = { user, password: current, passwordVersion: 7 };
+        await login.handler(makeRequest({ user, payload: { username: user, password: 'the-password' } }), makeToolkit());
+        assert.equal(
+            written.find(([key]) => key === 'authData'),
+            undefined
+        );
+    });
+
+    await t.test('enabling the second factor demands the password', async () => {
+        // Switching TOTP on bumps the password version, which ends every other session: a
+        // hijacked session could lock the real admin out, so it is a step that asks for the
+        // password again like the step down does
+        stored.authData = { user: 'admin', password: await pbkdf2.hash('the-password', { iterations: 1000 }), passwordVersion: 1 };
+        const enable = route('POST', '/admin/account/tfa/enable');
+
+        for (const password of [undefined, '', 'wrong-password']) {
+            written.length = 0;
+            const h = makeToolkit();
+            const req = makeRequest({ user: 'admin', payload: { type: 'totp', code: currentCode(seed), password }, artifacts: { requireTotp: false } });
+            await enable.handler(req, h);
+            assert.deepEqual(h.answers.redirects, ['/admin/account/security']);
+            assert.equal(req.flashes[0].message, 'Invalid password', `password ${JSON.stringify(password)} is refused`);
+            assert.equal(
+                written.find(([key]) => key === 'totpEnabled'),
+                undefined,
+                'nothing is switched on'
+            );
+        }
+
+        written.length = 0;
+        const h = makeToolkit();
+        const req = makeRequest({
+            user: 'admin',
+            payload: { type: 'totp', code: currentCode(seed), password: 'the-password' },
+            artifacts: { requireTotp: false }
+        });
+        await enable.handler(req, h);
+        assert.equal(req.flashes[0].message, 'Two-factor auth enabled');
+        assert.deepEqual(
+            written.find(([key]) => key === 'totpEnabled'),
+            ['totpEnabled', true]
+        );
     });
 
     await t.test('passkey registration demands the password at the step that stores the credential', async () => {
