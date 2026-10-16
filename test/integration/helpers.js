@@ -77,8 +77,19 @@ async function waitForListing(server, account, path, predicate, timeout, message
 }
 
 // Sign a payload object the way EmailEngine signs tracking / unsubscribe blobs: base64url(JSON) as
-// `data` and base64url(HMAC-SHA256(JSON)) as `sig`. Mirrors lib/tools.js getSignedFormDataSync.
-function signBlob(obj) {
+// `data` and base64url(HMAC-SHA256(JSON)) as `sig`, keyed by the purpose-derived key. Mirrors
+// lib/tools.js getSignedFormDataSync / signServiceData.
+function signBlob(obj, purpose = 'tracking') {
+    const data = Buffer.from(JSON.stringify(obj));
+    const key = crypto.createHmac('sha256', SERVICE_SECRET).update(`emailengine:signing:${purpose}:v1`).digest();
+    const sig = crypto.createHmac('sha256', key).update(data).digest('base64url');
+    return { data: data.toString('base64url'), sig };
+}
+
+// The signature a link minted before the keys were derived carries: the raw service secret as the
+// HMAC key. Still accepted on the tracking and unsubscribe endpoints, since such links live in mail
+// that was already sent
+function signBlobLegacy(obj) {
     const data = Buffer.from(JSON.stringify(obj));
     const sig = crypto.createHmac('sha256', SERVICE_SECRET).update(data).digest('base64url');
     return { data: data.toString('base64url'), sig };
@@ -260,6 +271,7 @@ module.exports = {
     waitForListing,
     etherealAccountPayload,
     signBlob,
+    signBlobLegacy,
     extractCrumb,
     extractCrumbFromHtml,
     startMockImapServer,

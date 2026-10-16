@@ -482,7 +482,12 @@ test('unsubscribe form', async t => {
             }
         });
 
-        const { data, signature } = tools.getSignedFormDataSync(SECRET, { act: 'unsub', acc: 'acc-1', list: 'news', rcpt: 'r@example.com' }, true);
+        const { data, signature } = tools.getSignedFormDataSync(
+            SECRET,
+            { act: 'unsub', acc: 'acc-1', list: 'news', rcpt: 'r@example.com' },
+            true,
+            'unsubscribe'
+        );
         const h = makeToolkit();
         await route('POST', '/unsubscribe/address').handler(makeRequest({ payload: { data, sig: signature, action: 'unsubscribe' } }), h);
 

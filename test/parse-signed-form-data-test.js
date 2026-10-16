@@ -121,6 +121,49 @@ test('parseSignedFormData', async t => {
         assert.equal(await tools.verifyServiceSignature(decoded, undefined), false);
     });
 
+    await t.test('a setup blob signed with the raw secret, or for another purpose, is refused', async () => {
+        // The setup form, tracking links and unsubscribe links used to share one HMAC key, so a
+        // webhook body with its signature header, or any tracking blob, was a valid setup blob.
+        // The form accepts its own derived key only; the other two keep accepting the raw-secret
+        // signature of links minted before the keys were derived.
+        const payload = { account: 'psfd-purpose', n: freshNonce(), t: Date.now() };
+        const data = Buffer.from(JSON.stringify(payload));
+        const rawSigned = crypto.createHmac('sha256', SECRET).update(data).digest('base64url');
+        await assert.rejects(tools.parseSignedFormData(redis, { data: data.toString('base64url'), sig: rawSigned }, gt), is403);
+
+        const asTracking = tools.getSignedFormDataSync(SECRET, payload, true, 'tracking');
+        await assert.rejects(tools.parseSignedFormData(redis, { data: asTracking.data, sig: asTracking.signature }, gt), is403);
+        const asUnsubscribe = tools.getSignedFormDataSync(SECRET, payload, true, 'unsubscribe');
+        await assert.rejects(tools.parseSignedFormData(redis, { data: asUnsubscribe.data, sig: asUnsubscribe.signature }, gt), is403);
+
+        // the tracking and unsubscribe verifiers take their own key, and the legacy raw one
+        const decoded = data.toString();
+        assert.equal(await tools.verifyServiceSignature(decoded, asTracking.signature, 'tracking'), true);
+        assert.equal(await tools.verifyServiceSignature(decoded, rawSigned, 'tracking'), true, 'a legacy tracking link');
+        assert.equal(await tools.verifyServiceSignature(decoded, asUnsubscribe.signature, 'unsubscribe'), true);
+        assert.equal(await tools.verifyServiceSignature(decoded, rawSigned, 'unsubscribe'), true, 'a legacy unsubscribe link');
+        // but not each other's
+        assert.equal(await tools.verifyServiceSignature(decoded, asTracking.signature, 'unsubscribe'), false);
+        assert.equal(await tools.verifyServiceSignature(decoded, asUnsubscribe.signature, 'tracking'), false);
+        // and the webhook signature stays the raw secret, so customer verification code keeps working
+        assert.equal(await tools.verifyServiceSignature(decoded, rawSigned), false, 'the raw key is not the form key');
+        assert.throws(() => tools.deriveSigningKey(SECRET, 'webhook'), /Unknown signing purpose/);
+    });
+
+    await t.test('a stored secret that does not decrypt is reported, not overwritten', async () => {
+        // A wrong EENGINE_SECRET makes every encrypted setting read as null. Overwriting the field
+        // would destroy the value the rotation CLI can still recover; the read fails instead.
+        const unreadable = '$wd02$aes-256-gcm$' + '00'.repeat(16) + '$' + '00'.repeat(12) + '$' + '00'.repeat(16) + '$' + '00'.repeat(32);
+        await redis.hset(`${REDIS_PREFIX}settings`, 'serviceSecret', unreadable);
+        try {
+            assert.equal(await settings.get('serviceSecret'), null, 'the fixture must read as undecryptable');
+            await assert.rejects(tools.getServiceSecret(), err => err.code === 'EServiceSecretUnreadable');
+            assert.equal(await redis.hget(`${REDIS_PREFIX}settings`, 'serviceSecret'), unreadable, 'the stored value must survive');
+        } finally {
+            await settings.set('serviceSecret', SECRET);
+        }
+    });
+
     await t.test('fails closed when the service secret is empty (regenerates, does not skip)', async () => {
         // Force the stored secret absent (a direct hdel - set() now refuses to blank serviceSecret, which
         // is the guard exercised by settings-coupling-test.js). getServiceSecret() must regenerate a fresh

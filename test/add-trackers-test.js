@@ -90,9 +90,12 @@ async function decodeTrackingPayload(url) {
     assert.ok(sig, `tracking URL is missing its signature: ${url}`);
 
     // The signature covers the DECODED blob, not the base64url text - same order as
-    // parseSignedFormData() and the /open.gif + /redirect handlers.
+    // parseSignedFormData() and the /open.gif + /redirect handlers, under the tracking key.
     const decoded = Buffer.from(data, 'base64url').toString();
-    assert.ok(await verifyServiceSignature(decoded, sig), `tracking URL signature does not verify: ${url}`);
+    assert.ok(await verifyServiceSignature(decoded, sig, 'tracking'), `tracking URL signature does not verify: ${url}`);
+    // and under no other key: a tracking blob must not pass as a setup-form blob
+    assert.equal(await verifyServiceSignature(decoded, sig), false, `tracking URL signature verifies as a form blob: ${url}`);
+    assert.equal(await verifyServiceSignature(decoded, sig, 'unsubscribe'), false, `tracking URL signature verifies as an unsubscribe blob: ${url}`);
     return JSON.parse(decoded);
 }
 
