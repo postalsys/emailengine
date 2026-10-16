@@ -20,12 +20,13 @@ const { initSentry } = require('../lib/sentry');
 initSentry('webhooks');
 
 const { redis, queueConf, logBullErrors } = require('../lib/db');
-const { Worker, UnrecoverableError } = require('bullmq');
+const { Worker, UnrecoverableError, DelayedError } = require('bullmq');
+const { penaltyKey, penaltyFor } = require('../lib/webhook-penalty');
 const settings = require('../lib/settings');
 const { decryptField } = require('../lib/encrypt');
 const getSecret = require('../lib/get-secret');
 
-const { REDIS_PREFIX, ACCOUNT_DELETED_NOTIFY, MESSAGE_NEW_NOTIFY } = require('../lib/consts');
+const { REDIS_PREFIX, ACCOUNT_DELETED_NOTIFY, MESSAGE_NEW_NOTIFY, DEFAULT_WEBHOOK_REQUEST_TIMEOUT } = require('../lib/consts');
 
 const { fetch: fetchCmd } = require('undici');
 
@@ -202,7 +203,7 @@ parentPort.on('message', message => {
 
 const notifyWorker = new Worker(
     'notify',
-    async job => {
+    async (job, token) => {
         // do not process active jobs, use it for debugging only
         //return new Promise((resolve, reject) => {});
         let accountKey = getAccountKey(job.data.account);
@@ -291,6 +292,30 @@ const notifyWorker = new Worker(
                 account: job.data.account
             });
             return;
+        }
+
+        // A target that just failed at the network level is penalised for a short while, and a
+        // delivery to it waits out the penalty in the delayed set instead of costing the queue
+        // another full attempt timeout; see lib/webhook-penalty.js. The attempt count is not
+        // spent by the wait
+        const targetPenaltyKey = penaltyKey(webhooks);
+        if (targetPenaltyKey) {
+            let remaining = await redis.pttl(targetPenaltyKey);
+            if (remaining > 0) {
+                logger.debug({
+                    msg: 'Webhook target is penalised, delaying delivery',
+                    action: 'webhook',
+                    queue: job.queue.name,
+                    code: 'target_penalised',
+                    job: job.id,
+                    event: job.name,
+                    account: job.data.account,
+                    webhooks: redactUrlCredentials(webhooks),
+                    delay: remaining
+                });
+                await job.moveToDelayed(Date.now() + remaining, token);
+                throw new DelayedError();
+            }
         }
 
         // Only the header lists that travel to this target are loaded; lib/webhook-routing.js
@@ -512,6 +537,17 @@ const notifyWorker = new Worker(
         } catch (err) {
             // egress and redirect failures are thrown as UnrecoverableError below, so they are final as well
             let isFinalAttempt = willBeFinalAttempt(job) || isUnrecoverableWebhookError(err);
+
+            // A target that held the attempt until it timed out, or refused the connection, is
+            // penalised so the next deliveries to it do not each cost the same wait
+            let penalty = penaltyFor(err, WEBHOOK_TIMEOUT || DEFAULT_WEBHOOK_REQUEST_TIMEOUT);
+            if (penalty && targetPenaltyKey) {
+                try {
+                    await redis.set(targetPenaltyKey, '1', 'PX', penalty);
+                } catch (penaltyErr) {
+                    // a missed penalty costs the queue one more timeout, nothing else
+                }
+            }
 
             // BullMQ keeps only the message of a failure on the job. The code and the HTTP status
             // are what explain it, so they are recorded the way the submit worker records its own

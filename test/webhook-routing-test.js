@@ -225,6 +225,29 @@ test('deliveryCustomHeaders sends each level its own headers', () => {
     assert.deepStrictEqual(deliveryCustomHeaders(null, { route, global, account }), {});
 });
 
+test("deliveryCustomHeaders drops the headers that are not the list owner's to set", () => {
+    const { deliveryCustomHeaders, isReservedDeliveryHeader } = require('../lib/webhook-routing');
+    // The framing of the request, and the X-EE-Wh-* headers a receiver reads to recognise
+    // EmailEngine's own deliveries: an account-scoped token could otherwise forge the job id the
+    // receiver deduplicates on, or point the request at another virtual host
+    const account = [
+        { key: 'Host', value: 'other.example.com' },
+        { key: 'X-EE-Wh-Id', value: 'forged' },
+        { key: 'x-ee-wh-attempts-made', value: '99' },
+        { key: 'Content-Length', value: '1' },
+        { key: 'Authorization', value: 'Bearer account-secret' },
+        { key: 'X-Account', value: 'a' }
+    ];
+    assert.deepStrictEqual(deliveryCustomHeaders('account', { account }), { Authorization: 'Bearer account-secret', 'X-Account': 'a' });
+
+    for (const key of ['Host', 'host', ' Host ', 'X-EE-Wh-Id', 'X-EE-WH-CUSTOM-ROUTE', 'Transfer-Encoding', 'Connection']) {
+        assert.equal(isReservedDeliveryHeader(key), true, key);
+    }
+    for (const key of ['Authorization', 'X-Custom', 'Content-Type', 'X-EE-Account', 'User-Agent']) {
+        assert.equal(isReservedDeliveryHeader(key), false, key);
+    }
+});
+
 test('isRouteMappingMissing drops a legacy job queued with a failed mapping', () => {
     const { isRouteMappingMissing } = require('../lib/webhook-routing');
 

@@ -318,6 +318,13 @@
                                     ],
                                     "default": false
                                 },
+                                "requireTLS": {
+                                    "type": "boolean",
+                                    "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a server on a trusted network that has no TLS at all",
+                                    "examples": [
+                                        true
+                                    ]
+                                },
                                 "tls": {
                                     "type": "object",
                                     "description": "Advanced TLS configuration options",
@@ -337,6 +344,77 @@
                                                 "TLSv1.2"
                                             ],
                                             "maxLength": 256
+                                        },
+                                        "maxVersion": {
+                                            "type": "string",
+                                            "description": "Maximum TLS version to accept",
+                                            "examples": [
+                                                "TLSv1.3"
+                                            ],
+                                            "maxLength": 256
+                                        },
+                                        "servername": {
+                                            "type": "string",
+                                            "description": "Server name for SNI and certificate validation, when it differs from the host",
+                                            "examples": [
+                                                "imap.example.com"
+                                            ],
+                                            "maxLength": 256
+                                        },
+                                        "ciphers": {
+                                            "type": "string",
+                                            "description": "Cipher suite specification, in OpenSSL format",
+                                            "maxLength": 1024
+                                        },
+                                        "ca": {
+                                            "description": "Trusted CA certificates in PEM format, replacing the default trust store",
+                                            "anyOf": [
+                                                {
+                                                    "type": "string",
+                                                    "maxLength": 65536
+                                                },
+                                                {
+                                                    "type": "array",
+                                                    "maxItems": 32,
+                                                    "items": {
+                                                        "type": "string",
+                                                        "maxLength": 65536
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "cert": {
+                                            "type": "string",
+                                            "description": "Client certificate in PEM format, for servers that require one",
+                                            "maxLength": 65536
+                                        },
+                                        "key": {
+                                            "type": "string",
+                                            "description": "Private key of the client certificate in PEM format",
+                                            "maxLength": 65536
+                                        },
+                                        "passphrase": {
+                                            "type": "string",
+                                            "description": "Passphrase of the client certificate private key",
+                                            "maxLength": 1024
+                                        },
+                                        "honorCipherOrder": {
+                                            "type": "boolean",
+                                            "description": "Prefer the ciphers in the order given rather than the order the server lists them"
+                                        },
+                                        "ecdhCurve": {
+                                            "type": "string",
+                                            "description": "ECDH curve name or list for key agreement",
+                                            "maxLength": 256
+                                        },
+                                        "sigalgs": {
+                                            "type": "string",
+                                            "description": "Supported signature algorithms, colon separated",
+                                            "maxLength": 1024
+                                        },
+                                        "secureOptions": {
+                                            "type": "integer",
+                                            "description": "OpenSSL option flags, as a number"
                                         }
                                     }
                                 },
@@ -533,6 +611,13 @@
                                     ],
                                     "default": false
                                 },
+                                "requireTLS": {
+                                    "type": "boolean",
+                                    "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a server on a trusted network that has no TLS at all",
+                                    "examples": [
+                                        true
+                                    ]
+                                },
                                 "tls": {
                                     "type": "object",
                                     "description": "Advanced TLS configuration options",
@@ -552,6 +637,77 @@
                                                 "TLSv1.2"
                                             ],
                                             "maxLength": 256
+                                        },
+                                        "maxVersion": {
+                                            "type": "string",
+                                            "description": "Maximum TLS version to accept",
+                                            "examples": [
+                                                "TLSv1.3"
+                                            ],
+                                            "maxLength": 256
+                                        },
+                                        "servername": {
+                                            "type": "string",
+                                            "description": "Server name for SNI and certificate validation, when it differs from the host",
+                                            "examples": [
+                                                "imap.example.com"
+                                            ],
+                                            "maxLength": 256
+                                        },
+                                        "ciphers": {
+                                            "type": "string",
+                                            "description": "Cipher suite specification, in OpenSSL format",
+                                            "maxLength": 1024
+                                        },
+                                        "ca": {
+                                            "description": "Trusted CA certificates in PEM format, replacing the default trust store",
+                                            "anyOf": [
+                                                {
+                                                    "type": "string",
+                                                    "maxLength": 65536
+                                                },
+                                                {
+                                                    "type": "array",
+                                                    "maxItems": 32,
+                                                    "items": {
+                                                        "type": "string",
+                                                        "maxLength": 65536
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "cert": {
+                                            "type": "string",
+                                            "description": "Client certificate in PEM format, for servers that require one",
+                                            "maxLength": 65536
+                                        },
+                                        "key": {
+                                            "type": "string",
+                                            "description": "Private key of the client certificate in PEM format",
+                                            "maxLength": 65536
+                                        },
+                                        "passphrase": {
+                                            "type": "string",
+                                            "description": "Passphrase of the client certificate private key",
+                                            "maxLength": 1024
+                                        },
+                                        "honorCipherOrder": {
+                                            "type": "boolean",
+                                            "description": "Prefer the ciphers in the order given rather than the order the server lists them"
+                                        },
+                                        "ecdhCurve": {
+                                            "type": "string",
+                                            "description": "ECDH curve name or list for key agreement",
+                                            "maxLength": 256
+                                        },
+                                        "sigalgs": {
+                                            "type": "string",
+                                            "description": "Supported signature algorithms, colon separated",
+                                            "maxLength": 1024
+                                        },
+                                        "secureOptions": {
+                                            "type": "integer",
+                                            "description": "OpenSSL option flags, as a number"
                                         }
                                     }
                                 }
@@ -843,7 +999,9 @@
                             "description": "Gmail thread ID to attach the outgoing message to",
                             "examples": [
                                 "1694936993596975454"
-                            ]
+                            ],
+                            "maxLength": 256,
+                            "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\?#%\\u0000-\\u001f\\u007f]+$"
                         }
                     }
                 },
@@ -1153,6 +1311,13 @@
                         true
                     ],
                     "default": false
+                },
+                "requireTLS": {
+                    "type": "boolean",
+                    "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a relay on a trusted network that has no TLS at all",
+                    "examples": [
+                        true
+                    ]
                 }
             },
             "additionalProperties": false,
@@ -2206,7 +2371,7 @@
     {
         "name": "get_settings",
         "title": "Get settings",
-        "description": "Read instance settings. Set each setting you want returned to true. Secrets come back as a boolean saying whether a value is stored, credentials inside URLs are masked, and eventTypes lists the webhook event names the instance supports. Settings that would widen this credential (operator scripts, the link signing secret, the authentication server, proxy trust and local addresses, proxies, the built-in listeners, TLS certificates and provisioning, the service URL, mail certificate checking, the AI key and endpoint, custom webhook headers, hosted page markup, the MCP and audit switches, and error reporting) are not offered.",
+        "description": "Read instance settings. Set each setting you want returned to true. Secrets come back as a boolean saying whether a value is stored, credentials inside URLs are masked, and eventTypes lists the webhook event names the instance supports. Settings that would widen this credential (operator scripts, the link signing secret, the authentication server, proxy trust and local addresses, proxies, the built-in listeners, TLS certificates and provisioning, the service URL, mail certificate checking, the AI key and endpoint, the webhook target and its custom headers, hosted page markup, the MCP and audit switches, and error reporting) are not offered.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -2215,10 +2380,6 @@
                     "default": false
                 },
                 "webhooksEnabled": {
-                    "type": "boolean",
-                    "default": false
-                },
-                "webhooks": {
                     "type": "boolean",
                     "default": false
                 },
@@ -3292,14 +3453,17 @@
                             "examples": [
                                 "1278455344230334865"
                             ],
-                            "maxLength": 256
+                            "maxLength": 256,
+                            "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\?#%\\u0000-\\u001f\\u007f]+$"
                         },
                         "threadId": {
                             "type": "string",
                             "description": "Thread identifier for email conversations (when supported by the email server)",
                             "examples": [
                                 "1694936993596975454"
-                            ]
+                            ],
+                            "maxLength": 256,
+                            "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\?#%\\u0000-\\u001f\\u007f]+$"
                         },
                         "header": {
                             "type": "object",
@@ -3364,7 +3528,8 @@
                                 "examples": [
                                     "1278455344230334865"
                                 ],
-                                "maxLength": 256
+                                "maxLength": 256,
+                                "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\?#%\\u0000-\\u001f\\u007f]+$"
                             }
                         }
                     }
@@ -3452,7 +3617,9 @@
                             "description": "Gmail thread ID to attach the outgoing message to",
                             "examples": [
                                 "1694936993596975454"
-                            ]
+                            ],
+                            "maxLength": 256,
+                            "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\?#%\\u0000-\\u001f\\u007f]+$"
                         }
                     }
                 },
@@ -4090,6 +4257,13 @@
                                         true
                                     ]
                                 },
+                                "requireTLS": {
+                                    "type": "boolean",
+                                    "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a server on a trusted network that has no TLS at all",
+                                    "examples": [
+                                        true
+                                    ]
+                                },
                                 "tls": {
                                     "type": "object",
                                     "description": "Advanced TLS configuration options",
@@ -4103,11 +4277,82 @@
                                         },
                                         "minVersion": {
                                             "type": "string",
-                                            "description": "Minimum TLS version to accept",
+                                            "description": "Minimum TLS version to accept (e.g., \"TLSv1.2\", \"TLSv1.3\")",
                                             "examples": [
                                                 "TLSv1.2"
                                             ],
                                             "maxLength": 256
+                                        },
+                                        "maxVersion": {
+                                            "type": "string",
+                                            "description": "Maximum TLS version to accept",
+                                            "examples": [
+                                                "TLSv1.3"
+                                            ],
+                                            "maxLength": 256
+                                        },
+                                        "servername": {
+                                            "type": "string",
+                                            "description": "Server name for SNI and certificate validation, when it differs from the host",
+                                            "examples": [
+                                                "imap.example.com"
+                                            ],
+                                            "maxLength": 256
+                                        },
+                                        "ciphers": {
+                                            "type": "string",
+                                            "description": "Cipher suite specification, in OpenSSL format",
+                                            "maxLength": 1024
+                                        },
+                                        "ca": {
+                                            "description": "Trusted CA certificates in PEM format, replacing the default trust store",
+                                            "anyOf": [
+                                                {
+                                                    "type": "string",
+                                                    "maxLength": 65536
+                                                },
+                                                {
+                                                    "type": "array",
+                                                    "maxItems": 32,
+                                                    "items": {
+                                                        "type": "string",
+                                                        "maxLength": 65536
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "cert": {
+                                            "type": "string",
+                                            "description": "Client certificate in PEM format, for servers that require one",
+                                            "maxLength": 65536
+                                        },
+                                        "key": {
+                                            "type": "string",
+                                            "description": "Private key of the client certificate in PEM format",
+                                            "maxLength": 65536
+                                        },
+                                        "passphrase": {
+                                            "type": "string",
+                                            "description": "Passphrase of the client certificate private key",
+                                            "maxLength": 1024
+                                        },
+                                        "honorCipherOrder": {
+                                            "type": "boolean",
+                                            "description": "Prefer the ciphers in the order given rather than the order the server lists them"
+                                        },
+                                        "ecdhCurve": {
+                                            "type": "string",
+                                            "description": "ECDH curve name or list for key agreement",
+                                            "maxLength": 256
+                                        },
+                                        "sigalgs": {
+                                            "type": "string",
+                                            "description": "Supported signature algorithms, colon separated",
+                                            "maxLength": 1024
+                                        },
+                                        "secureOptions": {
+                                            "type": "integer",
+                                            "description": "OpenSSL option flags, as a number"
                                         }
                                     }
                                 },
@@ -4297,6 +4542,13 @@
                                         false
                                     ]
                                 },
+                                "requireTLS": {
+                                    "type": "boolean",
+                                    "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a server on a trusted network that has no TLS at all",
+                                    "examples": [
+                                        true
+                                    ]
+                                },
                                 "tls": {
                                     "type": "object",
                                     "description": "Advanced TLS configuration options",
@@ -4310,11 +4562,82 @@
                                         },
                                         "minVersion": {
                                             "type": "string",
-                                            "description": "Minimum TLS version to accept",
+                                            "description": "Minimum TLS version to accept (e.g., \"TLSv1.2\", \"TLSv1.3\")",
                                             "examples": [
                                                 "TLSv1.2"
                                             ],
                                             "maxLength": 256
+                                        },
+                                        "maxVersion": {
+                                            "type": "string",
+                                            "description": "Maximum TLS version to accept",
+                                            "examples": [
+                                                "TLSv1.3"
+                                            ],
+                                            "maxLength": 256
+                                        },
+                                        "servername": {
+                                            "type": "string",
+                                            "description": "Server name for SNI and certificate validation, when it differs from the host",
+                                            "examples": [
+                                                "imap.example.com"
+                                            ],
+                                            "maxLength": 256
+                                        },
+                                        "ciphers": {
+                                            "type": "string",
+                                            "description": "Cipher suite specification, in OpenSSL format",
+                                            "maxLength": 1024
+                                        },
+                                        "ca": {
+                                            "description": "Trusted CA certificates in PEM format, replacing the default trust store",
+                                            "anyOf": [
+                                                {
+                                                    "type": "string",
+                                                    "maxLength": 65536
+                                                },
+                                                {
+                                                    "type": "array",
+                                                    "maxItems": 32,
+                                                    "items": {
+                                                        "type": "string",
+                                                        "maxLength": 65536
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "cert": {
+                                            "type": "string",
+                                            "description": "Client certificate in PEM format, for servers that require one",
+                                            "maxLength": 65536
+                                        },
+                                        "key": {
+                                            "type": "string",
+                                            "description": "Private key of the client certificate in PEM format",
+                                            "maxLength": 65536
+                                        },
+                                        "passphrase": {
+                                            "type": "string",
+                                            "description": "Passphrase of the client certificate private key",
+                                            "maxLength": 1024
+                                        },
+                                        "honorCipherOrder": {
+                                            "type": "boolean",
+                                            "description": "Prefer the ciphers in the order given rather than the order the server lists them"
+                                        },
+                                        "ecdhCurve": {
+                                            "type": "string",
+                                            "description": "ECDH curve name or list for key agreement",
+                                            "maxLength": 256
+                                        },
+                                        "sigalgs": {
+                                            "type": "string",
+                                            "description": "Supported signature algorithms, colon separated",
+                                            "maxLength": 1024
+                                        },
+                                        "secureOptions": {
+                                            "type": "integer",
+                                            "description": "OpenSSL option flags, as a number"
                                         }
                                     }
                                 }
@@ -4501,6 +4824,13 @@
                 "secure": {
                     "type": "boolean",
                     "description": "Should connection use TLS. Usually true for port 465",
+                    "examples": [
+                        true
+                    ]
+                },
+                "requireTLS": {
+                    "type": "boolean",
+                    "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a relay on a trusted network that has no TLS at all",
                     "examples": [
                         true
                     ]
@@ -4893,20 +5223,13 @@
     {
         "name": "update_settings",
         "title": "Update settings",
-        "description": "Change instance settings. Send only the keys to change; they take effect immediately on every worker. Covers where webhooks are delivered and which events are sent, notification shaping, branding, sync strategy, queue retention and AI processing. Confirm with the user before changing the webhook target. The settings that would widen this credential (operator scripts, the link signing secret, the authentication server, proxy trust and local addresses, proxies, the built-in listeners, TLS certificates and provisioning, the service URL, mail certificate checking, the AI key and endpoint, custom webhook headers, hosted page markup, the MCP and audit switches, and error reporting) are not offered.",
+        "description": "Change instance settings. Send only the keys to change; they take effect immediately on every worker. Covers where webhooks are delivered and which events are sent, notification shaping, branding, sync strategy, queue retention and AI processing. Confirm with the user before changing the webhook target. The settings that would widen this credential (operator scripts, the link signing secret, the authentication server, proxy trust and local addresses, proxies, the built-in listeners, TLS certificates and provisioning, the service URL, mail certificate checking, the AI key and endpoint, the webhook target and its custom headers, hosted page markup, the MCP and audit switches, and error reporting) are not offered.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "webhooksEnabled": {
                     "type": "boolean",
                     "description": "Enable or disable webhook delivery for all accounts"
-                },
-                "webhooks": {
-                    "type": "string",
-                    "description": "Target URL that will receive webhook notifications via POST requests",
-                    "examples": [
-                        "https://api.example.com/email/webhooks"
-                    ]
                 },
                 "webhookEvents": {
                     "type": "array",
@@ -5458,6 +5781,13 @@
                                     ],
                                     "default": false
                                 },
+                                "requireTLS": {
+                                    "type": "boolean",
+                                    "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a server on a trusted network that has no TLS at all",
+                                    "examples": [
+                                        true
+                                    ]
+                                },
                                 "tls": {
                                     "type": "object",
                                     "description": "Advanced TLS configuration options",
@@ -5477,6 +5807,77 @@
                                                 "TLSv1.2"
                                             ],
                                             "maxLength": 256
+                                        },
+                                        "maxVersion": {
+                                            "type": "string",
+                                            "description": "Maximum TLS version to accept",
+                                            "examples": [
+                                                "TLSv1.3"
+                                            ],
+                                            "maxLength": 256
+                                        },
+                                        "servername": {
+                                            "type": "string",
+                                            "description": "Server name for SNI and certificate validation, when it differs from the host",
+                                            "examples": [
+                                                "imap.example.com"
+                                            ],
+                                            "maxLength": 256
+                                        },
+                                        "ciphers": {
+                                            "type": "string",
+                                            "description": "Cipher suite specification, in OpenSSL format",
+                                            "maxLength": 1024
+                                        },
+                                        "ca": {
+                                            "description": "Trusted CA certificates in PEM format, replacing the default trust store",
+                                            "anyOf": [
+                                                {
+                                                    "type": "string",
+                                                    "maxLength": 65536
+                                                },
+                                                {
+                                                    "type": "array",
+                                                    "maxItems": 32,
+                                                    "items": {
+                                                        "type": "string",
+                                                        "maxLength": 65536
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "cert": {
+                                            "type": "string",
+                                            "description": "Client certificate in PEM format, for servers that require one",
+                                            "maxLength": 65536
+                                        },
+                                        "key": {
+                                            "type": "string",
+                                            "description": "Private key of the client certificate in PEM format",
+                                            "maxLength": 65536
+                                        },
+                                        "passphrase": {
+                                            "type": "string",
+                                            "description": "Passphrase of the client certificate private key",
+                                            "maxLength": 1024
+                                        },
+                                        "honorCipherOrder": {
+                                            "type": "boolean",
+                                            "description": "Prefer the ciphers in the order given rather than the order the server lists them"
+                                        },
+                                        "ecdhCurve": {
+                                            "type": "string",
+                                            "description": "ECDH curve name or list for key agreement",
+                                            "maxLength": 256
+                                        },
+                                        "sigalgs": {
+                                            "type": "string",
+                                            "description": "Supported signature algorithms, colon separated",
+                                            "maxLength": 1024
+                                        },
+                                        "secureOptions": {
+                                            "type": "integer",
+                                            "description": "OpenSSL option flags, as a number"
                                         }
                                     }
                                 },
@@ -5673,6 +6074,13 @@
                                     ],
                                     "default": false
                                 },
+                                "requireTLS": {
+                                    "type": "boolean",
+                                    "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a server on a trusted network that has no TLS at all",
+                                    "examples": [
+                                        true
+                                    ]
+                                },
                                 "tls": {
                                     "type": "object",
                                     "description": "Advanced TLS configuration options",
@@ -5692,6 +6100,77 @@
                                                 "TLSv1.2"
                                             ],
                                             "maxLength": 256
+                                        },
+                                        "maxVersion": {
+                                            "type": "string",
+                                            "description": "Maximum TLS version to accept",
+                                            "examples": [
+                                                "TLSv1.3"
+                                            ],
+                                            "maxLength": 256
+                                        },
+                                        "servername": {
+                                            "type": "string",
+                                            "description": "Server name for SNI and certificate validation, when it differs from the host",
+                                            "examples": [
+                                                "imap.example.com"
+                                            ],
+                                            "maxLength": 256
+                                        },
+                                        "ciphers": {
+                                            "type": "string",
+                                            "description": "Cipher suite specification, in OpenSSL format",
+                                            "maxLength": 1024
+                                        },
+                                        "ca": {
+                                            "description": "Trusted CA certificates in PEM format, replacing the default trust store",
+                                            "anyOf": [
+                                                {
+                                                    "type": "string",
+                                                    "maxLength": 65536
+                                                },
+                                                {
+                                                    "type": "array",
+                                                    "maxItems": 32,
+                                                    "items": {
+                                                        "type": "string",
+                                                        "maxLength": 65536
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "cert": {
+                                            "type": "string",
+                                            "description": "Client certificate in PEM format, for servers that require one",
+                                            "maxLength": 65536
+                                        },
+                                        "key": {
+                                            "type": "string",
+                                            "description": "Private key of the client certificate in PEM format",
+                                            "maxLength": 65536
+                                        },
+                                        "passphrase": {
+                                            "type": "string",
+                                            "description": "Passphrase of the client certificate private key",
+                                            "maxLength": 1024
+                                        },
+                                        "honorCipherOrder": {
+                                            "type": "boolean",
+                                            "description": "Prefer the ciphers in the order given rather than the order the server lists them"
+                                        },
+                                        "ecdhCurve": {
+                                            "type": "string",
+                                            "description": "ECDH curve name or list for key agreement",
+                                            "maxLength": 256
+                                        },
+                                        "sigalgs": {
+                                            "type": "string",
+                                            "description": "Supported signature algorithms, colon separated",
+                                            "maxLength": 1024
+                                        },
+                                        "secureOptions": {
+                                            "type": "integer",
+                                            "description": "OpenSSL option flags, as a number"
                                         }
                                     }
                                 }

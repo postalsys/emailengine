@@ -781,6 +781,28 @@ test('Tools utility tests', async t => {
         assert.strictEqual(tools.isEndedSession(1, undefined), true);
     });
 
+    await t.test('formatSecretHint() leaves little of the secret and sanitizeUrlError() redacts the URL an error carries', () => {
+        // the hint reaches API error payloads and webhooks, so three characters and the length
+        assert.strictEqual(tools.formatSecretHint('GOCSPX-abcdefghijklmnopqrstuvwxyz'), 'GOC... (33B)');
+        assert.strictEqual(tools.formatSecretHint(''), '... (0B)');
+        assert.strictEqual(tools.formatSecretHint(undefined), '... (0B)');
+
+        // a URL parser error names the string it failed on, proxy credentials included
+        let err;
+        try {
+            new URL('socks5://user:s3cret@[bad');
+        } catch (e) {
+            err = e;
+        }
+        assert.match(err.input, /s3cret/);
+        tools.sanitizeUrlError(err);
+        assert.doesNotMatch(err.input, /s3cret/);
+        // tolerant of everything else
+        assert.strictEqual(tools.sanitizeUrlError(null), null);
+        const plain = new Error('x');
+        assert.strictEqual(tools.sanitizeUrlError(plain), plain);
+    });
+
     await t.test('isEndedSession() ages a session out by the time it was issued', () => {
         // The sealed cookie carries no expiry, so a cookie captured once used to stay valid until
         // the next password change
