@@ -20,3 +20,13 @@ updates:
             update-types:
                 - version-update:semver-major
                 - version-update:semver-minor
+
+    # The workflows pin every third-party action to a commit, so a moved tag cannot change what
+    # runs next to the deploy key, the provider credentials or the npm publishing identity. This
+    # entry is what keeps those pins current
+    - package-ecosystem: github-actions
+      directory: /
+      schedule:
+          interval: weekly
+      commit-message:
+          prefix: ci

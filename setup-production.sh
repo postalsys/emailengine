@@ -23,8 +23,10 @@ generate_secret() {
     openssl rand -hex 32 2>/dev/null || cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1
 }
 
+# Hex rather than base64: the password goes into a redis:// URL, where "/" and "+" of a base64
+# value made the URL unparseable about half the time
 generate_password() {
-    openssl rand -base64 32 2>/dev/null || cat /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&*()_+' | fold -w 32 | head -n 1
+    openssl rand -hex 24 2>/dev/null || cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 48 | head -n 1
 }
 
 print_message $GREEN "==================================="

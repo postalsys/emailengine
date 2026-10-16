@@ -26,6 +26,12 @@ scripts
 systemd
 manual-test
 
+# Development and test configuration: config/test.toml carries a prepared API token and binds
+# the API to every interface, and config/development* is the developer's own. The image runs
+# with the production configuration
+config/development*
+config/test.toml
+
 # Local environment, secrets and editor state. keylog.txt is a TLS key log (npm run dev writes one);
 # it is gitignored, but nothing else would keep it out of the context and the layer cache.
 .env*

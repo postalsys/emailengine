@@ -214,20 +214,31 @@ if ! id -u emailengine >/dev/null 2>&1; then
     useradd -r -s /bin/false -d /opt/emailengine -m emailengine
 fi
 
-# Set proper ownership
-chown emailengine:emailengine /opt/emailengine
+# The binary stays root's: root runs it (/opt/emailengine -v) during installs and upgrades, so a
+# binary the service user could replace would run its code as root at the next upgrade. The
+# service user only needs to execute it
+chown root:root /opt/emailengine
+chmod 755 /opt/emailengine
 
 # Create unit file for EmailEngine (skip if upgrading)
 if [ "$IS_UPGRADE" = false ]; then
+    # The secrets live in a root-only file rather than in the unit: a unit file is world readable
+    # and `systemctl show` hands its Environment= lines to any local user over the bus, which is
+    # the key to every stored credential
+    (umask 077 && echo "EENGINE_REDIS=redis://:${REDIS_PASSWORD}@127.0.0.1:6379/8
+EENGINE_SECRET=${EENGINE_SECRET}" > /etc/emailengine.env)
+    chown root:root /etc/emailengine.env
+    chmod 600 /etc/emailengine.env
+
     echo "[Unit]
 Description=EmailEngine
 After=redis-server
 
 [Service]
-# Configure environment variables
-Environment=\"EENGINE_REDIS=redis://:${REDIS_PASSWORD}@127.0.0.1:6379/8\"
+# Configure environment variables. The Redis URL and the encryption secret are in
+# /etc/emailengine.env, readable by root only
+EnvironmentFile=/etc/emailengine.env
 Environment=\"EENGINE_PORT=3000\"
-Environment=\"EENGINE_SECRET=${EENGINE_SECRET}\"
 Environment=\"EENGINE_API_PROXY=true\"
 # Caddy on this host is the only proxy allowed to set X-Forwarded-For
 Environment=\"EENGINE_API_PROXY_ADDRESSES=127.0.0.1,::1\"
@@ -337,8 +348,9 @@ if [ "$OLD_VERSION" = "$NEW_VERSION" ]; then
 else
     mv emailengine /opt
     rm -rf "$TMPDIR"
-    chmod +x /opt/emailengine
-    chown emailengine:emailengine /opt/emailengine
+    # root's binary, executable by the service user (see install.sh)
+    chmod 755 /opt/emailengine
+    chown root:root /opt/emailengine
     systemctl restart emailengine
 
     echo "Upgraded EmailEngine"

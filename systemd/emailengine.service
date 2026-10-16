@@ -81,6 +81,23 @@ Type=simple
 Restart=always
 RestartSec=5
 
+# --- Hardening ---
+
+# The process needs no privileges beyond its user, writes only under its own directories and the
+# temporary directory, and must not be readable by another service on the host: /proc/<pid>/environ
+# carries EENGINE_SECRET, which opens every stored credential.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectProc=invisible
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+
 # Increase limits
 # file size, ulimit -f
 LimitFSIZE=infinity
