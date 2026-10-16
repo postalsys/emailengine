@@ -20,6 +20,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { getRawEmail, removeBcc } = require('../lib/get-raw-email');
+const { MAX_DELIVERY_ATTEMPTS } = require('../lib/consts');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
@@ -47,6 +48,21 @@ test('getRawEmail - raw path (processMessage)', async t => {
         assert.strictEqual(res.hasBcc, false);
         assert.strictEqual(res.envelope.from, 'alice@example.com');
         assert.deepStrictEqual(res.envelope.to, ['bob@example.org']);
+    });
+
+    await t.test('a delivery-attempts header is held to the bound the API applies', async () => {
+        // the header is what a stored draft or an SMTP submission carries, and nothing else
+        // validated it: 1e9 attempts, or zero, were taken as written
+        const attempts = async value => {
+            const raw = rawMessage(['From: Alice <alice@example.com>', 'To: bob@example.org', `X-EE-Delivery-Attempts: ${value}`], 'Body');
+            const res = await getRawEmail({ raw }, null);
+            assert.doesNotMatch(res.raw.toString(), /^X-EE-Delivery-Attempts/m, 'the header is removed');
+            return res.deliveryAttempts;
+        };
+        assert.strictEqual(await attempts('5'), 5);
+        assert.strictEqual(await attempts('1000000000'), MAX_DELIVERY_ATTEMPTS);
+        assert.strictEqual(await attempts('0'), 1);
+        assert.strictEqual(await attempts('-3'), 1);
     });
 
     await t.test('accepts data.raw as a base64 string', async () => {

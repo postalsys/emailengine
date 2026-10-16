@@ -69,13 +69,14 @@ function stubToolkit() {
 
 // Opens a listen stream and swaps its sendMessage for a recorder, so fanout targeting can be
 // asserted without parsing SSE frames (delivery itself is lib/response-stream territory)
-function openRecordingStream({ credential, accepted }) {
+function openRecordingStream({ credential, accepted, server }) {
     const sent = [];
     const response = openListenStream({
         h: stubToolkit(),
         request: stubRequest(credential),
         subscriptionId: `sub-${credential}`,
-        accepted
+        accepted,
+        server
     });
     const stream = response.stream;
     stream.sendMessage = message => sent.push(message);
@@ -152,6 +153,23 @@ test('MCP listen streams', async t => {
             assert.equal(one.sent.length + two.sent.length + silent.sent.length, 1);
         } finally {
             for (const opened of [one, two, silent]) {
+                opened.stream.finalize();
+            }
+        }
+    });
+
+    await t.test('a re-check pass ends a stream that has nothing left to watch', async () => {
+        // Such a stream used to be skipped by the pass, so it outlived a token revocation for as
+        // long as the client kept it open; one with a surviving subscription stays
+        const server = stubServer(['a1']);
+        const empty = openRecordingStream({ credential: 'cred-empty', accepted: {}, server });
+        const watching = openRecordingStream({ credential: 'cred-watching', accepted: { resourceSubscriptions: [accountUri('a1')] }, server });
+        try {
+            await recheckListenStreams();
+            assert.equal(empty.stream._finalized, true, 'the empty stream is ended');
+            assert.notEqual(watching.stream._finalized, true, 'the watching stream stays open');
+        } finally {
+            for (const opened of [empty, watching]) {
                 opened.stream.finalize();
             }
         }

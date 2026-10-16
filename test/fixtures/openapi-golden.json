@@ -6033,11 +6033,12 @@
       },
       "MailMergeList": {
         "type": "array",
-        "description": "Mail merge options. A separate email is generated for each recipient",
+        "description": "Mail merge options. A separate email is generated for each recipient, up to 1000 per request",
         "x-meta": {
           "usage": "Use this to send one personalised message per recipient in a single request, instead of one request each. Each entry gets its own queue id and its own delivery.\n\nIt takes over addressing and rendering for the whole request: `messageId`, `envelope`, `to`, `cc`, `bcc` and `render` at the message root are rejected, because each entry supplies its own."
         },
         "minItems": 1,
+        "maxItems": 1000,
         "items": {
           "$ref": "#/components/schemas/MailMergeListEntry"
         }

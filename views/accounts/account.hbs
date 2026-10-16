@@ -989,7 +989,7 @@ submitLabel="Delete account"}}
         const reconnectAccount = async () => {
             const account = document.getElementById('account-id').value.trim();
 
-            const data = await uiPostJson(`/admin/accounts/${account}/reconnect`, {
+            const data = await uiPostJson(`/admin/accounts/${encodeURIComponent(account)}/reconnect`, {
                 reconnect: true
             });
 
@@ -1018,7 +1018,7 @@ submitLabel="Delete account"}}
 
                 uiButtonBusy(requestResumeElm, true);
                 const account = document.getElementById('account-id').value.trim();
-                uiPostJson(`/admin/accounts/${account}/resume`, {}).then(data => {
+                uiPostJson(`/admin/accounts/${encodeURIComponent(account)}/resume`, {}).then(data => {
                     if (data.success) {
                         // Both the button and the alert explaining why it was there belong to the
                         // switched-off state, so reload rather than leave either behind. No toast:
@@ -1038,7 +1038,7 @@ submitLabel="Delete account"}}
         const syncAccount = async () => {
             const account = document.getElementById('account-id').value.trim();
 
-            const data = await uiPostJson(`/admin/accounts/${account}/sync`, {
+            const data = await uiPostJson(`/admin/accounts/${encodeURIComponent(account)}/sync`, {
                 sync: true
             });
 
@@ -1059,7 +1059,7 @@ submitLabel="Delete account"}}
             let current = document.getElementById('logs-info').dataset.logs;
             let toggled = current === 'enabled' ? false : true;
 
-            const data = await uiPostJson(`/admin/accounts/${account}/logs`, {
+            const data = await uiPostJson(`/admin/accounts/${encodeURIComponent(account)}/logs`, {
                 enabled: toggled
             });
             if (data.enabled) {
@@ -1102,7 +1102,7 @@ submitLabel="Delete account"}}
             e.preventDefault();
             const account = document.getElementById('account-id').value.trim();
             uiBusyAction(flushLogsElm, () =>
-                uiPostJson(`/admin/accounts/${account}/logs-flush`).then(data => {
+                uiPostJson(`/admin/accounts/${encodeURIComponent(account)}/logs-flush`).then(data => {
                     if (data.success) {
                         markLogsEmpty();
                     }
@@ -1118,7 +1118,7 @@ submitLabel="Delete account"}}
             if (!indicator) return;
 
             try {
-                const res = await fetch(`/admin/accounts/${account}/exports?pageSize=1`);
+                const res = await fetch(`/admin/accounts/${encodeURIComponent(account)}/exports?pageSize=1`);
                 if (!res.ok) {
                     indicator.classList.add('hidden');
                     return;
@@ -1201,7 +1201,7 @@ submitLabel="Delete account"}}
 
             const account = document.getElementById('account-id').value.trim();
             try {
-                const res = await fetch(`/admin/accounts/${account}/export/${currentExportId}`);
+                const res = await fetch(`/admin/accounts/${encodeURIComponent(account)}/export/${currentExportId}`);
                 if (!res.ok) {
                     throw new Error(`HTTP error! status: ${res.status}`);
                 }
@@ -1258,7 +1258,7 @@ submitLabel="Delete account"}}
                     stopPolling();
                     document.getElementById('export-download-section').classList.remove('hidden');
                     document.getElementById('export-download-link').href =
-                        `/admin/accounts/${account}/export/${currentExportId}/download`;
+                        `/admin/accounts/${encodeURIComponent(account)}/export/${currentExportId}/download`;
                     progressBar.style.width = '100%';
                     progressBar.setAttribute('aria-valuenow', 100);
                     progressBar.classList.remove('bg-info');
@@ -1280,7 +1280,7 @@ submitLabel="Delete account"}}
         async function checkExistingExport() {
             const account = document.getElementById('account-id').value.trim();
             try {
-                const res = await fetch(`/admin/accounts/${account}/exports?pageSize=1`);
+                const res = await fetch(`/admin/accounts/${encodeURIComponent(account)}/exports?pageSize=1`);
                 if (!res.ok) {
                     showFormView();
                     return;
@@ -1340,7 +1340,7 @@ submitLabel="Delete account"}}
             // would run two exports and leave the first one with nothing pointing at it.
             uiBusyAction(exportStartBtn, async () => {
                 try {
-                    const data = await uiPostJson(`/admin/accounts/${account}/export`, {
+                    const data = await uiPostJson(`/admin/accounts/${encodeURIComponent(account)}/export`, {
                         startDate: startDate + 'T00:00:00Z',
                         endDate: endDate + 'T23:59:59Z',
                         includeAttachments
@@ -1378,7 +1378,7 @@ submitLabel="Delete account"}}
 
             try {
                 // the crumb travels in the header: the route validates DELETE in restful mode
-                const res = await fetch(`/admin/accounts/${account}/export/${currentExportId}`, {
+                const res = await fetch(`/admin/accounts/${encodeURIComponent(account)}/export/${currentExportId}`, {
                     method: 'DELETE',
                     headers: { 'X-CSRF-Token': document.getElementById('crumb').value }
                 });

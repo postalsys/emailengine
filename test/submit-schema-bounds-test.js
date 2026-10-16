@@ -12,6 +12,7 @@ const assert = require('node:assert').strict;
 
 const { redis } = require('../lib/db');
 const { MAX_MESSAGE_ATTACHMENTS } = require('../lib/schemas');
+const { MAX_MAIL_MERGE_ENTRIES } = require('../lib/consts');
 const { captureApiRoutes } = require('./helpers/capture-api-routes');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
@@ -35,6 +36,13 @@ test('submission payload bounds', async t => {
     const submit = payloadOf('POST /v1/account/{account}/submit');
     const draftSubmit = payloadOf('POST /v1/account/{account}/message/{message}/submit');
     const upload = payloadOf('POST /v1/account/{account}/message');
+
+    await t.test(`the mail merge list is capped at ${MAX_MAIL_MERGE_ENTRIES} entries`, () => {
+        // every entry becomes a queued copy of the message, attachments included
+        const entries = n => Array.from({ length: n }, (_, i) => ({ to: { address: `r${i}@example.com` } }));
+        assert.equal(errorsAt(submit, { mailMerge: entries(MAX_MAIL_MERGE_ENTRIES) }, 'mailMerge').length, 0);
+        assert.equal(errorsAt(submit, { mailMerge: entries(MAX_MAIL_MERGE_ENTRIES + 1) }, 'mailMerge').length, 1);
+    });
 
     await t.test('deliveryAttempts stays within 0..100', () => {
         for (const schema of [submit, draftSubmit]) {
