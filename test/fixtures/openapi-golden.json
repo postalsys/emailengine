@@ -236,9 +236,13 @@
       },
       "ca": {
         "type": "array",
+        "example": [
+          "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----"
+        ],
         "maxItems": 32,
         "items": {
           "type": "string",
+          "example": "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----",
           "maxLength": 65536
         }
       },
@@ -273,13 +277,16 @@
           "ciphers": {
             "type": "string",
             "description": "Cipher suite specification, in OpenSSL format",
+            "example": "HIGH:!aNULL:!MD5",
             "maxLength": 1024
           },
           "ca": {
             "description": "Trusted CA certificates in PEM format, replacing the default trust store",
+            "example": "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----",
             "anyOf": [
               {
                 "type": "string",
+                "example": "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----",
                 "maxLength": 65536
               },
               {
@@ -290,35 +297,42 @@
           "cert": {
             "type": "string",
             "description": "Client certificate in PEM format, for servers that require one",
+            "example": "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----",
             "maxLength": 65536
           },
           "key": {
             "type": "string",
             "description": "Private key of the client certificate in PEM format",
+            "example": "-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----",
             "maxLength": 65536
           },
           "passphrase": {
             "type": "string",
             "description": "Passphrase of the client certificate private key",
+            "example": "key passphrase",
             "maxLength": 1024
           },
           "honorCipherOrder": {
             "type": "boolean",
-            "description": "Prefer the ciphers in the order given rather than the order the server lists them"
+            "description": "Prefer the ciphers in the order given rather than the order the server lists them",
+            "example": false
           },
           "ecdhCurve": {
             "type": "string",
             "description": "ECDH curve name or list for key agreement",
+            "example": "auto",
             "maxLength": 256
           },
           "sigalgs": {
             "type": "string",
             "description": "Supported signature algorithms, colon separated",
+            "example": "RSA-PSS+SHA256:ECDSA+SHA256",
             "maxLength": 1024
           },
           "secureOptions": {
             "type": "integer",
-            "description": "OpenSSL option flags, as a number"
+            "description": "OpenSSL option flags, as a number",
+            "example": 0
           }
         }
       },
@@ -516,13 +530,16 @@
           "ciphers": {
             "type": "string",
             "description": "Cipher suite specification, in OpenSSL format",
+            "example": "HIGH:!aNULL:!MD5",
             "maxLength": 1024
           },
           "ca": {
             "description": "Trusted CA certificates in PEM format, replacing the default trust store",
+            "example": "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----",
             "anyOf": [
               {
                 "type": "string",
+                "example": "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----",
                 "maxLength": 65536
               },
               {
@@ -533,35 +550,42 @@
           "cert": {
             "type": "string",
             "description": "Client certificate in PEM format, for servers that require one",
+            "example": "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----",
             "maxLength": 65536
           },
           "key": {
             "type": "string",
             "description": "Private key of the client certificate in PEM format",
+            "example": "-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----",
             "maxLength": 65536
           },
           "passphrase": {
             "type": "string",
             "description": "Passphrase of the client certificate private key",
+            "example": "key passphrase",
             "maxLength": 1024
           },
           "honorCipherOrder": {
             "type": "boolean",
-            "description": "Prefer the ciphers in the order given rather than the order the server lists them"
+            "description": "Prefer the ciphers in the order given rather than the order the server lists them",
+            "example": false
           },
           "ecdhCurve": {
             "type": "string",
             "description": "ECDH curve name or list for key agreement",
+            "example": "auto",
             "maxLength": 256
           },
           "sigalgs": {
             "type": "string",
             "description": "Supported signature algorithms, colon separated",
+            "example": "RSA-PSS+SHA256:ECDSA+SHA256",
             "maxLength": 1024
           },
           "secureOptions": {
             "type": "integer",
-            "description": "OpenSSL option flags, as a number"
+            "description": "OpenSSL option flags, as a number",
+            "example": 0
           }
         }
       },
@@ -2208,13 +2232,16 @@
           "ciphers": {
             "type": "string",
             "description": "Cipher suite specification, in OpenSSL format",
+            "example": "HIGH:!aNULL:!MD5",
             "maxLength": 1024
           },
           "ca": {
             "description": "Trusted CA certificates in PEM format, replacing the default trust store",
+            "example": "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----",
             "anyOf": [
               {
                 "type": "string",
+                "example": "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----",
                 "maxLength": 65536
               },
               {
@@ -2225,35 +2252,42 @@
           "cert": {
             "type": "string",
             "description": "Client certificate in PEM format, for servers that require one",
+            "example": "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----",
             "maxLength": 65536
           },
           "key": {
             "type": "string",
             "description": "Private key of the client certificate in PEM format",
+            "example": "-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----",
             "maxLength": 65536
           },
           "passphrase": {
             "type": "string",
             "description": "Passphrase of the client certificate private key",
+            "example": "key passphrase",
             "maxLength": 1024
           },
           "honorCipherOrder": {
             "type": "boolean",
-            "description": "Prefer the ciphers in the order given rather than the order the server lists them"
+            "description": "Prefer the ciphers in the order given rather than the order the server lists them",
+            "example": false
           },
           "ecdhCurve": {
             "type": "string",
             "description": "ECDH curve name or list for key agreement",
+            "example": "auto",
             "maxLength": 256
           },
           "sigalgs": {
             "type": "string",
             "description": "Supported signature algorithms, colon separated",
+            "example": "RSA-PSS+SHA256:ECDSA+SHA256",
             "maxLength": 1024
           },
           "secureOptions": {
             "type": "integer",
-            "description": "OpenSSL option flags, as a number"
+            "description": "OpenSSL option flags, as a number",
+            "example": 0
           }
         }
       },
@@ -2458,13 +2492,16 @@
           "ciphers": {
             "type": "string",
             "description": "Cipher suite specification, in OpenSSL format",
+            "example": "HIGH:!aNULL:!MD5",
             "maxLength": 1024
           },
           "ca": {
             "description": "Trusted CA certificates in PEM format, replacing the default trust store",
+            "example": "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----",
             "anyOf": [
               {
                 "type": "string",
+                "example": "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----",
                 "maxLength": 65536
               },
               {
@@ -2475,35 +2512,42 @@
           "cert": {
             "type": "string",
             "description": "Client certificate in PEM format, for servers that require one",
+            "example": "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----",
             "maxLength": 65536
           },
           "key": {
             "type": "string",
             "description": "Private key of the client certificate in PEM format",
+            "example": "-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----",
             "maxLength": 65536
           },
           "passphrase": {
             "type": "string",
             "description": "Passphrase of the client certificate private key",
+            "example": "key passphrase",
             "maxLength": 1024
           },
           "honorCipherOrder": {
             "type": "boolean",
-            "description": "Prefer the ciphers in the order given rather than the order the server lists them"
+            "description": "Prefer the ciphers in the order given rather than the order the server lists them",
+            "example": false
           },
           "ecdhCurve": {
             "type": "string",
             "description": "ECDH curve name or list for key agreement",
+            "example": "auto",
             "maxLength": 256
           },
           "sigalgs": {
             "type": "string",
             "description": "Supported signature algorithms, colon separated",
+            "example": "RSA-PSS+SHA256:ECDSA+SHA256",
             "maxLength": 1024
           },
           "secureOptions": {
             "type": "integer",
-            "description": "OpenSSL option flags, as a number"
+            "description": "OpenSSL option flags, as a number",
+            "example": 0
           }
         }
       },
