@@ -106,7 +106,7 @@ services:
             test: >
                 sh -c "
                 if [ -n \"$$REDIS_PASSWORD\" ]; then
-                    redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping
+                    REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli --no-auth-warning ping
                 else
                     redis-cli ping
                 fi

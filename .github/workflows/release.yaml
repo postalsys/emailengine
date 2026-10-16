@@ -3,12 +3,10 @@ on:
         branches:
             - master
 
-permissions:
-    contents: write
-    pull-requests: write
-    packages: write
-    attestations: write
-    id-token: write
+# Every job declares the permissions it needs. A workflow-level grant reaches each job, so the
+# id-token the npm trusted publisher is bound to, and the package registry writes, used to be
+# available to the release-please job and to every third-party action any job ran
+permissions: {}
 
 name: Manage Release
 
@@ -28,6 +26,10 @@ jobs:
     release_please:
         name: Create or prepare release
         runs-on: ubuntu-latest
+        permissions:
+            # the release PR, the tag and the draft release
+            contents: write
+            pull-requests: write
         outputs:
             major: ${{ steps.release.outputs.major }}
             minor: ${{ steps.release.outputs.minor }}
@@ -40,7 +42,7 @@ jobs:
             # so users never see a version whose binaries do not exist yet, and `force-tag-creation`
             # makes the tag anyway: GitHub withholds the tag for a draft, and upload.sh builds
             # from the tag (falling back to HEAD behind an interactive prompt without it).
-            - uses: googleapis/release-please-action@v4
+            - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4
               id: release
 
     tests:
@@ -56,7 +58,7 @@ jobs:
             contents: read
         steps:
             - name: Checkout the wait-for-tests action
-              uses: actions/checkout@v6
+              uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
               with:
                   sparse-checkout: .github/actions/wait-for-tests
 
@@ -90,12 +92,16 @@ jobs:
             contents: read
             id-token: write
         steps:
-            - uses: actions/checkout@v6
-            - uses: actions/setup-node@v6
+            - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+            - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
               with:
                   node-version: 24
                   registry-url: "https://registry.npmjs.org"
-            - run: npm ci
+            # Without lifecycle scripts: this job holds the identity the npm trusted publisher
+            # accepts, and the only script the install would run is the repository's own git hook
+            # setup, which a checkout in CI has no use for. A compromised dependency's install
+            # script must not run next to that identity
+            - run: npm ci --ignore-scripts
             - run: npm publish --provenance --access public
 
     publish_docker:
@@ -109,6 +115,10 @@ jobs:
         # takes the emulator out of the picture.
         runs-on: ${{ matrix.runner }}
         timeout-minutes: 30
+        permissions:
+            contents: read
+            # GHCR, and the registry login of the digest push
+            packages: write
         strategy:
             fail-fast: false
             matrix:
@@ -122,19 +132,19 @@ jobs:
         steps:
             - run: echo version v${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}.${{needs.release_please.outputs.patch}}
 
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
             - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v4
+              uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
             - name: Login to DockerHub
-              uses: docker/login-action@v4
+              uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
               with:
                   username: ${{ secrets.DOCKERHUB_USERNAME }}
                   password: ${{ secrets.DOCKERHUB_TOKEN }}
 
             - name: Login to GHCR
-              uses: docker/login-action@v4
+              uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
               with:
                   registry: ghcr.io
                   username: ${{ github.repository_owner }}
@@ -144,7 +154,7 @@ jobs:
             # never pushed to the tags users pull. The push below replays from this build's local
             # layer cache, so paying for the build twice costs almost nothing.
             - name: Build for smoke test (local)
-              uses: docker/build-push-action@v7
+              uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
               with:
                   context: .
                   platforms: ${{ matrix.platform }}
@@ -163,7 +173,7 @@ jobs:
             # them between registries.
             - name: Build and push by digest
               id: build
-              uses: docker/build-push-action@v7
+              uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
               with:
                   context: .
                   platforms: ${{ matrix.platform }}
@@ -180,7 +190,7 @@ jobs:
                   touch "/tmp/digests/${digest#sha256:}"
 
             - name: Upload digest
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
               with:
                   name: digests-${{ matrix.arch }}
                   path: /tmp/digests/*
@@ -197,9 +207,12 @@ jobs:
         # the gate visible in the job itself rather than only in the job it depends on.
         if: needs.release_please.outputs.release_created
         timeout-minutes: 15
+        permissions:
+            contents: read
+            packages: write
         steps:
             - name: Download digests
-              uses: actions/download-artifact@v4
+              uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
               with:
                   path: /tmp/digests
                   pattern: digests-*
@@ -220,16 +233,16 @@ jobs:
                   fi
 
             - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v4
+              uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
             - name: Login to DockerHub
-              uses: docker/login-action@v4
+              uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
               with:
                   username: ${{ secrets.DOCKERHUB_USERNAME }}
                   password: ${{ secrets.DOCKERHUB_TOKEN }}
 
             - name: Login to GHCR
-              uses: docker/login-action@v4
+              uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
               with:
                   registry: ghcr.io
                   username: ${{ github.repository_owner }}

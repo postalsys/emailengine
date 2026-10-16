@@ -27,10 +27,10 @@ jobs:
         runs-on: ubuntu-24.04
         # Service containers to run with `container-job`
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
             - name: Use Node.js 24
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
               with:
                   node-version: 24
                   cache: npm
@@ -46,9 +46,9 @@ jobs:
         runs-on: ubuntu-24.04
         timeout-minutes: 10
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
             - name: Use Node.js 24
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
               with:
                   node-version: 24
                   cache: npm
@@ -87,9 +87,9 @@ jobs:
                 ports:
                     - 6379:6379
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
             - name: Use Node.js ${{ matrix.node }}
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
               with:
                   node-version: ${{ matrix.node }}
                   cache: npm
@@ -120,9 +120,9 @@ jobs:
                 ports:
                     - 6379:6379
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
             - name: Use Node.js 24
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
               with:
                   node-version: 24
                   cache: npm
@@ -155,12 +155,12 @@ jobs:
         runs-on: ubuntu-24.04
         timeout-minutes: 20
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
             # Single arch: the findings are properties of the base image and the lockfile, neither of
             # which differs per architecture, so scanning both legs would only double the runtime.
             - name: Build the image
-              uses: docker/build-push-action@v7
+              uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
               with:
                   context: .
                   platforms: linux/amd64
@@ -170,7 +170,7 @@ jobs:
                       EE_COMMIT_HASH=${{ github.sha }}
 
             - name: Scan for known vulnerabilities
-              uses: aquasecurity/trivy-action@v0.36.0
+              uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
               with:
                   image-ref: emailengine:scan
                   scanners: vuln
@@ -199,9 +199,9 @@ jobs:
                 ports:
                     - 6379:6379
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
             - name: Use Node.js 24
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
               with:
                   node-version: 24
                   cache: npm
@@ -209,7 +209,7 @@ jobs:
             # Unpinned on purpose, matching upload.sh: releases are built with whatever pkg is
             # current, so a pkg regression should fail here rather than mid-release.
             - name: Install pkg
-              run: npm install -g @yao-pkg/pkg
+              run: npm install -g @yao-pkg/pkg@6.23.0
 
             # The real production tree rather than a dev install. That distinction matters: the
             # empty-ESM-file failure only exists under `npm ci --omit=dev`, and
@@ -274,9 +274,9 @@ jobs:
                 ports:
                     - 6379:6379
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
             - name: Use Node.js 24
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
               with:
                   node-version: 24
                   cache: npm

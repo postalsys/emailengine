@@ -45,3 +45,10 @@ core.*
 
 # Local logs
 *.log
+
+# Deployment tooling and the test configuration - the package is the application, not the host
+# setup, and config/test.toml ships a prepared API token with its plaintext in a comment
+install.sh
+setup-production.sh
+systemd/
+config/test.toml
