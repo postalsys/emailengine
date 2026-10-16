@@ -43,7 +43,9 @@
             {{> ui/form-field id="imap_host" label="Hostname" value=values.imap_host error=errors.imap_host lpignore=true required=true}}
             {{> ui/form-field id="imap_port" type="number" label="Port" value=values.imap_port error=errors.imap_port lpignore=true required=true}}
 
-            {{> ui/checkbox id="imap_secure" label="Use direct TLS" checked=values.imap_secure error=errors.imap_secure tooltip="Usually enabled for port 993. When disabled, EmailEngine uses STARTTLS if the server supports it."}}
+            {{> ui/checkbox id="imap_secure" label="Use direct TLS" checked=values.imap_secure error=errors.imap_secure tooltip="Usually enabled for port 993. When disabled, EmailEngine upgrades the connection with STARTTLS."}}
+
+            {{> ui/checkbox id="imap_requireTLS" label="Require STARTTLS" checked=values.imap_requireTLS error=errors.imap_requireTLS tooltip="When direct TLS is off, fail the connection instead of continuing in cleartext if the server does not offer STARTTLS or the upgrade fails. Disable only for a server on a trusted network that has no TLS at all."}}
 
             {{> ui/checkbox id="imap_tls_ignoreCertErrors" label="Allow invalid certificates" checked=values.imap_tls_ignoreCertErrors error=errors.imap_tls_ignoreCertErrors tooltip="Accept self-signed or otherwise invalid TLS certificates when connecting to the IMAP server of this account. The Allow Insecure Email Certificates option on the Security configuration page applies the same override to all accounts."}}
 
@@ -92,7 +94,9 @@
             {{> ui/form-field id="smtp_host" label="Hostname" value=values.smtp_host error=errors.smtp_host lpignore=true required=true}}
             {{> ui/form-field id="smtp_port" type="number" label="Port" value=values.smtp_port error=errors.smtp_port lpignore=true required=true}}
 
-            {{> ui/checkbox id="smtp_secure" label="Use direct TLS" checked=values.smtp_secure error=errors.smtp_secure tooltip="Usually enabled for port 465. When disabled, EmailEngine uses STARTTLS if the server supports it."}}
+            {{> ui/checkbox id="smtp_secure" label="Use direct TLS" checked=values.smtp_secure error=errors.smtp_secure tooltip="Usually enabled for port 465. When disabled, EmailEngine upgrades the connection with STARTTLS."}}
+
+            {{> ui/checkbox id="smtp_requireTLS" label="Require STARTTLS" checked=values.smtp_requireTLS error=errors.smtp_requireTLS tooltip="When direct TLS is off, fail the connection instead of continuing in cleartext if the server does not offer STARTTLS or the upgrade fails. Disable only for a server on a trusted network that has no TLS at all."}}
 
             {{> ui/checkbox id="smtp_tls_ignoreCertErrors" label="Allow invalid certificates" checked=values.smtp_tls_ignoreCertErrors error=errors.smtp_tls_ignoreCertErrors tooltip="Accept self-signed or otherwise invalid TLS certificates when connecting to the SMTP server of this account. The Allow Insecure Email Certificates option on the Security configuration page applies the same override to all accounts."}}
 

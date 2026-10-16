@@ -305,6 +305,9 @@ test('messageWebSafeHtml: sender markup can not fake the collapse marker', async
                     '<details class=ee-collapsed-thread>hidden three</details>' +
                     '<details/class="ee&#45;collapsed&#x2d;thread">hidden four</details>' +
                     '<details CLASS = "EE-COLLAPSED-THREAD other">hidden five</details>' +
+                    // an attribute name may start right after a quoted value, no space needed
+                    '<details open=""class="ee-collapsed-thread">hidden six</details>' +
+                    "<details id='x'class='ee-collapsed-thread'>hidden seven</details>" +
                     '</body></html>'
             }
         });
@@ -312,6 +315,8 @@ test('messageWebSafeHtml: sender markup can not fake the collapse marker', async
         assert.doesNotMatch(html, /ee-collapsed-thread/i);
         assert.match(html, /hidden one/);
         assert.match(html, /hidden five/);
+        assert.match(html, /hidden six/);
+        assert.match(html, /hidden seven/);
         // unrelated class names survive
         assert.match(html, /class="keep"/);
         assert.match(html, /class="other"/);

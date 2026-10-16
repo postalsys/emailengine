@@ -57,6 +57,29 @@ test('bounce heuristics stay linear on hostile text at the 50 KB window', async 
         assertScalesLinearly('Error:', n => heuristicInput('Error:'.repeat(Math.floor(n / 6))), SIZE)
     );
 
+    await t.test('a run of newlines after "Delivery ... failed:" (recipient on the next line)', () =>
+        // `\s*\n*\s*` used to split a newline run three ways: 400 newlines took over two seconds,
+        // and the IMAP worker replayed the message after every restart
+        assertScalesLinearly('delivery failed newlines', n => heuristicInput('Delivery to the following recipient failed permanently:' + '\n'.repeat(n)), SIZE)
+    );
+
+    await t.test('a run of newlines after "The following recipients were affected:"', () =>
+        assertScalesLinearly('affected newlines', n => heuristicInput('The following recipients were affected:' + '\n'.repeat(n)), SIZE)
+    );
+
+    await t.test('a run of spaces between the host and "said:" (Postfix block)', () =>
+        assertScalesLinearly('host spaces', n => heuristicInput('<a@example.com>: host mx.example.com' + ' '.repeat(n) + 'x'), SIZE)
+    );
+
+    await t.test('the Postfix block still parses with and without the bracketed address', async () => {
+        let result = await heuristicInput('<bob@example.com>: host mx.example.com said: 550 5.1.1 No such user here\n');
+        assert.equal(result.recipient, 'bob@example.com');
+        assert.equal(result.mta, 'mx.example.com');
+
+        result = await heuristicInput('Delivery to the following recipient failed permanently:\n\n\n     dave@example.com\n\nTechnical details');
+        assert.equal(result.recipient, 'dave@example.com');
+    });
+
     await t.test('"host" without a colon inside the Postfix recipient block', () => {
         // Reaching this branch needs a recipient and a response without a message, which a
         // delivery-status part with a Status but no Diagnostic-Code provides

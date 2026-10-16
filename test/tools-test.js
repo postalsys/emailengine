@@ -81,6 +81,30 @@ test('Tools utility tests', async t => {
         setTimeout(() => process.exit(), 1000).unref();
     });
 
+    await t.test('convertDataUrisToAttachments() turns inline images into cid attachments', () => {
+        const data = { html: '<p><img src="data:image/png;base64,iVBORw0KGgo=" alt="x"><img src="https://example.com/a.png"></p>' };
+        tools.convertDataUrisToAttachments(data);
+        assert.equal(data.attachments.length, 1);
+        assert.equal(data.attachments[0].path, 'data:image/png;base64,iVBORw0KGgo=');
+        assert.match(data.html, /src="cid:[^"]+@emailengine"/);
+        assert.match(data.html, /src="https:\/\/example\.com\/a\.png"/);
+    });
+
+    await t.test('convertDataUrisToAttachments() stays linear on a run of unclosed image tags', () => {
+        // `<img[^>]*` used to scan to the end of the body from every tag (80 KB took half a
+        // second; the 5 MB schema cap would have been minutes on the API worker)
+        const time = n => {
+            const data = { html: '<img '.repeat(n) + '<img src="data:image/png;base64,iVBORw0KGgo=">' };
+            const start = process.hrtime.bigint();
+            tools.convertDataUrisToAttachments(data);
+            return Number(process.hrtime.bigint() - start) / 1e6;
+        };
+        const small = time(20000);
+        const large = time(40000);
+        assert.ok(large < 500, `${large.toFixed(1)} ms for 40000 unclosed image tags`);
+        assert.ok(large <= Math.max(small * 3, 50), `${small.toFixed(1)} ms -> ${large.toFixed(1)} ms when doubled`);
+    });
+
     // getDuration tests
     await t.test('getDuration() parses seconds', async () => {
         assert.strictEqual(tools.getDuration('5s'), 5000);
