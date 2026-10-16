@@ -104,6 +104,22 @@ function hrefsOf(html) {
 }
 
 test('addTrackers', async t => {
+    await t.test('a run of unclosed anchors is rewritten in linear time', async () => {
+        // `<a[^>]*` used to scan from every anchor to the end of the body and backtrack over it
+        // looking for ` href` (80 KB took most of a second; the SMTP port reaches this with an
+        // unauthenticated X-EE-Tracking-Enabled header)
+        const time = async n => {
+            const source = buildMessage('<a '.repeat(n) + '<a href="https://example.com/x">x</a>');
+            const start = process.hrtime.bigint();
+            await trackedHtml(source, { trackClicks: true });
+            return Number(process.hrtime.bigint() - start) / 1e6;
+        };
+        const small = await time(10000);
+        const large = await time(20000);
+        assert.ok(large < 500, `${large.toFixed(1)} ms for 20000 unclosed anchors`);
+        assert.ok(large <= Math.max(small * 3, 50), `${small.toFixed(1)} ms -> ${large.toFixed(1)} ms when doubled`);
+    });
+
     await t.test('the open tracker is injected just before the body end tag', async () => {
         const html = await trackedHtml(buildMessage('<html><body><p>Hello</p></body></html>'), { trackOpens: true });
 

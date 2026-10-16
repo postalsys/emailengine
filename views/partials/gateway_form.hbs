@@ -13,6 +13,8 @@
 
     {{> ui/form-field id="port" type="number" label="Port" value=values.port error=errors.port lpignore=true placeholder="587" required=true hint="Common ports: 25 or 587 for STARTTLS, 465 for direct TLS."}}
 
-    {{> ui/checkbox id="secure" label="Use direct TLS" checked=values.secure error=errors.secure tooltip="Usually enabled for port 465. When disabled, EmailEngine uses STARTTLS if the server supports it."}}
+    {{> ui/checkbox id="secure" label="Use direct TLS" checked=values.secure error=errors.secure tooltip="Usually enabled for port 465. When disabled, EmailEngine upgrades the connection with STARTTLS."}}
+
+    {{> ui/checkbox id="requireTLS" label="Require STARTTLS" checked=values.requireTLS error=errors.requireTLS tooltip="When direct TLS is off, fail the connection instead of continuing in cleartext if the server does not offer STARTTLS or the upgrade fails. Disable only for a relay on a trusted network that has no TLS at all."}}
 
 </div>

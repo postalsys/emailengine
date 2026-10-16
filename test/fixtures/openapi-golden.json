@@ -353,6 +353,11 @@
             "example": true,
             "default": false
           },
+          "requireTLS": {
+            "type": "boolean",
+            "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a server on a trusted network that has no TLS at all",
+            "example": true
+          },
           "tls": {
             "$ref": "#/components/schemas/ImapTlsOptions"
           },
@@ -605,6 +610,11 @@
             "description": "Use TLS encryption from the start (true for port 465, false for STARTTLS on ports 587/25)",
             "example": false,
             "default": false
+          },
+          "requireTLS": {
+            "type": "boolean",
+            "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a server on a trusted network that has no TLS at all",
+            "example": true
           },
           "tls": {
             "$ref": "#/components/schemas/SmtpTlsOptions"
@@ -1204,6 +1214,11 @@
             "example": true,
             "default": false
           },
+          "requireTLS": {
+            "type": "boolean",
+            "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a server on a trusted network that has no TLS at all",
+            "example": true
+          },
           "tls": {
             "$ref": "#/components/schemas/ImapTlsOptions"
           },
@@ -1333,6 +1348,11 @@
             "description": "Use TLS encryption from the start (true for port 465, false for STARTTLS on ports 587/25)",
             "example": false,
             "default": false
+          },
+          "requireTLS": {
+            "type": "boolean",
+            "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a server on a trusted network that has no TLS at all",
+            "example": true
           },
           "tls": {
             "$ref": "#/components/schemas/SmtpTlsOptions"
@@ -2291,6 +2311,11 @@
             "description": "Use TLS encryption for the connection",
             "example": true
           },
+          "requireTLS": {
+            "type": "boolean",
+            "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a server on a trusted network that has no TLS at all",
+            "example": true
+          },
           "tls": {
             "$ref": "#/components/schemas/ImapUpdateTlsOptions"
           },
@@ -2535,6 +2560,11 @@
             "type": "boolean",
             "description": "Use TLS encryption from the start",
             "example": false
+          },
+          "requireTLS": {
+            "type": "boolean",
+            "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a server on a trusted network that has no TLS at all",
+            "example": true
           },
           "tls": {
             "$ref": "#/components/schemas/SmtpUpdateTlsOptions"
@@ -7658,6 +7688,11 @@
             "description": "Should connection use TLS. Usually true for port 465",
             "example": true,
             "default": false
+          },
+          "requireTLS": {
+            "type": "boolean",
+            "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a relay on a trusted network that has no TLS at all",
+            "example": true
           }
         },
         "required": [
@@ -7825,6 +7860,12 @@
             "default": false,
             "nullable": true
           },
+          "requireTLS": {
+            "type": "boolean",
+            "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a relay on a trusted network that has no TLS at all",
+            "example": true,
+            "nullable": true
+          },
           "lastError": {
             "$ref": "#/components/schemas/GatewayErrorEntry"
           }
@@ -7897,6 +7938,11 @@
           "secure": {
             "type": "boolean",
             "description": "Should connection use TLS. Usually true for port 465",
+            "example": true
+          },
+          "requireTLS": {
+            "type": "boolean",
+            "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a relay on a trusted network that has no TLS at all",
             "example": true
           }
         }
