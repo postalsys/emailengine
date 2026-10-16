@@ -18,7 +18,7 @@ const tokens = require('../lib/tokens');
 const settings = require('../lib/settings');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
-const { REDIS_PREFIX } = require('../lib/consts');
+const { REDIS_PREFIX, AUTH_FAILURE_DISABLED_FIELD } = require('../lib/consts');
 
 const ACCOUNT = 'imap-proxy-acct';
 const API_ACCOUNT = 'imap-proxy-api-acct';
@@ -183,6 +183,40 @@ test('IMAP proxy auth handler', async t => {
         // promise about what it does inside the IMAP session
         const { accountData } = await authenticate({ username: ACCOUNT, password: fullMailToken }, session());
         assert.strictEqual(accountData.account, ACCOUNT);
+    });
+
+    await t.test('rejects accounts whose IMAP is switched off or parked with ACCOUNTDISABLED', async () => {
+        // A proxy session is an IMAP connection made with the account's credentials, which is
+        // exactly what the send-only switch and the auth-failure park stop
+        await settings.set('imapProxyServerPassword', 'global-proxy-pass');
+        try {
+            const disabled = `${ACCOUNT}-disabled`;
+            await seedAccount(disabled, { imap: JSON.stringify({ host: 'imap.test', port: 993, secure: true, disabled: true }) });
+            await assert.rejects(
+                () => authenticate({ username: disabled, password: 'global-proxy-pass' }, session()),
+                err => {
+                    assert.strictEqual(err.serverResponseCode, 'ACCOUNTDISABLED');
+                    assert.match(err.message, /IMAP is disabled/);
+                    return true;
+                }
+            );
+
+            const parked = `${ACCOUNT}-parked`;
+            await seedAccount(parked, {
+                imap: JSON.stringify({ host: 'imap.test', port: 993, secure: true, disabled: true }),
+                [AUTH_FAILURE_DISABLED_FIELD]: new Date().toISOString()
+            });
+            await assert.rejects(
+                () => authenticate({ username: parked, password: 'global-proxy-pass' }, session()),
+                err => {
+                    assert.strictEqual(err.serverResponseCode, 'ACCOUNTDISABLED');
+                    assert.match(err.message, /repeated authentication failures/);
+                    return true;
+                }
+            );
+        } finally {
+            await settings.set('imapProxyServerPassword', '');
+        }
     });
 
     await t.test('rejects API-only accounts with ACCOUNTDISABLED', async () => {
