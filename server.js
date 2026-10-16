@@ -20,17 +20,21 @@
 // same way. Set before anything can require bullmq; worker threads share this environment.
 process.env.MSGPACKR_NATIVE_ACCELERATION_DISABLED = 'true';
 
-// Load environment variables if not already loaded
-if (!process.env.EE_ENV_LOADED) {
-    require('dotenv').config({ quiet: true });
-    process.env.EE_ENV_LOADED = 'true';
-}
-
-// Attempt to change working directory to script location
+// Attempt to change working directory to script location. Before anything reads a file by a
+// relative path: `.env` below and the `config/` directory wild-config loads (including executable
+// `.js` configuration files, run with the real require) are both resolved against the working
+// directory, and the directory the operator happened to start from is not where this instance's
+// configuration lives
 try {
     process.chdir(__dirname);
 } catch (err) {
     // ignore - may fail in some containerized environments
+}
+
+// Load environment variables if not already loaded
+if (!process.env.EE_ENV_LOADED) {
+    require('dotenv').config({ quiet: true });
+    process.env.EE_ENV_LOADED = 'true';
 }
 
 // Set process title for easier identification in process lists

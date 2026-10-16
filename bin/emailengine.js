@@ -6,6 +6,16 @@
 // lib/db below, off its optional node-gyp decoder. server.js sets the same for a direct start.
 process.env.MSGPACKR_NATIVE_ACCELERATION_DISABLED = 'true';
 
+// The application root is the working directory, as for server.js: the `config/` directory
+// wild-config loads below (executable `.js` configuration files included, run with the real
+// require) and the `.env` file are resolved against it, and the directory a subcommand happened to
+// be started from is not where this instance's configuration lives
+try {
+    process.chdir(require('path').join(__dirname, '..'));
+} catch (err) {
+    // ignore - may fail in a packaged binary or a containerized environment
+}
+
 const packageData = require('../package.json');
 const fs = require('fs');
 const pathlib = require('path');

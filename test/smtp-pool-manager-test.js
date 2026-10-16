@@ -59,6 +59,16 @@ test('generatePoolKey', async t => {
         assert.strictEqual(key, generatePoolKey(makeSettings()));
     });
 
+    await t.test('separates accounts that log their transactions, and nothing else', () => {
+        // the transaction log is written through the account's own logger, so a logged pool is
+        // per account; an unlogged pool to the same server is still shared
+        const base = makeSettings({ transactionLog: true });
+        assert.notStrictEqual(generatePoolKey(Object.assign({}, base, { account: 'a' })), generatePoolKey(Object.assign({}, base, { account: 'b' })));
+        assert.strictEqual(generatePoolKey(Object.assign({}, base, { account: 'a' })), generatePoolKey(Object.assign({}, base, { account: 'a' })));
+        const quiet = makeSettings({ transactionLog: false });
+        assert.strictEqual(generatePoolKey(Object.assign({}, quiet, { account: 'a' })), generatePoolKey(Object.assign({}, quiet, { account: 'b' })));
+    });
+
     await t.test('is independent of property insertion order', () => {
         const a = { host: 'h', port: 25, secure: true, auth: { user: 'u' } };
         const b = { auth: { user: 'u' }, secure: true, port: 25, host: 'h' };

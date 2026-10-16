@@ -50,6 +50,20 @@ test('Encryption tests', async t => {
         assert.strictEqual(decrypted, '');
     });
 
+    await t.test('encrypt() never encrypts a value that is already ciphertext', async () => {
+        // A stored value that did not decrypt (a rotated secret) is read back as it was, and a
+        // partial update of the record writes it back; encrypting it again under the new secret
+        // would put the only recoverable copy beyond the rotation CLI
+        const once = encrypt('the password', 'secret one');
+        assert.strictEqual(encrypt(once, 'secret two'), once);
+        assert.strictEqual(encrypt(once, 'secret one'), once);
+        assert.strictEqual(decrypt(once, 'secret one'), 'the password');
+        // cleartext that merely starts with a dollar is still encrypted
+        const dollar = encrypt('$notaformat$x', 'secret one');
+        assert.notStrictEqual(dollar, '$notaformat$x');
+        assert.strictEqual(decrypt(dollar, 'secret one'), '$notaformat$x');
+    });
+
     await t.test('encrypt() returns different ciphertext for same input (random IV)', async () => {
         const cleartext = 'Same input text';
         const encrypted1 = encrypt(cleartext, testSecret);
