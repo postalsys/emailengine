@@ -58,10 +58,12 @@ test('Settings AI text coupling', async t => {
             webhooksCustomHeaders: headers,
             proxyUrl: 'socks5://user:pass@127.0.0.1:1080',
             // resolveCredentials() sends the userinfo of this URL as basic auth
-            authServer: 'https://auth:pass@auth.example.com/credentials'
+            authServer: 'https://auth:pass@auth.example.com/credentials',
+            // the environment the operator's scripts read their API keys from
+            scriptEnv: '{"API_KEY":"s3cret-Bearer-pass@"}'
         });
 
-        for (const key of ['webhooks', 'webhooksCustomHeaders', 'proxyUrl', 'authServer']) {
+        for (const key of ['webhooks', 'webhooksCustomHeaders', 'proxyUrl', 'authServer', 'scriptEnv']) {
             const raw = await redis.hget(`${REDIS_PREFIX}settings`, key);
             assert.ok(raw.startsWith('$wd02$'), `${key} must be stored encrypted, got ${raw.slice(0, 12)}`);
             assert.ok(!raw.includes('s3cret') && !raw.includes('Bearer') && !raw.includes('pass@'), `${key} must not be stored in the clear`);
@@ -73,6 +75,8 @@ test('Settings AI text coupling', async t => {
         assert.deepStrictEqual(await settings.get('webhooksCustomHeaders'), headers);
         assert.strictEqual(await settings.get('proxyUrl'), 'socks5://user:pass@127.0.0.1:1080');
         assert.strictEqual(await settings.get('authServer'), 'https://auth:pass@auth.example.com/credentials');
+        // stored pretty-printed, so compared as the object it encodes
+        assert.deepStrictEqual(JSON.parse(await settings.get('scriptEnv')), { API_KEY: 's3cret-Bearer-pass@' });
     });
 
     await t.test('an authServer value stored in the clear before it was encrypted still reads', async () => {
