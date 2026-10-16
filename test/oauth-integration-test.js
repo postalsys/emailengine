@@ -133,7 +133,7 @@ test('OAuth integration tests', async t => {
                         assert.strictEqual(err.code, 'ETokenRefresh');
                         assert.strictEqual(err.statusCode, 400);
                         assert.deepStrictEqual(err.tokenRequest.response, { error: 'Failed to parse response' });
-                        assert.strictEqual(err.tokenRequest.clientSecret, undefined);
+                        assert.strictEqual(err.clientSecretHint, undefined);
                         return true;
                     }
                 );
@@ -157,8 +157,8 @@ test('OAuth integration tests', async t => {
                     () => outlook.refreshToken({ refreshToken: 'rt-1' }),
                     err => {
                         assert.strictEqual(err.code, 'ETokenRefresh');
-                        assert.ok(err.tokenRequest.clientSecret, 'partial secret is attached');
-                        assert.notStrictEqual(err.tokenRequest.clientSecret, 'abcdefghijklmnopqrstuvwxyz', 'never the whole secret');
+                        assert.ok(err.clientSecretHint, 'partial secret is attached');
+                        assert.notStrictEqual(err.clientSecretHint, 'abcdefghijklmnopqrstuvwxyz', 'never the whole secret');
                         return true;
                     }
                 );
@@ -175,7 +175,7 @@ test('OAuth integration tests', async t => {
                 await assert.rejects(
                     () => outlook.refreshToken({ refreshToken: 'rt-1' }),
                     err => {
-                        assert.strictEqual(err.tokenRequest.clientSecret, undefined);
+                        assert.strictEqual(err.clientSecretHint, undefined);
                         assert.strictEqual(err.tokenRequest.userFlag.code, 'OUTLOOK_TOKEN_RENEWAL_FAILED');
                         return true;
                     }

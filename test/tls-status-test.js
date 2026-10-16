@@ -68,7 +68,9 @@ test('certificateLabel()', async t => {
     });
 
     await t.test('counts down the last two weeks', () => {
-        const label = status.certificateLabel(certificate({ validTo: new Date(Date.now() + 3 * DAY) }));
+        // an hour of slack, like the cases below: the label reads the clock after this date was
+        // made, and the days are rounded down, so an exact multiple flipped to the day before
+        const label = status.certificateLabel(certificate({ validTo: new Date(Date.now() + 3 * DAY + 3600 * 1000) }));
 
         assert.equal(label.type, 'warning');
         assert.equal(label.text, 'Expires in 3 days');

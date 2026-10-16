@@ -30,7 +30,15 @@ dnsPromises.reverse = async ip => {
 // Fresh copies, since updatePublicInterfaces() mutates the entries it is handed
 pubface.resolvePublicInterfaces = async () => fakeNet.interfaces.map(entry => Object.assign({}, entry));
 
-const { matchIp, resolveClientIp, googleCrawlerMap, detectAutomatedRequest, updatePublicInterfaces, getLocalAddress } = require('../lib/utils/network');
+const {
+    matchIp,
+    resolveClientIp,
+    googleCrawlerMap,
+    detectAutomatedRequest,
+    updatePublicInterfaces,
+    getLocalAddress,
+    budgetAddress
+} = require('../lib/utils/network');
 const { REDIS_PREFIX } = require('../lib/consts');
 
 // The module holds its own references now, so the globals can go back
@@ -564,4 +572,17 @@ test('Network Utilities tests', async t => {
             }
         }
     });
+});
+
+test('budgetAddress() keys an IPv6 client by its /64 and everything else by itself', () => {
+    // the unit a client controls: every per-address budget (the failed-login counts, the admin
+    // sign-in and passkey limiters) is keyed through this one function
+    assert.equal(budgetAddress('2001:db8:1:2:3:4:5:6'), '2001:db8:1:2::/64');
+    assert.equal(budgetAddress('2001:db8:1:2:ffff:ffff:ffff:ffff'), '2001:db8:1:2::/64', 'the same block');
+    assert.notEqual(budgetAddress('2001:db8:1:3::1'), budgetAddress('2001:db8:1:2::1'), 'another block');
+    assert.equal(budgetAddress('203.0.113.7'), '203.0.113.7');
+    assert.equal(budgetAddress('::ffff:203.0.113.7'), '203.0.113.7', 'an IPv4-mapped address is the IPv4 client');
+    assert.equal(budgetAddress(''), 'unknown');
+    assert.equal(budgetAddress(undefined), 'unknown');
+    assert.equal(budgetAddress('not an address'), 'not an address', 'used as it is');
 });

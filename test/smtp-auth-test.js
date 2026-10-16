@@ -14,6 +14,7 @@ const { AUTH_FAILURE_LIMIT, authFailureKey, authFailureAddressKey, AUTH_FAILURE_
 const { rateLimitWindowKey } = require('../lib/rate-limit');
 const { trackedWindow, exhaustBudget } = require('./helpers/auth-throttle');
 const tokens = require('../lib/tokens');
+const tokenAuditLog = require('../lib/token-audit-log');
 const settings = require('../lib/settings');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
@@ -293,6 +294,36 @@ test('SMTP account resolver', async t => {
             }
         );
         assert.ok(!accountCache.has(sess), 'the cached account is dropped with the session');
+    });
+
+    await t.test('the per-submission recheck records neither a use of the token nor an audit entry', async () => {
+        // the token opened the session; what each message asks is whether it still admits it,
+        // and a thousand messages must not look like a thousand logins
+        const prevAudit = await settings.get('tokenAuditLog');
+        await settings.set('tokenAuditLog', true);
+        tokenAuditLog.resetFlagCache();
+        const token = await tokens.provision({ account: ACCOUNT, scopes: ['smtp'], description: 'smtp-auth recheck', nolog: true });
+        const settle = () => new Promise(resolve => setTimeout(resolve, 100));
+        try {
+            const sess = session();
+            assert.deepStrictEqual(await onAuth({ username: ACCOUNT, password: token }, sess), { user: ACCOUNT });
+            await settle();
+            const { id } = await tokens.get(token, false);
+            const accessAfterLogin = await redis.hgetBuffer(`${REDIS_PREFIX}tokens:access`, id);
+            assert.ok(accessAfterLogin, 'the login is a use of the token');
+            const { total: auditAfterLogin } = await tokenAuditLog.list(id);
+            assert.equal(auditAfterLogin, 1, 'and one audit entry');
+
+            await resolveAccount(sess, {});
+            await resolveAccount(sess, {});
+            await settle();
+            assert.deepStrictEqual(await redis.hgetBuffer(`${REDIS_PREFIX}tokens:access`, id), accessAfterLogin, 'the last use is still the login');
+            assert.equal((await tokenAuditLog.list(id)).total, auditAfterLogin, 'and so is the audit trail');
+        } finally {
+            await tokens.delete(token);
+            await settings.set('tokenAuditLog', prevAudit || false);
+            tokenAuditLog.resetFlagCache();
+        }
     });
 
     await t.test('an unauthenticated session names its account with the control header', async () => {
