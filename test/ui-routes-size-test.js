@@ -48,24 +48,32 @@ test('routes-ui.js stays within the size budget', () => {
 // ask whether it should exist.
 const MODULE_BUDGETS = {
     // 2505 -> 2507 for wiring the IDLE restart interval, whose form logic lives in imap-idle-field.js,
-    // 2507 -> 2509 for the queue card on the account page, whose counting lives in lib/queue-browser
-    'account-routes.js': 2509,
+    // 2507 -> 2509 for the queue card on the account page, whose counting lives in lib/queue-browser,
+    // 2509 -> 2508 when the TLS checkboxes of both connection sections (including the new Require
+    // STARTTLS one) moved to connection-security-form.js
+    'account-routes.js': 2508,
+    'connection-security-form.js': 45,
     // 1553 -> 1567 for the clear-error case that dismisses the Document Store removal notice,
-    // 1567 -> 1544 when the AI page's fields were derived from one list
-    'admin-config-routes.js': 1532,
+    // 1567 -> 1544 when the AI page's fields were derived from one list, 1532 -> 1540 for the
+    // model reload refusing to send the stored API key to a URL other than the stored one
+    'admin-config-routes.js': 1540,
     'admin-entities-routes.js': 2548,
     'ai-options.js': 113,
     'special-use-paths.js': 33,
     'imap-idle-field.js': 42,
     // 1649 -> 1650 for the require of the shared formBoolean() schema helper, 1658 -> 1661 for
     // verifying the password hash before the username is compared, so the login's response time
-    // does not say which of the two was wrong
-    'auth-routes.js': 1661,
+    // does not say which of the two was wrong, 1661 -> 1689 for the password check before TOTP is
+    // switched on and the per-account budget on passkey registration, with the sign-in budget and
+    // the hash upgrade moved to sign-in-helpers.js
+    'auth-routes.js': 1689,
+    'sign-in-helpers.js': 59,
     'dashboard-routes.js': 175,
     'export-routes.js': 207,
     'gmail-service-auth.js': 64,
     'internals-routes.js': 458,
-    'mcp-consent-routes.js': 381,
+    // 381 -> 385 for refreshing a client registration on approval rather than on every render
+    'mcp-consent-routes.js': 385,
     'network-config-routes.js': 437,
     // 998 -> 987 when the send-only app detection moved to lib/oauth/scope-checker.js, which is where
     // the scope check it delegates to already lives, 987 -> 977 when the base scope render context
@@ -84,7 +92,8 @@ const MODULE_BUDGETS = {
     'smtp-test-routes.js': 243,
     'suppression-list-routes.js': 310,
     'tls-config-routes.js': 628,
-    'unsubscribe-routes.js': 261
+    // 261 -> 264 for naming the signing key the unsubscribe links are verified against
+    'unsubscribe-routes.js': 264
 };
 
 test('every lib/ui-routes module stays within its size budget', () => {
