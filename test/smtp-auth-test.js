@@ -273,6 +273,28 @@ test('SMTP account resolver', async t => {
         await settings.set('smtpServerAuthEnabled', prevAuthEnabled || false);
     });
 
+    await t.test('a session opened with a token stops submitting once the token is gone', async () => {
+        // A session can stay open for as long as the client likes, so each submission asks
+        // whether the token that opened it still admits it
+        const token = await tokens.provision({ account: ACCOUNT, scopes: ['smtp'], description: 'smtp-auth revoked later', nolog: true });
+        const sess = session();
+        assert.deepStrictEqual(await onAuth({ username: ACCOUNT, password: token }, sess), { user: ACCOUNT });
+
+        const account = await resolveAccount(sess, {});
+        assert.strictEqual(account.account, ACCOUNT, 'the token still admits the session');
+
+        await tokens.delete(token);
+        await assert.rejects(
+            () => resolveAccount(sess, {}),
+            err => {
+                assert.match(err.message, /Authentication required/);
+                assert.strictEqual(err.responseCode, 530);
+                return true;
+            }
+        );
+        assert.ok(!accountCache.has(sess), 'the cached account is dropped with the session');
+    });
+
     await t.test('an unauthenticated session names its account with the control header', async () => {
         await settings.set('smtpServerAuthEnabled', false);
 

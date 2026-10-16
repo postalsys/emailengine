@@ -502,3 +502,115 @@ test('implicit TLS: a client that never completes the handshake is disconnected'
         await closeServer(server);
     }
 });
+
+test('a chunk full of pipelined commands is answered without growing the stack', async () => {
+    // Each synchronously completing command used to re-enter the parser from inside itself, so
+    // one 28 KB write of NOOPs overflowed the stack and the RangeError, raised inside the socket
+    // data handler, took the proxy worker down for everyone
+    const { server, port } = await startServer();
+    try {
+        const client = connectClient(port);
+        await client.waitFor(/\* OK /);
+        const count = 5000;
+        client.send('a NOOP\r\n'.repeat(count) + 'B1 CAPABILITY\r\n');
+        await client.waitFor(/^B1 OK/m, 20000);
+        assert.equal(client.buffer.split('a OK').length - 1, count);
+        client.socket.destroy();
+    } finally {
+        await closeServer(server);
+    }
+});
+
+test('the text of one command is bounded across its literal segments', async () => {
+    // The per-line cap is 1 MB, and a command may announce 32 literals before login: every
+    // segment ending in {N} was appended to the same payload, so one unauthenticated connection
+    // could hold about 33 MB while trickling its last line
+    const { server, port } = await startServer();
+    try {
+        const client = connectClient(port);
+        await client.waitFor(/\* OK /);
+        const segment = '"' + 'x'.repeat(700 * 1024) + '" {1}\r\n';
+        client.send('A1 ID (' + segment);
+        await client.waitFor(/\+ Go ahead/, 10000);
+        client.send('a' + segment);
+        await client.waitFor(/^A1 BAD Command too long/m, 10000);
+        assert.equal(client.buffer.split('+ Go ahead').length - 1, 1, 'no continuation for the segment that crossed the bound');
+
+        // the refused command is dropped entirely, the next line is a new command
+        client.send('A2 NOOP\r\n');
+        await client.waitFor(/^A2 OK/m);
+        client.socket.destroy();
+    } finally {
+        await closeServer(server);
+    }
+});
+
+test('a line trickled in small segments is scanned once, not once per segment', () => {
+    // Every segment used to rebuild `remainder + chunk` and scan it from the start, quadratic in
+    // the line length (1 MB in 100 byte segments cost about half a second of the worker's time)
+    const { IMAPStream } = require('../lib/imapproxy/imap-core/lib/imap-stream');
+    const time = bytes => {
+        const parser = new IMAPStream();
+        const lines = [];
+        parser.oncommand = (command, next) => {
+            lines.push(command.value.length);
+            next();
+        };
+        const start = process.hrtime.bigint();
+        const piece = 'x'.repeat(100);
+        let sent = 0;
+        for (; sent < bytes; sent += piece.length) {
+            parser.write(piece);
+        }
+        parser.write('\r\n');
+        assert.deepEqual(lines, [sent]);
+        return Number(process.hrtime.bigint() - start) / 1e6;
+    };
+    const small = time(256 * 1024);
+    const large = time(512 * 1024);
+    assert.ok(large < 500, `${large.toFixed(1)} ms for 512 KB in 100 byte segments`);
+    assert.ok(large <= Math.max(small * 3, 50), `${small.toFixed(1)} ms -> ${large.toFixed(1)} ms when doubled`);
+
+    // and a line that never ends is still refused at the cap
+    const parser = new IMAPStream({ maxLineLength: 1000 });
+    parser.oncommand = () => assert.fail('nothing to parse');
+    const failure = new Promise(resolve => parser.once('error', resolve));
+    for (let i = 0; i < 11; i++) {
+        parser.write('y'.repeat(100));
+    }
+    return failure.then(failed => assert.match(failed.message, /Command line too long/));
+});
+
+test('a login pipelined behind an AUTHENTICATE still in flight is refused', async () => {
+    // AUTHENTICATE without an initial response resumes the parser to read the SASL line, so the
+    // commands pipelined behind it used to run while its credential check was still going: every
+    // success opened its own upstream session and the client socket ended up attached to several
+    let inFlight = 0;
+    let peak = 0;
+    const { server, port } = await startServer({ proxyMode: false }, (auth, session, callback) => {
+        inFlight++;
+        peak = Math.max(peak, inFlight);
+        setTimeout(() => {
+            inFlight--;
+            callback(null, { response: 'NO', code: 'AUTHENTICATIONFAILED', message: 'Invalid credentials' });
+        }, 300);
+    });
+    try {
+        const client = connectClient(port);
+        await client.waitFor(/\* OK /);
+        const sasl = Buffer.from('\x00user\x00pass').toString('base64');
+        client.send(`A1 AUTHENTICATE PLAIN\r\n${sasl}\r\nA2 AUTHENTICATE PLAIN\r\n${sasl}\r\nA3 LOGIN user pass\r\n`);
+        await client.waitFor(/^A3 NO Authentication already in progress/m);
+        assert.match(client.buffer, /^A2 NO Authentication already in progress/m);
+        assert.doesNotMatch(client.buffer, /^A1 /m, 'the first check is still running');
+        await client.waitFor(/^A1 NO \[AUTHENTICATIONFAILED\]/m);
+        assert.equal(peak, 1, 'one credential check at a time');
+
+        // once the first attempt is answered the connection accepts another
+        client.send('A4 LOGIN user pass\r\n');
+        await client.waitFor(/^A4 NO \[AUTHENTICATIONFAILED\]/m);
+        client.socket.destroy();
+    } finally {
+        await closeServer(server);
+    }
+});
