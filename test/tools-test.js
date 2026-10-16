@@ -609,9 +609,12 @@ test('Tools utility tests', async t => {
         const payload = JSON.parse(raw);
         assert.deepStrictEqual(payload, { act: 'unsub', acc: 'acc1', list: 'newsletter', rcpt: 'User@Example.com', msg: '<msg1@example.com>' });
 
-        // the signature must verify with the same HMAC the unsubscribe page checks
-        const expected = crypto.createHmac('sha256', secret).update(raw).digest('base64url');
+        // the signature must verify with the same HMAC the unsubscribe page checks: the key is the
+        // one derived from the service secret for the unsubscribe purpose, not the secret itself
+        const unsubscribeKey = crypto.createHmac('sha256', secret).update('emailengine:signing:unsubscribe:v1').digest();
+        const expected = crypto.createHmac('sha256', unsubscribeKey).update(raw).digest('base64url');
         assert.strictEqual(url.searchParams.get('sig'), expected);
+        assert.notStrictEqual(url.searchParams.get('sig'), crypto.createHmac('sha256', secret).update(raw).digest('base64url'));
     });
 
     await t.test('buildUnsubscribeUrl() stays host-relative without a base URL and omits a missing message ID', async () => {

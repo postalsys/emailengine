@@ -3454,11 +3454,10 @@ const startApplication = async () => {
         await settings.set('enableApiProxy', HAS_API_PROXY_SET ? API_PROXY : true);
     }
 
-    // Service settings
-    let existingServiceSecret = await settings.get('serviceSecret');
-    if (existingServiceSecret === null) {
-        await settings.set('serviceSecret', crypto.randomBytes(16).toString('hex'));
-    }
+    // Service settings. HSETNX rather than read-then-write: a stored secret that does not decrypt
+    // (the wrong EENGINE_SECRET) reads as null, and overwriting it would destroy a value the
+    // rotation CLI can still recover once the right secret is back
+    await settings.setIfMissing('serviceSecret', crypto.randomBytes(16).toString('hex'));
 
     let existingQueueKeep = await settings.get('queueKeep');
     if (existingQueueKeep === null) {

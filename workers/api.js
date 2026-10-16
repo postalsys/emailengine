@@ -39,6 +39,7 @@ const {
     resolveOAuthErrorStatus,
     constantTimeEqual,
     verifyServiceSignature,
+    SIGNING_PURPOSE,
     claimFormNonce,
     releaseFormNonce,
     setAdminSession,
@@ -1739,7 +1740,7 @@ const init = async () => {
         path: '/redirect',
         async handler(request, h) {
             let data = Buffer.from(request.query.data, 'base64url').toString();
-            if (!(await verifyServiceSignature(data, request.query.sig))) {
+            if (!(await verifyServiceSignature(data, request.query.sig, SIGNING_PURPOSE.TRACKING))) {
                 let error = Boom.boomify(new Error('Signature validation failed'), { statusCode: 403 });
                 throw error;
             }
@@ -1809,7 +1810,7 @@ const init = async () => {
         path: '/open.gif',
         async handler(request, h) {
             let data = Buffer.from(request.query.data, 'base64url').toString();
-            if (!(await verifyServiceSignature(data, request.query.sig))) {
+            if (!(await verifyServiceSignature(data, request.query.sig, SIGNING_PURPOSE.TRACKING))) {
                 let error = Boom.boomify(new Error('Signature validation failed'), { statusCode: 403 });
                 throw error;
             }
@@ -1887,7 +1888,7 @@ const init = async () => {
 
             // A false result is a forged/bad signature (permanent -> benign); a THROWN error is a
             // transient failure reading the service secret and is intentionally left to surface as 5xx.
-            if (!(await verifyServiceSignature(raw, request.query.sig))) {
+            if (!(await verifyServiceSignature(raw, request.query.sig, SIGNING_PURPOSE.UNSUBSCRIBE))) {
                 return 'data validation failed';
             }
 
