@@ -512,6 +512,48 @@ test('API route table and authentication', async t => {
         }
     });
 
+    await t.test('every /v1 route whose handler reads the query declares a query schema', () => {
+        // A route with no query validator hands the handler whatever arrived. The one handler that
+        // read it without a schema (server-signatures) merged the query over the internal RPC
+        // message, so the caller could replace `cmd` and `account` and run any main-thread command
+        // against any account. Routes that never read the query are left alone: declaring an empty
+        // schema there would start refusing harmless extra arguments for no gain.
+        const missing = v1Routes.filter(route => route.handlerReadsQuery && !route.query).map(route => route.route);
+        assert.deepEqual(missing, [], `a /v1 handler reads request.query without a validate.query schema: ${JSON.stringify(missing)}`);
+        assert.ok(v1Routes.filter(route => route.handlerReadsQuery).length >= 10, 'the handler scan has to actually find readers');
+    });
+
+    await t.test('every grantable route that takes delegation fields calls assertNoIdentityRetarget()', () => {
+        // `oauth2.auth.delegatedAccount` makes an account authenticate with another account's
+        // stored token, and `auth.user` on an application-credentials app selects the mailbox.
+        // Same shape as the proxy guard above: derived from the schemas, so a new route taking the
+        // field is what fails here, and the guarded list is checked for staleness.
+        const guarded = ['POST /v1/account', 'PUT /v1/account/{account}'];
+
+        const declaresDelegation = route => {
+            const payload = route.payload;
+            if (!payload || typeof payload.describe !== 'function') {
+                return false;
+            }
+            const described = payload.describe();
+            const auth = described.keys && described.keys.oauth2 && described.keys.oauth2.keys && described.keys.oauth2.keys.auth;
+            return !!(auth && auth.keys && auth.keys.delegatedAccount);
+        };
+
+        const unguarded = v1Routes
+            .filter(declaresDelegation)
+            .filter(route => routeGrant(route).group !== GROUP.ADMIN && !guarded.includes(route.route))
+            .map(route => route.route);
+        assert.deepEqual(unguarded, [], 'a grantable route accepts delegation fields without calling assertNoIdentityRetarget(): ' + JSON.stringify(unguarded));
+
+        for (const route of guarded) {
+            assert.ok(
+                v1Routes.some(entry => entry.route === route && declaresDelegation(entry)),
+                `${route} no longer takes delegation fields, so its entry in this guard is stale`
+            );
+        }
+    });
+
     await t.test('every /v1 DELETE requires the destructive action', () => {
         // The action axis exists so a token can be granted write but not destructive. That only
         // holds if no DELETE resolves to plain write, which used to be the method default and made

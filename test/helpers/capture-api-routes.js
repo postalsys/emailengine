@@ -79,6 +79,12 @@ function describeRoute(cfg, method) {
         // The request-body schema as registered, so a guardrail can ask what fields a route accepts
         // rather than reading the route modules by hand. Undefined for routes that take no payload.
         payload: options.validate && options.validate.payload,
+        // The query schema as registered. Undefined when the route declares none, which means the
+        // handler sees whatever arrived
+        query: options.validate && options.validate.query,
+        // Whether the handler reads the query at all, so a guardrail can tell a route that
+        // ignores it from one that forwards it unvalidated
+        handlerReadsQuery: typeof cfg.handler === 'function' && /request\.query\b/.test(cfg.handler.toString()),
         // Shaped the way a live request.route is, so the described route can be handed straight to
         // routeGrant() - and to buildToolRegistry() in lib/mcp/tools.js, which reads the joi
         // validation schemas and the route description the same way it does off server.table()

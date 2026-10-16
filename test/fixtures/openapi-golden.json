@@ -234,6 +234,14 @@
           "user"
         ]
       },
+      "ca": {
+        "type": "array",
+        "maxItems": 32,
+        "items": {
+          "type": "string",
+          "maxLength": 65536
+        }
+      },
       "ImapTlsOptions": {
         "type": "object",
         "description": "Advanced TLS configuration options",
@@ -249,6 +257,68 @@
             "description": "Minimum TLS version to accept (e.g., \"TLSv1.2\", \"TLSv1.3\")",
             "example": "TLSv1.2",
             "maxLength": 256
+          },
+          "maxVersion": {
+            "type": "string",
+            "description": "Maximum TLS version to accept",
+            "example": "TLSv1.3",
+            "maxLength": 256
+          },
+          "servername": {
+            "type": "string",
+            "description": "Server name for SNI and certificate validation, when it differs from the host",
+            "example": "imap.example.com",
+            "maxLength": 256
+          },
+          "ciphers": {
+            "type": "string",
+            "description": "Cipher suite specification, in OpenSSL format",
+            "maxLength": 1024
+          },
+          "ca": {
+            "description": "Trusted CA certificates in PEM format, replacing the default trust store",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 65536
+              },
+              {
+                "$ref": "#/components/schemas/ca"
+              }
+            ]
+          },
+          "cert": {
+            "type": "string",
+            "description": "Client certificate in PEM format, for servers that require one",
+            "maxLength": 65536
+          },
+          "key": {
+            "type": "string",
+            "description": "Private key of the client certificate in PEM format",
+            "maxLength": 65536
+          },
+          "passphrase": {
+            "type": "string",
+            "description": "Passphrase of the client certificate private key",
+            "maxLength": 1024
+          },
+          "honorCipherOrder": {
+            "type": "boolean",
+            "description": "Prefer the ciphers in the order given rather than the order the server lists them"
+          },
+          "ecdhCurve": {
+            "type": "string",
+            "description": "ECDH curve name or list for key agreement",
+            "maxLength": 256
+          },
+          "sigalgs": {
+            "type": "string",
+            "description": "Supported signature algorithms, colon separated",
+            "maxLength": 1024
+          },
+          "secureOptions": {
+            "type": "integer",
+            "description": "OpenSSL option flags, as a number"
           }
         }
       },
@@ -425,6 +495,68 @@
             "description": "Minimum TLS version to accept (e.g., \"TLSv1.2\", \"TLSv1.3\")",
             "example": "TLSv1.2",
             "maxLength": 256
+          },
+          "maxVersion": {
+            "type": "string",
+            "description": "Maximum TLS version to accept",
+            "example": "TLSv1.3",
+            "maxLength": 256
+          },
+          "servername": {
+            "type": "string",
+            "description": "Server name for SNI and certificate validation, when it differs from the host",
+            "example": "imap.example.com",
+            "maxLength": 256
+          },
+          "ciphers": {
+            "type": "string",
+            "description": "Cipher suite specification, in OpenSSL format",
+            "maxLength": 1024
+          },
+          "ca": {
+            "description": "Trusted CA certificates in PEM format, replacing the default trust store",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 65536
+              },
+              {
+                "$ref": "#/components/schemas/ca"
+              }
+            ]
+          },
+          "cert": {
+            "type": "string",
+            "description": "Client certificate in PEM format, for servers that require one",
+            "maxLength": 65536
+          },
+          "key": {
+            "type": "string",
+            "description": "Private key of the client certificate in PEM format",
+            "maxLength": 65536
+          },
+          "passphrase": {
+            "type": "string",
+            "description": "Passphrase of the client certificate private key",
+            "maxLength": 1024
+          },
+          "honorCipherOrder": {
+            "type": "boolean",
+            "description": "Prefer the ciphers in the order given rather than the order the server lists them"
+          },
+          "ecdhCurve": {
+            "type": "string",
+            "description": "ECDH curve name or list for key agreement",
+            "maxLength": 256
+          },
+          "sigalgs": {
+            "type": "string",
+            "description": "Supported signature algorithms, colon separated",
+            "maxLength": 1024
+          },
+          "secureOptions": {
+            "type": "integer",
+            "description": "OpenSSL option flags, as a number"
           }
         }
       },
@@ -2037,9 +2169,71 @@
           },
           "minVersion": {
             "type": "string",
-            "description": "Minimum TLS version to accept",
+            "description": "Minimum TLS version to accept (e.g., \"TLSv1.2\", \"TLSv1.3\")",
             "example": "TLSv1.2",
             "maxLength": 256
+          },
+          "maxVersion": {
+            "type": "string",
+            "description": "Maximum TLS version to accept",
+            "example": "TLSv1.3",
+            "maxLength": 256
+          },
+          "servername": {
+            "type": "string",
+            "description": "Server name for SNI and certificate validation, when it differs from the host",
+            "example": "imap.example.com",
+            "maxLength": 256
+          },
+          "ciphers": {
+            "type": "string",
+            "description": "Cipher suite specification, in OpenSSL format",
+            "maxLength": 1024
+          },
+          "ca": {
+            "description": "Trusted CA certificates in PEM format, replacing the default trust store",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 65536
+              },
+              {
+                "$ref": "#/components/schemas/ca"
+              }
+            ]
+          },
+          "cert": {
+            "type": "string",
+            "description": "Client certificate in PEM format, for servers that require one",
+            "maxLength": 65536
+          },
+          "key": {
+            "type": "string",
+            "description": "Private key of the client certificate in PEM format",
+            "maxLength": 65536
+          },
+          "passphrase": {
+            "type": "string",
+            "description": "Passphrase of the client certificate private key",
+            "maxLength": 1024
+          },
+          "honorCipherOrder": {
+            "type": "boolean",
+            "description": "Prefer the ciphers in the order given rather than the order the server lists them"
+          },
+          "ecdhCurve": {
+            "type": "string",
+            "description": "ECDH curve name or list for key agreement",
+            "maxLength": 256
+          },
+          "sigalgs": {
+            "type": "string",
+            "description": "Supported signature algorithms, colon separated",
+            "maxLength": 1024
+          },
+          "secureOptions": {
+            "type": "integer",
+            "description": "OpenSSL option flags, as a number"
           }
         }
       },
@@ -2220,9 +2414,71 @@
           },
           "minVersion": {
             "type": "string",
-            "description": "Minimum TLS version to accept",
+            "description": "Minimum TLS version to accept (e.g., \"TLSv1.2\", \"TLSv1.3\")",
             "example": "TLSv1.2",
             "maxLength": 256
+          },
+          "maxVersion": {
+            "type": "string",
+            "description": "Maximum TLS version to accept",
+            "example": "TLSv1.3",
+            "maxLength": 256
+          },
+          "servername": {
+            "type": "string",
+            "description": "Server name for SNI and certificate validation, when it differs from the host",
+            "example": "imap.example.com",
+            "maxLength": 256
+          },
+          "ciphers": {
+            "type": "string",
+            "description": "Cipher suite specification, in OpenSSL format",
+            "maxLength": 1024
+          },
+          "ca": {
+            "description": "Trusted CA certificates in PEM format, replacing the default trust store",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 65536
+              },
+              {
+                "$ref": "#/components/schemas/ca"
+              }
+            ]
+          },
+          "cert": {
+            "type": "string",
+            "description": "Client certificate in PEM format, for servers that require one",
+            "maxLength": 65536
+          },
+          "key": {
+            "type": "string",
+            "description": "Private key of the client certificate in PEM format",
+            "maxLength": 65536
+          },
+          "passphrase": {
+            "type": "string",
+            "description": "Passphrase of the client certificate private key",
+            "maxLength": 1024
+          },
+          "honorCipherOrder": {
+            "type": "boolean",
+            "description": "Prefer the ciphers in the order given rather than the order the server lists them"
+          },
+          "ecdhCurve": {
+            "type": "string",
+            "description": "ECDH curve name or list for key agreement",
+            "maxLength": 256
+          },
+          "sigalgs": {
+            "type": "string",
+            "description": "Supported signature algorithms, colon separated",
+            "maxLength": 1024
+          },
+          "secureOptions": {
+            "type": "integer",
+            "description": "OpenSSL option flags, as a number"
           }
         }
       },
@@ -3289,7 +3545,9 @@
             "example": "1694936993596975454",
             "x-meta": {
               "usage": "Set this when you know the Gmail thread the outgoing message belongs to and do not want EmailEngine to work it out from the referenced message.\n\nGmail API accounts only. IMAP and MS Graph derive threading from the `In-Reply-To` and `References` headers and ignore it. When both `message` and `threadId` are given, this one wins."
-            }
+            },
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\?#%\\u0000-\\u001f\\u007f]+$"
           }
         }
       },
@@ -4898,7 +5156,8 @@
           "type": "string",
           "description": "Globally unique email identifier (when supported by the email server)",
           "example": "1278455344230334865",
-          "maxLength": 256
+          "maxLength": 256,
+          "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\?#%\\u0000-\\u001f\\u007f]+$"
         }
       },
       "SearchQuery": {
@@ -5025,12 +5284,15 @@
             "type": "string",
             "description": "Globally unique email identifier (when supported by the email server)",
             "example": "1278455344230334865",
-            "maxLength": 256
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\?#%\\u0000-\\u001f\\u007f]+$"
           },
           "threadId": {
             "type": "string",
             "description": "Thread identifier for email conversations (when supported by the email server)",
-            "example": "1694936993596975454"
+            "example": "1694936993596975454",
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\?#%\\u0000-\\u001f\\u007f]+$"
           },
           "header": {
             "$ref": "#/components/schemas/Headers"

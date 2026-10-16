@@ -9,7 +9,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { BaseClient, markRejectedAccessToken } = require('../lib/email-client/base-client');
+const { BaseClient, markRejectedAccessToken, isSafePathSegment } = require('../lib/email-client/base-client');
 const { isTransientNetworkError } = require('../lib/email-client/credential-errors');
 const { EMAIL_DELIVERY_ERROR_NOTIFY } = require('../lib/consts');
 const msgpack = require('../lib/msgpack');
@@ -263,6 +263,29 @@ test('BaseClient.unpackApiId()', async t => {
         assert.throws(() => client.unpackApiId('', parts => parts.length >= 2), isInvalidId);
         assert.throws(() => client.unpackApiId(msgpack.encode(['only-one']).toString('base64url'), parts => parts.length >= 2), isInvalidId);
         assert.throws(() => client.unpackApiId(msgpack.encode({ a: 1 }).toString('base64url'), () => true), isInvalidId);
+    });
+});
+
+test('isSafePathSegment() keeps a decoded provider id inside its URL segment', async t => {
+    await t.test('accepts the shapes the providers hand out', () => {
+        for (const value of ['18c2f0a1b2c3d4e5', 'AAMkAGI2TG93AAA=', 'AQMkADAwATM3ZmYAZS1kNmQ4LTA0YjQtMDACLTAwCgBGAAAD-_=', 'ANGjdJ8ZgPZkAbcd']) {
+            assert.equal(isSafePathSegment(value), true, value);
+        }
+    });
+
+    await t.test('refuses a part that would leave the segment', () => {
+        // `..` walks the URL to a sibling resource on the same token; a slash ends the segment
+        // early; `?`, `#` and `%` change what the rest of the URL means
+        for (const value of ['..', '.', '../other-mailbox', 'a/b', 'a?x=1', 'a#frag', 'a%2F', 'a b', 'a\nb', '', null, 42, 'x'.repeat(1025)]) {
+            assert.equal(isSafePathSegment(value), false, JSON.stringify(value));
+        }
+    });
+
+    await t.test('the compound id decoder applies it through the shape check', () => {
+        const client = makeClient();
+        const isInvalidId = err => err.code === 'InvalidId' && err.statusCode === 400;
+        const encoded = msgpack.encode(['../../users/victim@example.com/messages/x', 'att']).toString('base64url');
+        assert.throws(() => client.unpackApiId(encoded, parts => parts.length >= 2 && isSafePathSegment(parts[0]) && isSafePathSegment(parts[1])), isInvalidId);
     });
 });
 

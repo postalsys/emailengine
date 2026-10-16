@@ -56,6 +56,19 @@ test('mintWidenings', async t => {
         assert.equal(mintWidenings(creator, { restrictions: { rateLimit: { maxRequests: 100, timeWindow: 600 } } }).length, 1, 'same rate, bigger burst');
     });
 
+    await t.test('scopes must be a subset of the creator scopes', () => {
+        const creator = { scopes: ['api'] };
+        assert.equal(mintWidenings(creator, {}).length, 1, 'no scope list asks for every scope');
+        assert.equal(mintWidenings(creator, { scopes: ['api', 'smtp'] }).length, 1, 'a listener scope the creator does not hold');
+        assert.equal(mintWidenings(creator, { scopes: ['*'] }).length, 1);
+        assert.deepEqual(mintWidenings(creator, { scopes: ['api'] }), []);
+        assert.deepEqual(mintWidenings({ scopes: ['api', 'smtp'] }, { scopes: ['smtp'] }), []);
+        // a creator holding every scope, or none in particular, may hand any out
+        assert.deepEqual(mintWidenings({ scopes: ['*'] }, { scopes: ['imap-proxy'] }), []);
+        assert.deepEqual(mintWidenings({ scopes: [] }, { scopes: ['imap-proxy'] }), []);
+        assert.deepEqual(mintWidenings({}, { scopes: ['imap-proxy'] }), []);
+    });
+
     await t.test('the expiry may not be later than the creator expiry', () => {
         const expires = Date.now() + HOUR;
         const creator = { expires };

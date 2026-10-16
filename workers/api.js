@@ -843,6 +843,20 @@ const init = async () => {
 
                 let isValidSessionToken = await tokens.validateSessionToken(session.sid, token, request.params.account, 900);
                 if (isValidSessionToken) {
+                    // The credential was minted for a page inside the admin perimeter, so it is
+                    // held to that perimeter too. The /v1 path it is presented on is not an admin
+                    // path, so the request-level check above did not apply.
+                    if (ADMIN_ACCESS_ADDRESSES && ADMIN_ACCESS_ADDRESSES.length && !matchIp(request.app.ip, ADMIN_ACCESS_ADDRESSES)) {
+                        logger.warn({
+                            msg: 'Session token presented from outside the admin address list',
+                            account: request.params.account,
+                            remoteAddress: request.app.ip,
+                            method: request.route.method,
+                            path: request.route.path
+                        });
+                        throw Boom.forbidden('Unauthorized address');
+                    }
+
                     // A session token is bound to the account whose page minted it (checked above,
                     // against request.params.account), but it used to reach every api-tagged route
                     // naming that account - it never met the permission model at all. It lives in
