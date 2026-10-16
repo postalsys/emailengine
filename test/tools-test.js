@@ -250,6 +250,48 @@ test('Tools utility tests', async t => {
     });
 
     // getSignedFormDataSync tests
+    await t.test('formatOAuthRequestBody() and formatOAuthResponse() mask the secrets a token exchange carries', () => {
+        // a string body and a URLSearchParams body alike, and the masking is not switchable
+        const secret = 'client-secret-0123456789abcdef';
+        const body = new URLSearchParams({ grant_type: 'refresh_token', client_id: 'app', client_secret: secret, refresh_token: 'rt-0123456789abcdef' });
+        for (const input of [body.toString(), body]) {
+            const masked = tools.formatOAuthRequestBody(input);
+            assert.strictEqual(masked.grant_type, 'refresh_token');
+            assert.strictEqual(masked.client_id, 'app');
+            assert.doesNotMatch(masked.client_secret, /0123456789abcdef/);
+            assert.match(masked.client_secret, /^client-s\.\.\. \(\d+B\)$/);
+            assert.doesNotMatch(masked.refresh_token, /0123456789abcdef/);
+        }
+
+        // a signed JWT assertion keeps its readable part
+        const assertion = tools.formatOAuthRequestBody(
+            new URLSearchParams({ assertion: 'eyJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJhIn0.signature-0123456789abcdef' })
+        ).assertion;
+        assert.match(assertion, /^eyJhbGciOiJSUzI1NiJ9\./);
+        assert.doesNotMatch(assertion, /0123456789abcdef/);
+
+        const response = { token_type: 'Bearer', access_token: 'at-0123456789abcdef', refresh_token: 'rt-0123456789abcdef', expires_in: 3600 };
+        const masked = tools.formatOAuthResponse(response);
+        assert.strictEqual(masked.token_type, 'Bearer');
+        assert.strictEqual(masked.expires_in, 3600);
+        assert.doesNotMatch(masked.access_token, /0123456789abcdef/);
+        assert.doesNotMatch(masked.refresh_token, /0123456789abcdef/);
+        assert.strictEqual(response.access_token, 'at-0123456789abcdef', 'the response itself is left alone');
+        assert.strictEqual(tools.formatOAuthResponse(null), null);
+        assert.strictEqual(tools.formatOAuthResponse('text'), 'text');
+    });
+
+    await t.test('deriveSigningKey() follows the secret it was derived from', () => {
+        const { FORM, TRACKING } = tools.SIGNING_PURPOSE;
+        const first = tools.deriveSigningKey('secret-one', FORM);
+        assert.notDeepStrictEqual(tools.deriveSigningKey('secret-one', TRACKING), first, 'a key per purpose');
+        const second = tools.deriveSigningKey('secret-two', FORM);
+        assert.notDeepStrictEqual(second, first, 'a new secret is a new key, not the cached one');
+        assert.deepStrictEqual(tools.deriveSigningKey('secret-one', FORM), first, 'and the old secret derives the old key again');
+        assert.throws(() => tools.deriveSigningKey('secret-one', 'webhook'), /Unknown signing purpose/);
+        assert.throws(() => tools.deriveSigningKey('secret-one'), /Unknown signing purpose/);
+    });
+
     await t.test('getSignedFormDataSync() creates signed data', async () => {
         const secret = 'test-secret';
         const opts = { account: 'test-account', name: 'Test User' };
@@ -782,7 +824,7 @@ test('Tools utility tests', async t => {
     });
 
     await t.test('formatSecretHint() leaves little of the secret and sanitizeUrlError() redacts the URL an error carries', () => {
-        // the hint reaches API error payloads and webhooks, so three characters and the length
+        // the hint travels on the token error into the log, so three characters and the length
         assert.strictEqual(tools.formatSecretHint('GOCSPX-abcdefghijklmnopqrstuvwxyz'), 'GOC... (33B)');
         assert.strictEqual(tools.formatSecretHint(''), '... (0B)');
         assert.strictEqual(tools.formatSecretHint(undefined), '... (0B)');

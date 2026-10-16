@@ -9,7 +9,8 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { BaseClient, markRejectedAccessToken, isSafePathSegment } = require('../lib/email-client/base-client');
+const { BaseClient, markRejectedAccessToken } = require('../lib/email-client/base-client');
+const { isSafePathSegment } = require('../lib/utils/provider-id');
 const { isTransientNetworkError } = require('../lib/email-client/credential-errors');
 const { EMAIL_DELIVERY_ERROR_NOTIFY } = require('../lib/consts');
 const msgpack = require('../lib/msgpack');

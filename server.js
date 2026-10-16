@@ -150,10 +150,10 @@ const {
     releaseWorkerAccounts,
     requeueFailedAccounts,
     forgetAccount,
-    mapConcurrent,
     shouldRequeueFailedAssignment,
     planRebalance
 } = require('./lib/account-assignment');
+const { mapConcurrent } = require('./lib/utils/map-concurrent');
 const { RespawnTracker } = require('./lib/respawn-backoff');
 
 const msgpack = require('./lib/msgpack');
@@ -2552,10 +2552,15 @@ const openAiRequestOpts = () => ({
 
 const aiValueSet = value => value !== undefined && value !== null && value !== '';
 
+const aiUrlValue = value => (value === undefined || value === null ? '' : String(value).trim());
+
 /**
  * Options for one request to the AI provider. The configuration page's test sends every field as
  * its form shows it, so the test runs with what the page shows; the sync path sends none and gets
- * the stored settings. The key is the exception: the form leaves it blank to keep the stored one
+ * the stored settings. The key is the exception: the form leaves it blank to keep the stored one,
+ * and a request made with the stored key goes to the stored URL, since a write-only secret must
+ * not be extractable by pointing a request that falls back to it at a server of one's own. The
+ * rule is here rather than on the page's routes so every request the form can make is under it
  * @param {Object} data - The command's data
  * @returns {Promise<{openAiAPIKey: string, requestOpts: Object}>}
  */
@@ -2566,6 +2571,9 @@ async function aiRequestOptions(data) {
     const openAiAPIKey = (data.options && data.options.openAiAPIKey) || stored.openAiAPIKey;
     if (!openAiAPIKey) {
         throw new Error(`OpenAI API key is not configured`);
+    }
+    if (data.options && !data.options.openAiAPIKey && aiUrlValue(data.options.openAiAPIUrl) !== aiUrlValue(stored.openAiAPIUrl)) {
+        throw new Error('Enter the API key to use a different API URL');
     }
 
     const requestOpts = openAiRequestOpts();

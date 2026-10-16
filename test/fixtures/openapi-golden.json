@@ -7736,7 +7736,7 @@
           },
           "requireTLS": {
             "type": "boolean",
-            "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a relay on a trusted network that has no TLS at all",
+            "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a server on a trusted network that has no TLS at all",
             "example": true
           }
         },
@@ -7907,7 +7907,7 @@
           },
           "requireTLS": {
             "type": "boolean",
-            "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a relay on a trusted network that has no TLS at all",
+            "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a server on a trusted network that has no TLS at all",
             "example": true,
             "nullable": true
           },
@@ -7987,7 +7987,7 @@
           },
           "requireTLS": {
             "type": "boolean",
-            "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a relay on a trusted network that has no TLS at all",
+            "description": "Require STARTTLS when secure is false. Defaults to true: the connection fails if the server does not offer STARTTLS or the upgrade fails. Set to false only for a server on a trusted network that has no TLS at all",
             "example": true
           }
         }

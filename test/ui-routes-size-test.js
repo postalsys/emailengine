@@ -49,15 +49,17 @@ test('routes-ui.js stays within the size budget', () => {
 const MODULE_BUDGETS = {
     // 2505 -> 2507 for wiring the IDLE restart interval, whose form logic lives in imap-idle-field.js,
     // 2507 -> 2509 for the queue card on the account page, whose counting lives in lib/queue-browser,
-    // 2509 -> 2508 when the TLS checkboxes of both connection sections (including the new Require
-    // STARTTLS one) moved to connection-security-form.js
-    'account-routes.js': 2508,
-    'connection-security-form.js': 45,
+    // 2509 -> 2500 when the TLS checkboxes of both connection sections (including the new Require
+    // STARTTLS one), their form fields included, moved to connection-security-form.js
+    'account-routes.js': 2500,
+    'connection-security-form.js': 74,
     // 1553 -> 1567 for the clear-error case that dismisses the Document Store removal notice,
     // 1567 -> 1544 when the AI page's fields were derived from one list, 1532 -> 1540 for the
-    // model reload refusing to send the stored API key to a URL other than the stored one
-    'admin-config-routes.js': 1540,
-    'admin-entities-routes.js': 2548,
+    // model reload refusing to send the stored API key to a URL other than the stored one, 1540 -> 1532
+    // when that rule moved to aiRequestOptions() in server.js, which the test prompt goes through too
+    'admin-config-routes.js': 1532,
+    // 2548 -> 2533 when the gateway forms took the STARTTLS field from connection-security-form.js
+    'admin-entities-routes.js': 2533,
     'ai-options.js': 113,
     'special-use-paths.js': 33,
     'imap-idle-field.js': 42,
@@ -65,8 +67,9 @@ const MODULE_BUDGETS = {
     // verifying the password hash before the username is compared, so the login's response time
     // does not say which of the two was wrong, 1661 -> 1689 for the password check before TOTP is
     // switched on and the per-account budget on passkey registration, with the sign-in budget and
-    // the hash upgrade moved to sign-in-helpers.js
-    'auth-routes.js': 1689,
+    // the hash upgrade moved to sign-in-helpers.js, 1689 -> 1684 when the password re-check started
+    // naming its own refusal
+    'auth-routes.js': 1684,
     'sign-in-helpers.js': 59,
     'dashboard-routes.js': 175,
     'export-routes.js': 207,

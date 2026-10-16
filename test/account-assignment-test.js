@@ -15,9 +15,9 @@ const {
     requeueFailedAccounts,
     forgetAccount,
     shouldRequeueFailedAssignment,
-    planRebalance,
-    mapConcurrent
+    planRebalance
 } = require('../lib/account-assignment');
+const { mapConcurrent } = require('../lib/utils/map-concurrent');
 
 function makeState(workers) {
     return {

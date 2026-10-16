@@ -10,7 +10,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 const crypto = require('crypto');
 
-const { isOwnAccountKey } = require('../lib/account/own-account-key');
+const { isOwnAccountKey, ownAccountKeyFilter } = require('../lib/account/own-account-key');
 const redisScanDelete = require('../lib/redis-scan-delete');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
@@ -45,6 +45,13 @@ test('isOwnAccountKey() admits the shapes the account writes and nothing else', 
     // an account id carrying a colon itself is matched whole
     assert.equal(isOwnAccountKey('pfx:', 'tenant:x', 'pfx:iam:tenant:x:g'), true);
     assert.equal(isOwnAccountKey('pfx:', 'tenant:x', 'pfx:iam:tenant:g'), false);
+
+    // the predicate a scan is filtered with is the same rule
+    const mine = ownAccountKeyFilter('pfx:', 'tenant');
+    assert.deepEqual(['pfx:iam:tenant:g', 'pfx:iam:tenant:x:g', 'pfx:iam:tenant:l:z9', 'pfx:iam:other:g'].filter(mine), [
+        'pfx:iam:tenant:g',
+        'pfx:iam:tenant:l:z9'
+    ]);
 });
 
 test('redisScanDelete() leaves the keys its filter refuses', async () => {
