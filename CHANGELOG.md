@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.84.2](https://github.com/postalsys/emailengine/compare/v2.84.1...v2.84.2) (2026-10-17)
+
+
+### Bug Fixes
+
+* bound what hostile message content and mail servers can make a worker do ([02daa27](https://github.com/postalsys/emailengine/commit/02daa27df82680dfa59c572258c88a576d74d2ad))
+* bump the owned dependencies to the releases of the 2026-10-16 security scan ([2cbd569](https://github.com/postalsys/emailengine/commit/2cbd5691cfed2a9103e021b334c62451228504fe))
+* close the paths a bound or narrowed API token could use to reach other accounts ([c87c861](https://github.com/postalsys/emailengine/commit/c87c8612e41e92bc5abf79c8d3e42978b4d91364))
+* derive a separate signing key per purpose from the service secret ([1fa3368](https://github.com/postalsys/emailengine/commit/1fa336891015dab0b184689412fd02d263dcb6c2))
+* document the TLS options in the API reference and keep the admin modules within their size budgets ([9d96a0c](https://github.com/postalsys/emailengine/commit/9d96a0c5d2f5a17f7a2bbc4beff6869f3be919c1))
+* give admin sessions a lifetime, count only failed sign-ins and ask for the password before enabling TOTP ([d08d3ab](https://github.com/postalsys/emailengine/commit/d08d3ab6c0af99652699b9d007a3e8678f97b115))
+* harden the IMAP proxy and the SMTP listener against unauthenticated clients ([34ebdad](https://github.com/postalsys/emailengine/commit/34ebdad6201ba7ba73d3c20e25bf029782e80beb))
+* keep account ids apart in Redis keys and URLs, and bound licenses, mail merges and stored secrets ([c9d3547](https://github.com/postalsys/emailengine/commit/c9d3547ddf06033022eb8833186efeb00b78847a))
+* keep narrowed tokens off the webhook target, bound slow webhook targets and stop secrets leaking through logs and error payloads ([40ce6cb](https://github.com/postalsys/emailengine/commit/40ce6cbac9b77ea47adf0dc62f9146c5df3842f2))
+* penalise only timed-out webhook targets, log hapi's internal request errors and run the integration tier against cleartext mocks ([4578cc6](https://github.com/postalsys/emailengine/commit/4578cc674215a09b3d98cc28640007c883eec62a))
+* share the helpers the security fixes duplicated and move each rule to where it covers every caller ([b9ba3ec](https://github.com/postalsys/emailengine/commit/b9ba3ecf44599c861741e50b7f3940eaa54a3c56))
+
 ## [2.84.1](https://github.com/postalsys/emailengine/compare/v2.84.0...v2.84.1) (2026-10-15)
 
 
