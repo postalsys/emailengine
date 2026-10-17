@@ -18,7 +18,7 @@ const crypto = require('crypto');
 const supertest = require('supertest');
 const config = require('@zone-eu/wild-config');
 
-const { ACCESS_TOKEN, startMockImapServer, extractCrumbFromHtml } = require('./helpers');
+const { ACCESS_TOKEN, startMockImapServer, extractCrumbFromHtml, mockImapConnection } = require('./helpers');
 const { redis } = require('../../lib/db');
 const registerRedisTeardown = require('../helpers/redis-teardown');
 const { Account } = require('../../lib/account');
@@ -80,13 +80,7 @@ test('The account page gates the stored log actions on there being stored logs',
             account,
             name: `Log download test (${account})`,
             email: `${account}@example.com`,
-            imap: {
-                host: '127.0.0.1',
-                port: mock.port,
-                secure: false,
-                auth: { user: 'testuser', pass: 'pass' },
-                resyncDelay: 3600
-            }
+            imap: mockImapConnection(mock.port)
         })
         .expect(200);
 

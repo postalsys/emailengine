@@ -21,7 +21,7 @@ const crypto = require('crypto');
 const supertest = require('supertest');
 const Redis = require('ioredis');
 const config = require('@zone-eu/wild-config');
-const { ACCESS_TOKEN, waitForCondition } = require('./helpers');
+const { ACCESS_TOKEN, waitForCondition, mockImapConnection } = require('./helpers');
 
 const redis = new Redis(config.dbs.redis);
 const server = supertest.agent(`http://127.0.0.1:${config.api.port}`).auth(ACCESS_TOKEN, { type: 'bearer' });
@@ -210,14 +210,7 @@ function accountPayload(account, port) {
     return {
         account,
         name: `Phantom folder test (${account})`,
-        imap: {
-            host: '127.0.0.1',
-            port,
-            secure: false,
-            auth: { user: 'testuser', pass: 'pass' },
-            // keep periodic resyncs out of the observation windows
-            resyncDelay: 3600
-        }
+        imap: mockImapConnection(port)
     };
 }
 

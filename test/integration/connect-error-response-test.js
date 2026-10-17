@@ -21,7 +21,7 @@ const assert = require('node:assert').strict;
 const crypto = require('crypto');
 const supertest = require('supertest');
 const config = require('@zone-eu/wild-config');
-const { ACCESS_TOKEN, waitForCondition, startMockImapServer } = require('./helpers');
+const { ACCESS_TOKEN, waitForCondition, startMockImapServer, mockImapConnection } = require('./helpers');
 
 const server = supertest.agent(`http://127.0.0.1:${config.api.port}`).auth(ACCESS_TOKEN, { type: 'bearer' });
 
@@ -60,13 +60,7 @@ test('Connection error response is stored as text', async t => {
         .send({
             account,
             name: `Connect error test (${account})`,
-            imap: {
-                host: '127.0.0.1',
-                port: mock.port,
-                secure: false,
-                auth: { user: 'testuser', pass: 'pass' },
-                resyncDelay: 3600
-            }
+            imap: mockImapConnection(mock.port)
         })
         .expect(200);
 

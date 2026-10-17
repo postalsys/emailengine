@@ -87,6 +87,7 @@ The webhooks system (`workers/webhooks.js`, `lib/webhooks.js`) delivers real-tim
 - Signature header: `X-EE-Wh-Signature` (HMAC-SHA256 of body using service secret)
 - Concurrency: Configurable via `EENGINE_NOTIFY_QC` (default: 1)
 - Timeout: each delivery attempt is capped at 30s wall-clock (`EENGINE_WEBHOOK_TIMEOUT` to override); a timed-out attempt fails with `ETIMEDOUT` and retries like any other transient error
+- Penalty: a target whose attempt ran into that timeout is penalised for twice the attempt cap (at most 5 minutes, keyed by origin in Redis), and every delivery to the same origin waits the penalty out in the delayed set, attempt count untouched, instead of each costing the queue another full timeout (`lib/webhook-penalty.js`). Only timeouts count: a refused or reset connection or an unresolvable name fails in milliseconds and holds nothing, and penalising those deferred every delivery to a receiver for a minute whenever one attempt hit its restart. The integration tier's own webhook receiver restarts between test files, which is how that showed
 
 **Custom routes** (`lib/webhooks.js`):
 - `fn` - JavaScript filter function returning boolean (include/exclude event)

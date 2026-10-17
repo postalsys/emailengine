@@ -28,14 +28,21 @@ test('penaltyKey() identifies a target by its origin', () => {
 
 test('penaltyFor() penalises the failures that hold the queue', () => {
     const timeout = 30 * 1000;
-    // a timed-out attempt and a connection that was never made: twice the attempt cap
+    // a timed-out attempt, whichever deadline reported it: twice the attempt cap
     assert.equal(penaltyFor(Object.assign(new Error('timeout'), { code: 'ETIMEDOUT' }), timeout), 60 * 1000);
-    assert.equal(penaltyFor(Object.assign(new Error('refused'), { code: 'ECONNREFUSED' }), timeout), 60 * 1000);
-    assert.equal(penaltyFor(Object.assign(new Error('fetch failed'), { cause: { code: 'ENOTFOUND' } }), timeout), 60 * 1000);
+    assert.equal(penaltyFor(Object.assign(new Error('fetch failed'), { cause: { code: 'UND_ERR_CONNECT_TIMEOUT' } }), timeout), 60 * 1000);
+    assert.equal(penaltyFor(Object.assign(new Error('fetch failed'), { cause: { code: 'UND_ERR_HEADERS_TIMEOUT' } }), timeout), 60 * 1000);
     // capped, whatever the attempt cap is set to
     assert.equal(penaltyFor(Object.assign(new Error('timeout'), { code: 'ETIMEDOUT' }), 60 * 60 * 1000), MAX_PENALTY_MS);
     // and never zero for a penalised failure
     assert.ok(penaltyFor(Object.assign(new Error('timeout'), { code: 'ETIMEDOUT' }), 0) >= 1000);
+
+    // a connection refused or reset and a name that does not resolve fail in milliseconds, so
+    // they hold nothing: a receiver that is restarting when one attempt arrives must not have
+    // every delivery deferred for a minute
+    assert.equal(penaltyFor(Object.assign(new Error('refused'), { code: 'ECONNREFUSED' }), timeout), 0);
+    assert.equal(penaltyFor(Object.assign(new Error('reset'), { code: 'ECONNRESET' }), timeout), 0);
+    assert.equal(penaltyFor(Object.assign(new Error('fetch failed'), { cause: { code: 'ENOTFOUND' } }), timeout), 0);
 
     // a receiver that answered, with any status, is not holding the queue; the retry schedule
     // spaces those out already. Nor is a refusal that fails the job for good

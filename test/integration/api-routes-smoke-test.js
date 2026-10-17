@@ -224,13 +224,17 @@ test('narrowed access tokens', async t => {
             'smoke: all actions, management'
         );
 
-        for (const path of ['/v1/settings?webhooks=true', '/v1/tokens', '/v1/oauth2']) {
+        for (const path of ['/v1/settings?webhookEvents=true', '/v1/tokens', '/v1/oauth2']) {
             assert.equal((await agent.get(path)).status, 200, `GET ${path} is grantable now`);
         }
 
         const read = await agent.get('/v1/settings?scriptEnv=true');
         assert.equal(read.status, 403, 'scriptEnv is where operators keep the API keys their scripts use');
         assert.match(read.body.message, /scriptEnv/);
+
+        const target = await agent.get('/v1/settings?webhooks=true');
+        assert.equal(target.status, 403, 'the webhook target is where every event body and the custom headers go, so it is privileged beside them');
+        assert.match(target.body.message, /webhooks/);
 
         const write = await agent.post('/v1/settings').send({ smtpServerAuthEnabled: false });
         assert.equal(write.status, 403, 'switching SMTP authentication off would turn a settings grant into sending as any account');
@@ -247,7 +251,7 @@ test('narrowed access tokens', async t => {
         assert.equal((await agent.get('/v1/blocklists')).status, 200);
 
         for (const [method, path, group] of [
-            ['get', '/v1/settings?webhooks=true', 'settings'],
+            ['get', '/v1/settings?webhookEvents=true', 'settings'],
             ['post', '/v1/settings', 'settings'],
             ['get', '/v1/tokens', 'token'],
             ['get', '/v1/oauth2', 'oauth2'],
@@ -266,7 +270,7 @@ test('narrowed access tokens', async t => {
 
         // Naming the section is what grants it, on the same route
         const named = await narrowed({ actions: ['read'], groups: ['settings'] }, 'smoke: settings named');
-        assert.equal((await named.get('/v1/settings?webhooks=true')).status, 200);
+        assert.equal((await named.get('/v1/settings?webhookEvents=true')).status, 200);
     });
 
     await t.test('a narrowed token can not redirect a submission through a proxy it names', async () => {
@@ -321,7 +325,7 @@ test('narrowed access tokens', async t => {
 
         // Still narrowed, on both axes
         assert.equal((await agent.get('/v1/blocklists')).status, 403);
-        assert.equal((await agent.get('/v1/settings?webhooks=true')).status, 403);
+        assert.equal((await agent.get('/v1/settings?webhookEvents=true')).status, 403);
     });
 
     await t.test('returns an id that identifies the new token in the listings', async () => {

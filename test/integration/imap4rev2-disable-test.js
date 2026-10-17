@@ -14,7 +14,7 @@ const assert = require('node:assert').strict;
 const crypto = require('crypto');
 const supertest = require('supertest');
 const config = require('@zone-eu/wild-config');
-const { ACCESS_TOKEN, waitForCondition, startMockImapServer } = require('./helpers');
+const { ACCESS_TOKEN, waitForCondition, startMockImapServer, mockImapConnection } = require('./helpers');
 
 const server = supertest.agent(`http://127.0.0.1:${config.api.port}`).auth(ACCESS_TOKEN, { type: 'bearer' });
 
@@ -77,15 +77,11 @@ test('Account-level disableIMAP4rev2 controls the ENABLE command', async t => {
                 account,
                 name: `IMAP4rev2 test (${account})`,
                 imap: Object.assign(
-                    {
-                        host: '127.0.0.1',
-                        port: mock.port,
-                        secure: false,
+                    mockImapConnection(mock.port, {
                         // the login user doubles as the key for the recorded
                         // ENABLE commands, so both accounts can share one mock
-                        auth: { user: account, pass: 'pass' },
-                        resyncDelay: 3600
-                    },
+                        auth: { user: account, pass: 'pass' }
+                    }),
                     imapExtras
                 )
             })
