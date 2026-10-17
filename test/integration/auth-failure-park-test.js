@@ -24,7 +24,7 @@ const crypto = require('crypto');
 const supertest = require('supertest');
 const config = require('@zone-eu/wild-config');
 
-const { ACCESS_TOKEN, startMockImapServer, extractCrumbFromHtml } = require('./helpers');
+const { ACCESS_TOKEN, startMockImapServer, extractCrumbFromHtml, mockImapConnection } = require('./helpers');
 const { redis } = require('../../lib/db');
 const registerRedisTeardown = require('../helpers/redis-teardown');
 const { createErrorStateClient, seedExpiredErrorRun, accountKeyFor, drainSetImmediate } = require('../helpers/auth-failure');
@@ -70,13 +70,7 @@ test('An account switched off after authentication failures', async t => {
             account,
             name: `Auth failure park test (${account})`,
             email: `${account}@example.com`,
-            imap: {
-                host: '127.0.0.1',
-                port: mock.port,
-                secure: false,
-                auth: { user: 'testuser', pass: 'pass' },
-                resyncDelay: 3600
-            }
+            imap: mockImapConnection(mock.port)
         })
         .expect(200);
 

@@ -21,7 +21,7 @@ const baseUrl = `http://127.0.0.1:${config.api.port}`;
 
 test('Tracking endpoints enforce (and accept) service-secret signatures', async t => {
     await t.test('/open.gif accepts a valid signature and rejects a forged one', async () => {
-        const { data, sig } = signBlob({ act: 'open', acc: 'sig-test', msg: 'm1' });
+        const { data, sig } = signBlob({ act: 'open', acc: 'sig-test', msg: 'm1' }, 'tracking');
 
         const ok = await supertest(baseUrl).get('/open.gif').query({ data, sig });
         assert.equal(ok.status, 200, `valid signature should be accepted, got ${ok.status}`);
@@ -33,7 +33,7 @@ test('Tracking endpoints enforce (and accept) service-secret signatures', async 
 
     await t.test('/redirect accepts a valid signature and rejects a forged one', async () => {
         const target = 'https://example.com/landing';
-        const { data, sig } = signBlob({ act: 'click', url: target, acc: 'sig-test', msg: 'm1' });
+        const { data, sig } = signBlob({ act: 'click', url: target, acc: 'sig-test', msg: 'm1' }, 'tracking');
 
         const ok = await supertest(baseUrl).get('/redirect').query({ data, sig }).redirects(0);
         assert.equal(ok.status, 302, `valid signature should redirect, got ${ok.status}`);

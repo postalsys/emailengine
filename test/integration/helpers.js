@@ -76,10 +76,26 @@ async function waitForListing(server, account, path, predicate, timeout, message
     );
 }
 
-// Sign a payload object the way EmailEngine signs tracking / unsubscribe blobs: base64url(JSON) as
-// `data` and base64url(HMAC-SHA256(JSON)) as `sig`, keyed by the purpose-derived key. Mirrors
-// lib/tools.js getSignedFormDataSync / signServiceData.
-function signBlob(obj, purpose = 'tracking') {
+/**
+ * The IMAP section of an account that connects to startMockImapServer() or another local mock:
+ * the mock speaks cleartext only, so the STARTTLS requirement is switched off, and the long
+ * resync delay keeps the periodic pass out of the test's observation window.
+ *
+ * @param {Number} port - the mock's port
+ * @param {Object} [overrides] - fields replacing the defaults, usually `auth`
+ * @returns {Object}
+ */
+function mockImapConnection(port, overrides) {
+    return Object.assign({ host: '127.0.0.1', port, secure: false, requireTLS: false, auth: { user: 'testuser', pass: 'pass' }, resyncDelay: 3600 }, overrides);
+}
+
+// Sign a payload object the way EmailEngine signs setup-form, tracking and unsubscribe blobs:
+// base64url(JSON) as `data` and base64url(HMAC-SHA256(JSON)) as `sig`, keyed by the key derived
+// for the named purpose. Mirrors lib/tools.js getSignedFormDataSync / signServiceData.
+function signBlob(obj, purpose) {
+    if (!['form', 'tracking', 'unsubscribe'].includes(purpose)) {
+        throw new Error(`signBlob() needs the purpose the blob is verified under, got ${JSON.stringify(purpose)}`);
+    }
     const data = Buffer.from(JSON.stringify(obj));
     const key = crypto.createHmac('sha256', SERVICE_SECRET).update(`emailengine:signing:${purpose}:v1`).digest();
     const sig = crypto.createHmac('sha256', key).update(data).digest('base64url');
@@ -264,6 +280,7 @@ function skipUnlessEnv(...names) {
 
 module.exports = {
     skipUnlessEnv,
+    mockImapConnection,
     createUsableTestAccount,
     waitForCondition,
     waitForAccountConnected,

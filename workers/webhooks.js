@@ -294,7 +294,7 @@ const notifyWorker = new Worker(
             return;
         }
 
-        // A target that just failed at the network level is penalised for a short while, and a
+        // A target whose last attempt ran into the timeout is penalised for a short while, and a
         // delivery to it waits out the penalty in the delayed set instead of costing the queue
         // another full attempt timeout; see lib/webhook-penalty.js. The attempt count is not
         // spent by the wait

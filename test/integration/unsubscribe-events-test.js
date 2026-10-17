@@ -124,7 +124,7 @@ test('Unsubscribe / resubscribe webhook events', async t => {
     });
 
     await t.test('One-click POST /unsubscribe fires listUnsubscribe', { timeout: 90000 }, async () => {
-        const { data, sig } = signBlob({ act: 'unsub', acc: accountId, list: listIdOneClick, rcpt, msg: messageId });
+        const { data, sig } = signBlob({ act: 'unsub', acc: accountId, list: listIdOneClick, rcpt, msg: messageId }, 'unsubscribe');
 
         const res = await supertest(baseUrl).post('/unsubscribe').query({ data, sig }).type('form').send({ 'List-Unsubscribe': 'One-Click' });
         assert.strictEqual(res.text, 'ok');
@@ -143,7 +143,7 @@ test('Unsubscribe / resubscribe webhook events', async t => {
     });
 
     await t.test('Form POST /unsubscribe/address fires listUnsubscribe', { timeout: 90000 }, async () => {
-        const { data, sig } = signBlob({ act: 'unsub', acc: accountId, list: listIdForm, rcpt, msg: messageId });
+        const { data, sig } = signBlob({ act: 'unsub', acc: accountId, list: listIdForm, rcpt, msg: messageId }, 'unsubscribe');
 
         // GET the page first to obtain the crumb cookie (agent) + value (form).
         const pageRes = await server.get('/unsubscribe').query({ data, sig }).expect(200);
@@ -165,7 +165,7 @@ test('Unsubscribe / resubscribe webhook events', async t => {
     });
 
     await t.test('Form POST /unsubscribe/address (subscribe) fires listSubscribe and clears the entry', { timeout: 90000 }, async () => {
-        const { data, sig } = signBlob({ act: 'unsub', acc: accountId, list: listIdForm, rcpt, msg: messageId });
+        const { data, sig } = signBlob({ act: 'unsub', acc: accountId, list: listIdForm, rcpt, msg: messageId }, 'unsubscribe');
 
         // Re-read the page (now in the unsubscribed state) to get a current crumb for the subscribe form.
         const pageRes = await server.get('/unsubscribe').query({ data, sig }).expect(200);

@@ -506,6 +506,10 @@ const init = async () => {
 
     // Base Hapi options shared by both the default and SO_REUSEPORT binding paths
     const serverOptions = {
+        // hapi's default prints every internal request error to stderr; the request error
+        // listener below logs them through pino instead
+        debug: false,
+
         state: {
             strictHeader: false
         },
@@ -1521,6 +1525,27 @@ const init = async () => {
     // Position is not load-bearing: the document is generated from the finished route table on the
     // first request, not at registration time
     registerOpenApiRoute(server, openApiOptions);
+
+    // An exception thrown by a handler, an extension or a response schema with failAction
+    // 'error' is answered with a bare 500 and reported on the request's error channel. hapi's
+    // own record of it was an unstructured line on stderr (switched off above), and the API
+    // error path only logs what handlers pass to handleError(), not what escapes them
+    server.events.on({ name: 'request', channels: 'error' }, (request, event, tags) => {
+        if (tags.internal && !tags.implementation) {
+            // a 5xx the code raised on purpose: the API error path (handleError) and the web
+            // error page log those themselves, with the request context they have
+            return;
+        }
+        logger.error({
+            msg: 'Request failed with an internal error',
+            component: 'api',
+            method: request.method,
+            path: request.path,
+            route: request.route && request.route.path,
+            tags: Object.keys(tags || {}),
+            err: event.error
+        });
+    });
 
     server.events.on('response', request => {
         const tags = request.route && request.route.settings && request.route.settings.tags;

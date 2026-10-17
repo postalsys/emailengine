@@ -25,6 +25,9 @@ const assert = require('node:assert').strict;
 
 const { signBlob, extractCrumb, ACCESS_TOKEN } = require('./helpers');
 
+// the setup form verifies its blobs under the form key, see verifyServiceSignature()
+const signFormBlob = obj => signBlob(obj, 'form');
+
 const baseUrl = `http://127.0.0.1:${config.api.port}`;
 
 // A complete set of imap/smtp fields: absent the signature gate this request would be well-formed
@@ -92,7 +95,7 @@ test('Hosted form connection test requires a signed blob', async t => {
     await t.test('accepts a validly signed request and reaches the connection test', async () => {
         const { agent, crumb } = await crumbAgent();
         // Include a nonce (n/t): the connection tester now requires it (see the require-nonce test below).
-        const { data, sig } = signBlob({
+        const { data, sig } = signFormBlob({
             account: 'ssrf-gate-positive',
             email: 'user@example.com',
             n: crypto.randomBytes(16).toString('base64url'),
@@ -116,7 +119,7 @@ test('Hosted form connection/create endpoints require a nonce in the signed blob
     // never-expiring blob cannot drive outbound connections (SSRF) or overwrite an account.
     await t.test('/imap/test rejects a validly signed blob that carries no nonce', async () => {
         const { agent, crumb } = await crumbAgent();
-        const { data, sig } = signBlob({ account: 'no-nonce', email: 'user@example.com' });
+        const { data, sig } = signFormBlob({ account: 'no-nonce', email: 'user@example.com' });
         const res = await agent
             .post('/accounts/new/imap/test')
             .set('content-type', 'application/json')
@@ -126,7 +129,7 @@ test('Hosted form connection/create endpoints require a nonce in the signed blob
 
     await t.test('/imap/server rejects a validly signed blob that carries no nonce', async () => {
         const { agent, crumb } = await crumbAgent();
-        const { data, sig } = signBlob({ account: 'no-nonce-server', email: 'user@example.com' });
+        const { data, sig } = signFormBlob({ account: 'no-nonce-server', email: 'user@example.com' });
         const res = await agent.post('/accounts/new/imap/server').type('form').send(Object.assign({ crumb, data, sig }, serverFields));
         assert.equal(res.status, 403, `expected 403, got ${res.status}`);
     });
@@ -136,7 +139,7 @@ test('Hosted form connection/create endpoints require a nonce in the signed blob
         // runs autodetectImapSettings - so a leaked never-expiring blob cannot drive outbound autodiscovery.
         // email + password are supplied so the request passes payload validation and reaches the nonce gate.
         const { agent, crumb } = await crumbAgent();
-        const { data, sig } = signBlob({ account: 'no-nonce-page1', email: 'user@example.com' });
+        const { data, sig } = signFormBlob({ account: 'no-nonce-page1', email: 'user@example.com' });
         const res = await agent.post('/accounts/new/imap').type('form').send({ crumb, data, sig, email: 'user@example.com', password: 'secret' });
         assert.equal(res.status, 403, `expected 403, got ${res.status}`);
     });
@@ -154,7 +157,7 @@ test('Hosted form bounds outbound probes per issued blob', async t => {
     await t.test('rejects probes past the cap, shared across endpoints and scoped per nonce', { timeout: 60000 }, async () => {
         const { agent, crumb } = await crumbAgent();
         const n = crypto.randomBytes(16).toString('base64url');
-        const { data, sig } = signBlob({ account: 'probe-cap', email: 'user@example.com', n, t: Date.now() });
+        const { data, sig } = signFormBlob({ account: 'probe-cap', email: 'user@example.com', n, t: Date.now() });
 
         // The cap size is defense-in-depth, not a contract, so discover it rather than hardcoding: keep
         // probing until a 429. Bounded so a missing/broken cap fails the test instead of looping forever.
@@ -180,7 +183,7 @@ test('Hosted form bounds outbound probes per issued blob', async t => {
         assert.equal(page1.status, 429, `the exhausted nonce must be capped on the autodetect endpoint too, got ${page1.status}`);
 
         // Per-nonce scope: a freshly issued blob has its own budget and is not collateral-capped.
-        const fresh = signBlob({ account: 'probe-cap-fresh', email: 'user@example.com', n: crypto.randomBytes(16).toString('base64url'), t: Date.now() });
+        const fresh = signFormBlob({ account: 'probe-cap-fresh', email: 'user@example.com', n: crypto.randomBytes(16).toString('base64url'), t: Date.now() });
         const freshRes = await agent
             .post('/accounts/new/imap/test')
             .set('content-type', 'application/json')
@@ -201,7 +204,7 @@ test('Hosted form account creation dedupes the single-use nonce', async t => {
 
     const submitFields = crumb => {
         const n = crypto.randomBytes(16).toString('base64url');
-        const { data, sig } = signBlob({ n, t: Date.now(), redirectUrl: 'https://example.com/done' });
+        const { data, sig } = signFormBlob({ n, t: Date.now(), redirectUrl: 'https://example.com/done' });
         return Object.assign({ crumb, data, sig }, serverFields);
     };
 
@@ -257,7 +260,7 @@ test('Hosted form enforces the expected account identity on the IMAP arm', async
 
     const submit = async (blob, overrides) => {
         const { agent, crumb } = await crumbAgent();
-        const { data, sig } = signBlob(Object.assign({ n: crypto.randomBytes(16).toString('base64url'), t: Date.now() }, blob));
+        const { data, sig } = signFormBlob(Object.assign({ n: crypto.randomBytes(16).toString('base64url'), t: Date.now() }, blob));
         return agent
             .post('/accounts/new/imap/server')
             .type('form')
@@ -340,7 +343,7 @@ test('Hosted form enforces the expected account identity on the IMAP arm', async
 
     await t.test('page 1 rejects a mismatched address before autodiscovery runs', async () => {
         const { agent, crumb } = await crumbAgent();
-        const { data, sig } = signBlob({
+        const { data, sig } = signFormBlob({
             expectedEmail: 'owner@example.com',
             n: crypto.randomBytes(16).toString('base64url'),
             t: Date.now()
@@ -359,7 +362,7 @@ test('Hosted form re-renders with the signed blob on validation failure', async 
     await t.test('a validation error preserves data/sig in the re-rendered form', async () => {
         const { agent, crumb } = await crumbAgent();
         const n = crypto.randomBytes(16).toString('base64url');
-        const { data, sig } = signBlob({ n, t: Date.now(), redirectUrl: 'https://example.com/done' });
+        const { data, sig } = signFormBlob({ n, t: Date.now(), redirectUrl: 'https://example.com/done' });
         // A malformed email makes server-side Joi validation fail, triggering the failAction re-render.
         const fields = Object.assign({ crumb, data, sig }, serverFields, { email: 'not-a-valid-email' });
 
@@ -380,7 +383,7 @@ test('Hosted form re-renders with the signed blob on validation failure', async 
 
         const render = async secure => {
             const { agent, crumb } = await crumbAgent();
-            const { data, sig } = signBlob({ n: crypto.randomBytes(16).toString('base64url'), t: Date.now() });
+            const { data, sig } = signFormBlob({ n: crypto.randomBytes(16).toString('base64url'), t: Date.now() });
             const fields = Object.assign({ crumb, data, sig }, serverFields, {
                 email: 'not-a-valid-email',
                 imap_secure: secure,
@@ -410,7 +413,7 @@ test('Hosted form re-renders with the signed blob on validation failure', async 
         // array, which would render value="A,B" into the hidden input and permanently break every
         // resubmit. rebuildFormValues drops the failed key, so the input re-renders empty instead.
         const { agent, crumb } = await crumbAgent();
-        const { data, sig } = signBlob({ n: crypto.randomBytes(16).toString('base64url'), t: Date.now() });
+        const { data, sig } = signFormBlob({ n: crypto.randomBytes(16).toString('base64url'), t: Date.now() });
 
         // Hand-build the urlencoded body: supertest's .send(object) cannot produce duplicate keys.
         const body = new URLSearchParams();
@@ -436,7 +439,7 @@ test('Hosted form can skip the server settings step', async t => {
     // being correct, while example.com resolves nothing at all.
     const skipBlob = () => {
         const n = crypto.randomBytes(16).toString('base64url');
-        return signBlob({ n, t: Date.now(), redirectUrl: 'https://example.com/done', skipServerSettings: true });
+        return signFormBlob({ n, t: Date.now(), redirectUrl: 'https://example.com/done', skipServerSettings: true });
     };
 
     const page1 = async (blob, email) => {
@@ -468,7 +471,7 @@ test('Hosted form can skip the server settings step', async t => {
 
     await t.test('without the option a resolved address gets the settings form, pre-verified', async () => {
         const n = crypto.randomBytes(16).toString('base64url');
-        const res = await page1(signBlob({ n, t: Date.now(), redirectUrl: 'https://example.com/done' }), 'user@gmail.com');
+        const res = await page1(signFormBlob({ n, t: Date.now(), redirectUrl: 'https://example.com/done' }), 'user@gmail.com');
 
         assert.equal(res.status, 200, `expected 200, got ${res.status}`);
         assert.ok(res.text.includes('id="settings-form"'), 'expected the server settings form');
@@ -479,7 +482,7 @@ test('Hosted form can skip the server settings step', async t => {
 
     await t.test('the hand-off to the settings form requires a signed blob with a nonce', async () => {
         const { agent, crumb } = await crumbAgent();
-        const { data, sig } = signBlob({ account: 'no-nonce-settings', email: 'user@example.com' });
+        const { data, sig } = signFormBlob({ account: 'no-nonce-settings', email: 'user@example.com' });
         const res = await agent.post('/accounts/new/imap/settings').type('form').send(Object.assign({ crumb, data, sig }, serverFields));
         assert.equal(res.status, 403, `expected 403, got ${res.status}`);
     });
@@ -491,7 +494,7 @@ test('Hosted form can skip the server settings step', async t => {
         const render = async query => {
             const { agent, crumb } = await crumbAgent();
             const n = crypto.randomBytes(16).toString('base64url');
-            const { data, sig } = signBlob({ n, t: Date.now(), redirectUrl: 'https://example.com/done' });
+            const { data, sig } = signFormBlob({ n, t: Date.now(), redirectUrl: 'https://example.com/done' });
             const res = await agent.post(`/accounts/new/imap/settings${query}`).type('form').send(Object.assign({ crumb, data, sig }, serverFields));
             assert.equal(res.status, 200, `expected 200, got ${res.status}`);
             return res.text;
@@ -507,7 +510,7 @@ test('Hosted form can skip the server settings step', async t => {
     await t.test('the hand-off renders the settings form filled in, with the check not re-armed', async () => {
         const { agent, crumb } = await crumbAgent();
         const n = crypto.randomBytes(16).toString('base64url');
-        const { data, sig } = signBlob({ n, t: Date.now(), redirectUrl: 'https://example.com/done' });
+        const { data, sig } = signFormBlob({ n, t: Date.now(), redirectUrl: 'https://example.com/done' });
 
         const res = await agent.post('/accounts/new/imap/settings').type('form').send(Object.assign({ crumb, data, sig }, serverFields));
 
