@@ -92,6 +92,7 @@ const MODULE_BUDGETS = {
     'route-helpers.js': 611,
     'outlook-subscription-view.js': 36,
     'settings-page.js': 117,
+    'form-lists.js': 50,
     'smtp-test-routes.js': 243,
     'suppression-list-routes.js': 310,
     'tls-config-routes.js': 628,

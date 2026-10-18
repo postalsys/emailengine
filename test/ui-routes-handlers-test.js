@@ -17,6 +17,7 @@ const pathlib = require('node:path');
 const { finished } = require('node:stream/promises');
 
 const tools = require('../lib/tools');
+const settings = require('../lib/settings');
 const { Account } = require('../lib/account');
 const { Export } = require('../lib/export');
 const { webhooks } = require('../lib/webhooks');
@@ -614,6 +615,90 @@ test('OAuth2 app forms', async t => {
 
         const strip = context => Object.assign({}, context, { errors: undefined });
         assert.deepEqual(strip(viaHandler.answers.views[0].context), strip(viaFail.answers.views[0].context));
+    });
+
+    const interactiveApp = { provider: 'gmail', name: 'App', clientId: 'cid', clientSecret: 'sec', redirectUrl: 'http://localhost/cb', baseScopes: 'imap' };
+
+    // A POST without the scope fields used to fail with "Cannot read properties of undefined
+    // (reading 'split')" before the app was stored
+    await t.test('a request without the scope fields creates the app with no custom scopes', async t => {
+        let created;
+        stub(t, oauth2Apps, {
+            async create(data) {
+                created = data;
+                return { id: 'app-1' };
+            }
+        });
+
+        const fields = interactiveApp;
+        const newRoute = route('POST', '/admin/config/oauth/new');
+        const { error, value } = newRoute.options.validate.payload.validate(fields, newRoute.options.validate.options);
+        assert.ifError(error);
+
+        const h = makeToolkit();
+        await newRoute.handler(makeRequest({ payload: value }), h);
+
+        assert.deepEqual(created.extraScopes, []);
+        assert.deepEqual(created.skipScopes, []);
+        assert.equal(h.answers.redirects.length, 1);
+    });
+
+    await t.test('an edit without the scope fields keeps the stored scopes', async t => {
+        let updates;
+        stub(t, oauth2Apps, {
+            async get(id) {
+                return { id, provider: 'gmail', extraScopes: ['stored'] };
+            },
+            async update(id, data) {
+                updates = data;
+                return { id };
+            }
+        });
+
+        const fields = { ...interactiveApp, app: 'app-1', extraScopes: 'one  two\nthree' };
+        const editRoute = route('POST', '/admin/config/oauth/edit');
+        const { error, value } = editRoute.options.validate.payload.validate(fields, editRoute.options.validate.options);
+        assert.ifError(error);
+
+        await editRoute.handler(makeRequest({ payload: value }), makeToolkit());
+
+        assert.deepEqual(updates.extraScopes, ['one', 'two', 'three']);
+        assert.equal('skipScopes' in updates, false, 'an absent field is not written');
+    });
+});
+
+test('webhook settings form', async t => {
+    const route = capture('../lib/ui-routes/admin-config-routes');
+    const webhooksRoute = route('POST', '/admin/config/webhooks');
+    const submit = async fields => {
+        let written;
+        stub(t, settings, {
+            async setMulti(data) {
+                written = data;
+            },
+            async clear() {}
+        });
+        const { error, value } = webhooksRoute.options.validate.payload.validate(fields, webhooksRoute.options.validate.options);
+        assert.ifError(error);
+        const h = makeToolkit();
+        await webhooksRoute.handler(makeRequest({ payload: value }), h);
+        return { written, h };
+    };
+
+    await t.test('parses the custom headers', async () => {
+        const { written } = await submit({ webhooksEnabled: 'true', customHeaders: 'Authorization: Bearer x\nX-Empty' });
+        assert.deepEqual(written.webhooksCustomHeaders, [
+            { key: 'Authorization', value: 'Bearer x' },
+            { key: 'X-Empty', value: '' }
+        ]);
+    });
+
+    // A POST without the field used to fail with "Cannot read properties of undefined (reading 'split')"
+    await t.test('a request without the custom headers field saves and keeps the stored headers', async () => {
+        const { written, h } = await submit({ webhooksEnabled: 'true' });
+        assert.ok(written, 'the settings were saved');
+        assert.equal('webhooksCustomHeaders' in written, false);
+        assert.deepEqual(h.answers.redirects, ['/admin/config/webhooks']);
     });
 });
 
