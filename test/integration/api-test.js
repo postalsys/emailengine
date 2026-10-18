@@ -1247,10 +1247,15 @@ test('API tests', async t => {
         // copy. Graph still attaches a nextLink to a full page whether or not anything follows, so
         // the second page came back empty and the test failed, and passed again on a re-run made
         // within the half hour, which found the previous run's copy as well.
+        //
+        // The window also ends where the test starts. Graph pages newest first by offset, so a
+        // message arriving between the two requests (another CI run on the same mailbox) shifted
+        // every entry down by one and the second page began with the first page's message
+        let untilTime = new Date().toISOString();
         let sinceTime = new Date(Date.now() - 90 * 24 * 3600 * 1000).toISOString();
         let listing = top =>
             new URLSearchParams({
-                $filter: `receivedDateTime gt ${sinceTime}`,
+                $filter: `receivedDateTime gt ${sinceTime} and receivedDateTime le ${untilTime}`,
                 $select: 'id',
                 $top: String(top),
                 $orderby: 'receivedDateTime desc'
