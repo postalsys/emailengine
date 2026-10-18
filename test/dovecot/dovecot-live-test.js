@@ -50,10 +50,9 @@ async function createDovecotAccount(account, imapExtras, accountExtras) {
                     host: '127.0.0.1',
                     port: DOVECOT_PORT,
                     secure: false,
-                    // the container speaks cleartext on its internal port, which is exactly
-                    // the trusted-network case the opt-out exists for: STARTTLS is required
-                    // on every other cleartext connection
-                    requireTLS: false,
+                    // the container offers STARTTLS with a self-signed certificate, so the
+                    // default (STARTTLS required) applies and only verification is relaxed
+                    tls: { rejectUnauthorized: false },
                     // the Dovecot test container uses a static passdb: any user
                     // authenticates with the shared password and gets its own
                     // empty mail home, so accounts need no server-side setup

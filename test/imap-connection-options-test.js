@@ -35,7 +35,12 @@ test('ImapFlow options', async t => {
         assert.equal(imapClientOptions({ host: 'h', port: 143, secure: false }).doSTARTTLS, true);
         assert.equal(imapClientOptions({ host: 'h', port: 143 }).doSTARTTLS, true, 'secure left unset');
         assert.equal(imapClientOptions({ host: 'h', port: 143, secure: false, requireTLS: true }).doSTARTTLS, true);
-        assert.equal(imapClientOptions({ host: 'h', port: 143, secure: false, requireTLS: false }).doSTARTTLS, false);
+    });
+
+    // Opting out makes the upgrade opportunistic, as it is for SMTP, rather than switching
+    // STARTTLS off: a server that offers it is still used encrypted
+    await t.test('the opt-out leaves STARTTLS opportunistic', () => {
+        assert.equal('doSTARTTLS' in imapClientOptions({ host: 'h', port: 143, secure: false, requireTLS: false }), false);
     });
 
     await t.test('a connection that is TLS from the start is left alone', () => {
