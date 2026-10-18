@@ -52,3 +52,16 @@ test('getMaildata() decodes 8-bit bytes in a quoted-printable body', () => {
     const maildata = indexer.getMaildata(indexer.parseMimeTree(raw));
     assert.equal(maildata.text, 'caf\u00e9 \u20ac \u00e9');
 });
+
+test('getMaildata() trims the line ends of a text body in linear time', () => {
+    const indexer = new Indexer();
+    // a run of spaces inside a line. The regex that trimmed line ends retried the run from
+    // every position in it, 40k spaces took 1.4 s
+    const line = 'a' + ' '.repeat(200000) + 'b';
+    const raw = Buffer.from(['From: a@example.com', 'Content-Type: text/plain; charset=utf-8', '', line, 'c ', ''].join('\r\n'));
+    const start = Date.now();
+    const maildata = indexer.getMaildata(indexer.parseMimeTree(raw));
+    const elapsed = Date.now() - start;
+    assert.ok(elapsed < 2000, `took ${elapsed} ms`);
+    assert.deepEqual(maildata.html, [`<p>${line}<br/>c</p>`]);
+});
