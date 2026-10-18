@@ -482,24 +482,27 @@ test('certificate provisioning', async t => {
         // is reporting through, waits out the certificate library's per-domain lock and records a
         // failure of its own, and its completion releases the name while the first order is still
         // running - so a third click stacks another one on top.
+        // A name of its own: the in-flight set outlives a test, and an order another test left
+        // running would look exactly like the second click this one is about.
+        const hostname = 'twice.example.com';
+
         let release;
         const gate = new Promise(resolve => {
             release = resolve;
         });
 
+        // Generated up front: an RSA key takes an unbounded time on a busy runner, and generating it
+        // after the gate opens spent the budget waitFor() gives the provisioning writes
+        const material = await issued(hostname);
         const certs = stubCerts({
-            async onAcquire(hostname) {
+            async onAcquire() {
                 await gate;
-                return await issued(hostname);
+                return material;
             }
         });
 
         const commands = [];
         const call = async message => commands.push(message.cmd);
-
-        // A name of its own: the in-flight set outlives a test, and an order another test left
-        // running would look exactly like the second click this one is about.
-        const hostname = 'twice.example.com';
 
         const first = await provision.requestProvisioning({ certs, logger, call, hostnames: [hostname] });
         const second = await provision.requestProvisioning({ certs, logger, call, hostnames: [hostname] });
@@ -550,17 +553,17 @@ test('certificate provisioning', async t => {
         const gate = new Promise(resolve => {
             release = resolve;
         });
-        let ordered;
+        const hostname = 'mail.example.com';
+        // Generated up front, as in the test above
+        const ordered = await issued(hostname);
         const certs = stubCerts({
-            async onAcquire(hostname) {
+            async onAcquire() {
                 await gate;
-                ordered = await issued(hostname);
                 return ordered;
             }
         });
         const call = async () => {};
 
-        const hostname = 'mail.example.com';
         await settings.set('smtpServerEnabled', true);
         await settings.set('smtpServerTLSEnabled', true);
 
@@ -577,7 +580,7 @@ test('certificate provisioning', async t => {
         // same Redis database, and tls-status-test.js records a valid state for this hostname too
         await waitFor(async () => {
             const record = (await provision.getProvisioningStatus())[hostname];
-            return ordered && record && record.state === 'valid' && record.fingerprint === ordered.fingerprint ? record : false;
+            return record && record.state === 'valid' && record.fingerprint === ordered.fingerprint ? record : false;
         }, 'the background order to finish');
 
         assert.equal(certs.calls.filter(entry => entry.skipAcquire === false).length, 1, 'one order reached the certificate authority');
