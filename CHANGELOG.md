@@ -1,5 +1,33 @@
 # Changelog
 
+## [2.84.2](https://github.com/postalsys/emailengine/compare/v2.84.1...v2.84.2) (2026-10-18)
+
+
+### Bug Fixes
+
+* bound what hostile message content and mail servers can make a worker do ([02daa27](https://github.com/postalsys/emailengine/commit/02daa27df82680dfa59c572258c88a576d74d2ad))
+* bump @postalsys/email-text-tools to 2.4.24 and @postalsys/ee-client to 1.8.2, embed cid: images only in image attributes ([3d40506](https://github.com/postalsys/emailengine/commit/3d405060828e529156b4df954a3f6b8a5d8e25ae))
+* bump @zone-eu/mailsplit to 5.4.24, mailparser to 3.9.41 and imapflow to 2.5.3 ([3266d8d](https://github.com/postalsys/emailengine/commit/3266d8d2518e37b3c40c947a87d258a68e364497))
+* bump @zone-eu/mailsplit to 5.4.25, mailparser to 3.9.42 and imapflow to 2.5.4 ([76415b0](https://github.com/postalsys/emailengine/commit/76415b0dd58ea202a671e198f6fe9cae9d35d6f0))
+* bump libmime to 5.5.1, libqp to 3.0.1, libbase64 to 1.4.1 and nodemailer to 10.1.7 ([a934ba7](https://github.com/postalsys/emailengine/commit/a934ba79964c2b58abae056adcb0a4544f872eb4))
+* bump node from `ebfe2f9` to `44fce69` ([#676](https://github.com/postalsys/emailengine/issues/676)) ([54a6b87](https://github.com/postalsys/emailengine/commit/54a6b87ad04a9dbad0e91ed20bc179dd11235c48))
+* bump nodemailer to 10.1.5, joi to 18.3.0 and the owned packages that pinned the previous releases ([8faa692](https://github.com/postalsys/emailengine/commit/8faa6926c6d025e77ba17eac027e671782d7b527))
+* bump nodemailer to 10.1.6, smtp-server to 3.20.1 and mailparser to 3.9.45 ([bcf583e](https://github.com/postalsys/emailengine/commit/bcf583e94390c90574733e76ec04f7ac78558402))
+* bump the owned dependencies to the releases of the 2026-10-16 security scan ([2cbd569](https://github.com/postalsys/emailengine/commit/2cbd5691cfed2a9103e021b334c62451228504fe))
+* close the paths a bound or narrowed API token could use to reach other accounts ([c87c861](https://github.com/postalsys/emailengine/commit/c87c8612e41e92bc5abf79c8d3e42978b4d91364))
+* derive a separate signing key per purpose from the service secret ([1fa3368](https://github.com/postalsys/emailengine/commit/1fa336891015dab0b184689412fd02d263dcb6c2))
+* document the TLS options in the API reference and keep the admin modules within their size budgets ([9d96a0c](https://github.com/postalsys/emailengine/commit/9d96a0c5d2f5a17f7a2bbc4beff6869f3be919c1))
+* give admin sessions a lifetime, count only failed sign-ins and ask for the password before enabling TOTP ([d08d3ab](https://github.com/postalsys/emailengine/commit/d08d3ab6c0af99652699b9d007a3e8678f97b115))
+* harden the IMAP proxy and the SMTP listener against unauthenticated clients ([34ebdad](https://github.com/postalsys/emailengine/commit/34ebdad6201ba7ba73d3c20e25bf029782e80beb))
+* keep account ids apart in Redis keys and URLs, and bound licenses, mail merges and stored secrets ([c9d3547](https://github.com/postalsys/emailengine/commit/c9d3547ddf06033022eb8833186efeb00b78847a))
+* keep narrowed tokens off the webhook target, bound slow webhook targets and stop secrets leaking through logs and error payloads ([40ce6cb](https://github.com/postalsys/emailengine/commit/40ce6cbac9b77ea47adf0dc62f9146c5df3842f2))
+* keep STARTTLS opportunistic for an IMAP account that opts out of requiring it ([42cac3a](https://github.com/postalsys/emailengine/commit/42cac3ab1a96cf6e0d6d93389dec06e01cdabc4b))
+* penalise only timed-out webhook targets, log hapi's internal request errors and run the integration tier against cleartext mocks ([4578cc6](https://github.com/postalsys/emailengine/commit/4578cc674215a09b3d98cc28640007c883eec62a))
+* save the webhook and OAuth2 app forms when a list field is not sent ([8157671](https://github.com/postalsys/emailengine/commit/81576712c91ead5374631e16d864bfd6a9856ddc))
+* share the helpers the security fixes duplicated and move each rule to where it covers every caller ([b9ba3ec](https://github.com/postalsys/emailengine/commit/b9ba3ecf44599c861741e50b7f3940eaa54a3c56))
+* treat an unreachable network as a transient connection failure ([b0b4dd5](https://github.com/postalsys/emailengine/commit/b0b4dd5cb56658a8d48f62392bb83a369db265d0))
+* trim the line ends of a text body in linear time when rendering it as html ([d5d30cd](https://github.com/postalsys/emailengine/commit/d5d30cd12bc141c7aeb8d4d2f0f254e550519dd4))
+
 ## [2.84.1](https://github.com/postalsys/emailengine/compare/v2.84.0...v2.84.1) (2026-10-15)
 
 
