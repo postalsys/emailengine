@@ -1,5 +1,7 @@
 'use strict';
 
+/* global AggregateError */
+
 // lib/network-errors.js: undici raises every connection failure as a generic TypeError with the
 // real code on err.cause. A Pub/Sub pull whose body stalled reached error tracking as
 // "TypeError: terminated" because the pull loop read err.code alone, and seven Pub/Sub management
@@ -26,6 +28,14 @@ test('isTransientNetworkError()', async t => {
         assert.equal(isTransientNetworkError(undiciFailure('terminated', 'UND_ERR_BODY_TIMEOUT')), true);
         assert.equal(isTransientNetworkError(new Error('wrapped', { cause: undiciFailure('fetch failed', 'ECONNRESET') })), true);
         assert.equal(isTransientNetworkError(Object.assign(new Error('x'), { code: 'ETIMEDOUT' })), true);
+    });
+
+    await t.test('counts an unreachable network as transient', () => {
+        // Every address of a dual-stack host failing on a host without IPv6: Node reports an
+        // AggregateError carrying the first address's code, and undici wraps it in "fetch failed"
+        const aggregate = Object.assign(new AggregateError([new Error('connect ENETUNREACH')]), { code: 'ENETUNREACH' });
+        assert.equal(isTransientNetworkError(new TypeError('fetch failed', { cause: aggregate })), true);
+        assert.equal(isTransientNetworkError(undiciFailure('fetch failed', 'EHOSTUNREACH')), true);
     });
 
     await t.test('is false for anything else, and survives a self-referencing chain', () => {
