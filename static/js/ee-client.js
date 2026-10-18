@@ -6,6 +6,11 @@ const MESSAGE_BODY_STYLES = `
     :host {
         all: initial;
         display: block;
+        /* Nothing the message does paints outside this box, whatever its outermost wrapper says.
+           EmailEngine clips the message inside a wrapper of its own; this is the viewer's copy of
+           that rule, for a body rendered by a version whose wrapper the sender could still style.
+           clip, not hidden: the host must not become a scroll container of its own. */
+        overflow: clip;
         color: inherit;
         font-family: var(--ee-font, sans-serif);
         font-size: 14px;

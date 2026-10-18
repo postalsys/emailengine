@@ -731,6 +731,45 @@ test('Tools utility tests', async t => {
         assert.ok(!cids.has(''));
     });
 
+    await t.test('embedCidImages() rewrites image attributes in every attribute syntax', async () => {
+        const lookup = cid => (cid === 'a@x' ? { contentType: 'image/png', content: 'QUJD' } : null);
+        const html = tools.embedCidImages(
+            '<img src="cid:a@x"><img src=\'cid:a@x\'><img src=cid:a@x alt=x><img title="t"src="cid:a@x"><td background="cid:a@x">',
+            lookup
+        );
+        assert.strictEqual((html.match(/data:image\/png;base64,QUJD/g) || []).length, 5);
+        assert.ok(!html.includes('cid:'));
+    });
+
+    await t.test('embedCidImages() rewrites every candidate of a srcset', async () => {
+        const lookup = cid => ({ contentType: 'image/png', content: cid === 'a@x' ? 'QQ==' : 'Qg==' });
+        const html = tools.embedCidImages('<img srcset="cid:a@x 1x, cid:b@x 2x" src="cid:a@x">', lookup);
+        assert.strictEqual(html, '<img srcset="data:image/png;base64,QQ== 1x, data:image/png;base64,Qg== 2x" src="data:image/png;base64,QQ==">');
+    });
+
+    await t.test('embedCidImages() leaves links and text alone, so a sender never gets a data: link', async () => {
+        const lookup = () => ({ contentType: 'text/html', content: 'PHA+PC9wPg==' });
+        const html = '<a href="cid:doc@x" target="_blank">open</a><p>see cid:doc@x</p><div style="background: url(cid:doc@x)">x</div>';
+        assert.strictEqual(tools.embedCidImages(html, lookup), html);
+    });
+
+    await t.test('embedCidImages() keeps references it has no content for', async () => {
+        const html = '<img src="cid:missing@x">';
+        assert.strictEqual(
+            tools.embedCidImages(html, () => null),
+            html
+        );
+        assert.strictEqual(
+            tools.embedCidImages(html, () => ({ contentType: 'image/png', content: '' })),
+            html
+        );
+    });
+
+    await t.test('embedCidImages() only trusts a plain type/subtype content type', async () => {
+        const html = tools.embedCidImages('<img src="cid:a@x">', () => ({ contentType: 'image/png"onerror="alert(1)', content: 'QUJD' }));
+        assert.strictEqual(html, '<img src="data:application/octet-stream;base64,QUJD">');
+    });
+
     await t.test('collectCidReferences() returns an empty set for non-string or empty input', async () => {
         assert.strictEqual(tools.collectCidReferences(undefined).size, 0);
         assert.strictEqual(tools.collectCidReferences(false).size, 0);
