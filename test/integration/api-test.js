@@ -407,7 +407,7 @@ test('API tests', async t => {
         assert.strictEqual(message.subject, 'Test message 🤣');
         assert.strictEqual(message.messageSpecialUse, '\\Inbox');
         assert.strictEqual(message.text.plain, 'Hello world! 🙃');
-        assert.strictEqual(message.text.html, '<div style="overflow: auto;"><b>Hello world! 🙃</b></div>');
+        assert.strictEqual(message.text.html, '<div style="overflow: auto; contain: paint;"><div><b>Hello world! 🙃</b></div></div>');
         assert.strictEqual(message.text.webSafe, true);
     });
 
