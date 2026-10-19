@@ -51,20 +51,25 @@ cp node_modules/flyonui/flyonui.js static/js/flyonui.js
 # Rebuild the compiled admin UI stylesheet (Tailwind v4 + FlyonUI)
 npm run build:css
 
-# Both JSON artifacts below are refreshed from the network and are committed, so a failed fetch
+# The artifacts below are refreshed from the network and are committed, so a failed fetch
 # must not be allowed to damage the copy already in the tree. A plain `> file` redirect truncates
 # before the command runs, which is how a GitHub 500 once left a zero-byte sbom.json behind - and
 # under `set -e` it also aborts the rest of this script, silently skipping the licence and gettext
 # regeneration that npm run update chains after it. Each fetch therefore lands in a sibling temp
-# file, is checked for being valid JSON, and only then replaces the committed one. The temp file
-# is created next to its target rather than in $TMPDIR so the move is a rename within the same
-# filesystem, never a copy that could be interrupted half-written.
-fetch_json() {
+# file, is checked for being complete (valid JSON, or a format-specific check), and only then
+# replaces the committed one. The temp file is created next to its target rather than in $TMPDIR
+# so the move is a rename within the same filesystem, never a copy that could be interrupted
+# half-written.
+#
+# fetch_checked TARGET CHECK COMMAND...: CHECK is a node script that throws unless the file named
+# by process.argv[1] is a complete copy of what TARGET should hold.
+fetch_checked() {
     local target="$1"
-    shift
+    local check="$2"
+    shift 2
     local tmp
     tmp=$(mktemp "${target}.XXXXXX")
-    if "$@" > "$tmp" && node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "$tmp"; then
+    if "$@" > "$tmp" && node -e "$check" "$tmp"; then
         mv "$tmp" "$target"
     else
         rm -f "$tmp"
@@ -72,8 +77,20 @@ fetch_json() {
     fi
 }
 
+fetch_json() {
+    local target="$1"
+    shift
+    fetch_checked "$target" 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "$@"
+}
+
 fetch_json data/google-crawlers.json wget -q -O - https://developers.google.com/static/crawling/ipranges/special-crawlers.json
 node -e 'console.log("Google crawlers updated: "+require("./data/google-crawlers.json").creationTime);'
+
+# The Public Suffix List, read by lib/utils/public-suffix.js. Kept verbatim (it is MPL-2.0 and carries
+# its own licence header), and only accepted when both sections arrived whole: a truncated list would
+# not fail to parse, it would just quietly know fewer suffixes.
+fetch_checked data/public_suffix_list.dat 'const t=require("fs").readFileSync(process.argv[1],"utf8");for(const m of ["===BEGIN ICANN DOMAINS===","===END ICANN DOMAINS===","===BEGIN PRIVATE DOMAINS===","===END PRIVATE DOMAINS==="])if(!t.includes(m))throw new Error("missing "+m)' wget -q -O - https://publicsuffix.org/list/public_suffix_list.dat
+grep -m1 '^// VERSION:' data/public_suffix_list.dat || true
 
 # brew install gh
 # gh auth login

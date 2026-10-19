@@ -1160,6 +1160,11 @@ test.describe('admin shell', () => {
         await page.locator('#languageDetails summary').click();
         await expect(page.locator('#languageDetails .alert')).toBeVisible();
 
+        // the timezone list comes from the runtime ICU data under current IANA names
+        const timezone = page.locator('#settingsServiceTimezone');
+        await expect(timezone.locator('option[value="Europe/Kyiv"]')).toHaveText('Europe/Kyiv (GMT+02:00)');
+        await expect(timezone.locator('option[value="Europe/Kiev"]')).toHaveCount(0);
+
         // clear-completed-jobs posts to the server and reports through a toast
         await page.locator('#clean-queues-btn').click();
         await expect(page.locator('#toastContainer .alert', { hasText: 'Cleanup request sent' })).toBeVisible();

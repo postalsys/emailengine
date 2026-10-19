@@ -33,6 +33,9 @@
                 {{#> ui/form-field id="settingsServiceTimezone" label="Timezone" error=errors.timezone}}
                 <select id="settingsServiceTimezone" class="select max-w-md{{#if errors.timezone}} is-invalid{{/if}}"
                     name="timezone">
+                    {{#unless values.timezone}}
+                    <option value="" selected>Not set</option>
+                    {{/unless}}
                     {{#each timezones}}
                     <option value="{{timezone}}" {{#if selected}}selected{{/if}}>{{name}}</option>
                     {{/each}}

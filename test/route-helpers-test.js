@@ -831,3 +831,24 @@ test('pagination links are windowed', async t => {
         assert.equal(view.showPaging, true);
     });
 });
+
+test('formatAccountData labels an IMAP or SMTP account with its registrable domain', async t => {
+    const gt = { gettext: s => s };
+
+    await t.test('the IMAP host is shortened to the domain the provider registered', () => {
+        const account = formatAccountData({ account: 'acct', imap: { host: 'imap.mail.example.co.uk' } }, gt);
+        assert.equal(account.type.name, 'IMAP');
+        assert.equal(account.type.comment, 'example.co.uk');
+    });
+
+    await t.test('an SMTP-only account uses the SMTP host', () => {
+        const account = formatAccountData({ account: 'acct', smtp: { host: 'smtp.example.com' } }, gt);
+        assert.equal(account.type.name, 'SMTP');
+        assert.equal(account.type.comment, 'example.com');
+    });
+
+    await t.test('a host with no registrable domain, such as an address, is shown as it is', () => {
+        const account = formatAccountData({ account: 'acct', imap: { host: '192.168.1.10' } }, gt);
+        assert.equal(account.type.comment, '192.168.1.10');
+    });
+});
