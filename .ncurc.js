@@ -19,7 +19,7 @@ module.exports = {
     target: name =>
         ['pino', '@playwright/test'].includes(name)
             ? 'patch'
-            : ['nanoid', 'gettext-parser', 'xgettext-template', 'chai', 'undici', 'marked', '@sentry/node-core', 'he'].includes(name)
+            : ['nanoid', 'gettext-parser', 'xgettext-template', 'undici', 'marked', '@sentry/node-core', 'he'].includes(name)
               ? 'minor'
               : 'latest',
     //   pino              - held on 10.3.x. 10.4.0 took PR #2294, which makes lib/caller.js prefer
@@ -43,7 +43,6 @@ module.exports = {
     //   nanoid            - 4.x dropped the CommonJS require export (ESM-only)
     //   gettext-parser    - 8.x is ESM-only
     //   xgettext-template - 6.x is ESM-only (translation build tool)
-    //   chai              - 5.x is ESM-only (only used by the vendored imap-core tests)
     //   undici            - 8.x requires Node >=22.19 and crashes at require() on Node 20. Permanent while the
     //                       Node 20 floor above stands.
     //   marked            - 16.x dropped the CommonJS build (ESM-only, needs require(esm)/Node >=20.19); 15.x is the

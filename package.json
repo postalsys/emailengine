@@ -123,7 +123,6 @@
         "ace-builds": "1.45.0",
         "acorn": "8.19.0",
         "acorn-walk": "8.3.5",
-        "chai": "4.5.0",
         "eerawlog": "1.5.5",
         "eslint": "10.13.0",
         "eslint-config-prettier": "10.1.8",

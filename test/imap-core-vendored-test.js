@@ -9,12 +9,27 @@
 //
 // The vendored files are deliberately NOT edited: keeping them byte-identical to upstream is what
 // makes the fork's patch list (see lib/imapproxy/imap-core/README.md) reviewable. Instead this
-// adapter installs the handful of mocha globals they expect, then requires them.
+// adapter installs the handful of mocha globals they expect and a stand-in for chai, then
+// requires them.
 //
 // Only the hermetic specs are wired up. protocol-test.js drives a live WildDuck server (MongoDB plus
 // the WildDuck REST API, loaded by prepare.sh); see the README for that gap.
 
 const nodeTest = require('node:test');
+const Module = require('node:module');
+const path = require('node:path');
+
+// The specs require('chai'). chai is not a dependency: requests for it from the vendored test
+// directory resolve to a node:assert-backed stand-in covering the chains those files use.
+const VENDORED_TEST_DIR = path.join(__dirname, '..', 'lib', 'imapproxy', 'imap-core', 'test') + path.sep;
+const CHAI_STAND_IN = require.resolve('./helpers/chai-stand-in.js');
+const resolveFilename = Module._resolveFilename;
+Module._resolveFilename = function (request, parent, ...rest) {
+    if (request === 'chai' && parent && typeof parent.filename === 'string' && parent.filename.startsWith(VENDORED_TEST_DIR)) {
+        return CHAI_STAND_IN;
+    }
+    return resolveFilename.call(this, request, parent, ...rest);
+};
 
 // mocha calls hook and test bodies with a context exposing timeout()/slow()/retries(). Node's
 // runner has no equivalent, and the specs only ever use them to widen a timeout, so they are

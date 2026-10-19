@@ -47,8 +47,9 @@ The `test/` directory is upstream's mocha suite. It is written for mocha, which 
 dependency here, and had never been executed after the import.
 
 The hermetic specs now run as part of the normal unit tier through
-`test/imap-core-vendored-test.js`, which installs the mocha globals the specs expect and requires
-them. **Do not edit the files under `test/` to make them run** - keeping them byte-identical to
+`test/imap-core-vendored-test.js`, which installs the mocha globals the specs expect, routes their
+`require('chai')` to a node:assert-backed stand-in (`test/helpers/chai-stand-in.js`, covering only
+the chains these files use; chai itself is not a dependency), and requires them. **Do not edit the files under `test/` to make them run** - keeping them byte-identical to
 upstream is what makes the patch list above reviewable. Adapt them from the EmailEngine side
 instead.
 
