@@ -103,6 +103,12 @@ jobs:
                   npm run test:unit
               env:
                   NODE_ENV: test
+            # pkg bundles a CommonJS module graph, and Node 22+ hides an ESM-only dependency by
+            # loading it through require(esm). Rerun the tier with that switched off so one fails here.
+            - name: Run unit tests with require(esm) disabled
+              if: matrix.node == '24'
+              run: |
+                  npm run test:cjs
 
     dovecot:
         # Live IMAP tier against a real IMAP4rev2 server (Dovecot 2.4 in Docker);
