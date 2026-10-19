@@ -338,7 +338,7 @@ test('buildOidcBellProvider', async t => {
 
 test('retryDiscovery', async t => {
     // minDelay/maxDelay are injected so the schedule runs in milliseconds; the delay
-    // arithmetic itself belongs to exponential-backoff and is not re-asserted here.
+    // arithmetic itself is covered by test/back-off-test.js and is not re-asserted here.
     await t.test('keeps probing until discovery answers and resolves with the document', async () => {
         const doc = { issuer: 'https://idp.example.com' };
 

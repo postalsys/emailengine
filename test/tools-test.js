@@ -242,6 +242,22 @@ test('Tools utility tests', async t => {
         assert.ok(selections.size > 1, 'Should distribute across multiple workers');
     });
 
+    // An upgrade must not move accounts between workers or source addresses. The scores are
+    // murmurhash3 values pinned in test/murmurhash3-test.js
+    await t.test('selectRendezvousNode() picks the same worker for a known account', () => {
+        const workers = [{ threadId: 1 }, { threadId: 2 }, { threadId: 3 }, { threadId: 4 }];
+        assert.strictEqual(tools.selectRendezvousNode('account-1', workers).threadId, 3);
+    });
+
+    await t.test('selectRendezvousAddress() picks the same local address for a known account', () => {
+        assert.strictEqual(tools.selectRendezvousAddress('abc123def456ghi7', ['127.0.0.1', '192.168.1.10', '2001:db8::1']), '2001:db8::1');
+        assert.strictEqual(tools.selectRendezvousAddress('abc123def456ghi7', ['127.0.0.1', '192.168.1.10']), '192.168.1.10');
+    });
+
+    await t.test('getRendezvousScore() hashes the shard id and the key joined by a NUL', () => {
+        assert.strictEqual(tools.getRendezvousScore('account-1', 2), 3899279571);
+    });
+
     await t.test('getRendezvousScore() returns consistent hash', async () => {
         const score1 = tools.getRendezvousScore('key', 'shard1');
         const score2 = tools.getRendezvousScore('key', 'shard1');

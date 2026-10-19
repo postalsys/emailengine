@@ -19,7 +19,7 @@ module.exports = {
     target: name =>
         ['pino', '@playwright/test'].includes(name)
             ? 'patch'
-            : ['nanoid', 'gettext-parser', 'xgettext-template', 'undici', 'marked', '@sentry/node-core', 'he'].includes(name)
+            : ['gettext-parser', 'xgettext-template', 'undici', 'marked', '@sentry/node-core', 'he'].includes(name)
               ? 'minor'
               : 'latest',
     //   pino              - held on 10.3.x. 10.4.0 took PR #2294, which makes lib/caller.js prefer
@@ -40,7 +40,6 @@ module.exports = {
     //                       times out with "Received: undefined" while the page snapshot shows the button).
     //                       Same spec passes in 3.8 s on 1.63.0; nothing in the 1.64 release notes covers
     //                       it. Lift once a 1.64.x or later passes that spec unchanged.
-    //   nanoid            - 4.x dropped the CommonJS require export (ESM-only)
     //   gettext-parser    - 8.x is ESM-only
     //   xgettext-template - 6.x is ESM-only (translation build tool)
     //   undici            - 8.x requires Node >=22.19 and crashes at require() on Node 20. Permanent while the

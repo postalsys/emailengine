@@ -127,7 +127,7 @@ const { packRpcError, unpackRpcError } = require('./lib/worker-rpc-error');
 const promClient = require('prom-client');
 const fs = require('fs').promises;
 const crypto = require('crypto');
-const { compare: cv } = require('compare-versions');
+const { compareVersions, parseVersion } = require('./lib/utils/version');
 const Joi = require('joi');
 const { settingsSchema } = require('./lib/schemas');
 const settings = require('./lib/settings');
@@ -2069,7 +2069,9 @@ let licenseCheckHandler = async opts => {
         // Check if we need to validate the license
         let kv = await redis.hget(`${REDIS_PREFIX}settings`, 'kv');
         let checkKv = true;
-        if (kv && typeof kv === 'string' && cv(packageData.version, Buffer.from(kv, 'hex').toString(), '<=')) {
+        // an unreadable record means checking again, which also rewrites it
+        let validatedVersion = kv && typeof kv === 'string' ? Buffer.from(kv, 'hex').toString() : null;
+        if (parseVersion(validatedVersion) && compareVersions(packageData.version, validatedVersion) <= 0) {
             checkKv = false;
         }
 

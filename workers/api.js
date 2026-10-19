@@ -55,7 +55,7 @@ const Boom = require('@hapi/boom');
 const Cookie = require('@hapi/cookie');
 const Crumb = require('@hapi/crumb');
 const Joi = require('joi');
-const hapiPino = require('hapi-pino');
+const requestLogger = require('../lib/hapi-request-logger');
 const Inert = require('@hapi/inert');
 const Vision = require('@hapi/vision');
 const Accept = require('@hapi/accept');
@@ -1512,11 +1512,10 @@ const init = async () => {
     sessionAuthServer = server;
 
     await server.register({
-        plugin: hapiPino,
+        plugin: requestLogger,
         options: {
-            instance: logger.child({ component: 'api' }, { redact: consts.REDACTED_LOG_KEYS }),
             // Redact Authorization headers, see https://getpino.io/#/docs/redaction
-            redact: consts.REDACTED_LOG_KEYS
+            logger: logger.child({ component: 'api' }, { redact: consts.REDACTED_LOG_KEYS })
         }
     });
 
