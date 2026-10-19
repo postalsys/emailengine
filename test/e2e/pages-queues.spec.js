@@ -195,6 +195,9 @@ test.describe('queue browser pages', () => {
                 await expect(listed.getByRole('button', { name: 'Retry' })).toBeVisible();
                 await listed.getByRole('link', { name: 'Open', exact: true }).click();
                 await expect(page).toHaveURL(new RegExp(`/admin/queues/submit/jobs/${queueId}$`));
+                // the kebab below is a FlyonUI dropdown, which drops a click that lands before its
+                // script has initialised the page
+                await page.waitForLoadState('load');
 
                 // Removed from its own page, which asks first, it lands on the list of the state
                 // it was in rather than on the page of an entry that no longer exists. The actions
