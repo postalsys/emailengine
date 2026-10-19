@@ -173,11 +173,17 @@ test('fetchWithVettedRedirects', async t => {
 });
 
 test('readBodyCapped', async t => {
-    // Streams `size` bytes in 16 KB chunks, or without end when size is Infinity
+    // Streams `size` bytes in 16 KB chunks, or without end when size is Infinity. A write to a
+    // response the client has already cut off calls back with an error on the next tick, so the
+    // loop has to stop there: carrying on spun on process.nextTick until the test runner's
+    // async-resource map overflowed ("Map maximum size exceeded") and the file timed out
     const streamer = size => (res, req, closed) => {
         res.writeHead(200, { 'Content-Type': 'text/plain' });
         let sent = 0;
-        const next = () => {
+        const next = err => {
+            if (err || res.destroyed) {
+                return;
+            }
             if (sent >= size) {
                 return res.end();
             }
