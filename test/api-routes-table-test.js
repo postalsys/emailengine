@@ -343,7 +343,7 @@ test('API route table and authentication', async t => {
         assert.deepEqual(
             misfiled,
             [],
-            'a route that hands out a credential must be in GROUP.ADMIN, ' + `which no permissions record can name: ${JSON.stringify(misfiled)}`
+            `a route that hands out a credential must be in GROUP.ADMIN, which no permissions record can name: ${JSON.stringify(misfiled)}`
         );
 
         // The pattern has to actually match something, or the assertion above passes vacuously:

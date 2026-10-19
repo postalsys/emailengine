@@ -1,112 +1,94 @@
+'use strict';
+
+// Shared lint baseline for the Postal Systems / Nodemailer packages: eslint:recommended
+// plus the rules of the retired eslint-config-nodemailer, with formatting left to Prettier.
+// Keep this file identical across repos except for the "Repo-specific" block at the end.
+
 const js = require('@eslint/js');
+const prettier = require('eslint-config-prettier');
+const globals = require('globals');
 
 module.exports = [
     {
-        ignores: ['node_modules/**', 'ee-dist/**', 'static/**']
+        ignores: ['node_modules/**', 'coverage/**', 'dist/**', 'ee-dist/**', 'static/**']
     },
     js.configs.recommended,
     {
+        files: ['**/*.js', '**/*.cjs'],
         languageOptions: {
-            ecmaVersion: 2020,
+            ecmaVersion: 2022,
             sourceType: 'commonjs',
-            globals: {
-                // Node.js globals
-                Buffer: 'readonly',
-                __dirname: 'readonly',
-                __filename: 'readonly',
-                console: 'readonly',
-                exports: 'writable',
-                global: 'readonly',
-                module: 'writable',
-                process: 'readonly',
-                require: 'readonly',
-                BigInt: 'readonly',
-                setImmediate: 'readonly',
-                clearImmediate: 'readonly',
-                setTimeout: 'readonly',
-                clearTimeout: 'readonly',
-                setInterval: 'readonly',
-                clearInterval: 'readonly',
-                AbortController: 'readonly',
-                AbortSignal: 'readonly',
-                URL: 'readonly',
-                URLSearchParams: 'readonly',
-                structuredClone: 'readonly',
-                // Test globals
-                it: 'readonly',
-                describe: 'readonly',
-                before: 'readonly',
-                after: 'readonly',
-                beforeEach: 'readonly',
-                afterEach: 'readonly'
-            }
+            globals: { ...globals.node }
         },
-        files: ['**/*.js'],
         rules: {
-            // Disable rules that conflict with the project's style
-            'no-unused-vars': ['error', { args: 'none', caughtErrors: 'none' }],
-            'no-prototype-builtins': 'off',
-            // Disable all formatting rules (handled by Prettier)
-            'array-bracket-spacing': 'off',
-            'arrow-parens': 'off',
-            'arrow-spacing': 'off',
-            'block-spacing': 'off',
-            'brace-style': 'off',
-            'comma-dangle': 'off',
-            'comma-spacing': 'off',
-            'comma-style': 'off',
-            'computed-property-spacing': 'off',
-            'dot-location': 'off',
-            'eol-last': 'off',
-            'func-call-spacing': 'off',
-            'function-call-argument-newline': 'off',
-            'function-paren-newline': 'off',
-            'generator-star-spacing': 'off',
-            'implicit-arrow-linebreak': 'off',
-            indent: 'off',
-            'jsx-quotes': 'off',
-            'key-spacing': 'off',
-            'keyword-spacing': 'off',
-            'linebreak-style': 'off',
-            'lines-around-comment': 'off',
-            'lines-between-class-members': 'off',
-            'max-len': 'off',
-            'multiline-ternary': 'off',
-            'new-parens': 'off',
-            'newline-per-chained-call': 'off',
-            'no-extra-parens': 'off',
-            'no-mixed-spaces-and-tabs': 'off',
-            'no-multi-spaces': 'off',
-            'no-multiple-empty-lines': 'off',
-            'no-tabs': 'off',
-            'no-trailing-spaces': 'off',
-            'no-whitespace-before-property': 'off',
-            'nonblock-statement-body-position': 'off',
-            'object-curly-newline': 'off',
-            'object-curly-spacing': 'off',
-            'object-property-newline': 'off',
-            'one-var-declaration-per-line': 'off',
-            'operator-linebreak': 'off',
-            'padded-blocks': 'off',
-            'padding-line-between-statements': 'off',
-            'quote-props': 'off',
-            quotes: 'off',
-            'rest-spread-spacing': 'off',
-            semi: 'off',
-            'semi-spacing': 'off',
-            'semi-style': 'off',
-            'space-before-blocks': 'off',
-            'space-before-function-paren': 'off',
-            'space-in-parens': 'off',
-            'space-infix-ops': 'off',
-            'space-unary-ops': 'off',
-            'switch-colon-spacing': 'off',
-            'template-curly-spacing': 'off',
-            'template-tag-spacing': 'off',
-            'unicode-bom': 'off',
-            'wrap-iife': 'off',
-            'wrap-regex': 'off',
-            'yield-star-spacing': 'off'
+            'no-await-in-loop': 'error',
+            'no-div-regex': 'error',
+            strict: ['error', 'global'],
+            eqeqeq: 'error',
+            'dot-notation': 'error',
+            curly: 'error',
+            'no-unused-expressions': ['error', { allowShortCircuit: true }],
+            'no-unused-vars': ['error', { varsIgnorePattern: '^_', argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+            'handle-callback-err': 'error',
+            'no-new': 'error',
+            'new-cap': 'error',
+            'no-eval': 'error',
+            'no-invalid-this': 'error',
+            radix: ['error', 'always'],
+            'no-use-before-define': ['error', 'nofunc'],
+            'callback-return': ['error', ['callback', 'cb', 'done']],
+            'no-redeclare': 'error',
+            'block-scoped-var': 'error',
+            'no-sequences': 'error',
+            'no-throw-literal': 'error',
+            'no-useless-call': 'error',
+            'no-useless-concat': 'error',
+            'no-void': 'error',
+            yoda: 'error',
+            'no-var': 'error',
+            'no-bitwise': 'error',
+            'no-lonely-if': 'error',
+            'arrow-body-style': ['error', 'as-needed'],
+            'prefer-arrow-callback': 'error',
+            'object-shorthand': 'error',
+            'prefer-spread': 'error',
+            'no-prototype-builtins': 'off'
         }
-    }
+    },
+    {
+        files: ['test/**'],
+        languageOptions: {
+            globals: { ...globals.node, ...globals.mocha }
+        }
+    },
+    // Repo-specific: overrides go here, each with a one-line reason
+    {
+        // The vendored imap-core suite (lib/imapproxy/imap-core/test) is mocha-shaped and lives outside test/
+        files: ['lib/imapproxy/imap-core/test/**'],
+        languageOptions: {
+            globals: { ...globals.node, ...globals.mocha }
+        }
+    },
+    {
+        rules: {
+            // 524 violations: workers and sync loops await sequentially on purpose (ordering, backpressure, rate limits)
+            'no-await-in-loop': 'off',
+            // 264 violations: 256 unused catch bindings (optional catch binding would churn 100+ files) and 8 named
+            // parameters kept for documented interfaces (base-class stubs, provider overrides, test doubles)
+            'no-unused-vars': ['error', { varsIgnorePattern: '^_', args: 'none', caughtErrors: 'none' }],
+            // 48 violations: IMAP/MIME parsers, crypto, flag masks and hashing need bitwise operators
+            'no-bitwise': 'off',
+            // 20 violations: closures and hoisted helpers referencing later module-level bindings, fixing means reordering modules
+            'no-use-before-define': 'off',
+            // 13 violations: SCREAMING_CASE factory constants, the TLS SNICallback option and node:test's lowercase spec reporter class
+            'new-cap': 'off',
+            // 11 violations: Handlebars helpers and test stubs use the call-site this by design
+            'no-invalid-this': 'off',
+            // 10 violations: stream transform callbacks followed by other statements, rewriting them risks changing flow
+            'callback-return': 'off',
+            // 9 violations, all deliberate x == null / x != null checks that cover both null and undefined
+            eqeqeq: ['error', 'always', { null: 'ignore' }]
+        }
+    },
+    prettier
 ];

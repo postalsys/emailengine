@@ -23,13 +23,13 @@ function createMockRedis() {
         hgetallBuffer: async () => ({}),
         multi: () => ({
             exec: async () => [],
-            hset: function () {
+            hset() {
                 return this;
             },
-            hdel: function () {
+            hdel() {
                 return this;
             },
-            del: function () {
+            del() {
                 return this;
             }
         }),
@@ -46,7 +46,7 @@ function createMockRedis() {
         defineCommand: () => {},
         // ioredfour Lock calls redis.duplicate() to create a subscriber connection.
         // Return a mock to prevent real Redis connections.
-        duplicate: function () {
+        duplicate() {
             return createMockRedis();
         }
     };
@@ -154,10 +154,9 @@ test('IMAP null guard tests', async t => {
             completedTimer: null,
             state: 'connected',
             syncing: false,
-            refreshFolderList: async () => {
+            refreshFolderList: async () =>
                 // Return null so all mailboxes enter the sync branch
-                return null;
-            },
+                null,
             setStateVal: async () => {},
             getAccountKey: () => 'test:account',
             redis: mockRedis,

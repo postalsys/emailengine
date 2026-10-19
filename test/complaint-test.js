@@ -18,7 +18,7 @@ const { BaseClient } = require('../lib/email-client/base-client');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
-const mightBeAComplaint = messageInfo => BaseClient.prototype.mightBeAComplaint.call(BaseClient.prototype, { messageSpecialUse: '\\Inbox', ...messageInfo });
+const mightBeAComplaint = messageInfo => BaseClient.prototype.mightBeAComplaint({ messageSpecialUse: '\\Inbox', ...messageInfo });
 
 const Path = require('path');
 const path = fname => Path.join(__dirname, 'fixtures', 'complaints', fname);

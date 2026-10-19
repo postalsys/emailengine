@@ -42,8 +42,8 @@ function oversizedHeaderMessage() {
 // test can assert on the SMTP reply code it carries and not just on the message text.
 async function collectError(stream) {
     try {
-        for await (const chunk of stream) {
-            void chunk;
+        for await (const _chunk of stream) {
+            // drain the stream until it errors
         }
     } catch (err) {
         return err;

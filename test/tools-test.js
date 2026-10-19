@@ -871,6 +871,8 @@ test('Tools utility tests', async t => {
         // a URL parser error names the string it failed on, proxy credentials included
         let err;
         try {
+            // only the parser's exception is under test
+            // eslint-disable-next-line no-new
             new URL('socks5://user:s3cret@[bad');
         } catch (e) {
             err = e;

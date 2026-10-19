@@ -1,4 +1,4 @@
-/* global document, window, navigator, getComputedStyle */
+/* global document, window, getComputedStyle */
 'use strict';
 
 // E2E coverage for the server-rendered API reference (/admin/reference).
@@ -1108,7 +1108,7 @@ test.describe('API reference', () => {
                 return null;
             }
             return new Promise(resolve =>
-                editorInstance.completers[0].getCompletions(editorInstance, editorInstance.session, { row: 0, column: 0 }, '', (err, list) =>
+                editorInstance.completers[0].getCompletions(editorInstance, editorInstance.session, { row: 0, column: 0 }, '', (_err, list) =>
                     resolve((list || []).map(item => ({ caption: item.caption, value: item.value })))
                 )
             );

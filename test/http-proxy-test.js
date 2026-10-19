@@ -30,28 +30,28 @@ function createMockRedis() {
         },
         multi: () => ({
             exec: async () => [],
-            hmset: function () {
+            hmset() {
                 return this;
             },
-            hset: function () {
+            hset() {
                 return this;
             },
-            hdel: function () {
+            hdel() {
                 return this;
             },
-            del: function () {
+            del() {
                 return this;
             },
-            expire: function () {
+            expire() {
                 return this;
             },
-            srem: function () {
+            srem() {
                 return this;
             },
-            zadd: function () {
+            zadd() {
                 return this;
             },
-            hincrby: function () {
+            hincrby() {
                 return this;
             }
         }),
@@ -69,7 +69,7 @@ function createMockRedis() {
         on: () => {},
         off: () => {},
         defineCommand: () => {},
-        duplicate: function () {
+        duplicate() {
             return createMockRedis();
         }
     };

@@ -1,6 +1,6 @@
 'use strict';
 
-/* global Event, document */
+/* global document */
 
 // Idempotent admin-UI bootstrap helpers for the e2e suite. Every spec shares one booted
 // EmailEngine instance and the isolated Redis db 14 (see playwright.config.js), so these must

@@ -152,31 +152,29 @@ function createMockRedis() {
             };
             return pipeObj;
         },
-        multi: () => {
-            return {
-                hset() {
-                    return this;
-                },
-                hdel() {
-                    return this;
-                },
-                del() {
-                    return this;
-                },
-                expire() {
-                    return this;
-                },
-                srem() {
-                    return this;
-                },
-                hincrby() {
-                    return this;
-                },
-                async exec() {
-                    return [];
-                }
-            };
-        },
+        multi: () => ({
+            hset() {
+                return this;
+            },
+            hdel() {
+                return this;
+            },
+            del() {
+                return this;
+            },
+            expire() {
+                return this;
+            },
+            srem() {
+                return this;
+            },
+            hincrby() {
+                return this;
+            },
+            async exec() {
+                return [];
+            }
+        }),
         ttl: async () => 3600,
         quit: async () => {},
         disconnect: () => {},
@@ -184,7 +182,7 @@ function createMockRedis() {
         on: () => {},
         off: () => {},
         defineCommand: () => {},
-        duplicate: function () {
+        duplicate() {
             return createMockRedis();
         }
     };

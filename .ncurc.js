@@ -1,3 +1,5 @@
+'use strict';
+
 module.exports = {
     upgrade: true,
     // Node 20 is a hard runtime floor, not a preference. The DigitalOcean one-click images run

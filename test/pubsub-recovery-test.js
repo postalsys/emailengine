@@ -72,43 +72,43 @@ function createMockRedis() {
                     }
                     return results;
                 },
-                sadd: function (key, ...members) {
+                sadd(key, ...members) {
                     ops.push(() => redis.sadd(key, ...members));
                     return this;
                 },
-                hmset: function (key, data) {
+                hmset(key, data) {
                     ops.push(() => redis.hmset(key, data));
                     return this;
                 },
-                hset: function () {
+                hset() {
                     ops.push(() => 0);
                     return this;
                 },
-                hdel: function () {
+                hdel() {
                     ops.push(() => 0);
                     return this;
                 },
-                del: function (key) {
+                del(key) {
                     ops.push(() => redis.del(key));
                     return this;
                 },
-                expire: function () {
+                expire() {
                     ops.push(() => 0);
                     return this;
                 },
-                srem: function (key, ...members) {
+                srem(key, ...members) {
                     ops.push(() => redis.srem(key, ...members));
                     return this;
                 },
-                scard: function (key) {
+                scard(key) {
                     ops.push(() => redis.scard(key));
                     return this;
                 },
-                zadd: function () {
+                zadd() {
                     ops.push(() => 0);
                     return this;
                 },
-                hincrby: function () {
+                hincrby() {
                     ops.push(() => 0);
                     return this;
                 }
@@ -202,7 +202,7 @@ function createMockRedis() {
             );
             return pipeChain;
         },
-        duplicate: function () {
+        duplicate() {
             return createMockRedis();
         }
     };

@@ -324,7 +324,10 @@ test('token renewal writes only the token fields, and only over the grant it use
         const accountObject = createAccount({
             getLock: () => createLock([]),
             // the reads before the write are the renewal's own snapshot
-            loadAccountData: async () => (++loads, structuredClone(stored)),
+            loadAccountData: async () => {
+                ++loads;
+                return structuredClone(stored);
+            },
             // the skipped write hands back what it read under the lock
             update: async () => ({ account: 'acc', skipped: true, current: structuredClone(reauthorized) })
         });
@@ -363,7 +366,10 @@ test('token renewal writes only the token fields, and only over the grant it use
         let loads = 0;
         const accountObject = createAccount({
             getLock: () => createLock([]),
-            loadAccountData: async () => (++loads, { account: 'acc', oauth2: { refreshToken: 'RT-1' } }),
+            loadAccountData: async () => {
+                ++loads;
+                return { account: 'acc', oauth2: { refreshToken: 'RT-1' } };
+            },
             persistUpdate: async (data, oldAccountData) => {
                 persisted++;
                 // the record read for the check is handed on, so the write does not read again

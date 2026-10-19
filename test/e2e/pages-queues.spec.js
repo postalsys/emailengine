@@ -1,4 +1,3 @@
-/* global fetch */
 'use strict';
 
 // Per-page tests for the queue browser (/admin/queues), the in-house replacement for the

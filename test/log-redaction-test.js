@@ -27,6 +27,8 @@ test('REDACTED_LOG_KEYS', async t => {
     await t.test('a URL parse error does not log the URL it rejected', () => {
         let err;
         try {
+            // only the parser's exception is under test
+            // eslint-disable-next-line no-new
             new URL('socks5://user:s3cret@proxy.example.com:99999');
         } catch (parseError) {
             err = parseError;

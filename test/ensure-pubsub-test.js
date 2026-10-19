@@ -75,27 +75,27 @@ function createMockRedis() {
                     }
                     return results;
                 },
-                sadd: function (key, ...members) {
+                sadd(key, ...members) {
                     ops.push(() => redis.sadd(key, ...members));
                     return this;
                 },
-                hmset: function (key, data) {
+                hmset(key, data) {
                     ops.push(() => redis.hmset(key, data));
                     return this;
                 },
-                hdel: function (key, fields) {
+                hdel(key, fields) {
                     ops.push(() => redis.hdel(key, fields));
                     return this;
                 },
-                del: function (key) {
+                del(key) {
                     ops.push(() => redis.del(key));
                     return this;
                 },
-                srem: function (key, ...members) {
+                srem(key, ...members) {
                     ops.push(() => redis.srem(key, ...members));
                     return this;
                 },
-                scard: function (key) {
+                scard(key) {
                     ops.push(() => redis.scard(key));
                     return this;
                 }
@@ -149,7 +149,7 @@ function createMockRedis() {
         defineCommand: name => {
             redis[name] = async () => [1, null, 0];
         },
-        duplicate: function () {
+        duplicate() {
             return createMockRedis();
         }
     };

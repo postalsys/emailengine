@@ -1,4 +1,4 @@
-/* global document, window, navigator, fetch, getComputedStyle */
+/* global document, window, getComputedStyle */
 'use strict';
 
 // Per-page smoke tests for the admin UI (Tailwind v4 + FlyonUI theme). Each admin page gets at

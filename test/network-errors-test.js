@@ -1,7 +1,5 @@
 'use strict';
 
-/* global AggregateError */
-
 // lib/network-errors.js: undici raises every connection failure as a generic TypeError with the
 // real code on err.cause. A Pub/Sub pull whose body stalled reached error tracking as
 // "TypeError: terminated" because the pull loop read err.code alone, and seven Pub/Sub management
