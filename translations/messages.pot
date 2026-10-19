@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-10-18 16:36+0000\n"
+"POT-Creation-Date: 2026-10-19 08:27+0000\n"
 
 #: lib/autodetect-imap-settings.js:160
 msgid ""
@@ -24,100 +24,100 @@ msgstr ""
 #: lib/tools.js:2761
 #: lib/tools.js:2767
 #: lib/tools.js:2772
-#: lib/ui-routes/account-routes.js:1327
+#: lib/ui-routes/account-routes.js:1328
 msgid "Invalid or expired account setup URL"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:486
-#: lib/ui-routes/account-routes.js:530
-#: lib/ui-routes/account-routes.js:850
-#: lib/ui-routes/account-routes.js:927
-#: lib/ui-routes/account-routes.js:940
-#: lib/ui-routes/account-routes.js:987
-#: lib/ui-routes/account-routes.js:1203
-#: lib/ui-routes/account-routes.js:1394
+#: lib/ui-routes/account-routes.js:487
+#: lib/ui-routes/account-routes.js:531
+#: lib/ui-routes/account-routes.js:851
+#: lib/ui-routes/account-routes.js:928
+#: lib/ui-routes/account-routes.js:941
+#: lib/ui-routes/account-routes.js:988
+#: lib/ui-routes/account-routes.js:1204
+#: lib/ui-routes/account-routes.js:1395
 #: lib/ui-routes/route-helpers.js:350
 #: workers/api.js:2346
 #: workers/api.js:2421
 msgid "Email Account Setup"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:555
-#: lib/ui-routes/account-routes.js:587
+#: lib/ui-routes/account-routes.js:556
+#: lib/ui-routes/account-routes.js:588
 #: lib/ui-routes/unsubscribe-routes.js:74
 msgid "Invalid request. Check your input and try again."
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:731
+#: lib/ui-routes/account-routes.js:732
 msgid "Too many attempts for this setup link. Request a new setup link to continue."
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:974
-#: lib/ui-routes/account-routes.js:1377
+#: lib/ui-routes/account-routes.js:975
+#: lib/ui-routes/account-routes.js:1378
 msgid "Couldn't set up account. Try again."
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1062
-#: lib/ui-routes/account-routes.js:1102
-#: lib/ui-routes/admin-entities-routes.js:1953
+#: lib/ui-routes/account-routes.js:1063
+#: lib/ui-routes/account-routes.js:1103
+#: lib/ui-routes/admin-entities-routes.js:1954
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1065
-#: lib/ui-routes/account-routes.js:1105
-#: lib/ui-routes/admin-entities-routes.js:1956
+#: lib/ui-routes/account-routes.js:1066
+#: lib/ui-routes/account-routes.js:1106
+#: lib/ui-routes/admin-entities-routes.js:1957
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1070
-#: lib/ui-routes/account-routes.js:1122
-#: lib/ui-routes/admin-entities-routes.js:1973
+#: lib/ui-routes/account-routes.js:1071
+#: lib/ui-routes/account-routes.js:1123
+#: lib/ui-routes/admin-entities-routes.js:1974
 msgid "Connection timed out"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1076
-#: lib/ui-routes/account-routes.js:1125
-#: lib/ui-routes/admin-entities-routes.js:1976
+#: lib/ui-routes/account-routes.js:1077
+#: lib/ui-routes/account-routes.js:1126
+#: lib/ui-routes/admin-entities-routes.js:1977
 msgid "Could not connect to server"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1089
-#: lib/ui-routes/account-routes.js:1093
-#: lib/ui-routes/account-routes.js:1114
-#: lib/ui-routes/account-routes.js:1118
-#: lib/ui-routes/admin-entities-routes.js:1965
-#: lib/ui-routes/admin-entities-routes.js:1969
+#: lib/ui-routes/account-routes.js:1090
+#: lib/ui-routes/account-routes.js:1094
+#: lib/ui-routes/account-routes.js:1115
+#: lib/ui-routes/account-routes.js:1119
+#: lib/ui-routes/admin-entities-routes.js:1966
+#: lib/ui-routes/admin-entities-routes.js:1970
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1108
-#: lib/ui-routes/admin-entities-routes.js:1959
+#: lib/ui-routes/account-routes.js:1109
+#: lib/ui-routes/admin-entities-routes.js:1960
 msgid "Authentication credentials were not provided"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1111
-#: lib/ui-routes/admin-entities-routes.js:1962
+#: lib/ui-routes/account-routes.js:1112
+#: lib/ui-routes/admin-entities-routes.js:1963
 msgid "OAuth2 authentication failed"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1128
-#: lib/ui-routes/admin-entities-routes.js:1979
+#: lib/ui-routes/account-routes.js:1129
+#: lib/ui-routes/admin-entities-routes.js:1980
 msgid "Unexpected server response"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1315
+#: lib/ui-routes/account-routes.js:1316
 msgid "Temporary error, please try again"
 msgstr ""
 
-#: lib/ui-routes/admin-config-routes.js:195
+#: lib/ui-routes/admin-config-routes.js:196
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/ui-routes/oauth-config-routes.js:267
+#: lib/ui-routes/oauth-config-routes.js:268
 msgid "Unknown"
 msgstr ""
 
-#: lib/ui-routes/oauth-config-routes.js:274
+#: lib/ui-routes/oauth-config-routes.js:275
 #: views/config/license.hbs:20
 #: views/partials/queue_retention_note.hbs:10
 #: views/queues/index.hbs:54
@@ -127,7 +127,7 @@ msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/ui-routes/oauth-config-routes.js:276
+#: lib/ui-routes/oauth-config-routes.js:277
 msgid "Indefinite"
 msgstr ""
 
