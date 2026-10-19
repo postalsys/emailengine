@@ -19,7 +19,7 @@ module.exports = {
     target: name =>
         ['pino', '@playwright/test'].includes(name)
             ? 'patch'
-            : ['gettext-parser', 'xgettext-template', 'undici', 'marked', '@sentry/node-core', 'he'].includes(name)
+            : ['gettext-parser', 'xgettext-template', 'undici', 'marked', '@sentry/node-core', 'he', 'iconv-lite'].includes(name)
               ? 'minor'
               : 'latest',
     //   pino              - held on 10.3.x. 10.4.0 took PR #2294, which makes lib/caller.js prefer
@@ -47,6 +47,8 @@ module.exports = {
     //   marked            - 16.x dropped the CommonJS build (ESM-only, needs require(esm)/Node >=20.19); 15.x is the
     //                       last require()-compatible line. 15.0.12 verified on Node 20-24 and in a yao/pkg node24 build.
     //                       Permanent while the Node 20 floor above stands.
+    //   iconv-lite        - 1.0 (alpha since 2026-10) requires Node >=22 and moves to ES modules, relying on
+    //                       require(esm). Held on 0.x; libmime, imapflow and mailparser carry the same cap.
     //   he                - 2.x is ESM-only (exports only src/he.mjs) and requires Node >=22; require('he') throws
     //                       ERR_REQUIRE_ESM on Node 20 before 20.19. 1.2.0 is the last CommonJS release. mailparser,
     //                       which reaches EmailEngine through the same require, rejects 2.x for the same reason.
