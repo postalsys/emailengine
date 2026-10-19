@@ -59,12 +59,12 @@ Wired up and running:
 - `imap-compile-stream-test.js`
 - `imap-indexer-test.js` (upstream has its `#rebuild` block commented out)
 - `tools-test.js`
+- `search-test.js` (unit tests for the SEARCH query parser and matcher)
 
-Not wired up, because they drive a live server via `test-server.js` and need MongoDB plus a
-WildDuck REST API that does not exist in this repository:
+Not wired up, because it drives a live WildDuck server and needs MongoDB plus a WildDuck REST API
+(`prepare.sh` loads its fixtures through both) that do not exist in this repository:
 
 - `protocol-test.js`
-- `search-test.js`
 
 That is a real coverage gap: `protocol-test.js` is the suite that exercises the connection and
 command state machines, which is where most of the local patches above landed. The connection

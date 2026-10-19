@@ -11,8 +11,8 @@
 // makes the fork's patch list (see lib/imapproxy/imap-core/README.md) reviewable. Instead this
 // adapter installs the handful of mocha globals they expect, then requires them.
 //
-// Only the hermetic specs are wired up. protocol-test.js and search-test.js drive a live server
-// through test-server.js, which needs MongoDB and a WildDuck API; see the README for that gap.
+// Only the hermetic specs are wired up. protocol-test.js drives a live WildDuck server (MongoDB plus
+// the WildDuck REST API, loaded by prepare.sh); see the README for that gap.
 
 const nodeTest = require('node:test');
 
@@ -63,3 +63,4 @@ require('../lib/imapproxy/imap-core/test/imap-compiler-test.js');
 require('../lib/imapproxy/imap-core/test/imap-compile-stream-test.js');
 require('../lib/imapproxy/imap-core/test/imap-indexer-test.js');
 require('../lib/imapproxy/imap-core/test/tools-test.js');
+require('../lib/imapproxy/imap-core/test/search-test.js');
