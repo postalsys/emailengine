@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-10-19 08:27+0000\n"
+"POT-Creation-Date: 2026-10-19 16:40+0000\n"
 
 #: lib/autodetect-imap-settings.js:160
 msgid ""
@@ -37,8 +37,8 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:1204
 #: lib/ui-routes/account-routes.js:1395
 #: lib/ui-routes/route-helpers.js:350
-#: workers/api.js:2346
-#: workers/api.js:2421
+#: workers/api.js:2345
+#: workers/api.js:2420
 msgid "Email Account Setup"
 msgstr ""
 
@@ -414,7 +414,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: views/error.hbs:6
-#: workers/api.js:3216
+#: workers/api.js:3215
 msgid "Something went wrong"
 msgstr ""
 
@@ -530,37 +530,37 @@ msgid ""
 "received."
 msgstr ""
 
-#: workers/api.js:2273
+#: workers/api.js:2272
 msgid ""
 "The sign-in was cancelled or the requested access was not granted. Open the "
 "account setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2282
+#: workers/api.js:2281
 msgid "Sign-in with the email provider failed: %s"
 msgstr ""
 
-#: workers/api.js:2286
+#: workers/api.js:2285
 msgid "Sign-in with the email provider failed: no authorization code was received"
 msgstr ""
 
-#: workers/api.js:2292
+#: workers/api.js:2291
 msgid "Sign-in with the email provider failed: the request state is not valid"
 msgstr ""
 
-#: workers/api.js:2298
+#: workers/api.js:2297
 msgid ""
 "The account setup session has expired or was already used. Open the account "
 "setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2305
+#: workers/api.js:2304
 msgid ""
 "Sign-in with the email provider failed: the stored setup session is not "
 "valid"
 msgstr ""
 
-#: workers/api.js:3215
-#: workers/api.js:3327
+#: workers/api.js:3214
+#: workers/api.js:3326
 msgid "Requested page not found"
 msgstr ""

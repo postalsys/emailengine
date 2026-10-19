@@ -146,8 +146,10 @@ function createMockRedis() {
         disconnect: () => {},
         on: () => {},
         off: () => {},
+        // The lock scripts ioredfour defines. A granted lock answers {1, index, ttl} like the real
+        // script does: ioredfour 2 refuses to release a lock whose index is not a number
         defineCommand: name => {
-            redis[name] = async () => [1, null, 0];
+            redis[name] = async () => [1, 1, 300000];
         },
         duplicate() {
             return createMockRedis();
