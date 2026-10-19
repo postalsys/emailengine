@@ -8669,7 +8669,7 @@
           "clientSecret": {
             "type": "string",
             "description": "OAuth2 client secret from the provider",
-            "example": "boT7Q~dUljnfFdVuqpC11g8nGMjO8kpRAv-ZB",
+            "example": "example-client-secret",
             "maxLength": 256,
             "x-convert": {
               "trim": true
@@ -9206,7 +9206,7 @@
           "clientSecret": {
             "type": "string",
             "description": "Client secret for 3-legged OAuth2 applications",
-            "example": "boT7Q~dUljnfFdVuqpC11g8nGMjO8kpRAv-ZB",
+            "example": "example-client-secret",
             "maxLength": 256,
             "x-convert": {
               "trim": true
