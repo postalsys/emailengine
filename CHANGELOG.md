@@ -1,5 +1,38 @@
 # Changelog
 
+## [2.85.0](https://github.com/postalsys/emailengine/compare/v2.84.2...v2.85.0) (2026-10-20)
+
+
+### Features
+
+* add an API endpoint to resume an account switched off after authentication failures ([6914729](https://github.com/postalsys/emailengine/commit/69147294647ba61dda1554aa67a0f402fa1ab3d9))
+
+
+### Bug Fixes
+
+* accept cpus for the webhook, submit and export worker counts ([dc19eae](https://github.com/postalsys/emailengine/commit/dc19eaeaf8a6ee364d987b2683daa5e8a2ff4607))
+* add resume_account to the MCP tools ([2c61fb2](https://github.com/postalsys/emailengine/commit/2c61fb2ffb180558b52eab13146f67abb92734c8))
+* bump imapflow to 2.5.6 and bullmq to 6.3.17 ([5d9dccd](https://github.com/postalsys/emailengine/commit/5d9dccdba899d8e28929f47924feba91b8563cdb))
+* bump imapflow to 2.5.8, gettext to 4.2.0, joi-messages to 1.4.0 and templates to 2.1.0 ([8891e9f](https://github.com/postalsys/emailengine/commit/8891e9f67ffa5fd87f1ad6e8954bdbab3314655d))
+* bump imapflow to 2.5.9, bullmq to 6.3.19 and email-ai-tools to 2.3.1 ([a9ad209](https://github.com/postalsys/emailengine/commit/a9ad20985a0565d37999b8567298650e5c3ccf1a))
+* bump ioredfour to 2.0.0, certs to 2.0.0 and pubface to 1.2.0 ([ec5ae18](https://github.com/postalsys/emailengine/commit/ec5ae18afb371a38f92b1c94c0f652b8a02feede))
+* bump libmime to 5.5.2, gettext to 4.1.2, wild-config to 1.7.10 and bounce-classifier to 3.0.2 ([40482cd](https://github.com/postalsys/emailengine/commit/40482cd9558295f10512f29fcb2a7f28ac314f27))
+* bump templates to 2.1.1, which formats dates without moment ([63bb897](https://github.com/postalsys/emailengine/commit/63bb89709b7130cd340113fc78000dca9ccb2b1c))
+* cap the V8 young generation in the Docker image and the binaries ([7864aa5](https://github.com/postalsys/emailengine/commit/7864aa5a725b93edb60aa365b35a607605e51af0))
+* complete the OAuth2 account setup the way the hosted form does ([1a33ecc](https://github.com/postalsys/emailengine/commit/1a33ecc987001e3205a251f8161c89acda76e045))
+* decide webhook queueing before formatting the payload ([1b96844](https://github.com/postalsys/emailengine/commit/1b9684485a8c8541b80fc432bab7008a216c1985))
+* drop psl and timezones-list for the source data and Intl ([55d9c7b](https://github.com/postalsys/emailengine/commit/55d9c7b8216c9afd2080bfe406165aa1cf8bb7e3))
+* expose drafts, bulk message operations and more as MCP tools ([68ef849](https://github.com/postalsys/emailengine/commit/68ef8495b39858b14ada898e613218beaf34cae4))
+* expose mailbox create, rename and delete as MCP tools ([faece57](https://github.com/postalsys/emailengine/commit/faece57b4525aa02ad5b799b629216252ec60077))
+* log a resumed account once, with the reason it was re-enabled ([d752ed3](https://github.com/postalsys/emailengine/commit/d752ed3d9e1299eb13c3110afc9163ee1ef080a8))
+* point the documentation links at the pages' current addresses ([7ce2ca8](https://github.com/postalsys/emailengine/commit/7ce2ca8bf6deb9f4c2df7b0f28ce24cc229eacb9))
+* read .mo catalogs with @postalsys/gettext and bump owned packages ([5cf93a9](https://github.com/postalsys/emailengine/commit/5cf93a90f56c00f640a5c9340a83413bef398a6f))
+* replace five small dependencies with in-house modules ([93da438](https://github.com/postalsys/emailengine/commit/93da43887c733fe09ea2d722eef4bfb40b3d4b21))
+* report the event loop delay of every thread ([2b001fc](https://github.com/postalsys/emailengine/commit/2b001fcf5e1d352a0baeab3f9e2e7846d1db8382))
+* stop downloading inline images for messageNew when nothing uses them ([7d63a88](https://github.com/postalsys/emailengine/commit/7d63a881259540c51fabd66fc05c43a49e542b9b))
+* stop queueing webhook events that no delivery would send ([5a4921c](https://github.com/postalsys/emailengine/commit/5a4921c06a527ec5911eef78fed1019a07fedc5c))
+* use a placeholder for the OAuth2 client secret example ([cd96134](https://github.com/postalsys/emailengine/commit/cd96134fdbd2a396d66f25f0261cf5dbe2166204))
+
 ## [2.84.2](https://github.com/postalsys/emailengine/compare/v2.84.1...v2.84.2) (2026-10-18)
 
 
