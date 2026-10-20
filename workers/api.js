@@ -497,13 +497,16 @@ parentPort.on('message', message => {
     }
 });
 
-const init = async () => {
-    await loadTranslations();
+// Set by the certificate timer from the startup prechecks (scheduleCertificateReconciler) and read
+// by the onPreResponse extension (registerResponseExtensions)
+let assertPreconditionResult;
 
-    gt.setLocale((await settings.get('locale')) || 'en');
-
-    registerHandlebarsHelpers(handlebars, { gt });
-
+/**
+ * Builds the hapi server, with the API TLS context when the API is served over HTTPS
+ * @returns {Promise<Object>} The server, the certificate handler, the API TLS context and the
+ *   SO_REUSEPORT listener (null unless several API workers share the port)
+ */
+async function createApiServer() {
     // Base Hapi options shared by both the default and SO_REUSEPORT binding paths
     const serverOptions = {
         // hapi's default prints every internal request error to stderr; the request error
@@ -594,8 +597,10 @@ const init = async () => {
             });
     }
 
-    let assertPreconditionResult;
+    return { server, certHandler, apiTlsContext, reusePortListener };
+}
 
+function decorateApiToolkit(server, certHandler, apiTlsContext) {
     // A read-only view of the certificate store for routes. Ordering a certificate is the
     // reconciler's job - it owns the state a page follows, the retry pacing and the listener
     // reload - and the difference between reading and ordering is one argument
@@ -626,7 +631,9 @@ const init = async () => {
         enabled: !!API_TLS,
         active: apiTlsContext ? apiTlsContext.active : null
     }));
+}
 
+function registerLocaleExtension(server) {
     server.ext('onPreAuth', async (request, h) => {
         const tags = (request.route && request.route.settings && request.route.settings.tags) || [];
         // Skip if it's a static file route
@@ -701,7 +708,9 @@ const init = async () => {
 
         return h.continue;
     });
+}
 
+function registerRequestContextExtension(server) {
     server.ext('onRequest', async (request, h) => {
         // set default, will be overriden once active language is resolved
         request.app.gt = gt;
@@ -777,7 +786,9 @@ const init = async () => {
 
         return h.continue;
     });
+}
 
+function buildOpenApiOptions() {
     const openApiOptions = {
         // Spec-shaping options (tag list and order, security scheme, external docs) live in
         // lib/swagger-options.js so the document can be reproduced outside a running server
@@ -791,6 +802,10 @@ const init = async () => {
         cors: !!CORS_CONFIG
     };
 
+    return openApiOptions;
+}
+
+function registerApiTokenAuth(server) {
     server.auth.scheme(API_TOKEN_SCHEME, apiTokenScheme);
 
     // Authentication for API calls
@@ -1167,7 +1182,26 @@ const init = async () => {
             return { isValid: true, credentials: { token }, artifacts: tokenData };
         }
     });
+}
 
+// The version an SSO login stamps into its session, so the checks that end a session later can
+// compare against it. The password logins in lib/ui-routes/auth-routes.js stamp the same field
+// from the same place; without it a session is refused on the first request after any version
+// bump, which is a forced re-login rather than a lockout.
+//
+// Read by both strategies that accept a session: the cookie strategy below, and the session
+// token branch of the api-token strategy above - the two credentials the same cookie carries,
+// and "log out all sessions" has to end both.
+const sessionPasswordVersion = async () => {
+    const authData = await settings.get('authData');
+    return (authData && authData.passwordVersion) || 0;
+};
+
+/**
+ * Registers the cookie plugins and the admin session strategy
+ * @returns {Promise<boolean>} Whether the cookies are marked Secure
+ */
+async function registerSessionAuth(server) {
     // needed for auth session and flash messages
     await server.register(Cookie);
     await server.register(Bell);
@@ -1184,20 +1218,6 @@ const init = async () => {
         // drops on a plain-http instance, so the chosen locale never stuck there
         isSecure: secureCookie
     });
-
-    // The version an SSO login stamps into its session, so the checks that end a session later can
-    // compare against it. The password logins in lib/ui-routes/auth-routes.js stamp the same field
-    // from the same place; without it a session is refused on the first request after any version
-    // bump, which is a forced re-login rather than a lockout.
-    //
-    // Read by both strategies that accept a session: the cookie strategy below, and the session
-    // token branch of the api-token strategy above - the two credentials the same cookie carries,
-    // and "log out all sessions" has to end both. Declared here rather than above because both
-    // consumers only call it at request time, which is after this whole function has run.
-    const sessionPasswordVersion = async () => {
-        const authData = await settings.get('authData');
-        return (authData && authData.passwordVersion) || 0;
-    };
 
     // Authentication for admin pages
     server.auth.strategy('session', 'cookie', {
@@ -1295,27 +1315,31 @@ const init = async () => {
         }
     });
 
-    // Shared by the SSO strategies. The redirect URL is captured at strategy registration;
-    // the validators re-read it from settings so an origin change after startup (which would
-    // break the registered callback URL) disables the SSO button instead of failing mid-flow.
-    let getServiceRedirectUrl = async () => new URL((await settings.get('serviceUrl')) || `http://${API_HOST}${API_PORT !== 80 ? `:${API_PORT}` : ''}`);
-    let serviceOriginUnchanged = async redirectUrl => (await getServiceRedirectUrl()).origin === redirectUrl.origin;
-    // A sign-in the IdP denied, or the user cancelled, comes back as an unauthenticated try-mode
-    // request. It gets the same flash-and-redirect the allow-list denial in the OIDC handler
-    // uses, so the user lands on the login form with a way to try again rather than on the
-    // generic error page with bell's raw message. The reason goes to the log only. ?sso_denied=1
-    // stops a forced instance from auto-redirecting straight back into the flow.
-    let ssoFailureRedirect = async (request, h, method) => {
-        request.logger.warn({
-            msg: 'SSO login failed',
-            method,
-            reason: (request.auth.error && request.auth.error.message) || 'unknown',
-            remoteAddress: request.app.ip
-        });
-        await request.flash({ type: 'danger', message: 'Single sign-on failed or was cancelled. Please try again' });
-        return h.redirect('/admin/login?sso_denied=1');
-    };
+    return secureCookie;
+}
 
+// Shared by the SSO strategies. The redirect URL is captured at strategy registration;
+// the validators re-read it from settings so an origin change after startup (which would
+// break the registered callback URL) disables the SSO button instead of failing mid-flow.
+let getServiceRedirectUrl = async () => new URL((await settings.get('serviceUrl')) || `http://${API_HOST}${API_PORT !== 80 ? `:${API_PORT}` : ''}`);
+let serviceOriginUnchanged = async redirectUrl => (await getServiceRedirectUrl()).origin === redirectUrl.origin;
+// A sign-in the IdP denied, or the user cancelled, comes back as an unauthenticated try-mode
+// request. It gets the same flash-and-redirect the allow-list denial in the OIDC handler
+// uses, so the user lands on the login form with a way to try again rather than on the
+// generic error page with bell's raw message. The reason goes to the log only. ?sso_denied=1
+// stops a forced instance from auto-redirecting straight back into the flow.
+let ssoFailureRedirect = async (request, h, method) => {
+    request.logger.warn({
+        msg: 'SSO login failed',
+        method,
+        reason: (request.auth.error && request.auth.error.message) || 'unknown',
+        remoteAddress: request.app.ip
+    });
+    await request.flash({ type: 'danger', message: 'Single sign-on failed or was cancelled. Please try again' });
+    return h.redirect('/admin/login?sso_denied=1');
+};
+
+async function registerOktaAuth(server, secureCookie) {
     if (USE_OKTA_AUTH) {
         let redirectUrl = await getServiceRedirectUrl();
 
@@ -1370,7 +1394,9 @@ const init = async () => {
             }
         });
     }
+}
 
+async function registerOidcAuth(server, secureCookie) {
     if (USE_OIDC_AUTH) {
         let redirectUrl = await getServiceRedirectUrl();
 
@@ -1502,7 +1528,9 @@ const init = async () => {
                 .catch(err => logger.error({ msg: 'OIDC SSO disabled: discovery retry failed', issuer: sso.OIDC_ISSUER, err }));
         }
     }
+}
 
+async function registerServerPlugins(server) {
     if (await settings.isInstanceSecured()) {
         server.auth.default('session');
     }
@@ -1520,11 +1548,9 @@ const init = async () => {
     });
 
     await server.register([Inert, Vision]);
+}
 
-    // Position is not load-bearing: the document is generated from the finished route table on the
-    // first request, not at registration time
-    registerOpenApiRoute(server, openApiOptions);
-
+function registerRequestEvents(server) {
     // An exception thrown by a handler, an extension or a response schema with failAction
     // 'error' is answered with a bare 500 and reported on the request's error channel. hapi's
     // own record of it was an unstructured line on stderr (switched off above), and the API
@@ -1558,7 +1584,9 @@ const init = async () => {
             statusCode: request.response && request.response.statusCode
         });
     });
+}
 
+function registerStaticPageRoutes(server) {
     server.route({
         method: 'GET',
         path: '/',
@@ -1679,7 +1707,9 @@ const init = async () => {
             tags: ['static']
         }
     });
+}
 
+function registerStaticFilesRoute(server) {
     const staticRoot = pathlib.resolve(__dirname, '..', 'static');
     const staticRootPrefix = staticRoot + pathlib.sep;
 
@@ -1731,7 +1761,9 @@ const init = async () => {
                 : undefined
         }
     });
+}
 
+function registerHealthRoute(server) {
     server.route({
         method: 'GET',
         path: '/health',
@@ -1758,7 +1790,9 @@ const init = async () => {
             tags: ['static', 'health']
         }
     });
+}
 
+function registerRedirectRoute(server) {
     server.route({
         method: 'GET',
         path: '/redirect',
@@ -1828,7 +1862,9 @@ const init = async () => {
             auth: false
         }
     });
+}
 
+function registerOpenTrackingRoute(server) {
     server.route({
         method: 'GET',
         path: '/open.gif',
@@ -1893,7 +1929,9 @@ const init = async () => {
             auth: false
         }
     });
+}
 
+function registerUnsubscribeRoute(server) {
     server.route({
         method: 'POST',
         path: '/unsubscribe',
@@ -2011,7 +2049,9 @@ const init = async () => {
             auth: false
         }
     });
+}
 
+function registerOutlookNotificationRoute(server) {
     server.route({
         method: 'POST',
         path: '/oauth/msg/notification',
@@ -2114,7 +2154,9 @@ const init = async () => {
             auth: false
         }
     });
+}
 
+function registerOutlookLifecycleRoute(server) {
     server.route({
         method: 'POST',
         path: '/oauth/msg/lifecycle',
@@ -2259,587 +2301,688 @@ const init = async () => {
             auth: false
         }
     });
+}
 
-    server.route({
-        method: 'GET',
-        path: '/oauth',
-        async handler(request, h) {
-            // The mailbox owner sees these on the public error page, in the same locale as the
-            // rest of the setup flow. The pending setup is still unspent at this point (its state
-            // entry is claimed only below), so opening the setup link again is a valid retry.
-            if (request.query.error === 'access_denied') {
-                let error = Boom.badRequest(
-                    request.app.gt.gettext('The sign-in was cancelled or the requested access was not granted. Open the account setup link again to retry.')
-                );
-                if (request.query.error_description) {
-                    error.output.payload.details = [String(request.query.error_description)];
-                }
-                throw error;
+// The OAuth2 callback (GET /oauth). The handler below runs these steps in order; every one that
+// can end the request either throws or returns the response to send.
+
+// Refuses a callback that reports a provider error, carries no code or names a malformed state,
+// before the pending setup is touched
+function assertOAuthCallbackQuery(request) {
+    // The mailbox owner sees these on the public error page, in the same locale as the
+    // rest of the setup flow. The pending setup is still unspent at this point (its state
+    // entry is claimed only below), so opening the setup link again is a valid retry.
+    if (request.query.error === 'access_denied') {
+        let error = Boom.badRequest(
+            request.app.gt.gettext('The sign-in was cancelled or the requested access was not granted. Open the account setup link again to retry.')
+        );
+        if (request.query.error_description) {
+            error.output.payload.details = [String(request.query.error_description)];
+        }
+        throw error;
+    }
+
+    if (request.query.error) {
+        throw Boom.badRequest(util.format(request.app.gt.gettext('Sign-in with the email provider failed: %s'), request.query.error));
+    }
+
+    if (!request.query.code) {
+        throw Boom.badRequest(request.app.gt.gettext('Sign-in with the email provider failed: no authorization code was received'));
+    }
+
+    // Validate nonce format: 16 bytes base64url encoded = 21-22 characters
+    // Also accept base64 encoding (+, /, =) for backward compatibility with old cached nonces
+    if (!/^account:add:[A-Za-z0-9_\-+/]{21,22}={0,2}$/.test(request.query.state)) {
+        throw Boom.badRequest(request.app.gt.gettext('Sign-in with the email provider failed: the request state is not valid'));
+    }
+}
+
+// Claims the pending setup the state names: the entry is deleted in the same transaction that reads
+// it, so a setup can be completed only once
+async function claimOAuthSetup(request) {
+    let [[, accountData]] = await redis.multi().get(`${REDIS_PREFIX}${request.query.state}`).del(`${REDIS_PREFIX}${request.query.state}`).exec();
+    if (!accountData) {
+        throw Boom.badRequest(request.app.gt.gettext('The account setup session has expired or was already used. Open the account setup link again to retry.'));
+    }
+
+    try {
+        accountData = JSON.parse(accountData);
+    } catch (E) {
+        throw Boom.badRequest(request.app.gt.gettext('Sign-in with the email provider failed: the stored setup session is not valid'));
+    }
+
+    if (!accountData.account) {
+        accountData.account = null;
+    }
+
+    return accountData;
+}
+
+// have to use HTML redirect, otherwise samesite=strict cookies are not passed on
+function renderOAuthRedirect(request, h, httpRedirectUrl) {
+    return h.view(
+        'redirect',
+        {
+            pageTitleFull: request.app.gt.gettext('Email Account Setup'),
+            httpRedirectUrl
+        },
+        {
+            layout: 'public'
+        }
+    );
+}
+
+// Hands the user back to the provider after a failure they can correct themselves, as a fresh
+// single-use setup. The token-bearing oauth2 object is dropped so the retry starts clean, and
+// _meta rides along so the redirect URL, the expected identity and the form nonce all survive
+// it - that nonce is claimed only on success, so it is still unspent here.
+async function startOAuthRetry(flow, loginHint, prompt) {
+    const { accountData, requestedSetup, provider, accountMeta, oAuth2Client } = flow;
+
+    const reAuthState = `account:add:${crypto.randomBytes(NONCE_BYTES).toString('base64url')}`;
+    const reAuthAccountData = buildRetrySetup(accountData, requestedSetup, provider, accountMeta);
+
+    await redis.set(`${REDIS_PREFIX}${reAuthState}`, JSON.stringify(reAuthAccountData), 'EX', Math.floor(MAX_FORM_TTL / 1000));
+
+    // The address to steer the user towards rides on the authorize URL only - persisting it
+    // would overwrite a shared mailbox with the principal that is signing in to reach it.
+    return oAuth2Client.generateAuthUrl({ state: reAuthState, email: loginHint, prompt });
+}
+
+async function gmailMissingScopesView(flow, r, grantedScopes) {
+    const { request, h, oAuth2Client, accountData } = flow;
+
+    // Check if user deselected required scopes in Google's granular consent
+    const requiredFunctionalScopes = oAuth2Client.scopes.filter(s => !OPENID_SCOPES.includes(s));
+    const missingScopes = requiredFunctionalScopes.filter(s => !grantedScopes.includes(s));
+
+    if (missingScopes.length > 0) {
+        request.logger.warn({
+            msg: 'OAuth2 grant missing required scopes',
+            requested: requiredFunctionalScopes,
+            granted: grantedScopes,
+            missing: missingScopes
+        });
+
+        // Best-effort revocation of the partial token
+        oAuth2Client.revokeToken(r.refresh_token || r.access_token).catch(err => {
+            request.logger.warn({ msg: 'Failed to revoke partial OAuth2 token', err });
+        });
+
+        const retryUrl = await startOAuthRetry(flow, accountData.email);
+
+        const missingScopesList = missingScopes.map(formatScopeDescription);
+
+        return h.view(
+            'oauth-scope-error',
+            {
+                pageTitleFull: request.app.gt.gettext('Email Account Setup'),
+                templateLocale: request.app.locale,
+                retryUrl,
+                missingScopesList
+            },
+            {
+                layout: 'public'
             }
+        );
+    }
+}
 
-            if (request.query.error) {
-                throw Boom.badRequest(util.format(request.app.gt.gettext('Sign-in with the email provider failed: %s'), request.query.error));
-            }
+async function resolveGmailUserEmail(flow, r, grantedScopes) {
+    const { request, oAuth2Client } = flow;
 
-            if (!request.query.code) {
-                throw Boom.badRequest(request.app.gt.gettext('Sign-in with the email provider failed: no authorization code was received'));
-            }
+    let profileRes;
+    let userEmail;
+    let userName;
 
-            // Validate nonce format: 16 bytes base64url encoded = 21-22 characters
-            // Also accept base64 encoding (+, /, =) for backward compatibility with old cached nonces
-            if (!/^account:add:[A-Za-z0-9_\-+/]{21,22}={0,2}$/.test(request.query.state)) {
-                throw Boom.badRequest(request.app.gt.gettext('Sign-in with the email provider failed: the request state is not valid'));
-            }
+    // With OpenID Connect scopes (openid, email, profile), the ID token contains user info
+    // This works for all account types including send-only accounts
+    const idTokenPayload = decodeJwtPayload(r.id_token);
+    if (r.id_token && !idTokenPayload) {
+        request.logger.warn({ msg: 'Failed to decode Gmail ID token' });
+    }
+    if (idTokenPayload && typeof idTokenPayload.email === 'string' && isEmail(idTokenPayload.email)) {
+        userEmail = idTokenPayload.email;
+        userName = idTokenPayload.name || null;
+        request.logger.info({ msg: 'Extracted user info from ID token', userEmail, userName });
+    }
 
-            let [[, accountData]] = await redis.multi().get(`${REDIS_PREFIX}${request.query.state}`).del(`${REDIS_PREFIX}${request.query.state}`).exec();
-            if (!accountData) {
-                throw Boom.badRequest(
-                    request.app.gt.gettext('The account setup session has expired or was already used. Open the account setup link again to retry.')
-                );
-            }
+    // Back channel, so this is the claim the restriction can actually be enforced on;
+    // the hd argument on the authorization URL only filters the chooser Google shows
+    flow.workspaceDomain = workspaceDomainOf(idTokenPayload);
 
+    // If ID token didn't provide email, fall back to Gmail API profile endpoint
+    // This should rarely happen since we now request openid/email/profile scopes
+    if (!userEmail) {
+        // Check if we have scopes that allow accessing the profile endpoint
+        const hasProfileScope =
+            grantedScopes.includes('https://mail.google.com/') ||
+            grantedScopes.includes('https://www.googleapis.com/auth/gmail.readonly') ||
+            grantedScopes.includes('https://www.googleapis.com/auth/gmail.modify') ||
+            grantedScopes.includes('https://www.googleapis.com/auth/gmail.metadata');
+
+        if (hasProfileScope) {
             try {
-                accountData = JSON.parse(accountData);
-            } catch (E) {
-                throw Boom.badRequest(request.app.gt.gettext('Sign-in with the email provider failed: the stored setup session is not valid'));
-            }
-
-            if (!accountData.account) {
-                accountData.account = null;
-            }
-
-            const accountMeta = accountData._meta || {};
-            delete accountData._meta;
-
-            const redirectUrl = accountMeta.redirectUrl;
-
-            const provider = accountData.oauth2.provider;
-
-            // What the caller originally asked for, captured before the provider branches below rewrite
-            // accountData from whoever signed in. A retry has to start from this rather than from the
-            // rejected attempt: `email` may name a shared mailbox to bind (and is otherwise overwritten
-            // with the authenticated address), `name` gets filled in from the rejected user's profile when
-            // the caller supplied none, and `oauth2.auth.delegatedUser` names the mailbox rather than a
-            // credential, so it must survive while the tokens do not.
-            const requestedSetup = {
-                email: accountData.email,
-                name: accountData.name,
-                delegatedUser: accountData.oauth2.auth && accountData.oauth2.auth.delegatedUser
-            };
-
-            const oauth2App = await oauth2Apps.get(provider);
-            if (!oauth2App) {
-                let error = Boom.boomify(new Error('Missing or disabled OAuth2 app'), { statusCode: 404 });
-                throw error;
-            }
-
-            // The code exchange, the profile lookups and any revoke already speak for the account being
-            // set up, so they leave through its route (its own proxy, if the setup named one)
-            const oAuth2Client = await oauth2Apps.getClient(oauth2App.id, { route: await getAccountHttpRoute(redis, accountData) });
-
-            // have to use HTML redirect, otherwise samesite=strict cookies are not passed on
-            const renderRedirect = httpRedirectUrl =>
-                h.view(
-                    'redirect',
-                    {
-                        pageTitleFull: request.app.gt.gettext('Email Account Setup'),
-                        httpRedirectUrl
-                    },
-                    {
-                        layout: 'public'
-                    }
-                );
-
-            // Hands the user back to the provider after a failure they can correct themselves, as a fresh
-            // single-use setup. The token-bearing oauth2 object is dropped so the retry starts clean, and
-            // _meta rides along so the redirect URL, the expected identity and the form nonce all survive
-            // it - that nonce is claimed only on success, so it is still unspent here.
-            const startOAuthRetry = async (loginHint, prompt) => {
-                const reAuthState = `account:add:${crypto.randomBytes(NONCE_BYTES).toString('base64url')}`;
-                const reAuthAccountData = buildRetrySetup(accountData, requestedSetup, provider, accountMeta);
-
-                await redis.set(`${REDIS_PREFIX}${reAuthState}`, JSON.stringify(reAuthAccountData), 'EX', Math.floor(MAX_FORM_TTL / 1000));
-
-                // The address to steer the user towards rides on the authorize URL only - persisting it
-                // would overwrite a shared mailbox with the principal that is signing in to reach it.
-                return oAuth2Client.generateAuthUrl({ state: reAuthState, email: loginHint, prompt });
-            };
-
-            // Addresses the provider itself returned over a back channel, the only values allowed to
-            // satisfy an expected identity (see lib/account/expected-identity.js). Every provider case
-            // fills this in; one that does not leaves it empty, and an empty list fails the check closed.
-            const providerIdentities = [];
-
-            // The Workspace or Cloud organization domain the provider reported, for an application
-            // restricted to Google Workspace accounts. Only the Gmail case fills it in; the
-            // restriction is a Google setting and no other provider has the notion.
-            let workspaceDomain = null;
-
-            // The token to revoke if the setup is rejected after the code was already exchanged, set by
-            // each provider case because the token response is scoped to the switch. Prefer the refresh
-            // token: revoking either invalidates the grant, but the access token may already be expired.
-            let grantToken;
-
-            // `app.provider` is for example "gmail", `provider` is oauth2 app id
-            switch (oauth2App.provider) {
-                case 'gmail': {
-                    const r = await oAuth2Client.getToken(request.query.code);
-                    if (!r || !r.access_token) {
-                        let error = Boom.boomify(new Error(`Oauth failed: did not get token`), { statusCode: 400 });
-                        throw error;
-                    }
-
-                    const grantedScopes = r.scope ? r.scope.split(/\s+/) : [];
-
-                    request.logger.info({ msg: 'OAuth token received', grantedScopes, hasIdToken: !!r.id_token });
-
-                    // Check if user deselected required scopes in Google's granular consent
-                    const requiredFunctionalScopes = oAuth2Client.scopes.filter(s => !OPENID_SCOPES.includes(s));
-                    const missingScopes = requiredFunctionalScopes.filter(s => !grantedScopes.includes(s));
-
-                    if (missingScopes.length > 0) {
-                        request.logger.warn({
-                            msg: 'OAuth2 grant missing required scopes',
-                            requested: requiredFunctionalScopes,
-                            granted: grantedScopes,
-                            missing: missingScopes
-                        });
-
-                        // Best-effort revocation of the partial token
-                        oAuth2Client.revokeToken(r.refresh_token || r.access_token).catch(err => {
-                            request.logger.warn({ msg: 'Failed to revoke partial OAuth2 token', err });
-                        });
-
-                        const retryUrl = await startOAuthRetry(accountData.email);
-
-                        const missingScopesList = missingScopes.map(formatScopeDescription);
-
-                        return h.view(
-                            'oauth-scope-error',
-                            {
-                                pageTitleFull: request.app.gt.gettext('Email Account Setup'),
-                                templateLocale: request.app.locale,
-                                retryUrl,
-                                missingScopesList
-                            },
-                            {
-                                layout: 'public'
-                            }
-                        );
-                    }
-
-                    let profileRes;
-                    let userEmail;
-                    let userName;
-
-                    // With OpenID Connect scopes (openid, email, profile), the ID token contains user info
-                    // This works for all account types including send-only accounts
-                    const idTokenPayload = decodeJwtPayload(r.id_token);
-                    if (r.id_token && !idTokenPayload) {
-                        request.logger.warn({ msg: 'Failed to decode Gmail ID token' });
-                    }
-                    if (idTokenPayload && typeof idTokenPayload.email === 'string' && isEmail(idTokenPayload.email)) {
-                        userEmail = idTokenPayload.email;
-                        userName = idTokenPayload.name || null;
-                        request.logger.info({ msg: 'Extracted user info from ID token', userEmail, userName });
-                    }
-
-                    // Back channel, so this is the claim the restriction can actually be enforced on;
-                    // the hd argument on the authorization URL only filters the chooser Google shows
-                    workspaceDomain = workspaceDomainOf(idTokenPayload);
-
-                    // If ID token didn't provide email, fall back to Gmail API profile endpoint
-                    // This should rarely happen since we now request openid/email/profile scopes
-                    if (!userEmail) {
-                        // Check if we have scopes that allow accessing the profile endpoint
-                        const hasProfileScope =
-                            grantedScopes.includes('https://mail.google.com/') ||
-                            grantedScopes.includes('https://www.googleapis.com/auth/gmail.readonly') ||
-                            grantedScopes.includes('https://www.googleapis.com/auth/gmail.modify') ||
-                            grantedScopes.includes('https://www.googleapis.com/auth/gmail.metadata');
-
-                        if (hasProfileScope) {
-                            try {
-                                request.logger.debug({ msg: 'Attempting Gmail profile endpoint as fallback' });
-                                profileRes = await oAuth2Client.request(r.access_token, 'https://gmail.googleapis.com/gmail/v1/users/me/profile');
-                                if (profileRes && profileRes.emailAddress) {
-                                    userEmail = profileRes.emailAddress;
-                                }
-                            } catch (err) {
-                                request.logger.error({ msg: 'Failed to fetch user info from Gmail API', err });
-                                let response = err.oauthRequest && err.oauthRequest.response;
-                                if (response && response.error) {
-                                    let message;
-                                    if (/Gmail API has not been used in project/.test(response.error.message)) {
-                                        message =
-                                            'Can not perform requests against Gmail API as the project has not been enabled. If you are the admin, check notifications on the dashboard.';
-                                    } else {
-                                        message = response.error.message;
-                                    }
-
-                                    let error = Boom.boomify(new Error(message), { statusCode: resolveOAuthErrorStatus(response.error, err) });
-                                    throw error;
-                                }
-                                throw err;
-                            }
-                        }
-                    }
-
-                    if (!userEmail) {
-                        let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
-                        throw error;
-                    }
-
-                    // Back-channel only: either the id_token from the token endpoint or the Gmail profile
-                    // API response, never a value that travelled through the browser.
-                    providerIdentities.push(userEmail);
-                    grantToken = r.refresh_token || r.access_token;
-
-                    accountData.email = isEmail(userEmail) ? userEmail : accountData.email;
-
-                    const defaultScopes = (oauth2App.baseScopes && GMAIL_SCOPES[oauth2App.baseScopes]) || GMAIL_SCOPES.imap;
-
-                    accountData.oauth2 = Object.assign(
-                        accountData.oauth2 || {},
-                        {
-                            provider,
-                            accessToken: r.access_token,
-                            refreshToken: r.refresh_token,
-                            expires: new Date(Date.now() + r.expires_in * 1000),
-                            scope: grantedScopes.length ? grantedScopes : defaultScopes,
-                            tokenType: r.token_type
-                        },
-                        {
-                            auth: {
-                                user: userEmail
-                            }
-                        }
-                    );
-
-                    accountData.googleHistoryId = profileRes ? Number(profileRes.historyId) || null : null;
-
-                    request.logger.info({ msg: 'Provisioned OAuth2 tokens', user: userEmail, provider: oauth2App.provider });
-                    break;
+                request.logger.debug({ msg: 'Attempting Gmail profile endpoint as fallback' });
+                profileRes = await oAuth2Client.request(r.access_token, 'https://gmail.googleapis.com/gmail/v1/users/me/profile');
+                if (profileRes && profileRes.emailAddress) {
+                    userEmail = profileRes.emailAddress;
                 }
-
-                case 'outlook': {
-                    const r = await oAuth2Client.getToken(request.query.code);
-                    if (!r || !r.access_token) {
-                        let error = Boom.boomify(new Error(`Oauth failed: did not get token`), { statusCode: 400 });
-                        throw error;
-                    }
-
-                    let userInfo;
-
-                    if (!oauth2App.baseScopes || oauth2App.baseScopes === 'imap') {
-                        // Read account info from the id_token, falling back to the client_info GET argument.
-                        // The fallback is needed because previously EmailEngine did not request for the
-                        // User.Read scope - but client_info arrives through the browser, so it is a display
-                        // fallback only and never counts as identity evidence. See lib/oauth/outlook-identity.js.
-
-                        let clientInfo = false;
-                        if (request.query.client_info) {
-                            try {
-                                clientInfo = JSON.parse(Buffer.from(request.query.client_info, 'base64url').toString());
-                            } catch (err) {
-                                // Base64-shaped but not JSON. It is an optional display hint, so log and continue
-                                // rather than failing the whole setup on a value we do not trust anyway.
-                                request.logger.warn({ msg: 'Failed to decode Outlook client_info argument', err });
-                            }
-                        }
-
-                        const idTokenPayload = decodeJwtPayload(r.id_token);
-                        if (r.id_token && !idTokenPayload) {
-                            request.logger.warn({ msg: 'Failed to decode Outlook ID token' });
-                        }
-
-                        userInfo = resolveOutlookUserInfo({ clientInfo, idTokenPayload });
-                    } else {
-                        // Request profile info from API
-
-                        let profileRes;
-                        try {
-                            profileRes = await oAuth2Client.request(r.access_token, `${oAuth2Client.apiBase}/v1.0/me`);
-                        } catch (err) {
-                            let response = err.oauthRequest && err.oauthRequest.response;
-                            if (response && response.error) {
-                                let message = response.error.message;
-                                let error = Boom.boomify(new Error(message), { statusCode: resolveOAuthErrorStatus(response.error, err) });
-                                throw error;
-                            }
-                            throw err;
-                        }
-
-                        userInfo = resolveOutlookUserInfo({ profile: profileRes });
-
-                        request.logger.info({
-                            msg: 'User profile returned by MS Graph API',
-                            user: userInfo.email,
-                            provider: oauth2App.provider
-                        });
-                    }
-
-                    const authData = {
-                        user: userInfo.username || userInfo.email
-                    };
-
-                    if (!authData.user) {
-                        let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
-                        throw error;
-                    }
-
-                    // Only the back-channel addresses, so a forged client_info cannot satisfy an expectation.
-                    providerIdentities.push(...userInfo.verifiedIdentities);
-                    grantToken = r.refresh_token || r.access_token;
-
-                    if (accountData.oauth2 && accountData.oauth2.auth && accountData.oauth2.auth.delegatedUser) {
-                        // Delegated user (shared mailbox) specified in oauth2.auth.delegatedUser
-                        authData.delegatedUser = accountData.oauth2.auth.delegatedUser;
-                        // Ensure email is set to the delegated user if not already provided
-                        if (!accountData.email) {
-                            accountData.email = accountData.oauth2.auth.delegatedUser;
-                        }
-                    } else if (accountData.delegated && accountData.email && accountData.email !== userInfo.email) {
-                        // Legacy: Shared mailbox specified via delegated flag
-                        authData.delegatedUser = accountData.email;
-                    } else {
-                        // Not a delegated account, use the authenticated user's email
-                        accountData.email = userInfo.email;
-                    }
-
-                    accountData.name = accountData.name || userInfo.name || '';
-
-                    accountData.oauth2 = Object.assign(
-                        accountData.oauth2 || {},
-                        {
-                            provider,
-                            accessToken: r.access_token,
-                            refreshToken: r.refresh_token,
-                            expires: new Date(Date.now() + r.expires_in * 1000),
-                            scope: r.scope ? r.scope.split(/\s+/) : oAuth2Client.scopes,
-                            tokenType: r.token_type
-                        },
-                        {
-                            auth: authData
-                        }
-                    );
-
-                    request.logger.info({ msg: 'Provisioned OAuth2 tokens', user: userInfo.email, provider: oauth2App.provider });
-                    break;
-                }
-
-                case 'mailRu': {
-                    const r = await oAuth2Client.getToken(request.query.code);
-                    if (!r || !r.access_token) {
-                        let error = Boom.boomify(new Error(`Oauth failed: did not get token`), { statusCode: 400 });
-                        throw error;
-                    }
-
-                    let profileRes;
-                    try {
-                        profileRes = await oAuth2Client.request(r.access_token, 'https://oauth.mail.ru/userinfo');
-                    } catch (err) {
-                        let response = err.oauthRequest && err.oauthRequest.response;
-                        if (response && response.error) {
-                            let message = response.error.message;
-                            let error = Boom.boomify(new Error(message), { statusCode: resolveOAuthErrorStatus(response.error, err) });
-                            throw error;
-                        }
-                        throw err;
-                    }
-
-                    if (!profileRes || !profileRes || !profileRes.email) {
-                        let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
-                        throw error;
-                    }
-
-                    // Back-channel only: the Mail.ru userinfo endpoint response.
-                    providerIdentities.push(profileRes.email);
-                    grantToken = r.refresh_token || r.access_token;
-
-                    accountData.name = accountData.name || profileRes.name || '';
-                    accountData.email = isEmail(profileRes.email) ? profileRes.email : accountData.email;
-
-                    accountData.oauth2 = Object.assign(
-                        accountData.oauth2 || {},
-                        {
-                            provider,
-                            accessToken: r.access_token,
-                            refreshToken: r.refresh_token,
-                            expires: new Date(Date.now() + r.expires_in * 1000),
-                            scope: r.scope ? r.scope.split(/\s+/) : MAIL_RU_SCOPES,
-                            tokenType: r.token_type
-                        },
-                        {
-                            auth: {
-                                user: profileRes.email
-                            }
-                        }
-                    );
-
-                    request.logger.info({ msg: 'Provisioned OAuth2 tokens', user: profileRes.email, provider: oauth2App.provider });
-                    break;
-                }
-
-                default: {
-                    throw new Error('Unknown OAuth2 provider');
-                }
-            }
-
-            // Expected identity check. Runs before the nonce claim and before create(), so a rejected
-            // setup neither consumes the signed link nor overwrites the credentials already on the
-            // account. The expectation can come from the signed form blob or from the account itself -
-            // persisting it is what makes the constraint outlive the link that introduced it, and it is
-            // why a later link issued without expectedEmail cannot quietly drop the pin.
-            const expectedEmail = await resolveExpectedIdentity(redis, {
-                account: accountData.account,
-                blobExpectation: pendingSetupExpectation(accountData, accountMeta)
-            });
-
-            // "Accept only Google Workspace accounts" used to be advisory: generateAuthUrl() sets hd=*,
-            // which filters the account chooser Google shows and nothing else, so a link assembled
-            // without that argument - or a user who switches account inside the chooser - completed the
-            // setup with a consumer account. The hosted-domain claim of the ID token is checked here
-            // instead, and a token that names no domain is refused rather than trusted: for the Gmail
-            // provider the OpenID scopes are always requested (GmailOauth's constructor adds them), so
-            // a missing claim means the account has no Workspace domain, not that the claim was never
-            // asked for.
-            if (oauth2App.googleWorkspaceAccounts && oauth2App.provider === 'gmail' && !workspaceDomain) {
-                request.logger.warn({
-                    msg: 'OAuth2 sign-in used a personal account for a Workspace-only application',
-                    account: accountData.account,
-                    provider: oauth2App.provider
-                });
-
-                // The code was already exchanged, so we are holding a grant we will never use. Best
-                // effort, and the same duck-typing guard as the identity mismatch below.
-                if (grantToken && typeof oAuth2Client.revokeToken === 'function') {
-                    try {
-                        await oAuth2Client.revokeToken(grantToken);
-                    } catch (err) {
-                        request.logger.warn({ msg: 'Failed to revoke the OAuth2 grant after a Workspace check', err });
-                    }
-                }
-
-                // select_account for the same reason as the identity mismatch: they are signed in to the
-                // account that just failed, and without it Google would hand back the same one
-                const retryUrl = await startOAuthRetry(accountData.email, 'select_account consent');
-
-                return workspaceErrorView(request, h, { actualEmail: providerIdentities[0], retryUrl });
-            }
-
-            if (expectedEmail && !matchesExpectedIdentity(expectedEmail, providerIdentities)) {
-                // Neither address is logged: the expectation and the authenticated identity both belong to
-                // the end user, and this line is the one record of a failed attempt. Note the provider
-                // identity was already logged by the "Provisioned OAuth2 tokens" line above.
-                request.logger.warn({
-                    msg: 'OAuth2 identity did not match the expected email address',
-                    account: accountData.account,
-                    provider: oauth2App.provider
-                });
-
-                // The code was already exchanged, so we are holding a refresh token we will never use.
-                // Best effort, and the same duck-typing guard Account.delete({ revoke }) uses: only
-                // GmailOauth implements revokeToken, and a rejected setup must not become a 500.
-                if (grantToken && typeof oAuth2Client.revokeToken === 'function') {
-                    try {
-                        await oAuth2Client.revokeToken(grantToken);
-                    } catch (err) {
-                        request.logger.warn({ msg: 'Failed to revoke the OAuth2 grant after an identity mismatch', err });
-                    }
-                }
-
-                // Stop here with a way back rather than redirecting to the calling application: signing in
-                // as the wrong account is a correctable mistake, and the hosted flow only ever redirects on
-                // success. Hint the address they were supposed to use, and force the account picker:
-                // they are already signed in to the one that just failed, so without select_account Google
-                // would hand back the same account and the retry would loop. Microsoft always shows the
-                // picker and Mail.ru ignores the hint, so this only changes Google's behavior.
-                const retryUrl = await startOAuthRetry(expectedEmail, 'select_account consent');
-
-                return identityErrorView(request, h, {
-                    expectedEmail,
-                    // The primary address the provider reported. Microsoft can return both a mailbox
-                    // address and a user principal name, and either would have satisfied the pin, so
-                    // naming the first is enough to show which account actually signed in.
-                    actualEmail: providerIdentities[0],
-                    retryUrl
-                });
-            }
-
-            if (expectedEmail) {
-                // Pin the account so every later setup is checked, including one driven by a link that
-                // carries no expectation of its own.
-                accountData.expectedEmail = expectedEmail;
-            }
-
-            if ('delegated' in accountData) {
-                // remove artefacts
-                delete accountData.delegated;
-            }
-
-            let accountObject = new Account({
-                redis,
-                call,
-                secret: await getSecret(),
-                timeout: request.headers['x-ee-timeout']
-            });
-
-            // Claim the single-use nonce BEFORE create (SET NX), mirroring the IMAP arm in
-            // lib/ui-routes/account-routes.js, so one signed link cannot be double-spent across the two
-            // arms (initiate OAuth -> submit the same blob to /accounts/new/imap/server -> complete this
-            // callback) and a replayed callback cannot create a second account.
-            //
-            // Backward-compat, BY DESIGN: this only engages when accountMeta.n is present. Legacy /
-            // pre-upgrade re-auth blobs carry no nonce (accountMeta.n is undefined), so the claim is
-            // skipped and those links keep working - the OAuth entry (accountFormHandler) intentionally
-            // does NOT require a nonce for exactly that reason.
-            // claimFormNonce/releaseFormNonce (lib/tools.js) are the same primitives the IMAP arm uses, so
-            // the double-spend semantics stay in one place.
-            let nonceClaimed = false;
-            if (accountMeta.n) {
-                let claimed;
-                try {
-                    claimed = await claimFormNonce(redis, accountMeta.n, accountMeta.t);
-                } catch (err) {
-                    // A Redis failure is not a consumed nonce - surface a retryable error rather than
-                    // misreporting a valid setup URL as invalid.
-                    request.logger.error({ msg: 'Failed to claim nonce for an account form request', err });
-                    throw Boom.boomify(new Error('Temporary error, please try again'), { statusCode: 500 });
-                }
-                if (!claimed) {
-                    // The nonce key already exists: this signed URL was already used.
-                    throw Boom.boomify(new Error('Invalid or expired account setup URL'), { statusCode: 403 });
-                }
-                nonceClaimed = true;
-            }
-
-            let result;
-            try {
-                result = await accountObject.create(accountData);
             } catch (err) {
-                // Release the nonce so the user can retry (same accepted residual as the IMAP arm: if
-                // Redis also fails here the nonce stays consumed for its TTL and a fresh link is needed -
-                // the price of claim-before-create being atomic).
-                if (nonceClaimed) {
-                    await releaseFormNonce(redis, accountMeta.n, request.logger);
+                request.logger.error({ msg: 'Failed to fetch user info from Gmail API', err });
+                let response = err.oauthRequest && err.oauthRequest.response;
+                if (response && response.error) {
+                    let message;
+                    if (/Gmail API has not been used in project/.test(response.error.message)) {
+                        message =
+                            'Can not perform requests against Gmail API as the project has not been enabled. If you are the admin, check notifications on the dashboard.';
+                    } else {
+                        message = response.error.message;
+                    }
+
+                    let error = Boom.boomify(new Error(message), { statusCode: resolveOAuthErrorStatus(response.error, err) });
+                    throw error;
                 }
                 throw err;
             }
+        }
+    }
 
-            let httpRedirectUrl;
-            if (redirectUrl) {
-                let serviceUrl = await settings.get('serviceUrl');
-                let url = new URL(redirectUrl, serviceUrl);
-                url.searchParams.set('account', result.account);
-                url.searchParams.set('state', result.state);
-                httpRedirectUrl = url.href;
-            } else {
-                httpRedirectUrl = `/admin/accounts/${result.account}`;
-            }
+    return { profileRes, userEmail };
+}
 
-            return renderRedirect(httpRedirectUrl);
+async function completeGmailCallback(flow) {
+    const { request, oAuth2Client, oauth2App, provider, accountData, providerIdentities } = flow;
+
+    const r = await oAuth2Client.getToken(request.query.code);
+    if (!r || !r.access_token) {
+        let error = Boom.boomify(new Error(`Oauth failed: did not get token`), { statusCode: 400 });
+        throw error;
+    }
+
+    const grantedScopes = r.scope ? r.scope.split(/\s+/) : [];
+
+    request.logger.info({ msg: 'OAuth token received', grantedScopes, hasIdToken: !!r.id_token });
+
+    const scopeErrorView = await gmailMissingScopesView(flow, r, grantedScopes);
+    if (scopeErrorView) {
+        return scopeErrorView;
+    }
+
+    const { profileRes, userEmail } = await resolveGmailUserEmail(flow, r, grantedScopes);
+
+    if (!userEmail) {
+        let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
+        throw error;
+    }
+
+    // Back-channel only: either the id_token from the token endpoint or the Gmail profile
+    // API response, never a value that travelled through the browser.
+    providerIdentities.push(userEmail);
+    flow.grantToken = r.refresh_token || r.access_token;
+
+    accountData.email = isEmail(userEmail) ? userEmail : accountData.email;
+
+    const defaultScopes = (oauth2App.baseScopes && GMAIL_SCOPES[oauth2App.baseScopes]) || GMAIL_SCOPES.imap;
+
+    accountData.oauth2 = Object.assign(
+        accountData.oauth2 || {},
+        {
+            provider,
+            accessToken: r.access_token,
+            refreshToken: r.refresh_token,
+            expires: new Date(Date.now() + r.expires_in * 1000),
+            scope: grantedScopes.length ? grantedScopes : defaultScopes,
+            tokenType: r.token_type
         },
+        {
+            auth: {
+                user: userEmail
+            }
+        }
+    );
+
+    accountData.googleHistoryId = profileRes ? Number(profileRes.historyId) || null : null;
+
+    request.logger.info({ msg: 'Provisioned OAuth2 tokens', user: userEmail, provider: oauth2App.provider });
+}
+
+async function resolveOutlookCallbackUser(flow, r) {
+    const { request, oAuth2Client, oauth2App } = flow;
+
+    let userInfo;
+
+    if (!oauth2App.baseScopes || oauth2App.baseScopes === 'imap') {
+        // Read account info from the id_token, falling back to the client_info GET argument.
+        // The fallback is needed because previously EmailEngine did not request for the
+        // User.Read scope - but client_info arrives through the browser, so it is a display
+        // fallback only and never counts as identity evidence. See lib/oauth/outlook-identity.js.
+
+        let clientInfo = false;
+        if (request.query.client_info) {
+            try {
+                clientInfo = JSON.parse(Buffer.from(request.query.client_info, 'base64url').toString());
+            } catch (err) {
+                // Base64-shaped but not JSON. It is an optional display hint, so log and continue
+                // rather than failing the whole setup on a value we do not trust anyway.
+                request.logger.warn({ msg: 'Failed to decode Outlook client_info argument', err });
+            }
+        }
+
+        const idTokenPayload = decodeJwtPayload(r.id_token);
+        if (r.id_token && !idTokenPayload) {
+            request.logger.warn({ msg: 'Failed to decode Outlook ID token' });
+        }
+
+        userInfo = resolveOutlookUserInfo({ clientInfo, idTokenPayload });
+    } else {
+        // Request profile info from API
+
+        let profileRes;
+        try {
+            profileRes = await oAuth2Client.request(r.access_token, `${oAuth2Client.apiBase}/v1.0/me`);
+        } catch (err) {
+            let response = err.oauthRequest && err.oauthRequest.response;
+            if (response && response.error) {
+                let message = response.error.message;
+                let error = Boom.boomify(new Error(message), { statusCode: resolveOAuthErrorStatus(response.error, err) });
+                throw error;
+            }
+            throw err;
+        }
+
+        userInfo = resolveOutlookUserInfo({ profile: profileRes });
+
+        request.logger.info({
+            msg: 'User profile returned by MS Graph API',
+            user: userInfo.email,
+            provider: oauth2App.provider
+        });
+    }
+
+    return userInfo;
+}
+
+async function completeOutlookCallback(flow) {
+    const { request, oAuth2Client, oauth2App, provider, accountData, providerIdentities } = flow;
+
+    const r = await oAuth2Client.getToken(request.query.code);
+    if (!r || !r.access_token) {
+        let error = Boom.boomify(new Error(`Oauth failed: did not get token`), { statusCode: 400 });
+        throw error;
+    }
+
+    const userInfo = await resolveOutlookCallbackUser(flow, r);
+
+    const authData = {
+        user: userInfo.username || userInfo.email
+    };
+
+    if (!authData.user) {
+        let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
+        throw error;
+    }
+
+    // Only the back-channel addresses, so a forged client_info cannot satisfy an expectation.
+    providerIdentities.push(...userInfo.verifiedIdentities);
+    flow.grantToken = r.refresh_token || r.access_token;
+
+    if (accountData.oauth2 && accountData.oauth2.auth && accountData.oauth2.auth.delegatedUser) {
+        // Delegated user (shared mailbox) specified in oauth2.auth.delegatedUser
+        authData.delegatedUser = accountData.oauth2.auth.delegatedUser;
+        // Ensure email is set to the delegated user if not already provided
+        if (!accountData.email) {
+            accountData.email = accountData.oauth2.auth.delegatedUser;
+        }
+    } else if (accountData.delegated && accountData.email && accountData.email !== userInfo.email) {
+        // Legacy: Shared mailbox specified via delegated flag
+        authData.delegatedUser = accountData.email;
+    } else {
+        // Not a delegated account, use the authenticated user's email
+        accountData.email = userInfo.email;
+    }
+
+    accountData.name = accountData.name || userInfo.name || '';
+
+    accountData.oauth2 = Object.assign(
+        accountData.oauth2 || {},
+        {
+            provider,
+            accessToken: r.access_token,
+            refreshToken: r.refresh_token,
+            expires: new Date(Date.now() + r.expires_in * 1000),
+            scope: r.scope ? r.scope.split(/\s+/) : oAuth2Client.scopes,
+            tokenType: r.token_type
+        },
+        {
+            auth: authData
+        }
+    );
+
+    request.logger.info({ msg: 'Provisioned OAuth2 tokens', user: userInfo.email, provider: oauth2App.provider });
+}
+
+async function completeMailRuCallback(flow) {
+    const { request, oAuth2Client, oauth2App, provider, accountData, providerIdentities } = flow;
+
+    const r = await oAuth2Client.getToken(request.query.code);
+    if (!r || !r.access_token) {
+        let error = Boom.boomify(new Error(`Oauth failed: did not get token`), { statusCode: 400 });
+        throw error;
+    }
+
+    let profileRes;
+    try {
+        profileRes = await oAuth2Client.request(r.access_token, 'https://oauth.mail.ru/userinfo');
+    } catch (err) {
+        let response = err.oauthRequest && err.oauthRequest.response;
+        if (response && response.error) {
+            let message = response.error.message;
+            let error = Boom.boomify(new Error(message), { statusCode: resolveOAuthErrorStatus(response.error, err) });
+            throw error;
+        }
+        throw err;
+    }
+
+    if (!profileRes || !profileRes || !profileRes.email) {
+        let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
+        throw error;
+    }
+
+    // Back-channel only: the Mail.ru userinfo endpoint response.
+    providerIdentities.push(profileRes.email);
+    flow.grantToken = r.refresh_token || r.access_token;
+
+    accountData.name = accountData.name || profileRes.name || '';
+    accountData.email = isEmail(profileRes.email) ? profileRes.email : accountData.email;
+
+    accountData.oauth2 = Object.assign(
+        accountData.oauth2 || {},
+        {
+            provider,
+            accessToken: r.access_token,
+            refreshToken: r.refresh_token,
+            expires: new Date(Date.now() + r.expires_in * 1000),
+            scope: r.scope ? r.scope.split(/\s+/) : MAIL_RU_SCOPES,
+            tokenType: r.token_type
+        },
+        {
+            auth: {
+                user: profileRes.email
+            }
+        }
+    );
+
+    request.logger.info({ msg: 'Provisioned OAuth2 tokens', user: profileRes.email, provider: oauth2App.provider });
+}
+
+// `app.provider` is for example "gmail", `provider` is oauth2 app id
+async function exchangeOAuthCode(flow) {
+    switch (flow.oauth2App.provider) {
+        case 'gmail':
+            return await completeGmailCallback(flow);
+
+        case 'outlook':
+            return await completeOutlookCallback(flow);
+
+        case 'mailRu':
+            return await completeMailRuCallback(flow);
+
+        default: {
+            throw new Error('Unknown OAuth2 provider');
+        }
+    }
+}
+
+// The Workspace restriction and the expected identity, both checked after the code exchange.
+// Answers the error page with a way back when the setup has to be refused
+async function rejectOAuthIdentity(flow, expectedEmail) {
+    const { request, h, accountData, oauth2App, oAuth2Client, providerIdentities, workspaceDomain, grantToken } = flow;
+
+    // "Accept only Google Workspace accounts" used to be advisory: generateAuthUrl() sets hd=*,
+    // which filters the account chooser Google shows and nothing else, so a link assembled
+    // without that argument - or a user who switches account inside the chooser - completed the
+    // setup with a consumer account. The hosted-domain claim of the ID token is checked here
+    // instead, and a token that names no domain is refused rather than trusted: for the Gmail
+    // provider the OpenID scopes are always requested (GmailOauth's constructor adds them), so
+    // a missing claim means the account has no Workspace domain, not that the claim was never
+    // asked for.
+    if (oauth2App.googleWorkspaceAccounts && oauth2App.provider === 'gmail' && !workspaceDomain) {
+        request.logger.warn({
+            msg: 'OAuth2 sign-in used a personal account for a Workspace-only application',
+            account: accountData.account,
+            provider: oauth2App.provider
+        });
+
+        // The code was already exchanged, so we are holding a grant we will never use. Best
+        // effort, and the same duck-typing guard as the identity mismatch below.
+        if (grantToken && typeof oAuth2Client.revokeToken === 'function') {
+            try {
+                await oAuth2Client.revokeToken(grantToken);
+            } catch (err) {
+                request.logger.warn({ msg: 'Failed to revoke the OAuth2 grant after a Workspace check', err });
+            }
+        }
+
+        // select_account for the same reason as the identity mismatch: they are signed in to the
+        // account that just failed, and without it Google would hand back the same one
+        const retryUrl = await startOAuthRetry(flow, accountData.email, 'select_account consent');
+
+        return workspaceErrorView(request, h, { actualEmail: providerIdentities[0], retryUrl });
+    }
+
+    if (expectedEmail && !matchesExpectedIdentity(expectedEmail, providerIdentities)) {
+        // Neither address is logged: the expectation and the authenticated identity both belong to
+        // the end user, and this line is the one record of a failed attempt. Note the provider
+        // identity was already logged by the "Provisioned OAuth2 tokens" line above.
+        request.logger.warn({
+            msg: 'OAuth2 identity did not match the expected email address',
+            account: accountData.account,
+            provider: oauth2App.provider
+        });
+
+        // The code was already exchanged, so we are holding a refresh token we will never use.
+        // Best effort, and the same duck-typing guard Account.delete({ revoke }) uses: only
+        // GmailOauth implements revokeToken, and a rejected setup must not become a 500.
+        if (grantToken && typeof oAuth2Client.revokeToken === 'function') {
+            try {
+                await oAuth2Client.revokeToken(grantToken);
+            } catch (err) {
+                request.logger.warn({ msg: 'Failed to revoke the OAuth2 grant after an identity mismatch', err });
+            }
+        }
+
+        // Stop here with a way back rather than redirecting to the calling application: signing in
+        // as the wrong account is a correctable mistake, and the hosted flow only ever redirects on
+        // success. Hint the address they were supposed to use, and force the account picker:
+        // they are already signed in to the one that just failed, so without select_account Google
+        // would hand back the same account and the retry would loop. Microsoft always shows the
+        // picker and Mail.ru ignores the hint, so this only changes Google's behavior.
+        const retryUrl = await startOAuthRetry(flow, expectedEmail, 'select_account consent');
+
+        return identityErrorView(request, h, {
+            expectedEmail,
+            // The primary address the provider reported. Microsoft can return both a mailbox
+            // address and a user principal name, and either would have satisfied the pin, so
+            // naming the first is enough to show which account actually signed in.
+            actualEmail: providerIdentities[0],
+            retryUrl
+        });
+    }
+}
+
+async function createOAuthAccount(request, accountData, accountMeta) {
+    let accountObject = new Account({
+        redis,
+        call,
+        secret: await getSecret(),
+        timeout: request.headers['x-ee-timeout']
+    });
+
+    // Claim the single-use nonce BEFORE create (SET NX), mirroring the IMAP arm in
+    // lib/ui-routes/account-routes.js, so one signed link cannot be double-spent across the two
+    // arms (initiate OAuth -> submit the same blob to /accounts/new/imap/server -> complete this
+    // callback) and a replayed callback cannot create a second account.
+    //
+    // Backward-compat, BY DESIGN: this only engages when accountMeta.n is present. Legacy /
+    // pre-upgrade re-auth blobs carry no nonce (accountMeta.n is undefined), so the claim is
+    // skipped and those links keep working - the OAuth entry (accountFormHandler) intentionally
+    // does NOT require a nonce for exactly that reason.
+    // claimFormNonce/releaseFormNonce (lib/tools.js) are the same primitives the IMAP arm uses, so
+    // the double-spend semantics stay in one place.
+    let nonceClaimed = false;
+    if (accountMeta.n) {
+        let claimed;
+        try {
+            claimed = await claimFormNonce(redis, accountMeta.n, accountMeta.t);
+        } catch (err) {
+            // A Redis failure is not a consumed nonce - surface a retryable error rather than
+            // misreporting a valid setup URL as invalid.
+            request.logger.error({ msg: 'Failed to claim nonce for an account form request', err });
+            throw Boom.boomify(new Error('Temporary error, please try again'), { statusCode: 500 });
+        }
+        if (!claimed) {
+            // The nonce key already exists: this signed URL was already used.
+            throw Boom.boomify(new Error('Invalid or expired account setup URL'), { statusCode: 403 });
+        }
+        nonceClaimed = true;
+    }
+
+    let result;
+    try {
+        result = await accountObject.create(accountData);
+    } catch (err) {
+        // Release the nonce so the user can retry (same accepted residual as the IMAP arm: if
+        // Redis also fails here the nonce stays consumed for its TTL and a fresh link is needed -
+        // the price of claim-before-create being atomic).
+        if (nonceClaimed) {
+            await releaseFormNonce(redis, accountMeta.n, request.logger);
+        }
+        throw err;
+    }
+
+    return result;
+}
+
+async function oauthSuccessRedirectUrl(redirectUrl, result) {
+    let httpRedirectUrl;
+    if (redirectUrl) {
+        let serviceUrl = await settings.get('serviceUrl');
+        let url = new URL(redirectUrl, serviceUrl);
+        url.searchParams.set('account', result.account);
+        url.searchParams.set('state', result.state);
+        httpRedirectUrl = url.href;
+    } else {
+        httpRedirectUrl = `/admin/accounts/${result.account}`;
+    }
+
+    return httpRedirectUrl;
+}
+
+async function handleOAuthCallback(request, h) {
+    assertOAuthCallbackQuery(request);
+
+    const accountData = await claimOAuthSetup(request);
+
+    const accountMeta = accountData._meta || {};
+    delete accountData._meta;
+
+    const redirectUrl = accountMeta.redirectUrl;
+
+    const provider = accountData.oauth2.provider;
+
+    // What the caller originally asked for, captured before the provider branches below rewrite
+    // accountData from whoever signed in. A retry has to start from this rather than from the
+    // rejected attempt: `email` may name a shared mailbox to bind (and is otherwise overwritten
+    // with the authenticated address), `name` gets filled in from the rejected user's profile when
+    // the caller supplied none, and `oauth2.auth.delegatedUser` names the mailbox rather than a
+    // credential, so it must survive while the tokens do not.
+    const requestedSetup = {
+        email: accountData.email,
+        name: accountData.name,
+        delegatedUser: accountData.oauth2.auth && accountData.oauth2.auth.delegatedUser
+    };
+
+    const oauth2App = await oauth2Apps.get(provider);
+    if (!oauth2App) {
+        let error = Boom.boomify(new Error('Missing or disabled OAuth2 app'), { statusCode: 404 });
+        throw error;
+    }
+
+    // The code exchange, the profile lookups and any revoke already speak for the account being
+    // set up, so they leave through its route (its own proxy, if the setup named one)
+    const oAuth2Client = await oauth2Apps.getClient(oauth2App.id, { route: await getAccountHttpRoute(redis, accountData) });
+
+    // What the provider steps below read, and the values they fill in
+    const flow = {
+        request,
+        h,
+        accountData,
+        accountMeta,
+        requestedSetup,
+        provider,
+        oauth2App,
+        oAuth2Client,
+
+        // Addresses the provider itself returned over a back channel, the only values allowed to
+        // satisfy an expected identity (see lib/account/expected-identity.js). Every provider case
+        // fills this in; one that does not leaves it empty, and an empty list fails the check closed.
+        providerIdentities: [],
+
+        // The Workspace or Cloud organization domain the provider reported, for an application
+        // restricted to Google Workspace accounts. Only the Gmail case fills it in; the
+        // restriction is a Google setting and no other provider has the notion.
+        workspaceDomain: null,
+
+        // The token to revoke if the setup is rejected after the code was already exchanged, set by
+        // each provider case because the token response is scoped to the switch. Prefer the refresh
+        // token: revoking either invalidates the grant, but the access token may already be expired.
+        grantToken: undefined
+    };
+
+    const providerView = await exchangeOAuthCode(flow);
+    if (providerView) {
+        return providerView;
+    }
+
+    // Expected identity check. Runs before the nonce claim and before create(), so a rejected
+    // setup neither consumes the signed link nor overwrites the credentials already on the
+    // account. The expectation can come from the signed form blob or from the account itself -
+    // persisting it is what makes the constraint outlive the link that introduced it, and it is
+    // why a later link issued without expectedEmail cannot quietly drop the pin.
+    const expectedEmail = await resolveExpectedIdentity(redis, {
+        account: accountData.account,
+        blobExpectation: pendingSetupExpectation(accountData, accountMeta)
+    });
+
+    const identityView = await rejectOAuthIdentity(flow, expectedEmail);
+    if (identityView) {
+        return identityView;
+    }
+
+    if (expectedEmail) {
+        // Pin the account so every later setup is checked, including one driven by a link that
+        // carries no expectation of its own.
+        accountData.expectedEmail = expectedEmail;
+    }
+
+    if ('delegated' in accountData) {
+        // remove artefacts
+        delete accountData.delegated;
+    }
+
+    const result = await createOAuthAccount(request, accountData, accountMeta);
+
+    const httpRedirectUrl = await oauthSuccessRedirectUrl(redirectUrl, result);
+
+    return renderOAuthRedirect(request, h, httpRedirectUrl);
+}
+
+function registerOAuthCallbackRoute(server) {
+    server.route({
+        method: 'GET',
+        path: '/oauth',
+        handler: handleOAuthCallback,
         options: {
             description: 'OAuth2 response endpoint',
 
@@ -2885,28 +3028,9 @@ const init = async () => {
             auth: false
         }
     });
+}
 
-    // setup every /v1 route module (wiring lives in lib/api-routes/index.js so the route table
-    // can be captured without booting this worker - see test/api-routes-table-test.js)
-    await registerApiRoutes({
-        server,
-        call,
-        notify,
-        metrics,
-        CORS_CONFIG,
-        FLAG_SORT_ORDER,
-        SMTP_TEST_HOST,
-        MAX_ATTACHMENT_SIZE,
-        MAX_BODY_SIZE,
-        MAX_PAYLOAD_TIMEOUT,
-        mcpFeatureEnabled,
-        oauth2Schema,
-        imapSchema,
-        smtpSchema,
-        AccountTypeSchema,
-        OAuth2ProviderSchema
-    });
-
+async function registerCsrfProtection(server, secureCookie) {
     // Web UI routes
 
     await server.register({
@@ -2928,7 +3052,9 @@ const init = async () => {
             }
         }
     });
+}
 
+function registerViews(server) {
     server.views({
         engines: {
             hbs: handlebars
@@ -3184,7 +3310,9 @@ const init = async () => {
             };
         }
     });
+}
 
+function registerResponseExtensions(server) {
     const preResponse = async (request, h) => {
         let response = request.response;
 
@@ -3271,7 +3399,9 @@ const init = async () => {
     // After preResponse on purpose: it replaces an error response with the rendered error page
     // or a JSON body, and the headers have to land on whatever is actually sent
     server.ext('onPreResponse', securityHeadersExt({ cspMode: CSP_MODE }));
+}
 
+function registerTotpExtension(server) {
     server.ext('onPostAuth', async (request, h) => {
         if (request.requireTotp) {
             // The password step is done and only the second factor is missing, so the session
@@ -3288,7 +3418,9 @@ const init = async () => {
         }
         return h.continue;
     });
+}
 
+function registerChangesRoute(server) {
     server.route({
         method: 'GET',
         path: '/admin/changes',
@@ -3297,10 +3429,9 @@ const init = async () => {
         // helper so the two can not drift apart on framing or on stream cleanup.
         handler: openChangeStream
     });
+}
 
-    // setup web UI
-    routesUi(server, call);
-
+function registerMetricsRoute(server) {
     server.route({
         method: 'GET',
         path: '/metrics',
@@ -3318,7 +3449,9 @@ const init = async () => {
             }
         }
     });
+}
 
+function registerNotFoundRoute(server) {
     server.route({
         method: '*',
         path: '/{any*}',
@@ -3326,7 +3459,9 @@ const init = async () => {
             throw Boom.notFound(request.app.gt.gettext('Requested page not found')); // 404
         }
     });
+}
 
+async function startApiListener(server, reusePortListener) {
     await server.start();
 
     if (USE_REUSE_PORT) {
@@ -3357,7 +3492,9 @@ const init = async () => {
             }
         });
     }
+}
 
+async function warnUntrustedForwardedFor() {
     // An IP allowlist is only as trustworthy as the address it matches against. If the deployment
     // takes the client address from X-Forwarded-For but does not say which peers may set it, any
     // client that can reach this port can present whatever address the allowlist expects.
@@ -3381,7 +3518,9 @@ const init = async () => {
             allowedAddresses: ADMIN_ACCESS_ADDRESSES && ADMIN_ACCESS_ADDRESSES.length ? ADMIN_ACCESS_ADDRESSES : null
         });
     }
+}
 
+function warmApiReference(server) {
     // Warm the swagger.json cache, and with it the /admin/reference render model - which
     // reads the same document back and costs ~12ms to build. Doing both here keeps that
     // work off the first visitor's request.
@@ -3394,7 +3533,9 @@ const init = async () => {
                 logger.debug({ msg: 'Failed to build the API reference model', err });
             });
     });
+}
 
+function scheduleCertificateReconciler(certHandler) {
     // Keep the configured hostnames supplied with certificates.
     //
     // This used to be a renewal timer and nothing else: it read the certificate for the service
@@ -3426,6 +3567,93 @@ const init = async () => {
 
         handler().catch(err => logger.error({ msg: 'Failed to run certificate handler', err }));
     }, TLS_RENEW_CHECK_INTERVAL).unref();
+}
+
+const init = async () => {
+    await loadTranslations();
+
+    gt.setLocale((await settings.get('locale')) || 'en');
+
+    registerHandlebarsHelpers(handlebars, { gt });
+
+    const { server, certHandler, apiTlsContext, reusePortListener } = await createApiServer();
+
+    decorateApiToolkit(server, certHandler, apiTlsContext);
+
+    registerLocaleExtension(server);
+    registerRequestContextExtension(server);
+
+    const openApiOptions = buildOpenApiOptions();
+
+    registerApiTokenAuth(server);
+
+    const secureCookie = await registerSessionAuth(server);
+
+    await registerOktaAuth(server, secureCookie);
+    await registerOidcAuth(server, secureCookie);
+
+    await registerServerPlugins(server);
+
+    // Position is not load-bearing: the document is generated from the finished route table on the
+    // first request, not at registration time
+    registerOpenApiRoute(server, openApiOptions);
+
+    registerRequestEvents(server);
+
+    registerStaticPageRoutes(server);
+    registerStaticFilesRoute(server);
+    registerHealthRoute(server);
+    registerRedirectRoute(server);
+    registerOpenTrackingRoute(server);
+    registerUnsubscribeRoute(server);
+    registerOutlookNotificationRoute(server);
+    registerOutlookLifecycleRoute(server);
+    registerOAuthCallbackRoute(server);
+
+    // setup every /v1 route module (wiring lives in lib/api-routes/index.js so the route table
+    // can be captured without booting this worker - see test/api-routes-table-test.js)
+    await registerApiRoutes({
+        server,
+        call,
+        notify,
+        metrics,
+        CORS_CONFIG,
+        FLAG_SORT_ORDER,
+        SMTP_TEST_HOST,
+        MAX_ATTACHMENT_SIZE,
+        MAX_BODY_SIZE,
+        MAX_PAYLOAD_TIMEOUT,
+        mcpFeatureEnabled,
+        oauth2Schema,
+        imapSchema,
+        smtpSchema,
+        AccountTypeSchema,
+        OAuth2ProviderSchema
+    });
+
+    await registerCsrfProtection(server, secureCookie);
+
+    registerViews(server);
+
+    registerResponseExtensions(server);
+
+    registerTotpExtension(server);
+
+    registerChangesRoute(server);
+
+    // setup web UI
+    routesUi(server, call);
+
+    registerMetricsRoute(server);
+    registerNotFoundRoute(server);
+
+    await startApiListener(server, reusePortListener);
+
+    await warnUntrustedForwardedFor();
+
+    warmApiReference(server);
+
+    scheduleCertificateReconciler(certHandler);
 };
 
 // dynamic imports first, use a wrapper function or eslint parser will crash
