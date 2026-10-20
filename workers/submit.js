@@ -116,7 +116,7 @@ async function notify(account, event, data) {
         payload.data = data;
     }
 
-    await Webhooks.pushToQueue(event, await Webhooks.formatPayload(event, payload));
+    await Webhooks.enqueue(event, payload);
 }
 
 const smtpLogger = {};

@@ -229,6 +229,8 @@ test('Tools utility tests', async t => {
         assert.strictEqual(tools.workerPoolSize(undefined, 'cpus'), cpuCount);
         assert.strictEqual(tools.workerPoolSize(undefined, undefined), 1);
         assert.strictEqual(tools.workerPoolSize('2.7', 1), 2, 'a fraction is rounded down');
+        assert.strictEqual(tools.workerPoolSize(undefined, undefined, 4), 4, 'a pool can name its own default');
+        assert.strictEqual(tools.workerPoolSize('invalid', 'invalid', 4), 4);
     });
 
     // selectRendezvousNode tests

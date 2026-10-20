@@ -245,3 +245,35 @@ test('pushToQueue() queues only what a delivery would send', async t => {
         assert.strictEqual(routeJobs().length, 1);
     });
 });
+
+test('enqueue() formats only what it will queue', async t => {
+    const realFormatPayload = webhooks.formatPayload;
+    let formatted = 0;
+    webhooks.formatPayload = async (event, payload) => {
+        formatted++;
+        return realFormatPayload.call(webhooks, event, payload);
+    };
+    t.after(() => {
+        webhooks.formatPayload = realFormatPayload;
+    });
+
+    const inboxMessage = { account: 'acc', path: 'INBOX', event: 'messageNew', data: { id: 'm1' } };
+
+    await t.test('webhooks disabled: nothing is formatted or queued', async () => {
+        await resetRoutes();
+        formatted = 0;
+        await settings.set('webhooksEnabled', false);
+        await webhooks.enqueue('messageNew', inboxMessage);
+        assert.strictEqual(formatted, 0);
+        assert.deepStrictEqual(queued, []);
+    });
+
+    await t.test('webhooks enabled: the formatted payload is queued', async () => {
+        await resetRoutes();
+        formatted = 0;
+        await webhooks.enqueue('messageNew', inboxMessage);
+        assert.strictEqual(formatted, 1);
+        assert.strictEqual(mainJobs().length, 1);
+        assert.ok(mainJobs()[0].data.eventId, 'formatPayload() assigns the event id');
+    });
+});

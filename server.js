@@ -75,7 +75,6 @@ const {
     getDuration,
     getByteSize,
     getBoolean,
-    getWorkerCount,
     workerPoolSize,
     selectRendezvousNode,
     checkLicense,
@@ -156,6 +155,7 @@ const {
 } = require('./lib/account-assignment');
 const { mapConcurrent } = require('./lib/utils/map-concurrent');
 const { RespawnTracker } = require('./lib/respawn-backoff');
+const { heartbeatDiagnostics, eventLoopDelaySeries } = require('./lib/thread-diagnostics');
 
 const msgpack = require('./lib/msgpack');
 
@@ -226,16 +226,14 @@ const CONNECTION_SETUP_DELAY = getDuration(readEnvValue('EENGINE_CONNECTION_SETU
 config.api.maxSize = getByteSize(readEnvValue('EENGINE_MAX_SIZE') || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
 config.dbs.redis = readEnvValue('EENGINE_REDIS') || readEnvValue('REDIS_URL') || config.dbs.redis;
 
-config.workers.imap = getWorkerCount(readEnvValue('EENGINE_WORKERS') || config.workers.imap) || 4;
+config.workers.imap = workerPoolSize(readEnvValue('EENGINE_WORKERS'), config.workers.imap, 4);
 config.workers.webhooks = workerPoolSize(readEnvValue('EENGINE_WORKERS_WEBHOOKS'), config.workers.webhooks);
 config.workers.submit = workerPoolSize(readEnvValue('EENGINE_WORKERS_SUBMIT'), config.workers.submit);
 // The Workers page has labelled this row EENGINE_WORKERS_EXPORT since the export worker shipped, while
 // only --workers.export and [workers] export were read, so an operator who set it saw no effect
 config.workers.export = workerPoolSize(readEnvValue('EENGINE_WORKERS_EXPORT'), config.workers.export);
 // API worker count. Values >1 require SO_REUSEPORT (Linux); on unsupported platforms it falls back to 1 at startup.
-// Uses getWorkerCount() for parity with EENGINE_WORKERS (supports "cpus"); Math.floor avoids a fractional
-// count over-spawning, Math.max keeps at least one API worker.
-config.workers.api = Math.max(1, Math.floor(getWorkerCount(readEnvValue('EENGINE_WORKERS_API') || config.workers.api)));
+config.workers.api = workerPoolSize(readEnvValue('EENGINE_WORKERS_API'), config.workers.api);
 
 config.api.port =
     (hasEnvValue('EENGINE_PORT') && Number(readEnvValue('EENGINE_PORT'))) || (hasEnvValue('PORT') && Number(readEnvValue('PORT'))) || config.api.port;
@@ -1017,22 +1015,19 @@ async function getThreadsInfo() {
 }
 
 /**
- * What the heartbeat log lines say about a thread: the accounts it carries, and the longest event
- * loop delay of its last reading. A thread that has gone quiet cannot answer, so the reading is
- * the one the metrics collector took before that, at most 15 seconds earlier.
+ * The heartbeat log fields for a thread, see lib/thread-diagnostics.js
  * @param {Worker} worker - The worker thread
+ * @param {number} now - Current time in milliseconds
+ * @param {number} [lastHeartbeat] - When the thread last reported in
  * @returns {Object} Fields to add to the log entry
  */
-function heartbeatDiagnostics(worker) {
-    let details = {};
-    if (workerAssigned.has(worker)) {
-        details.accounts = workerAssigned.get(worker).size;
-    }
-    let reading = metricsCollector?.cachedThreadsInfo?.find(threadInfo => threadInfo.threadId === worker.threadId);
-    if (reading && reading.eventLoopDelay) {
-        details.lastEventLoopDelay = Math.round(reading.eventLoopDelay.max) + 'ms';
-    }
-    return details;
+function workerHeartbeatDiagnostics(worker, now, lastHeartbeat) {
+    return heartbeatDiagnostics({
+        now,
+        lastHeartbeat,
+        accounts: workerAssigned.get(worker)?.size,
+        threadInfo: metricsCollector?.cachedThreadsInfo?.find(threadInfo => threadInfo.threadId === worker.threadId)
+    });
 }
 
 /**
@@ -1051,9 +1046,8 @@ function handleWorkerHeartbeat(worker) {
             msg: 'Worker recovered',
             threadId: worker.threadId,
             type: workersMeta.get(worker)?.type,
-            // how long the thread was blocked, which its next event loop reading also shows
-            silentFor: previousHeartbeat ? Math.round((now - previousHeartbeat) / 1000) + 's' : undefined,
-            ...heartbeatDiagnostics(worker)
+            // timeSinceHeartbeat here is how long the thread was blocked
+            ...workerHeartbeatDiagnostics(worker, now, previousHeartbeat)
         });
     }
     workerHealthStatus.set(worker, 'healthy');
@@ -1084,8 +1078,7 @@ async function checkWorkerHealth() {
                     msg: 'Worker critically unresponsive, restarting',
                     threadId: worker.threadId,
                     type,
-                    timeSinceHeartbeat: Math.round(timeSinceHeartbeat / 1000) + 's',
-                    ...heartbeatDiagnostics(worker)
+                    ...workerHeartbeatDiagnostics(worker, now, lastHeartbeat)
                 });
 
                 workerHealthStatus.set(worker, 'restarting');
@@ -1107,8 +1100,7 @@ async function checkWorkerHealth() {
                     msg: 'Worker unhealthy - no heartbeat',
                     threadId: worker.threadId,
                     type,
-                    timeSinceHeartbeat: Math.round(timeSinceHeartbeat / 1000) + 's',
-                    ...heartbeatDiagnostics(worker)
+                    ...workerHeartbeatDiagnostics(worker, now, lastHeartbeat)
                 });
 
                 workerHealthStatus.set(worker, 'unhealthy');
@@ -1153,7 +1145,7 @@ async function sendWebhook(account, event, data) {
         payload.data = data;
     }
 
-    await Webhooks.pushToQueue(event, await Webhooks.formatPayload(event, payload));
+    await Webhooks.enqueue(event, payload);
 }
 
 /**
@@ -2467,15 +2459,12 @@ async function updateQueueCounters() {
     // a replaced thread leaves with its thread id, so the series are rebuilt on every update
     metrics.threadEventLoopDelayMax.reset();
     metrics.threadEventLoopDelayP99.reset();
+    for (let { labels, max, p99 } of eventLoopDelaySeries(threadsInfo)) {
+        metrics.threadEventLoopDelayMax.set(labels, max);
+        metrics.threadEventLoopDelayP99.set(labels, p99);
+    }
     for (let workerThreadInfo of threadsInfo || []) {
         let key = workerThreadInfo.type;
-
-        let delay = workerThreadInfo.eventLoopDelay;
-        if (delay) {
-            let labels = { type: workerThreadInfo.type, thread: String(workerThreadInfo.threadId) };
-            metrics.threadEventLoopDelayMax.set(labels, delay.max / 1000);
-            metrics.threadEventLoopDelayP99.set(labels, delay.p99 / 1000);
-        }
         let metricKey = `${key}_total`;
 
         // Check if thread is recent (started within METRIC_RECENT)

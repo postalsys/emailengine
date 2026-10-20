@@ -18,7 +18,7 @@ const {
     resolveTargetUrl,
     isDeliverableRoute,
     eventAllowed,
-    isInboxPayload,
+    defaultRouteTakes,
     headerLevels,
     deliveryCustomHeaders,
     isRouteMappingMissing
@@ -34,7 +34,7 @@ const settings = require('../lib/settings');
 const { decryptField } = require('../lib/encrypt');
 const getSecret = require('../lib/get-secret');
 
-const { REDIS_PREFIX, ACCOUNT_DELETED_NOTIFY, MESSAGE_NEW_NOTIFY, DEFAULT_WEBHOOK_REQUEST_TIMEOUT } = require('../lib/consts');
+const { REDIS_PREFIX, ACCOUNT_DELETED_NOTIFY, DEFAULT_WEBHOOK_REQUEST_TIMEOUT } = require('../lib/consts');
 
 const { fetch: fetchCmd } = require('undici');
 
@@ -351,28 +351,21 @@ const notifyWorker = new Worker(
         }
 
         if (!customRoute) {
-            // custom routes have their own mappings
-            let webhookEvents = (await settings.get('webhookEvents')) || [];
-            if (!eventAllowed(webhookEvents, job.name)) {
+            // custom routes have their own mappings; the default route follows webhookEvents and
+            // inboxNewOnly, by the same rule pushToQueue() applied before queueing
+            let { webhookEvents, inboxNewOnly } = await settings.getMulti('webhookEvents', 'inboxNewOnly');
+            if (!defaultRouteTakes(job.name, job.data, { webhookEvents, inboxNewOnly })) {
                 logger.trace({
-                    msg: 'Webhook event not in whitelist',
+                    msg: 'Webhook event not taken by the default route',
                     action: 'webhook',
                     queue: job.queue.name,
-                    code: 'event_not_whitelisted',
+                    code: eventAllowed(webhookEvents, job.name) ? 'inbox_new_only' : 'event_not_whitelisted',
                     job: job.id,
                     event: job.name,
                     account: job.data.account,
                     webhookEvents
                 });
                 return;
-            }
-
-            if (job.data.event === MESSAGE_NEW_NOTIFY && !isInboxPayload(job.data)) {
-                const inboxNewOnly = (await settings.get('inboxNewOnly')) || false;
-                if (inboxNewOnly) {
-                    // ignore this message
-                    return;
-                }
             }
         }
 

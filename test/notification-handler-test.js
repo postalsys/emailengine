@@ -97,32 +97,25 @@ test('buildPayload specialUse for API clients', async t => {
 
 test('notify', async t => {
     const { webhooks } = require('../lib/webhooks');
-    const savedFormatPayload = Object.prototype.hasOwnProperty.call(webhooks, 'formatPayload') ? webhooks.formatPayload : undefined;
-    const savedPushToQueue = Object.prototype.hasOwnProperty.call(webhooks, 'pushToQueue') ? webhooks.pushToQueue : undefined;
+    const savedEnqueue = Object.prototype.hasOwnProperty.call(webhooks, 'enqueue') ? webhooks.enqueue : undefined;
     t.after(() => {
-        for (const [name, saved] of [
-            ['formatPayload', savedFormatPayload],
-            ['pushToQueue', savedPushToQueue]
-        ]) {
-            if (saved) {
-                webhooks[name] = saved;
-            } else {
-                delete webhooks[name];
-            }
+        if (savedEnqueue) {
+            webhooks.enqueue = savedEnqueue;
+        } else {
+            delete webhooks.enqueue;
         }
     });
 
-    await t.test('queues the formatted payload for webhook delivery', async () => {
-        const pushed = [];
-        webhooks.formatPayload = async (event, payload) => Object.assign({ formatted: true }, payload);
-        webhooks.pushToQueue = async (event, payload) => pushed.push({ event, payload });
+    await t.test('hands the payload to the webhook queue', async () => {
+        const enqueued = [];
+        webhooks.enqueue = async (event, payload) => enqueued.push({ event, payload });
 
         await makeHandler().notify({ path: 'INBOX' }, MESSAGE_NEW_NOTIFY, { id: 'm1' });
 
-        assert.strictEqual(pushed.length, 1);
-        assert.strictEqual(pushed[0].event, MESSAGE_NEW_NOTIFY);
-        assert.strictEqual(pushed[0].payload.formatted, true);
-        assert.strictEqual(pushed[0].payload.account, 'acc-1');
-        assert.deepStrictEqual(pushed[0].payload.data, { id: 'm1' });
+        assert.strictEqual(enqueued.length, 1);
+        assert.strictEqual(enqueued[0].event, MESSAGE_NEW_NOTIFY);
+        assert.strictEqual(enqueued[0].payload.account, 'acc-1');
+        assert.strictEqual(enqueued[0].payload.path, 'INBOX');
+        assert.deepStrictEqual(enqueued[0].payload.data, { id: 'm1' });
     });
 });

@@ -372,6 +372,29 @@ test('inline images are not downloaded when nothing uses them', async t => {
         assert.equal(notifications[0].data.attachments[0].content, undefined);
     });
 
+    await t.test('notifyAttachmentSize decides what notifyAttachments downloads', async () => {
+        settingsValues.notifyAttachments = true;
+        settingsValues.notifyAttachmentSize = 1000;
+        const attachments = [
+            { id: 'fits', contentType: 'application/pdf', encodedSize: 1000 },
+            { id: 'too-big', contentType: 'application/pdf', encodedSize: 1001 }
+        ];
+        const api = createApiClient({ id: 'm1', messageSpecialUse: '\\Inbox', text: { html }, attachments: structuredClone(attachments) });
+        await api.run();
+        assert.deepEqual(api.downloads, ['fits']);
+
+        const partId = part => Buffer.concat([Buffer.alloc(8), Buffer.from(part)]).toString('base64url');
+        const imap = createMailbox({
+            text: { html },
+            attachments: [
+                { id: partId('2'), contentType: 'application/pdf', encodedSize: 1000 },
+                { id: partId('3'), contentType: 'application/pdf', encodedSize: 1001 }
+            ]
+        });
+        await imap.run();
+        assert.deepEqual(imap.downloads, ['2']);
+    });
+
     await t.test('notifyAttachments still downloads them', async () => {
         settingsValues.notifyAttachments = true;
         const { run, downloads } = createApiClient({

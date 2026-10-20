@@ -125,7 +125,7 @@ async function notify(account, event, data) {
         data
     };
 
-    await Webhooks.pushToQueue(event, await Webhooks.formatPayload(event, payload));
+    await Webhooks.enqueue(event, payload);
 }
 
 // Returns a throttled callback that extends both the BullMQ job lock and the export's Redis key

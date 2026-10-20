@@ -61,3 +61,12 @@ test('formatPayload() measures attachments by their encoded size', async t => {
         assert.deepEqual(await keptContents([{ content: CONTENT }]), [false]);
     });
 });
+
+test('withinNotifyAttachmentSize() is the rule both the download and formatPayload() use', () => {
+    const { withinNotifyAttachmentSize } = require('../lib/notify-attachments');
+    assert.equal(withinNotifyAttachmentSize({ encodedSize: 5000 }, 0), true, 'no limit');
+    assert.equal(withinNotifyAttachmentSize({ encodedSize: 820 }, 820), true);
+    assert.equal(withinNotifyAttachmentSize({ encodedSize: 821 }, 820), false);
+    assert.equal(withinNotifyAttachmentSize({}, 820), true, 'nothing known yet: downloaded, then measured by its content');
+    assert.equal(withinNotifyAttachmentSize({ content: CONTENT }, 500), false);
+});
