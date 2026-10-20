@@ -10,6 +10,7 @@ const { webhooks, ENCRYPTED_ROUTE_FIELDS } = require('../lib/webhooks');
 const { redis, notifyQueue } = require('../lib/db');
 const { REDIS_PREFIX } = require('../lib/consts');
 const msgpack = require('../lib/msgpack');
+const settings = require('../lib/settings');
 const getSecret = require('../lib/get-secret');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
@@ -29,6 +30,10 @@ notifyQueue.add = async (name, data) => {
 };
 const routeJobs = () => queued.filter(job => job.data._route);
 
+const mainJobs = () => queued.filter(job => !job.data._route);
+
+// pushToQueue() queues nothing while delivery is off, so the route tests run with it on and every
+// event allowed; the gate itself is tested at the end
 async function resetRoutes() {
     const keys = await redis.keys(`${REDIS_PREFIX}wh:*`);
     if (keys.length) {
@@ -37,6 +42,9 @@ async function resetRoutes() {
     webhooks.handlerCache = [];
     webhooks.handlerCacheV = -1;
     queued.length = 0;
+    await settings.set('webhooksEnabled', true);
+    await settings.set('webhookEvents', ['*']);
+    await settings.set('inboxNewOnly', false);
 }
 
 async function storedMeta(id) {
@@ -185,5 +193,55 @@ test('a route with a map script sends the mapped payload or nothing', async t =>
         await webhooks.pushToQueue('messageNew', payload);
         assert.strictEqual(routeJobs().length, 1);
         assert.ok(!('mapping' in routeJobs()[0].data._route));
+    });
+});
+
+test('pushToQueue() queues only what a delivery would send', async t => {
+    const inboxMessage = { account: 'acc', path: 'INBOX', event: 'messageNew', data: { id: 'm1' } };
+    const sentMessage = { account: 'acc', path: 'Sent', specialUse: '\\Sent', event: 'messageNew', data: { id: 'm2' } };
+
+    await t.test('nothing at all while webhooks are disabled, routes included', async () => {
+        await resetRoutes();
+        // a route that queues every event it is asked about
+        await webhooks.create({ name: 'Never runs', enabled: true, targetUrl: 'https://example.com/never' }, { fn: 'return true;' });
+        await settings.set('webhooksEnabled', false);
+        await webhooks.pushToQueue('messageNew', inboxMessage);
+        assert.deepStrictEqual(queued, []);
+    });
+
+    await t.test('the main job follows the webhookEvents allowlist', async () => {
+        await resetRoutes();
+        await settings.set('webhookEvents', ['messageDeleted']);
+        await webhooks.pushToQueue('messageNew', inboxMessage);
+        await webhooks.pushToQueue('messageDeleted', { account: 'acc', event: 'messageDeleted', data: {} });
+        assert.deepStrictEqual(
+            mainJobs().map(job => job.name),
+            ['messageDeleted']
+        );
+
+        await settings.set('webhookEvents', []);
+        await webhooks.pushToQueue('messageDeleted', { account: 'acc', event: 'messageDeleted', data: {} });
+        assert.strictEqual(mainJobs().length, 1, 'an empty allowlist delivers nothing');
+    });
+
+    await t.test('the main job follows inboxNewOnly', async () => {
+        await resetRoutes();
+        await settings.set('inboxNewOnly', true);
+        await webhooks.pushToQueue('messageNew', sentMessage);
+        await webhooks.pushToQueue('messageNew', inboxMessage);
+        assert.deepStrictEqual(
+            mainJobs().map(job => job.data.data.id),
+            ['m1']
+        );
+    });
+
+    await t.test('routes are not bound by the default route filters', async () => {
+        await resetRoutes();
+        await webhooks.create({ name: 'All', enabled: true, targetUrl: 'https://example.com/all' }, { fn: 'return true;' });
+        await settings.set('webhookEvents', []);
+        await settings.set('inboxNewOnly', true);
+        await webhooks.pushToQueue('messageNew', sentMessage);
+        assert.strictEqual(mainJobs().length, 0);
+        assert.strictEqual(routeJobs().length, 1);
     });
 });

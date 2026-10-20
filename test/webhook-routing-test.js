@@ -261,3 +261,24 @@ test('isRouteMappingMissing drops a legacy job queued with a failed mapping', ()
     // the map failed: jobs queued before pushToQueue() skipped such a route carry null
     assert.strictEqual(isRouteMappingMissing({ id: 'r', mapping: null }), true);
 });
+
+test('defaultRouteTakes() applies the allowlist and inboxNewOnly', () => {
+    const { defaultRouteTakes, isInboxPayload } = require('../lib/webhook-routing');
+
+    assert.strictEqual(defaultRouteTakes('messageNew', {}, { webhookEvents: ['*'] }), true);
+    assert.strictEqual(defaultRouteTakes('messageNew', {}, { webhookEvents: ['messageNew'] }), true);
+    assert.strictEqual(defaultRouteTakes('messageNew', {}, { webhookEvents: ['messageDeleted'] }), false);
+    assert.strictEqual(defaultRouteTakes('messageNew', {}, { webhookEvents: null }), false, 'an unset allowlist delivers nothing');
+
+    const sent = { account: 'acc', path: 'Sent', specialUse: '\\Sent', data: {} };
+    assert.strictEqual(defaultRouteTakes('messageNew', sent, { webhookEvents: ['*'], inboxNewOnly: true }), false);
+    assert.strictEqual(defaultRouteTakes('messageNew', sent, { webhookEvents: ['*'], inboxNewOnly: false }), true);
+    assert.strictEqual(defaultRouteTakes('messageDeleted', sent, { webhookEvents: ['*'], inboxNewOnly: true }), true, 'inboxNewOnly is about messageNew only');
+
+    // every way the clients report the Inbox
+    assert.strictEqual(isInboxPayload({ account: 'acc', path: 'INBOX' }), true);
+    assert.strictEqual(isInboxPayload({ specialUse: '\\Inbox' }), true);
+    assert.strictEqual(isInboxPayload({ data: { messageSpecialUse: '\\Inbox' } }), true);
+    assert.strictEqual(isInboxPayload({ data: { labels: ['\\Important', '\\Inbox'] } }), true);
+    assert.strictEqual(isInboxPayload({ account: 'acc', path: 'Archive', data: { labels: [] } }), false);
+});

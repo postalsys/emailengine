@@ -14,7 +14,15 @@ const { readEnvValue, threadStats, getDuration, httpAgent, getServiceSecret, red
 const { sendWebhookRequest, isUnrecoverableWebhookError } = require('../lib/webhook-request');
 const { willBeFinalAttempt, isFinalFailedAttempt } = require('../lib/delivery-error');
 const { validateWebhookTarget } = require('../lib/webhook-egress');
-const { resolveTargetUrl, isDeliverableRoute, eventAllowed, headerLevels, deliveryCustomHeaders, isRouteMappingMissing } = require('../lib/webhook-routing');
+const {
+    resolveTargetUrl,
+    isDeliverableRoute,
+    eventAllowed,
+    isInboxPayload,
+    headerLevels,
+    deliveryCustomHeaders,
+    isRouteMappingMissing
+} = require('../lib/webhook-routing');
 
 const { initSentry } = require('../lib/sentry');
 initSentry('webhooks');
@@ -359,28 +367,11 @@ const notifyWorker = new Worker(
                 return;
             }
 
-            switch (job.data.event) {
-                case MESSAGE_NEW_NOTIFY: {
-                    // check if we need to send this event or not
-                    let isInbox = false;
-                    if (
-                        (job.data.account && job.data.path === 'INBOX') ||
-                        job.data.specialUse === '\\Inbox' ||
-                        (job.data.data && job.data.data.messageSpecialUse === '\\Inbox') ||
-                        (job.data.data && job.data.data.labels && job.data.data.labels.includes('\\Inbox'))
-                    ) {
-                        isInbox = true;
-                    }
-
-                    if (!isInbox) {
-                        const inboxNewOnly = (await settings.get('inboxNewOnly')) || false;
-                        if (inboxNewOnly) {
-                            // ignore this message
-                            return;
-                        }
-                    }
-
-                    break;
+            if (job.data.event === MESSAGE_NEW_NOTIFY && !isInboxPayload(job.data)) {
+                const inboxNewOnly = (await settings.get('inboxNewOnly')) || false;
+                if (inboxNewOnly) {
+                    // ignore this message
+                    return;
                 }
             }
         }
