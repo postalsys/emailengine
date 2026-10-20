@@ -100,6 +100,12 @@ ENV EENGINE_HOST=0.0.0.0
 ENV EENGINE_API_PROXY=true
 # The pure JavaScript msgpackr decoder is what the pkg binary uses, so npm and Docker installs decode the same way and no native addon is loaded
 ENV MSGPACKR_NATIVE_ACCELERATION_DISABLED=true
+# Caps each thread's young generation at the size Node 22 used. Node 24 (V8 13.6) quadrupled the
+# default, and every worker thread grows to it during startup, which raised the startup RSS of an
+# empty instance by about half. The limit applies to each thread separately, not to the process. A
+# NODE_OPTIONS given at run time replaces this one, so keep the flag in it to keep the cap. The pkg
+# binary bakes the same value in package.json, and test/node-heap-options-test.js keeps the two equal.
+ENV NODE_OPTIONS=--max-semi-space-size=16
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD ["node", "/emailengine/server.js"]
