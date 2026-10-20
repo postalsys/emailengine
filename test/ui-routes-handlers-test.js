@@ -321,6 +321,24 @@ test('worker account page', async t => {
     });
 });
 
+test('workers page', async t => {
+    await t.test('shows the longest event loop delay of each thread', async () => {
+        const threads = [
+            { threadId: 0, type: 'main', isMain: true, online: Date.now(), heapUsed: 1000, eventLoopDelay: { max: 12.6, p99: 9, mean: 2 } },
+            { threadId: 3, type: 'imap', online: Date.now(), heapUsed: 1000, accounts: 2, eventLoopDelay: null },
+            { threadId: 4, type: 'imap', online: Date.now(), resourceUsageError: { error: 'Timeout', unresponsive: true }, eventLoopDelay: { max: 5 } }
+        ];
+        const route = capture('../lib/ui-routes/internals-routes', async ({ cmd }) => (cmd === 'threads' ? threads : {}));
+
+        const h = makeToolkit();
+        await route('GET', '/admin/internals').handler(makeRequest(), h);
+
+        const rows = h.answers.views[0].context.groups.flatMap(group => group.threads);
+        const byId = Object.fromEntries(rows.map(row => [row.threadId, row.eventLoopDelayMax]));
+        assert.deepEqual(byId, { 0: 13, 3: undefined, 4: undefined }, 'no reading yet, and an unresponsive thread, show no value');
+    });
+});
+
 // All five special-use folder overrides have to survive the edit form. Only sentMailPath was in the
 // loop that copies the submitted values onto the account, so the other four were settable over
 // PUT /v1/account/{account} alone - and a form that offered them while the loop ignored four would

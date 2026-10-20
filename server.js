@@ -664,6 +664,18 @@ const metrics = {
         help: 'Number of unresponsive worker threads'
     }),
 
+    threadEventLoopDelayMax: new promClient.Gauge({
+        name: 'thread_event_loop_delay_max_seconds',
+        help: 'Longest event loop delay of a thread over the last collection window (15s)',
+        labelNames: ['type', 'thread']
+    }),
+
+    threadEventLoopDelayP99: new promClient.Gauge({
+        name: 'thread_event_loop_delay_p99_seconds',
+        help: '99th percentile event loop delay of a thread over the last collection window (15s)',
+        labelNames: ['type', 'thread']
+    }),
+
     licenseDaysRemaining: new promClient.Gauge({
         name: 'license_days_remaining',
         help: 'Days until license expires (-1 for lifetime, 0 for no license)'
@@ -1004,11 +1016,31 @@ async function getThreadsInfo() {
 }
 
 /**
+ * What the heartbeat log lines say about a thread: the accounts it carries, and the longest event
+ * loop delay of its last reading. A thread that has gone quiet cannot answer, so the reading is
+ * the one the metrics collector took before that, at most 15 seconds earlier.
+ * @param {Worker} worker - The worker thread
+ * @returns {Object} Fields to add to the log entry
+ */
+function heartbeatDiagnostics(worker) {
+    let details = {};
+    if (workerAssigned.has(worker)) {
+        details.accounts = workerAssigned.get(worker).size;
+    }
+    let reading = metricsCollector?.cachedThreadsInfo?.find(threadInfo => threadInfo.threadId === worker.threadId);
+    if (reading && reading.eventLoopDelay) {
+        details.lastEventLoopDelay = Math.round(reading.eventLoopDelay.max) + 'ms';
+    }
+    return details;
+}
+
+/**
  * Handle heartbeat from worker thread
  * @param {Worker} worker - The worker thread
  */
 function handleWorkerHeartbeat(worker) {
     const now = Date.now();
+    const previousHeartbeat = workerHeartbeats.get(worker);
     workerHeartbeats.set(worker, now);
 
     // Mark as healthy if it was previously unhealthy
@@ -1017,7 +1049,10 @@ function handleWorkerHeartbeat(worker) {
         logger.info({
             msg: 'Worker recovered',
             threadId: worker.threadId,
-            type: workersMeta.get(worker)?.type
+            type: workersMeta.get(worker)?.type,
+            // how long the thread was blocked, which its next event loop reading also shows
+            silentFor: previousHeartbeat ? Math.round((now - previousHeartbeat) / 1000) + 's' : undefined,
+            ...heartbeatDiagnostics(worker)
         });
     }
     workerHealthStatus.set(worker, 'healthy');
@@ -1048,7 +1083,8 @@ async function checkWorkerHealth() {
                     msg: 'Worker critically unresponsive, restarting',
                     threadId: worker.threadId,
                     type,
-                    timeSinceHeartbeat: Math.round(timeSinceHeartbeat / 1000) + 's'
+                    timeSinceHeartbeat: Math.round(timeSinceHeartbeat / 1000) + 's',
+                    ...heartbeatDiagnostics(worker)
                 });
 
                 workerHealthStatus.set(worker, 'restarting');
@@ -1070,7 +1106,8 @@ async function checkWorkerHealth() {
                     msg: 'Worker unhealthy - no heartbeat',
                     threadId: worker.threadId,
                     type,
-                    timeSinceHeartbeat: Math.round(timeSinceHeartbeat / 1000) + 's'
+                    timeSinceHeartbeat: Math.round(timeSinceHeartbeat / 1000) + 's',
+                    ...heartbeatDiagnostics(worker)
                 });
 
                 workerHealthStatus.set(worker, 'unhealthy');
@@ -2426,8 +2463,18 @@ async function updateQueueCounters() {
 
     let threadCounts = new Map();
     let unresponsiveCount = 0;
+    // a replaced thread leaves with its thread id, so the series are rebuilt on every update
+    metrics.threadEventLoopDelayMax.reset();
+    metrics.threadEventLoopDelayP99.reset();
     for (let workerThreadInfo of threadsInfo || []) {
         let key = workerThreadInfo.type;
+
+        let delay = workerThreadInfo.eventLoopDelay;
+        if (delay) {
+            let labels = { type: workerThreadInfo.type, thread: String(workerThreadInfo.threadId) };
+            metrics.threadEventLoopDelayMax.set(labels, delay.max / 1000);
+            metrics.threadEventLoopDelayP99.set(labels, delay.p99 / 1000);
+        }
         let metricKey = `${key}_total`;
 
         // Check if thread is recent (started within METRIC_RECENT)

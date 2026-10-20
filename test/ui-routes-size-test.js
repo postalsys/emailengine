@@ -81,7 +81,8 @@ const MODULE_BUDGETS = {
     'dashboard-routes.js': 175,
     'export-routes.js': 207,
     'gmail-service-auth.js': 64,
-    'internals-routes.js': 458,
+    // 458 -> 462 for the Workers page's event loop column
+    'internals-routes.js': 462,
     // 381 -> 385 for refreshing a client registration on approval rather than on every render
     'mcp-consent-routes.js': 385,
     'network-config-routes.js': 437,

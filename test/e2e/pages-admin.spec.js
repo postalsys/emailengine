@@ -1411,6 +1411,12 @@ test.describe('admin shell', () => {
         await expect(page.locator('h1', { hasText: 'Workers' })).toBeVisible();
         expect(await page.locator('tbody tr').count()).toBeGreaterThan(3);
 
+        // every thread row carries an event loop reading (or a dash before its first one)
+        await expect(page.locator('thead th', { hasText: 'Event loop' }).first()).toBeVisible();
+        for (const cell of await page.locator('td[data-label="Event loop"]').allTextContents()) {
+            expect(cell.trim()).toMatch(/^(\d[\d,.\s]* ms|-)$/);
+        }
+
         // row actions live in a per-row kebab (ui/row-actions): open the row's menu, then the
         // item fills the hidden thread input and opens the modal. openRowMenu waits out the close
         // fade of a previous menu, which is what used to make this look like a random close.

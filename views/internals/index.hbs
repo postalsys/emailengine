@@ -58,6 +58,7 @@
                     <th>ID</th>
                     <th>Uptime</th>
                     <th class="text-end">Memory</th>
+                    <th class="text-end" title="Longest event loop delay over the last 15 seconds">Event loop</th>
                     {{#if showAccounts}}
                     <th class="text-end">Accounts</th>
                     {{/if}}
@@ -97,6 +98,13 @@
                         <span class="text-base-content/40">-</span>
                         {{else}}
                         {{heapUsed}}
+                        {{/if}}
+                    </td>
+                    <td class="text-end" data-label="Event loop">
+                        {{#if eventLoopDelayMax includeZero=true}}
+                        {{formatInteger eventLoopDelayMax userLocale}} ms
+                        {{else}}
+                        <span class="text-base-content/40">-</span>
                         {{/if}}
                     </td>
                     {{#if ../showAccounts}}
