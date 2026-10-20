@@ -2880,7 +2880,6 @@ async function commandUnsubscribe(worker, message) {
     sendWebhook(message.account, LIST_UNSUBSCRIBE_NOTIFY, message.payload).catch(err =>
         logger.error({ msg: 'Unsubscribe webhook failed', account: message.account, err })
     );
-    return;
 }
 
 async function commandSubscribe(worker, message) {
@@ -2888,7 +2887,6 @@ async function commandSubscribe(worker, message) {
     sendWebhook(message.account, LIST_SUBSCRIBE_NOTIFY, message.payload).catch(err =>
         logger.error({ msg: 'Subscribe webhook failed', account: message.account, err })
     );
-    return;
 }
 
 async function commandNewAccount(worker, message) {
@@ -2905,28 +2903,24 @@ async function commandNewAccount(worker, message) {
     assignAccounts()
         .then(() => sendWebhook(message.account, ACCOUNT_ADDED_NOTIFY, { account: message.account }))
         .catch(err => logger.error({ msg: 'Account assignment failed', err }));
-    return;
 }
 
 async function commandDeleteAccount(worker, message) {
     // Handle account deletion
     //
-    // Guarded for the same reason as the `new` branch above, and here the throw was
+    // Guarded for the same reason as commandNewAccount() above, and here the throw was
     // answered with a 500 for a deletion that had in fact succeeded: the account was
     // already gone from Redis by the time this message was sent.
-    {
-        let assignedWorker = forgetAccount({ workerAssigned, assigned, unassigned }, message.account);
-        if (assignedWorker) {
-            // Notify worker to clean up
-            call(assignedWorker, message)
-                .then(() => logger.debug('Account cleanup completed'))
-                .catch(err => logger.error({ msg: 'Account cleanup failed', account: message.account, err }));
-        }
+    let assignedWorker = forgetAccount({ workerAssigned, assigned, unassigned }, message.account);
+    if (assignedWorker) {
+        // Notify worker to clean up
+        call(assignedWorker, message)
+            .then(() => logger.debug('Account cleanup completed'))
+            .catch(err => logger.error({ msg: 'Account cleanup failed', account: message.account, err }));
     }
     sendWebhook(message.account, ACCOUNT_DELETED_NOTIFY, { account: message.account }).catch(err =>
         logger.error({ msg: 'Account deletion webhook failed', account: message.account, err })
     );
-    return;
 }
 
 async function commandRunIndex() {
@@ -2941,41 +2935,36 @@ async function commandForwardToAccountWorker(worker, message) {
             .then(() => logger.debug('Worker command completed'))
             .catch(err => logger.error({ msg: 'Worker command failed', account: message.account, cmd: message.cmd, err }));
     }
-    return;
 }
 
 async function commandReloadServer(worker, message) {
-    {
-        // Reload proxy server
-        let type = message.cmd.replace(/Reload$/, '');
-        let hasWorkers = workers.has(type) && workers.get(type).size;
-        if (hasWorkers) {
-            // Kill existing workers
-            for (let worker of workers.get(type).values()) {
-                worker.terminate();
-            }
-        } else {
-            // Spawn new worker if enabled
-            let serverEnabled = await settings.get(`${type}ServerEnabled`);
-            if (serverEnabled) {
-                await spawnWorker(type);
-            }
+    // Reload proxy server
+    let type = message.cmd.replace(/Reload$/, '');
+    let hasWorkers = workers.has(type) && workers.get(type).size;
+    if (hasWorkers) {
+        // Kill existing workers
+        for (let worker of workers.get(type).values()) {
+            worker.terminate();
+        }
+    } else {
+        // Spawn new worker if enabled
+        let serverEnabled = await settings.get(`${type}ServerEnabled`);
+        if (serverEnabled) {
+            await spawnWorker(type);
         }
     }
     return NOT_HANDLED;
 }
 
 async function commandReloadCertificates(worker, message) {
-    {
-        // A renewed certificate, handed to a running listener. Forwarded to the worker
-        // rather than terminating it: a restart would cut every session in flight, and
-        // every listener can swap its secure context between handshakes. Sent to every
-        // worker of the type, not just the one that ordered the certificate: the
-        // reconciler is a singleton but the listeners are not.
-        let type = message.cmd.replace(/ReloadCertificates$/, '');
-        for (let worker of (workers.get(type) || new Set()).values()) {
-            call(worker, message).catch(err => logger.error({ msg: 'Failed to reload certificates', type, worker: worker.threadId, err }));
-        }
+    // A renewed certificate, handed to a running listener. Forwarded to the worker
+    // rather than terminating it: a restart would cut every session in flight, and
+    // every listener can swap its secure context between handshakes. Sent to every
+    // worker of the type, not just the one that ordered the certificate: the
+    // reconciler is a singleton but the listeners are not.
+    let type = message.cmd.replace(/ReloadCertificates$/, '');
+    for (let worker of (workers.get(type) || new Set()).values()) {
+        call(worker, message).catch(err => logger.error({ msg: 'Failed to reload certificates', type, worker: worker.threadId, err }));
     }
     return NOT_HANDLED;
 }
@@ -3090,8 +3079,7 @@ const COMMAND_HANDLERS = new Map([
     ['delete', commandDeleteAccount],
     ['runIndex', commandRunIndex],
     ...['update', 'sync', 'pause', 'resume', 'reconnect'].map(cmd => [cmd, commandForwardToAccountWorker]),
-    ['smtpReload', commandReloadServer],
-    ['imapProxyReload', commandReloadServer],
+    ...['smtpReload', 'imapProxyReload'].map(cmd => [cmd, commandReloadServer]),
     ...['apiReloadCertificates', 'smtpReloadCertificates', 'imapProxyReloadCertificates'].map(cmd => [cmd, commandReloadCertificates]),
     ...[
         'submitMessage',
@@ -3337,8 +3325,8 @@ const settleWorkerFleet = async (label, promises, logFields) => {
 
 /**
  * Loads the license from the configured license file and from EENGINE_PREPARED_LICENSE. Either one
- * failing is fatal: the returned object carries what startApplication() returns in that case
- * @returns {Promise<Object|null>} `{ result }` when startup has to stop, otherwise null
+ * failing is fatal: the process exits once the log is flushed
+ * @returns {Promise<boolean>} true when startup has to stop
  */
 const importConfiguredLicenses = async () => {
     // Process license file if provided
@@ -3358,7 +3346,8 @@ const importConfiguredLicenses = async () => {
             await setLicense(licenseData, licenseFile);
         } catch (err) {
             logger.fatal({ msg: 'License verification failed', source: config.licensePath, err });
-            return { result: logger.flush(() => process.exit(13)) };
+            logger.flush(() => process.exit(13));
+            return true;
         }
     }
 
@@ -3372,11 +3361,12 @@ const importConfiguredLicenses = async () => {
             }
         } catch (err) {
             logger.fatal({ msg: 'License import failed', source: 'import', err });
-            return { result: logger.flush(() => process.exit(13)) };
+            logger.flush(() => process.exit(13));
+            return true;
         }
     }
 
-    return null;
+    return false;
 };
 
 /**
@@ -3849,9 +3839,8 @@ const startApplication = async () => {
     runIndex = await redis.hincrby(`${REDIS_PREFIX}settings`, 'run', 1);
 
     // A license that was explicitly configured but cannot be loaded stops the startup
-    const licenseFailure = await importConfiguredLicenses();
-    if (licenseFailure) {
-        return licenseFailure.result;
+    if (await importConfiguredLicenses()) {
+        return;
     }
 
     await loadStoredLicense();
