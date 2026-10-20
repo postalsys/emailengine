@@ -69,7 +69,7 @@
         "@postalsys/email-text-tools": "2.5.0",
         "@postalsys/gettext": "4.3.0",
         "@postalsys/joi-messages": "1.4.1",
-        "@postalsys/templates": "2.1.0",
+        "@postalsys/templates": "2.1.1",
         "@sentry/node-core": "10.76.2",
         "@simplewebauthn/server": "14.0.3",
         "@zone-eu/mailsplit": "5.4.27",

@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "emailengine-app@2.84.2",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.84.2-9411dac3-9555-442e-8802-1d841d892431",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.84.2-b4de2130-052d-454b-81f6-eadeaa6cea03",
   "creationInfo": {
-    "created": "2026-10-19T21:08:04.805Z",
+    "created": "2026-10-20T05:08:05.075Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
@@ -2099,11 +2099,11 @@
     },
     {
       "name": "@postalsys/templates",
-      "SPDXID": "SPDXRef-Package-postalsys.templates-2.1.0",
-      "versionInfo": "2.1.0",
+      "SPDXID": "SPDXRef-Package-postalsys.templates-2.1.1",
+      "versionInfo": "2.1.1",
       "packageFileName": "node_modules/@postalsys/templates",
       "description": "Template language for EmailEngine",
-      "downloadLocation": "https://registry.npmjs.org/@postalsys/templates/-/templates-2.1.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@postalsys/templates/-/templates-2.1.1.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "ISC",
@@ -2111,13 +2111,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40postalsys/templates@2.1.0"
+          "referenceLocator": "pkg:npm/%40postalsys/templates@2.1.1"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "6bb25536ce57f4819e520dc7a5c514b13aa230381a0c251e316e033902885d8236f86cdd31f4c6361450e18356b18abe2b866beb7ce02a4d8f49305841c92caa"
+          "checksumValue": "525a6dc4b67cf3e129f6bcb2c163c7b150764dc0d912c5d2c5c37dcd621b9fdd01e00eeddf65e3085b5565d428e4112533e5f219bdd9d75485a74a5a430773a5"
         }
       ]
     },
@@ -4017,30 +4017,6 @@
       ]
     },
     {
-      "name": "moment",
-      "SPDXID": "SPDXRef-Package-moment-2.31.0",
-      "versionInfo": "2.31.0",
-      "packageFileName": "node_modules/moment",
-      "description": "Parse, validate, manipulate, and display dates",
-      "downloadLocation": "https://registry.npmjs.org/moment/-/moment-2.31.0.tgz",
-      "filesAnalyzed": false,
-      "homepage": "https://momentjs.com",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/moment@2.31.0"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "d1a70e4df32258e85e612e1ea166fcd3260c6ff24bbd5bfd4876ecd8f7a1683cdf506d01c3ce7948aca4d082939cf19ae7e5366e68b75baf25d7eb062d7fe9bf"
-        }
-      ]
-    },
-    {
       "name": "msgpackr",
       "SPDXID": "SPDXRef-Package-msgpackr-2.1.0",
       "versionInfo": "2.1.0",
@@ -5736,7 +5712,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-postalsys.templates-2.1.0",
+      "spdxElementId": "SPDXRef-Package-postalsys.templates-2.1.1",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -7072,12 +7048,7 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-marked-15.0.12",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.templates-2.1.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-moment-2.31.0",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.templates-2.1.0",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.templates-2.1.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
