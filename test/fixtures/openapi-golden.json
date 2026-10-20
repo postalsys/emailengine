@@ -82,7 +82,7 @@
       "description": "Configure OAuth2 applications for Gmail, Outlook, and other providers. Manage client credentials and authentication flows",
       "externalDocs": {
         "description": "OAuth2 Configuration Guide",
-        "url": "https://learn.emailengine.app/docs/configuration/oauth2-configuration"
+        "url": "https://learn.emailengine.app/docs/accounts/oauth2-setup"
       }
     },
     {

@@ -13,7 +13,7 @@ A headless email client application that provides access to IMAP, SMTP, Gmail AP
 
 -   Sync users' emails with your service and send emails on their behalf.
 -   Integrate your app with a dedicated email account, such as your support email.
--   [Monitor INBOX and Junk folders](https://learn.emailengine.app/docs/advanced/inbox-placement-testing) of a test email account to track where sent emails land.
+-   [Monitor INBOX and Junk folders](https://learn.emailengine.app/docs/sending/deliverability/inbox-placement-testing) of a test email account to track where sent emails land.
 -   Ideal for lightweight webmail and mobile email apps that prefer to avoid direct IMAP and MIME processing.
 
 ## Features
