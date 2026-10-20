@@ -5861,6 +5861,42 @@
           }
         }
       },
+      "AccountResumeResponse": {
+        "type": "object",
+        "properties": {
+          "resumed": {
+            "type": "boolean",
+            "description": "The account was switched back on and a reconnect was requested",
+            "example": true
+          }
+        }
+      },
+      "ConflictErrorResponse": {
+        "type": "object",
+        "description": "Conflict error",
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "description": "HTTP status code",
+            "example": 409
+          },
+          "error": {
+            "type": "string",
+            "description": "HTTP status text",
+            "example": "Conflict"
+          },
+          "message": {
+            "type": "string",
+            "description": "Error message",
+            "example": "Only a message whose delivery has failed can be retried"
+          },
+          "code": {
+            "type": "string",
+            "description": "Machine-readable error code",
+            "example": "NotFailed"
+          }
+        }
+      },
       "MessageSearchPayload": {
         "type": "object",
         "example": {
@@ -9816,32 +9852,6 @@
             "description": "Message-ID header value",
             "example": "<test123@example.com>",
             "nullable": true
-          }
-        }
-      },
-      "ConflictErrorResponse": {
-        "type": "object",
-        "description": "Conflict error",
-        "properties": {
-          "statusCode": {
-            "type": "integer",
-            "description": "HTTP status code",
-            "example": 409
-          },
-          "error": {
-            "type": "string",
-            "description": "HTTP status text",
-            "example": "Conflict"
-          },
-          "message": {
-            "type": "string",
-            "description": "Error message",
-            "example": "Only a message whose delivery has failed can be retried"
-          },
-          "code": {
-            "type": "string",
-            "description": "Machine-readable error code",
-            "example": "NotFailed"
           }
         }
       },
@@ -17271,6 +17281,132 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NotFoundErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-behavior": [
+          "The request only schedules the work and returns before it finishes. Watch the account state, or the accountInitialized and authenticationError webhooks, for the result."
+        ],
+        "x-ee-action": "write",
+        "x-ee-group": "account"
+      }
+    },
+    "/v1/account/{account}/resume": {
+      "put": {
+        "summary": "Resume syncing",
+        "operationId": "putV1AccountAccountResume",
+        "description": "Turns an account back on after EmailEngine switched it off following repeated authentication failures (`authFailureDisabledAt` on the account), and requests a reconnect. The same action as \"Resume syncing\" in the admin UI. Only lifts that automatic switch: an account that was not switched off by EmailEngine, including one an operator set to send-only, answers 409 with `code` NotSwitchedOff. If the stored credentials are still refused, the account is switched off again after the next run of failures, so fix the credentials first.<br/><br/>The request only schedules the work and returns before it finishes. Watch the account state, or the accountInitialized and authenticationError webhooks, for the result.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
+          },
+          {
+            "name": "account",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Unique identifier for the email account",
+              "example": "user123",
+              "maxLength": 256,
+              "x-convert": {
+                "trim": true
+              }
+            },
+            "description": "Unique identifier for the email account",
+            "required": true
+          }
+        ],
+        "tags": [
+          "Account"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns an acknowledgement. The account is switched back on and a reconnect is requested, not completed - watch the account state for the result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResumeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - the requested entity (account, message, mailbox, etc.) does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - the entity is not in a state the operation applies to",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictErrorResponse"
                 }
               }
             }

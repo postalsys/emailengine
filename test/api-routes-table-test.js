@@ -130,6 +130,7 @@ const GOLDEN_ROUTES = [
     'PUT /v1/account/{account}/messages/delete',
     'PUT /v1/account/{account}/messages/move',
     'PUT /v1/account/{account}/reconnect',
+    'PUT /v1/account/{account}/resume',
     'PUT /v1/account/{account}/sync',
     'PUT /v1/gateway/edit/{gateway}',
     'PUT /v1/oauth2/{app}',
@@ -382,6 +383,11 @@ test('API route table and authentication', async t => {
                 'DELETE /v1/account/{account}',
                 'PUT /v1/account/{account}/flush',
                 'PUT /v1/account/{account}/reconnect',
+                // Added after the split, a deliberate widening of every token that holds write on
+                // `account`: such a token could already reconnect an account, and resuming one
+                // the safety net switched off is the same operation on the connection, with no
+                // reach into credentials, hosts or the operator's own send-only switch
+                'PUT /v1/account/{account}/resume',
                 'PUT /v1/account/{account}/sync',
                 'GET /v1/account/{account}/server-signatures'
             ],
