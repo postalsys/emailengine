@@ -1440,6 +1440,49 @@
         }
     },
     {
+        "name": "create_mailbox",
+        "title": "Create mailbox",
+        "description": "Create a folder. Give the path as a list of names from the top level down ([\"Projects\", \"2026\"]) so the server joins them with its own separator; a missing parent is created too. The response carries the full path that list_messages and move_message take.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "path": {
+                    "type": "array",
+                    "description": "Mailbox path as an array or a string. If account is namespaced then namespace prefix is added by default.",
+                    "examples": [
+                        [
+                            "Parent folder",
+                            "Subfolder"
+                        ]
+                    ],
+                    "items": {
+                        "type": "string",
+                        "maxLength": 256
+                    }
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "path"
+            ]
+        },
+        "annotations": {
+            "title": "Create mailbox",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
         "name": "create_oauth2_app",
         "title": "Create OAuth2 application",
         "description": "Register an OAuth2 application that accounts can sign in through. Needs the provider and the client credentials created at that provider; a client secret or service key can be written but never read back. Confirm the redirect URL with the user: it is where the provider sends authorization codes and has to match what the provider has on file.",
@@ -1886,6 +1929,42 @@
         },
         "annotations": {
             "title": "Delete SMTP gateway",
+            "readOnlyHint": false,
+            "destructiveHint": true,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "delete_mailbox",
+        "title": "Delete mailbox",
+        "description": "Delete a folder by its path from list_mailboxes - confirm with the user before calling this. On an IMAP account the folder goes with every message in it, and nothing is kept in Trash. On a Gmail API account the label is removed and the messages stay in the mailbox under their other labels.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Mailbox folder path to delete",
+                    "examples": [
+                        "My Outdated Mail"
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "path"
+            ]
+        },
+        "annotations": {
+            "title": "Delete mailbox",
             "readOnlyHint": false,
             "destructiveHint": true,
             "openWorldHint": false
@@ -5705,6 +5784,63 @@
         },
         "annotations": {
             "title": "Update SMTP gateway",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "update_mailbox",
+        "title": "Rename or update mailbox",
+        "description": "Rename or move a folder (newPath, as a list of names from the top level down), or change whether it is subscribed. `path` is the current path from list_mailboxes. The messages move with the folder; list them again under the new path for their current ids.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Mailbox folder path to modify",
+                    "examples": [
+                        "Folder Name"
+                    ]
+                },
+                "newPath": {
+                    "type": "array",
+                    "description": "New mailbox path as an array or a string. If account is namespaced then namespace prefix is added by default. Optional.",
+                    "examples": [
+                        [
+                            "Parent folder",
+                            "Subfolder"
+                        ]
+                    ],
+                    "items": {
+                        "type": "string",
+                        "maxLength": 256
+                    }
+                },
+                "subscribed": {
+                    "type": "boolean",
+                    "description": "Change mailbox subscription status",
+                    "examples": [
+                        true
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "path"
+            ]
+        },
+        "annotations": {
+            "title": "Rename or update mailbox",
             "readOnlyHint": false,
             "destructiveHint": false,
             "openWorldHint": false

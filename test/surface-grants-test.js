@@ -55,13 +55,30 @@ describe('surface grants', () => {
             assert.ok(!manage.some(grant => grant.action === ACTION.DESTRUCTIVE && grant.group === GROUP.LICENSE));
         });
 
-        it('keep the mail surface exactly as it was, so no issued full-access mail token widened', () => {
+        it('keep the mail surface pinned, so an issued full-access mail token widens only by decision', () => {
             // The consent page's "Full access" level used to mint a token with no permissions
-            // record, bounded by this table alone. It is the reason the management tools got a
-            // second scope rather than a longer list here, and the reason this list is pinned.
+            // record, bounded by this table alone, and POST /v1/tokens still mints mcp-scoped
+            // tokens without one. It is the reason the management tools got a second scope rather
+            // than a longer list here, and the reason this list is pinned.
+            //
+            // write:mailbox and destructive:mailbox were added 2026-10-20 by explicit operator
+            // decision, for the folder create, rename and delete tools. That knowingly widened
+            // every existing mcp token without a permissions record, including those minted from
+            // the "Full access" consent in 2.79.2 to 2.80.0, to folder create, rename and delete.
             assert.deepEqual(
                 SURFACE_GRANTS.mcp.map(grant => `${grant.action}:${grant.group}`),
-                ['read:account', 'read:mailbox', 'read:message', 'write:message', 'destructive:message', 'send:submit', 'read:outbox', 'read:template']
+                [
+                    'read:account',
+                    'read:mailbox',
+                    'read:message',
+                    'write:message',
+                    'destructive:message',
+                    'send:submit',
+                    'read:outbox',
+                    'read:template',
+                    'write:mailbox',
+                    'destructive:mailbox'
+                ]
             );
         });
 

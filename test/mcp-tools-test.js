@@ -447,6 +447,47 @@ test('MCP tool registry', async t => {
         assert.equal(byName.get('move_messages').wireNames.get('source'), 'path');
     });
 
+    await t.test('the folder tools follow their message siblings across the mail levels', () => {
+        const annotations = Object.fromEntries(tools.map(tool => [tool.name, tool.annotations]));
+        for (const name of ['create_mailbox', 'update_mailbox']) {
+            assert.equal(annotations[name].readOnlyHint, false, name);
+            assert.equal(annotations[name].destructiveHint, false, name);
+            assert.deepEqual(byName.get(name).grant, { action: ACTION.WRITE, group: GROUP.MAILBOX }, name);
+        }
+        assert.equal(annotations.delete_mailbox.destructiveHint, true);
+        assert.deepEqual(byName.get('delete_mailbox').grant, { action: ACTION.DESTRUCTIVE, group: GROUP.MAILBOX });
+
+        // Mail surface only: the management table reaches no folder or message
+        for (const name of ['create_mailbox', 'update_mailbox', 'delete_mailbox']) {
+            assert.deepEqual(byName.get(name).surfaces, ['mcp'], name);
+        }
+
+        const offeredAt = (choice, boundAccount = null) =>
+            tools.filter(tool => toolVisibleTo(byName.get(tool.name), { tokenData: mcpGrantsFor(choice), boundAccount })).map(tool => tool.name);
+        const levels = {
+            read: offeredAt({ manage: 'none', mail: 'read' }),
+            mail: offeredAt({ manage: 'none', mail: 'mail' }),
+            full: offeredAt({ manage: 'none', mail: 'full' }),
+            administer: offeredAt({ manage: 'administer' })
+        };
+        for (const [name, from] of [
+            ['create_mailbox', 'mail'],
+            ['update_mailbox', 'mail'],
+            ['delete_mailbox', 'full']
+        ]) {
+            assert.ok(!levels.read.includes(name), `${name} at read`);
+            assert.equal(levels.mail.includes(name), from === 'mail', `${name} at mail`);
+            assert.ok(levels.full.includes(name), `${name} at full`);
+            assert.ok(!levels.administer.includes(name), `${name} at administer`);
+            // Each names its account in the path, so a bound token is offered it, without the argument
+            assert.ok(offeredAt({ manage: 'none', mail: 'full' }, 'acct-1').includes(name), `${name} bound`);
+            assert.ok(!('account' in toolDefinitionFor(byName.get(name), { boundAccount: 'acct-1' }).inputSchema.properties), `${name} bound schema`);
+        }
+        // Same levels as the message tools they sit beside
+        assert.equal(levels.mail.includes('move_messages'), true);
+        assert.equal(levels.mail.includes('delete_messages'), false);
+    });
+
     await t.test('resuming an account is an operate-level management tool', () => {
         const offeredAt = choice =>
             tools.filter(tool => toolVisibleTo(byName.get(tool.name), { tokenData: mcpGrantsFor(choice), boundAccount: null })).map(tool => tool.name);
