@@ -351,8 +351,14 @@ test('MCP tool registry', async t => {
         }
 
         // The exceptions the strategy admits without an {account} path parameter, from the shared table
-        for (const name of ['list_templates', 'list_tokens', 'create_template', 'update_template', 'delete_template']) {
+        for (const name of ['list_templates', 'list_tokens', 'create_template', 'get_template', 'update_template', 'delete_template']) {
             assert.ok(boundVisible.includes(name), `${name} is reachable by a bound token and has to be offered`);
+        }
+
+        // The queue routes name no account and are not exceptions, so a bound token is refused
+        // them as it is the queue listing - neither is advertised
+        for (const name of ['get_outbox', 'get_queued_message']) {
+            assert.ok(!boundVisible.includes(name), `${name} is not reachable by a bound token`);
         }
 
         // Every tool a bound credential is offered is one the strategy would admit
@@ -396,10 +402,48 @@ test('MCP tool registry', async t => {
         const annotations = Object.fromEntries(tools.map(tool => [tool.name, tool.annotations]));
 
         assert.equal(annotations.delete_message.destructiveHint, true);
+        assert.equal(annotations.delete_messages.destructiveHint, true);
         assert.equal(annotations.send_message.openWorldHint, true);
+        assert.equal(annotations.send_draft.openWorldHint, true);
+        assert.equal(annotations.create_delivery_test.openWorldHint, true);
         assert.equal(annotations.list_messages.readOnlyHint, true);
         assert.equal(annotations.get_message.readOnlyHint, true);
+        assert.equal(annotations.get_template.readOnlyHint, true);
+        assert.equal(annotations.get_queued_message.readOnlyHint, true);
         assert.equal(annotations.update_message.readOnlyHint, false);
+        for (const name of ['update_messages', 'move_messages']) {
+            assert.equal(annotations[name].readOnlyHint, false, name);
+            assert.equal(annotations[name].destructiveHint, false, name);
+        }
+    });
+
+    await t.test('the bulk and draft tools sit beside their single-message siblings', () => {
+        // Same surface and the same grant as the tool each one is the many-message (or stored
+        // draft) form of, so no consent level reaches one without the other
+        for (const [bulk, single] of [
+            ['update_messages', 'update_message'],
+            ['move_messages', 'move_message'],
+            ['delete_messages', 'delete_message'],
+            ['send_draft', 'send_message'],
+            ['get_queued_message', 'get_outbox'],
+            ['get_template', 'list_templates']
+        ]) {
+            assert.deepEqual(byName.get(bulk).grant, byName.get(single).grant, `${bulk} and ${single}`);
+            assert.deepEqual(byName.get(bulk).surfaces, byName.get(single).surfaces, `${bulk} and ${single}`);
+        }
+
+        // A stored draft already carries everything it sends; every payload field of the route is
+        // an operator decision or a network override
+        assert.deepEqual(Object.keys(tools.find(tool => tool.name === 'send_draft').inputSchema.properties).sort(), ['account', 'message']);
+
+        // The gateway is chosen over REST only, as it is for send_message
+        assert.ok(!('gateway' in tools.find(tool => tool.name === 'create_delivery_test').inputSchema.properties));
+        assert.deepEqual(byName.get('create_delivery_test').forcedValues, { gateway: null });
+
+        // The bulk move offers both of the route's `path` arguments under the names move_message uses
+        const move = tools.find(tool => tool.name === 'move_messages').inputSchema;
+        assert.deepEqual(move.required.slice().sort(), ['account', 'path', 'search', 'source']);
+        assert.equal(byName.get('move_messages').wireNames.get('source'), 'path');
     });
 });
 
@@ -468,6 +512,20 @@ test('MCP tool executor', async t => {
         options: {
             validate: { query: Joi.object({ pageSize: Joi.number().integer().min(1).max(1000).default(20) }) },
             plugins: { mcp: { name: 'demo_listing', title: 'Demo listing', description: 'demo', bounds: { pageSize: 100 } } }
+        }
+    });
+
+    // Mirrors the bulk move: one name taken from the query and from the payload
+    server.route({
+        method: 'PUT',
+        path: '/v1/demo/collide',
+        handler: request => ({ query: request.query, payload: request.payload }),
+        options: {
+            validate: {
+                query: Joi.object({ path: Joi.string().required() }),
+                payload: Joi.object({ path: Joi.string().required(), note: Joi.string() })
+            },
+            plugins: { mcp: { name: 'demo_collide', title: 'Demo collide', description: 'demo', rename: { query: { path: 'source' } } } }
         }
     });
 
@@ -613,6 +671,42 @@ test('MCP tool executor', async t => {
         assert.throws(() => buildToolRegistry([route({ keep: ['subject'] })]), /required argument account is hidden but not forced/);
         assert.throws(() => buildToolRegistry([route({ omit: ['account'] })]), /required argument account is hidden but not forced/);
         assert.doesNotThrow(() => buildToolRegistry([route({ omit: ['account'], force: { account: 'pinned' } })]));
+    });
+
+    await t.test('a renamed argument is offered under its new name and sent under its own', async () => {
+        const tool = byName.get('demo_collide');
+        assert.deepEqual(Object.keys(tool.definition.inputSchema.properties).sort(), ['note', 'path', 'source']);
+        assert.deepEqual(tool.definition.inputSchema.required.slice().sort(), ['path', 'source']);
+
+        const result = await callTool({ server, tool, args: { source: 'INBOX', path: 'Archive', note: 'n' }, request: outerRequest() });
+        assert.deepEqual(JSON.parse(result.content[0].text), { query: { path: 'INBOX' }, payload: { path: 'Archive', note: 'n' } });
+
+        const refused = await callTool({ server, tool, args: { path: 'Archive' }, request: outerRequest() });
+        assert.equal(refused.isError, true);
+        assert.match(refused.content[0].text, /Missing required tool argument: source/);
+    });
+
+    await t.test('a rename that does not apply is refused at build time', () => {
+        const route = rename => ({
+            method: 'put',
+            path: '/v1/demo/{id}/renamed',
+            settings: {
+                validate: {
+                    params: Joi.object({ id: Joi.string().required() }),
+                    query: Joi.object({ path: Joi.string() }),
+                    payload: Joi.object({ path: Joi.string(), other: Joi.string() })
+                },
+                plugins: { mcp: { name: 'demo_renamed', title: 'Demo', description: 'demo', rename } }
+            }
+        });
+
+        // Without one the two `path` arguments collide
+        assert.throws(() => buildToolRegistry([route(undefined)]), /argument path is defined by two request sources/);
+        assert.throws(() => buildToolRegistry([route({ params: { id: 'thing' } })]), /cannot rename arguments of params/);
+        assert.throws(() => buildToolRegistry([route({ query: { nosuch: 'x' } })]), /renamed argument nosuch is not a query argument/);
+        // A new name has to be free
+        assert.throws(() => buildToolRegistry([route({ query: { path: 'other' } })]), /argument other is defined by two request sources/);
+        assert.doesNotThrow(() => buildToolRegistry([route({ query: { path: 'source' } })]));
     });
 
     await t.test('API validation errors come back as tool errors, not exceptions', async () => {

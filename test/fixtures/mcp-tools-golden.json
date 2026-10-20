@@ -110,7 +110,7 @@
     {
         "name": "check_delivery_test",
         "title": "Check delivery test",
-        "description": "Check the result of a delivery test started over the REST API: whether the probe message arrived, and its SPF, DKIM and DMARC results.",
+        "description": "Check the result of a delivery test started by create_delivery_test or over the REST API: whether the probe message arrived, and its SPF, DKIM and DMARC results.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -987,9 +987,37 @@
         }
     },
     {
+        "name": "create_delivery_test",
+        "title": "Start delivery test",
+        "description": "Send a test message from the account to a probe address of EmailEngine's delivery test service, to see how its mail is received: whether it arrives and its SPF, DKIM and DMARC results. Returns a deliveryTest id; check_delivery_test reads the result from it, which takes a minute or so to be ready. check_delivery_test is a management tool, so a credential with mail access alone can start a test but not read it.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account"
+            ]
+        },
+        "annotations": {
+            "title": "Start delivery test",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": true
+        }
+    },
+    {
         "name": "create_draft",
         "title": "Create draft",
-        "description": "Store a new message in a folder, typically a draft in the Drafts folder. Takes structured fields (from, to, subject, text, html). It takes the same `reference` block as send_message, so a reply or a forward can be drafted for the user to look over first. Nothing is sent - use send_message for that.",
+        "description": "Store a new message in a folder, typically a draft in the Drafts folder. Takes structured fields (from, to, subject, text, html). It takes the same `reference` block as send_message, so a reply or a forward can be drafted for the user to look over first. Nothing is sent: once the user has reviewed the draft, send_draft sends it by the id this returns. send_message sends a new message directly.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -1906,6 +1934,285 @@
         }
     },
     {
+        "name": "delete_messages",
+        "title": "Delete matching messages",
+        "description": "Delete every message in one folder that matches a search, in one call - confirm with the user before calling this. Messages are moved to Trash, and deleted permanently when the folder already is Trash. Run search_messages with the same folder and criteria first to see which messages match, and pass exactly those criteria here. For one message, or a few whose ids are known, use delete_message instead.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Mailbox folder path. Can use special use labels like \"\\Sent\". Special value \"\\All\" is available for Gmail IMAP, Gmail API, MS Graph API accounts.",
+                    "examples": [
+                        "INBOX"
+                    ]
+                },
+                "force": {
+                    "type": "boolean",
+                    "description": "Delete messages even if not in Trash. Not supported for Gmail API accounts (messages are always moved to Trash)",
+                    "default": false
+                },
+                "search": {
+                    "type": "object",
+                    "description": "Search criteria for filtering messages",
+                    "properties": {
+                        "seq": {
+                            "type": "string",
+                            "description": "Sequence number range (e.g., \"1:10\" or \"1,3,5\"). Only supported for IMAP.",
+                            "examples": [
+                                "1:10"
+                            ],
+                            "maxLength": 8192
+                        },
+                        "answered": {
+                            "type": "boolean",
+                            "description": "Filter for messages that have been replied to. Only supported for IMAP."
+                        },
+                        "deleted": {
+                            "type": "boolean",
+                            "description": "Filter for messages marked for deletion. Only supported for IMAP."
+                        },
+                        "draft": {
+                            "type": "boolean",
+                            "description": "Filter for draft messages"
+                        },
+                        "unseen": {
+                            "type": "boolean",
+                            "description": "Filter for unread messages"
+                        },
+                        "flagged": {
+                            "type": "boolean",
+                            "description": "Filter for flagged/starred messages"
+                        },
+                        "seen": {
+                            "type": "boolean",
+                            "description": "Filter for read messages"
+                        },
+                        "from": {
+                            "type": "string",
+                            "description": "Search in From addresses",
+                            "examples": [
+                                "nyan.cat@example.com"
+                            ],
+                            "maxLength": 256
+                        },
+                        "to": {
+                            "type": "string",
+                            "description": "Search in To addresses. Not supported for MS Graph API.",
+                            "examples": [
+                                "support@example.com"
+                            ],
+                            "maxLength": 256
+                        },
+                        "cc": {
+                            "type": "string",
+                            "description": "Search in Cc addresses. Not supported for MS Graph API.",
+                            "examples": [
+                                "billing@example.com"
+                            ],
+                            "maxLength": 256
+                        },
+                        "bcc": {
+                            "type": "string",
+                            "description": "Search in Bcc addresses. Not supported for MS Graph API.",
+                            "examples": [
+                                "archive@example.com"
+                            ],
+                            "maxLength": 256
+                        },
+                        "body": {
+                            "type": "string",
+                            "description": "Search in message body content",
+                            "examples": [
+                                "Hello world"
+                            ],
+                            "maxLength": 256
+                        },
+                        "subject": {
+                            "type": "string",
+                            "description": "Search in message subject",
+                            "examples": [
+                                "Hello world"
+                            ],
+                            "maxLength": 2560
+                        },
+                        "larger": {
+                            "type": "integer",
+                            "description": "Find messages larger than specified size in bytes. Not supported for MS Graph API.",
+                            "examples": [
+                                1048576
+                            ],
+                            "minimum": 0,
+                            "maximum": 1073741824
+                        },
+                        "smaller": {
+                            "type": "integer",
+                            "description": "Find messages smaller than specified size in bytes. Not supported for MS Graph API.",
+                            "examples": [
+                                102400
+                            ],
+                            "minimum": 0,
+                            "maximum": 1073741824
+                        },
+                        "uid": {
+                            "type": "string",
+                            "description": "UID range (e.g., \"100:200\" or \"150,200,250\"). Only supported for IMAP.",
+                            "examples": [
+                                "100:200"
+                            ],
+                            "maxLength": 8192
+                        },
+                        "modseq": {
+                            "type": "integer",
+                            "description": "Find messages with modification sequence higher than specified value. Only supported for IMAP with CONDSTORE.",
+                            "examples": [
+                                12345
+                            ],
+                            "minimum": 0
+                        },
+                        "before": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Find messages received before this date",
+                            "examples": [
+                                "2024-08-09"
+                            ]
+                        },
+                        "since": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Find messages received after this date",
+                            "examples": [
+                                "2022-08-09"
+                            ]
+                        },
+                        "sentBefore": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Find messages sent before this date",
+                            "examples": [
+                                "2024-08-09"
+                            ]
+                        },
+                        "sentSince": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Find messages sent after this date",
+                            "examples": [
+                                "2022-08-09"
+                            ]
+                        },
+                        "emailId": {
+                            "type": "string",
+                            "description": "Globally unique email identifier (when supported by the email server)",
+                            "examples": [
+                                "1278455344230334865"
+                            ],
+                            "maxLength": 256,
+                            "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\?#%\\u0000-\\u001f\\u007f]+$"
+                        },
+                        "threadId": {
+                            "type": "string",
+                            "description": "Thread identifier for email conversations (when supported by the email server)",
+                            "examples": [
+                                "1694936993596975454"
+                            ],
+                            "maxLength": 256,
+                            "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\?#%\\u0000-\\u001f\\u007f]+$"
+                        },
+                        "header": {
+                            "type": "object",
+                            "description": "Search specific email headers",
+                            "examples": [
+                                {
+                                    "Message-ID": "<1DAF52A51E674A2@example.com>"
+                                }
+                            ]
+                        },
+                        "gmailRaw": {
+                            "type": "string",
+                            "description": "Gmail search syntax (only works with Gmail accounts)",
+                            "examples": [
+                                "has:attachment in:unread"
+                            ],
+                            "maxLength": 1024
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "Filter by Gmail labels or MS Graph (Outlook) categories. Not supported for generic IMAP accounts.",
+                            "properties": {
+                                "has": {
+                                    "type": "array",
+                                    "description": "Match messages that contain ALL of these labels/categories. Supported for Gmail and MS Graph (Outlook) accounts only.",
+                                    "examples": [
+                                        [
+                                            "Horizon"
+                                        ]
+                                    ],
+                                    "items": {
+                                        "type": "string",
+                                        "maxLength": 128
+                                    }
+                                },
+                                "not": {
+                                    "type": "array",
+                                    "description": "Match messages that contain NONE of these labels/categories. Supported for Gmail and MS Graph (Outlook) accounts only.",
+                                    "examples": [
+                                        [
+                                            "Horizon"
+                                        ]
+                                    ],
+                                    "items": {
+                                        "type": "string",
+                                        "maxLength": 128
+                                    }
+                                }
+                            }
+                        },
+                        "emailIds": {
+                            "type": "array",
+                            "description": "List of specific email IDs to fetch",
+                            "examples": [
+                                [
+                                    "1278455344230334865"
+                                ]
+                            ],
+                            "items": {
+                                "type": "string",
+                                "description": "Globally unique email identifier (when supported by the email server)",
+                                "examples": [
+                                    "1278455344230334865"
+                                ],
+                                "maxLength": 256,
+                                "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\?#%\\u0000-\\u001f\\u007f]+$"
+                            }
+                        }
+                    }
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "path",
+                "search"
+            ]
+        },
+        "annotations": {
+            "title": "Delete matching messages",
+            "readOnlyHint": false,
+            "destructiveHint": true,
+            "openWorldHint": false
+        }
+    },
+    {
         "name": "delete_oauth2_app",
         "title": "Delete OAuth2 application",
         "description": "Remove an OAuth2 application. Accounts that signed in through it can no longer refresh their access tokens and stop syncing. Confirm with the user before calling this.",
@@ -2445,6 +2752,34 @@
         }
     },
     {
+        "name": "get_queued_message",
+        "title": "Get queued message",
+        "description": "Get one message in the sending queue by the queue id that send_message, send_draft or get_outbox returned: its recipients, scheduled time, delivery attempts and the last delivery error.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "queueId": {
+                    "type": "string",
+                    "description": "Queue identifier for scheduled email",
+                    "examples": [
+                        "d41f0423195f271f"
+                    ],
+                    "maxLength": 100
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "queueId"
+            ]
+        },
+        "annotations": {
+            "title": "Get queued message",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
         "name": "get_settings",
         "title": "Get settings",
         "description": "Read instance settings. Set each setting you want returned to true. Secrets come back as a boolean saying whether a value is stored, credentials inside URLs are masked, and eventTypes lists the webhook event names the instance supports. Settings that would widen this credential (operator scripts, the link signing secret, the authentication server, proxy trust and local addresses, proxies, the built-in listeners, TLS certificates and provisioning, the service URL, mail certificate checking, the AI key and endpoint, the webhook target and its custom headers, hosted page markup, the MCP and audit switches, and error reporting) are not offered.",
@@ -2636,6 +2971,34 @@
         },
         "annotations": {
             "title": "Get settings",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "get_template",
+        "title": "Get template",
+        "description": "Get one stored email template with its subject and content (html, text, previewText), by the template id from list_templates.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "template": {
+                    "type": "string",
+                    "description": "Template ID",
+                    "examples": [
+                        "example"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "template"
+            ]
+        },
+        "annotations": {
+            "title": "Get template",
             "readOnlyHint": true,
             "destructiveHint": false,
             "openWorldHint": false
@@ -3201,6 +3564,288 @@
         }
     },
     {
+        "name": "move_messages",
+        "title": "Move matching messages",
+        "description": "Move every message in one folder that matches a search to another folder, in one call. `source` is the folder searched and `path` the folder the messages go to, both paths from list_mailboxes. Run search_messages on the source folder with the same criteria first to see which messages match, then pass those criteria here. For one message, or a few whose ids are known, use move_message instead.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "source": {
+                    "type": "string",
+                    "description": "Mailbox folder path. Can use special use labels like \"\\Sent\". Special value \"\\All\" is available for Gmail IMAP, Gmail API, MS Graph API accounts.",
+                    "examples": [
+                        "INBOX"
+                    ]
+                },
+                "search": {
+                    "type": "object",
+                    "description": "Search criteria for filtering messages",
+                    "properties": {
+                        "seq": {
+                            "type": "string",
+                            "description": "Sequence number range (e.g., \"1:10\" or \"1,3,5\"). Only supported for IMAP.",
+                            "examples": [
+                                "1:10"
+                            ],
+                            "maxLength": 8192
+                        },
+                        "answered": {
+                            "type": "boolean",
+                            "description": "Filter for messages that have been replied to. Only supported for IMAP."
+                        },
+                        "deleted": {
+                            "type": "boolean",
+                            "description": "Filter for messages marked for deletion. Only supported for IMAP."
+                        },
+                        "draft": {
+                            "type": "boolean",
+                            "description": "Filter for draft messages"
+                        },
+                        "unseen": {
+                            "type": "boolean",
+                            "description": "Filter for unread messages"
+                        },
+                        "flagged": {
+                            "type": "boolean",
+                            "description": "Filter for flagged/starred messages"
+                        },
+                        "seen": {
+                            "type": "boolean",
+                            "description": "Filter for read messages"
+                        },
+                        "from": {
+                            "type": "string",
+                            "description": "Search in From addresses",
+                            "examples": [
+                                "nyan.cat@example.com"
+                            ],
+                            "maxLength": 256
+                        },
+                        "to": {
+                            "type": "string",
+                            "description": "Search in To addresses. Not supported for MS Graph API.",
+                            "examples": [
+                                "support@example.com"
+                            ],
+                            "maxLength": 256
+                        },
+                        "cc": {
+                            "type": "string",
+                            "description": "Search in Cc addresses. Not supported for MS Graph API.",
+                            "examples": [
+                                "billing@example.com"
+                            ],
+                            "maxLength": 256
+                        },
+                        "bcc": {
+                            "type": "string",
+                            "description": "Search in Bcc addresses. Not supported for MS Graph API.",
+                            "examples": [
+                                "archive@example.com"
+                            ],
+                            "maxLength": 256
+                        },
+                        "body": {
+                            "type": "string",
+                            "description": "Search in message body content",
+                            "examples": [
+                                "Hello world"
+                            ],
+                            "maxLength": 256
+                        },
+                        "subject": {
+                            "type": "string",
+                            "description": "Search in message subject",
+                            "examples": [
+                                "Hello world"
+                            ],
+                            "maxLength": 2560
+                        },
+                        "larger": {
+                            "type": "integer",
+                            "description": "Find messages larger than specified size in bytes. Not supported for MS Graph API.",
+                            "examples": [
+                                1048576
+                            ],
+                            "minimum": 0,
+                            "maximum": 1073741824
+                        },
+                        "smaller": {
+                            "type": "integer",
+                            "description": "Find messages smaller than specified size in bytes. Not supported for MS Graph API.",
+                            "examples": [
+                                102400
+                            ],
+                            "minimum": 0,
+                            "maximum": 1073741824
+                        },
+                        "uid": {
+                            "type": "string",
+                            "description": "UID range (e.g., \"100:200\" or \"150,200,250\"). Only supported for IMAP.",
+                            "examples": [
+                                "100:200"
+                            ],
+                            "maxLength": 8192
+                        },
+                        "modseq": {
+                            "type": "integer",
+                            "description": "Find messages with modification sequence higher than specified value. Only supported for IMAP with CONDSTORE.",
+                            "examples": [
+                                12345
+                            ],
+                            "minimum": 0
+                        },
+                        "before": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Find messages received before this date",
+                            "examples": [
+                                "2024-08-09"
+                            ]
+                        },
+                        "since": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Find messages received after this date",
+                            "examples": [
+                                "2022-08-09"
+                            ]
+                        },
+                        "sentBefore": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Find messages sent before this date",
+                            "examples": [
+                                "2024-08-09"
+                            ]
+                        },
+                        "sentSince": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Find messages sent after this date",
+                            "examples": [
+                                "2022-08-09"
+                            ]
+                        },
+                        "emailId": {
+                            "type": "string",
+                            "description": "Globally unique email identifier (when supported by the email server)",
+                            "examples": [
+                                "1278455344230334865"
+                            ],
+                            "maxLength": 256,
+                            "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\?#%\\u0000-\\u001f\\u007f]+$"
+                        },
+                        "threadId": {
+                            "type": "string",
+                            "description": "Thread identifier for email conversations (when supported by the email server)",
+                            "examples": [
+                                "1694936993596975454"
+                            ],
+                            "maxLength": 256,
+                            "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\?#%\\u0000-\\u001f\\u007f]+$"
+                        },
+                        "header": {
+                            "type": "object",
+                            "description": "Search specific email headers",
+                            "examples": [
+                                {
+                                    "Message-ID": "<1DAF52A51E674A2@example.com>"
+                                }
+                            ]
+                        },
+                        "gmailRaw": {
+                            "type": "string",
+                            "description": "Gmail search syntax (only works with Gmail accounts)",
+                            "examples": [
+                                "has:attachment in:unread"
+                            ],
+                            "maxLength": 1024
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "Filter by Gmail labels or MS Graph (Outlook) categories. Not supported for generic IMAP accounts.",
+                            "properties": {
+                                "has": {
+                                    "type": "array",
+                                    "description": "Match messages that contain ALL of these labels/categories. Supported for Gmail and MS Graph (Outlook) accounts only.",
+                                    "examples": [
+                                        [
+                                            "Horizon"
+                                        ]
+                                    ],
+                                    "items": {
+                                        "type": "string",
+                                        "maxLength": 128
+                                    }
+                                },
+                                "not": {
+                                    "type": "array",
+                                    "description": "Match messages that contain NONE of these labels/categories. Supported for Gmail and MS Graph (Outlook) accounts only.",
+                                    "examples": [
+                                        [
+                                            "Horizon"
+                                        ]
+                                    ],
+                                    "items": {
+                                        "type": "string",
+                                        "maxLength": 128
+                                    }
+                                }
+                            }
+                        },
+                        "emailIds": {
+                            "type": "array",
+                            "description": "List of specific email IDs to fetch",
+                            "examples": [
+                                [
+                                    "1278455344230334865"
+                                ]
+                            ],
+                            "items": {
+                                "type": "string",
+                                "description": "Globally unique email identifier (when supported by the email server)",
+                                "examples": [
+                                    "1278455344230334865"
+                                ],
+                                "maxLength": 256,
+                                "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\?#%\\u0000-\\u001f\\u007f]+$"
+                            }
+                        }
+                    }
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Target mailbox folder path",
+                    "examples": [
+                        "INBOX"
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "source",
+                "search",
+                "path"
+            ]
+        },
+        "annotations": {
+            "title": "Move matching messages",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
         "name": "reconnect_account",
         "title": "Reconnect account",
         "description": "Ask the account's worker to close and re-open its connection. Use after fixing credentials or server settings, or when an account is stuck connecting.",
@@ -3623,6 +4268,43 @@
             "readOnlyHint": true,
             "destructiveHint": false,
             "openWorldHint": false
+        }
+    },
+    {
+        "name": "send_draft",
+        "title": "Send draft",
+        "description": "Send a draft that is already stored in the account, by its message id - confirm with the user before calling this. This is the second half of a review workflow: create_draft stores the message in the Drafts folder and returns its id, the user looks it over (get_message reads it back), and send_draft then sends that same draft as it is. The draft carries its own recipients, subject and content, so nothing else is needed. The message has to be a draft: in the Drafts folder or flagged \\Draft. Once sent it is removed from Drafts and, unless the account is set not to keep copies, filed in Sent. Delivery is queued; the response carries the queue id for get_outbox.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "message": {
+                    "type": "string",
+                    "description": "Message ID of the draft",
+                    "examples": [
+                        "AAAAAQAACnA"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "message"
+            ]
+        },
+        "annotations": {
+            "title": "Send draft",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": true
         }
     },
     {
@@ -5110,6 +5792,371 @@
         },
         "annotations": {
             "title": "Update message flags",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "update_messages",
+        "title": "Update matching messages",
+        "description": "Change the flags or labels of every message in one folder that matches a search, in one call - for example mark all unread mail from one sender as read. Run search_messages with the same folder and criteria first to see which messages match, then pass those criteria here. For one message, or a few whose ids are known, use update_message instead.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Mailbox folder path. Can use special use labels like \"\\Sent\". Special value \"\\All\" is available for Gmail IMAP, Gmail API, MS Graph API accounts.",
+                    "examples": [
+                        "INBOX"
+                    ]
+                },
+                "search": {
+                    "type": "object",
+                    "description": "Search criteria for filtering messages",
+                    "properties": {
+                        "seq": {
+                            "type": "string",
+                            "description": "Sequence number range (e.g., \"1:10\" or \"1,3,5\"). Only supported for IMAP.",
+                            "examples": [
+                                "1:10"
+                            ],
+                            "maxLength": 8192
+                        },
+                        "answered": {
+                            "type": "boolean",
+                            "description": "Filter for messages that have been replied to. Only supported for IMAP."
+                        },
+                        "deleted": {
+                            "type": "boolean",
+                            "description": "Filter for messages marked for deletion. Only supported for IMAP."
+                        },
+                        "draft": {
+                            "type": "boolean",
+                            "description": "Filter for draft messages"
+                        },
+                        "unseen": {
+                            "type": "boolean",
+                            "description": "Filter for unread messages"
+                        },
+                        "flagged": {
+                            "type": "boolean",
+                            "description": "Filter for flagged/starred messages"
+                        },
+                        "seen": {
+                            "type": "boolean",
+                            "description": "Filter for read messages"
+                        },
+                        "from": {
+                            "type": "string",
+                            "description": "Search in From addresses",
+                            "examples": [
+                                "nyan.cat@example.com"
+                            ],
+                            "maxLength": 256
+                        },
+                        "to": {
+                            "type": "string",
+                            "description": "Search in To addresses. Not supported for MS Graph API.",
+                            "examples": [
+                                "support@example.com"
+                            ],
+                            "maxLength": 256
+                        },
+                        "cc": {
+                            "type": "string",
+                            "description": "Search in Cc addresses. Not supported for MS Graph API.",
+                            "examples": [
+                                "billing@example.com"
+                            ],
+                            "maxLength": 256
+                        },
+                        "bcc": {
+                            "type": "string",
+                            "description": "Search in Bcc addresses. Not supported for MS Graph API.",
+                            "examples": [
+                                "archive@example.com"
+                            ],
+                            "maxLength": 256
+                        },
+                        "body": {
+                            "type": "string",
+                            "description": "Search in message body content",
+                            "examples": [
+                                "Hello world"
+                            ],
+                            "maxLength": 256
+                        },
+                        "subject": {
+                            "type": "string",
+                            "description": "Search in message subject",
+                            "examples": [
+                                "Hello world"
+                            ],
+                            "maxLength": 2560
+                        },
+                        "larger": {
+                            "type": "integer",
+                            "description": "Find messages larger than specified size in bytes. Not supported for MS Graph API.",
+                            "examples": [
+                                1048576
+                            ],
+                            "minimum": 0,
+                            "maximum": 1073741824
+                        },
+                        "smaller": {
+                            "type": "integer",
+                            "description": "Find messages smaller than specified size in bytes. Not supported for MS Graph API.",
+                            "examples": [
+                                102400
+                            ],
+                            "minimum": 0,
+                            "maximum": 1073741824
+                        },
+                        "uid": {
+                            "type": "string",
+                            "description": "UID range (e.g., \"100:200\" or \"150,200,250\"). Only supported for IMAP.",
+                            "examples": [
+                                "100:200"
+                            ],
+                            "maxLength": 8192
+                        },
+                        "modseq": {
+                            "type": "integer",
+                            "description": "Find messages with modification sequence higher than specified value. Only supported for IMAP with CONDSTORE.",
+                            "examples": [
+                                12345
+                            ],
+                            "minimum": 0
+                        },
+                        "before": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Find messages received before this date",
+                            "examples": [
+                                "2024-08-09"
+                            ]
+                        },
+                        "since": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Find messages received after this date",
+                            "examples": [
+                                "2022-08-09"
+                            ]
+                        },
+                        "sentBefore": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Find messages sent before this date",
+                            "examples": [
+                                "2024-08-09"
+                            ]
+                        },
+                        "sentSince": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Find messages sent after this date",
+                            "examples": [
+                                "2022-08-09"
+                            ]
+                        },
+                        "emailId": {
+                            "type": "string",
+                            "description": "Globally unique email identifier (when supported by the email server)",
+                            "examples": [
+                                "1278455344230334865"
+                            ],
+                            "maxLength": 256,
+                            "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\?#%\\u0000-\\u001f\\u007f]+$"
+                        },
+                        "threadId": {
+                            "type": "string",
+                            "description": "Thread identifier for email conversations (when supported by the email server)",
+                            "examples": [
+                                "1694936993596975454"
+                            ],
+                            "maxLength": 256,
+                            "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\?#%\\u0000-\\u001f\\u007f]+$"
+                        },
+                        "header": {
+                            "type": "object",
+                            "description": "Search specific email headers",
+                            "examples": [
+                                {
+                                    "Message-ID": "<1DAF52A51E674A2@example.com>"
+                                }
+                            ]
+                        },
+                        "gmailRaw": {
+                            "type": "string",
+                            "description": "Gmail search syntax (only works with Gmail accounts)",
+                            "examples": [
+                                "has:attachment in:unread"
+                            ],
+                            "maxLength": 1024
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "Filter by Gmail labels or MS Graph (Outlook) categories. Not supported for generic IMAP accounts.",
+                            "properties": {
+                                "has": {
+                                    "type": "array",
+                                    "description": "Match messages that contain ALL of these labels/categories. Supported for Gmail and MS Graph (Outlook) accounts only.",
+                                    "examples": [
+                                        [
+                                            "Horizon"
+                                        ]
+                                    ],
+                                    "items": {
+                                        "type": "string",
+                                        "maxLength": 128
+                                    }
+                                },
+                                "not": {
+                                    "type": "array",
+                                    "description": "Match messages that contain NONE of these labels/categories. Supported for Gmail and MS Graph (Outlook) accounts only.",
+                                    "examples": [
+                                        [
+                                            "Horizon"
+                                        ]
+                                    ],
+                                    "items": {
+                                        "type": "string",
+                                        "maxLength": 128
+                                    }
+                                }
+                            }
+                        },
+                        "emailIds": {
+                            "type": "array",
+                            "description": "List of specific email IDs to fetch",
+                            "examples": [
+                                [
+                                    "1278455344230334865"
+                                ]
+                            ],
+                            "items": {
+                                "type": "string",
+                                "description": "Globally unique email identifier (when supported by the email server)",
+                                "examples": [
+                                    "1278455344230334865"
+                                ],
+                                "maxLength": 256,
+                                "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\?#%\\u0000-\\u001f\\u007f]+$"
+                            }
+                        }
+                    }
+                },
+                "update": {
+                    "type": "object",
+                    "examples": [
+                        {
+                            "flags": {
+                                "add": "\\Seen",
+                                "delete": "\\Flagged"
+                            }
+                        }
+                    ],
+                    "properties": {
+                        "flags": {
+                            "type": "object",
+                            "description": "Flag operations to perform",
+                            "properties": {
+                                "add": {
+                                    "type": "array",
+                                    "description": "Flags to add to the message",
+                                    "examples": [
+                                        [
+                                            "\\Seen"
+                                        ]
+                                    ],
+                                    "items": {
+                                        "type": "string",
+                                        "maxLength": 128
+                                    }
+                                },
+                                "delete": {
+                                    "type": "array",
+                                    "description": "Flags to remove from the message",
+                                    "examples": [
+                                        [
+                                            "\\Flagged"
+                                        ]
+                                    ],
+                                    "items": {
+                                        "type": "string",
+                                        "maxLength": 128
+                                    }
+                                },
+                                "set": {
+                                    "type": "array",
+                                    "description": "Replace all flags with this list",
+                                    "examples": [
+                                        [
+                                            "\\Seen",
+                                            "\\Flagged"
+                                        ]
+                                    ],
+                                    "items": {
+                                        "type": "string",
+                                        "maxLength": 128
+                                    }
+                                }
+                            }
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "Label operations to perform (Gmail only)",
+                            "properties": {
+                                "add": {
+                                    "type": "array",
+                                    "description": "Gmail labels to add (use label ID or path)",
+                                    "examples": [
+                                        [
+                                            "Label_971539351003152516"
+                                        ]
+                                    ],
+                                    "items": {
+                                        "type": "string",
+                                        "maxLength": 128
+                                    }
+                                },
+                                "delete": {
+                                    "type": "array",
+                                    "description": "Gmail labels to remove (use label ID or path)",
+                                    "examples": [
+                                        [
+                                            "Label_971539351003152516"
+                                        ]
+                                    ],
+                                    "items": {
+                                        "type": "string",
+                                        "maxLength": 128
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "path",
+                "search"
+            ]
+        },
+        "annotations": {
+            "title": "Update matching messages",
             "readOnlyHint": false,
             "destructiveHint": false,
             "openWorldHint": false
