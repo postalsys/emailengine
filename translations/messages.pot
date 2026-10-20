@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-10-20 05:05+0000\n"
+"POT-Creation-Date: 2026-10-20 18:02+0000\n"
 
 #: lib/autodetect-imap-settings.js:160
 msgid ""
@@ -11,19 +11,19 @@ msgid ""
 "connect your account."
 msgstr ""
 
-#: lib/tools.js:1738
+#: lib/tools.js:1746
 #: lib/ui-routes/unsubscribe-routes.js:34
 #: lib/ui-routes/unsubscribe-routes.js:102
 msgid "Invalid input"
 msgstr ""
 
-#: lib/tools.js:2738
+#: lib/tools.js:2746
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:2761
-#: lib/tools.js:2767
-#: lib/tools.js:2772
+#: lib/tools.js:2769
+#: lib/tools.js:2775
+#: lib/tools.js:2780
 #: lib/ui-routes/account-setup.js:80
 msgid "Invalid or expired account setup URL"
 msgstr ""
