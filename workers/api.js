@@ -47,8 +47,6 @@ const {
     constantTimeEqual,
     verifyServiceSignature,
     SIGNING_PURPOSE,
-    claimFormNonce,
-    releaseFormNonce,
     setAdminSession,
     isEndedSession
 } = require('../lib/tools');
@@ -76,6 +74,7 @@ const { decodeJwtPayload } = require('../lib/oauth/decode-jwt-payload');
 const { resolveOutlookUserInfo } = require('../lib/oauth/outlook-identity');
 const { resolveOutlookMailbox } = require('../lib/oauth/outlook-mailbox');
 const { isValidOAuthState } = require('../lib/oauth/state');
+const { completeAccountSetup } = require('../lib/ui-routes/account-setup');
 const { buildRetrySetup } = require('../lib/oauth/retry-setup');
 const { matchesExpectedIdentity, pendingSetupExpectation, resolveExpectedIdentity } = require('../lib/account/expected-identity');
 
@@ -2803,74 +2802,6 @@ async function rejectOAuthIdentity(flow, { grantToken, workspaceDomain }, expect
     }
 }
 
-async function createOAuthAccount(request, accountData, accountMeta) {
-    let accountObject = new Account({
-        redis,
-        call,
-        secret: await getSecret(),
-        timeout: request.headers['x-ee-timeout']
-    });
-
-    // Claim the single-use nonce BEFORE create (SET NX), mirroring the IMAP arm in
-    // lib/ui-routes/account-routes.js, so one signed link cannot be double-spent across the two
-    // arms (initiate OAuth -> submit the same blob to /accounts/new/imap/server -> complete this
-    // callback) and a replayed callback cannot create a second account.
-    //
-    // Backward-compat, BY DESIGN: this only engages when accountMeta.n is present. Legacy /
-    // pre-upgrade re-auth blobs carry no nonce (accountMeta.n is undefined), so the claim is
-    // skipped and those links keep working - the OAuth entry (accountFormHandler) intentionally
-    // does NOT require a nonce for exactly that reason.
-    // claimFormNonce/releaseFormNonce (lib/tools.js) are the same primitives the IMAP arm uses, so
-    // the double-spend semantics stay in one place.
-    let nonceClaimed = false;
-    if (accountMeta.n) {
-        let claimed;
-        try {
-            claimed = await claimFormNonce(redis, accountMeta.n, accountMeta.t);
-        } catch (err) {
-            // A Redis failure is not a consumed nonce - surface a retryable error rather than
-            // misreporting a valid setup URL as invalid.
-            request.logger.error({ msg: 'Failed to claim nonce for an account form request', err });
-            throw Boom.boomify(new Error('Temporary error, please try again'), { statusCode: 500 });
-        }
-        if (!claimed) {
-            // The nonce key already exists: this signed URL was already used.
-            throw Boom.boomify(new Error('Invalid or expired account setup URL'), { statusCode: 403 });
-        }
-        nonceClaimed = true;
-    }
-
-    let result;
-    try {
-        result = await accountObject.create(accountData);
-    } catch (err) {
-        // Release the nonce so the user can retry (same accepted residual as the IMAP arm: if
-        // Redis also fails here the nonce stays consumed for its TTL and a fresh link is needed -
-        // the price of claim-before-create being atomic).
-        if (nonceClaimed) {
-            await releaseFormNonce(redis, accountMeta.n, request.logger);
-        }
-        throw err;
-    }
-
-    return result;
-}
-
-async function oauthSuccessRedirectUrl(redirectUrl, result) {
-    let httpRedirectUrl;
-    if (redirectUrl) {
-        let serviceUrl = await settings.get('serviceUrl');
-        let url = new URL(redirectUrl, serviceUrl);
-        url.searchParams.set('account', result.account);
-        url.searchParams.set('state', result.state);
-        httpRedirectUrl = url.href;
-    } else {
-        httpRedirectUrl = `/admin/accounts/${result.account}`;
-    }
-
-    return httpRedirectUrl;
-}
-
 async function handleOAuthCallback(request, h) {
     assertOAuthCallbackQuery(request);
 
@@ -2953,9 +2884,24 @@ async function handleOAuthCallback(request, h) {
         delete accountData.delegated;
     }
 
-    const result = await createOAuthAccount(request, accountData, accountMeta);
+    const accountObject = new Account({
+        redis,
+        call,
+        secret: await getSecret(),
+        timeout: request.headers['x-ee-timeout']
+    });
 
-    const httpRedirectUrl = await oauthSuccessRedirectUrl(redirectUrl, result);
+    // The nonce claim spans both arms, so one signed link cannot be spent on each (start OAuth2,
+    // submit the same blob to /accounts/new/imap/server, then complete this callback) and a
+    // replayed callback cannot create a second account. Only a link that carries a nonce is
+    // claimed: re-auth links issued before nonces existed carry none, and the OAuth2 entry
+    // (accountFormHandler) deliberately does not require one so that they keep working.
+    const httpRedirectUrl = await completeAccountSetup(request, {
+        accountObject,
+        accountData,
+        nonce: accountMeta.n ? { n: accountMeta.n, t: accountMeta.t } : null,
+        redirectUrl
+    });
 
     return renderRedirect(request, h, httpRedirectUrl);
 }

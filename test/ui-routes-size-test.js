@@ -52,7 +52,10 @@ const MODULE_BUDGETS = {
     // 2509 -> 2500 when the TLS checkboxes of both connection sections (including the new Require
     // STARTTLS one), their form fields included, moved to connection-security-form.js
     // 2500 -> 2573: function boundaries from the MI refactor (per-route registration functions), not handler code
-    'account-routes.js': 2562,
+    // 2573 -> 2562 when the setup redirect page moved to route-helpers.js, shared with the OAuth2 callback,
+    // 2562 -> 2518 when claiming the nonce and creating the account moved to account-setup.js
+    'account-routes.js': 2518,
+    'account-setup.js': 99,
     'connection-security-form.js': 74,
     // 1553 -> 1567 for the clear-error case that dismisses the Document Store removal notice,
     // 1567 -> 1544 when the AI page's fields were derived from one list, 1532 -> 1540 for the
@@ -93,7 +96,8 @@ const MODULE_BUDGETS = {
     // 658 -> 661 when windowedPageLinks grew a shared pageLink() builder, 661 -> 662 for the
     // comment on getExampleDocumentsPayloads(), which outlived the Document Store, 662 -> 623
     // when the AI page's model list and reasoning effort choices moved to ai-options.js, 623 -> 611
-    // when the Graph subscription view model moved to outlook-subscription-view.js
+    // when the Graph subscription view model moved to outlook-subscription-view.js, 611 -> 627 for the
+    // setup redirect page both setup arms render, which workers/api.js used to carry a copy of
     'route-helpers.js': 627,
     'outlook-subscription-view.js': 36,
     'settings-page.js': 117,
