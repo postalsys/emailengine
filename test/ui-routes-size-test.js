@@ -51,15 +51,18 @@ const MODULE_BUDGETS = {
     // 2507 -> 2509 for the queue card on the account page, whose counting lives in lib/queue-browser,
     // 2509 -> 2500 when the TLS checkboxes of both connection sections (including the new Require
     // STARTTLS one), their form fields included, moved to connection-security-form.js
-    'account-routes.js': 2500,
+    // 2500 -> 2573: function boundaries from the MI refactor (per-route registration functions), not handler code
+    'account-routes.js': 2573,
     'connection-security-form.js': 74,
     // 1553 -> 1567 for the clear-error case that dismisses the Document Store removal notice,
     // 1567 -> 1544 when the AI page's fields were derived from one list, 1532 -> 1540 for the
     // model reload refusing to send the stored API key to a URL other than the stored one, 1540 -> 1532
     // when that rule moved to aiRequestOptions() in server.js, which the test prompt goes through too
-    'admin-config-routes.js': 1532,
+    // 1532 -> 1580: function boundaries from the MI refactor (per-route registration functions), not handler code
+    'admin-config-routes.js': 1580,
     // 2548 -> 2533 when the gateway forms took the STARTTLS field from connection-security-form.js
-    'admin-entities-routes.js': 2533,
+    // 2533 -> 2602: function boundaries from the MI refactor (per-route registration functions), not handler code
+    'admin-entities-routes.js': 2602,
     'ai-options.js': 113,
     'special-use-paths.js': 33,
     'imap-idle-field.js': 42,
@@ -69,7 +72,8 @@ const MODULE_BUDGETS = {
     // switched on and the per-account budget on passkey registration, with the sign-in budget and
     // the hash upgrade moved to sign-in-helpers.js, 1689 -> 1684 when the password re-check started
     // naming its own refusal
-    'auth-routes.js': 1684,
+    // 1684 -> 1736: function boundaries from the MI refactor (per-route registration functions), not handler code
+    'auth-routes.js': 1736,
     'sign-in-helpers.js': 59,
     'dashboard-routes.js': 175,
     'export-routes.js': 207,
@@ -81,7 +85,8 @@ const MODULE_BUDGETS = {
     // 998 -> 987 when the send-only app detection moved to lib/oauth/scope-checker.js, which is where
     // the scope check it delegates to already lives, 987 -> 977 when the base scope render context
     // moved to oauth-form-context.js, 977 -> 978 for a new app's form starting out enabled
-    'oauth-config-routes.js': 978,
+    // 978 -> 1011: function boundaries from the MI refactor (per-route registration functions), not handler code
+    'oauth-config-routes.js': 1011,
     'queue-routes.js': 371,
     'oauth-form-context.js': 19,
     'reference-routes.js': 198,
@@ -95,7 +100,8 @@ const MODULE_BUDGETS = {
     'form-lists.js': 50,
     'smtp-test-routes.js': 243,
     'suppression-list-routes.js': 310,
-    'tls-config-routes.js': 628,
+    // 628 -> 671: function boundaries from the MI refactor (per-route registration functions), not handler code
+    'tls-config-routes.js': 671,
     // 261 -> 264 for naming the signing key the unsubscribe links are verified against
     'unsubscribe-routes.js': 264
 };
