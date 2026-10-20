@@ -13,8 +13,10 @@
 //   (TEXTTOOLS-2), so the notification is neither lost nor delivered with unsanitized HTML.
 // - A message with no text part has no text object, which the LLM gate dereferenced (IMAP-11).
 // - Inline images end up embedded in the web-safe copy too (CONTENT-5), which is what webhooks
-//   deliver in place of the HTML, and an image the inline pass skipped as too large is not
-//   downloaded after all.
+//   deliver in place of the HTML, and an image above the inline size cap is not downloaded.
+// - Without web-safe HTML or attachments in the payload, inline images are not downloaded at all:
+//   a pass that fetched every cid: image of every new message used to run regardless, and
+//   formatPayload() then dropped the content unused.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -100,7 +102,12 @@ function createMailbox(messageInfo, { dsn = false, bounce = false } = {}) {
     const notifications = [];
     const downloads = [];
     const imapClient = {
-        download: async () => ({ content: RAW_DSN }),
+        download: async (uid, part) => {
+            if (part) {
+                downloads.push(part);
+            }
+            return { content: RAW_DSN };
+        },
         downloadMany: async (uid, parts) => {
             downloads.push(...parts);
             return Object.fromEntries(parts.map(part => [part, { content: Buffer.from('image-bytes') }]));
@@ -273,7 +280,7 @@ test('inline images in the web-safe copy', async t => {
 
     const html = '<p><img src="cid:small@x"><img src="cid:big@x"></p>';
 
-    await t.test('BaseClient.processNew() embeds an already loaded image in both copies', async () => {
+    await t.test('BaseClient.processNew() embeds a downloaded image in both copies', async () => {
         settingsValues.notifyWebSafeHtml = true;
         const messageData = {
             id: 'm1',
@@ -290,7 +297,6 @@ test('inline images in the web-safe copy', async t => {
 
         const text = notifications[0].data.text;
         const dataUri = `data:image/png;base64,${Buffer.from('image-bytes').toString('base64')}`;
-        // The earlier inline pass loaded the small image; the embed step used to `continue` past it
         assert.ok(text.html.includes(dataUri), 'embedded in the HTML');
         assert.ok(text._generatedHtml.includes(dataUri), 'and in the web-safe copy webhooks deliver');
         assert.ok(text._generatedHtml.includes('cid:big@x'), 'a skipped image keeps its reference');
@@ -329,5 +335,54 @@ test('inline images in the web-safe copy', async t => {
         assert.ok(text._generatedHtml.includes('data:image/png;base64,'), 'the web-safe copy carries the image');
         assert.ok(text._generatedHtml.includes('cid:big@x'));
         assert.deepEqual(downloads, ['2'], 'the oversized image is not downloaded');
+    });
+});
+
+test('inline images are not downloaded when nothing uses them', async t => {
+    t.beforeEach(reset);
+
+    const html = '<p><img src="cid:img@x"></p>';
+
+    await t.test('BaseClient.processNew()', async () => {
+        const { run, notifications, downloads } = createApiClient({
+            id: 'm1',
+            messageSpecialUse: '\\Inbox',
+            text: { html },
+            attachments: [{ id: 'img', contentId: '<img@x>', contentType: 'image/png', encodedSize: 100 }]
+        });
+
+        await run();
+
+        assert.deepEqual(events(notifications), ['messageNew']);
+        assert.deepEqual(downloads, []);
+        assert.equal(notifications[0].data.attachments[0].content, undefined);
+    });
+
+    await t.test('Mailbox.processNew()', async () => {
+        const partId = part => Buffer.concat([Buffer.alloc(8), Buffer.from(part)]).toString('base64url');
+        const { run, notifications, downloads } = createMailbox({
+            text: { html },
+            attachments: [{ id: partId('2'), contentId: '<img@x>', contentType: 'image/png', encodedSize: 100 }]
+        });
+
+        await run();
+
+        assert.deepEqual(events(notifications), ['messageNew']);
+        assert.deepEqual(downloads, []);
+        assert.equal(notifications[0].data.attachments[0].content, undefined);
+    });
+
+    await t.test('notifyAttachments still downloads them', async () => {
+        settingsValues.notifyAttachments = true;
+        const { run, downloads } = createApiClient({
+            id: 'm1',
+            messageSpecialUse: '\\Inbox',
+            text: { html },
+            attachments: [{ id: 'img', contentId: '<img@x>', contentType: 'image/png', encodedSize: 100 }]
+        });
+
+        await run();
+
+        assert.deepEqual(downloads, ['img']);
     });
 });
