@@ -3910,6 +3910,34 @@
         }
     },
     {
+        "name": "resume_account",
+        "title": "Resume account",
+        "description": "Turn an account back on after EmailEngine switched it off following repeated authentication failures, and reconnect it. list_accounts and get_account show such an account with authFailureDisabledAt set. Use once the cause is fixed (a changed password, a revoked or expired authorization): with the same credentials still refused, the account is switched off again after the next run of failures. An account that EmailEngine did not switch off has nothing to resume, and the call fails saying so.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account"
+            ]
+        },
+        "annotations": {
+            "title": "Resume account",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
         "name": "retry_queued_message",
         "title": "Retry failed message",
         "description": "Retry a message whose delivery failed for good, by the queue id from get_outbox. Only a message in the failed state whose content is still stored can be retried; the error says when it cannot. A retried message starts over with a full set of delivery attempts.",

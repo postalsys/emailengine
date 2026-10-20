@@ -411,7 +411,7 @@ test('MCP tool registry', async t => {
         assert.equal(annotations.get_template.readOnlyHint, true);
         assert.equal(annotations.get_queued_message.readOnlyHint, true);
         assert.equal(annotations.update_message.readOnlyHint, false);
-        for (const name of ['update_messages', 'move_messages']) {
+        for (const name of ['update_messages', 'move_messages', 'resume_account']) {
             assert.equal(annotations[name].readOnlyHint, false, name);
             assert.equal(annotations[name].destructiveHint, false, name);
         }
@@ -426,7 +426,8 @@ test('MCP tool registry', async t => {
             ['delete_messages', 'delete_message'],
             ['send_draft', 'send_message'],
             ['get_queued_message', 'get_outbox'],
-            ['get_template', 'list_templates']
+            ['get_template', 'list_templates'],
+            ['resume_account', 'reconnect_account']
         ]) {
             assert.deepEqual(byName.get(bulk).grant, byName.get(single).grant, `${bulk} and ${single}`);
             assert.deepEqual(byName.get(bulk).surfaces, byName.get(single).surfaces, `${bulk} and ${single}`);
@@ -444,6 +445,14 @@ test('MCP tool registry', async t => {
         const move = tools.find(tool => tool.name === 'move_messages').inputSchema;
         assert.deepEqual(move.required.slice().sort(), ['account', 'path', 'search', 'source']);
         assert.equal(byName.get('move_messages').wireNames.get('source'), 'path');
+    });
+
+    await t.test('resuming an account is an operate-level management tool', () => {
+        const offeredAt = choice =>
+            tools.filter(tool => toolVisibleTo(byName.get(tool.name), { tokenData: mcpGrantsFor(choice), boundAccount: null })).map(tool => tool.name);
+        assert.ok(!offeredAt({ manage: 'observe' }).includes('resume_account'));
+        assert.ok(offeredAt({ manage: 'operate' }).includes('resume_account'));
+        assert.ok(!offeredAt({ manage: 'none', mail: 'full' }).includes('resume_account'));
     });
 });
 
