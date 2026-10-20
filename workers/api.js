@@ -8,7 +8,14 @@ const logger = require('../lib/logger');
 const Path = require('path');
 const Gettext = require('@postalsys/gettext');
 const { loadTranslations, gt, joiLocales, locales } = require('../lib/translations');
-const { accountStateLabel, formatServerState, identityErrorView, workspaceErrorView, isClientError } = require('../lib/ui-routes/route-helpers');
+const {
+    accountStateLabel,
+    formatServerState,
+    identityErrorView,
+    workspaceErrorView,
+    renderRedirect,
+    isClientError
+} = require('../lib/ui-routes/route-helpers');
 const { boundRouteBinding } = require('../lib/api-routes/account-binding');
 const util = require('util');
 const { webhooks: Webhooks } = require('../lib/webhooks');
@@ -67,6 +74,8 @@ const { registeredPublishers, openChangeStream } = require('../lib/response-stre
 const { oauth2Apps } = require('../lib/oauth2-apps');
 const { decodeJwtPayload } = require('../lib/oauth/decode-jwt-payload');
 const { resolveOutlookUserInfo } = require('../lib/oauth/outlook-identity');
+const { resolveOutlookMailbox } = require('../lib/oauth/outlook-mailbox');
+const { isValidOAuthState } = require('../lib/oauth/state');
 const { buildRetrySetup } = require('../lib/oauth/retry-setup');
 const { matchesExpectedIdentity, pendingSetupExpectation, resolveExpectedIdentity } = require('../lib/account/expected-identity');
 
@@ -2330,9 +2339,7 @@ function assertOAuthCallbackQuery(request) {
         throw Boom.badRequest(request.app.gt.gettext('Sign-in with the email provider failed: no authorization code was received'));
     }
 
-    // Validate nonce format: 16 bytes base64url encoded = 21-22 characters
-    // Also accept base64 encoding (+, /, =) for backward compatibility with old cached nonces
-    if (!/^account:add:[A-Za-z0-9_\-+/]{21,22}={0,2}$/.test(request.query.state)) {
+    if (!isValidOAuthState(request.query.state)) {
         throw Boom.badRequest(request.app.gt.gettext('Sign-in with the email provider failed: the request state is not valid'));
     }
 }
@@ -2356,20 +2363,6 @@ async function claimOAuthSetup(request) {
     }
 
     return accountData;
-}
-
-// have to use HTML redirect, otherwise samesite=strict cookies are not passed on
-function renderOAuthRedirect(request, h, httpRedirectUrl) {
-    return h.view(
-        'redirect',
-        {
-            pageTitleFull: request.app.gt.gettext('Email Account Setup'),
-            httpRedirectUrl
-        },
-        {
-            layout: 'public'
-        }
-    );
 }
 
 // Hands the user back to the provider after a failure they can correct themselves, as a fresh
@@ -2449,7 +2442,7 @@ async function resolveGmailUserEmail(flow, r, grantedScopes) {
 
     // Back channel, so this is the claim the restriction can actually be enforced on;
     // the hd argument on the authorization URL only filters the chooser Google shows
-    flow.workspaceDomain = workspaceDomainOf(idTokenPayload);
+    const workspaceDomain = workspaceDomainOf(idTokenPayload);
 
     // If ID token didn't provide email, fall back to Gmail API profile endpoint
     // This should rarely happen since we now request openid/email/profile scopes
@@ -2488,7 +2481,7 @@ async function resolveGmailUserEmail(flow, r, grantedScopes) {
         }
     }
 
-    return { profileRes, userEmail };
+    return { profileRes, userEmail, workspaceDomain };
 }
 
 async function completeGmailCallback(flow) {
@@ -2506,10 +2499,10 @@ async function completeGmailCallback(flow) {
 
     const scopeErrorView = await gmailMissingScopesView(flow, r, grantedScopes);
     if (scopeErrorView) {
-        return scopeErrorView;
+        return { view: scopeErrorView };
     }
 
-    const { profileRes, userEmail } = await resolveGmailUserEmail(flow, r, grantedScopes);
+    const { profileRes, userEmail, workspaceDomain } = await resolveGmailUserEmail(flow, r, grantedScopes);
 
     if (!userEmail) {
         let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
@@ -2519,7 +2512,6 @@ async function completeGmailCallback(flow) {
     // Back-channel only: either the id_token from the token endpoint or the Gmail profile
     // API response, never a value that travelled through the browser.
     providerIdentities.push(userEmail);
-    flow.grantToken = r.refresh_token || r.access_token;
 
     accountData.email = isEmail(userEmail) ? userEmail : accountData.email;
 
@@ -2545,6 +2537,8 @@ async function completeGmailCallback(flow) {
     accountData.googleHistoryId = profileRes ? Number(profileRes.historyId) || null : null;
 
     request.logger.info({ msg: 'Provisioned OAuth2 tokens', user: userEmail, provider: oauth2App.provider });
+
+    return { grantToken: r.refresh_token || r.access_token, workspaceDomain };
 }
 
 async function resolveOutlookCallbackUser(flow, r) {
@@ -2625,21 +2619,12 @@ async function completeOutlookCallback(flow) {
 
     // Only the back-channel addresses, so a forged client_info cannot satisfy an expectation.
     providerIdentities.push(...userInfo.verifiedIdentities);
-    flow.grantToken = r.refresh_token || r.access_token;
 
-    if (accountData.oauth2 && accountData.oauth2.auth && accountData.oauth2.auth.delegatedUser) {
-        // Delegated user (shared mailbox) specified in oauth2.auth.delegatedUser
-        authData.delegatedUser = accountData.oauth2.auth.delegatedUser;
-        // Ensure email is set to the delegated user if not already provided
-        if (!accountData.email) {
-            accountData.email = accountData.oauth2.auth.delegatedUser;
-        }
-    } else if (accountData.delegated && accountData.email && accountData.email !== userInfo.email) {
-        // Legacy: Shared mailbox specified via delegated flag
-        authData.delegatedUser = accountData.email;
-    } else {
-        // Not a delegated account, use the authenticated user's email
-        accountData.email = userInfo.email;
+    // A shared mailbox, named either way, or the signed-in user's own
+    const mailbox = resolveOutlookMailbox(accountData, userInfo);
+    accountData.email = mailbox.email;
+    if (mailbox.delegatedUser) {
+        authData.delegatedUser = mailbox.delegatedUser;
     }
 
     accountData.name = accountData.name || userInfo.name || '';
@@ -2660,6 +2645,8 @@ async function completeOutlookCallback(flow) {
     );
 
     request.logger.info({ msg: 'Provisioned OAuth2 tokens', user: userInfo.email, provider: oauth2App.provider });
+
+    return { grantToken: r.refresh_token || r.access_token };
 }
 
 async function completeMailRuCallback(flow) {
@@ -2691,7 +2678,6 @@ async function completeMailRuCallback(flow) {
 
     // Back-channel only: the Mail.ru userinfo endpoint response.
     providerIdentities.push(profileRes.email);
-    flow.grantToken = r.refresh_token || r.access_token;
 
     accountData.name = accountData.name || profileRes.name || '';
     accountData.email = isEmail(profileRes.email) ? profileRes.email : accountData.email;
@@ -2714,9 +2700,19 @@ async function completeMailRuCallback(flow) {
     );
 
     request.logger.info({ msg: 'Provisioned OAuth2 tokens', user: profileRes.email, provider: oauth2App.provider });
+
+    return { grantToken: r.refresh_token || r.access_token };
 }
 
-// `app.provider` is for example "gmail", `provider` is oauth2 app id
+// Exchanges the authorization code with the app's provider type (flow.oauth2App.provider, for example
+// "gmail") and fills in accountData and providerIdentities from what the provider returned. Resolves
+// to `{ view }` when the setup has to stop on a page of its own, otherwise to:
+//   grantToken      - the token to revoke if the setup is rejected after the exchange. The refresh
+//                     token is preferred: revoking either invalidates the grant, but the access token
+//                     may already be expired.
+//   workspaceDomain - the Workspace or Cloud organization domain, for an application restricted to
+//                     Google Workspace accounts. Only the Gmail provider reports one; the restriction
+//                     is a Google setting and no other provider has the notion.
 async function exchangeOAuthCode(flow) {
     switch (flow.oauth2App.provider) {
         case 'gmail':
@@ -2736,8 +2732,21 @@ async function exchangeOAuthCode(flow) {
 
 // The Workspace restriction and the expected identity, both checked after the code exchange.
 // Answers the error page with a way back when the setup has to be refused
-async function rejectOAuthIdentity(flow, expectedEmail) {
-    const { request, h, accountData, oauth2App, oAuth2Client, providerIdentities, workspaceDomain, grantToken } = flow;
+async function rejectOAuthIdentity(flow, { grantToken, workspaceDomain }, expectedEmail) {
+    const { request, h, accountData, oauth2App, oAuth2Client, providerIdentities } = flow;
+
+    // The code was already exchanged, so a refused setup leaves us holding a grant we will never
+    // use. Best effort, and the same duck-typing guard Account.delete({ revoke }) uses: only
+    // GmailOauth implements revokeToken, and a rejected setup must not become a 500.
+    const revokeUnusedGrant = async failureMessage => {
+        if (grantToken && typeof oAuth2Client.revokeToken === 'function') {
+            try {
+                await oAuth2Client.revokeToken(grantToken);
+            } catch (err) {
+                request.logger.warn({ msg: failureMessage, err });
+            }
+        }
+    };
 
     // "Accept only Google Workspace accounts" used to be advisory: generateAuthUrl() sets hd=*,
     // which filters the account chooser Google shows and nothing else, so a link assembled
@@ -2754,15 +2763,7 @@ async function rejectOAuthIdentity(flow, expectedEmail) {
             provider: oauth2App.provider
         });
 
-        // The code was already exchanged, so we are holding a grant we will never use. Best
-        // effort, and the same duck-typing guard as the identity mismatch below.
-        if (grantToken && typeof oAuth2Client.revokeToken === 'function') {
-            try {
-                await oAuth2Client.revokeToken(grantToken);
-            } catch (err) {
-                request.logger.warn({ msg: 'Failed to revoke the OAuth2 grant after a Workspace check', err });
-            }
-        }
+        await revokeUnusedGrant('Failed to revoke the OAuth2 grant after a Workspace check');
 
         // select_account for the same reason as the identity mismatch: they are signed in to the
         // account that just failed, and without it Google would hand back the same one
@@ -2774,23 +2775,14 @@ async function rejectOAuthIdentity(flow, expectedEmail) {
     if (expectedEmail && !matchesExpectedIdentity(expectedEmail, providerIdentities)) {
         // Neither address is logged: the expectation and the authenticated identity both belong to
         // the end user, and this line is the one record of a failed attempt. Note the provider
-        // identity was already logged by the "Provisioned OAuth2 tokens" line above.
+        // identity was already logged by the provider's "Provisioned OAuth2 tokens" line in exchangeOAuthCode().
         request.logger.warn({
             msg: 'OAuth2 identity did not match the expected email address',
             account: accountData.account,
             provider: oauth2App.provider
         });
 
-        // The code was already exchanged, so we are holding a refresh token we will never use.
-        // Best effort, and the same duck-typing guard Account.delete({ revoke }) uses: only
-        // GmailOauth implements revokeToken, and a rejected setup must not become a 500.
-        if (grantToken && typeof oAuth2Client.revokeToken === 'function') {
-            try {
-                await oAuth2Client.revokeToken(grantToken);
-            } catch (err) {
-                request.logger.warn({ msg: 'Failed to revoke the OAuth2 grant after an identity mismatch', err });
-            }
-        }
+        await revokeUnusedGrant('Failed to revoke the OAuth2 grant after an identity mismatch');
 
         // Stop here with a way back rather than redirecting to the calling application: signing in
         // as the wrong account is a correctable mistake, and the hosted flow only ever redirects on
@@ -2927,22 +2919,12 @@ async function handleOAuthCallback(request, h) {
         // Addresses the provider itself returned over a back channel, the only values allowed to
         // satisfy an expected identity (see lib/account/expected-identity.js). Every provider case
         // fills this in; one that does not leaves it empty, and an empty list fails the check closed.
-        providerIdentities: [],
-
-        // The Workspace or Cloud organization domain the provider reported, for an application
-        // restricted to Google Workspace accounts. Only the Gmail case fills it in; the
-        // restriction is a Google setting and no other provider has the notion.
-        workspaceDomain: null,
-
-        // The token to revoke if the setup is rejected after the code was already exchanged, set by
-        // each provider case because the token response is scoped to the switch. Prefer the refresh
-        // token: revoking either invalidates the grant, but the access token may already be expired.
-        grantToken: undefined
+        providerIdentities: []
     };
 
-    const providerView = await exchangeOAuthCode(flow);
-    if (providerView) {
-        return providerView;
+    const exchange = await exchangeOAuthCode(flow);
+    if (exchange.view) {
+        return exchange.view;
     }
 
     // Expected identity check. Runs before the nonce claim and before create(), so a rejected
@@ -2955,7 +2937,7 @@ async function handleOAuthCallback(request, h) {
         blobExpectation: pendingSetupExpectation(accountData, accountMeta)
     });
 
-    const identityView = await rejectOAuthIdentity(flow, expectedEmail);
+    const identityView = await rejectOAuthIdentity(flow, exchange, expectedEmail);
     if (identityView) {
         return identityView;
     }
@@ -2975,7 +2957,7 @@ async function handleOAuthCallback(request, h) {
 
     const httpRedirectUrl = await oauthSuccessRedirectUrl(redirectUrl, result);
 
-    return renderOAuthRedirect(request, h, httpRedirectUrl);
+    return renderRedirect(request, h, httpRedirectUrl);
 }
 
 function registerOAuthCallbackRoute(server) {

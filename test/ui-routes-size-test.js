@@ -52,7 +52,7 @@ const MODULE_BUDGETS = {
     // 2509 -> 2500 when the TLS checkboxes of both connection sections (including the new Require
     // STARTTLS one), their form fields included, moved to connection-security-form.js
     // 2500 -> 2573: function boundaries from the MI refactor (per-route registration functions), not handler code
-    'account-routes.js': 2573,
+    'account-routes.js': 2562,
     'connection-security-form.js': 74,
     // 1553 -> 1567 for the clear-error case that dismisses the Document Store removal notice,
     // 1567 -> 1544 when the AI page's fields were derived from one list, 1532 -> 1540 for the
@@ -94,7 +94,7 @@ const MODULE_BUDGETS = {
     // comment on getExampleDocumentsPayloads(), which outlived the Document Store, 662 -> 623
     // when the AI page's model list and reasoning effort choices moved to ai-options.js, 623 -> 611
     // when the Graph subscription view model moved to outlook-subscription-view.js
-    'route-helpers.js': 611,
+    'route-helpers.js': 627,
     'outlook-subscription-view.js': 36,
     'settings-page.js': 117,
     'form-lists.js': 50,

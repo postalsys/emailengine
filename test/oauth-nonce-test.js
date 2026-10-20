@@ -8,9 +8,9 @@ const path = require('path');
 
 const { NONCE_BYTES } = require('../lib/consts');
 
-// Regex that validates OAuth state nonces (from workers/api.js security fix)
-// Accepts both base64url and base64 encoding for backward compatibility
-const NONCE_VALIDATION_REGEX = /^[A-Za-z0-9_\-+/]{21,22}={0,2}$/;
+// The nonce format check the hosted form and the OAuth2 callback both apply. Accepts both base64url
+// and base64 encoding for backward compatibility
+const { OAUTH_NONCE_PATTERN: NONCE_VALIDATION_REGEX, isValidOAuthState } = require('../lib/oauth/state');
 
 test('OAuth nonce encoding tests', async t => {
     await t.test('base64url encoded nonce matches validation regex', async () => {
@@ -145,5 +145,20 @@ test('OAuth nonce encoding tests', async t => {
         assert.ok(NONCE_VALIDATION_REGEX.test(base64urlOnlyChars), 'base64url-only chars should pass');
         assert.ok(NONCE_VALIDATION_REGEX.test(base64OnlyChars), 'base64-only chars with padding should pass');
         assert.ok(!NONCE_VALIDATION_REGEX.test(mixedChars), 'too short nonce should fail');
+    });
+
+    await t.test('OAuth state is the account:add: prefix followed by a valid nonce', async () => {
+        for (let i = 0; i < 100; i++) {
+            const nonce = crypto.randomBytes(NONCE_BYTES).toString('base64url');
+            assert.ok(isValidOAuthState(`account:add:${nonce}`), `state should be valid for nonce ${nonce}`);
+        }
+
+        assert.ok(isValidOAuthState('account:add:AAAAAAAAAAAAAAAAAAA+/=='), 'a base64 nonce is accepted in a state');
+        assert.ok(!isValidOAuthState('AAAAAAAAAAAAAAAAAAAAAA'), 'a bare nonce is not a state');
+        assert.ok(!isValidOAuthState('account:del:AAAAAAAAAAAAAAAAAAAAAA'), 'another prefix is refused');
+        assert.ok(!isValidOAuthState('xaccount:add:AAAAAAAAAAAAAAAAAAAAAA'), 'the prefix is anchored');
+        assert.ok(!isValidOAuthState('account:add:AAAAAAAAAAAAAAAAAAAAAA\n'), 'the end is anchored');
+        assert.ok(!isValidOAuthState('account:add:short'), 'a short nonce is refused');
+        assert.ok(!isValidOAuthState(undefined), 'a missing state is refused');
     });
 });
