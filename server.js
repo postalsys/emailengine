@@ -2620,468 +2620,516 @@ async function withRequestDeadline(message, run) {
     }
 }
 
-async function onCommand(worker, message) {
-    switch (message.cmd) {
-        case 'metrics':
-            // Return Prometheus metrics
-            await updateQueueCounters();
-            return promClient.register.metrics();
+// Handlers for the commands workers send to the main thread, dispatched by onCommand(). A command
+// with no handler, and a handler that answers NOT_HANDLED, both reply with 999
+const NOT_HANDLED = 999;
 
-        case 'structuredMetrics': {
-            // Return structured metrics for API
-            let connections = {};
+async function commandMetrics() {
+    // Return Prometheus metrics
+    await updateQueueCounters();
+    return promClient.register.metrics();
+}
 
-            for (let key of Object.keys(metrics.imapConnections.hashMap)) {
-                if (key.indexOf('status:') === 0) {
-                    let metric = metrics.imapConnections.hashMap[key];
-                    connections[metric.labels.status] = metric.value;
-                }
-            }
+async function commandStructuredMetrics() {
+    // Return structured metrics for API
+    let connections = {};
 
-            return { connections, redisPing: await getRedisPing() };
-        }
-
-        case 'imapWorkerCount': {
-            // Return number of available IMAP workers
-            return { workers: availableIMAPWorkers.size };
-        }
-
-        case 'checkLicense':
-            // Force license check
-            try {
-                await licenseCheckHandler({
-                    subscriptionCheckTimeout: 60 * 1000
-                });
-            } catch (err) {
-                // ignore
-            }
-            return licenseInfo;
-
-        case 'license':
-            // Return license info with suspension status
-            if (!licenseInfo.active && suspendedWorkerTypes.size) {
-                return Object.assign({}, licenseInfo, { suspended: true });
-            }
-            return licenseInfo;
-
-        case 'updateLicense': {
-            // Update license from API
-            try {
-                const licenseFile = message.license;
-
-                let licenseData = await checkLicense(licenseFile);
-                if (!licenseData) {
-                    throw new Error('Invalid license provided');
-                }
-
-                logger.info({ msg: 'License updated', license: redactLicense(licenseData), source: 'API' });
-
-                await setLicense(licenseData, licenseFile);
-
-                licenseInfo.active = true;
-                licenseInfo.details = licenseData;
-                licenseInfo.type = 'EmailEngine License';
-
-                // Re-enable workers
-                checkActiveLicense();
-
-                return licenseInfo;
-            } catch (err) {
-                logger.warn({ msg: 'License update failed', source: 'API', err });
-                return false;
-            }
-        }
-
-        case 'removeLicense': {
-            // Remove existing license
-            try {
-                await settings.removeLicense();
-
-                licenseInfo.active = false;
-                licenseInfo.details = false;
-                licenseInfo.type = packageData.license;
-
-                return licenseInfo;
-            } catch (err) {
-                logger.error({ msg: 'License removal failed', err });
-                return false;
-            }
-        }
-
-        case 'kill-thread': {
-            // Terminate a specific thread
-            for (let [, workerSet] of workers) {
-                if (workerSet && workerSet.size) {
-                    for (let worker of workerSet) {
-                        if (worker.threadId === message.thread) {
-                            logger.info({ msg: 'Thread termination requested', thread: message.thread });
-                            return await worker.terminate();
-                        }
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        case 'snapshot-thread': {
-            // Get heap snapshot for debugging
-            if (message.thread === 0) {
-                // Main thread only - V8 operations should be done in main thread
-                try {
-                    logger.info({ msg: 'Heap snapshot requested', thread: message.thread });
-                    const stream = v8.getHeapSnapshot();
-                    if (stream) {
-                        return { _transfer: true, _response: await download(stream) };
-                    }
-                } catch (err) {
-                    logger.error({ msg: 'Failed to generate heap snapshot', thread: message.thread, err });
-                }
-                return false;
-            }
-
-            // Worker thread - use worker's built-in method which is safer
-            for (let [, workerSet] of workers) {
-                if (workerSet && workerSet.size) {
-                    for (let worker of workerSet) {
-                        if (worker.threadId === message.thread) {
-                            try {
-                                logger.info({ msg: 'Heap snapshot requested', thread: message.thread });
-                                // Use worker's built-in getHeapSnapshot method instead of V8 API
-                                const stream = await worker.getHeapSnapshot({ exposeInternals: true, exposeNumericValues: true });
-                                if (stream) {
-                                    return { _transfer: true, _response: await download(stream) };
-                                }
-                            } catch (err) {
-                                logger.error({ msg: 'Failed to generate heap snapshot for worker', thread: message.thread, err });
-                            }
-                            return false;
-                        }
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        case 'bounceClassify':
-            // Classify bounce response message
-            try {
-                return await bounceClassifier.classify(message.data.message);
-            } catch (err) {
-                // ignore
-                logger.warn({
-                    msg: 'Failed to classify bounce response',
-                    bounceResponse: message.data.message,
-                    err
-                });
-            }
-            return false;
-
-        // OpenAI integration commands - run in the main process, where the metrics live
-        case 'generateSummary': {
-            const { openAiAPIKey, requestOpts } = await aiRequestOptions(message.data);
-            requestOpts.user = message.data.account;
-
-            // the configuration page's test runs are not production traffic
-            const counted = !message.data.options;
-            const model = requestOpts.gptModel;
-
-            try {
-                const response = await withRequestDeadline(message, signal =>
-                    generateSummary(message.data.message, openAiAPIKey, Object.assign(requestOpts, { signal }))
-                );
-                const { usage } = response;
-
-                // the fitted email text the verbose mode adds stays out of the RPC and the log
-                delete usage.text;
-
-                if (counted) {
-                    metrics.aiRequests.inc({ model, status: 'success' });
-                    for (const type of ['prompt', 'completion']) {
-                        const tokens = usage[`${type}Tokens`];
-                        if (tokens) {
-                            metrics.aiTokens.inc({ model, type }, tokens);
-                        }
-                    }
-                }
-
-                return response;
-            } catch (err) {
-                if (counted) {
-                    metrics.aiRequests.inc({ model, status: 'failure' });
-                }
-                throw err;
-            }
-        }
-
-        case 'openAiListModels': {
-            const { openAiAPIKey, requestOpts } = await aiRequestOptions(message.data);
-            return await withRequestDeadline(message, signal => openAiListModels(openAiAPIKey, Object.assign(requestOpts, { signal })));
-        }
-
-        case 'threads': {
-            return await getThreadsInfo();
-        }
-
-        case 'apiWorkerScaling': {
-            // Reported on /admin/internals so operators can see when EENGINE_WORKERS_API > 1
-            // was requested but only one worker started, and why (reason: 'platform' | 'port').
-            return {
-                requested: apiWorkersRequested,
-                fallback: apiWorkersRequested > 1 && !apiWorkerReusePort,
-                reason: apiWorkerReusePortFallbackReason
-            };
-        }
-
-        case 'worker-accounts': {
-            // Get accounts assigned to a specific worker thread
-            const { threadId, page = 1, pageSize = 20 } = message;
-            const accounts = [];
-
-            // Find worker by threadId and get its assigned accounts
-            for (const [account, worker] of assigned) {
-                if (worker.threadId === threadId) {
-                    accounts.push(account);
-                }
-            }
-
-            // Sort accounts for consistent ordering
-            accounts.sort((a, b) => a.localeCompare(b));
-
-            // Paginate
-            const totalAccounts = accounts.length;
-            const totalPages = Math.ceil(totalAccounts / pageSize) || 1;
-            const currentPage = Math.min(Math.max(1, page), totalPages);
-            const start = (currentPage - 1) * pageSize;
-            const pagedAccounts = accounts.slice(start, start + pageSize);
-
-            return {
-                accounts: pagedAccounts,
-                total: totalAccounts,
-                page: currentPage,
-                pageSize,
-                pages: totalPages
-            };
-        }
-
-        case 'rate-limit': {
-            return await checkRateLimit(message.key, message.count, message.allowed, message.windowSize);
-        }
-
-        case 'unsubscribe':
-            // Handle list unsubscribe
-            sendWebhook(message.account, LIST_UNSUBSCRIBE_NOTIFY, message.payload).catch(err =>
-                logger.error({ msg: 'Unsubscribe webhook failed', account: message.account, err })
-            );
-            return;
-
-        case 'subscribe':
-            // Handle list subscribe
-            sendWebhook(message.account, LIST_SUBSCRIBE_NOTIFY, message.payload).catch(err =>
-                logger.error({ msg: 'Subscribe webhook failed', account: message.account, err })
-            );
-            return;
-
-        case 'new':
-            // Handle new account.
-            //
-            // `unassigned` is `false` until assignAccounts() loads the account list from Redis on
-            // its first run, which waits for an IMAP worker to report ready. An account created
-            // before that used to throw here and fail the request with a 500. Skipping the add is
-            // safe rather than merely quiet: the account is already in `ia:accounts` by the time
-            // this message is sent, so the first load picks it up.
-            if (unassigned) {
-                unassigned.add(message.account);
-            }
-            assignAccounts()
-                .then(() => sendWebhook(message.account, ACCOUNT_ADDED_NOTIFY, { account: message.account }))
-                .catch(err => logger.error({ msg: 'Account assignment failed', err }));
-            return;
-
-        case 'delete':
-            // Handle account deletion
-            //
-            // Guarded for the same reason as the `new` branch above, and here the throw was
-            // answered with a 500 for a deletion that had in fact succeeded: the account was
-            // already gone from Redis by the time this message was sent.
-            {
-                let assignedWorker = forgetAccount({ workerAssigned, assigned, unassigned }, message.account);
-                if (assignedWorker) {
-                    // Notify worker to clean up
-                    call(assignedWorker, message)
-                        .then(() => logger.debug('Account cleanup completed'))
-                        .catch(err => logger.error({ msg: 'Account cleanup failed', account: message.account, err }));
-                }
-            }
-            sendWebhook(message.account, ACCOUNT_DELETED_NOTIFY, { account: message.account }).catch(err =>
-                logger.error({ msg: 'Account deletion webhook failed', account: message.account, err })
-            );
-            return;
-
-        case 'runIndex': {
-            return runIndex;
-        }
-
-        case 'update':
-        case 'sync':
-        case 'pause':
-        case 'resume':
-        case 'reconnect':
-            // Forward to assigned worker
-            if (assigned.has(message.account)) {
-                let assignedWorker = assigned.get(message.account);
-                call(assignedWorker, message)
-                    .then(() => logger.debug('Worker command completed'))
-                    .catch(err => logger.error({ msg: 'Worker command failed', account: message.account, cmd: message.cmd, err }));
-            }
-            return;
-
-        case 'smtpReload':
-        case 'imapProxyReload':
-            {
-                // Reload proxy server
-                let type = message.cmd.replace(/Reload$/, '');
-                let hasWorkers = workers.has(type) && workers.get(type).size;
-                if (hasWorkers) {
-                    // Kill existing workers
-                    for (let worker of workers.get(type).values()) {
-                        worker.terminate();
-                    }
-                } else {
-                    // Spawn new worker if enabled
-                    let serverEnabled = await settings.get(`${type}ServerEnabled`);
-                    if (serverEnabled) {
-                        await spawnWorker(type);
-                    }
-                }
-            }
-            break;
-
-        case 'apiReloadCertificates':
-        case 'smtpReloadCertificates':
-        case 'imapProxyReloadCertificates':
-            {
-                // A renewed certificate, handed to a running listener. Forwarded to the worker
-                // rather than terminating it: a restart would cut every session in flight, and
-                // every listener can swap its secure context between handshakes. Sent to every
-                // worker of the type, not just the one that ordered the certificate: the
-                // reconciler is a singleton but the listeners are not.
-                let type = message.cmd.replace(/ReloadCertificates$/, '');
-                for (let worker of (workers.get(type) || new Set()).values()) {
-                    call(worker, message).catch(err => logger.error({ msg: 'Failed to reload certificates', type, worker: worker.threadId, err }));
-                }
-            }
-            break;
-
-        // IMAP operations - forward to assigned worker
-        case 'submitMessage':
-        case 'queueMessage':
-        case 'listMessages':
-        case 'getRawMessage':
-        case 'getText':
-        case 'getMessage':
-        case 'getMessages':
-        case 'updateMessage':
-        case 'updateMessages':
-        case 'listMailboxes':
-        case 'moveMessage':
-        case 'moveMessages':
-        case 'deleteMessage':
-        case 'deleteMessages':
-        case 'getQuota':
-        case 'createMailbox':
-        case 'modifyMailbox':
-        case 'deleteMailbox':
-        case 'uploadMessage':
-        case 'getAttachment':
-        case 'listSignatures': {
-            if (!assigned.has(message.account)) {
-                throw NO_ACTIVE_HANDLER_RESP_ERR;
-            }
-
-            let assignedWorker = assigned.get(message.account);
-
-            let transferList = [];
-            // Handle transferable objects
-            if (['getRawMessage', 'getAttachment'].includes(message.cmd) && message.port) {
-                transferList.push(message.port);
-            }
-            if (['submitMessage', 'queueMessage'].includes(message.cmd) && typeof message.raw === 'object') {
-                transferList.push(message.raw);
-            }
-
-            return await call(assignedWorker, message, transferList);
-        }
-
-        case 'subconnections': {
-            // Get submission connections
-            if (!assigned.has(message.account)) {
-                return [];
-            }
-
-            let assignedWorker = assigned.get(message.account);
-            return await call(assignedWorker, message, []);
-        }
-
-        case 'googlePubSub':
-        case 'googlePubSubRemove': {
-            // Notify all webhook workers about PubSub app changes
-            if (!workers.has('webhooks')) {
-                return true;
-            }
-            let proms = [];
-            for (let worker of workers.get('webhooks')) {
-                proms.push(
-                    call(worker, message).catch(err => {
-                        logger.error({ msg: 'Failed to notify webhook worker about PubSub change', cmd: message.cmd, err });
-                    })
-                );
-            }
-            await Promise.all(proms);
-            return true;
-        }
-
-        case 'externalNotify': {
-            // External notification (e.g., Google Push)
-            let proms = [];
-            for (let account of message.accounts || []) {
-                if (!assigned.has(account)) {
-                    continue;
-                }
-
-                let assignedWorker = assigned.get(account);
-                proms.push(
-                    call(assignedWorker, { cmd: 'externalNotify', account, historyId: message.historyId }).catch(err => {
-                        logger.error({ msg: 'External notification failed', cmd: 'externalNotify', account, historyId: message.historyId, err });
-                    })
-                );
-            }
-            await Promise.all(proms);
-            return true;
-        }
-
-        case 'subscriptionLifecycle': {
-            // MS Graph subscription lifecycle event (reauthorizationRequired, subscriptionRemoved)
-            if (!assigned.has(message.account)) {
-                logger.warn({
-                    msg: 'Subscription lifecycle event for unassigned account',
-                    account: message.account,
-                    event: message.event
-                });
-                return false;
-            }
-            let assignedWorker = assigned.get(message.account);
-            return await call(assignedWorker, {
-                cmd: 'subscriptionLifecycle',
-                account: message.account,
-                event: message.event,
-                timeout: message.timeout
-            });
+    for (let key of Object.keys(metrics.imapConnections.hashMap)) {
+        if (key.indexOf('status:') === 0) {
+            let metric = metrics.imapConnections.hashMap[key];
+            connections[metric.labels.status] = metric.value;
         }
     }
 
-    return 999;
+    return { connections, redisPing: await getRedisPing() };
+}
+
+async function commandImapWorkerCount() {
+    // Return number of available IMAP workers
+    return { workers: availableIMAPWorkers.size };
+}
+
+async function commandCheckLicense() {
+    // Force license check
+    try {
+        await licenseCheckHandler({
+            subscriptionCheckTimeout: 60 * 1000
+        });
+    } catch (err) {
+        // ignore
+    }
+    return licenseInfo;
+}
+
+async function commandLicense() {
+    // Return license info with suspension status
+    if (!licenseInfo.active && suspendedWorkerTypes.size) {
+        return Object.assign({}, licenseInfo, { suspended: true });
+    }
+    return licenseInfo;
+}
+
+async function commandUpdateLicense(worker, message) {
+    // Update license from API
+    try {
+        const licenseFile = message.license;
+
+        let licenseData = await checkLicense(licenseFile);
+        if (!licenseData) {
+            throw new Error('Invalid license provided');
+        }
+
+        logger.info({ msg: 'License updated', license: redactLicense(licenseData), source: 'API' });
+
+        await setLicense(licenseData, licenseFile);
+
+        licenseInfo.active = true;
+        licenseInfo.details = licenseData;
+        licenseInfo.type = 'EmailEngine License';
+
+        // Re-enable workers
+        checkActiveLicense();
+
+        return licenseInfo;
+    } catch (err) {
+        logger.warn({ msg: 'License update failed', source: 'API', err });
+        return false;
+    }
+}
+
+async function commandRemoveLicense() {
+    // Remove existing license
+    try {
+        await settings.removeLicense();
+
+        licenseInfo.active = false;
+        licenseInfo.details = false;
+        licenseInfo.type = packageData.license;
+
+        return licenseInfo;
+    } catch (err) {
+        logger.error({ msg: 'License removal failed', err });
+        return false;
+    }
+}
+
+async function commandKillThread(worker, message) {
+    // Terminate a specific thread
+    for (let [, workerSet] of workers) {
+        if (workerSet && workerSet.size) {
+            for (let worker of workerSet) {
+                if (worker.threadId === message.thread) {
+                    logger.info({ msg: 'Thread termination requested', thread: message.thread });
+                    return await worker.terminate();
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+async function commandSnapshotThread(worker, message) {
+    // Get heap snapshot for debugging
+    if (message.thread === 0) {
+        // Main thread only - V8 operations should be done in main thread
+        try {
+            logger.info({ msg: 'Heap snapshot requested', thread: message.thread });
+            const stream = v8.getHeapSnapshot();
+            if (stream) {
+                return { _transfer: true, _response: await download(stream) };
+            }
+        } catch (err) {
+            logger.error({ msg: 'Failed to generate heap snapshot', thread: message.thread, err });
+        }
+        return false;
+    }
+
+    // Worker thread - use worker's built-in method which is safer
+    for (let [, workerSet] of workers) {
+        if (workerSet && workerSet.size) {
+            for (let worker of workerSet) {
+                if (worker.threadId === message.thread) {
+                    try {
+                        logger.info({ msg: 'Heap snapshot requested', thread: message.thread });
+                        // Use worker's built-in getHeapSnapshot method instead of V8 API
+                        const stream = await worker.getHeapSnapshot({ exposeInternals: true, exposeNumericValues: true });
+                        if (stream) {
+                            return { _transfer: true, _response: await download(stream) };
+                        }
+                    } catch (err) {
+                        logger.error({ msg: 'Failed to generate heap snapshot for worker', thread: message.thread, err });
+                    }
+                    return false;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+async function commandBounceClassify(worker, message) {
+    // Classify bounce response message
+    try {
+        return await bounceClassifier.classify(message.data.message);
+    } catch (err) {
+        // ignore
+        logger.warn({
+            msg: 'Failed to classify bounce response',
+            bounceResponse: message.data.message,
+            err
+        });
+    }
+    return false;
+}
+
+// OpenAI integration commands - run in the main process, where the metrics live
+async function commandGenerateSummary(worker, message) {
+    const { openAiAPIKey, requestOpts } = await aiRequestOptions(message.data);
+    requestOpts.user = message.data.account;
+
+    // the configuration page's test runs are not production traffic
+    const counted = !message.data.options;
+    const model = requestOpts.gptModel;
+
+    try {
+        const response = await withRequestDeadline(message, signal =>
+            generateSummary(message.data.message, openAiAPIKey, Object.assign(requestOpts, { signal }))
+        );
+        const { usage } = response;
+
+        // the fitted email text the verbose mode adds stays out of the RPC and the log
+        delete usage.text;
+
+        if (counted) {
+            metrics.aiRequests.inc({ model, status: 'success' });
+            for (const type of ['prompt', 'completion']) {
+                const tokens = usage[`${type}Tokens`];
+                if (tokens) {
+                    metrics.aiTokens.inc({ model, type }, tokens);
+                }
+            }
+        }
+
+        return response;
+    } catch (err) {
+        if (counted) {
+            metrics.aiRequests.inc({ model, status: 'failure' });
+        }
+        throw err;
+    }
+}
+
+async function commandOpenAiListModels(worker, message) {
+    const { openAiAPIKey, requestOpts } = await aiRequestOptions(message.data);
+    return await withRequestDeadline(message, signal => openAiListModels(openAiAPIKey, Object.assign(requestOpts, { signal })));
+}
+
+async function commandThreads() {
+    return await getThreadsInfo();
+}
+
+async function commandApiWorkerScaling() {
+    // Reported on /admin/internals so operators can see when EENGINE_WORKERS_API > 1
+    // was requested but only one worker started, and why (reason: 'platform' | 'port').
+    return {
+        requested: apiWorkersRequested,
+        fallback: apiWorkersRequested > 1 && !apiWorkerReusePort,
+        reason: apiWorkerReusePortFallbackReason
+    };
+}
+
+async function commandWorkerAccounts(worker, message) {
+    // Get accounts assigned to a specific worker thread
+    const { threadId, page = 1, pageSize = 20 } = message;
+    const accounts = [];
+
+    // Find worker by threadId and get its assigned accounts
+    for (const [account, worker] of assigned) {
+        if (worker.threadId === threadId) {
+            accounts.push(account);
+        }
+    }
+
+    // Sort accounts for consistent ordering
+    accounts.sort((a, b) => a.localeCompare(b));
+
+    // Paginate
+    const totalAccounts = accounts.length;
+    const totalPages = Math.ceil(totalAccounts / pageSize) || 1;
+    const currentPage = Math.min(Math.max(1, page), totalPages);
+    const start = (currentPage - 1) * pageSize;
+    const pagedAccounts = accounts.slice(start, start + pageSize);
+
+    return {
+        accounts: pagedAccounts,
+        total: totalAccounts,
+        page: currentPage,
+        pageSize,
+        pages: totalPages
+    };
+}
+
+async function commandRateLimit(worker, message) {
+    return await checkRateLimit(message.key, message.count, message.allowed, message.windowSize);
+}
+
+async function commandUnsubscribe(worker, message) {
+    // Handle list unsubscribe
+    sendWebhook(message.account, LIST_UNSUBSCRIBE_NOTIFY, message.payload).catch(err =>
+        logger.error({ msg: 'Unsubscribe webhook failed', account: message.account, err })
+    );
+    return;
+}
+
+async function commandSubscribe(worker, message) {
+    // Handle list subscribe
+    sendWebhook(message.account, LIST_SUBSCRIBE_NOTIFY, message.payload).catch(err =>
+        logger.error({ msg: 'Subscribe webhook failed', account: message.account, err })
+    );
+    return;
+}
+
+async function commandNewAccount(worker, message) {
+    // Handle new account.
+    //
+    // `unassigned` is `false` until assignAccounts() loads the account list from Redis on
+    // its first run, which waits for an IMAP worker to report ready. An account created
+    // before that used to throw here and fail the request with a 500. Skipping the add is
+    // safe rather than merely quiet: the account is already in `ia:accounts` by the time
+    // this message is sent, so the first load picks it up.
+    if (unassigned) {
+        unassigned.add(message.account);
+    }
+    assignAccounts()
+        .then(() => sendWebhook(message.account, ACCOUNT_ADDED_NOTIFY, { account: message.account }))
+        .catch(err => logger.error({ msg: 'Account assignment failed', err }));
+    return;
+}
+
+async function commandDeleteAccount(worker, message) {
+    // Handle account deletion
+    //
+    // Guarded for the same reason as the `new` branch above, and here the throw was
+    // answered with a 500 for a deletion that had in fact succeeded: the account was
+    // already gone from Redis by the time this message was sent.
+    {
+        let assignedWorker = forgetAccount({ workerAssigned, assigned, unassigned }, message.account);
+        if (assignedWorker) {
+            // Notify worker to clean up
+            call(assignedWorker, message)
+                .then(() => logger.debug('Account cleanup completed'))
+                .catch(err => logger.error({ msg: 'Account cleanup failed', account: message.account, err }));
+        }
+    }
+    sendWebhook(message.account, ACCOUNT_DELETED_NOTIFY, { account: message.account }).catch(err =>
+        logger.error({ msg: 'Account deletion webhook failed', account: message.account, err })
+    );
+    return;
+}
+
+async function commandRunIndex() {
+    return runIndex;
+}
+
+async function commandForwardToAccountWorker(worker, message) {
+    // Forward to assigned worker
+    if (assigned.has(message.account)) {
+        let assignedWorker = assigned.get(message.account);
+        call(assignedWorker, message)
+            .then(() => logger.debug('Worker command completed'))
+            .catch(err => logger.error({ msg: 'Worker command failed', account: message.account, cmd: message.cmd, err }));
+    }
+    return;
+}
+
+async function commandReloadServer(worker, message) {
+    {
+        // Reload proxy server
+        let type = message.cmd.replace(/Reload$/, '');
+        let hasWorkers = workers.has(type) && workers.get(type).size;
+        if (hasWorkers) {
+            // Kill existing workers
+            for (let worker of workers.get(type).values()) {
+                worker.terminate();
+            }
+        } else {
+            // Spawn new worker if enabled
+            let serverEnabled = await settings.get(`${type}ServerEnabled`);
+            if (serverEnabled) {
+                await spawnWorker(type);
+            }
+        }
+    }
+    return NOT_HANDLED;
+}
+
+async function commandReloadCertificates(worker, message) {
+    {
+        // A renewed certificate, handed to a running listener. Forwarded to the worker
+        // rather than terminating it: a restart would cut every session in flight, and
+        // every listener can swap its secure context between handshakes. Sent to every
+        // worker of the type, not just the one that ordered the certificate: the
+        // reconciler is a singleton but the listeners are not.
+        let type = message.cmd.replace(/ReloadCertificates$/, '');
+        for (let worker of (workers.get(type) || new Set()).values()) {
+            call(worker, message).catch(err => logger.error({ msg: 'Failed to reload certificates', type, worker: worker.threadId, err }));
+        }
+    }
+    return NOT_HANDLED;
+}
+
+// IMAP operations - forward to assigned worker
+async function commandAccountOperation(worker, message) {
+    if (!assigned.has(message.account)) {
+        throw NO_ACTIVE_HANDLER_RESP_ERR;
+    }
+
+    let assignedWorker = assigned.get(message.account);
+
+    let transferList = [];
+    // Handle transferable objects
+    if (['getRawMessage', 'getAttachment'].includes(message.cmd) && message.port) {
+        transferList.push(message.port);
+    }
+    if (['submitMessage', 'queueMessage'].includes(message.cmd) && typeof message.raw === 'object') {
+        transferList.push(message.raw);
+    }
+
+    return await call(assignedWorker, message, transferList);
+}
+
+async function commandSubconnections(worker, message) {
+    // Get submission connections
+    if (!assigned.has(message.account)) {
+        return [];
+    }
+
+    let assignedWorker = assigned.get(message.account);
+    return await call(assignedWorker, message, []);
+}
+
+async function commandGooglePubSub(worker, message) {
+    // Notify all webhook workers about PubSub app changes
+    if (!workers.has('webhooks')) {
+        return true;
+    }
+    let proms = [];
+    for (let worker of workers.get('webhooks')) {
+        proms.push(
+            call(worker, message).catch(err => {
+                logger.error({ msg: 'Failed to notify webhook worker about PubSub change', cmd: message.cmd, err });
+            })
+        );
+    }
+    await Promise.all(proms);
+    return true;
+}
+
+async function commandExternalNotify(worker, message) {
+    // External notification (e.g., Google Push)
+    let proms = [];
+    for (let account of message.accounts || []) {
+        if (!assigned.has(account)) {
+            continue;
+        }
+
+        let assignedWorker = assigned.get(account);
+        proms.push(
+            call(assignedWorker, { cmd: 'externalNotify', account, historyId: message.historyId }).catch(err => {
+                logger.error({ msg: 'External notification failed', cmd: 'externalNotify', account, historyId: message.historyId, err });
+            })
+        );
+    }
+    await Promise.all(proms);
+    return true;
+}
+
+async function commandSubscriptionLifecycle(worker, message) {
+    // MS Graph subscription lifecycle event (reauthorizationRequired, subscriptionRemoved)
+    if (!assigned.has(message.account)) {
+        logger.warn({
+            msg: 'Subscription lifecycle event for unassigned account',
+            account: message.account,
+            event: message.event
+        });
+        return false;
+    }
+    let assignedWorker = assigned.get(message.account);
+    return await call(assignedWorker, {
+        cmd: 'subscriptionLifecycle',
+        account: message.account,
+        event: message.event,
+        timeout: message.timeout
+    });
+}
+
+// A Map rather than an object literal, so a command name like `constructor` or `__proto__` is an
+// unknown command and not an inherited property
+const COMMAND_HANDLERS = new Map([
+    ['metrics', commandMetrics],
+    ['structuredMetrics', commandStructuredMetrics],
+    ['imapWorkerCount', commandImapWorkerCount],
+    ['checkLicense', commandCheckLicense],
+    ['license', commandLicense],
+    ['updateLicense', commandUpdateLicense],
+    ['removeLicense', commandRemoveLicense],
+    ['kill-thread', commandKillThread],
+    ['snapshot-thread', commandSnapshotThread],
+    ['bounceClassify', commandBounceClassify],
+    ['generateSummary', commandGenerateSummary],
+    ['openAiListModels', commandOpenAiListModels],
+    ['threads', commandThreads],
+    ['apiWorkerScaling', commandApiWorkerScaling],
+    ['worker-accounts', commandWorkerAccounts],
+    ['rate-limit', commandRateLimit],
+    ['unsubscribe', commandUnsubscribe],
+    ['subscribe', commandSubscribe],
+    ['new', commandNewAccount],
+    ['delete', commandDeleteAccount],
+    ['runIndex', commandRunIndex],
+    ...['update', 'sync', 'pause', 'resume', 'reconnect'].map(cmd => [cmd, commandForwardToAccountWorker]),
+    ['smtpReload', commandReloadServer],
+    ['imapProxyReload', commandReloadServer],
+    ...['apiReloadCertificates', 'smtpReloadCertificates', 'imapProxyReloadCertificates'].map(cmd => [cmd, commandReloadCertificates]),
+    ...[
+        'submitMessage',
+        'queueMessage',
+        'listMessages',
+        'getRawMessage',
+        'getText',
+        'getMessage',
+        'getMessages',
+        'updateMessage',
+        'updateMessages',
+        'listMailboxes',
+        'moveMessage',
+        'moveMessages',
+        'deleteMessage',
+        'deleteMessages',
+        'getQuota',
+        'createMailbox',
+        'modifyMailbox',
+        'deleteMailbox',
+        'uploadMessage',
+        'getAttachment',
+        'listSignatures'
+    ].map(cmd => [cmd, commandAccountOperation]),
+    ['subconnections', commandSubconnections],
+    ['googlePubSub', commandGooglePubSub],
+    ['googlePubSubRemove', commandGooglePubSub],
+    ['externalNotify', commandExternalNotify],
+    ['subscriptionLifecycle', commandSubscriptionLifecycle]
+]);
+
+async function onCommand(worker, message) {
+    const handler = COMMAND_HANDLERS.get(message.cmd);
+    if (handler) {
+        return await handler(worker, message);
+    }
+
+    return NOT_HANDLED;
 }
 
 // Metrics collection results
@@ -3288,13 +3336,11 @@ const settleWorkerFleet = async (label, promises, logFields) => {
 };
 
 /**
- * Main application startup
- * @returns {Promise<void>}
+ * Loads the license from the configured license file and from EENGINE_PREPARED_LICENSE. Either one
+ * failing is fatal: the returned object carries what startApplication() returns in that case
+ * @returns {Promise<Object|null>} `{ result }` when startup has to stop, otherwise null
  */
-const startApplication = async () => {
-    // Generate unique run index
-    runIndex = await redis.hincrby(`${REDIS_PREFIX}settings`, 'run', 1);
-
+const importConfiguredLicenses = async () => {
     // Process license file if provided
     if (config.licensePath) {
         try {
@@ -3312,7 +3358,7 @@ const startApplication = async () => {
             await setLicense(licenseData, licenseFile);
         } catch (err) {
             logger.fatal({ msg: 'License verification failed', source: config.licensePath, err });
-            return logger.flush(() => process.exit(13));
+            return { result: logger.flush(() => process.exit(13)) };
         }
     }
 
@@ -3326,10 +3372,18 @@ const startApplication = async () => {
             }
         } catch (err) {
             logger.fatal({ msg: 'License import failed', source: 'import', err });
-            return logger.flush(() => process.exit(13));
+            return { result: logger.flush(() => process.exit(13)) };
         }
     }
 
+    return null;
+};
+
+/**
+ * Activates the license stored in Redis, if there is a valid one
+ * @returns {Promise<void>}
+ */
+const loadStoredLicense = async () => {
     // Load license from database
     let licenseFile = await redis.hget(`${REDIS_PREFIX}settings`, 'license');
     if (licenseFile) {
@@ -3352,12 +3406,13 @@ const startApplication = async () => {
     if (!licenseInfo.active) {
         logger.error({ msg: 'No active license. Running in limited mode.' });
     }
+};
 
-    // Check for updates
-    processCheckUpgrade().catch(err => {
-        logger.warn({ msg: 'Update check failed', err });
-    });
-
+/**
+ * One-time data migrations that run before the workers spawn. None of them is fatal
+ * @returns {Promise<void>}
+ */
+const runStartupMigrations = async () => {
     // Move any settings-based OAuth2 configuration into the app registry before workers spawn.
     // A failure is not fatal: the source settings keys stay in place, so the migration retries
     // on the next startup (the legacy config is simply not visible until it succeeds).
@@ -3382,7 +3437,13 @@ const startApplication = async () => {
     } catch (err) {
         logger.error({ msg: 'Failed to sweep the retired bounce store', err });
     }
+};
 
+/**
+ * Applies EENGINE_SETTINGS and records which keys it manages
+ * @returns {Promise<void>}
+ */
+const applyPreparedSettings = async () => {
     // Apply prepared settings
     if (preparedSettings) {
         logger.debug({ msg: 'Applying configuration', settingsKeys: Object.keys(preparedSettings) });
@@ -3398,13 +3459,13 @@ const startApplication = async () => {
     } else {
         await settings.clear('preparedSettingsKeys');
     }
+};
 
-    // Initialize required settings
-    let existingServiceId = await settings.get('serviceId');
-    if (existingServiceId === null) {
-        await settings.set('serviceId', crypto.randomBytes(16).toString('hex'));
-    }
-
+/**
+ * Seeds the SMTP server settings that have no stored value yet
+ * @returns {Promise<void>}
+ */
+const seedSmtpServerSettings = async () => {
     // SMTP server settings
     let existingSmtpEnabled = await settings.get('smtpServerEnabled');
     if (existingSmtpEnabled === null) {
@@ -3435,7 +3496,13 @@ const startApplication = async () => {
     if (existingSmtpProxy === null) {
         await settings.set('smtpServerProxy', SMTP_PROXY);
     }
+};
 
+/**
+ * Seeds the IMAP proxy settings that have no stored value yet
+ * @returns {Promise<void>}
+ */
+const seedImapProxySettings = async () => {
     // IMAP proxy settings
     let existingImapProxyEnabled = await settings.get('imapProxyServerEnabled');
     if (existingImapProxyEnabled === null) {
@@ -3461,7 +3528,13 @@ const startApplication = async () => {
     if (existingImapProxyProxy === null) {
         await settings.set('imapProxyServerProxy', IMAP_PROXY_PROXY);
     }
+};
 
+/**
+ * Seeds the API, service, webhook, script and token settings that have no stored value yet
+ * @returns {Promise<void>}
+ */
+const seedServiceSettings = async () => {
     // API proxy settings
     let existingEnableApiProxy = await settings.get('enableApiProxy');
     if (existingEnableApiProxy === null) {
@@ -3508,7 +3581,29 @@ const startApplication = async () => {
         // disableTokens is the inverse of REQUIRE_API_AUTH
         await settings.set('disableTokens', !REQUIRE_API_AUTH);
     }
+};
 
+/**
+ * Seeds every setting that has no stored value yet, in a fixed order
+ * @returns {Promise<void>}
+ */
+const seedDefaultSettings = async () => {
+    // Initialize required settings
+    let existingServiceId = await settings.get('serviceId');
+    if (existingServiceId === null) {
+        await settings.set('serviceId', crypto.randomBytes(16).toString('hex'));
+    }
+
+    await seedSmtpServerSettings();
+    await seedImapProxySettings();
+    await seedServiceSettings();
+};
+
+/**
+ * Imports EENGINE_PREPARED_TOKEN and EENGINE_PREPARED_PASSWORD. A failure is logged, not fatal
+ * @returns {Promise<void>}
+ */
+const importPreparedCredentials = async () => {
     // Import prepared token
     if (preparedToken) {
         try {
@@ -3546,7 +3641,13 @@ const startApplication = async () => {
             logger.error({ msg: 'Password import failed', err });
         }
     }
+};
 
+/**
+ * Warns about a missing encryption secret and makes sure the admin session cookie key exists
+ * @returns {Promise<void>}
+ */
+const ensureInstanceSecrets = async () => {
     if (!(await getSecret())) {
         // Every consumer of the secret stores the value as it is when there is none, so without
         // it the account passwords, OAuth2 tokens, webhook secrets and TLS keys sit in Redis in
@@ -3562,16 +3663,13 @@ const startApplication = async () => {
         cookiePassword = crypto.randomBytes(32).toString('base64');
         await settings.set('cookiePassword', cookiePassword);
     }
+};
 
-    // Redis reconnection is now handled by workers themselves
-    // Workers will exit when Redis reconnects after disconnection,
-    // and the server will automatically restart them
-
-    // Initialize HTTP proxy agent from settings/env vars before spawning workers
-    await reloadHttpProxyAgent();
-
-    // -- START WORKER THREADS
-
+/**
+ * Starts the API workers, several sharing the listen port when SO_REUSEPORT allows it
+ * @returns {Promise<void>}
+ */
+const startApiWorkers = async () => {
     // Start API server first for health checks.
     // Optionally run several API workers that share the listen port via SO_REUSEPORT.
     apiWorkersRequested = config.workers.api;
@@ -3622,10 +3720,13 @@ const startApplication = async () => {
     // `attempted` can be below `requested` after the SO_REUSEPORT fallback above
     let apiReady = (await settleWorkerFleet('API', apiPromises, { requested: apiWorkersRequested, attempted: apiPromises.length })).length;
     logger.info({ msg: 'API workers started', requested: apiWorkersRequested, ready: apiReady });
+};
 
-    // Small delay to allow API to start
-    await new Promise(r => setTimeout(r, 100));
-
+/**
+ * Starts the IMAP workers and assigns the accounts to them
+ * @returns {Promise<void>}
+ */
+const startImapWorkers = async () => {
     // Start IMAP workers
     let workerPromises = [];
     for (let i = 0; i < config.workers.imap; i++) {
@@ -3648,7 +3749,14 @@ const startApplication = async () => {
     } catch (err) {
         logger.error({ msg: 'Initial account assignment failed', err });
     }
+};
 
+/**
+ * Starts the webhook, submission and export workers, then the SMTP server and the IMAP proxy if
+ * they are enabled
+ * @returns {Promise<void>}
+ */
+const startBackgroundWorkers = async () => {
     // Start webhook workers
     for (let i = 0; i < config.workers.webhooks; i++) {
         await spawnWorker('webhooks');
@@ -3683,7 +3791,12 @@ const startApplication = async () => {
     if (await settings.get('imapProxyServerEnabled')) {
         await spawnWorker('imapProxy');
     }
+};
 
+/**
+ * Creates and starts the background metrics collector
+ */
+const startMetricsCollector = () => {
     // Initialize and start the metrics collector after all workers are ready
     metricsCollector = new MetricsCollector({
         logger,
@@ -3725,6 +3838,58 @@ const startApplication = async () => {
     metricsCollector.start();
 
     logger.info({ msg: 'Background metrics collector initialized and started' });
+};
+
+/**
+ * Main application startup
+ * @returns {Promise<void>}
+ */
+const startApplication = async () => {
+    // Generate unique run index
+    runIndex = await redis.hincrby(`${REDIS_PREFIX}settings`, 'run', 1);
+
+    // A license that was explicitly configured but cannot be loaded stops the startup
+    const licenseFailure = await importConfiguredLicenses();
+    if (licenseFailure) {
+        return licenseFailure.result;
+    }
+
+    await loadStoredLicense();
+
+    // Check for updates
+    processCheckUpgrade().catch(err => {
+        logger.warn({ msg: 'Update check failed', err });
+    });
+
+    await runStartupMigrations();
+
+    await applyPreparedSettings();
+
+    await seedDefaultSettings();
+
+    await importPreparedCredentials();
+
+    await ensureInstanceSecrets();
+
+    // Redis reconnection is now handled by workers themselves
+    // Workers will exit when Redis reconnects after disconnection,
+    // and the server will automatically restart them
+
+    // Initialize HTTP proxy agent from settings/env vars before spawning workers
+    await reloadHttpProxyAgent();
+
+    // -- START WORKER THREADS
+
+    await startApiWorkers();
+
+    // Small delay to allow API to start
+    await new Promise(r => setTimeout(r, 100));
+
+    await startImapWorkers();
+
+    await startBackgroundWorkers();
+
+    startMetricsCollector();
 };
 
 // Start the application
