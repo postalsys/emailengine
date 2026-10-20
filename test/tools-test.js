@@ -219,6 +219,18 @@ test('Tools utility tests', async t => {
         assert.strictEqual(tools.getWorkerCount(NaN), 0);
     });
 
+    await t.test('workerPoolSize() reads the environment, then the configuration file', async () => {
+        const cpuCount = os.cpus().length;
+        assert.strictEqual(tools.workerPoolSize('cpus', 2), cpuCount, 'the queue worker counts accept cpus too');
+        assert.strictEqual(tools.workerPoolSize('3', 2), 3);
+        assert.strictEqual(tools.workerPoolSize(undefined, 2), 2);
+        assert.strictEqual(tools.workerPoolSize('invalid', 2), 2, 'an unreadable value falls back to the configuration file');
+        assert.strictEqual(tools.workerPoolSize('0', 2), 2);
+        assert.strictEqual(tools.workerPoolSize(undefined, 'cpus'), cpuCount);
+        assert.strictEqual(tools.workerPoolSize(undefined, undefined), 1);
+        assert.strictEqual(tools.workerPoolSize('2.7', 1), 2, 'a fraction is rounded down');
+    });
+
     // selectRendezvousNode tests
     await t.test('selectRendezvousNode() returns consistent results for same key', async () => {
         const workers = [{ threadId: 1 }, { threadId: 2 }, { threadId: 3 }];

@@ -76,6 +76,7 @@ const {
     getByteSize,
     getBoolean,
     getWorkerCount,
+    workerPoolSize,
     selectRendezvousNode,
     checkLicense,
     checkForUpgrade,
@@ -226,11 +227,11 @@ config.api.maxSize = getByteSize(readEnvValue('EENGINE_MAX_SIZE') || config.api.
 config.dbs.redis = readEnvValue('EENGINE_REDIS') || readEnvValue('REDIS_URL') || config.dbs.redis;
 
 config.workers.imap = getWorkerCount(readEnvValue('EENGINE_WORKERS') || config.workers.imap) || 4;
-config.workers.webhooks = Number(readEnvValue('EENGINE_WORKERS_WEBHOOKS')) || config.workers.webhooks || 1;
-config.workers.submit = Number(readEnvValue('EENGINE_WORKERS_SUBMIT')) || config.workers.submit || 1;
+config.workers.webhooks = workerPoolSize(readEnvValue('EENGINE_WORKERS_WEBHOOKS'), config.workers.webhooks);
+config.workers.submit = workerPoolSize(readEnvValue('EENGINE_WORKERS_SUBMIT'), config.workers.submit);
 // The Workers page has labelled this row EENGINE_WORKERS_EXPORT since the export worker shipped, while
 // only --workers.export and [workers] export were read, so an operator who set it saw no effect
-config.workers.export = Number(readEnvValue('EENGINE_WORKERS_EXPORT')) || config.workers.export || 1;
+config.workers.export = workerPoolSize(readEnvValue('EENGINE_WORKERS_EXPORT'), config.workers.export);
 // API worker count. Values >1 require SO_REUSEPORT (Linux); on unsupported platforms it falls back to 1 at startup.
 // Uses getWorkerCount() for parity with EENGINE_WORKERS (supports "cpus"); Math.floor avoids a fractional
 // count over-spawning, Math.max keeps at least one API worker.
