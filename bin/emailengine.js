@@ -366,6 +366,447 @@ function generateCommandHelp(cmdName) {
     return lines.join('\n');
 }
 
+function runEncrypt() {
+    process.title = 'emailengine-encrypt';
+    // encrypt account passwords
+    require('../encrypt');
+}
+
+function runScan() {
+    process.title = 'emailengine-scan';
+    // Scan Redis keys
+    require('../scan');
+}
+
+function runPassword() {
+    // Update admin password
+    let password = argv.password || argv.p || crypto.randomBytes(16).toString('hex');
+
+    if (!password || typeof password !== 'string' || password.length < 8) {
+        console.error('Password must be at least 8 characters');
+        return process.exit(1);
+    }
+
+    let updatePassword = async () => {
+        let passwordHash = await pbkdf2.hash(password);
+
+        let authData = await settings.get('authData');
+
+        authData = authData || {};
+        authData.user = authData.user || 'admin';
+        authData.password = passwordHash;
+        authData.passwordVersion = Date.now();
+
+        await settings.set('authData', authData);
+        await settings.set('totpEnabled', false);
+        await settings.set('totpSeed', false);
+
+        let passkeys = require('../lib/passkeys');
+        await passkeys.deleteAllCredentials(authData.user);
+
+        return { password, passwordHash };
+    };
+
+    updatePassword()
+        .then(res => {
+            let returnValue = argv.hash || argv.r ? Buffer.from(res.passwordHash).toString('base64url') : res.password;
+            process.stdout.write(returnValue);
+            // The password is stored, and every existing session is ended by the
+            // version bump; the login requirement itself is installed by each API
+            // worker at startup, so an instance that was running without a password
+            // keeps serving the admin pages without one until it is restarted
+            process.stderr.write('\nRestart running EmailEngine instances for the new password to take effect\n');
+            return process.exit(0);
+        })
+        .catch(err => {
+            console.error('Failed to process account password');
+            console.error(err);
+            return process.exit(1);
+        });
+}
+
+function runHelp() {
+    // Show help for specific command or general help
+    let helpCmd = ((argv._ && argv._[1]) || '').toLowerCase();
+    if (helpCmd) {
+        let cmdHelp = generateCommandHelp(helpCmd);
+        if (cmdHelp) {
+            console.error(cmdHelp);
+        } else {
+            console.error(`Unknown command: ${helpCmd}`);
+            console.error('');
+            console.error('Run "emailengine help" to see available commands.');
+            process.exit(1);
+        }
+    } else {
+        console.error(generateHelp());
+    }
+    process.exit();
+}
+
+function runVersion() {
+    // Show version
+    console.log(`EmailEngine v${packageData.version} (${packageData.license})`);
+    return process.exit();
+}
+
+function runLicenseExport() {
+    return settings
+        .exportLicense()
+        .then(license => {
+            process.stdout.write(license);
+            return process.exit(0);
+        })
+        .catch(err => {
+            console.error('Failed to load license information');
+            console.error(err);
+            return process.exit(1);
+        });
+}
+
+function runLicenseImport() {
+    return settings
+        .importLicense((argv.license || argv.l || '').toString(), checkLicense)
+        .then(result => {
+            if (!result) {
+                console.error('License key was not imported');
+            } else {
+                console.error('License key was imported');
+            }
+            return process.exit(0);
+        })
+        .catch(err => {
+            console.error(`Failed to import license information${err.code ? ` [${err.code}]` : ''}`);
+            console.error(err);
+            return process.exit(1);
+        });
+}
+
+function runLicenseShow() {
+    fs.readFile(pathlib.join(__dirname, '..', 'LICENSE_EMAILENGINE.txt'), (err, licenseComm) => {
+        if (err) {
+            console.error('Failed to load license information');
+            console.error(err);
+            return process.exit(1);
+        }
+
+        console.error('EmailEngine License');
+        console.error('===================');
+
+        // if only stdout is read, only this line is is seen:
+        process.stdout.write(`EmailEngine v${packageData.version}`);
+
+        console.error(`\n(c) 2020-${new Date().getFullYear()} Postal Systems`);
+        console.error(`${packageData.license}, full text follows`);
+        console.error('');
+
+        console.error('-'.repeat(78));
+        console.error('');
+
+        console.error(licenseComm.toString().trim());
+        console.error('-'.repeat(78));
+        console.error('');
+
+        process.exit();
+    });
+}
+
+function runLicense() {
+    let licenseCmd = ((argv._ && argv._[1]) || '').toLowerCase();
+    if (licenseCmd === 'export') {
+        return runLicenseExport();
+    }
+
+    if (licenseCmd === 'import') {
+        return runLicenseImport();
+    }
+
+    runLicenseShow();
+}
+
+// Resolves the `--scope` arguments of `tokens issue` into the scopes and the permissions record the
+// token is minted with, exiting the process on any value that cannot be issued
+function resolveTokenIssueScopes() {
+    const { MCP_SECTIONS, mcpGrantsFor, mcpLevel } = require('../lib/token-permission-view');
+
+    // The two MCP scopes, by the name typed on the command line. A token
+    // holding one of them always carries the pair list of a named access
+    // level, exactly as the admin form and the consent prompt mint it: a
+    // credential issued for the tools of today must not grow to include a
+    // tool shipped next release. The level is appended to the scope with a
+    // colon (`--scope mcp-manage:observe`) and is REQUIRED: there is no
+    // consent prompt here to show what a level allows, and the one thing an
+    // implicit default must not do is pick the widest one.
+    const mcpScopes = new Map(Object.entries(MCP_SECTIONS).map(([key, section]) => [section.scope, { key, section }]));
+
+    let allowedScopes = ['*', 'api', 'metrics', 'smtp', 'imap-proxy'].concat([...mcpScopes.keys()]);
+    let requestedScopes = []
+        .concat(argv.scope || [])
+        .concat(argv.s || [])
+        .map(entry => (entry || '').toString().toLowerCase());
+
+    if (!requestedScopes.length) {
+        requestedScopes = ['*'];
+    }
+
+    let scopes = [];
+    let mcpChoice = {};
+
+    for (let entry of requestedScopes) {
+        let separator = entry.indexOf(':');
+        let scope = separator < 0 ? entry : entry.slice(0, separator);
+        let level = separator < 0 ? null : entry.slice(separator + 1);
+
+        if (!allowedScopes.includes(scope)) {
+            console.error(`Unknown scope: ${scope}`);
+            console.error(`Allowed scopes: "${allowedScopes.join('", "')}"`);
+            process.exit(1);
+        }
+
+        if (!mcpScopes.has(scope)) {
+            if (level !== null) {
+                console.error(`Scope "${scope}" does not take an access level`);
+                process.exit(1);
+            }
+            scopes.push(scope);
+            continue;
+        }
+
+        const { key, section } = mcpScopes.get(scope);
+        // mcpLevel() is the shared vocabulary, and it answers null both for a
+        // name the section does not have and for `none` - which is what makes
+        // `--scope mcp:none`, asking for a scope and declining it in the same
+        // breath, an error here rather than a token that grants nothing
+        if (!mcpLevel(section, level)) {
+            const levelNames = section.levels.map(sectionLevel => sectionLevel.value).join('", "');
+            console.error(level === null ? `Scope "${scope}" needs an access level, as "${scope}:<level>"` : `Unknown ${scope} access level: ${level}`);
+            console.error(`Allowed levels: "${levelNames}"`);
+            process.exit(1);
+        }
+        mcpChoice[key] = level;
+    }
+
+    let permissions;
+    if (Object.keys(mcpChoice).length) {
+        // The admin form hides the level editor as soon as a non-MCP scope is
+        // ticked, because one permissions record covers the whole token and a
+        // level's pair list would narrow the REST API too. There is no way to
+        // type a custom record here, so the combination is refused rather
+        // than silently resolved one way or the other.
+        if (scopes.length) {
+            console.error(`An MCP scope cannot be combined with "${scopes.join('", "')}" on the command line`);
+            console.error('Issue separate tokens, or use POST /v1/tokens to set an explicit permissions record');
+            process.exit(1);
+        }
+        ({ scopes, permissions } = mcpGrantsFor(mcpChoice));
+    }
+
+    return { scopes, permissions };
+}
+
+function runTokensIssue(tokens) {
+    let { scopes, permissions } = resolveTokenIssueScopes();
+
+    let description = (argv.description || argv.d || '').toString();
+    if (!description) {
+        description = `Generated at ${new Date().toISOString()}`;
+    }
+    let account = argv.account || argv.a || '';
+    tokens
+        .provision({
+            account,
+            description,
+            scopes,
+            permissions,
+            nolog: true
+        })
+        .then(token => {
+            process.stdout.write(token);
+            process.exit();
+        })
+        .catch(err => {
+            console.error(err);
+            process.exit(1);
+        });
+}
+
+function runTokensExport(tokens) {
+    let token = (argv.token || argv.t || '').toString();
+    tokens
+        .getRawData(token)
+        .then(tokenData => {
+            let encoded = msgpack.encode(tokenData);
+            process.stdout.write(encoded.toString('base64url'));
+            process.exit();
+        })
+        .catch(err => {
+            console.error(err);
+            process.exit(1);
+        });
+}
+
+function runTokensImport(tokens) {
+    let rawToken = (argv.token || argv.t || '').toString();
+    let tokenData;
+    try {
+        tokenData = msgpack.decode(Buffer.from(rawToken, 'base64url'));
+    } catch (err) {
+        console.error(`Unable to decode token data: ${err.message}`);
+        return process.exit(1);
+    }
+    tokens
+        .setRawData(tokenData)
+        .then(result => {
+            if (!result) {
+                console.error('Token was not imported');
+            } else {
+                console.error('Token was imported');
+            }
+            process.exit();
+        })
+        .catch(err => {
+            console.error(err);
+            process.exit(1);
+        });
+}
+
+const TOKENS_COMMANDS = new Map([
+    ['issue', runTokensIssue],
+    ['export', runTokensExport],
+    ['import', runTokensImport]
+]);
+
+function runTokens() {
+    const tokens = require('../lib/tokens');
+    let tokensCmd = ((argv._ && argv._[1]) || '').toLowerCase();
+
+    let handler = TOKENS_COMMANDS.get(tokensCmd);
+    if (handler) {
+        return handler(tokens);
+    }
+
+    // Nothing else would end the process: the Redis connection opened on load
+    // kept it running with no output
+    console.error(tokensCmd ? `Unknown tokens command: ${tokensCmd}` : 'A tokens command is required');
+    console.error('');
+    console.error(generateCommandHelp('tokens'));
+    return process.exit(1);
+}
+
+function runWebhooks() {
+    generateWebhookTable();
+    process.exit(1);
+}
+
+function runExport() {
+    getSecret()
+        .then(secret => {
+            let account = (argv.account || argv.a || '').toString();
+            let accountObject = new Account({
+                redis,
+                account,
+                secret
+            });
+            return accountObject.loadAccountData(account, false);
+        })
+        .then(accountData => {
+            process.stdout.write(JSON.stringify(accountData));
+            process.exit(0);
+        })
+        .catch(err => {
+            console.error(err);
+            process.exit(1);
+        });
+}
+
+function runCheckBounce() {
+    process.title = 'emailengine-check-bounce';
+    const { bounceDetect } = require('../lib/bounce-detect');
+    const bounceClassifier = require('@postalsys/bounce-classifier');
+
+    let emlPath = argv._[1] || argv.file || argv.f;
+
+    if (!emlPath) {
+        console.error('Error: EML file path is required');
+        console.error('Usage: emailengine check-bounce <path-to-eml-file>');
+        console.error('       emailengine check-bounce --file <path-to-eml-file>');
+        return process.exit(1);
+    }
+
+    // Resolve the path
+    emlPath = pathlib.resolve(emlPath);
+
+    // Check if file exists
+    if (!fs.existsSync(emlPath)) {
+        console.error(`Error: File not found: ${emlPath}`);
+        return process.exit(1);
+    }
+
+    const checkBounce = async () => {
+        // Initialize the bounce classifier
+        await bounceClassifier.initialize();
+
+        // Read the EML file
+        const emlStream = fs.createReadStream(emlPath);
+
+        // Detect bounce information
+        const bounce = await bounceDetect(emlStream);
+
+        // Classify the bounce if we have a response message
+        if (bounce?.response?.message) {
+            const classification = await bounceClassifier.classify(bounce.response.message);
+
+            if (classification?.label) {
+                bounce.response.category = classification.label;
+            }
+            if (classification?.action) {
+                bounce.response.recommendedAction = classification.action;
+            }
+            if (classification?.blocklist) {
+                bounce.response.blocklist = classification.blocklist;
+            }
+            if (classification?.retryAfter) {
+                bounce.response.retryAfter = classification.retryAfter;
+            }
+        }
+
+        return bounce;
+    };
+
+    checkBounce()
+        .then(result => {
+            process.stdout.write(JSON.stringify(result, null, 2));
+            process.stdout.write('\n');
+            return process.exit(0);
+        })
+        .catch(err => {
+            console.error('Failed to analyze bounce email');
+            console.error(err);
+            return process.exit(1);
+        });
+}
+
+function runServer() {
+    // run normally
+    require('../server');
+}
+
+// A Map rather than an object literal, so a command typed as `constructor` or `__proto__` is an
+// unknown command and not an inherited property
+const COMMAND_HANDLERS = new Map([
+    ['encrypt', runEncrypt],
+    ['scan', runScan],
+    ['password', runPassword],
+    ['help', runHelp],
+    ['version', runVersion],
+    ['license', runLicense],
+    ['tokens', runTokens],
+    ['webhooks', runWebhooks],
+    ['export', runExport],
+    ['check-bounce', runCheckBounce],
+    ['', runServer]
+]);
+
 function run() {
     let cmd = ((argv._ && argv._[0]) || '').toLowerCase();
     if (!cmd) {
@@ -378,431 +819,16 @@ function run() {
         }
     }
 
-    switch (cmd) {
-        case 'encrypt':
-            process.title = 'emailengine-encrypt';
-            // encrypt account passwords
-            require('../encrypt');
-            break;
-
-        case 'scan':
-            process.title = 'emailengine-scan';
-            // Scan Redis keys
-            require('../scan');
-            break;
-
-        case 'password':
-            {
-                // Update admin password
-                let password = argv.password || argv.p || crypto.randomBytes(16).toString('hex');
-
-                if (!password || typeof password !== 'string' || password.length < 8) {
-                    console.error('Password must be at least 8 characters');
-                    return process.exit(1);
-                }
-
-                let updatePassword = async () => {
-                    let passwordHash = await pbkdf2.hash(password);
-
-                    let authData = await settings.get('authData');
-
-                    authData = authData || {};
-                    authData.user = authData.user || 'admin';
-                    authData.password = passwordHash;
-                    authData.passwordVersion = Date.now();
-
-                    await settings.set('authData', authData);
-                    await settings.set('totpEnabled', false);
-                    await settings.set('totpSeed', false);
-
-                    let passkeys = require('../lib/passkeys');
-                    await passkeys.deleteAllCredentials(authData.user);
-
-                    return { password, passwordHash };
-                };
-
-                updatePassword()
-                    .then(res => {
-                        let returnValue = argv.hash || argv.r ? Buffer.from(res.passwordHash).toString('base64url') : res.password;
-                        process.stdout.write(returnValue);
-                        // The password is stored, and every existing session is ended by the
-                        // version bump; the login requirement itself is installed by each API
-                        // worker at startup, so an instance that was running without a password
-                        // keeps serving the admin pages without one until it is restarted
-                        process.stderr.write('\nRestart running EmailEngine instances for the new password to take effect\n');
-                        return process.exit(0);
-                    })
-                    .catch(err => {
-                        console.error('Failed to process account password');
-                        console.error(err);
-                        return process.exit(1);
-                    });
-            }
-            break;
-
-        case 'help':
-            {
-                // Show help for specific command or general help
-                let helpCmd = ((argv._ && argv._[1]) || '').toLowerCase();
-                if (helpCmd) {
-                    let cmdHelp = generateCommandHelp(helpCmd);
-                    if (cmdHelp) {
-                        console.error(cmdHelp);
-                    } else {
-                        console.error(`Unknown command: ${helpCmd}`);
-                        console.error('');
-                        console.error('Run "emailengine help" to see available commands.');
-                        process.exit(1);
-                    }
-                } else {
-                    console.error(generateHelp());
-                }
-                process.exit();
-            }
-            break;
-
-        case 'version':
-            // Show version
-            console.log(`EmailEngine v${packageData.version} (${packageData.license})`);
-            return process.exit();
-
-        case 'license':
-            {
-                let licenseCmd = ((argv._ && argv._[1]) || '').toLowerCase();
-                if (licenseCmd === 'export') {
-                    return settings
-                        .exportLicense()
-                        .then(license => {
-                            process.stdout.write(license);
-                            return process.exit(0);
-                        })
-                        .catch(err => {
-                            console.error('Failed to load license information');
-                            console.error(err);
-                            return process.exit(1);
-                        });
-                }
-
-                if (licenseCmd === 'import') {
-                    return settings
-                        .importLicense((argv.license || argv.l || '').toString(), checkLicense)
-                        .then(result => {
-                            if (!result) {
-                                console.error('License key was not imported');
-                            } else {
-                                console.error('License key was imported');
-                            }
-                            return process.exit(0);
-                        })
-                        .catch(err => {
-                            console.error(`Failed to import license information${err.code ? ` [${err.code}]` : ''}`);
-                            console.error(err);
-                            return process.exit(1);
-                        });
-                }
-
-                fs.readFile(pathlib.join(__dirname, '..', 'LICENSE_EMAILENGINE.txt'), (err, licenseComm) => {
-                    if (err) {
-                        console.error('Failed to load license information');
-                        console.error(err);
-                        return process.exit(1);
-                    }
-
-                    console.error('EmailEngine License');
-                    console.error('===================');
-
-                    // if only stdout is read, only this line is is seen:
-                    process.stdout.write(`EmailEngine v${packageData.version}`);
-
-                    console.error(`\n(c) 2020-${new Date().getFullYear()} Postal Systems`);
-                    console.error(`${packageData.license}, full text follows`);
-                    console.error('');
-
-                    console.error('-'.repeat(78));
-                    console.error('');
-
-                    console.error(licenseComm.toString().trim());
-                    console.error('-'.repeat(78));
-                    console.error('');
-
-                    process.exit();
-                });
-            }
-            break;
-
-        case 'tokens':
-            {
-                const tokens = require('../lib/tokens');
-                let tokensCmd = ((argv._ && argv._[1]) || '').toLowerCase();
-                switch (tokensCmd) {
-                    case 'issue':
-                        {
-                            const { MCP_SECTIONS, mcpGrantsFor, mcpLevel } = require('../lib/token-permission-view');
-
-                            // The two MCP scopes, by the name typed on the command line. A token
-                            // holding one of them always carries the pair list of a named access
-                            // level, exactly as the admin form and the consent prompt mint it: a
-                            // credential issued for the tools of today must not grow to include a
-                            // tool shipped next release. The level is appended to the scope with a
-                            // colon (`--scope mcp-manage:observe`) and is REQUIRED: there is no
-                            // consent prompt here to show what a level allows, and the one thing an
-                            // implicit default must not do is pick the widest one.
-                            const mcpScopes = new Map(Object.entries(MCP_SECTIONS).map(([key, section]) => [section.scope, { key, section }]));
-
-                            let allowedScopes = ['*', 'api', 'metrics', 'smtp', 'imap-proxy'].concat([...mcpScopes.keys()]);
-                            let requestedScopes = []
-                                .concat(argv.scope || [])
-                                .concat(argv.s || [])
-                                .map(entry => (entry || '').toString().toLowerCase());
-
-                            if (!requestedScopes.length) {
-                                requestedScopes = ['*'];
-                            }
-
-                            let scopes = [];
-                            let mcpChoice = {};
-
-                            for (let entry of requestedScopes) {
-                                let separator = entry.indexOf(':');
-                                let scope = separator < 0 ? entry : entry.slice(0, separator);
-                                let level = separator < 0 ? null : entry.slice(separator + 1);
-
-                                if (!allowedScopes.includes(scope)) {
-                                    console.error(`Unknown scope: ${scope}`);
-                                    console.error(`Allowed scopes: "${allowedScopes.join('", "')}"`);
-                                    process.exit(1);
-                                }
-
-                                if (!mcpScopes.has(scope)) {
-                                    if (level !== null) {
-                                        console.error(`Scope "${scope}" does not take an access level`);
-                                        process.exit(1);
-                                    }
-                                    scopes.push(scope);
-                                    continue;
-                                }
-
-                                const { key, section } = mcpScopes.get(scope);
-                                // mcpLevel() is the shared vocabulary, and it answers null both for a
-                                // name the section does not have and for `none` - which is what makes
-                                // `--scope mcp:none`, asking for a scope and declining it in the same
-                                // breath, an error here rather than a token that grants nothing
-                                if (!mcpLevel(section, level)) {
-                                    const levelNames = section.levels.map(sectionLevel => sectionLevel.value).join('", "');
-                                    console.error(
-                                        level === null
-                                            ? `Scope "${scope}" needs an access level, as "${scope}:<level>"`
-                                            : `Unknown ${scope} access level: ${level}`
-                                    );
-                                    console.error(`Allowed levels: "${levelNames}"`);
-                                    process.exit(1);
-                                }
-                                mcpChoice[key] = level;
-                            }
-
-                            let permissions;
-                            if (Object.keys(mcpChoice).length) {
-                                // The admin form hides the level editor as soon as a non-MCP scope is
-                                // ticked, because one permissions record covers the whole token and a
-                                // level's pair list would narrow the REST API too. There is no way to
-                                // type a custom record here, so the combination is refused rather
-                                // than silently resolved one way or the other.
-                                if (scopes.length) {
-                                    console.error(`An MCP scope cannot be combined with "${scopes.join('", "')}" on the command line`);
-                                    console.error('Issue separate tokens, or use POST /v1/tokens to set an explicit permissions record');
-                                    process.exit(1);
-                                }
-                                ({ scopes, permissions } = mcpGrantsFor(mcpChoice));
-                            }
-
-                            let description = (argv.description || argv.d || '').toString();
-                            if (!description) {
-                                description = `Generated at ${new Date().toISOString()}`;
-                            }
-                            let account = argv.account || argv.a || '';
-                            tokens
-                                .provision({
-                                    account,
-                                    description,
-                                    scopes,
-                                    permissions,
-                                    nolog: true
-                                })
-                                .then(token => {
-                                    process.stdout.write(token);
-                                    process.exit();
-                                })
-                                .catch(err => {
-                                    console.error(err);
-                                    process.exit(1);
-                                });
-                        }
-                        break;
-
-                    case 'export':
-                        {
-                            let token = (argv.token || argv.t || '').toString();
-                            tokens
-                                .getRawData(token)
-                                .then(tokenData => {
-                                    let encoded = msgpack.encode(tokenData);
-                                    process.stdout.write(encoded.toString('base64url'));
-                                    process.exit();
-                                })
-                                .catch(err => {
-                                    console.error(err);
-                                    process.exit(1);
-                                });
-                        }
-                        break;
-
-                    case 'import':
-                        {
-                            let rawToken = (argv.token || argv.t || '').toString();
-                            let tokenData;
-                            try {
-                                tokenData = msgpack.decode(Buffer.from(rawToken, 'base64url'));
-                            } catch (err) {
-                                console.error(`Unable to decode token data: ${err.message}`);
-                                return process.exit(1);
-                            }
-                            tokens
-                                .setRawData(tokenData)
-                                .then(result => {
-                                    if (!result) {
-                                        console.error('Token was not imported');
-                                    } else {
-                                        console.error('Token was imported');
-                                    }
-                                    process.exit();
-                                })
-                                .catch(err => {
-                                    console.error(err);
-                                    process.exit(1);
-                                });
-                        }
-                        break;
-
-                    default:
-                        // Nothing else would end the process: the Redis connection opened on load
-                        // kept it running with no output
-                        console.error(tokensCmd ? `Unknown tokens command: ${tokensCmd}` : 'A tokens command is required');
-                        console.error('');
-                        console.error(generateCommandHelp('tokens'));
-                        return process.exit(1);
-                }
-            }
-            break;
-
-        case 'webhooks':
-            generateWebhookTable();
-            process.exit(1);
-            break;
-
-        case 'export':
-            {
-                getSecret()
-                    .then(secret => {
-                        let account = (argv.account || argv.a || '').toString();
-                        let accountObject = new Account({
-                            redis,
-                            account,
-                            secret
-                        });
-                        return accountObject.loadAccountData(account, false);
-                    })
-                    .then(accountData => {
-                        process.stdout.write(JSON.stringify(accountData));
-                        process.exit(0);
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        process.exit(1);
-                    });
-            }
-            break;
-
-        case 'check-bounce':
-            {
-                process.title = 'emailengine-check-bounce';
-                const { bounceDetect } = require('../lib/bounce-detect');
-                const bounceClassifier = require('@postalsys/bounce-classifier');
-
-                let emlPath = argv._[1] || argv.file || argv.f;
-
-                if (!emlPath) {
-                    console.error('Error: EML file path is required');
-                    console.error('Usage: emailengine check-bounce <path-to-eml-file>');
-                    console.error('       emailengine check-bounce --file <path-to-eml-file>');
-                    return process.exit(1);
-                }
-
-                // Resolve the path
-                emlPath = pathlib.resolve(emlPath);
-
-                // Check if file exists
-                if (!fs.existsSync(emlPath)) {
-                    console.error(`Error: File not found: ${emlPath}`);
-                    return process.exit(1);
-                }
-
-                const checkBounce = async () => {
-                    // Initialize the bounce classifier
-                    await bounceClassifier.initialize();
-
-                    // Read the EML file
-                    const emlStream = fs.createReadStream(emlPath);
-
-                    // Detect bounce information
-                    const bounce = await bounceDetect(emlStream);
-
-                    // Classify the bounce if we have a response message
-                    if (bounce?.response?.message) {
-                        const classification = await bounceClassifier.classify(bounce.response.message);
-
-                        if (classification?.label) {
-                            bounce.response.category = classification.label;
-                        }
-                        if (classification?.action) {
-                            bounce.response.recommendedAction = classification.action;
-                        }
-                        if (classification?.blocklist) {
-                            bounce.response.blocklist = classification.blocklist;
-                        }
-                        if (classification?.retryAfter) {
-                            bounce.response.retryAfter = classification.retryAfter;
-                        }
-                    }
-
-                    return bounce;
-                };
-
-                checkBounce()
-                    .then(result => {
-                        process.stdout.write(JSON.stringify(result, null, 2));
-                        process.stdout.write('\n');
-                        return process.exit(0);
-                    })
-                    .catch(err => {
-                        console.error('Failed to analyze bounce email');
-                        console.error(err);
-                        return process.exit(1);
-                    });
-            }
-            break;
-
-        case '':
-            // run normally
-            require('../server');
-            break;
-
-        default:
-            // A mistyped command used to start the server instead
-            console.error(`Unknown command: ${cmd}`);
-            console.error('');
-            console.error('Run "emailengine help" to see available commands.');
-            return process.exit(1);
+    let handler = COMMAND_HANDLERS.get(cmd);
+    if (handler) {
+        return handler();
     }
+
+    // A mistyped command used to start the server instead
+    console.error(`Unknown command: ${cmd}`);
+    console.error('');
+    console.error('Run "emailengine help" to see available commands.');
+    return process.exit(1);
 }
 
 run();
