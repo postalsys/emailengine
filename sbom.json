@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "emailengine-app@2.85.0",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.85.0-40f073a0-3584-4020-b743-1f499301de64",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.85.0-239294c9-afd1-4504-9be3-ed7b79ef1dbf",
   "creationInfo": {
-    "created": "2026-10-21T21:45:01.862Z",
+    "created": "2026-10-21T23:29:11.800Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
@@ -3922,11 +3922,11 @@
     },
     {
       "name": "mailparser",
-      "SPDXID": "SPDXRef-Package-mailparser-3.12.0",
-      "versionInfo": "3.12.0",
+      "SPDXID": "SPDXRef-Package-mailparser-3.12.2",
+      "versionInfo": "3.12.2",
       "packageFileName": "node_modules/mailparser",
       "description": "Parse e-mails",
-      "downloadLocation": "https://registry.npmjs.org/mailparser/-/mailparser-3.12.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/mailparser/-/mailparser-3.12.2.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "MIT",
@@ -3934,13 +3934,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/mailparser@3.12.0"
+          "referenceLocator": "pkg:npm/mailparser@3.12.2"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "2bc4eb31d56f3b4ebdf894546141410f93c9a7a673377021c234000cdecd65019c48fa72d3602dfd99d3a36903c9262cb7324e54f9d14be65c470d59d42eeaff"
+          "checksumValue": "25b3adf808c922befe6e1329f20ec82debe57a80c00f46d75650099a292bcf4b1b42a9adf3c6042ca0f06102f924dba0915f6570df8316fdf677284fb2faa91d"
         }
       ]
     },
@@ -5884,7 +5884,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-mailparser-3.12.0",
+      "spdxElementId": "SPDXRef-Package-mailparser-3.12.2",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -7905,42 +7905,42 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-zone-eu.mailsplit-5.4.27",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-he-1.2.0",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-html-to-text-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libmime-5.6.0",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-linkify-it-5.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-nodemailer-10.1.7",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-punycode.js-2.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-tlds-1.261.0",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
