@@ -161,3 +161,10 @@ test('the token log limits are privileged, like the switch that turns the log on
         assert.ok(PRIVILEGED_SETTINGS_KEYS.includes(key), key);
     }
 });
+
+test('settings.clear() removes several keys in one call, and no key at all is a no-op', async () => {
+    await settings.setMulti({ queueKeepFailed: 900, queueKeepFailedAge: 7200 });
+    assert.strictEqual(await settings.clear('queueKeepFailed', 'queueKeepFailedAge'), 2);
+    assert.deepStrictEqual(await settings.getMulti('queueKeepFailed', 'queueKeepFailedAge'), { queueKeepFailed: null, queueKeepFailedAge: null });
+    assert.strictEqual(await settings.clear(), 0);
+});

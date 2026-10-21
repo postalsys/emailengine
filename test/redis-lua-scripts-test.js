@@ -26,6 +26,25 @@ registerRedisTeardown(redis, cleanup);
 
 const HASH = `${REDIS_PREFIX}hash`;
 
+test('zHeadScores', async t => {
+    const QUEUE = `${REDIS_PREFIX}queue`;
+    t.beforeEach(async () => {
+        await redis.del(QUEUE);
+    });
+
+    await t.test('returns the lowest scores only, in order, without the members', async () => {
+        await redis.zadd(QUEUE, 30, JSON.stringify({ uid: 30, big: 'x'.repeat(100) }), 10, JSON.stringify({ uid: 10 }), 20, JSON.stringify({ uid: 20 }));
+        assert.deepEqual(await redis.zHeadScores(QUEUE, 2), ['10', '20']);
+        assert.deepEqual(await redis.zHeadScores(QUEUE, 500), ['10', '20', '30']);
+    });
+
+    await t.test('a missing set or a count below one reads as empty', async () => {
+        assert.deepEqual(await redis.zHeadScores(QUEUE, 10), []);
+        await redis.zadd(QUEUE, 1, 'a');
+        assert.deepEqual(await redis.zHeadScores(QUEUE, 0), []);
+    });
+});
+
 test('hSetBigger', async t => {
     t.beforeEach(async () => {
         await redis.del(HASH);

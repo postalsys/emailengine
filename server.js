@@ -3041,21 +3041,6 @@ async function commandDeleteAccount(worker, message) {
     );
 }
 
-/**
- * Forwards a command to the worker that holds the account and answers with its result, for a
- * caller that has to wait for it (the teardown before an account is deleted)
- * @param {Object} worker - Requesting worker
- * @param {Object} message - The command
- * @returns {Promise<*>} The worker's answer, false when no worker holds the account
- */
-async function commandAwaitAccountWorker(worker, message) {
-    const assignedWorker = assigned.get(message.account);
-    if (!assignedWorker) {
-        return false;
-    }
-    return await call(assignedWorker, message);
-}
-
 async function commandRunIndex() {
     return runIndex;
 }
@@ -3210,7 +3195,9 @@ const COMMAND_HANDLERS = new Map([
     ['subscribe', commandSubscribe],
     ['new', commandNewAccount],
     ['delete', commandDeleteAccount],
-    ['teardown', commandAwaitAccountWorker],
+    // an account no worker holds has nothing of the provider's open; answering false here keeps
+    // that apart from WorkerNotAvailable, which a worker dying mid-teardown also answers
+    ['teardown', (worker, message) => (assigned.has(message.account) ? commandAccountOperation(worker, message) : false)],
     ['runIndex', commandRunIndex],
     ...['update', 'sync', 'pause', 'resume', 'reconnect'].map(cmd => [cmd, commandForwardToAccountWorker]),
     ...['smtpReload', 'imapProxyReload'].map(cmd => [cmd, commandReloadServer]),

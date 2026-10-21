@@ -78,6 +78,9 @@ function makeDeps(opts) {
                 }
                 state.hashes.get(key).set(field, value);
                 return 1;
+            },
+            async hdel(key, field) {
+                return state.hashes.get(key)?.delete(field) ? 1 : 0;
             }
         },
         settings: {
@@ -318,14 +321,18 @@ test('webhook delivery: recording the outcome', async t => {
     });
 
     await t.test('a success clears the flag of the level that decided the target', async () => {
+        // removed rather than overwritten with '{}': a removal of a field that is not there is no
+        // write at all, and every successful delivery clears
         let { deps, state } = makeDeps({ accountWebhooks: 'https://account.example.com/' });
+        state.hashes.get(ACCOUNT_KEY).set('webhookErrorFlag', JSON.stringify({ message: 'old' }));
         await createWebhookProcessor(deps)(makeJob());
-        assert.strictEqual(state.hashes.get(ACCOUNT_KEY).get('webhookErrorFlag'), '{}');
+        assert.strictEqual(state.hashes.get(ACCOUNT_KEY).has('webhookErrorFlag'), false);
         assert.deepStrictEqual(state.settingsCleared, []);
 
         ({ deps, state } = makeDeps({ routes: { r1: { id: 'r1', enabled: true, targetUrl: 'https://route.example.com/' } } }));
+        state.hashes.set(CONTENT_KEY, new Map([['r1:webhookErrorFlag', JSON.stringify({ message: 'old' })]]));
         await createWebhookProcessor(deps)(makeJob({ data: { _route: { id: 'r1', mapping: {} } } }));
-        assert.strictEqual(state.hashes.get(CONTENT_KEY).get('r1:webhookErrorFlag'), '{}');
+        assert.strictEqual(state.hashes.get(CONTENT_KEY).has('r1:webhookErrorFlag'), false);
     });
 
     await t.test('a failed attempt records the reason everywhere it is read back, then rethrows', async () => {

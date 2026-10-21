@@ -32,7 +32,7 @@ function createMailbox(membership, queuedUids, opts = {}) {
         getNotificationsKey: () => 'n',
         connection: {
             redis: {
-                zrange: async () => queuedUids.flatMap(uid => [JSON.stringify({ uid }), String(uid)])
+                zHeadScores: async (key, count) => queuedUids.slice(0, count).map(String)
             }
         },
         requireImapClient: () => ({

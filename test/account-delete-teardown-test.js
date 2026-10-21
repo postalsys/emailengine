@@ -77,6 +77,22 @@ test('account delete', async t => {
         assert.strictEqual(await redis.exists(`${REDIS_PREFIX}iad:${account}`), 0);
         assert.ok(logger.entries.some(entry => entry.msg === 'Failed to release provider resources before account delete'));
     });
+
+    await t.test('an account no worker holds is deleted without a warning', async () => {
+        // what the main thread answers for an account no worker holds, see the teardown command in server.js
+        const account = await storeAccount();
+        const logger = createMockLogger();
+        const accountObject = new Account({
+            account,
+            redis,
+            logger,
+            timeout: 1000,
+            call: async message => message.cmd !== 'teardown'
+        });
+
+        assert.deepStrictEqual(await accountObject.delete(), { account, deleted: true });
+        assert.ok(!logger.entries.some(entry => entry.level === 'warn'), JSON.stringify(logger.entries));
+    });
 });
 
 test('releaseRemoteResources()', async t => {
@@ -121,16 +137,24 @@ test('releaseRemoteResources()', async t => {
         assert.strictEqual(logger.entries[0].msg, 'Failed to delete MS Graph subscription');
     });
 
-    function gmailClient(accountData) {
+    function gmailClient(accountData, storedWatch = accountData.watchResponse ? JSON.stringify(accountData.watchResponse) : null) {
         const requests = [];
+        const loads = [];
         const client = Object.assign(Object.create(GmailClient.prototype), {
             account: 'a',
             logger: createMockLogger(),
-            accountObject: { loadAccountData: async () => accountData },
+            redis: { hget: async (key, field) => (field === 'watchResponse' ? storedWatch : null) },
+            getAccountKey: () => 'iad:a',
+            accountObject: {
+                loadAccountData: async () => {
+                    loads.push(1);
+                    return accountData;
+                }
+            },
             prepare: async () => {},
             request: async (url, method) => requests.push([url, method])
         });
-        return { client, requests };
+        return { client, requests, loads };
     }
 
     await t.test('Gmail: stops an armed Pub/Sub watch', async () => {
@@ -145,6 +169,15 @@ test('releaseRemoteResources()', async t => {
         for (const accountData of [{}, { _app: { pubSubApp: 'pubsub' } }, { watchResponse: { historyId: '1' } }]) {
             const { client, requests } = gmailClient(accountData);
             assert.strictEqual(await client.releaseRemoteResources(), false);
+            assert.strictEqual(requests.length, 0);
+        }
+    });
+
+    await t.test('Gmail: an account without a stored watch is not loaded at all', async () => {
+        for (const storedWatch of [null, 'null']) {
+            const { client, requests, loads } = gmailClient({ _app: { pubSubApp: 'pubsub' } }, storedWatch);
+            assert.strictEqual(await client.releaseRemoteResources(), false);
+            assert.strictEqual(loads.length, 0, String(storedWatch));
             assert.strictEqual(requests.length, 0);
         }
     });
