@@ -242,4 +242,60 @@ test('runFastSync', async t => {
             { runs: 150 }
         );
     });
+
+    await t.test('a missing or broken stored UIDNEXT queues everything fetched', async () => {
+        assert.deepStrictEqual(await fastSync({ server: uids(2, 3), storedStatus: { uidNext: 1 } }), { queued: [2, 3], uidNext: 4 });
+        assert.deepStrictEqual(await fastSync({ server: uids(2, 3), storedStatus: { uidNext: 1 }, storedUidNext: 'x' }), { queued: [2, 3], uidNext: 4 });
+    });
+
+    await t.test('new messages cost a fixed number of round trips, not two each', async () => {
+        const counting = countingRedis(redis);
+        const list = Array.from({ length: 200 }, (v, i) => ({ uid: i + 10 }));
+        const harness = await createSyncHarness({ server: list, storedStatus: { uidNext: 10 }, redisClient: counting.client });
+        try {
+            await redis.hset(harness.keys.mailbox, 'uidNext', '10');
+            counting.reset();
+            await harness.sync.runFastSync();
+            assert.strictEqual((await harness.queuedUids()).length, 200);
+            assert.ok(counting.roundTrips() < 10, `${counting.roundTrips()} round trips for 200 new messages`);
+        } finally {
+            await harness.cleanup();
+        }
+    });
+
+    // The queue and UIDNEXT move together: UIDNEXT moved past a message that was never queued means
+    // that message is never announced
+    await t.test('a failed queue write leaves UIDNEXT where it was', async () => {
+        const failing = new Proxy(redis, {
+            get(target, name) {
+                if (name === 'multi') {
+                    return () => {
+                        const multi = target.multi();
+                        multi.zadd = () => {
+                            multi.call('NOSUCHCOMMAND');
+                            return multi;
+                        };
+                        return multi;
+                    };
+                }
+                const value = target[name];
+                return typeof value === 'function' ? value.bind(target) : value;
+            }
+        });
+        const harness = await createSyncHarness({ server: uids(10, 11), storedStatus: { uidNext: 10 }, redisClient: failing });
+        try {
+            await redis.hset(harness.keys.mailbox, 'uidNext', '10');
+            // the transaction is refused as a whole, so neither write lands
+            await harness.sync
+                .queueNewMessages([
+                    { uid: 10, flags: new Set() },
+                    { uid: 11, flags: new Set() }
+                ])
+                .catch(() => {});
+            assert.strictEqual(await redis.hget(harness.keys.mailbox, 'uidNext'), '10');
+            assert.deepStrictEqual(await harness.queuedUids(), []);
+        } finally {
+            await harness.cleanup();
+        }
+    });
 });
