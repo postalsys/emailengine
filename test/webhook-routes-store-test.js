@@ -24,8 +24,8 @@ registerRedisTeardown(redis, async () => {
 // Every job pushToQueue() would queue, without reaching BullMQ. The main webhook job carries no
 // _route, so the route deliveries can be told apart from it
 const queued = [];
-notifyQueue.add = async (name, data) => {
-    queued.push({ name, data });
+notifyQueue.add = async (name, data, opts) => {
+    queued.push({ name, data, opts });
     return { id: String(queued.length) };
 };
 const routeJobs = () => queued.filter(job => job.data._route);
@@ -45,6 +45,8 @@ async function resetRoutes() {
     await settings.set('webhooksEnabled', true);
     await settings.set('webhookEvents', ['*']);
     await settings.set('inboxNewOnly', false);
+    await settings.clear('webhooksDeliveryAttempts');
+    await settings.clear('webhooksRetryDelay');
 }
 
 async function storedMeta(id) {
@@ -275,5 +277,34 @@ test('enqueue() formats only what it will queue', async t => {
         assert.strictEqual(formatted, 1);
         assert.strictEqual(mainJobs().length, 1);
         assert.ok(mainJobs()[0].data.eventId, 'formatPayload() assigns the event id');
+    });
+});
+
+test('the retry policy settings reach every queued delivery', async t => {
+    const payload = { account: 'acc', event: 'messageNew', data: {} };
+
+    await t.test('without the settings, 10 attempts starting at 5 seconds', async () => {
+        await resetRoutes();
+        await webhooks.create({ name: 'Policy route', enabled: true, targetUrl: 'https://example.com/policy' }, { fn: 'return true;' });
+        await webhooks.pushToQueue('messageNew', payload);
+        assert.strictEqual(queued.length, 2, 'the route delivery and the default one');
+        for (const job of queued) {
+            assert.strictEqual(job.opts.attempts, 10);
+            assert.strictEqual(job.opts.backoff.delay, 5000);
+        }
+    });
+
+    await t.test('the settings apply to the default and the route deliveries alike', async () => {
+        await resetRoutes();
+        await webhooks.create({ name: 'Policy route', enabled: true, targetUrl: 'https://example.com/policy' }, { fn: 'return true;' });
+        await settings.set('webhooksDeliveryAttempts', 3);
+        await settings.set('webhooksRetryDelay', 30000);
+        await webhooks.pushToQueue('messageNew', payload);
+        assert.strictEqual(queued.length, 2);
+        for (const job of queued) {
+            assert.strictEqual(job.opts.attempts, 3);
+            assert.strictEqual(job.opts.backoff.delay, 30000);
+            assert.strictEqual(job.opts.backoff.type, 'exponential');
+        }
     });
 });

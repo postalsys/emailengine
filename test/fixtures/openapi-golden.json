@@ -10396,6 +10396,22 @@
           "webhooksCustomHeaders": {
             "$ref": "#/components/schemas/webhooksCustomHeadersResponse"
           },
+          "webhooksDeliveryAttempts": {
+            "type": "integer",
+            "description": "How many attempts a webhook delivery gets, including the first, before it is given up on. Applies to events queued after the change. Default 10",
+            "example": 10,
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 100
+          },
+          "webhooksRetryDelay": {
+            "type": "integer",
+            "description": "Delay in milliseconds before the first retry of a failed webhook delivery. It doubles with every attempt after that. Applies to events queued after the change. Default 5000",
+            "example": 5000,
+            "nullable": true,
+            "minimum": 1000,
+            "maximum": 3600000
+          },
           "notifyHeaders": {
             "$ref": "#/components/schemas/notifyHeadersResponse"
           },
@@ -11195,6 +11211,22 @@
           },
           "webhooksCustomHeaders": {
             "$ref": "#/components/schemas/WebhooksCustomHeaders"
+          },
+          "webhooksDeliveryAttempts": {
+            "type": "integer",
+            "description": "How many attempts a webhook delivery gets, including the first, before it is given up on. Applies to events queued after the change. Default 10",
+            "example": 10,
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 100
+          },
+          "webhooksRetryDelay": {
+            "type": "integer",
+            "description": "Delay in milliseconds before the first retry of a failed webhook delivery. It doubles with every attempt after that. Applies to events queued after the change. Default 5000",
+            "example": 5000,
+            "nullable": true,
+            "minimum": 1000,
+            "maximum": 3600000
           },
           "notifyHeaders": {
             "$ref": "#/components/schemas/NotifyHeaders"
@@ -23528,6 +23560,22 @@
           },
           {
             "name": "webhooksCustomHeaders",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "webhooksDeliveryAttempts",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "webhooksRetryDelay",
             "in": "query",
             "schema": {
               "type": "boolean",

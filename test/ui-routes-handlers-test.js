@@ -718,6 +718,31 @@ test('webhook settings form', async t => {
         assert.equal('webhooksCustomHeaders' in written, false);
         assert.deepEqual(h.answers.redirects, ['/admin/config/webhooks']);
     });
+
+    await t.test('the retry fields are written in milliseconds, and cleared fields fall back to the defaults', async () => {
+        const { written } = await submit({ webhooksEnabled: 'true', webhooksDeliveryAttempts: '4', webhooksRetryDelay: '30' });
+        assert.equal(written.webhooksDeliveryAttempts, 4);
+        assert.equal(written.webhooksRetryDelay, 30000, 'seconds on the form, milliseconds in the setting');
+
+        const cleared = await submit({ webhooksEnabled: 'true', webhooksDeliveryAttempts: '', webhooksRetryDelay: '' });
+        assert.equal(cleared.written.webhooksDeliveryAttempts, null);
+        assert.equal(cleared.written.webhooksRetryDelay, null);
+    });
+
+    await t.test('out-of-range retry values are refused by the form schema', () => {
+        for (const fields of [
+            { webhooksDeliveryAttempts: '0' },
+            { webhooksDeliveryAttempts: '101' },
+            { webhooksRetryDelay: '0' },
+            { webhooksRetryDelay: '3601' }
+        ]) {
+            const { error } = webhooksRoute.options.validate.payload.validate(
+                Object.assign({ webhooksEnabled: 'true' }, fields),
+                webhooksRoute.options.validate.options
+            );
+            assert.ok(error, JSON.stringify(fields));
+        }
+    });
 });
 
 test('export download', async t => {

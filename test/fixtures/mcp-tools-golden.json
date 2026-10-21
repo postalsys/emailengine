@@ -2877,6 +2877,14 @@
                     "type": "boolean",
                     "default": false
                 },
+                "webhooksDeliveryAttempts": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "webhooksRetryDelay": {
+                    "type": "boolean",
+                    "default": false
+                },
                 "notifyHeaders": {
                     "type": "boolean",
                     "default": false
@@ -6604,6 +6612,30 @@
                         ],
                         "maxLength": 256
                     }
+                },
+                "webhooksDeliveryAttempts": {
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "description": "How many attempts a webhook delivery gets, including the first, before it is given up on. Applies to events queued after the change. Default 10",
+                    "examples": [
+                        10
+                    ],
+                    "minimum": 1,
+                    "maximum": 100
+                },
+                "webhooksRetryDelay": {
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "description": "Delay in milliseconds before the first retry of a failed webhook delivery. It doubles with every attempt after that. Applies to events queued after the change. Default 5000",
+                    "examples": [
+                        5000
+                    ],
+                    "minimum": 1000,
+                    "maximum": 3600000
                 },
                 "notifyHeaders": {
                     "type": "array",

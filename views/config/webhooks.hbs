@@ -103,6 +103,34 @@ class="mb-1"}}
         </div>
     </div>
 
+    {{#> ui/details summary="Delivery Retries" summarySmall="(All webhooks)"
+    class="card bg-base-100 shadow-md mb-6" open=values.webhooksDeliveryAttempts}}
+
+    <p class="mb-4">How a failed webhook delivery is retried. The delay doubles with every attempt. Changes apply to events queued after saving.</p>
+
+    <div class="grid gap-4 md:grid-cols-2">
+        <div>
+            {{> ui/setting-ref name="webhooksDeliveryAttempts"}}
+            {{#> ui/form-field id="settingsWebhooksDeliveryAttempts" label="Delivery attempts" error=errors.webhooksDeliveryAttempts}}
+            <input type="number" min="1" max="100" class="input{{#if errors.webhooksDeliveryAttempts}} is-invalid{{/if}}"
+                id="settingsWebhooksDeliveryAttempts" name="webhooksDeliveryAttempts" value="{{values.webhooksDeliveryAttempts}}"
+                placeholder="{{defaultWebhookAttempts}}" data-lpignore="true" autocomplete="off" />
+            <span class="helper-text">Attempts per event, including the first. Empty uses {{defaultWebhookAttempts}}.</span>
+            {{/ui/form-field}}
+        </div>
+        <div>
+            {{> ui/setting-ref name="webhooksRetryDelay"}}
+            {{#> ui/form-field id="settingsWebhooksRetryDelay" label="First retry delay (seconds)" error=errors.webhooksRetryDelay}}
+            <input type="number" min="1" max="3600" class="input{{#if errors.webhooksRetryDelay}} is-invalid{{/if}}"
+                id="settingsWebhooksRetryDelay" name="webhooksRetryDelay" value="{{values.webhooksRetryDelay}}"
+                placeholder="{{defaultWebhookRetryDelay}}" data-lpignore="true" autocomplete="off" />
+            <span class="helper-text">Wait before the first retry. Empty uses {{defaultWebhookRetryDelay}} seconds.</span>
+            {{/ui/form-field}}
+        </div>
+    </div>
+
+    {{/ui/details}}
+
     {{#> ui/details summary="Custom Headers" summarySmall="(Default webhook only)"
     class="card bg-base-100 shadow-md mb-6" open=values.customHeaders}}
 
