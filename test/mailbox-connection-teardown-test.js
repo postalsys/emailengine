@@ -18,6 +18,7 @@ require('./helpers/mock-db').installDbMock({
 // unconfigured instance would give back.
 const settings = require('../lib/settings');
 settings.get = async key => (key === 'notifyWebSafeHtml' ? true : undefined);
+settings.getMulti = async (...keys) => Object.fromEntries(await Promise.all(keys.map(async key => [key, await settings.get(key)])));
 
 const { Mailbox } = require('../lib/email-client/imap/mailbox');
 

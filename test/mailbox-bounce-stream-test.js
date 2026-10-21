@@ -20,6 +20,7 @@ bounceDetectModule.bounceDetect = async () => {
 
 const settings = require('../lib/settings');
 settings.get = async () => undefined;
+settings.getMulti = async (...keys) => Object.fromEntries(await Promise.all(keys.map(async key => [key, await settings.get(key)])));
 
 const { Mailbox } = require('../lib/email-client/imap/mailbox');
 const { createMockLogger } = require('./helpers/mock-logger');

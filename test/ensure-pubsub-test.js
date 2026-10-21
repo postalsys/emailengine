@@ -217,6 +217,7 @@ const { GMAIL_PUBSUB_DEFAULT_EXPIRATION_TTL } = require('../lib/consts');
 // Deterministic: no Gmail subscription TTL override -> ensurePubsub leaves Google's default policy,
 // so the "already exists" subscription path does not attempt a PATCH.
 settings.get = async () => undefined;
+settings.getMulti = async (...keys) => Object.fromEntries(await Promise.all(keys.map(async key => [key, await settings.get(key)])));
 
 const PROJECT = 'test-project';
 const GMAIL_PUBLISHER = 'serviceAccount:gmail-api-push@system.gserviceaccount.com';

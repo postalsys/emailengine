@@ -13,6 +13,7 @@ require('./helpers/mock-db').installDbMock();
 const settingsValues = {};
 const settings = require('../lib/settings');
 settings.get = async key => settingsValues[key];
+settings.getMulti = async (...keys) => Object.fromEntries(await Promise.all(keys.map(async key => [key, await settings.get(key)])));
 
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const { MESSAGE_NEW_NOTIFY } = require('../lib/consts');
