@@ -495,6 +495,32 @@ test('MCP tool registry', async t => {
         assert.ok(offeredAt({ manage: 'operate' }).includes('resume_account'));
         assert.ok(!offeredAt({ manage: 'none', mail: 'full' }).includes('resume_account'));
     });
+
+    await t.test('the failed webhook tools follow the outbox tools across the management levels', () => {
+        const offeredAt = choice =>
+            tools.filter(tool => toolVisibleTo(byName.get(tool.name), { tokenData: mcpGrantsFor(choice), boundAccount: null })).map(tool => tool.name);
+        const observe = offeredAt({ manage: 'observe' });
+        const operate = offeredAt({ manage: 'operate' });
+        const administer = offeredAt({ manage: 'administer' });
+
+        assert.ok(observe.includes('list_failed_webhooks') && !observe.includes('retry_failed_webhook'));
+        assert.ok(operate.includes('retry_failed_webhook') && !operate.includes('remove_failed_webhook'));
+        assert.ok(administer.includes('remove_failed_webhook'));
+        // a listing spans every account, so a mail credential is never offered them
+        assert.ok(!offeredAt({ manage: 'none', mail: 'full' }).some(name => /failed_webhook/.test(name)));
+
+        // the gateway check changes nothing, so observing is enough; deleting a list is not
+        assert.ok(observe.includes('verify_gateway'));
+        assert.ok(!operate.includes('delete_blocklist') && administer.includes('delete_blocklist'));
+    });
+
+    await t.test('the raw message source is a binary mail tool a bound credential is offered', () => {
+        const entry = byName.get('get_message_source');
+        assert.ok(entry.binary, 'returned as a resource, like an attachment');
+        assert.ok(entry.accountScoped);
+        assert.ok(toolVisibleTo(entry, { tokenData: mcpGrantsFor({ manage: 'none', mail: 'read' }), boundAccount: 'user' }));
+        assert.ok(toolVisibleTo(byName.get('get_server_signatures'), { tokenData: mcpGrantsFor({ manage: 'none', mail: 'read' }), boundAccount: 'user' }));
+    });
 });
 
 test('MCP tool executor', async t => {

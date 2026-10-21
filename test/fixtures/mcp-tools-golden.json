@@ -1907,6 +1907,33 @@
         }
     },
     {
+        "name": "delete_blocklist",
+        "title": "Delete suppression list",
+        "description": "Delete a whole suppression list with every address on it, so messages sent with that list id reach all recipients again. Confirm with the user before calling this.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "listId": {
+                    "type": "string",
+                    "description": "List ID. Must use a subdomain name format. Lists are registered ad-hoc, so a new identifier defines a new list.",
+                    "examples": [
+                        "test-list"
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "listId"
+            ]
+        },
+        "annotations": {
+            "title": "Delete suppression list",
+            "readOnlyHint": false,
+            "destructiveHint": true,
+            "openWorldHint": false
+        }
+    },
+    {
         "name": "delete_gateway",
         "title": "Delete SMTP gateway",
         "description": "Remove an SMTP gateway. Messages queued through it fail to deliver. Confirm with the user before calling this.",
@@ -2661,6 +2688,43 @@
         }
     },
     {
+        "name": "get_message_source",
+        "title": "Get raw message source",
+        "description": "Download the raw RFC 822 source of one message, headers and MIME parts included, returned inline as a base64 resource. Use get_message for the parsed message; this is for inspecting headers such as authentication results, or forwarding the original. Fails above 1 MB.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                },
+                "message": {
+                    "type": "string",
+                    "description": "Message ID",
+                    "examples": [
+                        "AAAAAQAACnA"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account",
+                "message"
+            ]
+        },
+        "annotations": {
+            "title": "Get raw message source",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
         "name": "get_message_text",
         "title": "Get message text",
         "description": "Fetch the body of a message as sanitized HTML, generated from the plaintext part when the message carries no HTML one. The text id comes from the text.id field of get_message or list_messages. It is capped at 65536 characters - hasMore true means the body is longer than that. Quoted reply and forward history is wrapped in a <details class=\"ee-collapsed-thread\"> element - what an email client hides behind a \"show more\" control - so everything outside it is what the sender wrote this time.",
@@ -2751,6 +2815,27 @@
                     "default": 20,
                     "minimum": 1,
                     "maximum": 100
+                },
+                "state": {
+                    "type": "string",
+                    "description": "List only messages in this state",
+                    "examples": [
+                        "failed"
+                    ],
+                    "enum": [
+                        "delayed",
+                        "waiting",
+                        "active",
+                        "failed"
+                    ]
+                },
+                "account": {
+                    "type": "string",
+                    "description": "List only messages queued by this account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
                 }
             },
             "additionalProperties": false
@@ -2853,6 +2938,34 @@
         },
         "annotations": {
             "title": "Get queued message",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "get_server_signatures",
+        "title": "Get account signatures",
+        "description": "List the email signatures configured on the account at the provider, to append to a message composed for it. Only Gmail API accounts report signatures; for other accounts the list is empty.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string",
+                    "description": "Unique identifier for the email account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "account"
+            ]
+        },
+        "annotations": {
+            "title": "Get account signatures",
             "readOnlyHint": true,
             "destructiveHint": false,
             "openWorldHint": false
@@ -3293,6 +3406,51 @@
         }
     },
     {
+        "name": "list_failed_webhooks",
+        "title": "List failed webhook deliveries",
+        "description": "List the webhook deliveries that failed for good, most recent first: the event, the account and message it was about, the route it was for and why the last attempt failed. Use it after a receiver outage to find what to replay with retry_failed_webhook.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer",
+                    "description": "Page number (zero indexed, so use 0 for first page)",
+                    "examples": [
+                        0
+                    ],
+                    "default": 0,
+                    "minimum": 0,
+                    "maximum": 1048576
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "description": "How many entries per page",
+                    "examples": [
+                        20
+                    ],
+                    "default": 20,
+                    "minimum": 1,
+                    "maximum": 100
+                },
+                "account": {
+                    "type": "string",
+                    "description": "List only the deliveries of this account",
+                    "examples": [
+                        "user123"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false
+        },
+        "annotations": {
+            "title": "List failed webhook deliveries",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
         "name": "list_gateways",
         "title": "List SMTP gateways",
         "description": "List the SMTP gateways (relay servers messages can be sent through instead of the account's own SMTP server), paged. Passwords are masked.",
@@ -3318,6 +3476,14 @@
                     "default": 20,
                     "minimum": 1,
                     "maximum": 100
+                },
+                "query": {
+                    "type": "string",
+                    "description": "List only entries whose gateway ID, name, host or username contains this text, ignoring case",
+                    "examples": [
+                        "example"
+                    ],
+                    "maxLength": 256
                 }
             },
             "additionalProperties": false
@@ -3452,6 +3618,14 @@
                     "default": 20,
                     "minimum": 1,
                     "maximum": 100
+                },
+                "query": {
+                    "type": "string",
+                    "description": "List only entries whose ID, name, description, client ID, service account or Pub/Sub names contains this text, ignoring case",
+                    "examples": [
+                        "example"
+                    ],
+                    "maxLength": 256
                 }
             },
             "additionalProperties": false
@@ -3497,6 +3671,14 @@
                     "default": 20,
                     "minimum": 1,
                     "maximum": 100
+                },
+                "query": {
+                    "type": "string",
+                    "description": "List only entries whose ID, name or description contains this text, ignoring case",
+                    "examples": [
+                        "example"
+                    ],
+                    "maxLength": 256
                 }
             },
             "additionalProperties": false
@@ -3587,6 +3769,14 @@
                     "default": 20,
                     "minimum": 1,
                     "maximum": 100
+                },
+                "query": {
+                    "type": "string",
+                    "description": "List only entries whose ID, name, description or target URL contains this text, ignoring case",
+                    "examples": [
+                        "example"
+                    ],
+                    "maxLength": 256
                 }
             },
             "additionalProperties": false
@@ -3961,6 +4151,34 @@
         }
     },
     {
+        "name": "remove_failed_webhook",
+        "title": "Remove failed webhook delivery",
+        "description": "Remove a failed webhook delivery from the queue, by the id list_failed_webhooks returned, so it is no longer kept for a retry. Confirm with the user before calling this.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "delivery": {
+                    "type": "string",
+                    "description": "Failed webhook delivery ID, as the listing returns it",
+                    "examples": [
+                        "1543"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "delivery"
+            ]
+        },
+        "annotations": {
+            "title": "Remove failed webhook delivery",
+            "readOnlyHint": false,
+            "destructiveHint": true,
+            "openWorldHint": false
+        }
+    },
+    {
         "name": "remove_from_blocklist",
         "title": "Remove from suppression list",
         "description": "Remove a recipient address from a suppression list, so messages to it are delivered again.",
@@ -4019,6 +4237,34 @@
         },
         "annotations": {
             "title": "Resume account",
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "retry_failed_webhook",
+        "title": "Retry failed webhook delivery",
+        "description": "Send a failed webhook delivery again, by the id list_failed_webhooks returned, with a fresh set of attempts. It goes to the target it was queued for, with the payload it was queued with.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "delivery": {
+                    "type": "string",
+                    "description": "Failed webhook delivery ID, as the listing returns it",
+                    "examples": [
+                        "1543"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "delivery"
+            ]
+        },
+        "annotations": {
+            "title": "Retry failed webhook delivery",
             "readOnlyHint": false,
             "destructiveHint": false,
             "openWorldHint": false
@@ -7664,6 +7910,34 @@
             "readOnlyHint": true,
             "destructiveHint": false,
             "openWorldHint": true
+        }
+    },
+    {
+        "name": "verify_gateway",
+        "title": "Check SMTP gateway",
+        "description": "Check that a stored SMTP gateway still connects and authenticates, with its stored settings and credentials. Nothing is sent or changed. Use it when deliveries through the gateway fail.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "gateway": {
+                    "type": "string",
+                    "description": "Gateway ID",
+                    "examples": [
+                        "example"
+                    ],
+                    "maxLength": 256
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "gateway"
+            ]
+        },
+        "annotations": {
+            "title": "Check SMTP gateway",
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "openWorldHint": false
         }
     },
     {
