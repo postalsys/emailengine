@@ -9,8 +9,7 @@ const assert = require('node:assert').strict;
 
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
-const { parseGmailFallbackPollInterval, DEFAULT_FALLBACK_POLL_INTERVAL } = require('../lib/email-client/gmail-fallback-poll');
-const { parseFallbackPollInterval } = require('../lib/email-client/outlook-fallback-poll');
+const { parseGmailFallbackPollInterval, parseFallbackPollInterval, DEFAULT_FALLBACK_POLL_INTERVAL } = require('../lib/email-client/fallback-poll');
 
 registerRedisTeardown(redis);
 

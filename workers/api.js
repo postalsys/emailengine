@@ -89,7 +89,7 @@ const { routeGrant, perRequestSurfaceAdmits, sessionTokenAdmits } = require('../
 const { mcpOptions } = require('../lib/api-routes/route-metadata');
 
 const { redis } = require('../lib/db');
-const { createHealthChecks, HealthCheckError } = require('../lib/health');
+const { createHealthChecks } = require('../lib/health');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
 
@@ -1825,7 +1825,7 @@ async function answerReadiness(request) {
     try {
         return await healthChecks.ready(timeoutError ? undefined : timeout);
     } catch (err) {
-        if (!(err instanceof HealthCheckError)) {
+        if (err.statusCode !== 503) {
             throw err;
         }
         const error = Boom.boomify(err, { statusCode: err.statusCode });

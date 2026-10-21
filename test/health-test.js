@@ -7,7 +7,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { createHealthChecks, HealthCheckError } = require('../lib/health');
+const { createHealthChecks } = require('../lib/health');
 
 function fakeRedis(opts = {}) {
     const store = new Map();
@@ -65,7 +65,6 @@ function checks(overrides = {}) {
 
 async function rejectsWith(promise, code) {
     await assert.rejects(promise, err => {
-        assert.ok(err instanceof HealthCheckError);
         assert.strictEqual(err.statusCode, 503);
         assert.strictEqual(err.code, code);
         return true;

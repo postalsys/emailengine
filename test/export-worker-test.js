@@ -131,8 +131,11 @@ function createHarness({ account = {}, settingsValues = {}, clock = createClock(
         account
     );
     const jobs = createExportJobs({
-        redis: { hgetall: async () => ({ account: ACCOUNT }) },
-        settings: { get: async key => settingsValues[key] },
+        redis: { hexists: async () => 1 },
+        settings: {
+            get: async key => settingsValues[key],
+            getMulti: async (...keys) => Object.fromEntries(keys.map(key => [key, settingsValues[key]]))
+        },
         getSecret: async () => 'secret',
         logger,
         Export: store,

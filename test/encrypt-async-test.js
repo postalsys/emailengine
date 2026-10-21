@@ -116,3 +116,40 @@ test('decryptAsync', async t => {
         );
     });
 });
+
+test('decryptAsync() bounds the derivations it runs at once', async () => {
+    const { encrypt, decryptAsync } = require('../lib/encrypt');
+    const crypto = require('node:crypto');
+    // values with salts of their own, the way records written by older processes come back
+    const secret = crypto.randomBytes(16).toString('hex');
+    const values = [];
+    for (let i = 0; i < 6; i++) {
+        values.push(encrypt(`value-${i}`, secret));
+    }
+    let running = 0;
+    let peak = 0;
+    const original = crypto.pbkdf2;
+    crypto.pbkdf2 = (...args) => {
+        const callback = args.pop();
+        running++;
+        peak = Math.max(peak, running);
+        original(...args, (err, key) => {
+            running--;
+            callback(err, key);
+        });
+    };
+    try {
+        // a fresh salt in each value, so each one needs a derivation of its own (the values then
+        // fail to decrypt, which does not matter here)
+        const distinct = values.map(value => {
+            const parts = value.split('$');
+            parts[parts.length - 2] = crypto.randomBytes(16).toString('hex');
+            return parts.join('$');
+        });
+        await Promise.allSettled(distinct.map(value => decryptAsync(value, secret)));
+    } finally {
+        crypto.pbkdf2 = original;
+    }
+    assert.ok(peak >= 1, 'the derivations ran');
+    assert.ok(peak <= 2, `at most two derivations at once, saw ${peak}`);
+});

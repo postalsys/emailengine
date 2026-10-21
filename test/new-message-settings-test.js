@@ -24,3 +24,11 @@ test('new message settings are read in one round trip', async t => {
         });
     }
 });
+
+test('an IMAP sync pass reads them once for all the messages it announces', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'lib/email-client/imap/mailbox.js'), 'utf-8');
+    assert.match(source, /const passSettings = await settings\.getMulti\(\.\.\.NEW_MESSAGE_SETTINGS\);/);
+    assert.match(source, /this\.processNew\(messageData, messageFetchOptions, storedStatus, categories, passSettings\)/);
+    assert.match(source, /passSettings \|\| \(await settings\.getMulti\(\.\.\.NEW_MESSAGE_SETTINGS\)\)/);
+    assert.doesNotMatch(source, /settings\.get\('resolveGmailCategories'\)/);
+});

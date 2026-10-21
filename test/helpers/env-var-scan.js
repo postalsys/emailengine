@@ -11,23 +11,14 @@
 
 const fs = require('fs');
 const pathlib = require('path');
+const { listFiles } = require('./list-files');
 
 const ROOT = pathlib.join(__dirname, '..', '..');
 
 function sourceFiles() {
     const files = [pathlib.join(ROOT, 'server.js')];
-    const walk = dir => {
-        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-            const full = pathlib.join(dir, entry.name);
-            if (entry.isDirectory()) {
-                walk(full);
-            } else if (entry.name.endsWith('.js')) {
-                files.push(full);
-            }
-        }
-    };
     for (const dir of ['lib', 'workers', 'bin']) {
-        walk(pathlib.join(ROOT, dir));
+        listFiles(pathlib.join(ROOT, dir), '.js', files);
     }
     return files;
 }
