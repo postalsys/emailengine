@@ -559,4 +559,89 @@ test('Outbox failed content', async t => {
             await cleanup('outbox-state-delayed', 'outbox-state-failed');
         }
     });
+
+    await t.test('list() with an account lists only that account, from its outbox hash', async () => {
+        const other = 'outbox-other-account';
+        try {
+            // failed first: failJob() takes the next waiting job off the queue
+            const failed = await failJob('outbox-acct-failed');
+            await outbox.retainFailedContent({ account, queueId: failed.id, finishedOn: failed.finishedOn, logger });
+            await queueMessage(account, 'outbox-acct-delayed');
+            await queueMessage(account, 'outbox-acct-waiting', { delay: 0 });
+            await queueMessage(other, 'outbox-other-delayed');
+
+            const listing = await outbox.list({ account, logger });
+            assert.deepEqual(
+                listing.messages.map(message => [message.queueId, message.state]),
+                [
+                    ['outbox-acct-delayed', 'delayed'],
+                    ['outbox-acct-waiting', 'waiting'],
+                    ['outbox-acct-failed', 'failed']
+                ],
+                'by state in listing order, and nothing of the other account'
+            );
+            assert.equal(listing.total, 3);
+            assert.equal(listing.pages, 1);
+
+            const paged = await outbox.list({ account, logger, page: 1, pageSize: 2 });
+            assert.deepEqual(
+                paged.messages.map(message => message.queueId),
+                ['outbox-acct-failed']
+            );
+            assert.equal(paged.pages, 2);
+
+            const failedOnly = await outbox.list({ account, state: 'failed', logger });
+            assert.deepEqual(
+                failedOnly.messages.map(message => message.queueId),
+                ['outbox-acct-failed']
+            );
+            assert.equal(failedOnly.total, 1);
+        } finally {
+            await cleanup('outbox-acct-delayed', 'outbox-acct-waiting', 'outbox-acct-failed');
+            await submitQueue.remove('outbox-other-delayed').catch(() => false);
+            await redis.unlink(`${REDIS_PREFIX}iaq:${other}`);
+        }
+    });
+
+    await t.test('list() with a state counts and pages only that state', async () => {
+        try {
+            await queueMessage(account, 'outbox-statefilter-delayed');
+            const failed = await failJob('outbox-statefilter-failed');
+
+            const listing = await outbox.list({ state: 'failed', logger, pageSize: 100 });
+            const ids = listing.messages.map(message => message.queueId);
+            assert.ok(ids.includes(failed.id));
+            assert.ok(!ids.includes('outbox-statefilter-delayed'), 'a delayed message is not in the failed listing');
+            assert.ok(listing.messages.every(message => message.state === 'failed'));
+            assert.equal(listing.total, Number((await submitQueue.getJobCounts('failed')).failed));
+        } finally {
+            await cleanup('outbox-statefilter-delayed', 'outbox-statefilter-failed');
+        }
+    });
+
+    await t.test('an account given to get, del, retry and promote has to own the message', async () => {
+        const other = 'outbox-owner-other';
+        try {
+            await queueMessage(account, 'outbox-owner-delayed');
+            const failed = await failJob('outbox-owner-failed');
+            await outbox.retainFailedContent({ account, queueId: failed.id, finishedOn: failed.finishedOn, logger });
+
+            // Another account naming these queue IDs reaches nothing, and changes nothing
+            assert.equal(await outbox.get({ queueId: 'outbox-owner-delayed', account: other, logger }), false);
+            assert.deepEqual(await outbox.del({ queueId: 'outbox-owner-delayed', account: other, logger }), { deleted: false });
+            assert.equal(await outbox.promote({ queueId: 'outbox-owner-delayed', account: other, logger }), false);
+            assert.equal(await outbox.retry({ queueId: failed.id, account: other, logger }), false);
+            assert.equal(await submitQueue.getJobState('outbox-owner-delayed'), 'delayed');
+            assert.equal(await submitQueue.getJobState(failed.id), 'failed');
+            assert.ok(await hasContent('outbox-owner-delayed'));
+
+            // The owner reaches them
+            assert.equal((await outbox.get({ queueId: 'outbox-owner-delayed', account, logger })).queueId, 'outbox-owner-delayed');
+            assert.equal((await outbox.retry({ queueId: failed.id, account, logger })).retried, true);
+            assert.equal((await outbox.promote({ queueId: 'outbox-owner-delayed', account, logger })).promoted, true);
+            assert.equal((await outbox.del({ queueId: 'outbox-owner-delayed', account, logger })).deleted, true);
+        } finally {
+            await cleanup('outbox-owner-delayed', 'outbox-owner-failed');
+        }
+    });
 });

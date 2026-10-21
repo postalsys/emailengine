@@ -46,6 +46,7 @@ const GOLDEN_ROUTES = [
     'DELETE /v1/account/{account}/export/{exportId}',
     'DELETE /v1/account/{account}/mailbox',
     'DELETE /v1/account/{account}/message/{message}',
+    'DELETE /v1/account/{account}/outbox/{queueId}',
     'DELETE /v1/blocklist/{listId}',
     'DELETE /v1/gateway/{gateway}',
     'DELETE /v1/license',
@@ -68,6 +69,8 @@ const GOLDEN_ROUTES = [
     'GET /v1/account/{account}/message/{message}/source',
     'GET /v1/account/{account}/messages',
     'GET /v1/account/{account}/oauth-token',
+    'GET /v1/account/{account}/outbox',
+    'GET /v1/account/{account}/outbox/{queueId}',
     'GET /v1/account/{account}/server-signatures',
     'GET /v1/account/{account}/text/{text}',
     'GET /v1/accounts',
@@ -104,6 +107,8 @@ const GOLDEN_ROUTES = [
     'POST /v1/account/{account}/mailbox',
     'POST /v1/account/{account}/message',
     'POST /v1/account/{account}/message/{message}/submit',
+    'POST /v1/account/{account}/outbox/{queueId}/promote',
+    'POST /v1/account/{account}/outbox/{queueId}/retry',
     'POST /v1/account/{account}/search',
     'POST /v1/account/{account}/submit',
     'POST /v1/authentication/form',
@@ -422,7 +427,14 @@ test('API route table and authentication', async t => {
                 'GET /v1/outbox/{queueId}',
                 'POST /v1/outbox/{queueId}/retry',
                 'POST /v1/outbox/{queueId}/promote',
-                'DELETE /v1/outbox/{queueId}'
+                'DELETE /v1/outbox/{queueId}',
+                // Added after the split, and no widening: the account form of the five above, each
+                // queue ID held to the account in the path, so it reaches a subset of them
+                'GET /v1/account/{account}/outbox',
+                'GET /v1/account/{account}/outbox/{queueId}',
+                'POST /v1/account/{account}/outbox/{queueId}/retry',
+                'POST /v1/account/{account}/outbox/{queueId}/promote',
+                'DELETE /v1/account/{account}/outbox/{queueId}'
             ],
             [GROUP.EXPORT]: [
                 'POST /v1/account/{account}/export',
