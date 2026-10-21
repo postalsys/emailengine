@@ -413,11 +413,11 @@ async function onCommand(command) {
  */
 async function drainApiServer() {
     apiDraining = true;
-    if (!apiServer) {
+    if (!sessionAuthServer) {
         return true;
     }
     try {
-        await apiServer.stop({ timeout: API_DRAIN_TIMEOUT });
+        await sessionAuthServer.stop({ timeout: API_DRAIN_TIMEOUT });
     } catch (err) {
         logger.warn({ msg: 'Failed to stop the API server cleanly', err });
     }
@@ -457,11 +457,9 @@ function publishChangeEvent(data) {
 
 // The Hapi server, published by init() once the session strategy is registered and the boot-time
 // default has been decided, so the authData branch of the settings dispatcher below cannot set a
-// strategy that does not exist yet or race the boot-time server.auth.default() call
+// strategy that does not exist yet or race the boot-time server.auth.default() call. Also what the
+// shutdown drain stops
 let sessionAuthServer = null;
-
-// The Hapi server, for the drain on shutdown
-let apiServer = null;
 
 // Installs a renewed certificate on this worker's own HTTPS listener. Published by init() when the
 // API is serving TLS, and called through the apiReloadCertificates command.
@@ -1576,7 +1574,6 @@ async function registerServerPlugins(server) {
     // From here on a first password set on another API worker switches the session strategy on
     // through the settings dispatcher (see the authData branch there)
     sessionAuthServer = server;
-    apiServer = server;
 
     await server.register({
         plugin: requestLogger,

@@ -32,7 +32,7 @@ const noopLogger = {
 
 function makeFakePrevClient({ closeThrows } = {}) {
     const prev = new EventEmitter();
-    prev.disabled = false;
+    prev.context = { disabled: false };
     prev.closed = false;
     prev.close = () => {
         prev.closed = true;
