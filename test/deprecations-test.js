@@ -174,7 +174,7 @@ test('deprecated request fields', async t => {
         );
         assert.strictEqual(logger.entries[0].msg, 'Deprecated request field used');
         assert.strictEqual(logger.entries[0].removal, REMOVAL_DATE);
-        assert.strictEqual(logger.entries[0].successor, DEPRECATED_FIELDS.syncFrom);
+        assert.strictEqual(logger.entries[0].successor, DEPRECATED_FIELDS.syncFrom.successor);
 
         clock += LOG_INTERVAL;
         report('syncFrom');
@@ -228,6 +228,50 @@ test('deprecated request fields', async t => {
         for (const route of declared) {
             assert.strictEqual(route.options.plugins.deprecation.since, BULL_BOARD_REDIRECTS_DEPRECATED_AT);
             assert.strictEqual(route.options.plugins.deprecation.link, '/admin/queues');
+        }
+    });
+});
+
+test('deprecated() schema decorator', async t => {
+    const Joi = require('joi');
+    const { deprecated, DEPRECATED_FIELDS, setFieldReporter, REMOVAL_DATE } = require('../lib/deprecations');
+
+    await t.test('describes the field from DEPRECATED_FIELDS, with the removal date, and hides it', () => {
+        const described = deprecated(Joi.any().strip(), 'syncFrom').describe();
+        assert.strictEqual(described.flags.description, `${DEPRECATED_FIELDS.syncFrom.note}. Accepted until ${REMOVAL_DATE}`);
+        assert.ok(described.metas.some(meta => meta.swaggerHidden === true));
+    });
+
+    await t.test('a published field stays in the API document', () => {
+        const described = deprecated(Joi.string(), 'tenant').describe();
+        assert.ok(!(described.metas || []).some(meta => meta.swaggerHidden), 'tenant is documented');
+    });
+
+    await t.test('reports a use and passes the value on', () => {
+        const reported = [];
+        const previous = setFieldReporter(field => reported.push(field));
+        try {
+            const { value, error } = deprecated(Joi.string(), 'tenant').validate('abc');
+            assert.ifError(error);
+            assert.strictEqual(value, 'abc');
+            assert.deepStrictEqual(reported, ['tenant']);
+        } finally {
+            setFieldReporter(previous);
+        }
+    });
+
+    await t.test('every deprecated field has a successor and a note', () => {
+        for (const [field, entry] of Object.entries(DEPRECATED_FIELDS)) {
+            assert.ok(entry.successor && entry.note, field);
+        }
+    });
+
+    await t.test('the schemas apply it instead of their own chains', () => {
+        const fs = require('node:fs');
+        const path = require('node:path');
+        for (const file of ['lib/schemas.js', 'lib/api-routes/oauth2-app-routes.js']) {
+            const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf-8');
+            assert.doesNotMatch(source, /custom\(\.\.\.deprecatedField\(/, file);
         }
     });
 });
