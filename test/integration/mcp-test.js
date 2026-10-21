@@ -225,10 +225,10 @@ test('MCP endpoint', async t => {
             assert.match(outbox.body.result.content[0].text, /permission/i);
 
             // and the narrowing shapes the advertised catalog: read across the account group
-            // is exactly two tools, so the agent never plans around a tool it cannot call
+            // is exactly these tools, so the agent never plans around a tool it cannot call
             const list = await modernRpc('tools/list', {}, { token: mcpToken });
             assert.equal(list.status, 200);
-            assert.deepEqual(toolNames(list), ['get_account', 'list_accounts']);
+            assert.deepEqual(toolNames(list), ['get_account', 'get_server_signatures', 'list_accounts']);
         } finally {
             await tokens.delete(mcpToken);
         }
