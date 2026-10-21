@@ -40,13 +40,25 @@ if (!process.env.EE_ENV_LOADED) {
 // Set process title for easier identification in process lists
 process.title = 'emailengine';
 
-// EmailEngine and its dependencies need Node 20 or newer, the same floor the engines field in
-// package.json declares. Checked before anything is required, so an older runtime gets this line
-// instead of a syntax error from a dependency. The check used to be a structuredClone probe, which
-// only caught Node 16 and older.
+// EmailEngine and its dependencies need Node 20 or newer. Checked before anything is required, so an
+// older runtime gets this line instead of a syntax error from a dependency. The check used to be a
+// structuredClone probe, which only caught Node 16 and older.
 if (Number(process.versions.node.split('.')[0]) < 20) {
     console.error(`Node.js version ${process.version} is not supported. Please upgrade to Node.js 20 or later.`);
     process.exit(1);
+}
+
+// Within Node 20 the dependency tree itself asks for 20.19.0 (html-to-text 10, the entities release
+// node-html-parser pulls in) or 20.18.1 (undici 7), which is what the engines field declares. npm
+// treats that field as advice, and an older 20.x starts and then fails somewhere in a dependency at
+// runtime, so it is named here. Only a warning: one-click DigitalOcean images upgrade EmailEngine on
+// their own but not the Node they run on, and an instance that works today must not stop at its next
+// self-upgrade over a minor version it may never exercise.
+const { MIN_SUPPORTED_NODE, isBelowSupportedNode } = require('./lib/node-version');
+if (isBelowSupportedNode(process.versions.node)) {
+    console.error(
+        `Node.js version ${process.version} is older than ${MIN_SUPPORTED_NODE}, the oldest release EmailEngine's dependencies support. Some features may fail at runtime. Please upgrade Node.js.`
+    );
 }
 
 const os = require('os');
