@@ -13,6 +13,12 @@ module.exports = {
     // Timeout for Gmail API operations
     GMAIL_TIMEOUT: 90000, // 90 seconds
 
+    // Timeout for a Google Workspace mailbox to connect over IMAP XOAUTH2. A healthy login is done
+    // in 1-2 s, but Gmail has been seen answering every command of one at 13-37 s (AUTHENTICATE
+    // 37 s, NAMESPACE 21 s, COMPRESS 15 s, ENABLE 13 s), still mid-LIST at 90 s, with EmailEngine
+    // writing each command at once. Sized for that, and below the runner's 180 s per-test cap
+    GMAIL_IMAP_CONNECT_TIMEOUT: 160000, // 160 seconds
+
     // Timeout for Outlook Graph API operations
     OUTLOOK_TIMEOUT: 90000, // 90 seconds
 

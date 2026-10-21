@@ -117,7 +117,7 @@ async function waitForCondition(checkFn, options = {}) {
         await new Promise(r => setTimeout(r, interval));
     }
 
-    throw new Error(`Timeout: ${message}`);
+    throw new Error(`Timeout: ${typeof message === 'function' ? message() : message}`);
 }
 
 // Poll until all expected account-lifecycle webhooks have been delivered to the shared receiver.
@@ -1327,7 +1327,7 @@ test('API tests', async t => {
         assert.strictEqual(response.body.state, 'new');
     });
 
-    await t.test('wait until gmailService account connects via IMAP XOAUTH2', { skip: gmailServiceSkip, timeout: 120000 }, async () => {
+    await t.test('wait until gmailService account connects via IMAP XOAUTH2', { skip: gmailServiceSkip, timeout: 170000 }, async () => {
         let lastResponse;
         await waitForCondition(
             async () => {
@@ -1341,13 +1341,17 @@ test('API tests', async t => {
                 }
                 return false;
             },
-            { timeout: testConfig.GMAIL_TIMEOUT, message: `Gmail Service account connection timeout` }
+            {
+                timeout: testConfig.GMAIL_IMAP_CONNECT_TIMEOUT,
+                // the state tells a slow provider (still connecting) from an account that never started
+                message: () => `Gmail Service account connection timeout, state ${lastResponse?.body?.state}`
+            }
         );
 
         assert.notStrictEqual(lastResponse.body.isApi, true, 'gmailService should use IMAP XOAUTH2, not the API path');
     });
 
-    await t.test('list mailboxes for gmailService account', { skip: gmailServiceSkip, timeout: 30000 }, async () => {
+    await t.test('list mailboxes for gmailService account', { skip: gmailServiceSkip, timeout: 60000 }, async () => {
         const response = await server.get(`/v1/account/${gmailServiceAccountId}/mailboxes`).expect(200);
 
         assert.ok(response.body.mailboxes.some(mb => mb.specialUse === '\\Inbox'));
@@ -1459,7 +1463,7 @@ test('API tests', async t => {
         assert.strictEqual(response.body.state, 'new');
     });
 
-    await t.test('WIF: wait until account connects via IMAP XOAUTH2', { skip: wifSkip, timeout: 120000 }, async () => {
+    await t.test('WIF: wait until account connects via IMAP XOAUTH2', { skip: wifSkip, timeout: 170000 }, async () => {
         let lastResponse;
         await waitForCondition(
             async () => {
@@ -1473,13 +1477,16 @@ test('API tests', async t => {
                 }
                 return false;
             },
-            { timeout: testConfig.GMAIL_TIMEOUT, message: `Gmail WIF account connection timeout` }
+            {
+                timeout: testConfig.GMAIL_IMAP_CONNECT_TIMEOUT,
+                message: () => `Gmail WIF account connection timeout, state ${lastResponse?.body?.state}`
+            }
         );
 
         assert.notStrictEqual(lastResponse.body.isApi, true, 'gmailService (WIF) should use IMAP XOAUTH2, not the API path');
     });
 
-    await t.test('WIF: list mailboxes for the account', { skip: wifSkip, timeout: 30000 }, async () => {
+    await t.test('WIF: list mailboxes for the account', { skip: wifSkip, timeout: 60000 }, async () => {
         const response = await server.get(`/v1/account/${wifAccountId}/mailboxes`).expect(200);
 
         assert.ok(response.body.mailboxes.some(mb => mb.specialUse === '\\Inbox'));
