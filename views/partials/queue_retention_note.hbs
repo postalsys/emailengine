@@ -11,20 +11,24 @@
     {{#if retention.failedCountFromSetting}}
     The count follows the completed job history limit in
     <a href="/admin/config/service#queue_settings" class="link link-animated">General settings</a>, which is above the
-    floor of {{formatInteger retention.failedCountFloor userLocale}} set with <code>EENGINE_QUEUE_KEEP_FAILED</code>;
+    floor of {{formatInteger retention.failedCountFloor userLocale}} set by the failed job limit there or by
+    <code>EENGINE_QUEUE_KEEP_FAILED</code>;
     {{else}}
-    The count is set with <code>EENGINE_QUEUE_KEEP_FAILED</code>, or by the completed job history limit in
-    <a href="/admin/config/service#queue_settings" class="link link-animated">General settings</a> when that is higher;
+    The count is the failed job limit in
+    <a href="/admin/config/service#queue_settings" class="link link-animated">General settings</a> (or
+    <code>EENGINE_QUEUE_KEEP_FAILED</code>), or the completed job history limit there when that is higher;
     {{/if}}
-    the age with <code>EENGINE_QUEUE_KEEP_FAILED_AGE</code>.
+    the age is set there too (or by <code>EENGINE_QUEUE_KEEP_FAILED_AGE</code>).
     {{#equals queue.name "submit"}}
     {{#if failedContent.limits.keepsContent}}
     The content of the {{formatInteger failedContent.limits.maxCount userLocale}} most recent failed messages is kept
-    so they can be retried, up to {{failedContent.limits.maxBytesLabel}} in total, set with
-    <code>EENGINE_QUEUE_KEEP_FAILED_CONTENT</code> and <code>EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE</code>.
+    so they can be retried, up to {{failedContent.limits.maxBytesLabel}} in total, set in
+    <a href="/admin/config/service#queue_settings" class="link link-animated">General settings</a> (or with
+    <code>EENGINE_QUEUE_KEEP_FAILED_CONTENT</code> and <code>EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE</code>).
     {{else}}
-    The content of a failed message is not kept, so none can be retried from here; set
-    <code>EENGINE_QUEUE_KEEP_FAILED_CONTENT</code> to keep some.
+    The content of a failed message is not kept, so none can be retried from here; raise the retained failed
+    message limits in <a href="/admin/config/service#queue_settings" class="link link-animated">General settings</a>
+    (or <code>EENGINE_QUEUE_KEEP_FAILED_CONTENT</code>) to keep some.
     {{/if}}
     {{/equals}}
     {{else}}

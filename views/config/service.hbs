@@ -117,6 +117,50 @@
                 {{/ui/form-field}}
             </div>
 
+            <div class="grid gap-4 sm:grid-cols-2 mt-4">
+                <div>
+                    {{> ui/setting-ref name="queueKeepFailed"}}
+                    {{#> ui/form-field id="settingsQueueKeepFailed" label="Failed job limit" error=errors.queueKeepFailed}}
+                    <input type="number" min="1" class="input{{#if errors.queueKeepFailed}} is-invalid{{/if}}"
+                        id="settingsQueueKeepFailed" name="queueKeepFailed" value="{{values.queueKeepFailed}}" data-lpignore="true"
+                        autocomplete="off" />
+                    <span class="helper-text">Failed jobs retained per queue, at least. A failed job is the only record that a
+                        delivery was given up on.</span>
+                    {{/ui/form-field}}
+                </div>
+
+                <div>
+                    {{> ui/setting-ref name="queueKeepFailedAge"}}
+                    {{#> ui/form-field id="settingsQueueKeepFailedAge" label="Failed job retention (days)" error=errors.queueKeepFailedAge}}
+                    <input type="number" min="0.01" step="any" class="input{{#if errors.queueKeepFailedAge}} is-invalid{{/if}}"
+                        id="settingsQueueKeepFailedAge" name="queueKeepFailedAge" value="{{values.queueKeepFailedAge}}" data-lpignore="true"
+                        autocomplete="off" />
+                    <span class="helper-text">How long failed jobs are kept.</span>
+                    {{/ui/form-field}}
+                </div>
+
+                <div>
+                    {{> ui/setting-ref name="queueKeepFailedContent"}}
+                    {{#> ui/form-field id="settingsQueueKeepFailedContent" label="Retryable failed messages" error=errors.queueKeepFailedContent}}
+                    <input type="number" min="0" class="input{{#if errors.queueKeepFailedContent}} is-invalid{{/if}}"
+                        id="settingsQueueKeepFailedContent" name="queueKeepFailedContent" value="{{values.queueKeepFailedContent}}" data-lpignore="true"
+                        autocomplete="off" />
+                    <span class="helper-text">How many of the most recent failed messages keep their content so they can be
+                        retried. 0 keeps none.</span>
+                    {{/ui/form-field}}
+                </div>
+
+                <div>
+                    {{> ui/setting-ref name="queueKeepFailedContentSize"}}
+                    {{#> ui/form-field id="settingsQueueKeepFailedContentSize" label="Retryable message content (MB)" error=errors.queueKeepFailedContentSize}}
+                    <input type="number" min="0" step="any" class="input{{#if errors.queueKeepFailedContentSize}} is-invalid{{/if}}"
+                        id="settingsQueueKeepFailedContentSize" name="queueKeepFailedContentSize" value="{{values.queueKeepFailedContentSize}}" data-lpignore="true"
+                        autocomplete="off" />
+                    <span class="helper-text">Total size of the kept content. 0 keeps none.</span>
+                    {{/ui/form-field}}
+                </div>
+            </div>
+
         </div>
     </div>
 

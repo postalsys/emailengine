@@ -140,6 +140,35 @@ test('token audit log', async t => {
         assert.equal(len, auditLog.LOG_ENTRIES, `expected the list capped at ${auditLog.LOG_ENTRIES}, got ${len}`);
     });
 
+    await t.test('the cap and the age follow the tokenLogEntries and tokenLogAge settings', async () => {
+        const { resetOverridableSettingsCache } = require('../lib/env-setting-overrides');
+        const previous = await settings.getMulti('tokenLogEntries', 'tokenLogAge');
+        await settings.setMulti({ tokenLogEntries: 5, tokenLogAge: 3600 });
+        resetOverridableSettingsCache();
+        try {
+            await redis.del(logKey);
+            for (let i = 0; i < 8; i++) {
+                auditLog.record(entry({ path: `/s${i}` }));
+            }
+            await waitForEntries(5);
+            // let any write still in flight land before measuring
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            assert.equal(await redis.llen(logKey), 5);
+            const ttl = await redis.ttl(logKey);
+            assert.ok(ttl > 0 && ttl <= 3600, `expected the log to expire within the configured hour, ttl ${ttl}`);
+        } finally {
+            for (const key of ['tokenLogEntries', 'tokenLogAge']) {
+                if (previous[key] === undefined || previous[key] === null) {
+                    await settings.clear(key);
+                } else {
+                    await settings.set(key, previous[key]);
+                }
+            }
+            resetOverridableSettingsCache();
+        }
+    });
+
     await t.test('truncates an over-long account to the longest one that could be real', async () => {
         // The entry is built in the authentication step, which runs before route validation, so this
         // field is whatever the client put in the path or the `?account=` query argument. Storing it

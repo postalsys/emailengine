@@ -55,6 +55,28 @@
                         rel="noopener noreferrer" class="link link-animated">the token log endpoint</a>. Logging starts when enabled and adds a storage write to each authenticated request.</span>
             </div>
 
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    {{> ui/setting-ref name="tokenLogEntries"}}
+                    {{#> ui/form-field id="settingsTokenLogEntries" label="Requests kept per token" error=errors.tokenLogEntries}}
+                    <input type="number" min="1" class="input{{#if errors.tokenLogEntries}} is-invalid{{/if}}"
+                        id="settingsTokenLogEntries" name="tokenLogEntries" value="{{values.tokenLogEntries}}" data-lpignore="true"
+                        autocomplete="off" />
+                    <span class="helper-text">A full log of typical entries takes roughly 170KB of Redis per token.</span>
+                    {{/ui/form-field}}
+                </div>
+
+                <div>
+                    {{> ui/setting-ref name="tokenLogAge"}}
+                    {{#> ui/form-field id="settingsTokenLogAge" label="Log retention after last use (days)" error=errors.tokenLogAge}}
+                    <input type="number" min="0.01" step="any" class="input{{#if errors.tokenLogAge}} is-invalid{{/if}}"
+                        id="settingsTokenLogAge" name="tokenLogAge" value="{{values.tokenLogAge}}" data-lpignore="true"
+                        autocomplete="off" />
+                    <span class="helper-text">A token nobody uses takes its log with it after this long.</span>
+                    {{/ui/form-field}}
+                </div>
+            </div>
+
     {{/ui/card}}
 
     {{#> ui/card title="Secrets and Encryption" id="secrets" bodyClass="space-y-4"}}

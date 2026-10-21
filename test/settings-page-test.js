@@ -65,4 +65,46 @@ test('registerSettingsPage', async t => {
 
         assert.deepEqual(context.envManagedKeys, []);
     });
+
+    await t.test('a page with no overridable field never lists one', async () => {
+        const { context } = await render();
+        assert.deepEqual(context.envOverriddenSettings, []);
+    });
+});
+
+test('registerSettingsPage flags fields their own environment variable pins', async t => {
+    const routes = {};
+    registerSettingsPage(
+        { route: def => (routes[def.method] = def) },
+        {
+            path: '/admin/config/overridable',
+            view: 'config/overridable',
+            pageTitle: 'Overridable',
+            menuKey: 'menuConfigOverridable',
+            schema: { queueKeepFailed: Joi.number(), tokenLogAge: Joi.number(), queueKeep: Joi.number() },
+            loadValues: async () => ({}),
+            applySettings: async () => {}
+        }
+    );
+    const render = async () => {
+        let rendered;
+        await routes.GET.handler({}, { view: (view, context) => (rendered = { view, context }) });
+        return rendered.context;
+    };
+
+    await t.test('nothing is pinned while the variables are unset', async () => {
+        assert.deepEqual((await render()).envOverriddenSettings, []);
+    });
+
+    await t.test('a set variable pins its own field, and only on a page that has the field', async () => {
+        process.env.EENGINE_QUEUE_KEEP_FAILED = '2500';
+        // set, but not for a field of this page
+        process.env.EENGINE_TOKEN_LOG_ENTRIES = '10';
+        try {
+            assert.deepEqual((await render()).envOverriddenSettings, [{ key: 'queueKeepFailed', env: 'EENGINE_QUEUE_KEEP_FAILED' }]);
+        } finally {
+            delete process.env.EENGINE_QUEUE_KEEP_FAILED;
+            delete process.env.EENGINE_TOKEN_LOG_ENTRIES;
+        }
+    });
 });

@@ -182,7 +182,7 @@ test('queue retention note', async t => {
         const webhooks = text(note('notify', 'failed'));
         assert.match(
             webhooks,
-            /^The most recent 500 are kept for 7 days\. The count is set with EENGINE_QUEUE_KEEP_FAILED, or by the completed job history limit in General settings when that is higher; the age with EENGINE_QUEUE_KEEP_FAILED_AGE\.$/
+            /^The most recent 500 are kept for 7 days\. The count is the failed job limit in General settings \(or EENGINE_QUEUE_KEEP_FAILED\), or the completed job history limit there when that is higher; the age is set there too \(or by EENGINE_QUEUE_KEEP_FAILED_AGE\)\.$/
         );
 
         // a history limit above the floor is what decides the count, and the note says so
@@ -193,7 +193,7 @@ test('queue retention note', async t => {
         );
         assert.match(
             raised,
-            /^The most recent 888 are kept for 7 days\. The count follows the completed job history limit in General settings, which is above the floor of 500 set with EENGINE_QUEUE_KEEP_FAILED; the age with EENGINE_QUEUE_KEEP_FAILED_AGE\.$/
+            /^The most recent 888 are kept for 7 days\. The count follows the completed job history limit in General settings, which is above the floor of 500 set by the failed job limit there or by EENGINE_QUEUE_KEEP_FAILED; the age is set there too \(or by EENGINE_QUEUE_KEEP_FAILED_AGE\)\.$/
         );
 
         const messages = text(
@@ -201,16 +201,16 @@ test('queue retention note', async t => {
                 retention: { completedCount: 0, failedCount: 2000, failedCountFloor: 2000, failedCountFromSetting: false, failedAgeDays: 1 }
             })
         );
-        assert.match(messages, /The most recent 2,000 are kept for 1 day\. The count is set with/);
+        assert.match(messages, /The most recent 2,000 are kept for 1 day\. The count is the failed job limit/);
         assert.match(
             messages,
-            /The content of the 100 most recent failed messages is kept so they can be retried, up to 100 MB in total, set with EENGINE_QUEUE_KEEP_FAILED_CONTENT and EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE\./
+            /The content of the 100 most recent failed messages is kept so they can be retried, up to 100 MB in total, set in General settings \(or with EENGINE_QUEUE_KEEP_FAILED_CONTENT and EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE\)\./
         );
 
         const noContent = text(note('submit', 'failed', { failedContent: { limits: { maxCount: 100, maxBytesLabel: '0 B', keepsContent: false } } }));
         assert.match(
             noContent,
-            /The content of a failed message is not kept, so none can be retried from here; set EENGINE_QUEUE_KEEP_FAILED_CONTENT to keep some\./
+            /The content of a failed message is not kept, so none can be retried from here; raise the retained failed message limits in General settings \(or EENGINE_QUEUE_KEEP_FAILED_CONTENT\) to keep some\./
         );
 
         assert.match(text(note('export', 'failed')), /^Exports are not kept here once they fail; an export's outcome is on its account's page\.$/);

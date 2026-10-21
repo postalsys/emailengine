@@ -3088,6 +3088,10 @@
                     "description": "Include the `notifyWebSafeHtml` setting in the response",
                     "default": false
                 },
+                "disableThreadCollapse": {
+                    "type": "boolean",
+                    "default": false
+                },
                 "notifyTextSize": {
                     "type": "boolean",
                     "description": "Include the `notifyTextSize` setting in the response",
@@ -3126,6 +3130,22 @@
                 "queueKeep": {
                     "type": "boolean",
                     "description": "Include the `queueKeep` setting in the response",
+                    "default": false
+                },
+                "queueKeepFailed": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "queueKeepFailedAge": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "queueKeepFailedContent": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "queueKeepFailedContentSize": {
+                    "type": "boolean",
                     "default": false
                 },
                 "deliveryAttempts": {
@@ -7058,6 +7078,10 @@
                     "type": "boolean",
                     "description": "Sanitize HTML content to remove potentially dangerous elements before including in webhooks, and fold quoted thread history into a collapsed block"
                 },
+                "disableThreadCollapse": {
+                    "type": "boolean",
+                    "description": "Stop web-safe HTML (in webhooks and in message responses that ask for it) from folding quoted thread history into a collapsed block. EENGINE_DISABLE_THREAD_COLLAPSE overrides this setting when set"
+                },
                 "notifyTextSize": {
                     "type": "integer",
                     "description": "Maximum size (in bytes) of text content to include in webhook payloads",
@@ -7128,6 +7152,38 @@
                     "description": "Number of completed and failed queue entries to retain for debugging",
                     "examples": [
                         50
+                    ],
+                    "minimum": 0
+                },
+                "queueKeepFailed": {
+                    "type": "integer",
+                    "description": "Failed queue entries retained per queue, at least (default 500); a higher queueKeep raises it. EENGINE_QUEUE_KEEP_FAILED overrides this setting when set",
+                    "examples": [
+                        500
+                    ],
+                    "minimum": 1
+                },
+                "queueKeepFailedAge": {
+                    "type": "integer",
+                    "description": "How long failed queue entries are retained, in seconds (default 604800, 7 days). EENGINE_QUEUE_KEEP_FAILED_AGE overrides this setting when set",
+                    "examples": [
+                        604800
+                    ],
+                    "minimum": 1
+                },
+                "queueKeepFailedContent": {
+                    "type": "integer",
+                    "description": "How many of the most recent failed messages keep their content so they can be retried (default 100, 0 keeps none). EENGINE_QUEUE_KEEP_FAILED_CONTENT overrides this setting when set",
+                    "examples": [
+                        100
+                    ],
+                    "minimum": 0
+                },
+                "queueKeepFailedContentSize": {
+                    "type": "integer",
+                    "description": "Total size of the retained failed-message content, in bytes (default 104857600, 100MB, 0 keeps none). EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE overrides this setting when set",
+                    "examples": [
+                        104857600
                     ],
                     "minimum": 0
                 },

@@ -347,9 +347,28 @@ test('Outbox failed content', async t => {
     await worker.waitUntilReady();
 
     const account = 'outbox-failed-account';
-    const limits = outbox.FAILED_CONTENT_LIMITS;
     const hasContent = async queueId => !!(await redis.hexists(`${REDIS_PREFIX}iaq:${account}`, queueId));
-    const originalLimits = Object.assign({}, limits);
+
+    // The content bounds are settings (the environment winning), read through a short cache, so a
+    // test narrows them by writing the settings and dropping the cache, and puts them back after
+    const settings = require('../lib/settings');
+    const { resetOverridableSettingsCache } = require('../lib/env-setting-overrides');
+    const LIMIT_KEYS = ['queueKeepFailedContent', 'queueKeepFailedContentSize'];
+    const originalLimits = await settings.getMulti(...LIMIT_KEYS);
+    async function setLimits(values) {
+        await settings.setMulti(values);
+        resetOverridableSettingsCache();
+    }
+    async function restoreLimits() {
+        for (const key of LIMIT_KEYS) {
+            if (originalLimits[key] === undefined || originalLimits[key] === null) {
+                await settings.clear(key);
+            } else {
+                await settings.set(key, originalLimits[key]);
+            }
+        }
+        resetOverridableSettingsCache();
+    }
 
     let token = 0;
 
@@ -379,7 +398,7 @@ test('Outbox failed content', async t => {
     }
 
     t.after(async () => {
-        Object.assign(limits, originalLimits);
+        await restoreLimits();
         await worker.close();
     });
 
@@ -457,8 +476,10 @@ test('Outbox failed content', async t => {
 
     await t.test('retainFailedContent() applies the count and size bounds, oldest first', async () => {
         try {
-            limits.maxCount = 2;
-            limits.maxBytes = 1024;
+            await setLimits({ queueKeepFailedContent: 2, queueKeepFailedContentSize: 1024 });
+            const narrowed = await outbox.getFailedContentLimits();
+            assert.equal(narrowed.maxCount, 2);
+            assert.equal(narrowed.maxBytes, 1024);
 
             // recent failures, a second apart: the age bound must not be what drops them
             const base = Date.now() - 10000;
@@ -484,7 +505,7 @@ test('Outbox failed content', async t => {
             // nothing to retain for a message whose content is already gone
             assert.equal(await outbox.retainFailedContent({ account, queueId: 'outbox-bound-missing', finishedOn: base + 5000, logger }), false);
         } finally {
-            Object.assign(limits, originalLimits);
+            await restoreLimits();
             await cleanup('outbox-bound-1', 'outbox-bound-2', 'outbox-bound-3', 'outbox-bound-huge');
         }
     });

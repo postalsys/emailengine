@@ -10569,6 +10569,21 @@
             "example": false,
             "nullable": true
           },
+          "tokenLogEntries": {
+            "type": "integer",
+            "description": "Requests retained per access token in the audit log (default 1000). A full log of typical entries is roughly 170KB of Redis per token. EENGINE_TOKEN_LOG_ENTRIES overrides this setting when set",
+            "example": 1000,
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          "tokenLogAge": {
+            "type": "integer",
+            "description": "How long a token's audit log survives its last use, in seconds (default 604800, 7 days). EENGINE_TOKEN_LOG_AGE overrides this setting when set",
+            "example": 604800,
+            "nullable": true,
+            "minimum": 1
+          },
           "proxyEnabled": {
             "type": "boolean",
             "description": "Route all outbound connections through a proxy server: IMAP and SMTP sessions as well as HTTP/HTTPS requests (Gmail API, Microsoft Graph, OAuth2 token exchange, webhooks, license validation) unless a dedicated HTTP proxy is configured",
@@ -10634,6 +10649,11 @@
           "notifyWebSafeHtml": {
             "type": "boolean",
             "description": "Sanitize HTML content to remove potentially dangerous elements before including in webhooks, and fold quoted thread history into a collapsed block",
+            "nullable": true
+          },
+          "disableThreadCollapse": {
+            "type": "boolean",
+            "description": "Stop web-safe HTML (in webhooks and in message responses that ask for it) from folding quoted thread history into a collapsed block. EENGINE_DISABLE_THREAD_COLLAPSE overrides this setting when set",
             "nullable": true
           },
           "notifyTextSize": {
@@ -10832,6 +10852,34 @@
             "type": "integer",
             "description": "Number of completed and failed queue entries to retain for debugging",
             "example": 50,
+            "nullable": true,
+            "minimum": 0
+          },
+          "queueKeepFailed": {
+            "type": "integer",
+            "description": "Failed queue entries retained per queue, at least (default 500); a higher queueKeep raises it. EENGINE_QUEUE_KEEP_FAILED overrides this setting when set",
+            "example": 500,
+            "nullable": true,
+            "minimum": 1
+          },
+          "queueKeepFailedAge": {
+            "type": "integer",
+            "description": "How long failed queue entries are retained, in seconds (default 604800, 7 days). EENGINE_QUEUE_KEEP_FAILED_AGE overrides this setting when set",
+            "example": 604800,
+            "nullable": true,
+            "minimum": 1
+          },
+          "queueKeepFailedContent": {
+            "type": "integer",
+            "description": "How many of the most recent failed messages keep their content so they can be retried (default 100, 0 keeps none). EENGINE_QUEUE_KEEP_FAILED_CONTENT overrides this setting when set",
+            "example": 100,
+            "nullable": true,
+            "minimum": 0
+          },
+          "queueKeepFailedContentSize": {
+            "type": "integer",
+            "description": "Total size of the retained failed-message content, in bytes (default 104857600, 100MB, 0 keeps none). EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE overrides this setting when set",
+            "example": 104857600,
             "nullable": true,
             "minimum": 0
           },
@@ -11368,6 +11416,19 @@
             "description": "Record which requests each access token makes, readable at GET /v1/tokens/{token}/log. Disabled by default, and entries only exist from the point it is enabled",
             "example": false
           },
+          "tokenLogEntries": {
+            "type": "integer",
+            "description": "Requests retained per access token in the audit log (default 1000). A full log of typical entries is roughly 170KB of Redis per token. EENGINE_TOKEN_LOG_ENTRIES overrides this setting when set",
+            "example": 1000,
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          "tokenLogAge": {
+            "type": "integer",
+            "description": "How long a token's audit log survives its last use, in seconds (default 604800, 7 days). EENGINE_TOKEN_LOG_AGE overrides this setting when set",
+            "example": 604800,
+            "minimum": 1
+          },
           "proxyEnabled": {
             "type": "boolean",
             "description": "Route all outbound connections through a proxy server: IMAP and SMTP sessions as well as HTTP/HTTPS requests (Gmail API, Microsoft Graph, OAuth2 token exchange, webhooks, license validation) unless a dedicated HTTP proxy is configured"
@@ -11428,6 +11489,10 @@
           "notifyWebSafeHtml": {
             "type": "boolean",
             "description": "Sanitize HTML content to remove potentially dangerous elements before including in webhooks, and fold quoted thread history into a collapsed block"
+          },
+          "disableThreadCollapse": {
+            "type": "boolean",
+            "description": "Stop web-safe HTML (in webhooks and in message responses that ask for it) from folding quoted thread history into a collapsed block. EENGINE_DISABLE_THREAD_COLLAPSE overrides this setting when set"
           },
           "notifyTextSize": {
             "type": "integer",
@@ -11609,6 +11674,30 @@
             "type": "integer",
             "description": "Number of completed and failed queue entries to retain for debugging",
             "example": 50,
+            "minimum": 0
+          },
+          "queueKeepFailed": {
+            "type": "integer",
+            "description": "Failed queue entries retained per queue, at least (default 500); a higher queueKeep raises it. EENGINE_QUEUE_KEEP_FAILED overrides this setting when set",
+            "example": 500,
+            "minimum": 1
+          },
+          "queueKeepFailedAge": {
+            "type": "integer",
+            "description": "How long failed queue entries are retained, in seconds (default 604800, 7 days). EENGINE_QUEUE_KEEP_FAILED_AGE overrides this setting when set",
+            "example": 604800,
+            "minimum": 1
+          },
+          "queueKeepFailedContent": {
+            "type": "integer",
+            "description": "How many of the most recent failed messages keep their content so they can be retried (default 100, 0 keeps none). EENGINE_QUEUE_KEEP_FAILED_CONTENT overrides this setting when set",
+            "example": 100,
+            "minimum": 0
+          },
+          "queueKeepFailedContentSize": {
+            "type": "integer",
+            "description": "Total size of the retained failed-message content, in bytes (default 104857600, 100MB, 0 keeps none). EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE overrides this setting when set",
+            "example": 104857600,
             "minimum": 0
           },
           "deliveryAttempts": {
@@ -23279,7 +23368,7 @@
       "post": {
         "summary": "Retry a failed message",
         "operationId": "postV1OutboxQueueidRetry",
-        "description": "Puts a message whose delivery failed for good back into the queue with a fresh set of delivery attempts. Only a failed message whose content is still stored can be retried: the content of the most recent failures is kept for this, within the bounds set by EENGINE_QUEUE_KEEP_FAILED_CONTENT and EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE. A message that cannot be retried answers 409 with `code` NotFailed (the message is not in the failed state) or ContentGone (its content is no longer stored).",
+        "description": "Puts a message whose delivery failed for good back into the queue with a fresh set of delivery attempts. Only a failed message whose content is still stored can be retried: the content of the most recent failures is kept for this, within the bounds set by the queueKeepFailedContent and queueKeepFailedContentSize settings (or EENGINE_QUEUE_KEEP_FAILED_CONTENT and EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE, which win when set). A message that cannot be retried answers 409 with `code` NotFailed (the message is not in the failed state) or ContentGone (its content is no longer stored).",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -23808,6 +23897,22 @@
             "description": "Include the `tokenAuditLog` setting in the response"
           },
           {
+            "name": "tokenLogEntries",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "tokenLogAge",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
             "name": "proxyEnabled",
             "in": "query",
             "schema": {
@@ -23876,6 +23981,14 @@
               "default": false
             },
             "description": "Include the `notifyWebSafeHtml` setting in the response"
+          },
+          {
+            "name": "disableThreadCollapse",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
           },
           {
             "name": "notifyTextSize",
@@ -24186,6 +24299,38 @@
               "default": false
             },
             "description": "Include the `queueKeep` setting in the response"
+          },
+          {
+            "name": "queueKeepFailed",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "queueKeepFailedAge",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "queueKeepFailedContent",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "queueKeepFailedContentSize",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
           },
           {
             "name": "deliveryAttempts",

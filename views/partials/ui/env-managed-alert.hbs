@@ -1,19 +1,28 @@
 {{!--
     ui/env-managed-alert - notice for the settings pages registered through
-    lib/ui-routes/settings-page.js, naming the form fields whose values the EENGINE_SETTINGS
-    environment variable re-applies on every boot. A value saved for one of them holds only
-    until the next restart, and without this the page would show the save succeeding.
-    Renders nothing when the page has no such field. The inputs stay enabled on purpose -
-    a disabled control drops out of the POST and would silently strip its value from the
+    lib/ui-routes/settings-page.js, naming the form fields whose values come from the environment.
+    Two kinds: fields the EENGINE_SETTINGS environment variable re-applies on every boot (a value
+    saved for one of them holds only until the next restart), and fields whose own environment
+    variable overrides the setting (lib/env-setting-overrides.js: the page shows the variable's
+    value and a value typed there is not saved). Without this the page would show the save
+    succeeding. Renders nothing when the page has no such field. The inputs stay enabled on
+    purpose - a disabled control drops out of the POST and would silently strip its value from the
     save - so the notice is the whole treatment.
       {{> ui/env-managed-alert}}
-    Reads `envManagedKeys` (array of field names) from the page context; registerSettingsPage
-    sets it on every render of the page.
+    Reads `envManagedKeys` (array of field names) and `envOverriddenSettings` (array of
+    `{key, env}`) from the page context; registerSettingsPage sets both on every render of the page.
 --}}
 {{#if envManagedKeys.length}}
 {{#> ui/alert-banner variant="info" icon="icon-[tabler--info-circle]" title="Some fields are set by the environment"}}
 <div>The following settings come from the <code>EENGINE_SETTINGS</code> environment variable and are re-applied on
     every restart. A value saved here is used until the next restart, then reverts to the environment value:
     {{#each envManagedKeys}}<code>{{this}}</code>{{#unless @last}}, {{/unless}}{{/each}}.</div>
+{{/ui/alert-banner}}
+{{/if}}
+{{#if envOverriddenSettings.length}}
+{{#> ui/alert-banner variant="info" icon="icon-[tabler--info-circle]" title="Some fields are pinned by environment variables"}}
+<div>These settings are set by their own environment variable, which takes precedence over the saved setting. The
+    form shows the environment value, and a value entered for them here is not saved while the variable is set:
+    {{#each envOverriddenSettings}}<code>{{key}}</code> (<code>{{env}}</code>){{#unless @last}}, {{/unless}}{{/each}}.</div>
 {{/ui/alert-banner}}
 {{/if}}

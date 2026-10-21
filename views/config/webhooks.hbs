@@ -204,6 +204,14 @@ class="mb-1"}}
             </div>
 
             <div>
+                {{> ui/setting-ref name="disableThreadCollapse"}}
+                {{> ui/checkbox id="settingsDisableThreadCollapse" name="disableThreadCollapse"
+                label="Keep quoted thread history expanded" class="text-list" checked=values.disableThreadCollapse
+                error=errors.disableThreadCollapse
+                hint="Do not fold quoted replies into a collapsed block in web-safe HTML, here and in API responses that ask for it."}}
+            </div>
+
+            <div>
                 {{> ui/setting-ref name="notifyTextSize"}}
                 {{#> ui/form-field id="settingsNotifyTextSize" label="Content Size Limit" error=errors.notifyTextSize}}
                 <input type="text" class="input text-list{{#if errors.notifyTextSize}} is-invalid{{/if}}"
