@@ -529,6 +529,9 @@ async function exportMessages(job, exportData) {
                         break;
                     }
 
+                    // Per chunk, not only per batch of entries: one batch can outlast the lock
+                    await maybeExtendLease();
+
                     let fetchBatch = entriesToFetch.slice(i, i + MESSAGE_FETCH_BATCH_SIZE);
                     let batchRetry = 0;
 
@@ -624,6 +627,10 @@ async function exportMessages(job, exportData) {
                     let fetchError = null;
 
                     for (let attempt = 1; attempt <= IMAP_MESSAGE_MAX_RETRIES; attempt++) {
+                        // Per attempt: a fetch can take up to EXPORT_TIMEOUT, so a batch of entries
+                        // with retries ran well past the 10 minute lock, and BullMQ started a second
+                        // run of the same export while this one was still writing
+                        await maybeExtendLease();
                         try {
                             message = await accountObject.getMessage(entry.messageId, { textType, maxBytes });
                             break; // Success - exit retry loop
