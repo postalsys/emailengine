@@ -51,9 +51,10 @@ function createSyncOperationsContext({ imapIndexer = 'full', messages = [], fetc
 
     let selectedPath = OTHER_PATH;
 
-    const ctx = {
+    // The real methods, so the helpers the operations call (releaseSyncLock and the per-message
+    // steps) are the ones under test; only the collaborators below are recorded
+    const ctx = Object.assign(Object.create(SyncOperations.prototype), {
         logger: silentLogger,
-        releaseSyncLock: SyncOperations.prototype.releaseSyncLock,
         connection: {
             syncing: false,
             imapClient: {
@@ -127,7 +128,7 @@ function createSyncOperationsContext({ imapIndexer = 'full', messages = [], fetc
             getMessagesKey: () => 'iam:acc:l:KEY',
             getMailboxKey: () => 'iam:acc:h:KEY'
         }
-    };
+    });
 
     return { ctx, calls, counters: COUNTERS[MAILBOX_PATH] };
 }
