@@ -11,7 +11,8 @@ const assert = require('node:assert').strict;
 const Joi = require('joi');
 
 const { applyIdleSettings } = require('../lib/email-client/imap/idle-settings');
-const { imapSchema, imapUpdateSchema, IMAP_MAX_IDLE_TIME_MIN, IMAP_MAX_IDLE_TIME_MAX } = require('../lib/schemas');
+const { imapSchema, imapUpdateSchema } = require('../lib/schemas');
+const { IMAP_MAX_IDLE_TIME_MIN, IMAP_MAX_IDLE_TIME_MAX } = require('../lib/consts');
 
 // applyIdleSettings() works in place, like the connection config it is called on
 const applied = (imapConfig, accountImap) => {

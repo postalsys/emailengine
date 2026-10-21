@@ -199,3 +199,24 @@ test('loadNotifyAttachments()', async () => {
     );
     assert.deepStrictEqual(loaded, ['small']);
 });
+
+test('loadNotifyAttachments() runs up to `concurrency` downloads at once', async () => {
+    const { loadNotifyAttachments } = require('../lib/notify-attachments');
+    let running = 0;
+    let peak = 0;
+    const attachments = Array.from({ length: 8 }, (v, i) => ({ id: `a${i}`, encodedSize: 10 }));
+    await loadNotifyAttachments(
+        attachments,
+        1024,
+        async attachment => {
+            running++;
+            peak = Math.max(peak, running);
+            await new Promise(resolve => setTimeout(resolve, 5));
+            attachment.content = 'x';
+            running--;
+        },
+        3
+    );
+    assert.strictEqual(peak, 3);
+    assert.ok(attachments.every(attachment => attachment.content === 'x'));
+});

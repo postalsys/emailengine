@@ -28,8 +28,7 @@ test('runLocked()', async t => {
         const result = await runLocked(
             lock,
             key,
-            10000,
-            1000,
+            { ttl: 10000, wait: 1000 },
             async held => {
                 assert.ok(held.success);
                 // the lock is really held meanwhile
@@ -43,7 +42,7 @@ test('runLocked()', async t => {
         assert.strictEqual((await lock.acquireLock(key, 1000)).success, true, 'released');
     });
 
-    await t.test('a lock someone else holds goes to onUnavailable, without waiting when waitTtl is null', async () => {
+    await t.test('a lock someone else holds goes to onUnavailable, without waiting when wait is false', async () => {
         const key = id();
         const holder = await lock.acquireLock(key, 10000);
         let ran = false;
@@ -51,8 +50,7 @@ test('runLocked()', async t => {
         const answer = await runLocked(
             lock,
             key,
-            10000,
-            null,
+            { ttl: 10000, wait: false },
             async () => {
                 ran = true;
             },
@@ -70,8 +68,7 @@ test('runLocked()', async t => {
             runLocked(
                 lock,
                 id(),
-                10000,
-                1000,
+                { ttl: 10000, wait: 1000 },
                 async () => {
                     throw failure;
                 },
@@ -100,6 +97,49 @@ test('runLocked()', async t => {
             ]
         );
     });
+});
+
+test('extend keeps a short lock held for a section that outlasts its ttl', async () => {
+    const key = id();
+    await runLocked(
+        lock,
+        key,
+        { ttl: 300, wait: 1000, extend: true },
+        async () => {
+            await new Promise(resolve => setTimeout(resolve, 700));
+            assert.strictEqual((await lock.acquireLock(key, 1000)).success, false, 'still held past the ttl');
+        },
+        () => assert.fail('the lock was free')
+    );
+});
+
+test('rethrowUnavailableLock(): contention becomes LockNotAcquired, anything else is rethrown', () => {
+    const { rethrowUnavailableLock } = require('../lib/lock-run');
+    const logger = createMockLogger();
+    const rethrow = rethrowUnavailableLock(logger, 'Failed to get connection lock', { lockKey: 'k' });
+    assert.throws(
+        () => rethrow(Object.assign(new Error('held'), { code: 'ELOCKNOTACQUIRED' })),
+        err => err.code === 'LockNotAcquired' && err.message === 'Failed to get connection lock'
+    );
+    const redisErr = new Error('down');
+    assert.throws(
+        () => rethrow(redisErr),
+        err => err === redisErr
+    );
+});
+
+test('refuseUnavailableLock() answers contention the way the site asks', () => {
+    const refuse = refuseUnavailableLock(
+        createMockLogger(),
+        'Failed to get flush lock',
+        {},
+        { statusCode: 429, code: 'LockFail', message: 'One flush operation at a time allowed, try again later' }
+    );
+    assert.throws(
+        () => refuse(Object.assign(new Error('held'), { code: 'ELOCKNOTACQUIRED' })),
+        err =>
+            err.output.statusCode === 429 && err.output.payload.code === 'LockFail' && err.message === 'One flush operation at a time allowed, try again later'
+    );
 });
 
 test('locks are taken only through runLocked()', () => {

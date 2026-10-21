@@ -8,7 +8,16 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { observe, observationFor, initialState, LEARN_CEILING, STABLE_SESSION, RELAX_AFTER, CAP_COOLDOWN } = require('../lib/email-client/imap/adaptive-idle');
+const {
+    observe,
+    observationFor,
+    initialState,
+    LEARN_CEILING,
+    STABLE_SESSION,
+    RELAX_AFTER,
+    CAP_COOLDOWN,
+    SAME_EVENT_WINDOW
+} = require('../lib/email-client/imap/adaptive-idle');
 const { IMAP_MAX_IDLE_TIME_MIN } = require('../lib/consts');
 const { forAll, gen } = require('./helpers/property');
 
@@ -40,6 +49,15 @@ test('adaptive IDLE interval', async t => {
         // and left alone for a day
         const ignored = observe(observe(capped, drop(30 * SECOND, 40 * SECOND), now + MINUTE), drop(30 * SECOND, 40 * SECOND), now + 2 * MINUTE);
         assert.strictEqual(ignored.interval, null);
+    });
+
+    await t.test('drops seen at the same moment by several accounts of a host are one event', () => {
+        const now = 1e12;
+        const first = observe(null, drop(30 * SECOND, 45 * SECOND), now);
+        const sameEvent = observe(first, drop(30 * SECOND, 45 * SECOND), now + SAME_EVENT_WINDOW - 1);
+        assert.strictEqual(sameEvent.interval, null, 'a second account seeing the same cut confirms nothing');
+        const later = observe(sameEvent, drop(30 * SECOND, 45 * SECOND), now + MINUTE);
+        assert.strictEqual(later.interval, 18 * SECOND);
     });
 
     await t.test('only a session dropped while idling counts', () => {

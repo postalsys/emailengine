@@ -41,6 +41,23 @@ test('adaptive IDLE store', async t => {
         assert.strictEqual(await learnedInterval(redis, host), 18000);
     });
 
+    await t.test('a long session on a host with nothing learned writes nothing', async () => {
+        const host = newHost();
+        const now = Date.now();
+        assert.strictEqual(await recordClose(redis, host, { connectedAt: now - 3600 * 1000, lastClientWrite: now, context: {} }, now), null);
+        assert.strictEqual(await redis.hexists(LEARNED_KEY, host), 0);
+    });
+
+    await t.test('a host back to nothing learned gives up its field', async () => {
+        const host = newHost();
+        const now = Date.now();
+        // a drop starts a run, a long session then ends it with nothing learned
+        await recordClose(redis, host, droppedIdle(now), now);
+        assert.strictEqual(await redis.hexists(LEARNED_KEY, host), 1);
+        await recordClose(redis, host, { connectedAt: now - 3600 * 1000, lastClientWrite: now, context: {} }, now + 60000);
+        assert.strictEqual(await redis.hexists(LEARNED_KEY, host), 0);
+    });
+
     await t.test('a close that says nothing is not stored', async () => {
         const host = newHost();
         assert.strictEqual(await recordClose(redis, host, { connectedAt: null, context: {} }), null);
@@ -53,12 +70,35 @@ test('adaptive IDLE store', async t => {
         assert.strictEqual(await learnedInterval(redis, host), null);
     });
 
-    await t.test('IMAPClient.recordIdleClose() records and logs a change, and never throws', async () => {
+    await t.test('IMAPClient.getLearnedIdleInterval() reads once for the connections an account opens together', async () => {
+        const host = newHost();
+        let reads = 0;
+        const client = Object.assign(Object.create(IMAPClient.prototype), {
+            logger: createMockLogger(),
+            redis: {
+                hget: async () => {
+                    reads++;
+                    return JSON.stringify({ interval: 18000 });
+                }
+            }
+        });
+        assert.strictEqual(await client.getLearnedIdleInterval(host), 18000);
+        assert.strictEqual(await client.getLearnedIdleInterval(host), 18000);
+        assert.strictEqual(reads, 1);
+    });
+
+    await t.test('IMAPClient.recordIdleClose() records and logs a change, and never throws', async t => {
         const host = newHost();
         const logger = createMockLogger();
         const client = Object.assign(Object.create(IMAPClient.prototype), { redis, logger, account: 'acc', imapConfig: { host } });
         await client.recordIdleClose(Object.assign(droppedIdle(Date.now()), { options: { host } }));
-        await client.recordIdleClose(Object.assign(droppedIdle(Date.now()), { options: { host } }));
+        // a second drop a minute later, not the same event seen twice
+        t.mock.timers.enable({ apis: ['Date'], now: Date.now() + 60 * 1000 });
+        try {
+            await client.recordIdleClose(Object.assign(droppedIdle(Date.now()), { options: { host } }));
+        } finally {
+            t.mock.timers.reset();
+        }
         assert.strictEqual(await learnedInterval(redis, host), 18000);
         assert.ok(logger.entries.some(entry => entry.msg === 'Learned an IDLE restart interval for the server'));
 

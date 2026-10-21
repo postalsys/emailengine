@@ -208,6 +208,7 @@ require.cache[ioredfourPath] = {
             return { success: true, id: `mock-lock-${key}`, key };
         }
         async releaseLock() {}
+        on() {}
     }
 };
 

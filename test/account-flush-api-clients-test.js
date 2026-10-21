@@ -148,7 +148,8 @@ test('Graph recovery pass after a flush', async t => {
             account: 'a',
             closed: false,
             state: 'connected',
-            accountObject: { loadAccountData: async () => ({ notifyFrom: new Date(since).toISOString() }) },
+            getAccountKey: () => 'iad:a',
+            redis: { hget: async (key, field) => (field === 'notifyFrom' ? new Date(since).toISOString() : null) },
             async reconnect() {
                 events.push('reconnect');
             },
@@ -168,7 +169,8 @@ test('Graph recovery pass after a flush', async t => {
             account: 'a',
             closed: false,
             state: 'authenticationError',
-            accountObject: { loadAccountData: async () => ({ notifyFrom: new Date(Date.now() - 3600 * 1000).toISOString() }) },
+            getAccountKey: () => 'iad:a',
+            redis: { hget: async () => new Date(Date.now() - 3600 * 1000).toISOString() },
             async reconnect() {
                 events.push('reconnect');
             },
