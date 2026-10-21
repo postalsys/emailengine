@@ -97,6 +97,28 @@ test('Mailbox.getMessageInfo() address fields', async t => {
         assert.deepEqual(info.cc, [{ name: '', address: 'copy@example.com' }]);
     });
 
+    await t.test('the header fallback keeps an IDN domain as the header has it and decodes names', async () => {
+        const info = await messageInfo({
+            envelope: { to: [{ name: 'x@y x@', address: '' }] },
+            headers: 'To: =?utf-8?B?SsO1ZQ==?= <joe@xn--mnchen-3ya.de>, Team: carol@xn--mnchen-3ya.de;\r\n'
+        });
+
+        assert.deepEqual(info.to, [
+            { name: 'J\u00f5e', address: 'joe@xn--mnchen-3ya.de' },
+            { name: '', address: 'carol@xn--mnchen-3ya.de' }
+        ]);
+    });
+
+    await t.test('the header fallback does not take an encoded word in the address part for an address', async () => {
+        // RFC 2047 keeps encoded words out of the addr-spec; this one would name ceo@bank.com
+        const info = await messageInfo({
+            envelope: { to: [{ name: 'x@y x@', address: '' }] },
+            headers: 'To: =?utf-8?Q?ceo=40bank=2Ecom?=@example.com, dave@example.org\r\n'
+        });
+
+        assert.deepEqual(info.to, [{ name: '', address: 'dave@example.org' }]);
+    });
+
     await t.test('keeps the ENVELOPE entry when no header was fetched', async () => {
         // The message listing path fetches no headers, so a group name is all there is
         const info = await messageInfo({

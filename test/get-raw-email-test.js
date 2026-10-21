@@ -205,6 +205,30 @@ test('getRawEmail - raw path (processMessage)', async t => {
     });
 });
 
+test('getRawEmail - envelope addresses from the raw headers', async t => {
+    await t.test('an IDN domain stays in ASCII form in the envelope', async () => {
+        // the envelope goes to an SMTP server, which may not accept a Unicode domain
+        const raw = rawMessage(['From: Alice <alice@xn--mnchen-3ya.de>', 'To: bob@xn--mnchen-3ya.de', 'Cc: Team: carol@xn--mnchen-3ya.de;'], 'Body');
+        const res = await getRawEmail({ raw }, null);
+        assert.strictEqual(res.envelope.from, 'alice@xn--mnchen-3ya.de');
+        assert.deepStrictEqual(res.envelope.to, ['bob@xn--mnchen-3ya.de', 'carol@xn--mnchen-3ya.de']);
+    });
+
+    await t.test('an encoded word in the address part is not taken for a recipient', async () => {
+        // RFC 2047 keeps encoded words out of the addr-spec; this one would name ceo@bank.com
+        const raw = rawMessage(['From: =?utf-8?B?SsO1ZQ==?= <joe@example.com>', 'To: =?utf-8?Q?ceo=40bank=2Ecom?=@example.com, dave@example.org'], 'Body');
+        const res = await getRawEmail({ raw }, null);
+        assert.strictEqual(res.envelope.from, 'joe@example.com');
+        assert.deepStrictEqual(res.envelope.to, ['dave@example.org']);
+    });
+
+    await t.test('a header that names a group with no address yields no empty recipient', async () => {
+        const raw = rawMessage(['From: alice@example.com', 'To: undisclosed-recipients:;', 'Bcc: hidden@example.com'], 'Body');
+        const res = await getRawEmail({ raw }, null);
+        assert.deepStrictEqual(res.envelope.to, ['hidden@example.com']);
+    });
+});
+
 test('getRawEmail - composed path (MailComposer)', async t => {
     await t.test('builds a MIME message from structured fields', async () => {
         const res = await getRawEmail(
