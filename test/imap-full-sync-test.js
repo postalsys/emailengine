@@ -188,6 +188,23 @@ test('runFullSync', async t => {
             await harness.cleanup();
         }
     });
+
+    await t.test('new and deleted messages are written a chunk at a time, not one round trip each', async () => {
+        const counting = countingRedis(redis);
+        // 200 new messages, and every other one of 200 indexed messages gone from the server
+        const stored = Array.from({ length: 200 }, (v, i) => ({ uid: i + 1 }));
+        const server = stored.filter(entry => entry.uid % 2).concat(Array.from({ length: 200 }, (v, i) => ({ uid: 1000 + i })));
+        const harness = await createSyncHarness({ server, stored, redisClient: counting.client });
+        try {
+            counting.reset();
+            await harness.sync.runFullSync();
+            assert.strictEqual(harness.events.deleted.length, 100);
+            assert.strictEqual((await harness.queuedUids()).length, 200);
+            assert.ok(counting.roundTrips() < 40, `${counting.roundTrips()} round trips for 200 new and 100 deleted messages`);
+        } finally {
+            await harness.cleanup();
+        }
+    });
 });
 
 test('runFastSync', async t => {

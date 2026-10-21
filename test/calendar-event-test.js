@@ -139,3 +139,63 @@ test('sortCalendarAttachments puts text/calendar first and is otherwise stable b
     );
     assert.deepEqual(CALENDAR_CONTENT_TYPES, ['text/calendar', 'application/ics']);
 });
+
+test('collectCalendarEvents()', async t => {
+    const { collectCalendarEvents } = require('../lib/calendar-event');
+    const { createMockLogger } = require('./helpers/mock-logger');
+    const b64 = text => Buffer.from(text).toString('base64');
+
+    await t.test('one event per UID, text/calendar first, the file name taken from either part', async () => {
+        const loaded = [];
+        const attachments = [
+            { id: 'ics', contentType: 'application/ics', filename: 'meeting.ics', content: b64(INVITE) },
+            { id: 'cal', contentType: 'text/calendar', method: 'REQUEST' },
+            { id: 'pdf', contentType: 'application/pdf' }
+        ];
+        const events = await collectCalendarEvents(
+            attachments,
+            async attachment => {
+                loaded.push(attachment.id);
+                attachment.content = b64(INVITE);
+            },
+            createMockLogger()
+        );
+        assert.deepStrictEqual(loaded, ['cal'], 'only a calendar part without content is loaded');
+        assert.strictEqual(events.length, 1);
+        assert.strictEqual(events[0].attachment, 'cal', 'the text/calendar part is the one listed');
+        assert.strictEqual(events[0].filename, 'meeting.ics', 'its file name comes from the other part');
+        assert.strictEqual(events[0].method, 'REQUEST');
+    });
+
+    await t.test('a default file name by method, and nothing for a message without events', async () => {
+        const events = await collectCalendarEvents([{ id: 'cal', contentType: 'text/calendar', content: b64(INVITE) }], async () => {}, createMockLogger());
+        assert.strictEqual(events[0].filename, 'invite.ics');
+        assert.strictEqual(await collectCalendarEvents([{ id: 'pdf', contentType: 'application/pdf' }], async () => {}, createMockLogger()), undefined);
+        assert.strictEqual(await collectCalendarEvents(undefined, async () => {}, createMockLogger()), undefined);
+    });
+
+    await t.test('a part that does not parse is logged and skipped', async () => {
+        const logger = createMockLogger();
+        const events = await collectCalendarEvents(
+            [{ id: 'bad', contentType: 'text/calendar', content: b64('BEGIN:VCALENDAR\r\nBROKEN') }],
+            async () => {},
+            logger
+        );
+        assert.strictEqual(events, undefined);
+    });
+});
+
+test('loadNotifyAttachments()', async () => {
+    const { loadNotifyAttachments } = require('../lib/notify-attachments');
+    const loaded = [];
+    await loadNotifyAttachments(
+        [
+            { id: 'small', encodedSize: 100 },
+            { id: 'big', encodedSize: 10 * 1024 * 1024 },
+            { id: 'have', encodedSize: 100, content: 'x' }
+        ],
+        1024,
+        async attachment => loaded.push(attachment.id)
+    );
+    assert.deepStrictEqual(loaded, ['small']);
+});
