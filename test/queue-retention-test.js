@@ -118,6 +118,11 @@ test('queueCleanAges', async t => {
         });
     });
 
+    await t.test('follows the failed-job retention setting when it is given', () => {
+        assert.strictEqual(queueCleanAges({ age: 30 * 24 * 3600, count: 500 }).failed, 30 * 24 * 3600 * 1000);
+        assert.strictEqual(queueCleanAges({ age: null }).failed, FAILED_JOB_RETENTION_AGE * 1000);
+    });
+
     await t.test('follows EENGINE_QUEUE_KEEP_FAILED_AGE (regression: the clean was fixed at 7 days)', () => {
         const { execFileSync } = require('node:child_process');
         const out = execFileSync(process.execPath, ['-e', "console.log(JSON.stringify(require('./lib/queue-retention').queueCleanAges()))"], {

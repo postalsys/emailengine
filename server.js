@@ -136,6 +136,7 @@ const { redis, notifyQueue, submitQueue, exportQueue } = require('./lib/db');
 const { queueStats, failedJobCount } = require('./lib/queue-stats');
 const { pruneFailedContent } = require('./lib/outbox');
 const { queueCleanAges } = require('./lib/queue-retention');
+const { getFailedJobRetention } = require('./lib/env-setting-overrides');
 const { packRpcError, unpackRpcError } = require('./lib/worker-rpc-error');
 const promClient = require('prom-client');
 const fs = require('fs').promises;
@@ -4029,7 +4030,7 @@ startApplication()
 
         async function cleanupQueues() {
             const queues = [notifyQueue, submitQueue, exportQueue];
-            const ages = queueCleanAges();
+            const ages = queueCleanAges(await getFailedJobRetention());
             for (const queue of queues) {
                 try {
                     // The same ages the jobs are added with, see lib/queue-retention.js

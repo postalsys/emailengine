@@ -16,7 +16,7 @@ const {
     MAX_WEBHOOK_RETRY_DELAY
 } = require('../lib/consts');
 const { settingsSchema } = require('../lib/schemas');
-const { forAll } = require('./helpers/seeded-random');
+const { forAll, gen } = require('./helpers/property');
 
 test('webhookRetryPolicy', async t => {
     await t.test('without settings it is the policy deliveries always had', () => {
@@ -44,25 +44,30 @@ test('webhookRetryPolicy', async t => {
     });
 
     await t.test('property: any stored value gives a policy inside the bounds the schema allows', () => {
-        forAll({
-            seed: 20261021,
-            runs: 2000,
-            generate: random => {
-                const draw = () =>
-                    random.pick([
-                        () => random.int(-1000, 1000),
-                        () => random.int(0, 10 * MAX_WEBHOOK_RETRY_DELAY),
-                        () => random.int(-1000, 1000) / 7,
-                        () => String(random.int(-50, 500)),
-                        () => random.string(random.int(0, 4)),
-                        () => null,
-                        () => undefined,
-                        () => Number.MAX_SAFE_INTEGER,
-                        () => -0
-                    ])();
-                return { webhooksDeliveryAttempts: draw(), webhooksRetryDelay: draw() };
+        // anything a setting could hold: in and out of range, fractions, numeric strings, junk
+        const stored = gen.withEdges(
+            random => {
+                const int = (min, max) => gen.integer(min, max)(random);
+                const kind = int(0, 4);
+                if (kind === 0) {
+                    return int(-1000, 1000);
+                }
+                if (kind === 1) {
+                    return int(0, 10 * MAX_WEBHOOK_RETRY_DELAY);
+                }
+                if (kind === 2) {
+                    return int(-1000, 1000) / 7;
+                }
+                if (kind === 3) {
+                    return String(int(-50, 500));
+                }
+                return gen.string('abcdefghijklmnopqrstuvwxyz0123456789', 0, 4)(random);
             },
-            check: values => {
+            [null, undefined, Number.MAX_SAFE_INTEGER, -0]
+        );
+        forAll(
+            gen.record({ webhooksDeliveryAttempts: stored, webhooksRetryDelay: stored }),
+            values => {
                 const { attempts, backoff } = webhookRetryPolicy(values);
                 assert.ok(Number.isInteger(attempts) && attempts >= 1 && attempts <= MAX_WEBHOOK_ATTEMPTS, `attempts ${attempts}`);
                 assert.ok(
@@ -80,7 +85,8 @@ test('webhookRetryPolicy', async t => {
                         assert.equal(picked, value, `${key} ${values[key]} passes the schema, so it is used as it is`);
                     }
                 }
-            }
-        });
+            },
+            { seed: 20261021, runs: 2000 }
+        );
     });
 });

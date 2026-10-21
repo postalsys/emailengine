@@ -3090,6 +3090,7 @@
                 },
                 "disableThreadCollapse": {
                     "type": "boolean",
+                    "description": "Include the `disableThreadCollapse` setting in the response",
                     "default": false
                 },
                 "notifyTextSize": {
@@ -3134,18 +3135,22 @@
                 },
                 "queueKeepFailed": {
                     "type": "boolean",
+                    "description": "Include the `queueKeepFailed` setting in the response",
                     "default": false
                 },
                 "queueKeepFailedAge": {
                     "type": "boolean",
+                    "description": "Include the `queueKeepFailedAge` setting in the response",
                     "default": false
                 },
                 "queueKeepFailedContent": {
                     "type": "boolean",
+                    "description": "Include the `queueKeepFailedContent` setting in the response",
                     "default": false
                 },
                 "queueKeepFailedContentSize": {
                     "type": "boolean",
+                    "description": "Include the `queueKeepFailedContentSize` setting in the response",
                     "default": false
                 },
                 "deliveryAttempts": {

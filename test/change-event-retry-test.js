@@ -844,6 +844,8 @@ test('GmailClient history retries', async t => {
             throw Object.assign(new Error('Not found'), { oauthRequest: { status: 404, response: { error: { code: 404 } } } });
         };
 
+        // the cursor is only written into an account that exists
+        await redis.hset(gmail.getAccountKey(), 'account', account);
         await gmail.processHistory(100, 100);
 
         assert.equal(await redis.hget(gmail.getAccountKey(), 'googleHistoryId'), '900');
@@ -974,6 +976,8 @@ test('Account deferred change store', async t => {
         gmail.processNew = async messageData => announced.push(messageData.id);
         gmail.request = async () => ({ history: [{ id: '101', messagesAdded: [{ message: { id: 'g1', labelIds: ['INBOX'] } }] }], historyId: '101' });
 
+        // the cursor is only written into an account that exists
+        await redis.hset(gmail.getAccountKey(), 'account', accountId);
         await gmail.processHistory(100, 101);
         assert.deepEqual(announced, []);
         assert.equal(await redis.hget(gmail.getAccountKey(), 'googleHistoryId'), '101');

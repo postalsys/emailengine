@@ -18088,7 +18088,7 @@
       "post": {
         "summary": "Retry a failed message",
         "operationId": "postV1AccountAccountOutboxQueueidRetry",
-        "description": "Puts a message whose delivery failed for good back into the queue with a fresh set of delivery attempts. Only a failed message whose content is still stored can be retried: the content of the most recent failures is kept for this, within the bounds set by EENGINE_QUEUE_KEEP_FAILED_CONTENT and EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE. A message that cannot be retried answers 409 with `code` NotFailed (the message is not in the failed state) or ContentGone (its content is no longer stored).",
+        "description": "Puts a message whose delivery failed for good back into the queue with a fresh set of delivery attempts. Only a failed message whose content is still stored can be retried: the content of the most recent failures is kept for this, within the bounds set by the queueKeepFailedContent and queueKeepFailedContentSize settings (or EENGINE_QUEUE_KEEP_FAILED_CONTENT and EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE, which win when set). A message that cannot be retried answers 409 with `code` NotFailed (the message is not in the failed state) or ContentGone (its content is no longer stored).",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -23901,16 +23901,20 @@
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `tokenLogEntries` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `tokenLogEntries` setting in the response"
           },
           {
             "name": "tokenLogAge",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `tokenLogAge` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `tokenLogAge` setting in the response"
           },
           {
             "name": "proxyEnabled",
@@ -23987,8 +23991,10 @@
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `disableThreadCollapse` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `disableThreadCollapse` setting in the response"
           },
           {
             "name": "notifyTextSize",
@@ -24305,32 +24311,40 @@
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `queueKeepFailed` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `queueKeepFailed` setting in the response"
           },
           {
             "name": "queueKeepFailedAge",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `queueKeepFailedAge` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `queueKeepFailedAge` setting in the response"
           },
           {
             "name": "queueKeepFailedContent",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `queueKeepFailedContent` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `queueKeepFailedContent` setting in the response"
           },
           {
             "name": "queueKeepFailedContentSize",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `queueKeepFailedContentSize` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `queueKeepFailedContentSize` setting in the response"
           },
           {
             "name": "deliveryAttempts",

@@ -27,6 +27,11 @@ function makeRedis() {
     const writes = [];
     return {
         writes,
+        // the account hash exists here, so the exists-guarded write lands like a plain one
+        async hSetExists(key, field, value) {
+            writes.push({ key, field, value });
+            return 1;
+        },
         async hset(key, field, value) {
             writes.push({ key, field, value });
         }
