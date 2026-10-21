@@ -83,9 +83,19 @@ test('webhook route credentials are encrypted at rest', async t => {
         assert.strictEqual(list.webhooks[0].targetUrl, targetUrl);
         assert.deepStrictEqual(list.webhooks[0].customHeaders, customHeaders);
 
-        // the listing search runs on the decrypted URL
+        // the listing search runs on the decrypted URL's host and path
         const found = await webhooks.list(0, 20, 'example.com/route');
         assert.strictEqual(found.total, 1);
+        assert.strictEqual(found.webhooks[0].targetUrl, targetUrl, 'a match returns the entry itself, not the view it was matched on');
+    });
+
+    // Regression: the search matched the decrypted URL, credentials included, so a reader of the
+    // masked listing could guess them a character at a time from whether the route matched
+    await t.test('the listing search can not see the credentials in a target URL', async () => {
+        for (const guess of ['s3cret', 'hook:', ':s3', '://h', 'hook:s3cret@']) {
+            const found = await webhooks.list(0, 20, guess);
+            assert.strictEqual(found.total, 0, `"${guess}" must not match`);
+        }
     });
 
     await t.test('an update that leaves the credentials out keeps them encrypted and intact', async () => {
