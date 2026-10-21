@@ -111,9 +111,10 @@ test('readEnvValue resolves a file-backed variable', async t => {
 });
 
 // lib/consts.js reads its variables through readEnvValue() while it is itself still loading, and the
-// helper reports through lib/logger.js, which requires lib/consts.js. Requiring the logger up front
-// would build pino from a half-initialized consts object, so these cases load consts first, the way
-// every worker does, and check both the value and that the report still arrives.
+// helper reports through lib/logger.js. The logger used to require lib/consts.js as well, a cycle the
+// helper got around by deferring every report by a tick; it takes its constants from the leaf
+// lib/logger-consts.js now. These cases load consts first, the way every worker does, and check both
+// the value and that the report arrives.
 const CONSTS_SCRIPT = `
     const consts = require('./lib/consts');
     process.stdout.write('\\n${MARKER}' + JSON.stringify({ value: consts[process.env.PROBE_CONST] }) + '\\n');
@@ -178,4 +179,15 @@ test('lib/consts.js variables honor the file form', async t => {
         assert.equal(value, 90 * 1000);
         assert.ok(records.some(entry => entry.level >= 50 && entry.key === 'EENGINE_FETCH_TIMEOUT'));
     });
+});
+
+test('the logger does not load lib/consts.js, so reading an environment value can log at once', () => {
+    // A cycle here is what made the helper defer its reports: pino would otherwise be built from a
+    // half-initialized consts object
+    const loaded = execFileSync(
+        process.execPath,
+        ['-e', "require('./lib/logger'); process.stdout.write(JSON.stringify(Object.keys(require.cache).filter(k => /lib[\\/]consts\\.js$/.test(k))))"],
+        { cwd: ROOT, encoding: 'utf-8', env: Object.assign({}, process.env, { EE_ENV_LOADED: 'true' }) }
+    );
+    assert.deepEqual(JSON.parse(loaded), []);
 });
