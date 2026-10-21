@@ -100,6 +100,42 @@ test('Export.queueMessage() counts a message once when its folder is retried', a
     assert.strictEqual(await redis.zcard(getExportQueueKey(ACCOUNT, exportId)), 2);
 });
 
+test('Export.queueMessages() queues a page in one pipeline with the same counting', async () => {
+    const exportId = generateExportId();
+    const exportKey = getExportKey(ACCOUNT, exportId);
+    createdKeys.add(exportKey);
+    createdKeys.add(getExportQueueKey(ACCOUNT, exportId));
+
+    await redis.hset(exportKey, { exportId, account: ACCOUNT, messagesQueued: 0 });
+    await redis.expire(exportKey, 600);
+
+    const page = Array.from({ length: 50 }, (v, i) => ({ folder: 'INBOX', messageId: `msg-${i}`, uid: i + 1, size: 10, date: Date.now() }));
+
+    assert.strictEqual(await Export.queueMessages(ACCOUNT, exportId, page), 50);
+    // a retried folder queues the same page again, and only new members count
+    assert.strictEqual(
+        await Export.queueMessages(ACCOUNT, exportId, page.slice(40).concat({ folder: 'INBOX', messageId: 'msg-new', uid: 99, date: Date.now() })),
+        1
+    );
+    assert.strictEqual(await Export.queueMessages(ACCOUNT, exportId, []), 0);
+
+    assert.strictEqual(await redis.hget(exportKey, 'messagesQueued'), '51');
+    assert.strictEqual(await redis.zcard(getExportQueueKey(ACCOUNT, exportId)), 51);
+    assert.ok((await redis.pttl(getExportQueueKey(ACCOUNT, exportId))) > 0, 'the queue takes the record expiry');
+});
+
+test('Export.incrementCounters() adds a batch of progress at once', async () => {
+    const exportId = generateExportId();
+    const exportKey = getExportKey(ACCOUNT, exportId);
+    createdKeys.add(exportKey);
+
+    await redis.hset(exportKey, { exportId, account: ACCOUNT, messagesExported: 2, bytesWritten: 100, messagesSkipped: 1 });
+    await Export.incrementCounters(ACCOUNT, exportId, { exported: 3, bytesWritten: 250, skipped: 2 });
+    await Export.incrementCounters(ACCOUNT, exportId, { exported: 0, bytesWritten: 0, skipped: 0 });
+
+    assert.deepStrictEqual(await redis.hmget(exportKey, 'messagesExported', 'bytesWritten', 'messagesSkipped'), ['5', '350', '3']);
+});
+
 test('Export.markInterruptedAsFailed() unlinks only the export file itself', async () => {
     const dir = await fs.promises.mkdtemp(pathlib.join(os.tmpdir(), 'ee-export-recovery-'));
     try {

@@ -454,6 +454,39 @@ test('exportMessages', async t => {
         assert.ok(job.locks >= 3, `${job.locks} extensions for 3 chunks`);
     });
 
+    await t.test('progress is written once per batch, and a page is queued in one call', async () => {
+        const { jobs, store, job } = createHarness({ account: imapAccount() });
+        store.queue.push(...entries(250));
+        await jobs.exportMessages(job, exportData());
+        assert.strictEqual(store.counters.messagesExported, 250);
+        // 250 entries are three batches of up to 100
+        assert.strictEqual(store.counterCalls, 3);
+
+        const indexing = createHarness({
+            account: {
+                async listMessages() {
+                    return { messages: Array.from({ length: 700 }, (v, i) => ({ id: `m${i}`, uid: i + 1 })) };
+                }
+            }
+        });
+        await indexing.jobs.indexMessages(indexing.job, exportData());
+        assert.strictEqual(indexing.store.queue.length, 700);
+        assert.strictEqual(indexing.store.queueCalls, 1);
+    });
+
+    await t.test('progress made before a failure is still written', async () => {
+        const { jobs, store, job } = createHarness({
+            account: imapAccount({
+                m5: () => {
+                    throw new Error('Unexpected server response');
+                }
+            })
+        });
+        store.queue.push(...entries(10));
+        await assert.rejects(jobs.exportMessages(job, exportData()));
+        assert.strictEqual(store.counters.messagesExported, 4);
+    });
+
     await t.test('property: exported + skipped always equals what was queued', async () => {
         await forAll(
             gen.record({ count: gen.integer(0, 250), missing: gen.array(gen.integer(1, 250), 0, 20), api: gen.boolean() }),
