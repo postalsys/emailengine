@@ -62,7 +62,7 @@ A headless email client application that provides access to IMAP, SMTP, Gmail AP
 
 ## Configuring EmailEngine
 
-Refer to the [configuration documentation](https://learn.emailengine.app/docs/configuration) for details on setting up EmailEngine.
+Refer to the [configuration documentation](https://learn.emailengine.app/docs/configuration) for details on setting up EmailEngine. [ENVIRONMENT.md](ENVIRONMENT.md) lists every environment variable EmailEngine reads, with its default.
 
 ## App Access
 

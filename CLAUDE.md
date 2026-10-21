@@ -119,6 +119,8 @@ Path-scoped rules in `.claude/rules/` load automatically when you work with the 
 
 ## Environment Variables
 
+`ENVIRONMENT.md` is the complete operator-facing list, and `test/env-docs-guardrail-test.js` fails when the code reads an `EENGINE_*` variable it does not list (or it lists one nothing reads). The entries below are the ones whose behavior needs more than a table row. Seven limits that used to be environment-only are settings too (`disableThreadCollapse`, `queueKeepFailed`, `queueKeepFailedAge`, `queueKeepFailedContent`, `queueKeepFailedContentSize`, `tokenLogEntries`, `tokenLogAge`): `lib/env-setting-overrides.js` resolves each one with the environment variable winning over the setting and the setting over the default, reads them through a ten-second per-process cache, and the settings pages flag a field whose variable is set (`envOverriddenSettings`) and do not save a value for it, so the pinned environment value is never copied into a setting that would outlive the variable. The token log limits are privileged settings like `tokenAuditLog`: a narrowed credential must not be able to shrink the audit trail its own requests land in.
+
 **Core:**
 
 - `EENGINE_REDIS` / `REDIS_URL` - Redis connection URI (default: `redis://127.0.0.1:6379/8`)
@@ -162,21 +164,21 @@ Path-scoped rules in `.claude/rules/` load automatically when you work with the 
 
 - `EENGINE_ACME_DIRECTORY_URL` / `EENGINE_ACME_ENVIRONMENT` - The CA directory Let's Encrypt certificates are ordered from (default: `https://acme-v02.api.letsencrypt.org/directory`) and the name of the stored ACME account record (default: `emailengine`). Override both or neither: the environment names the account record and the directory names the CA that issued it, so moving one alone presents an account key the other CA has never seen and every request is rejected. `lib/cert-handler.js` logs a warning when only one of them is set, since nothing in the CA's rejection says why. Point them at `https://acme-staging-v02.api.letsencrypt.org/directory` plus a distinct environment name to rehearse issuance - staging has the same asynchronous order finalization as production and no rate limits worth worrying about, but its certificates are signed by an untrusted root, so it must never be what a build ships. `lib/cert-handler.js` is the single place that constructs `@postalsys/certs`; all three workers that touch certificates (API, SMTP server, IMAP proxy) get their handler from it, and `test/acme-config-guardrail-test.js` keeps it that way
 
-**Queue retention:**
+**Queue retention** (the four failed-entry bounds are also settings, see above):
 
 - `EENGINE_QUEUE_REMOVE_AFTER` - Initial value for the `queueKeep` setting: completed entries to retain (default: 0)
 - `EENGINE_QUEUE_KEEP_FAILED` - Failed entries retained per queue, at least (default: 500); a `queueKeep` setting above it raises the count, so the queue page names whichever of the two applies. Failures are the only record that a delivery was given up on, so they are never dropped on arrival; raise or lower this against Redis memory, remembering a `messageNew` payload can carry up to `notifyTextSize` of message text
 - `EENGINE_QUEUE_KEEP_FAILED_AGE` - How long failed entries are retained, in seconds (default: 604800, 7 days)
 - `EENGINE_QUEUE_KEEP_FAILED_CONTENT` / `EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE` - How many of the most recent failed messages keep their raw content so they can be retried (default: 100), and how much content that may add up to in total (default: 100MB, a byte size). Content is dropped oldest first past either bound, past the failed-job age, and whenever the failed job itself is gone; `0` keeps none, which is how it was before failed messages could be retried. See `lib/outbox.js`
 
-**Token audit log** (only written when the `tokenAuditLog` setting is on, off by default):
+**Token audit log** (both limits are also settings, see above; only written when the `tokenAuditLog` setting is on, off by default):
 
 - `EENGINE_TOKEN_LOG_ENTRIES` - Requests retained per access token (default: 1000). Every write trims, so this bounds the feature's whole storage cost: a full log of typical entries is roughly 170KB of Redis per token, and it is the token count that scales it, not request volume. Values below 1 fall back to the default rather than being clamped
 - `EENGINE_TOKEN_LOG_AGE` - How long a token's log survives its last use, in seconds (default: 604800, 7 days). Refreshed on every write, so a token nobody uses takes its log with it
 
 **Message rendering:**
 
-- `EENGINE_DISABLE_THREAD_COLLAPSE` - Set to `true` to stop web-safe HTML from folding quoted thread history into a collapsed `<details class="ee-collapsed-thread">` block (default: folding enabled). The marker carries class names only - its `<summary>` is empty on purpose, so a renderer that does not know about it shows nothing extra. See `lib/web-safe-html.js`
+- `EENGINE_DISABLE_THREAD_COLLAPSE` - Overrides the `disableThreadCollapse` setting. Set to `true` to stop web-safe HTML from folding quoted thread history into a collapsed `<details class="ee-collapsed-thread">` block (default: folding enabled). The marker carries class names only - its `<summary>` is empty on purpose, so a renderer that does not know about it shows nothing extra. See `lib/web-safe-html.js`
 
 **Prepared configuration** (applied on startup):
 
@@ -192,7 +194,7 @@ EmailEngine ships as a single-file binary for Linux x64, macOS (x64 and arm64) a
 - **No compiled dependencies.** Never add a package with a native addon, a `node-gyp` build step, prebuilt binaries or a WASM blob, and never write one. Everything must be pure JavaScript that `pkg` can bundle and that runs unchanged on every target. When a task seems to need one (cryptography, image handling, parsing), it is done with Node's own built-in modules instead: `crypto` generates keys and signs, and `lib/tls/self-signed.js` builds an X.509 certificate out of `crypto` plus a small DER writer for exactly this reason.
 - **No shelling out.** Never invoke a CLI tool at runtime (`openssl`, `dig`, `curl`, `sh`, ...). None of them is guaranteed to exist on a customer's machine, several do not exist on Windows at all, and a `pkg` binary carries no shell of its own. Do the work in JavaScript. This applies to tests as well: a test that shells out to `openssl` fails on the platforms that matter most.
 
-- **Node.js 20 is the minimum.** `engines.node` is `>=20.0.0`, and runtime code, tests and tooling have to work on Node 20, 22 and 24. CI's unit job runs Node 24 and 20.19.0 (see `.claude/rules/testing.md` for why that exact 20.x).
+- **Node.js 20 is the minimum.** `engines.node` is `>=20.19.0` (the oldest release the dependency tree accepts; `server.js` warns below it and refuses to start below 20, see `lib/node-version.js`), and runtime code, tests and tooling have to work on Node 20, 22 and 24. CI's unit job runs Node 24 and 20.19.0 (see `.claude/rules/testing.md` for why that exact 20.x).
 - **The runtime dependency graph is CommonJS only.** `pkg` snapshots a CommonJS module graph and cannot load ES modules, so `require()` of every runtime dependency has to work with `--no-experimental-require-module`. Node 22+ (and 20.19) enable require(esm) by default, which hides an ESM-only dependency in development and tests until a binary is built. Never add or upgrade to an ESM-only package, and a CommonJS wrapper that only does a dynamic `import()` of ESM code does not count. When a dependency goes ESM-only, pin its last CommonJS release in `.ncurc.js` (`reject` or `target`) with the reason, so `npm run update` cannot move it. The worked example is `@asamuzakjp/css-color`: from 4.1.2 it pulls in the pure-ESM `@csstools/*` v4 through `@postalsys/email-text-tools` -> jsdom -> cssstyle, so `package.json` carries `"overrides": { "@asamuzakjp/css-color": "4.1.1" }` and `.ncurc.js` rejects it. An override in one of our libraries does not propagate to EmailEngine, so this repo carries its own. Check with `npm run test:cjs`, which runs the unit tier with `NODE_OPTIONS=--no-experimental-require-module`; CI runs it on the Node 24 unit leg.
 
 Build-time-only devDependencies (tailwindcss, playwright, pkg itself) are not covered by this: they never reach a running instance.
