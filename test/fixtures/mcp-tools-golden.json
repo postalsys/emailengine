@@ -2980,190 +2980,237 @@
             "properties": {
                 "eventTypes": {
                     "type": "boolean",
+                    "description": "Include the list of webhook event types in the response",
                     "default": false
                 },
                 "webhooksEnabled": {
                     "type": "boolean",
+                    "description": "Include the `webhooksEnabled` setting in the response",
                     "default": false
                 },
                 "webhookEvents": {
                     "type": "boolean",
+                    "description": "Include the `webhookEvents` setting in the response",
                     "default": false
                 },
                 "webhooksDeliveryAttempts": {
                     "type": "boolean",
+                    "description": "Include the `webhooksDeliveryAttempts` setting in the response",
                     "default": false
                 },
                 "webhooksRetryDelay": {
                     "type": "boolean",
+                    "description": "Include the `webhooksRetryDelay` setting in the response",
                     "default": false
                 },
                 "notifyHeaders": {
                     "type": "boolean",
+                    "description": "Include the `notifyHeaders` setting in the response",
                     "default": false
                 },
                 "notificationBaseUrl": {
                     "type": "boolean",
+                    "description": "Include the `notificationBaseUrl` setting in the response",
                     "default": false
                 },
                 "trackClicks": {
                     "type": "boolean",
+                    "description": "Include the `trackClicks` setting in the response",
                     "default": false
                 },
                 "trackOpens": {
                     "type": "boolean",
+                    "description": "Include the `trackOpens` setting in the response",
                     "default": false
                 },
                 "imapIndexer": {
                     "type": "boolean",
+                    "description": "Include the `imapIndexer` setting in the response",
                     "default": false
                 },
                 "resolveGmailCategories": {
                     "type": "boolean",
+                    "description": "Include the `resolveGmailCategories` setting in the response",
                     "default": false
                 },
                 "generateEmailSummary": {
                     "type": "boolean",
+                    "description": "Include the `generateEmailSummary` setting in the response",
                     "default": false
                 },
                 "openAiModel": {
                     "type": "boolean",
+                    "description": "Include the `openAiModel` setting in the response",
                     "default": false
                 },
                 "openAiTemperature": {
                     "type": "boolean",
+                    "description": "Include the `openAiTemperature` setting in the response",
                     "default": false
                 },
                 "openAiTopP": {
                     "type": "boolean",
+                    "description": "Include the `openAiTopP` setting in the response",
                     "default": false
                 },
                 "openAiReasoningEffort": {
                     "type": "boolean",
+                    "description": "Include the `openAiReasoningEffort` setting in the response",
                     "default": false
                 },
                 "openAiMaxTokens": {
                     "type": "boolean",
+                    "description": "Include the `openAiMaxTokens` setting in the response",
                     "default": false
                 },
                 "openAiPrompt": {
                     "type": "boolean",
+                    "description": "Include the `openAiPrompt` setting in the response",
                     "default": false
                 },
                 "inboxNewOnly": {
                     "type": "boolean",
+                    "description": "Include the `inboxNewOnly` setting in the response",
                     "default": false
                 },
                 "smtpEhloName": {
                     "type": "boolean",
+                    "description": "Include the `smtpEhloName` setting in the response",
                     "default": false
                 },
                 "notifyText": {
                     "type": "boolean",
+                    "description": "Include the `notifyText` setting in the response",
                     "default": false
                 },
                 "notifyWebSafeHtml": {
                     "type": "boolean",
+                    "description": "Include the `notifyWebSafeHtml` setting in the response",
                     "default": false
                 },
                 "notifyTextSize": {
                     "type": "boolean",
+                    "description": "Include the `notifyTextSize` setting in the response",
                     "default": false
                 },
                 "notifyAttachments": {
                     "type": "boolean",
+                    "description": "Include the `notifyAttachments` setting in the response",
                     "default": false
                 },
                 "notifyAttachmentSize": {
                     "type": "boolean",
+                    "description": "Include the `notifyAttachmentSize` setting in the response",
                     "default": false
                 },
                 "notifyCalendarEvents": {
                     "type": "boolean",
+                    "description": "Include the `notifyCalendarEvents` setting in the response",
                     "default": false
                 },
                 "logs": {
                     "type": "boolean",
+                    "description": "Include the `logs` setting in the response",
                     "default": false
                 },
                 "imapStrategy": {
                     "type": "boolean",
+                    "description": "Include the `imapStrategy` setting in the response",
                     "default": false
                 },
                 "smtpStrategy": {
                     "type": "boolean",
+                    "description": "Include the `smtpStrategy` setting in the response",
                     "default": false
                 },
                 "queueKeep": {
                     "type": "boolean",
+                    "description": "Include the `queueKeep` setting in the response",
                     "default": false
                 },
                 "deliveryAttempts": {
                     "type": "boolean",
+                    "description": "Include the `deliveryAttempts` setting in the response",
                     "default": false
                 },
                 "gmailSubscriptionTtl": {
                     "type": "boolean",
+                    "description": "Include the `gmailSubscriptionTtl` setting in the response",
                     "default": false
                 },
                 "locale": {
                     "type": "boolean",
+                    "description": "Include the `locale` setting in the response",
                     "default": false
                 },
                 "timezone": {
                     "type": "boolean",
+                    "description": "Include the `timezone` setting in the response",
                     "default": false
                 },
                 "pageBrandName": {
                     "type": "boolean",
+                    "description": "Include the `pageBrandName` setting in the response",
                     "default": false
                 },
                 "imapClientName": {
                     "type": "boolean",
+                    "description": "Include the `imapClientName` setting in the response",
                     "default": false
                 },
                 "imapClientVersion": {
                     "type": "boolean",
+                    "description": "Include the `imapClientVersion` setting in the response",
                     "default": false
                 },
                 "imapClientVendor": {
                     "type": "boolean",
+                    "description": "Include the `imapClientVendor` setting in the response",
                     "default": false
                 },
                 "imapClientSupportUrl": {
                     "type": "boolean",
+                    "description": "Include the `imapClientSupportUrl` setting in the response",
                     "default": false
                 },
                 "exportMaxConcurrent": {
                     "type": "boolean",
+                    "description": "Include the `exportMaxConcurrent` setting in the response",
                     "default": false
                 },
                 "exportMaxGlobalConcurrent": {
                     "type": "boolean",
+                    "description": "Include the `exportMaxGlobalConcurrent` setting in the response",
                     "default": false
                 },
                 "gmailExportBatchSize": {
                     "type": "boolean",
+                    "description": "Include the `gmailExportBatchSize` setting in the response",
                     "default": false
                 },
                 "outlookExportBatchSize": {
                     "type": "boolean",
+                    "description": "Include the `outlookExportBatchSize` setting in the response",
                     "default": false
                 },
                 "exportMaxMessages": {
                     "type": "boolean",
+                    "description": "Include the `exportMaxMessages` setting in the response",
                     "default": false
                 },
                 "exportMaxSize": {
                     "type": "boolean",
+                    "description": "Include the `exportMaxSize` setting in the response",
                     "default": false
                 },
                 "exportMaxMessageSize": {
                     "type": "boolean",
+                    "description": "Include the `exportMaxMessageSize` setting in the response",
                     "default": false
                 },
                 "exportMaxAge": {
                     "type": "boolean",
+                    "description": "Include the `exportMaxAge` setting in the response",
                     "default": false
                 }
             },
@@ -3281,7 +3328,7 @@
     {
         "name": "get_webhook_route",
         "title": "Get webhook route",
-        "description": "Get one webhook route: its target URL, the events it forwards, whether it is enabled, and its filter and mapping functions.",
+        "description": "Get one webhook route: its target URL, whether it is enabled, its custom headers, and the filter and mapping functions that decide which events it forwards and in what shape.",
         "inputSchema": {
             "type": "object",
             "properties": {

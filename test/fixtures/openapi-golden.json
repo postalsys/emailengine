@@ -234,7 +234,7 @@
           "user"
         ]
       },
-      "ca": {
+      "TlsCaCertificates": {
         "type": "array",
         "example": [
           "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----"
@@ -290,7 +290,7 @@
                 "maxLength": 65536
               },
               {
-                "$ref": "#/components/schemas/ca"
+                "$ref": "#/components/schemas/TlsCaCertificates"
               }
             ]
           },
@@ -543,7 +543,7 @@
                 "maxLength": 65536
               },
               {
-                "$ref": "#/components/schemas/ca"
+                "$ref": "#/components/schemas/TlsCaCertificates"
               }
             ]
           },
@@ -1712,7 +1712,7 @@
           }
         }
       },
-      "state": {
+      "OutlookSubscriptionStateName": {
         "type": "string",
         "description": "Subscription state",
         "x-meta": {
@@ -1730,12 +1730,12 @@
           "error"
         ]
       },
-      "state1": {
+      "OutlookSubscriptionState": {
         "type": "object",
         "description": "Current subscription state",
         "properties": {
           "state": {
-            "$ref": "#/components/schemas/state"
+            "$ref": "#/components/schemas/OutlookSubscriptionStateName"
           },
           "time": {
             "type": "number",
@@ -1760,7 +1760,7 @@
           }
         }
       },
-      "outlookSubscription": {
+      "OutlookSubscription": {
         "type": "object",
         "description": "Microsoft Graph subscription details (Outlook accounts only)",
         "properties": {
@@ -1777,7 +1777,7 @@
             "nullable": true
           },
           "state": {
-            "$ref": "#/components/schemas/state1"
+            "$ref": "#/components/schemas/OutlookSubscriptionState"
           }
         }
       },
@@ -2148,7 +2148,7 @@
             "example": "2021-02-17T13:43:18.860Z"
           },
           "outlookSubscription": {
-            "$ref": "#/components/schemas/outlookSubscription"
+            "$ref": "#/components/schemas/OutlookSubscription"
           },
           "lastError": {
             "$ref": "#/components/schemas/AccountErrorEntry"
@@ -2245,7 +2245,7 @@
                 "maxLength": 65536
               },
               {
-                "$ref": "#/components/schemas/ca"
+                "$ref": "#/components/schemas/TlsCaCertificates"
               }
             ]
           },
@@ -2505,7 +2505,7 @@
                 "maxLength": 65536
               },
               {
-                "$ref": "#/components/schemas/ca"
+                "$ref": "#/components/schemas/TlsCaCertificates"
               }
             ]
           },
@@ -3687,7 +3687,7 @@
           "address"
         ]
       },
-      "AddressList": {
+      "UploadToAddressList": {
         "type": "array",
         "description": "List of addresses",
         "example": [
@@ -3702,7 +3702,7 @@
           "$ref": "#/components/schemas/EmailAddress"
         }
       },
-      "AddressList1": {
+      "UploadAddressList": {
         "type": "array",
         "description": "List of addresses",
         "x-constraint": {
@@ -3845,13 +3845,13 @@
             "$ref": "#/components/schemas/FromAddress"
           },
           "to": {
-            "$ref": "#/components/schemas/AddressList"
+            "$ref": "#/components/schemas/UploadToAddressList"
           },
           "cc": {
-            "$ref": "#/components/schemas/AddressList1"
+            "$ref": "#/components/schemas/UploadAddressList"
           },
           "bcc": {
-            "$ref": "#/components/schemas/AddressList1"
+            "$ref": "#/components/schemas/UploadAddressList"
           },
           "subject": {
             "type": "string",
@@ -4010,7 +4010,7 @@
           }
         }
       },
-      "AddressList2": {
+      "AddressList": {
         "type": "array",
         "description": "List of email addresses",
         "items": {
@@ -4172,7 +4172,7 @@
           "forums"
         ]
       },
-      "MailboxSpecialUse1": {
+      "MessageMailboxSpecialUse": {
         "type": "string",
         "description": "Special folder type of the mailbox containing this message (IMAP accounts only)",
         "example": "\\Sent",
@@ -4295,16 +4295,16 @@
             "$ref": "#/components/schemas/FromAddressResponse"
           },
           "to": {
-            "$ref": "#/components/schemas/AddressList2"
+            "$ref": "#/components/schemas/AddressList"
           },
           "cc": {
-            "$ref": "#/components/schemas/AddressList2"
+            "$ref": "#/components/schemas/AddressList"
           },
           "bcc": {
-            "$ref": "#/components/schemas/AddressList2"
+            "$ref": "#/components/schemas/AddressList"
           },
           "replyTo": {
-            "$ref": "#/components/schemas/AddressList2"
+            "$ref": "#/components/schemas/AddressList"
           },
           "messageId": {
             "type": "string",
@@ -4355,7 +4355,7 @@
             "$ref": "#/components/schemas/MessageCategory"
           },
           "specialUse": {
-            "$ref": "#/components/schemas/MailboxSpecialUse1"
+            "$ref": "#/components/schemas/MessageMailboxSpecialUse"
           },
           "messageSpecialUse": {
             "$ref": "#/components/schemas/MessageSpecialUse"
@@ -4918,7 +4918,7 @@
           }
         }
       },
-      "status": {
+      "ResponseIdempotencyStatus": {
         "type": "string",
         "description": "Whether this response was produced now or replayed from the idempotency cache",
         "example": "MISS",
@@ -4948,7 +4948,7 @@
             }
           },
           "status": {
-            "$ref": "#/components/schemas/status"
+            "$ref": "#/components/schemas/ResponseIdempotencyStatus"
           }
         }
       },
@@ -5078,13 +5078,13 @@
             "$ref": "#/components/schemas/FromAddressResponse"
           },
           "replyTo": {
-            "$ref": "#/components/schemas/AddressList2"
+            "$ref": "#/components/schemas/AddressList"
           },
           "to": {
-            "$ref": "#/components/schemas/AddressList2"
+            "$ref": "#/components/schemas/AddressList"
           },
           "cc": {
-            "$ref": "#/components/schemas/AddressList2"
+            "$ref": "#/components/schemas/AddressList"
           },
           "messageId": {
             "type": "string",
@@ -5892,7 +5892,7 @@
           }
         }
       },
-      "nextAttempt": {
+      "OutboxNextAttempt": {
         "type": "string",
         "format": "date-time",
         "description": "Next delivery attempt time (approximate, computed from the retry backoff without jitter). False when all delivery attempts have been used up",
@@ -6085,7 +6085,7 @@
           "nextAttempt": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/nextAttempt"
+                "$ref": "#/components/schemas/OutboxNextAttempt"
               },
               {
                 "type": "boolean",
@@ -6669,7 +6669,7 @@
         "nullable": true,
         "maxLength": 256
       },
-      "UploadAttachment1": {
+      "SubmitAttachment": {
         "type": "object",
         "properties": {
           "filename": {
@@ -6721,12 +6721,12 @@
           "content"
         ]
       },
-      "UploadAttachmentList1": {
+      "SubmitAttachmentList": {
         "type": "array",
         "description": "List of attachments",
         "maxItems": 500,
         "items": {
-          "$ref": "#/components/schemas/UploadAttachment1"
+          "$ref": "#/components/schemas/SubmitAttachment"
         }
       },
       "DSN": {
@@ -6874,7 +6874,7 @@
             ]
           },
           "attachments": {
-            "$ref": "#/components/schemas/UploadAttachmentList1"
+            "$ref": "#/components/schemas/SubmitAttachmentList"
           },
           "messageId": {
             "type": "string",
@@ -7011,7 +7011,7 @@
           }
         }
       },
-      "ResponseReference1": {
+      "SubmitResponseReference": {
         "type": "object",
         "description": "Reference info if referencing was requested",
         "properties": {
@@ -7172,7 +7172,7 @@
             "example": "2021-07-08T07:06:34.336Z"
           },
           "reference": {
-            "$ref": "#/components/schemas/ResponseReference1"
+            "$ref": "#/components/schemas/SubmitResponseReference"
           },
           "preview": {
             "type": "string",
@@ -8366,7 +8366,7 @@
           "state"
         ]
       },
-      "status1": {
+      "GatewayErrorStatus": {
         "type": "string",
         "description": "Status of the last delivery attempt",
         "example": "error",
@@ -8394,7 +8394,7 @@
             "example": 1623868624153
           },
           "status": {
-            "$ref": "#/components/schemas/status1"
+            "$ref": "#/components/schemas/GatewayErrorStatus"
           },
           "response": {
             "type": "string",
@@ -9227,7 +9227,7 @@
           }
         }
       },
-      "authMethod": {
+      "OAuth2AppAuthMethod": {
         "type": "string",
         "description": "How the Gmail service account authenticates",
         "example": "externalAccount",
@@ -9397,7 +9397,7 @@
             }
           },
           "authMethod": {
-            "$ref": "#/components/schemas/authMethod"
+            "$ref": "#/components/schemas/OAuth2AppAuthMethod"
           },
           "externalAccount": {
             "type": "string",
@@ -10021,7 +10021,7 @@
           }
         }
       },
-      "status2": {
+      "OAuth2VerifyStepStatus": {
         "type": "string",
         "description": "Step outcome",
         "example": "ok",
@@ -10045,7 +10045,7 @@
             "example": "Sign assertion (signJwt)"
           },
           "status": {
-            "$ref": "#/components/schemas/status2"
+            "$ref": "#/components/schemas/OAuth2VerifyStepStatus"
           },
           "message": {
             "type": "string",
@@ -10173,7 +10173,7 @@
           }
         }
       },
-      "webhookEventsResponse": {
+      "SettingWebhookEvents": {
         "type": "array",
         "description": "List of event types that will trigger webhook notifications",
         "nullable": true,
@@ -10183,7 +10183,7 @@
           "maxLength": 256
         }
       },
-      "webhooksCustomHeadersResponse": {
+      "SettingWebhooksCustomHeaders": {
         "type": "array",
         "description": "Additional HTTP headers to include with webhook requests for authentication or tracking. The global list is sent to the global webhook URL only, an account-level list accompanies that account's deliveries",
         "nullable": true,
@@ -10191,7 +10191,7 @@
           "$ref": "#/components/schemas/WebhooksCustomHeader"
         }
       },
-      "notifyHeadersResponse": {
+      "SettingNotifyHeaders": {
         "type": "array",
         "description": "Email headers to include in webhook payloads for additional context",
         "nullable": true,
@@ -10201,7 +10201,7 @@
           "maxLength": 256
         }
       },
-      "imapIndexerResponse": {
+      "SettingImapIndexer": {
         "type": "string",
         "description": "How much of a mailbox EmailEngine tracks on each sync",
         "example": "full",
@@ -10221,7 +10221,7 @@
           "trim": true
         }
       },
-      "openAiReasoningEffortResponse": {
+      "SettingOpenAiReasoningEffort": {
         "type": "string",
         "description": "Reasoning effort for reasoning models such as GPT-5 and later. Empty sends \"low\" to those models and nothing to others. A value the model refuses is dropped",
         "example": "low",
@@ -10236,7 +10236,7 @@
         ],
         "nullable": true
       },
-      "logsResponse": {
+      "SettingLogs": {
         "type": "object",
         "nullable": true,
         "properties": {
@@ -10256,7 +10256,7 @@
           }
         }
       },
-      "imapStrategyResponse": {
+      "SettingImapStrategy": {
         "type": "string",
         "description": "IP address selection strategy for mailbox access when multiple local addresses are available: IMAP sessions, Gmail API and MS Graph requests, and the OAuth2 token requests of every account. The key keeps its historical name",
         "x-meta": {
@@ -10273,7 +10273,7 @@
         ],
         "nullable": true
       },
-      "smtpStrategyResponse": {
+      "SettingSmtpStrategy": {
         "type": "string",
         "description": "IP address selection strategy for sending over SMTP when multiple local addresses are available",
         "x-meta": {
@@ -10290,7 +10290,7 @@
         ],
         "nullable": true
       },
-      "localAddressesResponse": {
+      "SettingLocalAddresses": {
         "type": "array",
         "description": "List of local IP addresses to use for outbound connections (requires appropriate network configuration)",
         "nullable": true,
@@ -10311,7 +10311,7 @@
           }
         }
       },
-      "tlsProvisioningResponse": {
+      "SettingTlsProvisioning": {
         "type": "string",
         "description": "Where the TLS certificate for the built-in listeners comes from: \"acme\" orders one from Let's Encrypt, \"manual\" uses the certificate uploaded through the admin UI, \"self-signed\" stops trying to get a real one",
         "example": "acme",
@@ -10322,7 +10322,7 @@
         ],
         "nullable": true
       },
-      "tlsHostnamesResponse": {
+      "SettingTlsHostnames": {
         "type": "array",
         "description": "Additional hostnames to hold certificates for, beyond the Service URL hostname. Each one is ordered separately and served over SNI, so a mail client connecting to smtp.example.com is offered a certificate for that name",
         "nullable": true,
@@ -10339,7 +10339,7 @@
           }
         }
       },
-      "localeResponse": {
+      "SettingLocale": {
         "type": "string",
         "description": "Default language/locale for the user interface",
         "example": "fr",
@@ -10391,10 +10391,10 @@
             }
           },
           "webhookEvents": {
-            "$ref": "#/components/schemas/webhookEventsResponse"
+            "$ref": "#/components/schemas/SettingWebhookEvents"
           },
           "webhooksCustomHeaders": {
-            "$ref": "#/components/schemas/webhooksCustomHeadersResponse"
+            "$ref": "#/components/schemas/SettingWebhooksCustomHeaders"
           },
           "webhooksDeliveryAttempts": {
             "type": "integer",
@@ -10413,7 +10413,7 @@
             "maximum": 3600000
           },
           "notifyHeaders": {
-            "$ref": "#/components/schemas/notifyHeadersResponse"
+            "$ref": "#/components/schemas/SettingNotifyHeaders"
           },
           "serviceUrl": {
             "type": "string",
@@ -10456,7 +10456,7 @@
             "nullable": true
           },
           "imapIndexer": {
-            "$ref": "#/components/schemas/imapIndexerResponse"
+            "$ref": "#/components/schemas/SettingImapIndexer"
           },
           "resolveGmailCategories": {
             "type": "boolean",
@@ -10520,7 +10520,7 @@
             "maximum": 1
           },
           "openAiReasoningEffort": {
-            "$ref": "#/components/schemas/openAiReasoningEffortResponse"
+            "$ref": "#/components/schemas/SettingOpenAiReasoningEffort"
           },
           "openAiMaxTokens": {
             "type": "number",
@@ -10672,7 +10672,7 @@
             "nullable": true
           },
           "logs": {
-            "$ref": "#/components/schemas/logsResponse"
+            "$ref": "#/components/schemas/SettingLogs"
           },
           "sentryEnabled": {
             "type": "boolean",
@@ -10696,13 +10696,13 @@
             }
           },
           "imapStrategy": {
-            "$ref": "#/components/schemas/imapStrategyResponse"
+            "$ref": "#/components/schemas/SettingImapStrategy"
           },
           "smtpStrategy": {
-            "$ref": "#/components/schemas/smtpStrategyResponse"
+            "$ref": "#/components/schemas/SettingSmtpStrategy"
           },
           "localAddresses": {
-            "$ref": "#/components/schemas/localAddressesResponse"
+            "$ref": "#/components/schemas/SettingLocalAddresses"
           },
           "smtpServerEnabled": {
             "type": "boolean",
@@ -10754,10 +10754,10 @@
             "nullable": true
           },
           "tlsProvisioning": {
-            "$ref": "#/components/schemas/tlsProvisioningResponse"
+            "$ref": "#/components/schemas/SettingTlsProvisioning"
           },
           "tlsHostnames": {
-            "$ref": "#/components/schemas/tlsHostnamesResponse"
+            "$ref": "#/components/schemas/SettingTlsHostnames"
           },
           "apiTLSCertificate": {
             "type": "string",
@@ -10885,7 +10885,7 @@
             "nullable": true
           },
           "locale": {
-            "$ref": "#/components/schemas/localeResponse"
+            "$ref": "#/components/schemas/SettingLocale"
           },
           "timezone": {
             "type": "string",
@@ -11880,7 +11880,7 @@
           "queue"
         ]
       },
-      "details": {
+      "RedisWarningDetails": {
         "type": "array",
         "description": "Warning details",
         "items": {
@@ -11907,7 +11907,7 @@
             "example": "Unsafe Redis eviction policy"
           },
           "details": {
-            "$ref": "#/components/schemas/details"
+            "$ref": "#/components/schemas/RedisWarningDetails"
           }
         }
       },
@@ -13694,7 +13694,7 @@
           }
         }
       },
-      "target": {
+      "TestWebhookTarget": {
         "type": "string",
         "description": "Which configured target was tested",
         "example": "global",
@@ -13712,7 +13712,7 @@
             "example": true
           },
           "target": {
-            "$ref": "#/components/schemas/target"
+            "$ref": "#/components/schemas/TestWebhookTarget"
           },
           "duration": {
             "type": "integer",
@@ -15129,7 +15129,7 @@
       "post": {
         "summary": "Create mailbox",
         "operationId": "postV1AccountAccountMailbox",
-        "description": "Create new mailbox folder",
+        "description": "Creates a folder at the given path, a missing parent folder included. The path can be given as a list of names, which the server joins with its own separator.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -15389,7 +15389,7 @@
       "delete": {
         "summary": "Delete mailbox",
         "operationId": "deleteV1AccountAccountMailbox",
-        "description": "Delete existing mailbox folder",
+        "description": "Deletes a folder together with every message in it.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -15524,7 +15524,7 @@
       "get": {
         "summary": "List mailboxes",
         "operationId": "getV1AccountAccountMailboxes",
-        "description": "Lists all available mailboxes",
+        "description": "Lists every folder of the account with its path, special-use flag and subscription state, and optionally its message counters.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -16295,7 +16295,7 @@
       "put": {
         "summary": "Move a message to a specified folder",
         "operationId": "putV1AccountAccountMessageMessageMove",
-        "description": "Moves a message to a target folder",
+        "description": "Moves a message to another folder of the same account. When the server reports it, the response carries the ID the message has in the target folder, which can differ from the one it had.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -16439,7 +16439,7 @@
       "get": {
         "summary": "Download raw message",
         "operationId": "getV1AccountAccountMessageMessageSource",
-        "description": "Fetches raw message as a stream",
+        "description": "Streams the raw RFC 822 source of the message as the server stores it, headers and MIME parts included.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -16745,7 +16745,7 @@
       "get": {
         "summary": "List messages in a folder",
         "operationId": "getV1AccountAccountMessages",
-        "description": "Lists messages in a mailbox folder",
+        "description": "Lists the messages of one folder, newest first, one page at a time. Each entry carries the envelope, flags and labels, not the message body; use the message endpoint for the content.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -17747,7 +17747,7 @@
       "delete": {
         "summary": "Remove a message",
         "operationId": "deleteV1AccountAccountOutboxQueueid",
-        "description": "Remove a message from the outbox",
+        "description": "Removes a queued message together with its stored content, so it is not sent. A message whose delivery attempt is running right now is not removed and is reported as locked.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -18996,7 +18996,7 @@
       "get": {
         "summary": "Retrieve message text",
         "operationId": "getV1AccountAccountTextText",
-        "description": "Retrieves message text",
+        "description": "Returns the plain text and HTML content of a message by the text ID from the message details, decoded to UTF-8.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -19575,7 +19575,7 @@
       "get": {
         "summary": "List accounts",
         "operationId": "getV1Accounts",
-        "description": "Lists registered accounts",
+        "description": "Lists the email accounts registered on this instance, one page at a time, with their connection state.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -20038,7 +20038,7 @@
       "get": {
         "summary": "List blocklist entries",
         "operationId": "getV1BlocklistListid",
-        "description": "List suppressed addresses for a list",
+        "description": "Lists the addresses on a suppression list, one page at a time, with why and when each was added.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -20857,7 +20857,7 @@
       "get": {
         "summary": "Check test status",
         "operationId": "getV1DeliverytestCheckDeliverytest",
-        "description": "Check delivery test status",
+        "description": "Returns the result of a delivery test started with the delivery test endpoint: whether the test message arrived, and the authentication results it arrived with.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -20974,7 +20974,7 @@
       "post": {
         "summary": "Register new gateway",
         "operationId": "postV1Gateway",
-        "description": "Registers a new SMP gateway",
+        "description": "Stores an SMTP relay that messages can be sent through instead of the account's own SMTP server, by naming it as `gateway` when submitting.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -21179,7 +21179,7 @@
       "delete": {
         "summary": "Remove SMTP gateway",
         "operationId": "deleteV1GatewayGateway",
-        "description": "Delete SMTP gateway data",
+        "description": "Deletes a stored SMTP gateway. Messages queued for it fail to deliver.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -21401,7 +21401,7 @@
       "put": {
         "summary": "Update gateway info",
         "operationId": "putV1GatewayEditGateway",
-        "description": "Updates gateway information",
+        "description": "Changes the stored settings of an SMTP gateway. Fields left out of the request keep their stored values, the password included.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -21520,7 +21520,7 @@
       "get": {
         "summary": "List gateways",
         "operationId": "getV1Gateways",
-        "description": "Lists registered gateways",
+        "description": "Lists the stored SMTP gateways, one page at a time, with their delivery counters and last error. Passwords are not included.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -21648,7 +21648,7 @@
       "get": {
         "summary": "Request license info",
         "operationId": "getV1License",
-        "description": "Get active license information",
+        "description": "Returns the license this instance runs with: whether one is active, who it was issued to and when it expires.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -21819,7 +21819,7 @@
       "delete": {
         "summary": "Remove license",
         "operationId": "deleteV1License",
-        "description": "Remove registered active license",
+        "description": "Removes the active license. The instance continues without one.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -22126,7 +22126,7 @@
       "get": {
         "summary": "List OAuth2 applications",
         "operationId": "getV1Oauth2",
-        "description": "Lists registered OAuth2 applications",
+        "description": "Lists the stored OAuth2 applications, one page at a time. Client secrets and keys are not included.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -22574,7 +22574,7 @@
       "delete": {
         "summary": "Remove OAuth2 application",
         "operationId": "deleteV1Oauth2App",
-        "description": "Delete OAuth2 application data",
+        "description": "Deletes a stored OAuth2 application. Accounts that authenticate through it can no longer connect.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -23057,7 +23057,7 @@
       "delete": {
         "summary": "Remove a message",
         "operationId": "deleteV1OutboxQueueid",
-        "description": "Remove a message from the outbox",
+        "description": "Removes a queued message together with its stored content, so it is not sent. A message whose delivery attempt is running right now is not removed and is reported as locked.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -23531,704 +23531,880 @@
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the list of webhook event types in the response",
               "default": false
-            }
+            },
+            "description": "Include the list of webhook event types in the response"
           },
           {
             "name": "webhooksEnabled",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `webhooksEnabled` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `webhooksEnabled` setting in the response"
           },
           {
             "name": "webhooks",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `webhooks` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `webhooks` setting in the response"
           },
           {
             "name": "webhookEvents",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `webhookEvents` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `webhookEvents` setting in the response"
           },
           {
             "name": "webhooksCustomHeaders",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `webhooksCustomHeaders` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `webhooksCustomHeaders` setting in the response"
           },
           {
             "name": "webhooksDeliveryAttempts",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `webhooksDeliveryAttempts` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `webhooksDeliveryAttempts` setting in the response"
           },
           {
             "name": "webhooksRetryDelay",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `webhooksRetryDelay` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `webhooksRetryDelay` setting in the response"
           },
           {
             "name": "notifyHeaders",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `notifyHeaders` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `notifyHeaders` setting in the response"
           },
           {
             "name": "serviceUrl",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `serviceUrl` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `serviceUrl` setting in the response"
           },
           {
             "name": "notificationBaseUrl",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `notificationBaseUrl` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `notificationBaseUrl` setting in the response"
           },
           {
             "name": "trackClicks",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `trackClicks` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `trackClicks` setting in the response"
           },
           {
             "name": "trackOpens",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `trackOpens` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `trackOpens` setting in the response"
           },
           {
             "name": "imapIndexer",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `imapIndexer` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `imapIndexer` setting in the response"
           },
           {
             "name": "resolveGmailCategories",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `resolveGmailCategories` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `resolveGmailCategories` setting in the response"
           },
           {
             "name": "ignoreMailCertErrors",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `ignoreMailCertErrors` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `ignoreMailCertErrors` setting in the response"
           },
           {
             "name": "generateEmailSummary",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `generateEmailSummary` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `generateEmailSummary` setting in the response"
           },
           {
             "name": "openAiAPIKey",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `openAiAPIKey` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `openAiAPIKey` setting in the response"
           },
           {
             "name": "openAiModel",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `openAiModel` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `openAiModel` setting in the response"
           },
           {
             "name": "openAiAPIUrl",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `openAiAPIUrl` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `openAiAPIUrl` setting in the response"
           },
           {
             "name": "openAiTemperature",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `openAiTemperature` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `openAiTemperature` setting in the response"
           },
           {
             "name": "openAiTopP",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `openAiTopP` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `openAiTopP` setting in the response"
           },
           {
             "name": "openAiReasoningEffort",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `openAiReasoningEffort` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `openAiReasoningEffort` setting in the response"
           },
           {
             "name": "openAiMaxTokens",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `openAiMaxTokens` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `openAiMaxTokens` setting in the response"
           },
           {
             "name": "openAiPrompt",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `openAiPrompt` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `openAiPrompt` setting in the response"
           },
           {
             "name": "inboxNewOnly",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `inboxNewOnly` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `inboxNewOnly` setting in the response"
           },
           {
             "name": "serviceSecret",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `serviceSecret` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `serviceSecret` setting in the response"
           },
           {
             "name": "authServer",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `authServer` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `authServer` setting in the response"
           },
           {
             "name": "tokenAuditLog",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `tokenAuditLog` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `tokenAuditLog` setting in the response"
           },
           {
             "name": "proxyEnabled",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `proxyEnabled` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `proxyEnabled` setting in the response"
           },
           {
             "name": "proxyUrl",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `proxyUrl` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `proxyUrl` setting in the response"
           },
           {
             "name": "httpProxyEnabled",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `httpProxyEnabled` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `httpProxyEnabled` setting in the response"
           },
           {
             "name": "httpProxyUrl",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `httpProxyUrl` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `httpProxyUrl` setting in the response"
           },
           {
             "name": "smtpEhloName",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `smtpEhloName` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `smtpEhloName` setting in the response"
           },
           {
             "name": "notifyText",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `notifyText` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `notifyText` setting in the response"
           },
           {
             "name": "notifyWebSafeHtml",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `notifyWebSafeHtml` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `notifyWebSafeHtml` setting in the response"
           },
           {
             "name": "notifyTextSize",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `notifyTextSize` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `notifyTextSize` setting in the response"
           },
           {
             "name": "notifyAttachments",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `notifyAttachments` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `notifyAttachments` setting in the response"
           },
           {
             "name": "notifyAttachmentSize",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `notifyAttachmentSize` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `notifyAttachmentSize` setting in the response"
           },
           {
             "name": "notifyCalendarEvents",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `notifyCalendarEvents` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `notifyCalendarEvents` setting in the response"
           },
           {
             "name": "mcpEnabled",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `mcpEnabled` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `mcpEnabled` setting in the response"
           },
           {
             "name": "mcpOAuthEnabled",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `mcpOAuthEnabled` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `mcpOAuthEnabled` setting in the response"
           },
           {
             "name": "logs",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `logs` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `logs` setting in the response"
           },
           {
             "name": "sentryEnabled",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `sentryEnabled` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `sentryEnabled` setting in the response"
           },
           {
             "name": "sentryDsn",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `sentryDsn` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `sentryDsn` setting in the response"
           },
           {
             "name": "imapStrategy",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `imapStrategy` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `imapStrategy` setting in the response"
           },
           {
             "name": "smtpStrategy",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `smtpStrategy` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `smtpStrategy` setting in the response"
           },
           {
             "name": "localAddresses",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `localAddresses` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `localAddresses` setting in the response"
           },
           {
             "name": "smtpServerEnabled",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `smtpServerEnabled` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `smtpServerEnabled` setting in the response"
           },
           {
             "name": "smtpServerPort",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `smtpServerPort` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `smtpServerPort` setting in the response"
           },
           {
             "name": "smtpServerHost",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `smtpServerHost` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `smtpServerHost` setting in the response"
           },
           {
             "name": "smtpServerProxy",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `smtpServerProxy` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `smtpServerProxy` setting in the response"
           },
           {
             "name": "smtpServerAuthEnabled",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `smtpServerAuthEnabled` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `smtpServerAuthEnabled` setting in the response"
           },
           {
             "name": "smtpServerPassword",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `smtpServerPassword` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `smtpServerPassword` setting in the response"
           },
           {
             "name": "smtpServerTLSEnabled",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `smtpServerTLSEnabled` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `smtpServerTLSEnabled` setting in the response"
           },
           {
             "name": "tlsProvisioning",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `tlsProvisioning` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `tlsProvisioning` setting in the response"
           },
           {
             "name": "tlsHostnames",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `tlsHostnames` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `tlsHostnames` setting in the response"
           },
           {
             "name": "apiTLSCertificate",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `apiTLSCertificate` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `apiTLSCertificate` setting in the response"
           },
           {
             "name": "smtpServerTLSCertificate",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `smtpServerTLSCertificate` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `smtpServerTLSCertificate` setting in the response"
           },
           {
             "name": "imapProxyServerTLSCertificate",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `imapProxyServerTLSCertificate` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `imapProxyServerTLSCertificate` setting in the response"
           },
           {
             "name": "imapProxyServerEnabled",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `imapProxyServerEnabled` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `imapProxyServerEnabled` setting in the response"
           },
           {
             "name": "imapProxyServerPort",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `imapProxyServerPort` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `imapProxyServerPort` setting in the response"
           },
           {
             "name": "imapProxyServerHost",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `imapProxyServerHost` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `imapProxyServerHost` setting in the response"
           },
           {
             "name": "imapProxyServerProxy",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `imapProxyServerProxy` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `imapProxyServerProxy` setting in the response"
           },
           {
             "name": "imapProxyServerPassword",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `imapProxyServerPassword` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `imapProxyServerPassword` setting in the response"
           },
           {
             "name": "imapProxyServerTLSEnabled",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `imapProxyServerTLSEnabled` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `imapProxyServerTLSEnabled` setting in the response"
           },
           {
             "name": "queueKeep",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `queueKeep` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `queueKeep` setting in the response"
           },
           {
             "name": "deliveryAttempts",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `deliveryAttempts` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `deliveryAttempts` setting in the response"
           },
           {
             "name": "gmailSubscriptionTtl",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `gmailSubscriptionTtl` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `gmailSubscriptionTtl` setting in the response"
           },
           {
             "name": "templateHeader",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `templateHeader` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `templateHeader` setting in the response"
           },
           {
             "name": "templateHtmlHead",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `templateHtmlHead` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `templateHtmlHead` setting in the response"
           },
           {
             "name": "scriptEnv",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `scriptEnv` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `scriptEnv` setting in the response"
           },
           {
             "name": "enableApiProxy",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `enableApiProxy` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `enableApiProxy` setting in the response"
           },
           {
             "name": "locale",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `locale` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `locale` setting in the response"
           },
           {
             "name": "timezone",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `timezone` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `timezone` setting in the response"
           },
           {
             "name": "pageBrandName",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `pageBrandName` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `pageBrandName` setting in the response"
           },
           {
             "name": "openAiPreProcessingFn",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `openAiPreProcessingFn` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `openAiPreProcessingFn` setting in the response"
           },
           {
             "name": "imapClientName",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `imapClientName` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `imapClientName` setting in the response"
           },
           {
             "name": "imapClientVersion",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `imapClientVersion` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `imapClientVersion` setting in the response"
           },
           {
             "name": "imapClientVendor",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `imapClientVendor` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `imapClientVendor` setting in the response"
           },
           {
             "name": "imapClientSupportUrl",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `imapClientSupportUrl` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `imapClientSupportUrl` setting in the response"
           },
           {
             "name": "exportMaxConcurrent",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `exportMaxConcurrent` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `exportMaxConcurrent` setting in the response"
           },
           {
             "name": "exportMaxGlobalConcurrent",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `exportMaxGlobalConcurrent` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `exportMaxGlobalConcurrent` setting in the response"
           },
           {
             "name": "gmailExportBatchSize",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `gmailExportBatchSize` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `gmailExportBatchSize` setting in the response"
           },
           {
             "name": "outlookExportBatchSize",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `outlookExportBatchSize` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `outlookExportBatchSize` setting in the response"
           },
           {
             "name": "exportMaxMessages",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `exportMaxMessages` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `exportMaxMessages` setting in the response"
           },
           {
             "name": "exportMaxSize",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `exportMaxSize` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `exportMaxSize` setting in the response"
           },
           {
             "name": "exportMaxMessageSize",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `exportMaxMessageSize` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `exportMaxMessageSize` setting in the response"
           },
           {
             "name": "exportMaxAge",
             "in": "query",
             "schema": {
               "type": "boolean",
+              "description": "Include the `exportMaxAge` setting in the response",
               "default": false
-            }
+            },
+            "description": "Include the `exportMaxAge` setting in the response"
           }
         ],
         "tags": [
@@ -24399,7 +24575,7 @@
       "get": {
         "summary": "Show queue information",
         "operationId": "getV1SettingsQueueQueue",
-        "description": "Show queue status and current state",
+        "description": "Returns how many jobs a queue holds in each state and whether it is paused.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -24503,7 +24679,7 @@
       "put": {
         "summary": "Set queue settings",
         "operationId": "putV1SettingsQueueQueue",
-        "description": "Set queue settings",
+        "description": "Pauses or resumes a queue. A paused queue keeps accepting jobs, the workers stop taking them until it is resumed.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -24618,6 +24794,7 @@
       "get": {
         "summary": "Return server stats",
         "operationId": "getV1Stats",
+        "description": "Returns the running version and license, how many accounts are in each connection state, message and webhook counters for the last `seconds`, and the Redis server details with any warnings about how Redis is configured.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -24718,7 +24895,7 @@
       "get": {
         "summary": "List account templates",
         "operationId": "getV1Templates",
-        "description": "Lists stored templates for the account",
+        "description": "Lists the stored templates, one page at a time: the shared ones, or with `account` set the templates of that account.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -25206,7 +25383,7 @@
       "put": {
         "summary": "Update a template",
         "operationId": "putV1TemplatesTemplateTemplate",
-        "description": "Update a stored template.",
+        "description": "Changes a stored template. Fields left out of the request keep their stored values.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -25323,7 +25500,7 @@
       "delete": {
         "summary": "Remove a template",
         "operationId": "deleteV1TemplatesTemplateTemplate",
-        "description": "Delete a stored template",
+        "description": "Deletes a stored template. Messages already queued from it are not affected.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -25787,7 +25964,7 @@
       "delete": {
         "summary": "Remove a token",
         "operationId": "deleteV1TokensToken",
-        "description": "Delete an access token",
+        "description": "Revokes an access token. Requests made with it are refused from then on.",
         "parameters": [
           {
             "name": "x-ee-timeout",
