@@ -432,6 +432,18 @@ class ConnectionHandler {
         }
     }
 
+    /**
+     * Removes what the provider keeps for the account, ahead of its deletion, see
+     * BaseClient.releaseRemoteResources()
+     */
+    async teardownConnection(account) {
+        const accountObject = this.accounts.get(account);
+        if (!accountObject?.connection) {
+            return false;
+        }
+        return await accountObject.connection.releaseRemoteResources();
+    }
+
     async updateConnection(account) {
         logger.info({ msg: 'Account update requested', account });
         if (this.accounts.has(account)) {
@@ -1006,6 +1018,7 @@ class ConnectionHandler {
                 return await this.syncConnection(message.account, { since: message.since });
 
             case 'delete':
+            case 'teardown':
             case 'unassign':
             case 'update':
             case 'pause':

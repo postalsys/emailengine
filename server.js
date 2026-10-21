@@ -1563,14 +1563,14 @@ let spawnWorker = async (type, opts, slot) => {
                         if (account && accountUpdateKey) {
                             // Update account-specific counter
                             let accountKey = `${REDIS_PREFIX}iad:${account}`;
-                            update = update.hincrby(accountKey, `stats:count:${accountUpdateKey}`, 1);
+                            update = update.hIncrbyExists(accountKey, `stats:count:${accountUpdateKey}`, 1);
                         }
 
                         update.exec().catch(() => false);
                     } else if (account && accountUpdateKey) {
                         // Update only account-specific counter
                         let accountKey = `${REDIS_PREFIX}iad:${account}`;
-                        redis.hincrby(accountKey, `stats:count:${accountUpdateKey}`, 1).catch(() => false);
+                        redis.hIncrbyExists(accountKey, `stats:count:${accountUpdateKey}`, 1).catch(() => false);
                     }
 
                     // Update Prometheus metrics. prom-client throws synchronously on an unknown
@@ -2984,6 +2984,21 @@ async function commandDeleteAccount(worker, message) {
     );
 }
 
+/**
+ * Forwards a command to the worker that holds the account and answers with its result, for a
+ * caller that has to wait for it (the teardown before an account is deleted)
+ * @param {Object} worker - Requesting worker
+ * @param {Object} message - The command
+ * @returns {Promise<*>} The worker's answer, false when no worker holds the account
+ */
+async function commandAwaitAccountWorker(worker, message) {
+    const assignedWorker = assigned.get(message.account);
+    if (!assignedWorker) {
+        return false;
+    }
+    return await call(assignedWorker, message);
+}
+
 async function commandRunIndex() {
     return runIndex;
 }
@@ -3138,6 +3153,7 @@ const COMMAND_HANDLERS = new Map([
     ['subscribe', commandSubscribe],
     ['new', commandNewAccount],
     ['delete', commandDeleteAccount],
+    ['teardown', commandAwaitAccountWorker],
     ['runIndex', commandRunIndex],
     ...['update', 'sync', 'pause', 'resume', 'reconnect'].map(cmd => [cmd, commandForwardToAccountWorker]),
     ...['smtpReload', 'imapProxyReload'].map(cmd => [cmd, commandReloadServer]),
