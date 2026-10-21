@@ -120,7 +120,7 @@ initSentry('main');
 
 // Import additional dependencies
 const pathlib = require('path');
-const { redis, queueConf, notifyQueue, submitQueue, exportQueue, logBullErrors } = require('./lib/db');
+const { redis, notifyQueue, submitQueue, exportQueue } = require('./lib/db');
 const { queueStats } = require('./lib/queue-stats');
 const { pruneFailedContent } = require('./lib/outbox');
 const { packRpcError, unpackRpcError } = require('./lib/worker-rpc-error');
@@ -139,8 +139,6 @@ const tokens = require('./lib/tokens');
 
 const { checkRateLimit } = require('./lib/rate-limit');
 
-const { QueueEvents } = require('bullmq');
-
 const getSecret = require('./lib/get-secret');
 
 const { rejectWorkerCalls } = require('./lib/reject-worker-calls');
@@ -154,7 +152,8 @@ const {
     planRebalance
 } = require('./lib/account-assignment');
 const { mapConcurrent } = require('./lib/utils/map-concurrent');
-const { RespawnTracker } = require('./lib/respawn-backoff');
+const { RespawnTracker, retryWithBackoff } = require('./lib/respawn-backoff');
+const { legacySmtpOptionsInUse, REMOVAL_DATE } = require('./lib/deprecations');
 const { heartbeatDiagnostics, eventLoopDelaySeries } = require('./lib/thread-diagnostics');
 
 const msgpack = require('./lib/msgpack');
@@ -241,7 +240,8 @@ config.api.host = readEnvValue('EENGINE_HOST') || config.api.host;
 
 config.log.level = readEnvValue('EENGINE_LOG_LEVEL') || config.log.level;
 
-// Legacy SMTP configuration options (will be removed in future versions)
+// Legacy SMTP configuration options, removed after REMOVAL_DATE (lib/deprecations.js). They only
+// seed the SMTP server settings on a first start; the admin UI and the settings API own them after that
 const SMTP_ENABLED = hasEnvValue('EENGINE_SMTP_ENABLED') ? getBoolean(readEnvValue('EENGINE_SMTP_ENABLED')) : getBoolean(config.smtp.enabled);
 const SMTP_SECRET = readEnvValue('EENGINE_SMTP_SECRET') || config.smtp.secret;
 const SMTP_PORT = (readEnvValue('EENGINE_SMTP_PORT') && Number(readEnvValue('EENGINE_SMTP_PORT'))) || Number(config.smtp.port) || 2525;
@@ -292,6 +292,15 @@ logger.info({
     workersWebhooks: config.workers.webhooks,
     workersSubmission: config.workers.submit
 });
+
+const legacySmtpOptions = legacySmtpOptionsInUse({ hasEnvValue, smtpConfig: config.smtp });
+if (legacySmtpOptions.length) {
+    logger.warn({
+        msg: 'Deprecated SMTP server options are set, configure the SMTP server in the admin UI or through the settings API instead',
+        options: legacySmtpOptions,
+        removal: REMOVAL_DATE
+    });
+}
 
 // Standard response for when no active worker is available
 const NO_ACTIVE_HANDLER_RESP_ERR = new Error('No active handler for requested account. Try again later.');
@@ -362,9 +371,6 @@ const THREAD_CONFIG_VALUES = {
     webhooks: { key: 'EENGINE_WORKERS_WEBHOOKS', value: config.workers.webhooks },
     export: { key: 'EENGINE_WORKERS_EXPORT', value: config.workers.export }
 };
-
-// Queue event handlers for different job queues
-const queueEvents = {};
 
 // Unique run index for this server instance
 let runIndex;
@@ -899,6 +905,18 @@ let updateServerState = async (type, state, payload) => {
 };
 
 /**
+ * updateServerState() as a report: never rejects. The listener state is what the admin UI shows,
+ * and a write Redis refuses (OOM, READONLY) must neither keep a worker from starting nor reach
+ * the global handler from a call nobody awaits
+ * @param {string} type - Server type ('smtp' or 'imapProxy')
+ * @param {string} state - New state
+ * @param {Object} [payload] - Optional payload data
+ * @returns {Promise<void>}
+ */
+const reportServerState = (type, state, payload) =>
+    updateServerState(type, state, payload).catch(err => logger.error({ msg: 'Unable to update server state', type, state, err }));
+
+/**
  * Get detailed information about all threads
  * @returns {Promise<Array>} Array of thread information objects
  */
@@ -1172,20 +1190,30 @@ let spawnWorker = async (type, opts, slot) => {
     // Check if worker type is suspended (no license)
     if (suspendedWorkerTypes.has(type)) {
         if (['smtp', 'imapProxy'].includes(type)) {
-            await updateServerState(type, 'suspended', {});
+            await reportServerState(type, 'suspended', {});
         }
         return;
     }
 
     // Check if server type is enabled
     if (['smtp', 'imapProxy'].includes(type)) {
-        let serverEnabled = await settings.get(`${type}ServerEnabled`);
+        // Retried rather than failed: a respawn that could not read the setting (Redis refusing
+        // commands, a failover) used to end the respawn chain, and the listener stayed down until
+        // the process restarted
+        let serverEnabled = await retryWithBackoff(() => settings.get(`${type}ServerEnabled`), {
+            delayFor: attempt => respawnTracker.delayFor(attempt),
+            shouldStop: () => isClosing,
+            onError: (err, delay) => logger.error({ msg: 'Unable to read the listener setting, retrying', type, delay, err })
+        });
+        if (isClosing) {
+            return;
+        }
         if (!serverEnabled) {
-            await updateServerState(type, 'disabled', {});
+            await reportServerState(type, 'disabled', {});
             return;
         }
 
-        await updateServerState(type, 'spawning');
+        await reportServerState(type, 'spawning');
     }
 
     // A fresh spawn opens its own slot. Counting the crash streak per type made every short-lived
@@ -1226,7 +1254,7 @@ let spawnWorker = async (type, opts, slot) => {
         // Handle worker coming online
         worker.on('online', () => {
             if (['smtp', 'imapProxy'].includes(type)) {
-                updateServerState(type, 'initializing').catch(err => logger.error({ msg: 'Unable to update server state', type, err }));
+                reportServerState(type, 'initializing');
             }
             onlineWorkers.add(worker);
 
@@ -1271,12 +1299,9 @@ let spawnWorker = async (type, opts, slot) => {
 
             // Update server state for proxy servers
             if (['smtp', 'imapProxy'].includes(type)) {
-                // Not awaited, so the rejection has to be handled here: a Redis reply error
-                // (OOM, READONLY) would otherwise reach the global handler and take the whole
-                // process down with it.
-                updateServerState(type, suspendedWorkerTypes.has(type) ? 'suspended' : 'exited').catch(err =>
-                    logger.error({ msg: 'Unable to update server state', type, err })
-                );
+                // Not awaited: reportServerState() handles a Redis reply error (OOM, READONLY), which
+                // would otherwise reach the global handler and take the whole process down with it
+                reportServerState(type, suspendedWorkerTypes.has(type) ? 'suspended' : 'exited');
             }
 
             // Handle IMAP worker cleanup
@@ -1602,9 +1627,7 @@ let spawnWorker = async (type, opts, slot) => {
                         case 'smtpServerState':
                         case 'imapProxyServerState': {
                             let type = message.type.replace(/ServerState$/, '');
-                            updateServerState(type, message.key, message.payload).catch(err =>
-                                logger.error({ msg: 'Unable to update server state', type, err })
-                            );
+                            reportServerState(type, message.key, message.payload);
                             break;
                         }
                         default:
@@ -3266,12 +3289,6 @@ const closeQueues = cb => {
         }
     }
 
-    for (let name of ['notify', 'submit', 'export']) {
-        if (queueEvents[name]) {
-            proms.push(queueEvents[name].close());
-        }
-    }
-
     if (!proms.length) {
         return setImmediate(() => cb());
     }
@@ -3939,11 +3956,6 @@ startApplication()
 
         // Start worker health monitoring
         startHealthMonitoring();
-
-        // Initialize queue event listeners
-        for (let name of ['notify', 'submit', 'export']) {
-            queueEvents[name] = logBullErrors(new QueueEvents(name, Object.assign({}, queueConf)), `queueEvents:${name}`);
-        }
 
         // Periodic queue cleanup (every 6 hours)
         const QUEUE_CLEANUP_INTERVAL = 6 * 60 * 60 * 1000;
