@@ -89,6 +89,7 @@ const { routeGrant, perRequestSurfaceAdmits, sessionTokenAdmits } = require('../
 const { mcpOptions } = require('../lib/api-routes/route-metadata');
 
 const { redis } = require('../lib/db');
+const { createHealthChecks, HealthCheckError } = require('../lib/health');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
 
@@ -237,6 +238,9 @@ const ADMIN_ACCESS_ADDRESSES = readEnvList('EENGINE_ADMIN_ACCESS_ADDRESSES');
 // Peers allowed to set X-Forwarded-For. Unset means the header is honored from any peer whenever
 // the API proxy setting is on, which is the historical behavior; see resolveClientIp().
 const API_PROXY_ADDRESSES = readEnvList('EENGINE_API_PROXY_ADDRESSES');
+
+// How long a shutdown waits for requests in flight, just below the main thread's WORKER_DRAIN_TIMEOUT
+const API_DRAIN_TIMEOUT = 6000;
 
 const IMAP_WORKER_COUNT = getWorkerCount(readEnvValue('EENGINE_WORKERS') || (config.workers && config.workers.imap)) || 4;
 
@@ -392,10 +396,30 @@ async function onCommand(command) {
             // reconciler is a singleton but the HTTPS listeners are not, and a sibling worker that
             // kept its old context would go on serving the certificate that was just replaced.
             return refreshApiTls ? await refreshApiTls() : { updated: false };
+        case 'close':
+            return await drainApiServer();
         default:
             logger.debug({ msg: 'Unhandled command', command });
             return 999;
     }
+}
+
+/**
+ * Stops taking new connections and waits for the requests in flight, so a shutdown no longer cuts
+ * them. Readiness turns 503 first, which tells a load balancer to stop sending traffic here. The
+ * main thread bounds the whole wait with its own drain timeout, this one is just below it.
+ */
+async function drainApiServer() {
+    apiDraining = true;
+    if (!apiServer) {
+        return true;
+    }
+    try {
+        await apiServer.stop({ timeout: API_DRAIN_TIMEOUT });
+    } catch (err) {
+        logger.warn({ msg: 'Failed to stop the API server cleanly', err });
+    }
+    return true;
 }
 
 function publishChangeEvent(data) {
@@ -433,6 +457,9 @@ function publishChangeEvent(data) {
 // default has been decided, so the authData branch of the settings dispatcher below cannot set a
 // strategy that does not exist yet or race the boot-time server.auth.default() call
 let sessionAuthServer = null;
+
+// The Hapi server, for the drain on shutdown
+let apiServer = null;
 
 // Installs a renewed certificate on this worker's own HTTPS listener. Published by init() when the
 // API is serving TLS, and called through the apiReloadCertificates command.
@@ -1547,6 +1574,7 @@ async function registerServerPlugins(server) {
     // From here on a first password set on another API worker switches the session strategy on
     // through the settings dispatcher (see the authData branch there)
     sessionAuthServer = server;
+    apiServer = server;
 
     await server.register({
         plugin: requestLogger,
@@ -1772,32 +1800,64 @@ function registerStaticFilesRoute(server) {
     });
 }
 
+// Set by the close command: readiness answers 503 from then on while Hapi drains the requests in flight
+let apiDraining = false;
+
+const healthChecks = createHealthChecks({
+    call,
+    redis,
+    prefix: REDIS_PREFIX,
+    expectedImapWorkers: IMAP_WORKER_COUNT,
+    isDraining: () => apiDraining
+});
+
+/**
+ * Runs a readiness check and turns its failure into a 503 carrying a `code`
+ * @param {Object} request - Hapi request
+ * @returns {Promise<Object>} The check result
+ */
+async function answerReadiness(request) {
+    // Same rule as the license lookup: a header value the timer would mangle is ignored
+    const { error: timeoutError, value: timeout } = headerTimeoutSchema.validate(request.headers['x-ee-timeout']);
+    try {
+        return await healthChecks.ready(timeoutError ? undefined : timeout);
+    } catch (err) {
+        if (!(err instanceof HealthCheckError)) {
+            throw err;
+        }
+        const error = Boom.boomify(err, { statusCode: err.statusCode });
+        error.output.payload.code = err.code;
+        throw error;
+    }
+}
+
 function registerHealthRoute(server) {
+    const options = {
+        auth: false,
+        tags: ['static', 'health']
+    };
+
+    // Kept with its historical meaning (everything needed to serve traffic), for the probes and
+    // smoke tests already pointed at it
     server.route({
         method: 'GET',
         path: '/health',
-        async handler(request) {
-            const imapWorkerCount = await call({ cmd: 'imapWorkerCount', timeout: request.headers['x-ee-timeout'] });
-            if (imapWorkerCount < IMAP_WORKER_COUNT) {
-                let error = Boom.boomify(new Error('Not all IMAP workers available'), { statusCode: 500 });
-                throw error;
-            }
+        handler: answerReadiness,
+        options: Object.assign({ description: 'Health check' }, options)
+    });
 
-            let checkKey = `${REDIS_PREFIX}test:${Date.now()}`;
-            let expected = crypto.randomBytes(8).toString('hex');
-            let res = await redis.multi().set(checkKey, expected).get(checkKey).del(checkKey).exec();
-            if (!(res[1] && res[1][1] === expected && res[2] && res[2][1] === 1)) {
-                let error = Boom.boomify(new Error('Database check failed'), { statusCode: 500 });
-                throw error;
-            }
+    server.route({
+        method: 'GET',
+        path: '/health/ready',
+        handler: answerReadiness,
+        options: Object.assign({ description: 'Readiness check' }, options)
+    });
 
-            return { success: true };
-        },
-        options: {
-            description: 'Health check',
-            auth: false,
-            tags: ['static', 'health']
-        }
+    server.route({
+        method: 'GET',
+        path: '/health/live',
+        handler: () => healthChecks.live(),
+        options: Object.assign({ description: 'Liveness check' }, options)
     });
 }
 
