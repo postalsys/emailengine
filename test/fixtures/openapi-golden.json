@@ -7238,6 +7238,185 @@
           }
         }
       },
+      "FailedWebhookDeliveryRoute": {
+        "type": "object",
+        "description": "The custom webhook route the delivery was for. Null for the default webhook target",
+        "nullable": true,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Webhook route ID",
+            "example": "AAABgS-UcAYAAAABAA"
+          },
+          "name": {
+            "type": "string",
+            "description": "Webhook route name. Null when the route no longer exists",
+            "example": "Send to Slack",
+            "nullable": true
+          }
+        }
+      },
+      "FailedWebhookDeliveryError": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Why the last attempt failed",
+            "example": "Request failed with status 503"
+          },
+          "code": {
+            "type": "string",
+            "description": "Error code, when the failure carried one",
+            "example": "ECONNREFUSED",
+            "nullable": true
+          },
+          "statusCode": {
+            "type": "integer",
+            "description": "HTTP status the receiver answered with, when it answered",
+            "example": 503,
+            "nullable": true
+          },
+          "permanent": {
+            "type": "boolean",
+            "description": "True when retrying could not help, so the delivery was given up on early",
+            "example": false
+          }
+        }
+      },
+      "FailedWebhookDelivery": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Delivery ID",
+            "example": "1543"
+          },
+          "event": {
+            "type": "string",
+            "description": "Webhook event type",
+            "example": "messageNew"
+          },
+          "eventId": {
+            "type": "string",
+            "description": "Event identifier, as sent in the webhook payload",
+            "example": "c4a2bd7e-3a50-4b5d-a0d1-29fa2c9e2b6c",
+            "nullable": true
+          },
+          "account": {
+            "type": "string",
+            "description": "Account the event is about",
+            "example": "user123",
+            "nullable": true
+          },
+          "path": {
+            "type": "string",
+            "description": "Folder the event is about",
+            "example": "INBOX",
+            "nullable": true
+          },
+          "messageId": {
+            "type": "string",
+            "description": "Message-ID of the message the event is about",
+            "example": "<test123@example.com>",
+            "nullable": true
+          },
+          "route": {
+            "$ref": "#/components/schemas/FailedWebhookDeliveryRoute"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the event was queued",
+            "example": "2026-10-21T08:02:11.120Z",
+            "nullable": true
+          },
+          "failed": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the last attempt failed",
+            "example": "2026-10-21T09:40:43.301Z",
+            "nullable": true
+          },
+          "attemptsMade": {
+            "type": "integer",
+            "description": "Delivery attempts made",
+            "example": 10
+          },
+          "attempts": {
+            "type": "integer",
+            "description": "Delivery attempts allowed",
+            "example": 10
+          },
+          "error": {
+            "$ref": "#/components/schemas/FailedWebhookDeliveryError"
+          }
+        }
+      },
+      "FailedWebhookDeliveryList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/FailedWebhookDelivery"
+        }
+      },
+      "FailedWebhookDeliveriesResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "description": "How many matching entries",
+            "example": 12
+          },
+          "page": {
+            "type": "integer",
+            "description": "Current page (0-based index)",
+            "example": 0
+          },
+          "pages": {
+            "type": "integer",
+            "description": "Total page count",
+            "example": 1
+          },
+          "scanLimited": {
+            "type": "boolean",
+            "description": "True when an account filter was applied and the scan stopped before the end of the failed deliveries",
+            "example": false
+          },
+          "deliveries": {
+            "$ref": "#/components/schemas/FailedWebhookDeliveryList"
+          }
+        }
+      },
+      "DeleteFailedWebhookDeliveryResponse": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "description": "Was the delivery removed",
+            "default": true
+          },
+          "id": {
+            "type": "string",
+            "description": "Delivery ID",
+            "example": "1543"
+          }
+        }
+      },
+      "RetryFailedWebhookDeliveryResponse": {
+        "type": "object",
+        "properties": {
+          "retried": {
+            "type": "boolean",
+            "description": "Was the delivery put back into the queue",
+            "default": true
+          },
+          "id": {
+            "type": "string",
+            "description": "Delivery ID",
+            "example": "1543"
+          }
+        }
+      },
       "AccountsQueryFilter": {
         "type": "string",
         "description": "Search term used for filtering, or false when no filter was applied",
@@ -12403,7 +12582,8 @@
             "oauth2": "Manage OAuth2 applications. Client secrets are write-only, and a change can move where the provider sends authorization codes",
             "license": "Read, apply and remove the license key",
             "token": "List, inspect and revoke access tokens and read their audit logs, which record who read which account. Cannot create tokens",
-            "provisioning": "Add and reconfigure email accounts and SMTP gateways, including where they connect. A stored credential is sent to whatever host the record names after the change"
+            "provisioning": "Add and reconfigure email accounts and SMTP gateways, including where they connect. A stored credential is sent to whatever host the record names after the change",
+            "webhook-deliveries": "List, retry and remove the webhook deliveries that failed for good. A listing names the account, folder and message each failed event was about, across every account"
           }
         },
         "enum": [
@@ -12424,12 +12604,13 @@
           "oauth2",
           "license",
           "token",
+          "webhook-deliveries",
           "provisioning"
         ]
       },
       "TokenGroups": {
         "type": "array",
-        "description": "Which parts of the API this token may reach. Omitted, the token reaches every section except the instance sections (`settings`, `oauth2`, `license`, `token`, `provisioning`), which have to be named",
+        "description": "Which parts of the API this token may reach. Omitted, the token reaches every section except the instance sections (`settings`, `oauth2`, `license`, `token`, `webhook-deliveries`, `provisioning`), which have to be named",
         "example": [
           "message",
           "mailbox"
@@ -18884,6 +19065,406 @@
         "x-ee-group": "message"
       }
     },
+    "/v1/account/{account}/webhooks/failed": {
+      "get": {
+        "summary": "List failed webhook deliveries of an account",
+        "operationId": "getV1AccountAccountWebhooksFailed",
+        "description": "Lists webhook deliveries that failed for good, most recent first: every attempt failed, or the failure was permanent. Each entry says what the event was about and why the last attempt failed; the event payload itself is not included. With an account filter, the most recent failed deliveries of the whole queue are scanned for that account, and `scanLimited` says when the scan stopped before the end of the queue. How many failed deliveries are kept is set by EENGINE_QUEUE_KEEP_FAILED and EENGINE_QUEUE_KEEP_FAILED_AGE.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
+          },
+          {
+            "name": "account",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Unique identifier for the email account",
+              "example": "user123",
+              "maxLength": 256,
+              "x-convert": {
+                "trim": true
+              }
+            },
+            "description": "Unique identifier for the email account",
+            "required": true
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "Page number (zero indexed, so use 0 for first page)",
+              "example": 0,
+              "default": 0,
+              "minimum": 0,
+              "maximum": 1048576
+            },
+            "description": "Page number (zero indexed, so use 0 for first page)"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "How many entries per page",
+              "example": 20,
+              "default": 20,
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "description": "How many entries per page"
+          }
+        ],
+        "tags": [
+          "Webhooks"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns a page of failed webhook deliveries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FailedWebhookDeliveriesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "webhook-deliveries"
+      }
+    },
+    "/v1/account/{account}/webhooks/failed/{delivery}": {
+      "delete": {
+        "summary": "Remove a failed webhook delivery",
+        "operationId": "deleteV1AccountAccountWebhooksFailedDelivery",
+        "description": "Removes a webhook delivery that failed for good from the queue, so it is not kept for inspection or a retry. A delivery that is not in the failed state answers 409 with `code` NotFailed.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
+          },
+          {
+            "name": "account",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Unique identifier for the email account",
+              "example": "user123",
+              "maxLength": 256,
+              "x-convert": {
+                "trim": true
+              }
+            },
+            "description": "Unique identifier for the email account",
+            "required": true
+          },
+          {
+            "name": "delivery",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Failed webhook delivery ID, as the listing returns it",
+              "example": "1543",
+              "maxLength": 256
+            },
+            "description": "Failed webhook delivery ID, as the listing returns it",
+            "required": true
+          }
+        ],
+        "tags": [
+          "Webhooks"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns a deletion marker.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteFailedWebhookDeliveryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - the requested entity (account, message, mailbox, etc.) does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - the entity is not in a state the operation applies to",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-impact": "destructive",
+        "x-ee-action": "destructive",
+        "x-ee-group": "webhook-deliveries"
+      }
+    },
+    "/v1/account/{account}/webhooks/failed/{delivery}/retry": {
+      "post": {
+        "summary": "Retry a failed webhook delivery",
+        "operationId": "postV1AccountAccountWebhooksFailedDeliveryRetry",
+        "description": "Puts a webhook delivery that failed for good back into the queue with a fresh set of attempts. It is sent to the target the event was queued for, with the payload it was queued with. A delivery that is not in the failed state answers 409 with `code` NotFailed.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
+          },
+          {
+            "name": "account",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Unique identifier for the email account",
+              "example": "user123",
+              "maxLength": 256,
+              "x-convert": {
+                "trim": true
+              }
+            },
+            "description": "Unique identifier for the email account",
+            "required": true
+          },
+          {
+            "name": "delivery",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Failed webhook delivery ID, as the listing returns it",
+              "example": "1543",
+              "maxLength": 256
+            },
+            "description": "Failed webhook delivery ID, as the listing returns it",
+            "required": true
+          }
+        ],
+        "tags": [
+          "Webhooks"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns a retry marker. The delivery is waiting for an attempt again.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetryFailedWebhookDeliveryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - the requested entity (account, message, mailbox, etc.) does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - the entity is not in a state the operation applies to",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "webhook-deliveries"
+      }
+    },
     "/v1/accounts": {
       "get": {
         "summary": "List accounts",
@@ -25276,6 +25857,375 @@
         },
         "x-ee-action": "read",
         "x-ee-group": "webhook"
+      }
+    },
+    "/v1/webhooks/failed": {
+      "get": {
+        "summary": "List failed webhook deliveries",
+        "operationId": "getV1WebhooksFailed",
+        "description": "Lists webhook deliveries that failed for good, most recent first: every attempt failed, or the failure was permanent. Each entry says what the event was about and why the last attempt failed; the event payload itself is not included. With an account filter, the most recent failed deliveries of the whole queue are scanned for that account, and `scanLimited` says when the scan stopped before the end of the queue. How many failed deliveries are kept is set by EENGINE_QUEUE_KEEP_FAILED and EENGINE_QUEUE_KEEP_FAILED_AGE.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "Page number (zero indexed, so use 0 for first page)",
+              "example": 0,
+              "default": 0,
+              "minimum": 0,
+              "maximum": 1048576
+            },
+            "description": "Page number (zero indexed, so use 0 for first page)"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "How many entries per page",
+              "example": 20,
+              "default": 20,
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "description": "How many entries per page"
+          },
+          {
+            "name": "account",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "List only the deliveries of this account",
+              "example": "user123",
+              "maxLength": 256,
+              "x-convert": {
+                "trim": true
+              }
+            },
+            "description": "List only the deliveries of this account"
+          }
+        ],
+        "tags": [
+          "Webhooks"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns a page of failed webhook deliveries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FailedWebhookDeliveriesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "webhook-deliveries"
+      }
+    },
+    "/v1/webhooks/failed/{delivery}": {
+      "delete": {
+        "summary": "Remove a failed webhook delivery",
+        "operationId": "deleteV1WebhooksFailedDelivery",
+        "description": "Removes a webhook delivery that failed for good from the queue, so it is not kept for inspection or a retry. A delivery that is not in the failed state answers 409 with `code` NotFailed.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
+          },
+          {
+            "name": "delivery",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Failed webhook delivery ID, as the listing returns it",
+              "example": "1543",
+              "maxLength": 256
+            },
+            "description": "Failed webhook delivery ID, as the listing returns it",
+            "required": true
+          }
+        ],
+        "tags": [
+          "Webhooks"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns a deletion marker.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteFailedWebhookDeliveryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - the requested entity (account, message, mailbox, etc.) does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - the entity is not in a state the operation applies to",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-impact": "destructive",
+        "x-ee-action": "destructive",
+        "x-ee-group": "webhook-deliveries"
+      }
+    },
+    "/v1/webhooks/failed/{delivery}/retry": {
+      "post": {
+        "summary": "Retry a failed webhook delivery",
+        "operationId": "postV1WebhooksFailedDeliveryRetry",
+        "description": "Puts a webhook delivery that failed for good back into the queue with a fresh set of attempts. It is sent to the target the event was queued for, with the payload it was queued with. A delivery that is not in the failed state answers 409 with `code` NotFailed.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
+          },
+          {
+            "name": "delivery",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Failed webhook delivery ID, as the listing returns it",
+              "example": "1543",
+              "maxLength": 256
+            },
+            "description": "Failed webhook delivery ID, as the listing returns it",
+            "required": true
+          }
+        ],
+        "tags": [
+          "Webhooks"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns a retry marker. The delivery is waiting for an attempt again.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetryFailedWebhookDeliveryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - the requested entity (account, message, mailbox, etc.) does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - the entity is not in a state the operation applies to",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "webhook-deliveries"
       }
     }
   }

@@ -47,6 +47,7 @@ const GOLDEN_ROUTES = [
     'DELETE /v1/account/{account}/mailbox',
     'DELETE /v1/account/{account}/message/{message}',
     'DELETE /v1/account/{account}/outbox/{queueId}',
+    'DELETE /v1/account/{account}/webhooks/failed/{delivery}',
     'DELETE /v1/blocklist/{listId}',
     'DELETE /v1/gateway/{gateway}',
     'DELETE /v1/license',
@@ -56,6 +57,7 @@ const GOLDEN_ROUTES = [
     'DELETE /v1/templates/template/{template}',
     'DELETE /v1/token/{token}',
     'DELETE /v1/tokens/{token}',
+    'DELETE /v1/webhooks/failed/{delivery}',
     'GET /.well-known/oauth-authorization-server',
     'GET /.well-known/oauth-protected-resource/{suffix?}',
     'GET /mcp',
@@ -73,6 +75,7 @@ const GOLDEN_ROUTES = [
     'GET /v1/account/{account}/outbox/{queueId}',
     'GET /v1/account/{account}/server-signatures',
     'GET /v1/account/{account}/text/{text}',
+    'GET /v1/account/{account}/webhooks/failed',
     'GET /v1/accounts',
     'GET /v1/autoconfig',
     'GET /v1/blocklist/{listId}',
@@ -99,6 +102,7 @@ const GOLDEN_ROUTES = [
     'GET /v1/tokens/{token}/log',
     'GET /v1/webhookRoutes',
     'GET /v1/webhookRoutes/webhookRoute/{webhookRoute}',
+    'GET /v1/webhooks/failed',
     'POST /mcp',
     'POST /mcp/oauth/register',
     'POST /mcp/oauth/token',
@@ -111,6 +115,7 @@ const GOLDEN_ROUTES = [
     'POST /v1/account/{account}/outbox/{queueId}/retry',
     'POST /v1/account/{account}/search',
     'POST /v1/account/{account}/submit',
+    'POST /v1/account/{account}/webhooks/failed/{delivery}/retry',
     'POST /v1/authentication/form',
     'POST /v1/autoconfig',
     'POST /v1/blocklist/{listId}',
@@ -126,6 +131,7 @@ const GOLDEN_ROUTES = [
     'POST /v1/token',
     'POST /v1/tokens',
     'POST /v1/verifyAccount',
+    'POST /v1/webhooks/failed/{delivery}/retry',
     'PUT /v1/account/{account}',
     'PUT /v1/account/{account}/flush',
     'PUT /v1/account/{account}/mailbox',
@@ -303,7 +309,8 @@ test('API route table and authentication', async t => {
             'submit',
             'template',
             'token',
-            'webhook'
+            'webhook',
+            'webhook-deliveries'
         ]);
 
         assert.deepEqual(Object.values(ACTION).sort(), ['destructive', 'read', 'send', 'write']);

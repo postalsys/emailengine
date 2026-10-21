@@ -13,7 +13,9 @@ const { ACTION, GROUP, GRANTABLE_GROUPS, IMPLICIT_GROUPS } = require('../lib/api
 
 // The sections the admin split made grantable. A record has to name these; an absent groups axis
 // does not reach them.
-const SPLIT_GROUPS = [GROUP.SETTINGS, GROUP.OAUTH2, GROUP.LICENSE, GROUP.TOKEN, GROUP.PROVISIONING];
+// The grantable groups outside IMPLICIT_GROUPS: the five the admin split created, and the ones
+// added since, which a record reaches only by naming them
+const SPLIT_GROUPS = [GROUP.SETTINGS, GROUP.OAUTH2, GROUP.LICENSE, GROUP.TOKEN, GROUP.PROVISIONING, GROUP.WEBHOOK_DELIVERIES];
 
 // A read of a message, which is the operation most of these narrow around
 const READ_MESSAGE = { action: ACTION.READ, group: GROUP.MESSAGE };
