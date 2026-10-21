@@ -567,18 +567,36 @@ test('Mailbox.sync() overlapping calls', async t => {
             return { release: () => {} };
         };
 
-        await Promise.all([Mailbox.prototype.sync.call(ctx, true), Mailbox.prototype.sync.call(ctx, true)]);
+        // the second call arrives while the first pass is already in its SELECT, so it needs a
+        // pass of its own (calls made before a pass starts share it, see mailbox-sync-coalesce-test.js)
+        const first = Mailbox.prototype.sync.call(ctx, true);
+        while (!locks) {
+            await new Promise(resolve => setImmediate(resolve));
+        }
+        await Promise.all([first, Mailbox.prototype.sync.call(ctx, true)]);
 
-        assert.equal(locks, 2, 'each call must run its own pass');
+        assert.equal(locks, 2, 'a call made during a pass must run its own pass');
         assert.deepEqual(order, ['lock:1', 'open:1', 'lock:2', 'open:2'], 'the second pass must wait for the first to settle');
         assert.equal(ctx.synced, false, 'no resolver may stay armed once the passes are done');
+    });
+
+    await t.test('calls made before a pass starts share it', { timeout: 5000 }, async () => {
+        const { ctx, lockCalls } = createMockContext();
+        await Promise.all([Mailbox.prototype.sync.call(ctx, true), Mailbox.prototype.sync.call(ctx, true)]);
+        assert.equal(lockCalls(), 1);
     });
 
     await t.test('a failed pass does not block the next one', { timeout: 5000 }, async () => {
         const selectError = Object.assign(new Error('Connection not available'), { code: 'NoConnection' });
         const { ctx, lockCalls } = createMockContext({ selectError });
 
-        const [first, second] = await Promise.allSettled([Mailbox.prototype.sync.call(ctx, true), Mailbox.prototype.sync.call(ctx, true)]);
+        // settled right away, the first pass can fail before the second call is made
+        const firstSettled = Promise.allSettled([Mailbox.prototype.sync.call(ctx, true)]);
+        while (!lockCalls()) {
+            await new Promise(resolve => setImmediate(resolve));
+        }
+        const [second] = await Promise.allSettled([Mailbox.prototype.sync.call(ctx, true)]);
+        const [first] = await firstSettled;
 
         assert.equal(first.status, 'rejected');
         assert.equal(second.status, 'rejected', 'the second pass runs on its own and sees the same failure');

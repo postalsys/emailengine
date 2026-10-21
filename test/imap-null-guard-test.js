@@ -120,6 +120,8 @@ function createBaseUploadCtx(overrides) {
         }),
         packUid: async () => 'encodedId',
         onTaskCompleted: () => {},
+        // the real IDLE decision, shared with the Sent copy (see test/resume-idle-test.js)
+        resumeIdle: IMAPClient.prototype.resumeIdle,
         ...overrides
     };
 }
