@@ -24,7 +24,7 @@ jobs:
         runs-on: ubuntu-24.04
         services:
             redis:
-                image: redis
+                image: redis:8.2.10-alpine
                 options: >-
                     --health-cmd "redis-cli ping"
                     --health-interval 10s
@@ -33,13 +33,13 @@ jobs:
                 ports:
                     - 6379:6379
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
             - name: Use Node.js 24
-              uses: actions/setup-node@v7
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
               with:
                   node-version: 24
                   cache: npm
-            - run: npm install
+            - run: npm ci
             - name: Install Playwright browser
               run: npx playwright install --with-deps chromium
             - name: Run e2e tests
@@ -47,7 +47,7 @@ jobs:
               env:
                   NODE_ENV: e2e
             - name: Upload Playwright report
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
               if: ${{ !cancelled() }}
               with:
                   name: playwright-report

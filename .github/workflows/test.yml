@@ -25,7 +25,7 @@ jobs:
         name: License Compliance Check
         if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
         runs-on: ubuntu-24.04
-        # Service containers to run with `container-job`
+        timeout-minutes: 10
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -34,7 +34,7 @@ jobs:
               with:
                   node-version: 24
                   cache: npm
-            - run: npm install
+            - run: npm ci
 
             - name: Run License Checks
               run: |
@@ -52,7 +52,7 @@ jobs:
               with:
                   node-version: 24
                   cache: npm
-            - run: npm install
+            - run: npm ci
             - name: Run ESLint
               run: |
                   npm run lint
@@ -60,29 +60,57 @@ jobs:
               run: npm run format:check
 
     unit:
-        name: Unit Tests (Node ${{ matrix.node }})
+        name: Unit Tests (${{ matrix.label }})
         if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
         timeout-minutes: 10
         runs-on: ubuntu-24.04
-        # package.json promises Node >=20, while every other job runs 24 and the dependency tree
-        # declares later 20.x minimums of its own (undici 7 >=20.18.1, html-to-text 10 >=20.19.0).
-        # The 20.x leg runs the oldest release the tree itself accepts. Anything older is not a
-        # meaningful target: below 20.14 node --test has no --test-force-exit, which
-        # test/run-tests.js relies on, and on 20.14 dozens of unit tests fail on test runner
-        # differences (root-level hooks, mock timers) before the code under test is reached.
+        # package.json declares Node >=20.19.0, the oldest release the dependency tree itself accepts
+        # (undici 7 >=20.18.1, html-to-text 10 >=20.19.0), while every other job runs 24. The 20.x
+        # leg runs exactly that release. Anything older is not a meaningful target: below 20.14
+        # node --test has no --test-force-exit, which test/run-tests.js relies on, and on 20.14
+        # dozens of unit tests fail on test runner differences (root-level hooks, mock timers)
+        # before the code under test is reached.
+        #
+        # The Redis 7 and Valkey legs cover what operators actually run next to the current Redis:
+        # ioredis 6 speaks RESP3 by default, and a server answering a command differently would
+        # otherwise only show up in a customer's logs. The require(esm) leg reruns the tier with
+        # that loader switched off, because pkg bundles a CommonJS module graph and Node 22+ hides
+        # an ESM-only dependency by loading it through require(esm). It is a leg of its own so it
+        # runs alongside the others instead of doubling the Node 24 leg's runtime.
         strategy:
             fail-fast: false
             matrix:
-                node: ['24', '20.19.0']
-        # Service containers to run with `container-job`
+                include:
+                    - label: Node 24
+                      node: '24'
+                      redis: redis:8.2.10-alpine
+                      cli: redis-cli
+                      script: test:unit
+                    - label: Node 20.19.0
+                      node: '20.19.0'
+                      redis: redis:8.2.10-alpine
+                      cli: redis-cli
+                      script: test:unit
+                    - label: Node 24, require(esm) disabled
+                      node: '24'
+                      redis: redis:8.2.10-alpine
+                      cli: redis-cli
+                      script: test:cjs
+                    - label: Node 24, Redis 7
+                      node: '24'
+                      redis: redis:7.4.11-alpine
+                      cli: redis-cli
+                      script: test:unit
+                    - label: Node 24, Valkey 8
+                      node: '24'
+                      redis: valkey/valkey:8.1.10-alpine
+                      cli: valkey-cli
+                      script: test:unit
         services:
-            # Label used to access the service container
             redis:
-                # Docker Hub image
-                image: redis
-                # Set health checks to wait until redis has started
+                image: ${{ matrix.redis }}
                 options: >-
-                    --health-cmd "redis-cli ping"
+                    --health-cmd "${{ matrix.cli }} ping"
                     --health-interval 10s
                     --health-timeout 5s
                     --health-retries 5
@@ -95,20 +123,47 @@ jobs:
               with:
                   node-version: ${{ matrix.node }}
                   cache: npm
-            - run: npm install
+            - run: npm ci
             # No secrets: the unit tier is hermetic, so it runs the same on forks and Dependabot
             # pull requests as on master
+            - name: Run unit tests
+              run: |
+                  npm run ${{ matrix.script }}
+              env:
+                  NODE_ENV: test
+
+    # The binaries ship for macOS as well as Linux, but every other job runs on Ubuntu, so a path
+    # separator, a case-insensitive file system or a platform-specific Node behaviour would first
+    # surface on a customer's Mac. Redis comes from Homebrew because macOS runners cannot run
+    # service containers.
+    unit_macos:
+        name: Unit Tests (macOS, Node 24)
+        if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
+        timeout-minutes: 20
+        runs-on: macos-15
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - name: Use Node.js 24
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+              with:
+                  node-version: 24
+                  cache: npm
+            - name: Start Redis
+              run: |
+                  brew install redis
+                  redis-server --daemonize yes
+                  for i in $(seq 1 30); do
+                      if redis-cli ping; then exit 0; fi
+                      sleep 1
+                  done
+                  echo "redis never answered" >&2
+                  exit 1
+            - run: npm ci
             - name: Run unit tests
               run: |
                   npm run test:unit
               env:
                   NODE_ENV: test
-            # pkg bundles a CommonJS module graph, and Node 22+ hides an ESM-only dependency by
-            # loading it through require(esm). Rerun the tier with that switched off so one fails here.
-            - name: Run unit tests with require(esm) disabled
-              if: matrix.node == '24'
-              run: |
-                  npm run test:cjs
 
     dovecot:
         # Live IMAP tier against a real IMAP4rev2 server (Dovecot 2.4 in Docker);
@@ -119,7 +174,7 @@ jobs:
         runs-on: ubuntu-24.04
         services:
             redis:
-                image: redis
+                image: redis:8.2.10-alpine
                 options: >-
                     --health-cmd "redis-cli ping"
                     --health-interval 10s
@@ -134,7 +189,7 @@ jobs:
               with:
                   node-version: 24
                   cache: npm
-            - run: npm install
+            - run: npm ci
             - name: Run live Dovecot tests
               run: |
                   npm run test:dovecot
@@ -198,7 +253,7 @@ jobs:
         runs-on: ubuntu-24.04
         services:
             redis:
-                image: redis
+                image: redis:8.2.10-alpine
                 options: >-
                     --health-cmd "redis-cli ping"
                     --health-interval 10s
@@ -214,8 +269,8 @@ jobs:
                   node-version: 24
                   cache: npm
 
-            # Unpinned on purpose, matching upload.sh: releases are built with whatever pkg is
-            # current, so a pkg regression should fail here rather than mid-release.
+            # Pinned, so a bundler release cannot turn this job red without a diff to look at. Move
+            # it together with the pkg the release machine builds with.
             - name: Install pkg
               run: npm install -g @yao-pkg/pkg@6.23.0
 
@@ -262,6 +317,45 @@ jobs:
                   echo "binary never became healthy" >&2
                   exit 1
 
+    # The Windows binary is a release asset too, and the only place it used to be built was the
+    # release machine. Same production tree as the Linux job, built step by step because
+    # build-source is a shell one-liner that cmd.exe cannot run, then the CLI smoke test. Booting
+    # it would need a Redis, which Windows runners cannot provide as a service container.
+    pkg_build_windows:
+        name: Binary Build (win-x64, unsigned)
+        if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
+        timeout-minutes: 30
+        runs-on: windows-2025
+        defaults:
+            run:
+                shell: bash
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - name: Use Node.js 24
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+              with:
+                  node-version: 24
+                  cache: npm
+
+            - name: Install pkg
+              run: npm install -g @yao-pkg/pkg@6.23.0
+
+            - name: Build the production source tree
+              run: |
+                  npm ci --omit=dev --omit=optional
+                  ./prepare-bundle-deps.sh
+                  ./update-info.sh
+
+            - name: Bundle a binary
+              run: |
+                  mkdir -p ee-dist
+                  pkg --target node24-win-x64 --output ee-dist/emailengine-ci.exe package.json
+
+            - name: Smoke test the CLI
+              run: |
+                  ./ee-dist/emailengine-ci.exe --version
+                  ./ee-dist/emailengine-ci.exe help > /dev/null
+
     integration:
         name: Integration Tests
         if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
@@ -272,7 +366,7 @@ jobs:
             # Label used to access the service container
             redis:
                 # Docker Hub image
-                image: redis
+                image: redis:8.2.10-alpine
                 # Set health checks to wait until redis has started
                 options: >-
                     --health-cmd "redis-cli ping"
@@ -288,7 +382,7 @@ jobs:
               with:
                   node-version: 24
                   cache: npm
-            - run: npm install
+            - run: npm ci
             - name: Run integration tests
               run: |
                   npm run test:integration
