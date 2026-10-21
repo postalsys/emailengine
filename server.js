@@ -123,6 +123,7 @@ const pathlib = require('path');
 const { redis, notifyQueue, submitQueue, exportQueue } = require('./lib/db');
 const { queueStats } = require('./lib/queue-stats');
 const { pruneFailedContent } = require('./lib/outbox');
+const { queueCleanAges } = require('./lib/queue-retention');
 const { packRpcError, unpackRpcError } = require('./lib/worker-rpc-error');
 const promClient = require('prom-client');
 const fs = require('fs').promises;
@@ -3962,12 +3963,12 @@ startApplication()
 
         async function cleanupQueues() {
             const queues = [notifyQueue, submitQueue, exportQueue];
+            const ages = queueCleanAges();
             for (const queue of queues) {
                 try {
-                    // Clean completed jobs older than 24 hours
-                    await queue.clean(24 * 60 * 60 * 1000, 10000, 'completed');
-                    // Clean failed jobs older than 7 days
-                    await queue.clean(7 * 24 * 60 * 60 * 1000, 10000, 'failed');
+                    // The same ages the jobs are added with, see lib/queue-retention.js
+                    await queue.clean(ages.completed, 10000, 'completed');
+                    await queue.clean(ages.failed, 10000, 'failed');
                     logger.trace({ msg: 'Queue cleanup completed', queue: queue.name });
                 } catch (err) {
                     logger.error({ msg: 'Queue cleanup failed', queue: queue.name, err });

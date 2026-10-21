@@ -107,3 +107,32 @@ test('selectFailedContentToDrop', async t => {
         assert.deepStrictEqual(selectFailedContentToDrop(entries, limits({ maxBytes: 0 })).length, 2);
     });
 });
+
+test('queueCleanAges', async t => {
+    const { queueCleanAges } = require('../lib/queue-retention');
+
+    await t.test('uses the retention ages, converted to the milliseconds clean() takes', () => {
+        assert.deepStrictEqual(queueCleanAges(), {
+            completed: COMPLETED_JOB_RETENTION_AGE * 1000,
+            failed: FAILED_JOB_RETENTION_AGE * 1000
+        });
+    });
+
+    await t.test('follows EENGINE_QUEUE_KEEP_FAILED_AGE (regression: the clean was fixed at 7 days)', () => {
+        const { execFileSync } = require('node:child_process');
+        const out = execFileSync(process.execPath, ['-e', "console.log(JSON.stringify(require('./lib/queue-retention').queueCleanAges()))"], {
+            cwd: require('node:path').join(__dirname, '..'),
+            env: Object.assign({}, process.env, { EENGINE_QUEUE_KEEP_FAILED_AGE: String(30 * 24 * 3600) })
+        });
+        assert.strictEqual(JSON.parse(out).failed, 30 * 24 * 3600 * 1000);
+    });
+
+    await t.test('server.js cleans with these ages, not literals of its own', () => {
+        const source = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'server.js'), 'utf-8');
+        const calls = source.match(/\.clean\([^)]*\)/g) || [];
+        assert.ok(calls.length >= 2, 'the periodic clean is still in server.js');
+        for (const call of calls) {
+            assert.doesNotMatch(call, /\.clean\(\s*\d/, `literal age in ${call}`);
+        }
+    });
+});
