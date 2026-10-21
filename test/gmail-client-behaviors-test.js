@@ -322,3 +322,44 @@ test('GmailClient.close()', async t => {
         assert.equal(gmail.closed, true);
     });
 });
+
+test('GmailClient.listMessages() with a message deleted mid-listing', async t => {
+    function listingClient(failure) {
+        const gmail = makeClient();
+        gmail.formatMessage = entry => ({ id: entry.id });
+        gmail.request = async url => {
+            const id = url.split('/messages')[1].replace(/^\//, '');
+            if (!id) {
+                return { messages: [{ id: 'kept-1' }, { id: 'gone' }, { id: 'kept-2' }], resultSizeEstimate: 3 };
+            }
+            if (id === 'gone') {
+                throw failure;
+            }
+            return { id };
+        };
+        return gmail;
+    }
+
+    await t.test('skips a message that 404s between the listing and its fetch', async () => {
+        const err = new Error('Not Found');
+        err.oauthRequest = { status: 404 };
+        const result = await listingClient(err).listMessages({});
+        assert.deepStrictEqual(
+            result.messages.map(message => message.id),
+            ['kept-1', 'kept-2']
+        );
+    });
+
+    await t.test('any other failure still fails the page', async () => {
+        const err = new Error('Backend Error');
+        err.oauthRequest = { status: 503 };
+        await assert.rejects(listingClient(err).listMessages({}), /Backend Error/);
+    });
+});
+
+test('GmailClient.deleteMessage() names the Trash folder it moved to', async () => {
+    const { SYSTEM_NAMES } = require('../lib/email-client/gmail-client');
+    const gmail = makeClient();
+    gmail.request = async () => ({ id: 'm1', labelIds: ['TRASH'] });
+    assert.deepStrictEqual(await gmail.deleteMessage('m1'), { deleted: true, moved: { destination: SYSTEM_NAMES.TRASH, message: 'm1' } });
+});

@@ -310,3 +310,61 @@ test('queueMessageEntry', async t => {
         });
     });
 });
+
+test('pushMessageToQueue', async t => {
+    // the outbox hash, the only Redis structure this step writes
+    function fakeRedis() {
+        const hashes = new Map();
+        const hash = key => hashes.get(key) || hashes.set(key, new Map()).get(key);
+        return {
+            hashes,
+            hsetBuffer: async (key, field, value) => hash(key).set(field, value),
+            hdel: async (key, field) => (hash(key).delete(field) ? 1 : 0),
+            has: (key, field) => hash(key).has(field)
+        };
+    }
+
+    function pushClient(add) {
+        const redis = fakeRedis();
+        const client = Object.assign(Object.create(BaseClient.prototype), {
+            account: 'acc1',
+            logger: noopLogger,
+            redis,
+            submitQueue: { add: (...args) => add(redis, ...args) }
+        });
+        return { client, redis, outboxKey: `${REDIS_PREFIX}iaq:acc1` };
+    }
+
+    const params = {
+        data: {},
+        meta: {},
+        raw: Buffer.from('Subject: hi\r\n\r\nbody'),
+        envelope: { from: 'a@example.com', to: ['b@example.com'] },
+        messageId: '<m@example.com>',
+        subject: 'hi'
+    };
+
+    await t.test('stores the content and queues a job pointing to it', async () => {
+        reset();
+        const added = [];
+        const { client, redis, outboxKey } = pushClient(async (r, name, data, opts) => {
+            added.push(opts.jobId);
+            return { id: opts.jobId, updateProgress: async () => {} };
+        });
+        const result = await client.pushMessageToQueue(params);
+        assert.deepStrictEqual(added, [result.queueId]);
+        assert.ok(redis.has(outboxKey, result.queueId));
+    });
+
+    await t.test('removes the stored content again when the job cannot be added (regression)', async () => {
+        reset();
+        let queueId;
+        const { client, redis, outboxKey } = pushClient(async (r, name, data, opts) => {
+            queueId = opts.jobId;
+            assert.ok(r.has(outboxKey, queueId), 'content is stored before the add');
+            throw new Error('OOM command not allowed when used memory > maxmemory');
+        });
+        await assert.rejects(client.pushMessageToQueue(params), /OOM/);
+        assert.strictEqual(redis.has(outboxKey, queueId), false);
+    });
+});

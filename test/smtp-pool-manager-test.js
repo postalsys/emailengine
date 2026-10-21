@@ -203,3 +203,22 @@ test('the idle sweep does not close a pool while a message is on the wire', asyn
         await new Promise(resolve => server.close(resolve));
     }
 });
+
+test('a replaced pool does not drop its successor', async t => {
+    for (const event of ['clear', 'error']) {
+        await t.test(`on a late '${event}' event`, () => {
+            const settings = makeSettings({ host: `replaced-${event}.example.com` });
+            const key = generatePoolKey(settings);
+            const first = transportFor(settings);
+
+            closePooledConnection(key);
+            const second = transportFor(settings);
+            assert.notStrictEqual(first, second);
+
+            // the old transporter reports its teardown after the new one took its place
+            first.emit(event, new Error('late'));
+
+            assert.strictEqual(transportFor(settings), second, 'the live transport is still the one handed out');
+        });
+    }
+});
