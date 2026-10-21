@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "emailengine-app@2.85.0",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.85.0-ebda4055-8c45-48b7-aead-723e3df9141c",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.85.0-9615ac97-c217-4e02-bc6b-f0dcfb295b6a",
   "creationInfo": {
-    "created": "2026-10-21T19:25:40.356Z",
+    "created": "2026-10-21T20:58:01.985Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
@@ -3466,11 +3466,11 @@
     },
     {
       "name": "imapflow",
-      "SPDXID": "SPDXRef-Package-imapflow-2.6.0",
-      "versionInfo": "2.6.0",
+      "SPDXID": "SPDXRef-Package-imapflow-2.7.0",
+      "versionInfo": "2.7.0",
       "packageFileName": "node_modules/imapflow",
       "description": "IMAP Client for Node",
-      "downloadLocation": "https://registry.npmjs.org/imapflow/-/imapflow-2.6.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/imapflow/-/imapflow-2.7.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://imapflow.com/",
       "licenseDeclared": "MIT",
@@ -3478,13 +3478,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/imapflow@2.6.0"
+          "referenceLocator": "pkg:npm/imapflow@2.7.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "1f85ad69ff513c4839f357a05d2c7e123dd3268cfeae3984c2860d57d315c33a0b422ae7a413cd5ad880b3831de2e5854f646bcd5b0619cebebc2e6f44f456ed"
+          "checksumValue": "7c43198bd96044d0b2c85e1087d05077b2a34b4052ee418fe1a7027c03640bf0440aba1244e6e434bfb114a1e125240fb4ba3663e77edd0b19f515afc7c87edf"
         }
       ]
     },
@@ -3514,11 +3514,11 @@
     },
     {
       "name": "ioredfour",
-      "SPDXID": "SPDXRef-Package-ioredfour-2.1.0",
-      "versionInfo": "2.1.0",
+      "SPDXID": "SPDXRef-Package-ioredfour-2.2.0",
+      "versionInfo": "2.2.0",
       "packageFileName": "node_modules/ioredfour",
       "description": "A redis binary semaphore with some consistency",
-      "downloadLocation": "https://registry.npmjs.org/ioredfour/-/ioredfour-2.1.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/ioredfour/-/ioredfour-2.2.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/nodemailer/ioredfour#readme",
       "licenseDeclared": "MIT",
@@ -3526,13 +3526,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/ioredfour@2.1.0"
+          "referenceLocator": "pkg:npm/ioredfour@2.2.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "3f1399a94a99cbd799018a3c25094d510ab21d0c95bb30919818e733227883136b20d91e2bb06ebc7041734f15be975db690a1ee246b2dd0241f312045c822ac"
+          "checksumValue": "6c96c9ffd4b1a3d68704b89deb23f10032bc5ec874e6b9948d3a87af91b9a305c9f81fb4e46f496da0197e74a8430ec790a223e5d9d84aaabfd8bc7d418998c0"
         }
       ]
     },
@@ -5844,12 +5844,12 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-imapflow-2.6.0",
+      "spdxElementId": "SPDXRef-Package-imapflow-2.7.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-ioredfour-2.1.0",
+      "spdxElementId": "SPDXRef-Package-ioredfour-2.2.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -7610,42 +7610,42 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-zone-eu.mailsplit-5.4.27",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.6.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.7.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-encoding-japanese-2.4.0",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.6.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.7.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-iconv-lite-0.7.3",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.6.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.7.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libbase64-1.4.1",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.6.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.7.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libmime-5.5.2",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.6.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.7.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libqp-3.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.6.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.7.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-pino-10.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.6.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.7.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-socks-2.8.10",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.6.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.7.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7685,7 +7685,7 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-ioredis-6.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-ioredfour-2.1.0",
+      "relatedSpdxElement": "SPDXRef-Package-ioredfour-2.2.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
