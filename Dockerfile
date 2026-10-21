@@ -88,7 +88,10 @@ RUN addgroup -S emailenginegroup && adduser -S emailengineuser -G emailenginegro
 
 WORKDIR /emailengine
 
-COPY --from=builder --chown=emailengineuser:emailenginegroup /emailengine /emailengine
+# Owned by root and only readable by the runtime user, so a compromised process cannot rewrite the
+# code it runs or plant a module the next start would load. Nothing at runtime writes under
+# /emailengine: exports go to EENGINE_EXPORT_PATH, which defaults to the system temporary directory.
+COPY --from=builder /emailengine /emailengine
 
 RUN node -e "console.log('node arch: ' + os.arch())"
 RUN node -e "console.log(process.versions)"
@@ -106,6 +109,16 @@ ENV MSGPACKR_NATIVE_ACCELERATION_DISABLED=true
 # NODE_OPTIONS given at run time replaces this one, so keep the flag in it to keep the cap. The pkg
 # binary bakes the same value in package.json, and test/node-heap-options-test.js keeps the two equal.
 ENV NODE_OPTIONS=--max-semi-space-size=16
+
+EXPOSE 3000
+
+# The liveness check: answers while the process can serve HTTP, without waiting on Redis or the
+# workers, so an orchestrator restarts the container only when restarting can help. Readiness
+# (workers and Redis) is /health/ready, for whatever routes traffic to it. 127.0.0.1 rather than
+# localhost for the reason docker-compose.yml gives: BusyBox wget on musl tries ::1 only, and
+# EmailEngine listens on IPv4. Shell form so a changed EENGINE_PORT (or PORT) is followed.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider "http://127.0.0.1:${EENGINE_PORT:-${PORT:-3000}}/health/live" || exit 1
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD ["node", "/emailengine/server.js"]
