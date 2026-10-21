@@ -94,5 +94,10 @@ module.exports = {
         // @asamuzakjp/css-color >=4.1.2 pulls in @csstools/* v4 which are pure ESM and break pkg bundling
         // (transitive via @postalsys/email-text-tools -> jsdom -> cssstyle; also pinned in package.json "overrides").
         '@asamuzakjp/css-color'
+        // Not a direct dependency, so nothing here moves it: the "overrides" entry in package.json
+        // lifts cheerio from the 1.0.0 that juice 11 (via @postalsys/email-text-tools) pins exactly,
+        // which drags in a second copy of undici (6.x) next to ours. cheerio 1.2.0 shares our undici
+        // 7 and keeps a CommonJS build; juice 12 would fix this itself but is ESM-only and needs
+        // Node 22. Re-check the override when juice or email-text-tools changes its cheerio range.
     ]
 };

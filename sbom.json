@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "emailengine-app@2.85.0",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.85.0-5fd29ed1-8ce3-40d9-920a-4f0b336a1acd",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.85.0-ebda4055-8c45-48b7-aead-723e3df9141c",
   "creationInfo": {
-    "created": "2026-10-21T13:22:03.362Z",
+    "created": "2026-10-21T19:25:40.356Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
@@ -611,11 +611,11 @@
     },
     {
       "name": "@hapi/content",
-      "SPDXID": "SPDXRef-Package-hapi.content-6.0.2",
-      "versionInfo": "6.0.2",
+      "SPDXID": "SPDXRef-Package-hapi.content-6.0.3",
+      "versionInfo": "6.0.3",
       "packageFileName": "node_modules/@hapi/content",
       "description": "HTTP Content-* headers parsing",
-      "downloadLocation": "https://registry.npmjs.org/@hapi/content/-/content-6.0.2.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@hapi/content/-/content-6.0.3.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "BSD-3-Clause",
@@ -623,13 +623,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40hapi/content@6.0.2"
+          "referenceLocator": "pkg:npm/%40hapi/content@6.0.3"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "38ac823938cd47585fb704a393db9ec80413c3c0306a9bf306b3c858c1a7dfdbe14793e6a8b7581662dcdf96ec481c9eee048c9e59177dcebbf5b51d308711c9"
+          "checksumValue": "92c5de98c3590303eafe6bb56bd4d9ecb0d44a0311f6c7b1060a5a945de7acfe92338d804659c166ce7c212e40cbea38a3bcbab453572feacc264439821bc24b"
         }
       ]
     },
@@ -755,11 +755,11 @@
     },
     {
       "name": "@hapi/hapi",
-      "SPDXID": "SPDXRef-Package-hapi.hapi-21.4.10",
-      "versionInfo": "21.4.10",
+      "SPDXID": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "versionInfo": "21.4.11",
       "packageFileName": "node_modules/@hapi/hapi",
       "description": "HTTP Server framework",
-      "downloadLocation": "https://registry.npmjs.org/@hapi/hapi/-/hapi-21.4.10.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@hapi/hapi/-/hapi-21.4.11.tgz",
       "filesAnalyzed": false,
       "homepage": "https://hapi.dev",
       "licenseDeclared": "BSD-3-Clause",
@@ -767,13 +767,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40hapi/hapi@21.4.10"
+          "referenceLocator": "pkg:npm/%40hapi/hapi@21.4.11"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "1b497bb5c875ffce469326ac9a68ef8da9b62166f1ffdcc2a78010c789d9fe79ffaebae656646f15e8e3d9919ee63df01595422eddbe65e83de489851689beef"
+          "checksumValue": "c268f4a73fcc94891c5511a3200bba98f0b890d5ee1e84ee2e40fe8b5e29739a834f192970370419b8aee6c4aea1fe19cc3f9683482d626c52ed36970dda1231"
         }
       ]
     },
@@ -827,11 +827,11 @@
     },
     {
       "name": "@hapi/inert",
-      "SPDXID": "SPDXRef-Package-hapi.inert-7.1.2",
-      "versionInfo": "7.1.2",
+      "SPDXID": "SPDXRef-Package-hapi.inert-7.1.3",
+      "versionInfo": "7.1.3",
       "packageFileName": "node_modules/@hapi/inert",
       "description": "Static file and directory handlers plugin for hapi.js",
-      "downloadLocation": "https://registry.npmjs.org/@hapi/inert/-/inert-7.1.2.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@hapi/inert/-/inert-7.1.3.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "BSD-3-Clause",
@@ -839,13 +839,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40hapi/inert@7.1.2"
+          "referenceLocator": "pkg:npm/%40hapi/inert@7.1.3"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "7ebd179ac6135216a121b8a805e98595cfa8e2ba386e3d473cc28dddd1bd9ba5c2f94905f5f75561f6fbb8da038f4bcef877577a775b2a4e9811f646f53a1e4d"
+          "checksumValue": "a2174243b08aa02f93afd2b3794ee8d40a037f44e77c828fac4b3a3189efcdb983461919a381cfbc84061226ef48d16a483b8e419eaab880786370860f7544fa"
         }
       ]
     },
@@ -1955,11 +1955,11 @@
     },
     {
       "name": "@postalsys/certs",
-      "SPDXID": "SPDXRef-Package-postalsys.certs-2.0.0",
-      "versionInfo": "2.0.0",
+      "SPDXID": "SPDXRef-Package-postalsys.certs-2.0.1",
+      "versionInfo": "2.0.1",
       "packageFileName": "node_modules/@postalsys/certs",
       "description": "Manage Let's Encrypt certificates",
-      "downloadLocation": "https://registry.npmjs.org/@postalsys/certs/-/certs-2.0.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@postalsys/certs/-/certs-2.0.1.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/postalsys/certs#readme",
       "licenseDeclared": "ISC",
@@ -1967,13 +1967,37 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40postalsys/certs@2.0.0"
+          "referenceLocator": "pkg:npm/%40postalsys/certs@2.0.1"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "19f9d2dce09a6542308840a014a5e3bf08919f94888ea56e84843f381d5dfca84d5d126bc8b024d5012fbda1d4b9d22b479a71a410c9aae5891a4922d7a82e52"
+          "checksumValue": "b8bd27241c8eac93f333f1075dab96a33bfbca37dec5acceeb0ee2c29060d2bd6eeaefe64021562094173709fd5b7968cfa2bc6bf5ec861b7fb2992d818cfa12"
+        }
+      ]
+    },
+    {
+      "name": "ioredfour",
+      "SPDXID": "SPDXRef-Package-ioredfour-2.0.0",
+      "versionInfo": "2.0.0",
+      "packageFileName": "node_modules/@postalsys/certs/node_modules/ioredfour",
+      "description": "A redis binary semaphore with some consistency",
+      "downloadLocation": "https://registry.npmjs.org/ioredfour/-/ioredfour-2.0.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/nodemailer/ioredfour#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/ioredfour@2.0.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "8fd63ec2d841a90862f7594af3db07345dbb85fd688253a4b07753d7fbfcd23f88670a1c2080e017fbd0f93bea14c80a3440ed4154788406aadc9be8c2b692e2"
         }
       ]
     },
@@ -1998,6 +2022,54 @@
         {
           "algorithm": "SHA512",
           "checksumValue": "09494341aca2ba375098dc8b22be35dd825b2e2ee721ac0153971bf73ff042e661c022eeec527fbf4aac53f69bab8c731e8a364cecfcf1394e69636d0ed912b7"
+        }
+      ]
+    },
+    {
+      "name": "@postalsys/email-text-tools",
+      "SPDXID": "SPDXRef-Package-postalsys.email-text-tools-2.5.0",
+      "versionInfo": "2.5.0",
+      "packageFileName": "node_modules/@postalsys/email-ai-tools/node_modules/@postalsys/email-text-tools",
+      "description": "Email text tools",
+      "downloadLocation": "https://registry.npmjs.org/@postalsys/email-text-tools/-/email-text-tools-2.5.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/postalsys/email-text-tools#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40postalsys/email-text-tools@2.5.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "47fd7a725e999a5e11fa9f758d410baad654c9c6908414b8b95de9c8c69b712b03edd00a2705349dc3a4d865063d5030803a8b1c9bdb1ecf98a71469c0eb5cd8"
+        }
+      ]
+    },
+    {
+      "name": "libmime",
+      "SPDXID": "SPDXRef-Package-libmime-5.5.2",
+      "versionInfo": "5.5.2",
+      "packageFileName": "node_modules/@postalsys/email-ai-tools/node_modules/libmime",
+      "description": "Encode and decode quoted printable and base64 strings",
+      "downloadLocation": "https://registry.npmjs.org/libmime/-/libmime-5.5.2.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/nodemailer/libmime",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/libmime@5.5.2"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "072c3709c84ae1e4aa6e0ce9b6db14a02e21c7654f3fe867bde02e600619362a4473ed1694316355bd4848db1c8eafe276fc833ff5e383c9a705c7606ec82fce"
         }
       ]
     },
@@ -2027,11 +2099,11 @@
     },
     {
       "name": "@postalsys/email-text-tools",
-      "SPDXID": "SPDXRef-Package-postalsys.email-text-tools-2.5.0",
-      "versionInfo": "2.5.0",
+      "SPDXID": "SPDXRef-Package-postalsys.email-text-tools-2.6.0",
+      "versionInfo": "2.6.0",
       "packageFileName": "node_modules/@postalsys/email-text-tools",
       "description": "Email text tools",
-      "downloadLocation": "https://registry.npmjs.org/@postalsys/email-text-tools/-/email-text-tools-2.5.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@postalsys/email-text-tools/-/email-text-tools-2.6.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/postalsys/email-text-tools#readme",
       "licenseDeclared": "MIT",
@@ -2039,13 +2111,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40postalsys/email-text-tools@2.5.0"
+          "referenceLocator": "pkg:npm/%40postalsys/email-text-tools@2.6.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "47fd7a725e999a5e11fa9f758d410baad654c9c6908414b8b95de9c8c69b712b03edd00a2705349dc3a4d865063d5030803a8b1c9bdb1ecf98a71469c0eb5cd8"
+          "checksumValue": "fac970f99be39d64e5b1eaacc95a7b9e543b1062b667109b1904d4a52485de60b12eddda79cde292681b1b2d3c4462b94376b36d42f796f8da6e88efc600e825"
         }
       ]
     },
@@ -2602,11 +2674,11 @@
     },
     {
       "name": "cheerio",
-      "SPDXID": "SPDXRef-Package-cheerio-1.0.0",
-      "versionInfo": "1.0.0",
+      "SPDXID": "SPDXRef-Package-cheerio-1.2.0",
+      "versionInfo": "1.2.0",
       "packageFileName": "node_modules/cheerio",
       "description": "The fast, flexible & elegant library for parsing and manipulating HTML and XML.",
-      "downloadLocation": "https://registry.npmjs.org/cheerio/-/cheerio-1.0.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/cheerio/-/cheerio-1.2.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://cheerio.js.org/",
       "licenseDeclared": "MIT",
@@ -2614,13 +2686,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/cheerio@1.0.0"
+          "referenceLocator": "pkg:npm/cheerio@1.2.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "aae4bd1e08d0a5d6973afb19cfcd8ecfbbb1b578b2e9422c210729063ec7470d8ceb74a46ac9bdaa50e870033b8cdb9ac5d8693d4edce2424dfa0039302bb8c3"
+          "checksumValue": "583af26dcfe0285a53610bad2882ba52f7dcbb18a32197cc7d76989bc34cb0f431498bdffb5ddf5d4278af3b4619b25c050fc6179e60beb67405cd1b8ff9aabe"
         }
       ]
     },
@@ -2645,54 +2717,6 @@
         {
           "algorithm": "SHA512",
           "checksumValue": "f6ff641b42efceb95cba782d9c9b6918dc58f9fcc40902a12b8106257daf0727a388c5fce0c14d430e14c4f265ddb15b4ccc3e0dfb37ed7688902c1365f2e1e2"
-        }
-      ]
-    },
-    {
-      "name": "htmlparser2",
-      "SPDXID": "SPDXRef-Package-htmlparser2-9.1.0",
-      "versionInfo": "9.1.0",
-      "packageFileName": "node_modules/cheerio/node_modules/htmlparser2",
-      "description": "Fast & forgiving HTML/XML parser",
-      "downloadLocation": "https://registry.npmjs.org/htmlparser2/-/htmlparser2-9.1.0.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/htmlparser2@9.1.0"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "e737e0ea61d4a1a7abffded3c671a9c666d1ef326d3f021814c67f1f9b9c4e53d984abedba6d39ca23cadcc81a8b76b40f2571bfba98aa8c1e6847769eb610cd"
-        }
-      ]
-    },
-    {
-      "name": "undici",
-      "SPDXID": "SPDXRef-Package-undici-6.29.1",
-      "versionInfo": "6.29.1",
-      "packageFileName": "node_modules/cheerio/node_modules/undici",
-      "description": "An HTTP/1.1 client, written from scratch for Node.js",
-      "downloadLocation": "https://registry.npmjs.org/undici/-/undici-6.29.1.tgz",
-      "filesAnalyzed": false,
-      "homepage": "https://undici.nodejs.org",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/undici@6.29.1"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "12f46552dfd0a8012f5dd41e44c6147f0390b1fce90f3b7292b1b6a3018413fac1381a18bfdb85dfd673b0d0e1e254c51e14ebd973998ca91882e783d7666618"
         }
       ]
     },
@@ -3442,11 +3466,11 @@
     },
     {
       "name": "imapflow",
-      "SPDXID": "SPDXRef-Package-imapflow-2.5.9",
-      "versionInfo": "2.5.9",
+      "SPDXID": "SPDXRef-Package-imapflow-2.6.0",
+      "versionInfo": "2.6.0",
       "packageFileName": "node_modules/imapflow",
       "description": "IMAP Client for Node",
-      "downloadLocation": "https://registry.npmjs.org/imapflow/-/imapflow-2.5.9.tgz",
+      "downloadLocation": "https://registry.npmjs.org/imapflow/-/imapflow-2.6.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://imapflow.com/",
       "licenseDeclared": "MIT",
@@ -3454,13 +3478,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/imapflow@2.5.9"
+          "referenceLocator": "pkg:npm/imapflow@2.6.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "b5c65fc18da870c596d3ee4931a26e607a4dba72bfb577908fa93cba370789193be406c897be1b938eec62422a544d642a5ec39c4586c1ed3da982e6bb5e7b02"
+          "checksumValue": "1f85ad69ff513c4839f357a05d2c7e123dd3268cfeae3984c2860d57d315c33a0b422ae7a413cd5ad880b3831de2e5854f646bcd5b0619cebebc2e6f44f456ed"
         }
       ]
     },
@@ -3490,11 +3514,11 @@
     },
     {
       "name": "ioredfour",
-      "SPDXID": "SPDXRef-Package-ioredfour-2.0.0",
-      "versionInfo": "2.0.0",
+      "SPDXID": "SPDXRef-Package-ioredfour-2.1.0",
+      "versionInfo": "2.1.0",
       "packageFileName": "node_modules/ioredfour",
       "description": "A redis binary semaphore with some consistency",
-      "downloadLocation": "https://registry.npmjs.org/ioredfour/-/ioredfour-2.0.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/ioredfour/-/ioredfour-2.1.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/nodemailer/ioredfour#readme",
       "licenseDeclared": "MIT",
@@ -3502,13 +3526,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/ioredfour@2.0.0"
+          "referenceLocator": "pkg:npm/ioredfour@2.1.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "8fd63ec2d841a90862f7594af3db07345dbb85fd688253a4b07753d7fbfcd23f88670a1c2080e017fbd0f93bea14c80a3440ed4154788406aadc9be8c2b692e2"
+          "checksumValue": "3f1399a94a99cbd799018a3c25094d510ab21d0c95bb30919818e733227883136b20d91e2bb06ebc7041734f15be975db690a1ee246b2dd0241f312045c822ac"
         }
       ]
     },
@@ -3778,11 +3802,11 @@
     },
     {
       "name": "libmime",
-      "SPDXID": "SPDXRef-Package-libmime-5.5.2",
-      "versionInfo": "5.5.2",
+      "SPDXID": "SPDXRef-Package-libmime-5.6.0",
+      "versionInfo": "5.6.0",
       "packageFileName": "node_modules/libmime",
       "description": "Encode and decode quoted printable and base64 strings",
-      "downloadLocation": "https://registry.npmjs.org/libmime/-/libmime-5.5.2.tgz",
+      "downloadLocation": "https://registry.npmjs.org/libmime/-/libmime-5.6.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/nodemailer/libmime",
       "licenseDeclared": "MIT",
@@ -3790,13 +3814,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/libmime@5.5.2"
+          "referenceLocator": "pkg:npm/libmime@5.6.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "072c3709c84ae1e4aa6e0ce9b6db14a02e21c7654f3fe867bde02e600619362a4473ed1694316355bd4848db1c8eafe276fc833ff5e383c9a705c7606ec82fce"
+          "checksumValue": "6f91d1e35414b75c2196f2e7637021018c1b6b9e830e236fd715531f9be256af3afe6fb0bd6f877a8a0bc7ac7e31d35aa61a3d922ecba3f7d3c6eab0844b3fb1"
         }
       ]
     },
@@ -3898,11 +3922,11 @@
     },
     {
       "name": "mailparser",
-      "SPDXID": "SPDXRef-Package-mailparser-3.10.0",
-      "versionInfo": "3.10.0",
+      "SPDXID": "SPDXRef-Package-mailparser-3.11.0",
+      "versionInfo": "3.11.0",
       "packageFileName": "node_modules/mailparser",
       "description": "Parse e-mails",
-      "downloadLocation": "https://registry.npmjs.org/mailparser/-/mailparser-3.10.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/mailparser/-/mailparser-3.11.0.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "MIT",
@@ -3910,13 +3934,37 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/mailparser@3.10.0"
+          "referenceLocator": "pkg:npm/mailparser@3.11.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "92024fc0e75ee55acfa78cf087e6df470f36fb9025809f6b9f3a0f4f26fd1f29f48806447d171b46bfcb167ef2445084d362ca8dd55481201bf8693b93c690e1"
+          "checksumValue": "5055f27868799bdbe911fb00060e08bb3bb1ed2ddd5db4e96b8aac90f4bbc4ebdaa5454b99fe2b1202ffdd043c23043307a75f6b38901b573ed038b8c1dde4de"
+        }
+      ]
+    },
+    {
+      "name": "nodemailer",
+      "SPDXID": "SPDXRef-Package-nodemailer-10.1.7",
+      "versionInfo": "10.1.7",
+      "packageFileName": "node_modules/mailparser/node_modules/nodemailer",
+      "description": "Easy as cake e-mail sending from your Node.js applications",
+      "downloadLocation": "https://registry.npmjs.org/nodemailer/-/nodemailer-10.1.7.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://nodemailer.com/",
+      "licenseDeclared": "MIT-0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/nodemailer@10.1.7"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "3906ba143967e5f2edb66a926e30e2458bc50ce14dac1a9f88ec073e511b5118a5ddbfaf3c1d6ff31a62f92a78e9daf334396c4e736c4b9d36bed866cf9eabe3"
         }
       ]
     },
@@ -4186,11 +4234,11 @@
     },
     {
       "name": "nodemailer",
-      "SPDXID": "SPDXRef-Package-nodemailer-10.1.7",
-      "versionInfo": "10.1.7",
+      "SPDXID": "SPDXRef-Package-nodemailer-10.2.0",
+      "versionInfo": "10.2.0",
       "packageFileName": "node_modules/nodemailer",
       "description": "Easy as cake e-mail sending from your Node.js applications",
-      "downloadLocation": "https://registry.npmjs.org/nodemailer/-/nodemailer-10.1.7.tgz",
+      "downloadLocation": "https://registry.npmjs.org/nodemailer/-/nodemailer-10.2.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://nodemailer.com/",
       "licenseDeclared": "MIT-0",
@@ -4198,13 +4246,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/nodemailer@10.1.7"
+          "referenceLocator": "pkg:npm/nodemailer@10.2.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "3906ba143967e5f2edb66a926e30e2458bc50ce14dac1a9f88ec073e511b5118a5ddbfaf3c1d6ff31a62f92a78e9daf334396c4e736c4b9d36bed866cf9eabe3"
+          "checksumValue": "fd7c86c3a917dacb4c74a19425d01099801e63516c7167dd47275f77636d2b70372837d45170aa67313148d02ddb1861f745f6a8b091fa8d86778f183c9709c0"
         }
       ]
     },
@@ -4882,11 +4930,11 @@
     },
     {
       "name": "smtp-server",
-      "SPDXID": "SPDXRef-Package-smtp-server-3.20.2",
-      "versionInfo": "3.20.2",
+      "SPDXID": "SPDXRef-Package-smtp-server-3.21.0",
+      "versionInfo": "3.21.0",
       "packageFileName": "node_modules/smtp-server",
       "description": "Create custom SMTP servers on the fly",
-      "downloadLocation": "https://registry.npmjs.org/smtp-server/-/smtp-server-3.20.2.tgz",
+      "downloadLocation": "https://registry.npmjs.org/smtp-server/-/smtp-server-3.21.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://nodemailer.com/extras/smtp-server/",
       "licenseDeclared": "MIT-0",
@@ -4894,13 +4942,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/smtp-server@3.20.2"
+          "referenceLocator": "pkg:npm/smtp-server@3.21.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "f7856b3b9316cba209d518c2123e1b8ef2100a9a76cf4e5206e799ef673c835644a171bf3956d7d51bee65190ed96a8fd002600bcd55d6cbfa53143220dece1f"
+          "checksumValue": "be1253835251ebe98ce6f9420ff4f352f15c439250882a8fd056374e0309d2edcc3eebf16b0283ffa3c0f9369c3d81055408192232da08e49ff3b2f88dc374fb"
         }
       ]
     },
@@ -5433,6 +5481,30 @@
       ]
     },
     {
+      "name": "htmlparser2",
+      "SPDXID": "SPDXRef-Package-htmlparser2-9.1.0",
+      "versionInfo": "9.1.0",
+      "packageFileName": "node_modules/web-resource-inliner/node_modules/htmlparser2",
+      "description": "Fast & forgiving HTML/XML parser",
+      "downloadLocation": "https://registry.npmjs.org/htmlparser2/-/htmlparser2-9.1.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/htmlparser2@9.1.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "e737e0ea61d4a1a7abffded3c671a9c666d1ef326d3f021814c67f1f9b9c4e53d984abedba6d39ca23cadcc81a8b76b40f2571bfba98aa8c1e6847769eb610cd"
+        }
+      ]
+    },
+    {
       "name": "webidl-conversions",
       "SPDXID": "SPDXRef-Package-webidl-conversions-8.0.1",
       "versionInfo": "8.0.1",
@@ -5657,12 +5729,12 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "spdxElementId": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-hapi.inert-7.1.2",
+      "spdxElementId": "SPDXRef-Package-hapi.inert-7.1.3",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5682,7 +5754,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-postalsys.certs-2.0.0",
+      "spdxElementId": "SPDXRef-Package-postalsys.certs-2.0.1",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5697,7 +5769,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-postalsys.email-text-tools-2.5.0",
+      "spdxElementId": "SPDXRef-Package-postalsys.email-text-tools-2.6.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5747,11 +5819,6 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-encoding-japanese-2.4.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
       "spdxElementId": "SPDXRef-Package-fast-xml-parser-5.11.2",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
@@ -5777,12 +5844,12 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-imapflow-2.5.9",
+      "spdxElementId": "SPDXRef-Package-imapflow-2.6.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-ioredfour-2.0.0",
+      "spdxElementId": "SPDXRef-Package-ioredfour-2.1.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5807,7 +5874,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-libmime-5.5.2",
+      "spdxElementId": "SPDXRef-Package-libmime-5.6.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5817,7 +5884,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-mailparser-3.10.0",
+      "spdxElementId": "SPDXRef-Package-mailparser-3.11.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5827,7 +5894,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-nodemailer-10.1.7",
+      "spdxElementId": "SPDXRef-Package-nodemailer-10.2.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5857,7 +5924,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-smtp-server-3.20.2",
+      "spdxElementId": "SPDXRef-Package-smtp-server-3.21.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6093,7 +6160,7 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.boom-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.content-6.0.2",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.content-6.0.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -6143,92 +6210,92 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.accept-6.0.3",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.ammo-6.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.boom-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.bounce-3.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.call-9.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.catbox-12.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.catbox-memory-6.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.heavy-8.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.hoek-11.0.7",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.mimos-7.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.podium-5.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.shot-6.0.3",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.somever-4.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.statehood-8.2.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.subtext-8.1.4",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.teamwork-6.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.topo-6.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.validate-2.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -6248,32 +6315,32 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.ammo-6.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.inert-7.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.inert-7.1.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.boom-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.inert-7.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.inert-7.1.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.bounce-3.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.inert-7.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.inert-7.1.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.hoek-11.0.7",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.inert-7.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.inert-7.1.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.validate-2.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.inert-7.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.inert-7.1.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-lru-cache-7.18.3",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.inert-7.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.inert-7.1.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -6332,7 +6399,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-hapi.content-6.0.2",
+      "spdxElementId": "SPDXRef-Package-hapi.content-6.0.3",
       "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.1",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6427,7 +6494,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-hapi.content-6.0.2",
+      "spdxElementId": "SPDXRef-Package-hapi.content-6.0.3",
       "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.4",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6933,32 +7000,37 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-msgpack.msgpack-3.1.3",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-ioredfour-2.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-joi-18.3.0",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-pino-10.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-punycode.js-2.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-undici-7.30.1",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.1",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-ioredis-6.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-ioredfour-2.0.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -6984,21 +7056,6 @@
     {
       "spdxElementId": "SPDXRef-Package-undici-7.30.1",
       "relatedSpdxElement": "SPDXRef-Package-postalsys.email-ai-tools-2.3.1",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-zone-eu.mailsplit-5.4.27",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-content-0.1.17",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-libmime-5.5.2",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-content-0.1.17",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-node-html-parser-9.0.5",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-content-0.1.17",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7044,6 +7101,106 @@
     {
       "spdxElementId": "SPDXRef-Package-tlds-1.261.0",
       "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.5.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-encoding-japanese-2.4.0",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-iconv-lite-0.7.3",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-libbase64-1.4.1",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-libqp-3.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-zone-eu.mailsplit-5.4.27",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-content-0.1.17",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-libmime-5.5.2",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-content-0.1.17",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-node-html-parser-9.0.5",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-content-0.1.17",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-encoding-japanese-2.4.0",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-iconv-lite-0.7.3",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-libbase64-1.4.1",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-libqp-3.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-postalsys.email-content-0.1.17",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-dompurify-3.4.17",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-he-1.2.0",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-html-to-text-10.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-jsdom-27.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-juice-11.1.1",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-linkify-it-5.0.2",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-node-html-parser-9.0.5",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-tlds-1.261.0",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7192,6 +7349,26 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
+      "spdxElementId": "SPDXRef-Package-encoding-japanese-2.4.0",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-iconv-lite-0.7.3",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-libbase64-1.4.1",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-libqp-3.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
       "spdxElementId": "SPDXRef-Package-deep-extend-0.6.0",
       "relatedSpdxElement": "SPDXRef-Package-zone-eu.wild-config-1.7.10",
       "relationshipType": "DEPENDENCY_OF"
@@ -7253,42 +7430,42 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-cheerio-select-2.1.0",
-      "relatedSpdxElement": "SPDXRef-Package-cheerio-1.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-cheerio-1.2.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-encoding-sniffer-0.2.1",
-      "relatedSpdxElement": "SPDXRef-Package-cheerio-1.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-cheerio-1.2.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-htmlparser2-9.1.0",
-      "relatedSpdxElement": "SPDXRef-Package-cheerio-1.0.0",
+      "spdxElementId": "SPDXRef-Package-htmlparser2-10.1.0",
+      "relatedSpdxElement": "SPDXRef-Package-cheerio-1.2.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-parse5-7.3.0",
-      "relatedSpdxElement": "SPDXRef-Package-cheerio-1.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-cheerio-1.2.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-parse5-htmlparser2-tree-adapter-7.1.0",
-      "relatedSpdxElement": "SPDXRef-Package-cheerio-1.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-cheerio-1.2.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-parse5-parser-stream-7.1.2",
-      "relatedSpdxElement": "SPDXRef-Package-cheerio-1.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-cheerio-1.2.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-undici-6.29.1",
-      "relatedSpdxElement": "SPDXRef-Package-cheerio-1.0.0",
+      "spdxElementId": "SPDXRef-Package-undici-7.30.1",
+      "relatedSpdxElement": "SPDXRef-Package-cheerio-1.2.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-whatwg-mimetype-4.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-cheerio-1.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-cheerio-1.2.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7433,42 +7610,62 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-zone-eu.mailsplit-5.4.27",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.5.9",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.6.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-encoding-japanese-2.4.0",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.5.9",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.6.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-iconv-lite-0.7.3",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.5.9",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.6.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libbase64-1.4.1",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.5.9",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.6.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libmime-5.5.2",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.5.9",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.6.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libqp-3.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.5.9",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.6.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-pino-10.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.5.9",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.6.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-socks-2.8.10",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.5.9",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.6.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-encoding-japanese-2.4.0",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-iconv-lite-0.7.3",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-libbase64-1.4.1",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-libqp-3.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7488,7 +7685,7 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-ioredis-6.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-ioredfour-2.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-ioredfour-2.1.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7652,7 +7849,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-cheerio-1.0.0",
+      "spdxElementId": "SPDXRef-Package-cheerio-1.2.0",
       "relatedSpdxElement": "SPDXRef-Package-juice-11.1.1",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -7683,22 +7880,22 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-encoding-japanese-2.4.0",
-      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.6.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-iconv-lite-0.7.3",
-      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.6.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libbase64-1.4.1",
-      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.6.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libqp-3.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-libmime-5.5.2",
+      "relatedSpdxElement": "SPDXRef-Package-libmime-5.6.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7708,52 +7905,42 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-zone-eu.mailsplit-5.4.27",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.10.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-encoding-japanese-2.4.0",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.10.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.11.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-he-1.2.0",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.10.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.11.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-html-to-text-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.10.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.11.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-iconv-lite-0.7.3",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.10.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-libmime-5.5.2",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.10.0",
+      "spdxElementId": "SPDXRef-Package-libmime-5.6.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.11.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-linkify-it-5.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.10.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.11.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-nodemailer-10.1.7",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.10.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.11.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-punycode.js-2.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.10.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.11.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-tlds-1.261.0",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.10.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.11.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7883,17 +8070,17 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-ipv6-normalize-1.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-smtp-server-3.20.2",
+      "relatedSpdxElement": "SPDXRef-Package-smtp-server-3.21.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-nodemailer-10.1.7",
-      "relatedSpdxElement": "SPDXRef-Package-smtp-server-3.20.2",
+      "relatedSpdxElement": "SPDXRef-Package-smtp-server-3.21.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-punycode.js-2.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-smtp-server-3.20.2",
+      "relatedSpdxElement": "SPDXRef-Package-smtp-server-3.21.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {

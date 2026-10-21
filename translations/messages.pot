@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-10-21 13:22+0000\n"
+"POT-Creation-Date: 2026-10-21 19:25+0000\n"
 
 #: lib/autodetect-imap-settings.js:160
 msgid ""
@@ -37,7 +37,7 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:1360
 #: lib/ui-routes/route-helpers.js:350
 #: lib/ui-routes/route-helpers.js:373
-#: workers/api.js:2411
+#: workers/api.js:2478
 msgid "Email Account Setup"
 msgstr ""
 
@@ -58,25 +58,25 @@ msgstr ""
 
 #: lib/ui-routes/account-routes.js:1076
 #: lib/ui-routes/account-routes.js:1116
-#: lib/ui-routes/admin-entities-routes.js:1996
+#: lib/ui-routes/admin-entities-routes.js:1984
 msgid "Server hostname was not found"
 msgstr ""
 
 #: lib/ui-routes/account-routes.js:1079
 #: lib/ui-routes/account-routes.js:1119
-#: lib/ui-routes/admin-entities-routes.js:1999
+#: lib/ui-routes/admin-entities-routes.js:1987
 msgid "Invalid username or password"
 msgstr ""
 
 #: lib/ui-routes/account-routes.js:1084
 #: lib/ui-routes/account-routes.js:1136
-#: lib/ui-routes/admin-entities-routes.js:2016
+#: lib/ui-routes/admin-entities-routes.js:2004
 msgid "Connection timed out"
 msgstr ""
 
 #: lib/ui-routes/account-routes.js:1090
 #: lib/ui-routes/account-routes.js:1139
-#: lib/ui-routes/admin-entities-routes.js:2019
+#: lib/ui-routes/admin-entities-routes.js:2007
 msgid "Could not connect to server"
 msgstr ""
 
@@ -84,23 +84,23 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:1107
 #: lib/ui-routes/account-routes.js:1128
 #: lib/ui-routes/account-routes.js:1132
-#: lib/ui-routes/admin-entities-routes.js:2008
-#: lib/ui-routes/admin-entities-routes.js:2012
+#: lib/ui-routes/admin-entities-routes.js:1996
+#: lib/ui-routes/admin-entities-routes.js:2000
 msgid "TLS protocol error"
 msgstr ""
 
 #: lib/ui-routes/account-routes.js:1122
-#: lib/ui-routes/admin-entities-routes.js:2002
+#: lib/ui-routes/admin-entities-routes.js:1990
 msgid "Authentication credentials were not provided"
 msgstr ""
 
 #: lib/ui-routes/account-routes.js:1125
-#: lib/ui-routes/admin-entities-routes.js:2005
+#: lib/ui-routes/admin-entities-routes.js:1993
 msgid "OAuth2 authentication failed"
 msgstr ""
 
 #: lib/ui-routes/account-routes.js:1142
-#: lib/ui-routes/admin-entities-routes.js:2022
+#: lib/ui-routes/admin-entities-routes.js:2010
 msgid "Unexpected server response"
 msgstr ""
 
@@ -108,7 +108,7 @@ msgstr ""
 msgid "Temporary error, please try again"
 msgstr ""
 
-#: lib/ui-routes/admin-config-routes.js:196
+#: lib/ui-routes/admin-config-routes.js:197
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
@@ -413,7 +413,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: views/error.hbs:6
-#: workers/api.js:3271
+#: workers/api.js:3338
 msgid "Something went wrong"
 msgstr ""
 
@@ -529,37 +529,37 @@ msgid ""
 "received."
 msgstr ""
 
-#: workers/api.js:2325
+#: workers/api.js:2392
 msgid ""
 "The sign-in was cancelled or the requested access was not granted. Open the "
 "account setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2334
+#: workers/api.js:2401
 msgid "Sign-in with the email provider failed: %s"
 msgstr ""
 
-#: workers/api.js:2338
+#: workers/api.js:2405
 msgid "Sign-in with the email provider failed: no authorization code was received"
 msgstr ""
 
-#: workers/api.js:2342
+#: workers/api.js:2409
 msgid "Sign-in with the email provider failed: the request state is not valid"
 msgstr ""
 
-#: workers/api.js:2351
+#: workers/api.js:2418
 msgid ""
 "The account setup session has expired or was already used. Open the account "
 "setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2357
+#: workers/api.js:2424
 msgid ""
 "Sign-in with the email provider failed: the stored setup session is not "
 "valid"
 msgstr ""
 
-#: workers/api.js:3270
-#: workers/api.js:3387
+#: workers/api.js:3337
+#: workers/api.js:3459
 msgid "Requested page not found"
 msgstr ""
