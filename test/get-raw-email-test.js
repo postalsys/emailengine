@@ -437,3 +437,39 @@ test('splitter limits reject instead of crashing the worker', async t => {
         assert.match(out, /part9/);
     });
 });
+
+test('getRawEmail - custom headers and forwarded messages', async t => {
+    await t.test('a non-ASCII custom header is encoded instead of sent as raw 8-bit (regression)', async () => {
+        const raw = rawMessage(['From: Alice <alice@example.com>', 'To: bob@example.org', 'Subject: Hello'], 'Body text');
+        const res = await getRawEmail({ raw, headers: { 'x-customer': 'Jõgeva Öö', 'x-plain': 'ascii only' } }, null);
+        const out = res.raw.toString();
+        assert.match(out, /^X-Customer: =\?UTF-8\?Q\?J=C3=B5geva_=C3=96=C3=B6\?=$/m);
+        assert.match(out, /^X-Plain: ascii only$/m);
+        assert.ok(!/[\u0080-￿]/.test(out.split('\r\n\r\n')[0]), 'the header block is 7-bit');
+    });
+
+    for (const [label, body, encoding] of [
+        ['an ASCII message is labelled 7bit', 'From: a@example.com\r\nSubject: inner\r\n\r\nHello', '7bit'],
+        ['a message with 8-bit content is labelled 8bit', 'From: a@example.com\r\nSubject: inner\r\n\r\nTere õhtust', '8bit']
+    ]) {
+        await t.test(`a forwarded message/rfc822 attachment: ${label}, inserted as is`, async () => {
+            const res = await getRawEmail(
+                {
+                    from: { address: 'alice@example.com' },
+                    to: [{ address: 'bob@example.org' }],
+                    subject: 'Fwd',
+                    text: 'see attached',
+                    attachments: [
+                        { filename: 'forwarded.eml', contentType: 'message/rfc822', content: Buffer.from(body).toString('base64'), encoding: 'base64' }
+                    ]
+                },
+                null
+            );
+            const out = res.raw.toString();
+            const part = out.slice(out.indexOf('Content-Type: message/rfc822'));
+            assert.match(part, new RegExp(`^Content-Transfer-Encoding: ${encoding}$`, 'm'));
+            assert.match(part, /^Content-Disposition: attachment; filename=forwarded\.eml$/m);
+            assert.ok(part.includes(body), 'the forwarded message is not re-encoded');
+        });
+    }
+});

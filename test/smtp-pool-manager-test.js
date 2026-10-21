@@ -222,3 +222,19 @@ test('a replaced pool does not drop its successor', async t => {
         });
     }
 });
+
+test('idle cleanup and deliveries in progress', async t => {
+    await t.test('keeps a pool that nodemailer reports deliveries pending for, closes it once there are none', () => {
+        const settings = makeSettings({ host: 'pending.example.com' });
+        const transport = transportFor(settings);
+        let pending = 1;
+        transport.transporter.pendingCount = () => pending;
+
+        cleanupIdlePools(Date.now() + SMTP_POOL_MAX_IDLE + 1000);
+        assert.strictEqual(transportFor(settings), transport, 'a pool with a message on the wire is not closed');
+
+        pending = 0;
+        cleanupIdlePools(Date.now() + SMTP_POOL_MAX_IDLE + 1000);
+        assert.notStrictEqual(transportFor(settings), transport, 'an idle pool is closed and replaced on the next get');
+    });
+});

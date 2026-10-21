@@ -65,37 +65,35 @@ test('SentMailCopyDecider.shouldCopy', async t => {
 });
 
 test('ProviderMessageIdHandler', async t => {
-    await t.test('rewrites the message ID from a Hotmail/Outlook response', () => {
-        const info = { messageId: '<original@local>', response: '250 2.0.0 OK <ABC123.prod.outlook.com>' };
-        const original = ProviderMessageIdHandler.handleHotmail(info);
-        assert.strictEqual(original, '<original@local>');
-        assert.strictEqual(info.messageId, '<ABC123.prod.outlook.com>');
+    const { parseServerMessageId } = require('nodemailer/lib/smtp-connection/server-message-id.js');
+
+    // What nodemailer puts on info for the replies this used to parse itself, so a nodemailer change
+    // in the formats it reads shows up here
+    const sent = (response, host) => ({ messageId: '<original@local>', response, serverMessageId: parseServerMessageId(response, host) });
+
+    await t.test('takes the Message-ID an Outlook server gave the message', () => {
+        const info = sent('250 2.0.0 OK <ABC123@AM0PR01MB.eurprd01.prod.outlook.com> [Hostname=AM0PR01MB]', 'smtp.office365.com');
+        assert.strictEqual(ProviderMessageIdHandler.processResponse(info), '<original@local>');
+        assert.strictEqual(info.messageId, '<ABC123@AM0PR01MB.eurprd01.prod.outlook.com>');
     });
 
-    await t.test('leaves the message ID untouched for a non-Hotmail response', () => {
-        const info = { messageId: '<keep@local>', response: '250 OK queued' };
-        assert.strictEqual(ProviderMessageIdHandler.handleHotmail(info), undefined);
-        assert.strictEqual(info.messageId, '<keep@local>');
+    await t.test('builds the Amazon SES Message-ID, email.amazonses.com in us-east-1', () => {
+        const id = '0100018b5c3c0a4f-6b9e6f4e-0f8e-4f3e-9b5a-1c2d3e4f5a6b-000000';
+        const east = sent(`250 Ok ${id}`, 'email-smtp.us-east-1.amazonaws.com');
+        assert.strictEqual(ProviderMessageIdHandler.processResponse(east), '<original@local>');
+        assert.strictEqual(east.messageId, `<${id}@email.amazonses.com>`);
+
+        const west = sent(`250 Ok ${id}`, 'email-smtp.eu-west-1.amazonaws.com');
+        ProviderMessageIdHandler.processResponse(west);
+        assert.strictEqual(west.messageId, `<${id}@eu-west-1.amazonses.com>`);
     });
 
-    await t.test('builds an AWS SES message ID from the response (us-east-1 -> email)', () => {
-        const info = { messageId: '<orig@local>', response: '250 Ok 0123456789abcdef0123456789abcdef' };
-        const original = ProviderMessageIdHandler.handleAwsSes(info, 'email-smtp.us-east-1.amazonaws.com');
-        assert.strictEqual(original, '<orig@local>');
-        assert.strictEqual(info.messageId, '<0123456789abcdef0123456789abcdef@email.amazonses.com>');
-    });
-
-    await t.test('builds an AWS SES message ID for a non-us-east region', () => {
-        const info = { messageId: '<orig@local>', response: '250 Ok abcdef0123456789' };
-        ProviderMessageIdHandler.handleAwsSes(info, 'email-smtp.eu-west-1.amazonaws.com');
-        assert.strictEqual(info.messageId, '<abcdef0123456789@eu-west-1.amazonses.com>');
-    });
-
-    await t.test('processResponse tries Hotmail then SES', () => {
-        const sesInfo = { messageId: '<orig@local>', response: '250 Ok deadbeefdeadbeef' };
-        const original = ProviderMessageIdHandler.processResponse(sesInfo, 'email-smtp.us-east-1.amazonaws.com');
-        assert.strictEqual(original, '<orig@local>');
-        assert.match(sesInfo.messageId, /amazonses\.com>$/);
+    await t.test('leaves the Message-ID alone for any other reply', () => {
+        for (const info of [sent('250 OK queued', 'smtp.example.com'), sent('250 Ok 0100018b-000000', 'smtp.example.com'), { messageId: '<keep@local>' }]) {
+            const before = info.messageId;
+            assert.strictEqual(ProviderMessageIdHandler.processResponse(info), undefined);
+            assert.strictEqual(info.messageId, before);
+        }
     });
 });
 

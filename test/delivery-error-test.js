@@ -95,3 +95,26 @@ test('nextAttemptOfStoredJob() reads a job as it is stored', async t => {
         assert.equal(nextAttemptOfStoredJob({ attemptsMade: 1, processedOn: 1000000, opts: { backoff: BACKOFF } }, 900000), false);
     });
 });
+
+test("nodemailer's permanent verdict", async t => {
+    const { isPermanentDeliveryError } = require('../lib/delivery-error');
+    const { packRpcError, unpackRpcError } = require('../lib/worker-rpc-error');
+
+    const roundTrip = err => unpackRpcError(packRpcError(err));
+
+    await t.test('decides when nodemailer set it, also across the worker RPC hops', () => {
+        // every recipient rejected, one only deferred: nodemailer marks the whole error transient
+        const mixed = Object.assign(new Error('Can not send mail to any recipient'), { code: 'EENVELOPE', responseCode: 550, permanent: false });
+        assert.strictEqual(isPermanentDeliveryError(mixed), false);
+        assert.strictEqual(isPermanentDeliveryError(roundTrip(mixed)), false);
+
+        const rejected = Object.assign(new Error('Mailbox unavailable'), { code: 'EENVELOPE', responseCode: 550, permanent: true });
+        assert.strictEqual(isPermanentDeliveryError(roundTrip(rejected)), true);
+    });
+
+    await t.test('without it the reply code rule applies as before', () => {
+        assert.strictEqual(isPermanentDeliveryError(roundTrip(Object.assign(new Error('x'), { responseCode: 550 }))), true);
+        assert.strictEqual(isPermanentDeliveryError(roundTrip(Object.assign(new Error('x'), { responseCode: 451 }))), false);
+        assert.strictEqual(isPermanentDeliveryError(roundTrip(Object.assign(new Error('x'), { responseCode: 503 }))), false);
+    });
+});
