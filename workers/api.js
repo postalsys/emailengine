@@ -125,6 +125,7 @@ const {
 
 const registerApiRoutes = require('../lib/api-routes');
 const { securityHeadersExt, attachSecurityContext, isAdminPath, isMachineRoute, isSecureOrigin, CSP_MODES } = require('../lib/security-headers');
+const { deprecationExt } = require('../lib/deprecations');
 const { registerHandlebarsHelpers } = require('../lib/handlebars-helpers');
 
 const {
@@ -3327,6 +3328,10 @@ function registerResponseExtensions(server) {
     // After preResponse on purpose: it replaces an error response with the rendered error page
     // or a JSON body, and the headers have to land on whatever is actually sent
     server.ext('onPreResponse', securityHeadersExt({ cspMode: CSP_MODE }));
+
+    // Deprecation, Sunset and Link on the routes that declare plugins.deprecation, also after
+    // preResponse for the same reason
+    server.ext('onPreResponse', deprecationExt({ logger }));
 }
 
 function registerTotpExtension(server) {

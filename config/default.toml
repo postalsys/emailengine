@@ -38,6 +38,8 @@ maxSize = "5M"     # maximum size of an attachment when submitting or uploading 
 #keyPath = "/path/to/key.pem"
 
 [smtp]
+# enabled, port, host, secret and proxy are deprecated and removed after 2027-01-01. They only seed
+# the SMTP server settings on a first start; configure the SMTP server in the admin UI instead
 enabled = false
 port = 2525
 host = "127.0.0.1"
