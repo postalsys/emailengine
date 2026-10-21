@@ -38,6 +38,22 @@ test('zHeadScores', async t => {
         assert.deepEqual(await redis.zHeadScores(QUEUE, 500), ['10', '20', '30']);
     });
 
+    await t.test('matches the scores ZRANGE WITHSCORES reports, for any set and count', async () => {
+        const { forAll, gen } = require('./helpers/property');
+        await forAll(
+            gen.record({ uids: gen.array(gen.integer(1, 100000), 0, 40), count: gen.integer(-2, 50) }),
+            async ({ uids, count }) => {
+                await redis.del(QUEUE);
+                if (uids.length) {
+                    await redis.zadd(QUEUE, ...uids.flatMap(uid => [uid, JSON.stringify({ uid, pad: 'x'.repeat(uid % 7) })]));
+                }
+                const reference = count < 1 ? [] : (await redis.zrange(QUEUE, 0, count - 1, 'WITHSCORES')).filter((value, i) => i % 2 === 1);
+                assert.deepEqual(await redis.zHeadScores(QUEUE, count), reference);
+            },
+            { runs: 100 }
+        );
+    });
+
     await t.test('a missing set or a count below one reads as empty', async () => {
         assert.deepEqual(await redis.zHeadScores(QUEUE, 10), []);
         await redis.zadd(QUEUE, 1, 'a');
