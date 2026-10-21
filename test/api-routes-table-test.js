@@ -49,8 +49,10 @@ const GOLDEN_ROUTES = [
     'DELETE /v1/account/{account}/outbox/{queueId}',
     'DELETE /v1/account/{account}/webhooks/failed/{delivery}',
     'DELETE /v1/blocklist/{listId}',
+    'DELETE /v1/blocklists/{listId}',
     'DELETE /v1/gateway/{gateway}',
     'DELETE /v1/license',
+    'DELETE /v1/logs/{account}',
     'DELETE /v1/oauth2/{app}',
     'DELETE /v1/outbox/{queueId}',
     'DELETE /v1/templates/account/{account}',
@@ -121,6 +123,7 @@ const GOLDEN_ROUTES = [
     'POST /v1/blocklist/{listId}',
     'POST /v1/delivery-test/account/{account}',
     'POST /v1/gateway',
+    'POST /v1/gateway/{gateway}/verify',
     'POST /v1/license',
     'POST /v1/oauth2',
     'POST /v1/oauth2/{app}/verify',
@@ -132,6 +135,7 @@ const GOLDEN_ROUTES = [
     'POST /v1/tokens',
     'POST /v1/verifyAccount',
     'POST /v1/webhooks/failed/{delivery}/retry',
+    'POST /v1/webhooks/test',
     'PUT /v1/account/{account}',
     'PUT /v1/account/{account}/flush',
     'PUT /v1/account/{account}/mailbox',
@@ -458,12 +462,41 @@ test('API route table and authentication', async t => {
                 'DELETE /v1/templates/template/{template}',
                 'DELETE /v1/templates/account/{account}'
             ],
-            [GROUP.BLOCKLIST]: ['GET /v1/blocklists', 'GET /v1/blocklist/{listId}', 'POST /v1/blocklist/{listId}', 'DELETE /v1/blocklist/{listId}'],
-            [GROUP.WEBHOOK]: ['GET /v1/webhookRoutes', 'GET /v1/webhookRoutes/webhookRoute/{webhookRoute}'],
-            [GROUP.GATEWAY]: ['GET /v1/gateways', 'GET /v1/gateway/{gateway}', 'DELETE /v1/gateway/{gateway}'],
+            [GROUP.BLOCKLIST]: [
+                'GET /v1/blocklists',
+                'GET /v1/blocklist/{listId}',
+                'POST /v1/blocklist/{listId}',
+                'DELETE /v1/blocklist/{listId}',
+                // Added after the split, a deliberate widening of every token that holds destructive
+                // on `blocklist`: deleting the list is removing every address on it, which such a
+                // token could already do one address at a time
+                'DELETE /v1/blocklists/{listId}'
+            ],
+            [GROUP.WEBHOOK]: [
+                'GET /v1/webhookRoutes',
+                'GET /v1/webhookRoutes/webhookRoute/{webhookRoute}',
+                // Added after the split, a deliberate widening of every token that holds write on
+                // `webhook`: it posts a test event to a target the instance already has, which it
+                // neither takes from the request nor discloses
+                'POST /v1/webhooks/test'
+            ],
+            [GROUP.GATEWAY]: [
+                'GET /v1/gateways',
+                'GET /v1/gateway/{gateway}',
+                'DELETE /v1/gateway/{gateway}',
+                // Added after the split, a deliberate widening of every token that holds read on
+                // `gateway`: a connection check with the stored settings, which reports whether
+                // they work and changes nothing
+                'POST /v1/gateway/{gateway}/verify'
+            ],
             [GROUP.EVENTS]: ['GET /v1/changes'],
             [GROUP.DIAGNOSTICS]: ['GET /v1/stats', 'GET /v1/delivery-test/check/{deliveryTest}', 'GET /v1/pubsub/status', 'GET /v1/autoconfig', 'GET /metrics'],
-            [GROUP.LOGS]: ['GET /v1/logs/{account}']
+            [GROUP.LOGS]: [
+                'GET /v1/logs/{account}',
+                // Added after the split, a deliberate widening of every token that holds destructive
+                // on `logs`: it removes the stored entries such a token could already read
+                'DELETE /v1/logs/{account}'
+            ]
         };
 
         for (const [group, routes] of Object.entries(preSplit)) {

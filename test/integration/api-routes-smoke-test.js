@@ -77,10 +77,24 @@ const AUTH_REQUIRED_ROUTES = [
     ['post', '/v1/outbox/test-queue-id/retry'],
     ['post', '/v1/outbox/test-queue-id/promote'],
     ['delete', '/v1/outbox/test-queue-id'],
+    ['get', '/v1/account/main-account/outbox'],
+    ['get', '/v1/account/main-account/outbox/test-queue-id'],
+    ['post', '/v1/account/main-account/outbox/test-queue-id/retry'],
+    ['post', '/v1/account/main-account/outbox/test-queue-id/promote'],
+    ['delete', '/v1/account/main-account/outbox/test-queue-id'],
+
+    // webhook-delivery-routes.js
+    ['get', '/v1/webhooks/failed'],
+    ['post', '/v1/webhooks/failed/test-delivery/retry'],
+    ['delete', '/v1/webhooks/failed/test-delivery'],
+    ['get', '/v1/account/main-account/webhooks/failed'],
+    ['post', '/v1/account/main-account/webhooks/failed/test-delivery/retry'],
+    ['delete', '/v1/account/main-account/webhooks/failed/test-delivery'],
 
     // webhook-route-routes.js
     ['get', '/v1/webhookRoutes'],
     ['get', '/v1/webhookRoutes/webhookRoute/test-route'],
+    ['post', '/v1/webhooks/test'],
 
     // oauth2-app-routes.js
     ['get', '/v1/oauth2'],
@@ -96,6 +110,7 @@ const AUTH_REQUIRED_ROUTES = [
     ['post', '/v1/gateway'],
     ['put', '/v1/gateway/edit/test-gateway'],
     ['delete', '/v1/gateway/test-gateway'],
+    ['post', '/v1/gateway/test-gateway/verify'],
 
     // delivery-test-routes.js
     ['post', '/v1/delivery-test/account/main-account'],
@@ -106,6 +121,7 @@ const AUTH_REQUIRED_ROUTES = [
     ['get', '/v1/blocklist/test-list'],
     ['post', '/v1/blocklist/test-list'],
     ['delete', '/v1/blocklist/test-list'],
+    ['delete', '/v1/blocklists/test-list'],
 
     // submit-routes.js
     ['post', '/v1/account/main-account/submit'],
@@ -119,6 +135,7 @@ const AUTH_REQUIRED_ROUTES = [
     ['get', '/v1/account/main-account/server-signatures'],
     ['post', '/v1/authentication/form'],
     ['get', '/v1/logs/main-account'],
+    ['delete', '/v1/logs/main-account'],
     ['post', '/v1/verifyAccount'],
     ['get', '/v1/autoconfig?email=user@example.com'],
     ['post', '/v1/autoconfig']
@@ -130,9 +147,15 @@ const LIST_ENDPOINTS_OK = [
     '/v1/settings',
     '/v1/tokens',
     '/v1/outbox',
+    '/v1/outbox?state=failed',
+    '/v1/webhooks/failed',
     '/v1/webhookRoutes',
+    '/v1/webhookRoutes?query=nothing-matches',
     '/v1/oauth2',
+    '/v1/oauth2?query=nothing-matches',
     '/v1/gateways',
+    '/v1/gateways?query=nothing-matches',
+    '/v1/templates?query=nothing-matches',
     '/v1/blocklists',
     '/v1/pubsub/status',
     '/v1/stats'
@@ -541,6 +564,23 @@ test('Extracted API routes smoke test', async t => {
         for (const path of LIST_ENDPOINTS_OK) {
             const res = await authed.get(path);
             assert.equal(res.status, 200, `GET ${path} should return 200 with a valid token (got ${res.status})`);
+        }
+    });
+
+    await t.test('a 404 carries code NotFound whichever route throws it', async () => {
+        // These answered without a code before the JSON error body started filling it in
+        for (const path of ['/v1/outbox/no-such-queue-id', '/v1/logs/no-such-account', '/v1/account/no-such-account/export/exp_000000000000000000000000']) {
+            const res = await authed.get(path);
+            assert.equal(res.status, 404, `GET ${path}`);
+            assert.equal(res.body.code, 'NotFound', `GET ${path} carries a code`);
+        }
+    });
+
+    await t.test('the list filters narrow the listing', async () => {
+        for (const path of ['/v1/webhookRoutes', '/v1/oauth2', '/v1/gateways', '/v1/templates']) {
+            const res = await authed.get(`${path}?query=nothing-matches-this-${crypto.randomBytes(4).toString('hex')}`);
+            assert.equal(res.status, 200, `GET ${path}`);
+            assert.equal(res.body.total, 0, `GET ${path} with a query nothing matches is empty`);
         }
     });
 

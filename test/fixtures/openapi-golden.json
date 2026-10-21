@@ -8143,6 +8143,16 @@
           }
         }
       },
+      "DeleteBlocklistListResponse": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "description": "Was the list deleted",
+            "default": true
+          }
+        }
+      },
       "DeliveryTestGateway": {
         "type": "string",
         "description": "Optional gateway ID",
@@ -8515,6 +8525,36 @@
           "gateway"
         ]
       },
+      "VerifySmtpResult": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Was SMTP account verified",
+            "example": true
+          },
+          "error": {
+            "type": "string",
+            "description": "Error messages for SMTP verification. Only present if success=false",
+            "example": "Something went wrong"
+          },
+          "code": {
+            "type": "string",
+            "description": "Error code. Only present if success=false",
+            "example": "ERR_SSL_WRONG_VERSION_NUMBER"
+          },
+          "statusCode": {
+            "type": "integer",
+            "description": "HTTP-style status code for the error. Only present if success=false",
+            "example": 500
+          },
+          "responseText": {
+            "type": "string",
+            "description": "Server response for the failed verification. Only present if success=false",
+            "example": "535 Authentication failed"
+          }
+        }
+      },
       "UpdateGateway": {
         "type": "object",
         "properties": {
@@ -8761,6 +8801,16 @@
           "type": {
             "type": "string",
             "example": "LICENSE_EMAILENGINE"
+          }
+        }
+      },
+      "DeleteLogsResponse": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "description": "False when there were no stored log entries to remove",
+            "default": true
           }
         }
       },
@@ -13318,36 +13368,6 @@
           }
         }
       },
-      "VerifySmtpResult": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "description": "Was SMTP account verified",
-            "example": true
-          },
-          "error": {
-            "type": "string",
-            "description": "Error messages for SMTP verification. Only present if success=false",
-            "example": "Something went wrong"
-          },
-          "code": {
-            "type": "string",
-            "description": "Error code. Only present if success=false",
-            "example": "ERR_SSL_WRONG_VERSION_NUMBER"
-          },
-          "statusCode": {
-            "type": "integer",
-            "description": "HTTP-style status code for the error. Only present if success=false",
-            "example": 500
-          },
-          "responseText": {
-            "type": "string",
-            "description": "Server response for the failed verification. Only present if success=false",
-            "example": "535 Authentication failed"
-          }
-        }
-      },
       "MailboxShortResponseItem": {
         "type": "object",
         "properties": {
@@ -13629,6 +13649,60 @@
           "id",
           "name"
         ]
+      },
+      "TestWebhookRequest": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "webhookRoute": {
+            "type": "string",
+            "description": "Custom webhook route to test. Omit to test the global webhook target",
+            "example": "AAABgS-UcAYAAAABAA",
+            "maxLength": 256
+          }
+        }
+      },
+      "target": {
+        "type": "string",
+        "description": "Which configured target was tested",
+        "example": "global",
+        "enum": [
+          "global",
+          "route"
+        ]
+      },
+      "TestWebhookResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Did the receiver accept the test event with a 2xx response",
+            "example": true
+          },
+          "target": {
+            "$ref": "#/components/schemas/target"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "How long the delivery took, in milliseconds",
+            "example": 182
+          },
+          "error": {
+            "type": "string",
+            "description": "Why the delivery failed. Only present if success=false",
+            "example": "Request failed with status 503"
+          },
+          "code": {
+            "type": "string",
+            "description": "Error code. Only present if success=false",
+            "example": "ECONNREFUSED"
+          },
+          "statusCode": {
+            "type": "integer",
+            "description": "HTTP status the receiver answered with. Only present if it answered with an error",
+            "example": 503
+          }
+        }
       }
     }
   },
@@ -20427,6 +20501,119 @@
         "x-ee-group": "blocklist"
       }
     },
+    "/v1/blocklists/{listId}": {
+      "delete": {
+        "summary": "Delete a blocklist",
+        "operationId": "deleteV1BlocklistsListid",
+        "description": "Deletes a whole suppression list with every address on it. Messages sent with this list ID are delivered to all recipients again.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
+          },
+          {
+            "name": "listId",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "List ID. Must use a subdomain name format. Lists are registered ad-hoc, so a new identifier defines a new list.",
+              "example": "test-list",
+              "x-format": {
+                "hostname": true
+              }
+            },
+            "description": "List ID. Must use a subdomain name format. Lists are registered ad-hoc, so a new identifier defines a new list.",
+            "required": true
+          }
+        ],
+        "tags": [
+          "Blocklists"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns a deletion marker.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteBlocklistListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - the requested entity (account, message, mailbox, etc.) does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-impact": "destructive",
+        "x-ee-action": "destructive",
+        "x-ee-group": "blocklist"
+      }
+    },
     "/v1/changes": {
       "get": {
         "summary": "Stream state changes",
@@ -21067,6 +21254,117 @@
         "x-ee-group": "gateway"
       }
     },
+    "/v1/gateway/{gateway}/verify": {
+      "post": {
+        "summary": "Verify SMTP gateway",
+        "operationId": "postV1GatewayGatewayVerify",
+        "description": "Connects to the SMTP server of a stored gateway with its stored settings and credentials, and reports whether the connection and the authentication succeeded. Nothing is sent and nothing is stored.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
+          },
+          {
+            "name": "gateway",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Gateway ID",
+              "example": "example",
+              "maxLength": 256
+            },
+            "description": "Gateway ID",
+            "required": true
+          }
+        ],
+        "tags": [
+          "SMTP Gateway"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the result of the connection check.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifySmtpResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - the requested entity (account, message, mailbox, etc.) does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-impact": "readonly",
+        "x-ee-action": "read",
+        "x-ee-group": "gateway"
+      }
+    },
     "/v1/gateway/edit/{gateway}": {
       "put": {
         "summary": "Update gateway info",
@@ -21229,6 +21527,20 @@
               "maximum": 1000
             },
             "description": "How many entries per page"
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "List only entries whose gateway ID, name, host or username contains this text, ignoring case",
+              "example": "example",
+              "maxLength": 256,
+              "x-convert": {
+                "trim": true
+              }
+            },
+            "description": "List only entries whose gateway ID, name, host or username contains this text, ignoring case"
           }
         ],
         "tags": [
@@ -21664,6 +21976,118 @@
         ],
         "x-ee-action": "read",
         "x-ee-group": "logs"
+      },
+      "delete": {
+        "summary": "Clear stored logs for an account",
+        "operationId": "deleteV1LogsAccount",
+        "description": "Removes every stored log entry of the account. Logging continues if it is enabled for the account or the instance.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
+          },
+          {
+            "name": "account",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Unique identifier for the email account",
+              "example": "user123",
+              "maxLength": 256,
+              "x-convert": {
+                "trim": true
+              }
+            },
+            "description": "Unique identifier for the email account",
+            "required": true
+          }
+        ],
+        "tags": [
+          "Logs"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns a deletion marker.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteLogsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - the requested entity (account, message, mailbox, etc.) does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-impact": "destructive",
+        "x-ee-action": "destructive",
+        "x-ee-group": "logs"
       }
     },
     "/v1/oauth2": {
@@ -21709,6 +22133,20 @@
               "maximum": 1000
             },
             "description": "How many entries per page"
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "List only entries whose ID, name, description, client ID, service account or Pub/Sub names contains this text, ignoring case",
+              "example": "example",
+              "maxLength": 256,
+              "x-convert": {
+                "trim": true
+              }
+            },
+            "description": "List only entries whose ID, name, description, client ID, service account or Pub/Sub names contains this text, ignoring case"
           }
         ],
         "tags": [
@@ -24282,6 +24720,20 @@
               "maximum": 1000
             },
             "description": "How many entries per page"
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "List only entries whose ID, name or description contains this text, ignoring case",
+              "example": "example",
+              "maxLength": 256,
+              "x-convert": {
+                "trim": true
+              }
+            },
+            "description": "List only entries whose ID, name or description contains this text, ignoring case"
           }
         ],
         "tags": [
@@ -25678,6 +26130,20 @@
               "maximum": 1000
             },
             "description": "How many entries per page"
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "List only entries whose ID, name, description or target URL contains this text, ignoring case",
+              "example": "example",
+              "maxLength": 256,
+              "x-convert": {
+                "trim": true
+              }
+            },
+            "description": "List only entries whose ID, name, description or target URL contains this text, ignoring case"
           }
         ],
         "tags": [
@@ -26226,6 +26692,113 @@
         },
         "x-ee-action": "write",
         "x-ee-group": "webhook-deliveries"
+      }
+    },
+    "/v1/webhooks/test": {
+      "post": {
+        "summary": "Send a test webhook",
+        "operationId": "postV1WebhooksTest",
+        "description": "Posts a `test` event to the global webhook target, or with `webhookRoute` set to the target of that custom route, with the custom headers configured for it and signed like a real delivery, and reports whether the receiver accepted it. The target is never taken from the request.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds. Raises the command timeout above the EENGINE_TIMEOUT default for a long-running request; a value below the default has no effect"
+          }
+        ],
+        "tags": [
+          "Webhooks"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestWebhookRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Returns the result of the test delivery. A failed delivery is reported in the result, not as an error status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestWebhookResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation. Also returned when the email server refused the request, in which case the response carries a code and the server response instead of a field list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - the requested entity (account, message, mailbox, etc.) does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-action": "write",
+        "x-ee-group": "webhook"
       }
     }
   }
