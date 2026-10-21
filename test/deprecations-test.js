@@ -155,3 +155,79 @@ test('legacySmtpOptionsInUse', async t => {
         );
     });
 });
+
+test('deprecated request fields', async t => {
+    const { DEPRECATED_FIELDS, createFieldReporter, deprecatedField, setFieldReporter, BULL_BOARD_REDIRECTS_DEPRECATED_AT } = require('../lib/deprecations');
+    const schemas = require('../lib/schemas');
+
+    await t.test('a field is reported once an hour, each field on its own clock', () => {
+        const logger = createMockLogger();
+        let clock = 0;
+        const report = createFieldReporter({ getLogger: () => logger, now: () => clock });
+
+        report('syncFrom');
+        report('syncFrom');
+        report('documentStore');
+        assert.deepStrictEqual(
+            logger.entries.map(entry => entry.field),
+            ['syncFrom', 'documentStore']
+        );
+        assert.strictEqual(logger.entries[0].msg, 'Deprecated request field used');
+        assert.strictEqual(logger.entries[0].removal, REMOVAL_DATE);
+        assert.strictEqual(logger.entries[0].successor, DEPRECATED_FIELDS.syncFrom);
+
+        clock += LOG_INTERVAL;
+        report('syncFrom');
+        assert.strictEqual(logger.entries.length, 3);
+    });
+
+    await t.test('only a known field can be marked', () => {
+        assert.throws(() => deprecatedField('somethingElse'), /not a deprecated field/);
+    });
+
+    await t.test('every listed field is marked on a schema, and reported when a request carries it', async t => {
+        const reported = [];
+        const previous = setFieldReporter(field => reported.push(field));
+        t.after(() => setFieldReporter(previous));
+
+        const oauth2AppRoutes = [];
+        const { buildMockArgs } = require('./helpers/capture-api-routes');
+        await require('../lib/api-routes/oauth2-app-routes')(buildMockArgs({ route: cfg => oauth2AppRoutes.push(cfg) }));
+        const appUpdate = oauth2AppRoutes.find(route => route.method === 'PUT' && route.path === '/v1/oauth2/{app}').options.validate.payload;
+
+        const cases = [
+            ['documentStore', () => schemas.documentStoreSchema.validate(true)],
+            ['syncFrom', () => schemas.accountSchemas.syncFrom.validate('2026-01-01')],
+            ['documentStoreEnabled', () => schemas.settingsSchema.documentStoreEnabled.validate(true)],
+            ['generateRiskAssessment', () => schemas.settingsSchema.generateRiskAssessment.validate(true)],
+            ['openAiGenerateEmbeddings', () => schemas.settingsSchema.openAiGenerateEmbeddings.validate(true)],
+            ['trackSentMessages', () => schemas.settingsSchema.trackSentMessages.validate(true)],
+            ['oauth2.authority', () => schemas.oauth2Schema.authority.validate('consumers')],
+            ['oauth2.authority', () => schemas.oauth2UpdateSchema.authority.validate('consumers')],
+            ['tenant', () => appUpdate.extract('tenant').validate('f8cdef31-a31e-4b4a-93e4-5f571e91255a')]
+        ];
+        for (const [field, run] of cases) {
+            reported.length = 0;
+            const { error } = run();
+            assert.ifError(error);
+            assert.deepStrictEqual(reported, [field], field);
+        }
+        assert.deepStrictEqual([...new Set(cases.map(([field]) => field))].sort(), Object.keys(DEPRECATED_FIELDS).sort(), 'every listed field has a case');
+
+        // A value that is not there is not a use: absent, or an empty form field
+        reported.length = 0;
+        schemas.oauth2Schema.authority.validate('');
+        schemas.settingsSchema.trackSentMessages.validate(undefined);
+        assert.deepStrictEqual(reported, []);
+    });
+
+    await t.test('the bull-board redirects announce their removal', () => {
+        const { captureRouteConfigs } = require('./helpers/capture-ui-routes');
+        const declared = captureRouteConfigs().filter(route => route.options && route.options.plugins && route.options.plugins.deprecation);
+        assert.deepStrictEqual(declared.map(route => `${route.method} ${route.path}`).sort(), ['GET /admin/bull-board', 'GET /admin/bull-board/{path*}']);
+        for (const route of declared) {
+            assert.strictEqual(route.options.plugins.deprecation.since, BULL_BOARD_REDIRECTS_DEPRECATED_AT);
+            assert.strictEqual(route.options.plugins.deprecation.link, '/admin/queues');
+        }
+    });
+});
