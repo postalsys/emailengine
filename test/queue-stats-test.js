@@ -7,7 +7,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { queueStats, failedJobCount, COUNTED_STATES } = require('../lib/queue-stats');
+const { queueStats, COUNTED_STATES } = require('../lib/queue-stats');
 
 function fakeQueue({ counts = {}, paused = false } = {}) {
     const calls = [];
@@ -60,14 +60,20 @@ test('queueStats()', async t => {
     });
 });
 
-test('failedJobCount()', async t => {
-    await t.test('asks for the failed state only', async () => {
+test('queueStats() with the failed count', async t => {
+    await t.test('reads it in the same getJobCounts call, outside the total', async () => {
         const queue = fakeQueue({ counts: { failed: 12, waiting: 3 } });
-        assert.equal(await failedJobCount(queue), 12);
-        assert.deepEqual(queue.calls, [['failed']]);
+        const stats = await queueStats(queue, { failed: true });
+        assert.equal(stats.failed, 12);
+        assert.equal(stats.total, 3, 'a failed job is not pending work');
+        assert.deepEqual(queue.calls, [COUNTED_STATES.concat('failed')], 'one read for both');
     });
 
     await t.test('an empty queue reports zero', async () => {
-        assert.equal(await failedJobCount(fakeQueue()), 0);
+        assert.equal((await queueStats(fakeQueue(), { failed: true })).failed, 0);
+    });
+
+    await t.test('without the option the published shape has no failed key', async () => {
+        assert.ok(!('failed' in (await queueStats(fakeQueue({ counts: { failed: 5 } })))));
     });
 });

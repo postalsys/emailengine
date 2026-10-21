@@ -133,7 +133,7 @@ initSentry('main');
 // Import additional dependencies
 const pathlib = require('path');
 const { redis, notifyQueue, submitQueue, exportQueue } = require('./lib/db');
-const { queueStats, failedJobCount } = require('./lib/queue-stats');
+const { queueStats } = require('./lib/queue-stats');
 const { pruneFailedContent } = require('./lib/outbox');
 const { queueCleanAges } = require('./lib/queue-retention');
 const { getFailedJobRetention } = require('./lib/env-setting-overrides');
@@ -2571,26 +2571,25 @@ async function updateQueueCounters() {
     //
     // A queue whose count fails is skipped rather than ending the update: returning here used to
     // leave every Redis gauge below it stale for as long as that one count kept failing.
-    for (let [queue, queueObj] of [
+    const counted = [
         ['notify', notifyQueue],
         ['submit', submitQueue],
         ['export', exportQueue]
-    ]) {
-        let stats;
-        let failed;
-        try {
-            [stats, failed] = await Promise.all([queueStats(queueObj), failedJobCount(queueObj)]);
-        } catch (err) {
-            logger.error({ msg: 'Queue length count failed', queue, err });
-            continue;
+    ];
+    const results = await Promise.allSettled(counted.map(([, queueObj]) => queueStats(queueObj, { failed: true })));
+    counted.forEach(([queue], i) => {
+        if (results[i].status === 'rejected') {
+            logger.error({ msg: 'Queue length count failed', queue, err: results[i].reason });
+            return;
         }
+        const stats = results[i].value;
 
         metrics.queues.set({ queue: `${queue}`, state: `active` }, stats.active);
         metrics.queues.set({ queue: `${queue}`, state: `delayed` }, stats.delayed);
         metrics.queues.set({ queue: `${queue}`, state: `paused` }, stats.paused);
         metrics.queues.set({ queue: `${queue}`, state: `waiting` }, stats.waiting);
-        metrics.queueFailed.set({ queue: `${queue}` }, failed);
-    }
+        metrics.queueFailed.set({ queue: `${queue}` }, stats.failed);
+    });
 
     // Update Redis metrics
     try {
