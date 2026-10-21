@@ -158,6 +158,7 @@ async function createSyncHarness({ server, stored = [], storedStatus = {}, redis
     return {
         sync,
         mailbox,
+        server: imapServer,
         events,
         keys,
         async indexedUids() {

@@ -299,3 +299,31 @@ test('runFastSync', async t => {
         }
     });
 });
+
+test('a FETCH that finds no mailbox selected ends the pass', async () => {
+    // ImapFlow 2.6.0 throws NoMailboxSelected where it used to yield nothing. Taken for an empty
+    // folder, nothing had been fetched, so the trailing pass expunged every indexed message and
+    // sent a messageDeleted for each. The pass now stops without touching the index
+    const harness = await createSyncHarness({ server: uids(1, 2, 3), stored: uids(1, 2, 3) });
+    try {
+        let fetches = 0;
+        // what ImapFlow's fetch() iterator does once no mailbox is selected: reject on the first read
+        harness.server.fetch = () => ({
+            [Symbol.asyncIterator]: () => ({
+                next: async () => {
+                    fetches++;
+                    const err = new Error('No mailbox is currently selected');
+                    err.code = 'NoMailboxSelected';
+                    throw err;
+                }
+            })
+        });
+
+        await assert.rejects(harness.sync.runFullSync(), err => err.code === 'IMAPConnectionClosing' && err.cause?.code === 'NoMailboxSelected');
+        assert.strictEqual(fetches, 1, 'not retried');
+        assert.deepStrictEqual(harness.events.deleted, []);
+        assert.deepStrictEqual(await harness.indexedUids(), [1, 2, 3]);
+    } finally {
+        await harness.cleanup();
+    }
+});

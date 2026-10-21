@@ -212,13 +212,13 @@ test('IMAPClient drop-path reconnect throttle', async t => {
     await t.test('only connection survival validates and resets the close backoff', () => {
         const client = makeClient();
 
-        assert.equal(client.validateConnectionAge({ connectionStartTime: Date.now() }), false, 'a fresh connection must not count as validated');
+        assert.equal(client.validateConnectionAge({ context: { startedAt: Date.now() } }), false, 'a fresh connection must not count as validated');
 
         client.closeReconnectBackoff.nextDelay();
         assert.ok(client.closeReconnectBackoff.attempts > 0);
 
         assert.equal(
-            client.validateConnectionAge({ connectionStartTime: Date.now() - STABLE_CONNECTION_TIME - 1000 }),
+            client.validateConnectionAge({ context: { startedAt: Date.now() - STABLE_CONNECTION_TIME - 1000 } }),
             true,
             'a connection that outlived the stability threshold must count as validated'
         );

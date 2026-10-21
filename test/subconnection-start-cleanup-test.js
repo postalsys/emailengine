@@ -113,7 +113,7 @@ test('Subconnection.start() previous client cleanup', async t => {
         await assert.rejects(() => subconnection.start(), stopError);
 
         assert.equal(prev.closed, true);
-        assert.equal(prev.disabled, true);
+        assert.equal(prev.context.disabled, true);
         assert.equal(subconnection.imapClient, null);
         assert.equal(parent.connections.has(prev), false, 'replaced client must be dropped from the parent connections set');
 

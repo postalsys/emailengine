@@ -280,3 +280,20 @@ test('narrowHeaders()', async t => {
         assert.deepEqual(message.headers, {});
     });
 });
+
+test('Mailbox.getMessageInfo() header fallback with an address group', async () => {
+    // A server answers a group as an ENVELOPE entry without a host; the header fallback used to drop
+    // every member of the group with it, leaving the field empty
+    const info = await messageInfo({
+        envelope: {
+            from: [{ name: 'Sender', address: 'sender@example.com' }],
+            to: [{ name: 'Team', address: '' }]
+        },
+        headers: 'From: Sender <sender@example.com>\r\nTo: Team: alice@example.com, Bob <bob@example.com>;\r\n'
+    });
+
+    assert.deepEqual(info.to, [
+        { name: '', address: 'alice@example.com' },
+        { name: 'Bob', address: 'bob@example.com' }
+    ]);
+});

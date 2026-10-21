@@ -38,10 +38,9 @@ const noopLogger = {
     }
 };
 
-// listResponse drives the missing-mailbox verification LIST that runs after a
-// tagged NO: a non-empty array means the folder is still listed (phantom), an
-// empty array means it is gone, and a function can throw to simulate a failed
-// verification. Defaults to "folder exists".
+// listResponse answers a LIST if one is run. reconnect() runs none any more after a tagged NO,
+// ImapFlow reports a missing folder on the error itself; kept so a regression that brings a LIST
+// back still gets an answer. Defaults to "folder exists".
 function makeSubconnection({ mailboxOpenError, path = 'Shared Folders/team', listResponse = [{ path: 'Shared Folders/team' }] } = {}) {
     const listingRefreshCalls = [];
 
@@ -111,13 +110,16 @@ test('Subconnection.reconnect() backoff counter', async t => {
 });
 
 test('Subconnection.reconnect() missing monitored mailbox', async t => {
-    await t.test('disables the subconnection when the mailbox is gone', async () => {
+    // Whether a refused SELECT means the folder is gone is ImapFlow's call since 2.6.0 (an exact LIST
+    // match, \NonExistent and wildcard siblings excluded, tested there); it says so with
+    // err.mailboxMissing, and the subconnection no longer runs a LIST of its own
+    await t.test('disables the subconnection when ImapFlow reports the mailbox gone', async () => {
         const mailboxOpenError = Object.assign(new Error('Command failed'), {
             responseStatus: 'NO',
-            serverResponseCode: 'NONEXISTENT'
+            serverResponseCode: 'NONEXISTENT',
+            mailboxMissing: true
         });
-        // Verification LIST returns nothing: the folder was deleted server-side
-        const { subconnection, listingRefreshCalls } = makeSubconnection({ mailboxOpenError, listResponse: [] });
+        const { subconnection, listingRefreshCalls } = makeSubconnection({ mailboxOpenError });
 
         await subconnection.reconnect();
 
@@ -130,45 +132,14 @@ test('Subconnection.reconnect() missing monitored mailbox', async t => {
         assert.equal(await subconnection.reconnect(), false, 'retries must stop for the missing folder');
     });
 
-    await t.test('a wildcard-matched sibling is not proof that the mailbox exists', async () => {
-        const mailboxOpenError = Object.assign(new Error('Command failed'), {
-            responseStatus: 'NO',
-            serverResponseCode: 'NONEXISTENT'
-        });
-        // The raw path is used as the LIST match pattern, so the '%' in the
-        // deleted folder's name makes the server return a matching sibling.
-        // Only an exact path match may count as "still exists" - otherwise
-        // the disable path is skipped and the subconnection retries forever
-        const { subconnection, listingRefreshCalls } = makeSubconnection({
-            mailboxOpenError,
-            path: 'Reports 2024%',
-            listResponse: [{ path: 'Reports 2024-archive' }]
-        });
-
-        await subconnection.reconnect();
-
-        assert.equal(subconnection.disabled, true, 'a wildcard sibling match must not keep the subconnection alive');
-        assert.equal(subconnection.state, 'disabled');
-        assert.equal(subconnection.disabledReason, 'Mailbox folder not found');
-        assert.equal(listingRefreshCalls.length, 1, 'the folder deletion must be processed');
-    });
-
-    await t.test('keeps retrying when the verification LIST itself fails', async () => {
-        const mailboxOpenError = Object.assign(new Error('Command failed'), {
-            responseStatus: 'NO',
-            serverResponseCode: 'NONEXISTENT'
-        });
-        const { subconnection } = makeSubconnection({
-            mailboxOpenError,
-            listResponse: () => {
-                throw Object.assign(new Error('Connection not available'), { code: 'NoConnection' });
-            }
-        });
+    await t.test('keeps retrying when the SELECT failed for any other reason', async () => {
+        const mailboxOpenError = Object.assign(new Error('Command failed'), { responseStatus: 'NO' });
+        const { subconnection } = makeSubconnection({ mailboxOpenError });
         subconnection.reconnectBackoff.attempts = 5;
 
         await subconnection.reconnect();
 
-        assert.ok(!subconnection.disabled, 'an unverified miss must not disable the subconnection');
+        assert.ok(!subconnection.disabled, 'a refusal that is not a missing folder must not disable the subconnection');
         assert.equal(subconnection.reconnectBackoff.attempts, 6, 'the backoff counter must keep growing');
         assert.notEqual(subconnection.state, 'disabled');
     });

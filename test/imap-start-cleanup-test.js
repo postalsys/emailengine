@@ -80,7 +80,7 @@ test('IMAPClient.start() previous client cleanup', async t => {
         await client.start();
 
         assert.equal(prev.closed, true);
-        assert.equal(prev.disabled, true);
+        assert.equal(prev.context.disabled, true);
         assert.equal(client.imapClient, null);
         assert.equal(client.connections.has(prev), false, 'replaced client must be dropped from the connections set');
         assert.equal(client.connections.size, 0);
