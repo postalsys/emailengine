@@ -4,37 +4,24 @@ const { parentPort } = require('worker_threads');
 
 const packageData = require('../package.json');
 const config = require('@zone-eu/wild-config');
-const { createHmac } = require('crypto');
 const logger = require('../lib/logger');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 
 const { GooglePubSub } = require('../lib/oauth/pubsub/google');
 
-const { readEnvValue, threadStats, getDuration, httpAgent, getServiceSecret, redactUrlCredentials, splitUrlCredentials } = require('../lib/tools');
-const { sendWebhookRequest, isUnrecoverableWebhookError } = require('../lib/webhook-request');
-const { willBeFinalAttempt, isFinalFailedAttempt } = require('../lib/delivery-error');
+const { readEnvValue, threadStats, getDuration, httpAgent, getServiceSecret } = require('../lib/tools');
+const { isFinalFailedAttempt } = require('../lib/delivery-error');
 const { validateWebhookTarget } = require('../lib/webhook-egress');
-const {
-    resolveTargetUrl,
-    isDeliverableRoute,
-    eventAllowed,
-    defaultRouteTakes,
-    headerLevels,
-    deliveryCustomHeaders,
-    isRouteMappingMissing
-} = require('../lib/webhook-routing');
+const { createWebhookProcessor } = require('../lib/webhook-delivery');
 
 const { initSentry } = require('../lib/sentry');
 initSentry('webhooks');
 
 const { redis, queueConf, logBullErrors } = require('../lib/db');
-const { Worker, UnrecoverableError, DelayedError } = require('bullmq');
-const { penaltyKey, penaltyFor } = require('../lib/webhook-penalty');
+const { Worker } = require('bullmq');
 const settings = require('../lib/settings');
 const { decryptField } = require('../lib/encrypt');
 const getSecret = require('../lib/get-secret');
-
-const { REDIS_PREFIX, ACCOUNT_DELETED_NOTIFY, DEFAULT_WEBHOOK_REQUEST_TIMEOUT } = require('../lib/consts');
 
 const { fetch: fetchCmd } = require('undici');
 
@@ -91,10 +78,6 @@ async function call(message, transferList) {
 const googlePubSub = new GooglePubSub({
     call
 });
-
-function getAccountKey(account) {
-    return `${REDIS_PREFIX}iad:${account}`;
-}
 
 // The account `webhooks` and `webhooksCustomHeaders` fields are encrypted at rest (see
 // ENCRYPTED_ACCOUNT_FIELDS in lib/account.js); a value stored before that is cleartext, which
@@ -211,417 +194,20 @@ parentPort.on('message', message => {
 
 const notifyWorker = new Worker(
     'notify',
-    async (job, token) => {
-        // do not process active jobs, use it for debugging only
-        //return new Promise((resolve, reject) => {});
-        let accountKey = getAccountKey(job.data.account);
-
-        // Keep the route id reachable for the completed/failed event handlers, which see this same
-        // job instance after _route has been deleted from the payload. Stashed before the early
-        // returns below so a job that never reaches delivery still reports which route queued it.
-        if (job.data._route && job.data._route.id) {
-            job.__routeId = job.data._route.id;
-        }
-
-        // One round trip for the existence check and the two account fields a delivery may need
-        // (used to be three, one per job). The fields are opened where they are used, below.
-        let [accountExists, storedWebhooks, storedCustomHeaders] = await redis.hmget(accountKey, 'account', 'webhooks', 'webhooksCustomHeaders');
-        if (!accountExists && job.name !== ACCOUNT_DELETED_NOTIFY) {
-            logger.debug({
-                msg: 'Account not found',
-                action: 'webhook',
-                queue: job.queue.name,
-                code: 'account_not_found',
-                job: job.id,
-                event: job.name,
-                account: job.data.account
-            });
-            return;
-        }
-
-        let webhooksEnabled = await settings.get('webhooksEnabled');
-        if (!webhooksEnabled) {
-            logger.debug({
-                msg: 'Webhooks are disabled',
-                action: 'webhook',
-                queue: job.queue.name,
-                code: 'webhooks_disabled',
-                job: job.id,
-                event: job.name,
-                account: job.data.account
-            });
-            return;
-        }
-
-        let customRoute;
-        let customMapping;
-        if (job.data._route && job.data._route.id) {
-            customRoute = await Webhooks.getMeta(job.data._route.id);
-            customMapping = job.data._route.mapping;
-            let mappingMissing = isRouteMappingMissing(job.data._route);
-            delete job.data._route;
-            if (!isDeliverableRoute(customRoute)) {
-                return;
-            }
-            if (mappingMissing) {
-                logger.warn({
-                    msg: 'Custom webhook route has no mapped payload, not sending',
-                    action: 'webhook',
-                    queue: job.queue.name,
-                    code: 'missing_mapping',
-                    job: job.id,
-                    event: job.name,
-                    account: job.data.account,
-                    route: customRoute.id
-                });
-                return;
-            }
-        }
-
-        let accountWebhooks = await openAccountField('webhooks', storedWebhooks, job.data.account);
-
-        // the global setting is only fetched when neither a custom route nor the account override decides the target
-        let target = resolveTargetUrl(customRoute && customRoute.targetUrl, accountWebhooks, null);
-        if (!target.url) {
-            target = resolveTargetUrl(null, null, await settings.get('webhooks'));
-        }
-        let webhooks = target.url;
-        if (!webhooks) {
-            // A skipped delivery still reports the job as completed, so without this line a
-            // missing target is indistinguishable from a successful delivery - it reads as the
-            // receiver being slow rather than as nothing having been sent
-            logger.debug({
-                msg: 'Webhook URL is not set',
-                action: 'webhook',
-                queue: job.queue.name,
-                code: 'no_target_url',
-                job: job.id,
-                event: job.name,
-                account: job.data.account
-            });
-            return;
-        }
-
-        // A target whose last attempt ran into the timeout is penalised for a short while, and a
-        // delivery to it waits out the penalty in the delayed set instead of costing the queue
-        // another full attempt timeout; see lib/webhook-penalty.js. The attempt count is not
-        // spent by the wait
-        const targetPenaltyKey = penaltyKey(webhooks);
-        if (targetPenaltyKey) {
-            let remaining = await redis.pttl(targetPenaltyKey);
-            if (remaining > 0) {
-                logger.debug({
-                    msg: 'Webhook target is penalised, delaying delivery',
-                    action: 'webhook',
-                    queue: job.queue.name,
-                    code: 'target_penalised',
-                    job: job.id,
-                    event: job.name,
-                    account: job.data.account,
-                    webhooks: redactUrlCredentials(webhooks),
-                    delay: remaining
-                });
-                await job.moveToDelayed(Date.now() + remaining, token);
-                throw new DelayedError();
-            }
-        }
-
-        // Only the header lists that travel to this target are loaded; lib/webhook-routing.js
-        // holds the rule and the reasons
-        let levels = headerLevels(target.source);
-
-        let accountWebhooksCustomHeaders;
-        let accountWebhooksCustomHeadersJson = levels.includes('account')
-            ? await openAccountField('webhooksCustomHeaders', storedCustomHeaders, job.data.account)
-            : null;
-        if (accountWebhooksCustomHeadersJson) {
-            try {
-                accountWebhooksCustomHeaders = JSON.parse(accountWebhooksCustomHeadersJson);
-            } catch (err) {
-                // do not log the header values, they may carry authentication secrets
-                logger.debug({
-                    msg: 'Failed to parse custom webhook headers',
-                    action: 'webhook',
-                    event: job.name,
-                    account: job.data.account,
-                    jsonLength: accountWebhooksCustomHeadersJson.length,
-                    err
-                });
-            }
-        }
-
-        if (!customRoute) {
-            // custom routes have their own mappings; the default route follows webhookEvents and
-            // inboxNewOnly, by the same rule pushToQueue() applied before queueing
-            let { webhookEvents, inboxNewOnly } = await settings.getMulti('webhookEvents', 'inboxNewOnly');
-            if (!defaultRouteTakes(job.name, job.data, { webhookEvents, inboxNewOnly })) {
-                logger.trace({
-                    msg: 'Webhook event not taken by the default route',
-                    action: 'webhook',
-                    queue: job.queue.name,
-                    code: eventAllowed(webhookEvents, job.name) ? 'inbox_new_only' : 'event_not_whitelisted',
-                    job: job.id,
-                    event: job.name,
-                    account: job.data.account,
-                    webhookEvents
-                });
-                return;
-            }
-        }
-
-        // only log some of the properties for webhooks, not full contents
-        let filteredData = {};
-        for (let key of Object.keys(job.data)) {
-            switch (key) {
-                case 'data':
-                    {
-                        let filteredSubData = {};
-                        let isPartial = false;
-                        for (let dataKey of Object.keys(job.data.data || {})) {
-                            switch (dataKey) {
-                                case 'id':
-                                case 'uid':
-                                case 'path':
-                                case 'messageId':
-                                    filteredSubData[dataKey] = job.data.data[dataKey];
-                                    break;
-                                default:
-                                    isPartial = true;
-                            }
-                        }
-                        if (isPartial) {
-                            if (Object.keys(filteredSubData).length) {
-                                filteredSubData.partial = true;
-                            } else {
-                                filteredSubData = true;
-                            }
-                        }
-                        filteredData[key] = filteredSubData;
-                    }
-                    break;
-                default:
-                    filteredData[key] = job.data[key];
-            }
-        }
-
-        // never log the raw target URL, it may embed basic auth credentials; keep the redacted
-        // form reachable for the failed event handler
-        let redactedWebhooks = redactUrlCredentials(webhooks);
-        job.__redactedTargetUrl = redactedWebhooks;
-
-        logger.trace({
-            msg: 'Processing webhook',
-            action: 'webhook',
-            queue: job.queue.name,
-            code: 'processing',
-            job: job.id,
-            webhooks: redactedWebhooks,
-            accountWebhooks: !!accountWebhooks,
-            event: job.name,
-            data: filteredData,
-            account: job.data.account,
-            route: customRoute && customRoute.id
-        });
-
-        let headers = {
-            'Content-Type': 'application/json',
-            'User-Agent': `${packageData.name}/${packageData.version} (+${packageData.homepage})`,
-            'X-EE-Wh-Id': (job.id || '').toString(),
-            'X-EE-Wh-Attempts-Made': (job.attemptsMade || 0).toString(),
-            'X-EE-Wh-Queued-Time': Math.round(Math.max(0, (Date.now() - job.timestamp) / 1000)) + 's'
-        };
-
-        let { url: parsed, authorization } = splitUrlCredentials(webhooks);
-        if (authorization) {
-            headers.Authorization = authorization;
-        }
-
-        if (customRoute) {
-            headers['X-EE-Wh-Custom-Route'] = customRoute.id;
-        }
-        Object.assign(
-            headers,
-            deliveryCustomHeaders(target.source, {
-                route: customRoute && customRoute.customHeaders,
-                global: levels.includes('global') ? await settings.get('webhooksCustomHeaders') : null,
-                account: accountWebhooksCustomHeaders
-            })
-        );
-
-        let start = Date.now();
-        let duration;
-
-        let webhookPayload = customMapping || job.data;
-        if (webhookPayload.eventId) {
-            headers['X-EE-Wh-Event-Id'] = webhookPayload.eventId;
-            webhookPayload.eventId = undefined; // not included in JSON
-        }
-        let body = Buffer.from(JSON.stringify(webhookPayload));
-
-        // Explicitly set Content-Length to prevent undici mismatch errors
-        headers['Content-Length'] = body.length.toString();
-
-        const serviceSecret = await getServiceSecret();
-        let hmac = createHmac('sha256', serviceSecret);
-        hmac.update(body);
-        headers['X-EE-Wh-Signature'] = hmac.digest('base64url');
-
-        try {
-            let status;
-            try {
-                status = await sendWebhookRequest(fetchCmd, parsed.toString(), {
-                    method: 'post',
-                    body,
-                    headers,
-                    dispatcher: httpAgent.webhook,
-                    timeout: WEBHOOK_TIMEOUT,
-                    validateTarget: validateWebhookTarget
-                });
-                duration = Date.now() - start;
-            } catch (err) {
-                duration = Date.now() - start;
-                throw err.cause || err;
-            }
-
-            logger.trace({
-                msg: 'Webhook posted',
-                action: 'webhook',
-                queue: job.queue.name,
-                code: 'result_success',
-                job: job.id,
-                webhooks: redactedWebhooks,
-                requestBodySize: body.length,
-                accountWebhooks: !!accountWebhooks,
-                event: job.name,
-                status,
-                account: job.data.account,
-                route: customRoute && customRoute.id
-            });
-
-            try {
-                if (customRoute) {
-                    await redis.hset(Webhooks.getWebhooksContentKey(), `${customRoute.id}:webhookErrorFlag`, JSON.stringify({}));
-                } else if (accountWebhooks) {
-                    await redis.hset(accountKey, 'webhookErrorFlag', JSON.stringify({}));
-                } else {
-                    await settings.clear('webhookErrorFlag');
-                }
-            } catch (err) {
-                // ignore
-            }
-
-            metrics(logger, 'webhooks', 'inc', {
-                event: job.name,
-                status: 'success'
-            });
-
-            // Stored by BullMQ as the job's return value in the same write that completes it, so
-            // a retained completed job shows what the endpoint answered and how long it took
-            return { status: 'delivered', statusCode: status, duration };
-        } catch (err) {
-            // egress and redirect failures are thrown as UnrecoverableError below, so they are final as well
-            let isFinalAttempt = willBeFinalAttempt(job) || isUnrecoverableWebhookError(err);
-
-            // A target that held the attempt until it timed out, or refused the connection, is
-            // penalised so the next deliveries to it do not each cost the same wait
-            let penalty = penaltyFor(err, WEBHOOK_TIMEOUT || DEFAULT_WEBHOOK_REQUEST_TIMEOUT);
-            if (penalty && targetPenaltyKey) {
-                try {
-                    await redis.set(targetPenaltyKey, '1', 'PX', penalty);
-                } catch (penaltyErr) {
-                    // a missed penalty costs the queue one more timeout, nothing else
-                }
-            }
-
-            // BullMQ keeps only the message of a failure on the job. The code and the HTTP status
-            // are what explain it, so they are recorded the way the submit worker records its own
-            // delivery errors, for the queue browser to read back
-            try {
-                await job.updateProgress({ status: 'error', error: { message: err.message, code: err.code, statusCode: err.statusCode }, duration });
-            } catch (progressErr) {
-                // ignore
-            }
-
-            logger[isFinalAttempt ? 'error' : 'warn']({
-                msg: 'Failed posting webhook',
-                action: 'webhook',
-                queue: job.queue.name,
-                code: 'result_fail',
-                job: job.id,
-                webhooks: redactedWebhooks,
-                requestBodySize: body.length,
-                accountWebhooks: !!accountWebhooks,
-                event: job.name,
-                account: job.data.account,
-                route: customRoute && customRoute.id,
-                err
-            });
-
-            try {
-                if (customRoute) {
-                    await redis.hset(
-                        Webhooks.getWebhooksContentKey(),
-                        `${customRoute.id}:webhookErrorFlag`,
-                        JSON.stringify({
-                            event: job.name,
-                            message: err.message,
-                            time: Date.now(),
-                            // stored without credentials: the flag is read back through the
-                            // webhook route listing, the account page and the settings API
-                            url: redactUrlCredentials(customRoute.targetUrl),
-                            code: err.code,
-                            statusCode: err.statusCode
-                        })
-                    );
-                } else if (accountWebhooks) {
-                    await redis.hset(
-                        accountKey,
-                        'webhookErrorFlag',
-                        JSON.stringify({
-                            event: job.name,
-                            message: err.message,
-                            time: Date.now(),
-                            url: redactedWebhooks,
-                            code: err.code,
-                            statusCode: err.statusCode
-                        })
-                    );
-                } else {
-                    await settings.set('webhookErrorFlag', {
-                        event: job.name,
-                        message: err.message,
-                        time: Date.now(),
-                        url: redactedWebhooks,
-                        code: err.code,
-                        statusCode: err.statusCode
-                    });
-                }
-            } catch (err) {
-                // ignore
-            }
-
-            metrics(logger, 'webhooks', 'inc', {
-                event: job.name,
-                status: 'fail'
-            });
-
-            // Spending the remaining attempts on an unrecoverable failure only delays the operator
-            // seeing the real reason in the error flag. Fail the job now and keep the message.
-            if (isUnrecoverableWebhookError(err)) {
-                // UnrecoverableError copies the message only, and the failed-event handler logs the
-                // error it is given, so carry the code over or that log loses the actual reason
-                let unrecoverableErr = new UnrecoverableError(err.message);
-                unrecoverableErr.code = err.code;
-                throw unrecoverableErr;
-            }
-
-            throw err;
-        } finally {
-            if (duration) {
-                metrics(logger, 'webhookReq', 'observe', duration);
-            }
-        }
-    },
+    // the processor lives in lib/webhook-delivery.js so it can be tested; everything it touches is passed in here
+    createWebhookProcessor({
+        redis,
+        settings,
+        webhooks: Webhooks,
+        logger,
+        metrics: (key, method, ...args) => metrics(logger, key, method, ...args),
+        openAccountField,
+        getServiceSecret,
+        fetch: fetchCmd,
+        dispatcher: httpAgent.webhook,
+        timeout: WEBHOOK_TIMEOUT,
+        validateTarget: validateWebhookTarget
+    }),
     Object.assign(
         {
             concurrency: Number(NOTIFY_QC) || 1,
