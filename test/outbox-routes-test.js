@@ -69,6 +69,26 @@ test('outbox routes', async t => {
         assert.equal(res.result.total, 2);
     });
 
+    await t.test('a page of the account listing loads the jobs of that page only', async () => {
+        const loaded = [];
+        const getJob = submitQueue.getJob;
+        submitQueue.getJob = async function (id) {
+            loaded.push(id);
+            return getJob.call(this, id);
+        };
+        try {
+            const first = await server.inject({ method: 'GET', url: `/v1/account/${ACCOUNT}/outbox?pageSize=1` });
+            const second = await server.inject({ method: 'GET', url: `/v1/account/${ACCOUNT}/outbox?pageSize=1&page=1` });
+            assert.equal(first.result.total, 2);
+            assert.equal(second.result.total, 2);
+            const ids = [first, second].map(res => res.result.messages.map(message => message.queueId)).flat();
+            assert.deepEqual(ids.slice().sort(), ['outbox-routes-a-1', 'outbox-routes-a-2'], 'the two pages hold both messages once');
+            assert.deepEqual(loaded, ids, 'one job read per page, for the message on it');
+        } finally {
+            submitQueue.getJob = getJob;
+        }
+    });
+
     await t.test('GET /v1/outbox takes the same account filter, and a state filter', async () => {
         const res = await server.inject({ method: 'GET', url: `/v1/outbox?account=${OTHER}&state=delayed` });
         assert.equal(res.statusCode, 200);
