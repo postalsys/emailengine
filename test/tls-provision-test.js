@@ -186,6 +186,26 @@ test('certificate provisioning', async t => {
         assert.equal(result.changed, false);
     });
 
+    await t.test('a first order that failed says why (certs 2.0.1 failed record)', async () => {
+        // @postalsys/certs used to answer a first order it could not place with `false`, and the
+        // page fell back to a guessed "check DNS and port 80". It now returns a failed record with
+        // the reason, which is what the operator has to see (a CAA record refusing the CA, say)
+        const failed = {
+            domain: 'mail.example.com',
+            status: 'failed',
+            renewalError: { err: 'CAA record forbids issuance', code: 'caa_mismatch', time: new Date() }
+        };
+        const certs = stubCerts({ onAcquire: () => failed });
+
+        const result = await provision.provisionHostname({ certs, logger, hostname: 'mail.example.com' });
+
+        assert.equal(result.success, false);
+        assert.equal(result.message, 'CAA record forbids issuance');
+        const status = (await provision.getProvisioningStatus())['mail.example.com'];
+        assert.equal(status.state, 'failed');
+        assert.equal(status.message, 'CAA record forbids issuance');
+    });
+
     await t.test('a failed renewal keeps the certificate and says the renewal did not happen', async () => {
         // acquireCert() answers a failed order that had a usable certificate stored by returning
         // that certificate, still `valid` so the listener keeps serving it, with `renewalError`
