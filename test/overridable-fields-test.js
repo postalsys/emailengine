@@ -7,18 +7,17 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { secondsToDays, daysToSeconds, bytesToMegabytes, megabytesToBytes } = require('../lib/ui-routes/overridable-fields');
-
-// Small deterministic PRNG (mulberry32), so a failure names a value that reproduces
-function prng(seed) {
-    return () => {
-        seed |= 0;
-        seed = (seed + 0x6d2b79f5) | 0;
-        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-}
+const {
+    secondsToDays,
+    daysToSeconds,
+    bytesToMegabytes,
+    megabytesToBytes,
+    toFormValue,
+    fromFormValue,
+    msToSeconds,
+    secondsToMs
+} = require('../lib/ui-routes/overridable-fields');
+const { createRandom: prng } = require('./helpers/property');
 
 test('blank stays blank in both directions', () => {
     for (const fn of [secondsToDays, daysToSeconds, bytesToMegabytes, megabytesToBytes]) {
@@ -57,4 +56,19 @@ test('a value stored in odd units is shown within the form precision and resubmi
         const mb = bytesToMegabytes(bytes);
         assert.ok(Math.abs(megabytesToBytes(mb) - bytes) <= 5243, `${bytes}B shown as ${mb} MB`);
     }
+});
+
+test('the webhook retry delay is shown in seconds and stored in milliseconds', () => {
+    assert.strictEqual(toFormValue('webhooksRetryDelay', 5000), 5);
+    assert.strictEqual(fromFormValue('webhooksRetryDelay', 5), 5000);
+    assert.strictEqual(fromFormValue('webhooksRetryDelay', 2.5), 2500);
+    assert.strictEqual(msToSeconds(null), null);
+    assert.strictEqual(secondsToMs(null), null);
+    // a whole number of seconds survives the round trip
+    for (let seconds = 1; seconds <= 3600; seconds += 37) {
+        assert.strictEqual(toFormValue('webhooksRetryDelay', fromFormValue('webhooksRetryDelay', seconds)), seconds);
+    }
+    // a key without a unit is passed as it is
+    assert.strictEqual(toFormValue('notifyText', true), true);
+    assert.strictEqual(fromFormValue('notifyText', 'x'), 'x');
 });

@@ -72,7 +72,7 @@ const MODULE_BUDGETS = {
     'oauth-config-routes.js': 297,
     'oauth-form-context.js': 3,
     'outlook-subscription-view.js': 15,
-    'overridable-fields.js': 16,
+    'overridable-fields.js': 18,
     'queue-routes.js': 95,
     'reference-routes.js': 49,
     'route-helpers.js': 162,
