@@ -14,6 +14,8 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 const fs = require('fs');
 const pathlib = require('path');
+const acorn = require('acorn');
+const walk = require('acorn-walk');
 
 // Lower this after every extraction batch to the new `wc -l lib/routes-ui.js`.
 //
@@ -41,84 +43,79 @@ test('routes-ui.js stays within the size budget', () => {
     );
 });
 
-// Per-module ratchet for lib/ui-routes/: each module is capped at its line count when the cap
-// was set, so a module does not become the next god file one handler at a time (account-routes
-// and admin-entities-routes are already past 2500 lines). Lower a cap when a module shrinks;
-// raise one only as a reviewed decision. A new module needs an entry, which is the prompt to
-// ask whether it should exist.
+// Per-module ratchet for lib/ui-routes/: each module is capped at its size when the cap was set,
+// so a module does not become the next god file one handler at a time. Lower a cap when a module
+// shrinks; raise one only as a reviewed decision. A new module needs an entry, which is the prompt
+// to ask whether it should exist.
+//
+// Size is counted in statements, not lines. The line caps moved with every change that made the
+// code easier to read: a comment, a JSDoc block, or splitting one long function into named steps
+// (the per-route registration functions cost each module dozens of lines of signatures and closing
+// braces). A statement count is blind to all of that and grows with what the cap is about, the
+// handler code. Route option objects and joi schemas are expressions, so a schema is not counted.
 const MODULE_BUDGETS = {
-    // 2505 -> 2507 for wiring the IDLE restart interval, whose form logic lives in imap-idle-field.js,
-    // 2507 -> 2509 for the queue card on the account page, whose counting lives in lib/queue-browser,
-    // 2509 -> 2500 when the TLS checkboxes of both connection sections (including the new Require
-    // STARTTLS one), their form fields included, moved to connection-security-form.js
-    // 2500 -> 2573: function boundaries from the MI refactor (per-route registration functions), not handler code
-    // 2573 -> 2562 when the setup redirect page moved to route-helpers.js, shared with the OAuth2 callback,
-    // 2562 -> 2518 when claiming the nonce and creating the account moved to account-setup.js
-    'account-routes.js': 2518,
-    'account-setup.js': 99,
-    'connection-security-form.js': 74,
-    // 1553 -> 1567 for the clear-error case that dismisses the Document Store removal notice,
-    // 1567 -> 1544 when the AI page's fields were derived from one list, 1532 -> 1540 for the
-    // model reload refusing to send the stored API key to a URL other than the stored one, 1540 -> 1532
-    // when that rule moved to aiRequestOptions() in server.js, which the test prompt goes through too
-    // 1532 -> 1580: function boundaries from the MI refactor (per-route registration functions), not handler code
-    'admin-config-routes.js': 1580,
-    // 2548 -> 2533 when the gateway forms took the STARTTLS field from connection-security-form.js
-    // 2533 -> 2602: function boundaries from the MI refactor (per-route registration functions), not handler code
-    'admin-entities-routes.js': 2602,
-    'ai-options.js': 113,
-    'special-use-paths.js': 33,
-    'imap-idle-field.js': 42,
-    // 1649 -> 1650 for the require of the shared formBoolean() schema helper, 1658 -> 1661 for
-    // verifying the password hash before the username is compared, so the login's response time
-    // does not say which of the two was wrong, 1661 -> 1689 for the password check before TOTP is
-    // switched on and the per-account budget on passkey registration, with the sign-in budget and
-    // the hash upgrade moved to sign-in-helpers.js, 1689 -> 1684 when the password re-check started
-    // naming its own refusal
-    // 1684 -> 1736: function boundaries from the MI refactor (per-route registration functions), not handler code
-    'auth-routes.js': 1736,
-    'sign-in-helpers.js': 59,
-    'dashboard-routes.js': 175,
-    'export-routes.js': 207,
-    'gmail-service-auth.js': 64,
-    // 458 -> 462 for the Workers page's event loop column
-    'internals-routes.js': 462,
-    // 381 -> 385 for refreshing a client registration on approval rather than on every render
-    'mcp-consent-routes.js': 385,
-    'network-config-routes.js': 437,
-    // 998 -> 987 when the send-only app detection moved to lib/oauth/scope-checker.js, which is where
-    // the scope check it delegates to already lives, 987 -> 977 when the base scope render context
-    // moved to oauth-form-context.js, 977 -> 978 for a new app's form starting out enabled
-    // 978 -> 1011: function boundaries from the MI refactor (per-route registration functions), not handler code
-    'oauth-config-routes.js': 1011,
-    'queue-routes.js': 371,
-    'oauth-form-context.js': 19,
-    'reference-routes.js': 198,
-    // 658 -> 661 when windowedPageLinks grew a shared pageLink() builder, 661 -> 662 for the
-    // comment on getExampleDocumentsPayloads(), which outlived the Document Store, 662 -> 623
-    // when the AI page's model list and reasoning effort choices moved to ai-options.js, 623 -> 611
-    // when the Graph subscription view model moved to outlook-subscription-view.js, 611 -> 627 for the
-    // setup redirect page both setup arms render, which workers/api.js used to carry a copy of
-    'route-helpers.js': 627,
-    'outlook-subscription-view.js': 36,
-    'settings-page.js': 117,
-    'form-lists.js': 50,
-    'smtp-test-routes.js': 243,
-    'suppression-list-routes.js': 310,
-    // 628 -> 671: function boundaries from the MI refactor (per-route registration functions), not handler code
-    'tls-config-routes.js': 671,
-    // 261 -> 264 for naming the signing key the unsubscribe links are verified against
-    'unsubscribe-routes.js': 264
+    'account-routes.js': 630,
+    'account-setup.js': 32,
+    'admin-config-routes.js': 396,
+    'admin-entities-routes.js': 574,
+    'ai-options.js': 22,
+    'auth-routes.js': 520,
+    'connection-security-form.js': 11,
+    'dashboard-routes.js': 37,
+    'export-routes.js': 49,
+    'form-lists.js': 8,
+    'gmail-service-auth.js': 12,
+    'imap-idle-field.js': 11,
+    'internals-routes.js': 146,
+    'mcp-consent-routes.js': 87,
+    'network-config-routes.js': 121,
+    'oauth-config-routes.js': 297,
+    'oauth-form-context.js': 3,
+    'outlook-subscription-view.js': 15,
+    'queue-routes.js': 95,
+    'reference-routes.js': 49,
+    'route-helpers.js': 162,
+    'settings-page.js': 36,
+    'sign-in-helpers.js': 16,
+    'smtp-test-routes.js': 77,
+    'special-use-paths.js': 5,
+    'suppression-list-routes.js': 83,
+    'tls-config-routes.js': 187,
+    'unsubscribe-routes.js': 64
 };
+
+// Statements that carry no code of their own: a block is only braces, and a function or class
+// declaration is the boundary of code whose statements are counted inside it
+const UNCOUNTED = new Set(['BlockStatement', 'EmptyStatement', 'FunctionDeclaration', 'ClassDeclaration']);
+
+function countStatements(source) {
+    const ast = acorn.parse(source, { ecmaVersion: 'latest', sourceType: 'script', allowHashBang: true });
+    let count = 0;
+    walk.full(ast, node => {
+        if ((node.type.endsWith('Statement') || node.type.endsWith('Declaration')) && !UNCOUNTED.has(node.type)) {
+            count++;
+        }
+    });
+    return count;
+}
+
+test('statement counting ignores comments and function boundaries', () => {
+    const inline = 'function a(x) { if (x) { return 1; } let y = x + 1; return y; }';
+    const split =
+        '// a comment\n/** JSDoc */\nfunction b(x) { return x + 1; }\nfunction a(x) {\n    if (x) {\n        return 1;\n    }\n    let y = b(x);\n    return y;\n}\n';
+    assert.strictEqual(countStatements(inline), 4);
+    // the extracted helper costs its one return statement, nothing for its lines
+    assert.strictEqual(countStatements(split), 5);
+});
 
 test('every lib/ui-routes module stays within its size budget', () => {
     const dir = pathlib.join(__dirname, '..', 'lib', 'ui-routes');
     for (const file of fs.readdirSync(dir).filter(name => name.endsWith('.js'))) {
         assert.ok(file in MODULE_BUDGETS, `lib/ui-routes/${file} has no entry in MODULE_BUDGETS`);
-        const lineCount = (fs.readFileSync(pathlib.join(dir, file), 'utf-8').match(/\n/g) || []).length;
+        const statements = countStatements(fs.readFileSync(pathlib.join(dir, file), 'utf-8'));
         assert.ok(
-            lineCount <= MODULE_BUDGETS[file],
-            `lib/ui-routes/${file} has ${lineCount} lines, exceeding its budget of ${MODULE_BUDGETS[file]}. ` +
+            statements <= MODULE_BUDGETS[file],
+            `lib/ui-routes/${file} has ${statements} statements, exceeding its budget of ${MODULE_BUDGETS[file]}. ` +
                 `Move code into a focused module or a shared helper instead of growing this one.`
         );
     }
