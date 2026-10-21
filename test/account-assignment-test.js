@@ -236,3 +236,17 @@ test('mapConcurrent() rejects with the first failure once the calls in flight ha
     assert.strictEqual(settled, 2, 'the call already in flight finished, nothing new was started');
     assert.deepStrictEqual(await mapConcurrent([], 4, async () => 1), []);
 });
+
+test('assignRetryDelay', async t => {
+    const { assignRetryDelay, QUICK_ASSIGN_RETRIES, SLOW_ASSIGN_RETRY_DELAY } = require('../lib/account-assignment');
+
+    await t.test('quick retries step up first', () => {
+        assert.deepStrictEqual([1, 2, 3].map(assignRetryDelay), [5000, 10000, 15000]);
+    });
+
+    await t.test('never gives up: a slow retry follows for as long as accounts stay unassigned', () => {
+        for (let retry = QUICK_ASSIGN_RETRIES + 1; retry < QUICK_ASSIGN_RETRIES + 50; retry++) {
+            assert.strictEqual(assignRetryDelay(retry), SLOW_ASSIGN_RETRY_DELAY);
+        }
+    });
+});

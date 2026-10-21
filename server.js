@@ -146,6 +146,8 @@ const { rejectWorkerCalls } = require('./lib/reject-worker-calls');
 const {
     pickLeastLoadedWorker,
     rollbackAssignment,
+    assignRetryDelay,
+    QUICK_ASSIGN_RETRIES,
     releaseWorkerAccounts,
     requeueFailedAccounts,
     forgetAccount,
@@ -817,7 +819,7 @@ let reassignmentTimer = null; // Timer for failsafe reassignment
 let reassignmentPending = false; // Flag to track if reassignment is pending
 const REASSIGNMENT_FAILSAFE_DELAY = 10 * 1000; // How long an exited IMAP worker gets to restart before its accounts move
 let assignRetryCount = 0; // Counter for safety-net retries in assignAccounts
-const MAX_ASSIGN_RETRIES = 3; // Max consecutive safety-net retries before giving up
+let assignRetryTimer = null; // The pending safety-net retry, so passes do not stack them
 
 // Worker management
 let imapInitialWorkersLoaded = false; // Have all initial IMAP workers started?
@@ -2069,28 +2071,25 @@ async function assignAccounts() {
 
         assigning = false;
 
-        // Safety net: if accounts remain unassigned, schedule a retry with backoff
+        // Safety net: if accounts remain unassigned, schedule a retry with backoff, and keep
+        // retrying slowly after the quick ones, see assignRetryDelay()
         if (unassigned && unassigned.size > 0 && availableIMAPWorkers.size > 0 && !isClosing) {
             assignRetryCount++;
-            if (assignRetryCount <= MAX_ASSIGN_RETRIES) {
-                let delay = 5000 * assignRetryCount;
-                logger.warn({
-                    msg: 'Accounts remain unassigned after assignment pass, scheduling retry',
-                    remaining: unassigned.size,
-                    retry: assignRetryCount,
-                    maxRetries: MAX_ASSIGN_RETRIES,
-                    delayMs: delay
-                });
-                setTimeout(() => {
-                    assignAccounts().catch(err => logger.error({ msg: 'Retry assignment failed', err }));
-                }, delay);
-            } else {
-                logger.error({
-                    msg: 'Max assignment retries reached, accounts remain unassigned',
-                    remaining: unassigned.size
-                });
-                assignRetryCount = 0;
-            }
+            let delay = assignRetryDelay(assignRetryCount);
+            logger[assignRetryCount <= QUICK_ASSIGN_RETRIES ? 'warn' : 'error']({
+                msg: 'Accounts remain unassigned after assignment pass, scheduling retry',
+                remaining: unassigned.size,
+                retry: assignRetryCount,
+                delayMs: delay
+            });
+            clearTimeout(assignRetryTimer);
+            assignRetryTimer = setTimeout(() => {
+                assignRetryTimer = null;
+                if (isClosing) {
+                    return;
+                }
+                assignAccounts().catch(err => logger.error({ msg: 'Retry assignment failed', err }));
+            }, delay);
         } else {
             assignRetryCount = 0;
         }
