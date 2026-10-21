@@ -78,3 +78,40 @@ test('imap.maxIdleTime schema', async t => {
         assert.ok(create.validate(Object.assign({}, base, { maxIdleTime: null })).error);
     });
 });
+
+test('commandSocketTimeout', async t => {
+    const { commandSocketTimeout, COMMAND_SOCKET_TIMEOUT } = require('../lib/email-client/imap/idle-settings');
+    const { forAll, gen } = require('./helpers/property');
+
+    await t.test('keeps the one minute default when no IDLE interval is set', () => {
+        for (const value of [undefined, null, 0, false]) {
+            assert.strictEqual(commandSocketTimeout(value), COMMAND_SOCKET_TIMEOUT);
+        }
+    });
+
+    await t.test('a 20 second interval (TransIP) closes the command connection by then', () => {
+        assert.strictEqual(commandSocketTimeout(20 * 1000), 20 * 1000);
+    });
+
+    await t.test('property: never longer than the interval or the default, never zero', () => {
+        forAll(
+            gen.withEdges(gen.integer(IMAP_MAX_IDLE_TIME_MIN, IMAP_MAX_IDLE_TIME_MAX), [
+                IMAP_MAX_IDLE_TIME_MIN,
+                IMAP_MAX_IDLE_TIME_MAX,
+                COMMAND_SOCKET_TIMEOUT
+            ]),
+            maxIdleTime => {
+                const timeout = commandSocketTimeout(maxIdleTime);
+                assert.ok(timeout > 0);
+                assert.ok(timeout <= maxIdleTime);
+                assert.ok(timeout <= COMMAND_SOCKET_TIMEOUT);
+                assert.strictEqual(timeout, Math.min(maxIdleTime, COMMAND_SOCKET_TIMEOUT));
+            }
+        );
+    });
+
+    await t.test('the command connection is built with it', () => {
+        const source = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'lib', 'email-client', 'imap-client.js'), 'utf-8');
+        assert.match(source, /socketTimeout: commandSocketTimeout\(imapConfig\.maxIdleTime\)/);
+    });
+});
