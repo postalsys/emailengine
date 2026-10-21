@@ -143,9 +143,13 @@ test('releaseRemoteResources()', async t => {
         const client = Object.assign(Object.create(GmailClient.prototype), {
             account: 'a',
             logger: createMockLogger(),
-            redis: { hget: async (key, field) => (field === 'watchResponse' ? storedWatch : null) },
-            getAccountKey: () => 'iad:a',
             accountObject: {
+                // the real method and decoding, over a fake stored value
+                getStoredField: Account.prototype.getStoredField,
+                unserializeAccountData: Account.prototype.unserializeAccountData,
+                logUnserializeFailure() {},
+                getAccountKey: () => 'iad:a',
+                redis: { hget: async (key, field) => (field === 'watchResponse' ? storedWatch : null) },
                 loadAccountData: async () => {
                     loads.push(1);
                     return accountData;
@@ -181,4 +185,21 @@ test('releaseRemoteResources()', async t => {
             assert.strictEqual(requests.length, 0);
         }
     });
+});
+
+test('Account.getStoredField() decodes one field the way the full load does', async () => {
+    const account = await storeAccount();
+    const accountObject = new Account({ account, redis, logger: createMockLogger() });
+    const key = `${REDIS_PREFIX}iad:${account}`;
+
+    assert.strictEqual(await accountObject.getStoredField('watchResponse'), undefined, 'not stored');
+
+    await accountObject.update({ watchResponse: { historyId: '42', expiration: '1' } });
+    assert.deepStrictEqual(await accountObject.getStoredField('watchResponse'), { historyId: '42', expiration: '1' });
+    assert.deepStrictEqual(await accountObject.getStoredField('watchResponse'), (await accountObject.loadAccountData(account)).watchResponse);
+
+    // what clearing the watch leaves behind
+    await accountObject.update({ watchResponse: null });
+    assert.notStrictEqual(await redis.hget(key, 'watchResponse'), null, 'the field is still there');
+    assert.strictEqual(await accountObject.getStoredField('watchResponse'), undefined);
 });
