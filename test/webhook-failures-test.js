@@ -115,6 +115,36 @@ test('failed webhook deliveries', async t => {
         );
     });
 
+    await t.test('an account filter loads the full jobs of the page shown only', async () => {
+        // The scan reads the data field of every job it looks at; the jobs of other accounts are
+        // never loaded whole, with their progress and stack traces
+        const loaded = [];
+        const getJob = notifyQueue.getJob;
+        notifyQueue.getJob = async function (id) {
+            loaded.push(id);
+            return getJob.call(this, id);
+        };
+        try {
+            const res = await server.inject({ method: 'GET', url: `/v1/account/${OTHER}/webhooks/failed` });
+            assert.deepEqual(
+                res.result.deliveries.map(entry => entry.id),
+                ['wf-b-1']
+            );
+            assert.deepEqual(loaded, ['wf-b-1']);
+
+            loaded.length = 0;
+            const paged = await server.inject({ method: 'GET', url: `/v1/account/${ACCOUNT}/webhooks/failed?pageSize=1&page=1` });
+            assert.equal(paged.result.total, 2);
+            assert.deepEqual(
+                paged.result.deliveries.map(entry => entry.id),
+                ['wf-a-1']
+            );
+            assert.deepEqual(loaded, ['wf-a-1'], 'only the page slice is loaded');
+        } finally {
+            notifyQueue.getJob = getJob;
+        }
+    });
+
     await t.test("another account's delivery is not found on the account routes, and stays failed", async () => {
         for (const [method, url] of [
             ['POST', `/v1/account/${OTHER}/webhooks/failed/wf-a-1/retry`],
