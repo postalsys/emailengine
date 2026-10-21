@@ -7084,8 +7084,11 @@
                     "description": "Sanitize HTML content to remove potentially dangerous elements before including in webhooks, and fold quoted thread history into a collapsed block"
                 },
                 "disableThreadCollapse": {
-                    "type": "boolean",
-                    "description": "Stop web-safe HTML (in webhooks and in message responses that ask for it) from folding quoted thread history into a collapsed block. EENGINE_DISABLE_THREAD_COLLAPSE overrides this setting when set"
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "description": "Stop web-safe HTML (in webhooks and in message responses that ask for it) from folding quoted thread history into a collapsed block. EENGINE_DISABLE_THREAD_COLLAPSE overrides this setting when set; null clears it"
                 },
                 "notifyTextSize": {
                     "type": "integer",
@@ -7161,32 +7164,44 @@
                     "minimum": 0
                 },
                 "queueKeepFailed": {
-                    "type": "integer",
-                    "description": "Failed queue entries retained per queue, at least (default 500); a higher queueKeep raises it. EENGINE_QUEUE_KEEP_FAILED overrides this setting when set",
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "description": "Failed queue entries retained per queue, at least (default 500); a higher queueKeep raises it. EENGINE_QUEUE_KEEP_FAILED overrides this setting when set; null clears it",
                     "examples": [
                         500
                     ],
                     "minimum": 1
                 },
                 "queueKeepFailedAge": {
-                    "type": "integer",
-                    "description": "How long failed queue entries are retained, in seconds (default 604800, 7 days). EENGINE_QUEUE_KEEP_FAILED_AGE overrides this setting when set",
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "description": "How long failed queue entries are retained, in seconds (default 604800, 7 days). EENGINE_QUEUE_KEEP_FAILED_AGE overrides this setting when set; null clears it",
                     "examples": [
                         604800
                     ],
                     "minimum": 1
                 },
                 "queueKeepFailedContent": {
-                    "type": "integer",
-                    "description": "How many of the most recent failed messages keep their content so they can be retried (default 100, 0 keeps none). EENGINE_QUEUE_KEEP_FAILED_CONTENT overrides this setting when set",
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "description": "How many of the most recent failed messages keep their content so they can be retried (default 100, 0 keeps none). EENGINE_QUEUE_KEEP_FAILED_CONTENT overrides this setting when set; null clears it",
                     "examples": [
                         100
                     ],
                     "minimum": 0
                 },
                 "queueKeepFailedContentSize": {
-                    "type": "integer",
-                    "description": "Total size of the retained failed-message content, in bytes (default 104857600, 100MB, 0 keeps none). EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE overrides this setting when set",
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "description": "Total size of the retained failed-message content, in bytes (default 104857600, 100MB, 0 keeps none). EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE overrides this setting when set; null clears it",
                     "examples": [
                         104857600
                     ],

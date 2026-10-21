@@ -10571,7 +10571,7 @@
           },
           "tokenLogEntries": {
             "type": "integer",
-            "description": "Requests retained per access token in the audit log (default 1000). A full log of typical entries is roughly 170KB of Redis per token. EENGINE_TOKEN_LOG_ENTRIES overrides this setting when set",
+            "description": "Requests retained per access token in the audit log (default 1000). A full log of typical entries is roughly 170KB of Redis per token. EENGINE_TOKEN_LOG_ENTRIES overrides this setting when set; null clears it",
             "example": 1000,
             "nullable": true,
             "minimum": 1,
@@ -10579,7 +10579,7 @@
           },
           "tokenLogAge": {
             "type": "integer",
-            "description": "How long a token's audit log survives its last use, in seconds (default 604800, 7 days). EENGINE_TOKEN_LOG_AGE overrides this setting when set",
+            "description": "How long a token's audit log survives its last use, in seconds (default 604800, 7 days). EENGINE_TOKEN_LOG_AGE overrides this setting when set; null clears it",
             "example": 604800,
             "nullable": true,
             "minimum": 1
@@ -10653,7 +10653,7 @@
           },
           "disableThreadCollapse": {
             "type": "boolean",
-            "description": "Stop web-safe HTML (in webhooks and in message responses that ask for it) from folding quoted thread history into a collapsed block. EENGINE_DISABLE_THREAD_COLLAPSE overrides this setting when set",
+            "description": "Stop web-safe HTML (in webhooks and in message responses that ask for it) from folding quoted thread history into a collapsed block. EENGINE_DISABLE_THREAD_COLLAPSE overrides this setting when set; null clears it",
             "nullable": true
           },
           "notifyTextSize": {
@@ -10857,28 +10857,28 @@
           },
           "queueKeepFailed": {
             "type": "integer",
-            "description": "Failed queue entries retained per queue, at least (default 500); a higher queueKeep raises it. EENGINE_QUEUE_KEEP_FAILED overrides this setting when set",
+            "description": "Failed queue entries retained per queue, at least (default 500); a higher queueKeep raises it. EENGINE_QUEUE_KEEP_FAILED overrides this setting when set; null clears it",
             "example": 500,
             "nullable": true,
             "minimum": 1
           },
           "queueKeepFailedAge": {
             "type": "integer",
-            "description": "How long failed queue entries are retained, in seconds (default 604800, 7 days). EENGINE_QUEUE_KEEP_FAILED_AGE overrides this setting when set",
+            "description": "How long failed queue entries are retained, in seconds (default 604800, 7 days). EENGINE_QUEUE_KEEP_FAILED_AGE overrides this setting when set; null clears it",
             "example": 604800,
             "nullable": true,
             "minimum": 1
           },
           "queueKeepFailedContent": {
             "type": "integer",
-            "description": "How many of the most recent failed messages keep their content so they can be retried (default 100, 0 keeps none). EENGINE_QUEUE_KEEP_FAILED_CONTENT overrides this setting when set",
+            "description": "How many of the most recent failed messages keep their content so they can be retried (default 100, 0 keeps none). EENGINE_QUEUE_KEEP_FAILED_CONTENT overrides this setting when set; null clears it",
             "example": 100,
             "nullable": true,
             "minimum": 0
           },
           "queueKeepFailedContentSize": {
             "type": "integer",
-            "description": "Total size of the retained failed-message content, in bytes (default 104857600, 100MB, 0 keeps none). EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE overrides this setting when set",
+            "description": "Total size of the retained failed-message content, in bytes (default 104857600, 100MB, 0 keeps none). EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE overrides this setting when set; null clears it",
             "example": 104857600,
             "nullable": true,
             "minimum": 0
@@ -11418,15 +11418,17 @@
           },
           "tokenLogEntries": {
             "type": "integer",
-            "description": "Requests retained per access token in the audit log (default 1000). A full log of typical entries is roughly 170KB of Redis per token. EENGINE_TOKEN_LOG_ENTRIES overrides this setting when set",
+            "description": "Requests retained per access token in the audit log (default 1000). A full log of typical entries is roughly 170KB of Redis per token. EENGINE_TOKEN_LOG_ENTRIES overrides this setting when set; null clears it",
             "example": 1000,
+            "nullable": true,
             "minimum": 1,
             "maximum": 1000000
           },
           "tokenLogAge": {
             "type": "integer",
-            "description": "How long a token's audit log survives its last use, in seconds (default 604800, 7 days). EENGINE_TOKEN_LOG_AGE overrides this setting when set",
+            "description": "How long a token's audit log survives its last use, in seconds (default 604800, 7 days). EENGINE_TOKEN_LOG_AGE overrides this setting when set; null clears it",
             "example": 604800,
+            "nullable": true,
             "minimum": 1
           },
           "proxyEnabled": {
@@ -11492,7 +11494,8 @@
           },
           "disableThreadCollapse": {
             "type": "boolean",
-            "description": "Stop web-safe HTML (in webhooks and in message responses that ask for it) from folding quoted thread history into a collapsed block. EENGINE_DISABLE_THREAD_COLLAPSE overrides this setting when set"
+            "description": "Stop web-safe HTML (in webhooks and in message responses that ask for it) from folding quoted thread history into a collapsed block. EENGINE_DISABLE_THREAD_COLLAPSE overrides this setting when set; null clears it",
+            "nullable": true
           },
           "notifyTextSize": {
             "type": "integer",
@@ -11678,26 +11681,30 @@
           },
           "queueKeepFailed": {
             "type": "integer",
-            "description": "Failed queue entries retained per queue, at least (default 500); a higher queueKeep raises it. EENGINE_QUEUE_KEEP_FAILED overrides this setting when set",
+            "description": "Failed queue entries retained per queue, at least (default 500); a higher queueKeep raises it. EENGINE_QUEUE_KEEP_FAILED overrides this setting when set; null clears it",
             "example": 500,
+            "nullable": true,
             "minimum": 1
           },
           "queueKeepFailedAge": {
             "type": "integer",
-            "description": "How long failed queue entries are retained, in seconds (default 604800, 7 days). EENGINE_QUEUE_KEEP_FAILED_AGE overrides this setting when set",
+            "description": "How long failed queue entries are retained, in seconds (default 604800, 7 days). EENGINE_QUEUE_KEEP_FAILED_AGE overrides this setting when set; null clears it",
             "example": 604800,
+            "nullable": true,
             "minimum": 1
           },
           "queueKeepFailedContent": {
             "type": "integer",
-            "description": "How many of the most recent failed messages keep their content so they can be retried (default 100, 0 keeps none). EENGINE_QUEUE_KEEP_FAILED_CONTENT overrides this setting when set",
+            "description": "How many of the most recent failed messages keep their content so they can be retried (default 100, 0 keeps none). EENGINE_QUEUE_KEEP_FAILED_CONTENT overrides this setting when set; null clears it",
             "example": 100,
+            "nullable": true,
             "minimum": 0
           },
           "queueKeepFailedContentSize": {
             "type": "integer",
-            "description": "Total size of the retained failed-message content, in bytes (default 104857600, 100MB, 0 keeps none). EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE overrides this setting when set",
+            "description": "Total size of the retained failed-message content, in bytes (default 104857600, 100MB, 0 keeps none). EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE overrides this setting when set; null clears it",
             "example": 104857600,
+            "nullable": true,
             "minimum": 0
           },
           "deliveryAttempts": {

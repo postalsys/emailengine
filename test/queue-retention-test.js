@@ -6,11 +6,19 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { buildRetentionPolicy, COMPLETED_JOB_RETENTION_AGE, FAILED_JOB_RETENTION_AGE, FAILED_JOB_RETENTION_COUNT } = require('../lib/queue-retention');
+const {
+    buildRetentionPolicy,
+    COMPLETED_JOB_RETENTION_AGE,
+    FAILED_JOB_RETENTION_AGE_DEFAULT: FAILED_JOB_RETENTION_AGE,
+    FAILED_JOB_RETENTION_COUNT_DEFAULT: FAILED_JOB_RETENTION_COUNT
+} = require('../lib/queue-retention');
+
+// The bounds getFailedJobRetention() resolves when neither the environment nor a setting is set
+const DEFAULT_RETENTION = { age: FAILED_JOB_RETENTION_AGE, count: FAILED_JOB_RETENTION_COUNT };
 
 test('buildRetentionPolicy', async t => {
     await t.test('maps a numeric queueKeep to an age+count completed policy', () => {
-        const { removeOnComplete } = buildRetentionPolicy(250);
+        const { removeOnComplete } = buildRetentionPolicy(250, DEFAULT_RETENTION);
         assert.deepStrictEqual(removeOnComplete, { age: COMPLETED_JOB_RETENTION_AGE, count: 250 });
     });
 
@@ -18,7 +26,7 @@ test('buildRetentionPolicy', async t => {
         // This is the regression the module exists for: queueKeep defaults to 0, and applying that
         // to removeOnFail deleted every exhausted job the moment it failed, so a webhook endpoint
         // that was down long enough to burn all 10 attempts left no record of the lost events.
-        const { removeOnComplete, removeOnFail } = buildRetentionPolicy(0);
+        const { removeOnComplete, removeOnFail } = buildRetentionPolicy(0, DEFAULT_RETENTION);
 
         assert.deepStrictEqual(removeOnComplete, { age: COMPLETED_JOB_RETENTION_AGE, count: 0 });
         assert.deepStrictEqual(removeOnFail, { age: FAILED_JOB_RETENTION_AGE, count: FAILED_JOB_RETENTION_COUNT });
@@ -27,18 +35,18 @@ test('buildRetentionPolicy', async t => {
 
     await t.test('widens the failed floor when the operator wants to keep more', () => {
         const large = FAILED_JOB_RETENTION_COUNT * 4;
-        const { removeOnFail } = buildRetentionPolicy(large);
+        const { removeOnFail } = buildRetentionPolicy(large, DEFAULT_RETENTION);
         assert.strictEqual(removeOnFail.count, large);
     });
 
     await t.test('keeps the floor when the operator wants to keep fewer', () => {
-        const { removeOnFail } = buildRetentionPolicy(1);
+        const { removeOnFail } = buildRetentionPolicy(1, DEFAULT_RETENTION);
         assert.strictEqual(removeOnFail.count, FAILED_JOB_RETENTION_COUNT);
     });
 
     await t.test('removes completed entries but retains failures for a true queueKeep', () => {
         // true is the `?? true` fallback used before the setting is materialized in Redis
-        const { removeOnComplete, removeOnFail } = buildRetentionPolicy(true);
+        const { removeOnComplete, removeOnFail } = buildRetentionPolicy(true, DEFAULT_RETENTION);
         assert.strictEqual(removeOnComplete, true);
         assert.deepStrictEqual(removeOnFail, { age: FAILED_JOB_RETENTION_AGE, count: FAILED_JOB_RETENTION_COUNT });
     });
@@ -51,7 +59,7 @@ test('buildRetentionPolicy', async t => {
     });
 
     await t.test('returns only the two retention keys so it can be spread into job options', () => {
-        assert.deepStrictEqual(Object.keys(buildRetentionPolicy(0)).sort(), ['removeOnComplete', 'removeOnFail']);
+        assert.deepStrictEqual(Object.keys(buildRetentionPolicy(0, DEFAULT_RETENTION)).sort(), ['removeOnComplete', 'removeOnFail']);
     });
 });
 
@@ -112,24 +120,21 @@ test('queueCleanAges', async t => {
     const { queueCleanAges } = require('../lib/queue-retention');
 
     await t.test('uses the retention ages, converted to the milliseconds clean() takes', () => {
-        assert.deepStrictEqual(queueCleanAges(), {
+        assert.deepStrictEqual(queueCleanAges(DEFAULT_RETENTION), {
             completed: COMPLETED_JOB_RETENTION_AGE * 1000,
             failed: FAILED_JOB_RETENTION_AGE * 1000
         });
     });
 
-    await t.test('follows the failed-job retention setting when it is given', () => {
+    await t.test('follows the failed-job retention in effect (regression: the clean was fixed at 7 days)', () => {
         assert.strictEqual(queueCleanAges({ age: 30 * 24 * 3600, count: 500 }).failed, 30 * 24 * 3600 * 1000);
-        assert.strictEqual(queueCleanAges({ age: null }).failed, FAILED_JOB_RETENTION_AGE * 1000);
     });
 
-    await t.test('follows EENGINE_QUEUE_KEEP_FAILED_AGE (regression: the clean was fixed at 7 days)', () => {
-        const { execFileSync } = require('node:child_process');
-        const out = execFileSync(process.execPath, ['-e', "console.log(JSON.stringify(require('./lib/queue-retention').queueCleanAges()))"], {
-            cwd: require('node:path').join(__dirname, '..'),
-            env: Object.assign({}, process.env, { EENGINE_QUEUE_KEEP_FAILED_AGE: String(30 * 24 * 3600) })
-        });
-        assert.strictEqual(JSON.parse(out).failed, 30 * 24 * 3600 * 1000);
+    await t.test('refuses to guess when the bounds are missing, which would ignore the setting', () => {
+        for (const value of [undefined, null, {}, { age: null, count: 500 }, { age: 60, count: 0 }]) {
+            assert.throws(() => queueCleanAges(value), TypeError);
+            assert.throws(() => buildRetentionPolicy(0, value), TypeError);
+        }
     });
 
     await t.test('server.js cleans with these ages, not literals of its own', () => {
