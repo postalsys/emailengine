@@ -30,3 +30,13 @@ test('apiCallDuration()', async t => {
         assert.equal(apiCallDuration({ received: 1000, completed: 1000 }), 0);
     });
 });
+
+test('the latency rides on the API call message instead of a message of its own', () => {
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const api = fs.readFileSync(path.join(__dirname, '..', 'workers', 'api.js'), 'utf-8');
+    const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf-8');
+    assert.match(api, /key: 'apiCall',[\s\S]{0,300}duration: apiCallDuration\(request\.info\)/);
+    assert.doesNotMatch(api, /metrics\(logger, 'apiCallDuration'/);
+    assert.match(server, /metrics\.apiCallDuration\.observe\(\{ method, route \}, message\.duration\)/);
+});

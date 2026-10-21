@@ -1614,14 +1614,18 @@ function registerRequestEvents(server) {
             // only log API calls
             return;
         }
-        metrics(logger, 'apiCall', 'inc', {
-            method: request.method,
-            route: request.route.path,
-            statusCode: request.response && request.response.statusCode
-        });
-        const duration = apiCallDuration(request.info);
-        if (duration !== null) {
-            metrics(logger, 'apiCallDuration', 'observe', { method: request.method, route: request.route.path }, duration);
+        // One message per request: the latency rides on the call counter's message and the main
+        // thread observes it there, rather than costing a second postMessage on every request
+        try {
+            parentPort.postMessage({
+                cmd: 'metrics',
+                key: 'apiCall',
+                method: 'inc',
+                args: [{ method: request.method, route: request.route.path, statusCode: request.response && request.response.statusCode }],
+                duration: apiCallDuration(request.info)
+            });
+        } catch (err) {
+            logger.error({ msg: 'Failed to post metrics to parent', err });
         }
     });
 }

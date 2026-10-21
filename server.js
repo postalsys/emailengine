@@ -1563,9 +1563,16 @@ let spawnWorker = async (type, opts, slot) => {
                         }
 
                         case 'apiCall': {
-                            let { statusCode } = message.args[0] || {};
+                            let { statusCode, method, route } = message.args[0] || {};
                             let success = statusCode >= 200 && statusCode < 300;
                             statUpdateKey = `${message.key}:${success ? 'success' : 'fail'}`;
+                            if (typeof message.duration === 'number' && Number.isFinite(message.duration)) {
+                                try {
+                                    metrics.apiCallDuration.observe({ method, route }, message.duration);
+                                } catch (err) {
+                                    logger.error({ msg: 'Unable to apply worker metric', type, key: 'apiCallDuration', err });
+                                }
+                            }
                             break;
                         }
 
