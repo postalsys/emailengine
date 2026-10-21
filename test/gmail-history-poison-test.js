@@ -29,10 +29,12 @@ const historyEntry = id => ({
 
 const usedAccounts = [];
 
-// Build a GmailClient against the test Redis with history collaborators stubbed
-function makeClient(account, historyPage) {
+// Build a GmailClient against the test Redis with history collaborators stubbed. The account hash
+// is created first: the client only writes its history markers into an account that exists
+async function makeClient(account, historyPage) {
     const client = new GmailClient(account, { redis });
     usedAccounts.push(client);
+    await redis.hset(client.getAccountKey(), 'account', account);
     const logs = { error: [], warn: [], info: [] };
     client.logger = {
         error: entry => logs.error.push(entry),
@@ -61,7 +63,7 @@ test('Gmail poison history entry protection', async t => {
     });
 
     await t.test('marks the entry in flight while it is processed and clears the marker after the run', async () => {
-        const { client, processed, markersDuringProcessing } = makeClient('poison-test-clean', {
+        const { client, processed, markersDuringProcessing } = await makeClient('poison-test-clean', {
             history: [historyEntry(1001)],
             historyId: '1001'
         });
@@ -78,7 +80,7 @@ test('Gmail poison history entry protection', async t => {
     });
 
     await t.test('a marker left by a died worker increments the attempt count on the retry', async () => {
-        const { client, processed, markersDuringProcessing } = makeClient('poison-test-retry', {
+        const { client, processed, markersDuringProcessing } = await makeClient('poison-test-retry', {
             history: [historyEntry(1001)],
             historyId: '1001'
         });
@@ -94,7 +96,7 @@ test('Gmail poison history entry protection', async t => {
     });
 
     await t.test('skips an entry that reached the attempt limit and advances the cursor past it', async () => {
-        const { client, logs, processed } = makeClient('poison-test-skip', {
+        const { client, logs, processed } = await makeClient('poison-test-skip', {
             history: [historyEntry(1001), historyEntry(1002)],
             historyId: '1002'
         });
@@ -116,7 +118,7 @@ test('Gmail poison history entry protection', async t => {
     });
 
     await t.test('a marker for a different entry does not affect processing', async () => {
-        const { client, processed, markersDuringProcessing } = makeClient('poison-test-other', {
+        const { client, processed, markersDuringProcessing } = await makeClient('poison-test-other', {
             history: [historyEntry(1001)],
             historyId: '1001'
         });
@@ -135,7 +137,7 @@ test('Gmail poison history entry protection', async t => {
     // label changes and deletions were lost with no syncWarning. The run now stops on it, the
     // cursor stays on the last entry that went through, and the in-flight marker bounds the retries
     await t.test('an entry that throws ends the run with the cursor before it', async () => {
-        const { client, logs } = makeClient('poison-test-throw', {
+        const { client, logs } = await makeClient('poison-test-throw', {
             history: [historyEntry(1001), historyEntry(1002), historyEntry(1003)],
             historyId: '1003'
         });
@@ -156,7 +158,7 @@ test('Gmail poison history entry protection', async t => {
     });
 
     await t.test('an entry that keeps throwing is skipped with a syncWarning at the attempt limit', async () => {
-        const { client } = makeClient('poison-test-throw-limit', {
+        const { client } = await makeClient('poison-test-throw-limit', {
             history: [historyEntry(1001), historyEntry(1002)],
             historyId: '1002'
         });
@@ -180,7 +182,7 @@ test('Gmail poison history entry protection', async t => {
     });
 
     await t.test('a graceful close clears an in-flight marker so a deploy does not leave a strike', async () => {
-        const { client } = makeClient('poison-test-close', { history: [], historyId: '1001' });
+        const { client } = await makeClient('poison-test-close', { history: [], historyId: '1001' });
         // a worker was terminated mid-entry, but by a drain rather than by the entry
         await redis.hset(client.getAccountKey(), 'googleHistoryProcessing', JSON.stringify({ id: '1001', count: 1 }));
 
@@ -192,7 +194,7 @@ test('Gmail poison history entry protection', async t => {
 
 test('Gmail history with an expired cursor', async t => {
     await t.test('a 404 moves the cursor to the current history id', async () => {
-        const { client } = makeClient('poison-test-expired', null);
+        const { client } = await makeClient('poison-test-expired', null);
         client.request = async url => {
             if (url.includes('/history')) {
                 const err = new Error('Requested entity was not found');
