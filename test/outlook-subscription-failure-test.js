@@ -14,6 +14,7 @@
 const test = require('node:test');
 const { after } = require('node:test');
 const assert = require('node:assert').strict;
+const { withFakeWithLock } = require('./helpers/fake-lock');
 
 require('./helpers/mock-db').installDbMock();
 
@@ -508,7 +509,7 @@ test('OutlookClient.renewSubscription() and the report it takes back', async t =
         const requests = [];
 
         outlook.accountObject = {
-            getLock: () => ({ acquireLock: async () => ({ success: true }), releaseLock: async () => {} })
+            getLock: () => withFakeWithLock({ acquireLock: async () => ({ success: true }), releaseLock: async () => {} })
         };
         outlook.getStoredSubscription = async () => JSON.parse(JSON.stringify(stored));
         outlook.saveStoredSubscription = async value => {

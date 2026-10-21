@@ -17,6 +17,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const { withFakeWithLock } = require('./helpers/fake-lock');
 
 // A prefix carrying glob metacharacters, so the SCAN patterns built from it can be checked for
 // escaping. Everything below runs against stubs, so no real key is ever named with it.
@@ -94,7 +95,7 @@ const { createMockLogger } = require('./helpers/mock-logger');
 const SECRET = 'account-data-layer-test-secret';
 
 function createLock(events) {
-    return {
+    return withFakeWithLock({
         waitAcquireLock: async key => {
             events.push({ event: 'acquire', key });
             return { success: true, id: key };
@@ -102,7 +103,7 @@ function createLock(events) {
         releaseLock: async held => {
             events.push({ event: 'release', key: held.id });
         }
-    };
+    });
 }
 
 function createAccount(extra) {

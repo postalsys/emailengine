@@ -198,6 +198,9 @@ require.cache[ioredfourPath] = {
     parent: null,
     children: [],
     exports: class MockLock {
+        constructor() {
+            require('./helpers/fake-lock').withFakeWithLock(this);
+        }
         async waitAcquireLock(key) {
             return { success: true, id: `mock-lock-${key}`, key };
         }

@@ -18,6 +18,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const { withFakeWithLock } = require('./helpers/fake-lock');
 
 // Mock the db module before importing account.js so no real Redis/BullMQ connections open.
 const mockQueue = { add: async () => ({}), close: async () => {}, on: () => {}, off: () => {} };
@@ -94,17 +95,19 @@ const { createMockLogger } = require('./helpers/mock-logger');
 function createCtx(oldAccountData, { lockOverrides, stored } = {}) {
     let calls = [];
     let lockEvents = [];
-    let lock = Object.assign(
-        {
-            waitAcquireLock: async key => {
-                lockEvents.push({ event: 'acquire', key });
-                return { success: true, id: key, index: 1 };
+    let lock = withFakeWithLock(
+        Object.assign(
+            {
+                waitAcquireLock: async key => {
+                    lockEvents.push({ event: 'acquire', key });
+                    return { success: true, id: key, index: 1 };
+                },
+                releaseLock: async held => {
+                    lockEvents.push({ event: 'release', key: held && held.id });
+                }
             },
-            releaseLock: async held => {
-                lockEvents.push({ event: 'release', key: held && held.id });
-            }
-        },
-        lockOverrides || {}
+            lockOverrides || {}
+        )
     );
 
     // The recovery paths read and write account hash fields directly rather than through

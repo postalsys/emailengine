@@ -14,6 +14,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const { withFakeWithLock } = require('./helpers/fake-lock');
 const { EventEmitter } = require('node:events');
 
 require('./helpers/mock-db').installDbMock();
@@ -198,7 +199,7 @@ test('IMAPClient command client ownership', async t => {
 
         const client = makeClient();
         client.accountObject = {
-            getLock: () => ({ waitAcquireLock: async () => ({ success: true }), releaseLock: async () => {} }),
+            getLock: () => withFakeWithLock({ waitAcquireLock: async () => ({ success: true }), releaseLock: async () => {} }),
             loadAccountData: async () => ({ imap: { host: 'localhost', port: 993 } })
         };
         client.getImapConfig = async () => ({ host: 'localhost', port: 993, auth: { user: 'u', pass: 'p' }, logger: false });
