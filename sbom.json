@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "emailengine-app@2.85.0",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.85.0-9615ac97-c217-4e02-bc6b-f0dcfb295b6a",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.85.0-40f073a0-3584-4020-b743-1f499301de64",
   "creationInfo": {
-    "created": "2026-10-21T20:58:01.985Z",
+    "created": "2026-10-21T21:45:01.862Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
@@ -3466,11 +3466,11 @@
     },
     {
       "name": "imapflow",
-      "SPDXID": "SPDXRef-Package-imapflow-2.7.0",
-      "versionInfo": "2.7.0",
+      "SPDXID": "SPDXRef-Package-imapflow-2.8.0",
+      "versionInfo": "2.8.0",
       "packageFileName": "node_modules/imapflow",
       "description": "IMAP Client for Node",
-      "downloadLocation": "https://registry.npmjs.org/imapflow/-/imapflow-2.7.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/imapflow/-/imapflow-2.8.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://imapflow.com/",
       "licenseDeclared": "MIT",
@@ -3478,13 +3478,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/imapflow@2.7.0"
+          "referenceLocator": "pkg:npm/imapflow@2.8.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "7c43198bd96044d0b2c85e1087d05077b2a34b4052ee418fe1a7027c03640bf0440aba1244e6e434bfb114a1e125240fb4ba3663e77edd0b19f515afc7c87edf"
+          "checksumValue": "dc84fc2cc980200003a75af245987883774b7656fad9ae19158cc69424244d04220f79b15eb16b995d2e642fea35617ea1841419cb449be33188594ea4998aac"
         }
       ]
     },
@@ -3922,11 +3922,11 @@
     },
     {
       "name": "mailparser",
-      "SPDXID": "SPDXRef-Package-mailparser-3.11.0",
-      "versionInfo": "3.11.0",
+      "SPDXID": "SPDXRef-Package-mailparser-3.12.0",
+      "versionInfo": "3.12.0",
       "packageFileName": "node_modules/mailparser",
       "description": "Parse e-mails",
-      "downloadLocation": "https://registry.npmjs.org/mailparser/-/mailparser-3.11.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/mailparser/-/mailparser-3.12.0.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "MIT",
@@ -3934,13 +3934,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/mailparser@3.11.0"
+          "referenceLocator": "pkg:npm/mailparser@3.12.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "5055f27868799bdbe911fb00060e08bb3bb1ed2ddd5db4e96b8aac90f4bbc4ebdaa5454b99fe2b1202ffdd043c23043307a75f6b38901b573ed038b8c1dde4de"
+          "checksumValue": "2bc4eb31d56f3b4ebdf894546141410f93c9a7a673377021c234000cdecd65019c48fa72d3602dfd99d3a36903c9262cb7324e54f9d14be65c470d59d42eeaff"
         }
       ]
     },
@@ -5844,7 +5844,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-imapflow-2.7.0",
+      "spdxElementId": "SPDXRef-Package-imapflow-2.8.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5884,7 +5884,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-mailparser-3.11.0",
+      "spdxElementId": "SPDXRef-Package-mailparser-3.12.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -7610,42 +7610,42 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-zone-eu.mailsplit-5.4.27",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.7.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.8.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-encoding-japanese-2.4.0",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.7.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.8.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-iconv-lite-0.7.3",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.7.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.8.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libbase64-1.4.1",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.7.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.8.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libmime-5.5.2",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.7.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.8.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libqp-3.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.7.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.8.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-pino-10.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.7.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.8.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-socks-2.8.10",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.7.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.8.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7905,42 +7905,42 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-zone-eu.mailsplit-5.4.27",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.11.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-he-1.2.0",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.11.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-html-to-text-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.11.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libmime-5.6.0",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.11.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-linkify-it-5.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.11.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-nodemailer-10.1.7",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.11.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-punycode.js-2.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.11.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-tlds-1.261.0",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.11.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
