@@ -109,3 +109,73 @@ test('readEnvValue resolves a file-backed variable', async t => {
         assert.deepEqual(warnings, []);
     });
 });
+
+// lib/consts.js reads its variables through readEnvValue() while it is itself still loading, and the
+// helper reports through lib/logger.js, which requires lib/consts.js. Requiring the logger up front
+// would build pino from a half-initialized consts object, so these cases load consts first, the way
+// every worker does, and check both the value and that the report still arrives.
+const CONSTS_SCRIPT = `
+    const consts = require('./lib/consts');
+    process.stdout.write('\\n${MARKER}' + JSON.stringify({ value: consts[process.env.PROBE_CONST] }) + '\\n');
+`;
+
+function resolveConst(name, env) {
+    const stdout = execFileSync(process.execPath, ['-e', CONSTS_SCRIPT], {
+        cwd: ROOT,
+        encoding: 'utf-8',
+        env: Object.assign(
+            {
+                PATH: process.env.PATH,
+                HOME: process.env.HOME,
+                NODE_ENV: 'test',
+                EE_ENV_LOADED: 'true',
+                EENGINE_LOG_LEVEL: 'trace',
+                PROBE_CONST: name
+            },
+            env
+        )
+    });
+    const marked = stdout.split('\n').find(line => line.startsWith(MARKER));
+    assert.ok(marked, `the probe printed no answer:\n${stdout}`);
+    return {
+        value: JSON.parse(marked.slice(MARKER.length)).value,
+        records: stdout
+            .split('\n')
+            .filter(line => line.startsWith('{'))
+            .map(line => JSON.parse(line))
+    };
+}
+
+test('lib/consts.js variables honor the file form', async t => {
+    const dir = fs.mkdtempSync(pathlib.join(os.tmpdir(), 'ee-env-consts-'));
+    t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+    await t.test('EENGINE_REDIS_PREFIX_FILE sets the key prefix', () => {
+        const file = pathlib.join(dir, 'prefix.txt');
+        fs.writeFileSync(file, 'tenant-a\n');
+        const { value, records } = resolveConst('REDIS_PREFIX', { EENGINE_REDIS_PREFIX_FILE: file });
+        assert.equal(value, 'tenant-a:');
+        assert.ok(
+            records.some(entry => entry.msg === 'Loaded environment value from file' && entry.key === 'EENGINE_REDIS_PREFIX'),
+            'the read is reported once the logger can be loaded'
+        );
+    });
+
+    await t.test('the variable itself still wins over the file', () => {
+        const file = pathlib.join(dir, 'prefix-ignored.txt');
+        fs.writeFileSync(file, 'from-file');
+        const { value } = resolveConst('REDIS_PREFIX', { EENGINE_REDIS_PREFIX: 'direct', EENGINE_REDIS_PREFIX_FILE: file });
+        assert.equal(value, 'direct:');
+    });
+
+    await t.test('an unset prefix stays empty', () => {
+        const { value } = resolveConst('REDIS_PREFIX', {});
+        assert.equal(value, '');
+    });
+
+    await t.test('an unreadable file is reported and leaves the default', () => {
+        const { value, records } = resolveConst('URL_FETCH_TIMEOUT', { EENGINE_FETCH_TIMEOUT_FILE: pathlib.join(dir, 'missing.txt') });
+        assert.equal(value, 90 * 1000);
+        assert.ok(records.some(entry => entry.level >= 50 && entry.key === 'EENGINE_FETCH_TIMEOUT'));
+    });
+});
