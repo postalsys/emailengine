@@ -7,6 +7,11 @@
 // not found there, whichever action is asked for.
 
 const test = require('node:test');
+
+// Own key prefix, set before any module reads it: the test files of the tier run in parallel on one
+// database, and a job these put into a queue would otherwise be picked up by another file's worker
+process.env.EENGINE_REDIS_PREFIX = 'test_outbox_routes';
+
 const assert = require('node:assert').strict;
 
 const Hapi = require('@hapi/hapi');

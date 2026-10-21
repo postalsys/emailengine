@@ -6,6 +6,11 @@
 // logs, and the free-text `query` filter of the list endpoints.
 
 const test = require('node:test');
+
+// Own key prefix, set before any module reads it: the test files of the tier run in parallel on one
+// database, and a job these put into a queue would otherwise be picked up by another file's worker
+process.env.EENGINE_REDIS_PREFIX = 'test_api_parity_routes';
+
 const assert = require('node:assert').strict;
 const crypto = require('node:crypto');
 

@@ -5,6 +5,11 @@
 // on the account routes.
 
 const test = require('node:test');
+
+// Own key prefix, set before any module reads it: the test files of the tier run in parallel on one
+// database, and a job these put into a queue would otherwise be picked up by another file's worker
+process.env.EENGINE_REDIS_PREFIX = 'test_webhook_failures';
+
 const assert = require('node:assert').strict;
 
 const Hapi = require('@hapi/hapi');
@@ -51,8 +56,12 @@ test('failed webhook deliveries', async t => {
     let server;
     t.before(async () => {
         await notifyQueue.obliterate({ force: true }).catch(() => false);
+        // apart in time, so the failed set has an order to list them in
+        const pause = () => new Promise(resolve => setTimeout(resolve, 10));
         await failDelivery('wf-a-1', ACCOUNT);
+        await pause();
         await failDelivery('wf-b-1', OTHER);
+        await pause();
         await failDelivery('wf-a-2', ACCOUNT);
 
         server = Hapi.server({});
