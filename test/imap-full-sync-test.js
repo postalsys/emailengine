@@ -205,6 +205,58 @@ test('runFullSync', async t => {
             await harness.cleanup();
         }
     });
+
+    await t.test('changed messages are indexed a chunk at a time, not one round trip each', async () => {
+        const counting = countingRedis(redis);
+        // a bulk mark-as-read of 300 messages
+        const stored = Array.from({ length: 300 }, (v, i) => ({ uid: i + 1 }));
+        const server = stored.map(entry => ({ uid: entry.uid, flags: ['\\Seen'] }));
+        const harness = await createSyncHarness({ server, stored, redisClient: counting.client });
+        try {
+            counting.reset();
+            await harness.sync.runFullSync();
+            assert.strictEqual(harness.events.changed.length, 300);
+            assert.ok(counting.roundTrips() < 30, `${counting.roundTrips()} round trips for 300 changed messages`);
+        } finally {
+            await harness.cleanup();
+        }
+    });
+
+    await t.test('messages gone from the end are removed a chunk at a time', async () => {
+        const counting = countingRedis(redis);
+        // a mass deletion: 1200 indexed messages, the server keeps the first 10
+        const stored = Array.from({ length: 1200 }, (v, i) => ({ uid: i + 1 }));
+        const harness = await createSyncHarness({ server: stored.slice(0, 10), stored, redisClient: counting.client });
+        try {
+            counting.reset();
+            await harness.sync.runFullSync();
+            assert.strictEqual(harness.events.deleted.length, 1190);
+            assert.deepStrictEqual(
+                await harness.indexedUids(),
+                stored.slice(0, 10).map(entry => entry.uid)
+            );
+            assert.ok(counting.roundTrips() < 30, `${counting.roundTrips()} round trips for 1190 deleted messages`);
+        } finally {
+            await harness.cleanup();
+        }
+    });
+});
+
+test('a deleted message leaves nothing queued for announcing', async () => {
+    // processDeleted() used to drop the queued entry itself, one round trip per message; the
+    // expunge now does it in the same pipeline
+    const harness = await createSyncHarness({ server: uids(1, 3), stored: uids(1, 2, 3, 4) });
+    try {
+        await redis.zadd(harness.keys.notifications, 2, JSON.stringify({ uid: 2 }), 4, JSON.stringify({ uid: 4 }));
+        await harness.sync.runFullSync();
+        assert.deepStrictEqual(
+            harness.events.deleted.sort((a, b) => a - b),
+            [2, 4]
+        );
+        assert.deepStrictEqual(await harness.queuedUids(), []);
+    } finally {
+        await harness.cleanup();
+    }
 });
 
 test('runFastSync', async t => {
