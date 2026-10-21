@@ -128,6 +128,7 @@ const registerApiRoutes = require('../lib/api-routes');
 const { securityHeadersExt, attachSecurityContext, isAdminPath, isMachineRoute, isSecureOrigin, CSP_MODES } = require('../lib/security-headers');
 const { deprecationExt } = require('../lib/deprecations');
 const { addDefaultErrorCode } = require('../lib/api-error-codes');
+const { apiCallDuration } = require('../lib/request-timing');
 const { registerHandlebarsHelpers } = require('../lib/handlebars-helpers');
 
 const {
@@ -1621,6 +1622,10 @@ function registerRequestEvents(server) {
             route: request.route.path,
             statusCode: request.response && request.response.statusCode
         });
+        const duration = apiCallDuration(request.info);
+        if (duration !== null) {
+            metrics(logger, 'apiCallDuration', 'observe', { method: request.method, route: request.route.path }, duration);
+        }
     });
 }
 

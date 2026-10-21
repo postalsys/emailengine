@@ -6,7 +6,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { heartbeatDiagnostics, eventLoopDelaySeries } = require('../lib/thread-diagnostics');
+const { heartbeatDiagnostics, eventLoopDelaySeries, threadHeapSeries } = require('../lib/thread-diagnostics');
 
 test('heartbeatDiagnostics()', async t => {
     await t.test('an account worker with a reading', () => {
@@ -43,4 +43,20 @@ test('eventLoopDelaySeries() converts readings to seconds and skips threads with
         [{ labels: { type: 'main', thread: '0' }, max: 0.25, p99: 0.04 }]
     );
     assert.deepEqual(eventLoopDelaySeries(null), []);
+});
+
+test('threadHeapSeries()', () => {
+    assert.deepEqual(
+        threadHeapSeries([
+            { type: 'main', threadId: 0, heapUsed: 1000, heapTotal: 4000 },
+            { type: 'imap', threadId: 3, heapUsed: 2500, heapTotal: 8000, rss: 999999 },
+            // a thread that did not answer its reading carries no heap figures
+            { type: 'webhooks', threadId: 5, resourceUsageError: { error: 'Timeout' } }
+        ]),
+        [
+            { labels: { type: 'main', thread: '0' }, used: 1000, total: 4000 },
+            { labels: { type: 'imap', thread: '3' }, used: 2500, total: 8000 }
+        ]
+    );
+    assert.deepEqual(threadHeapSeries(null), []);
 });

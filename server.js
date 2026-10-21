@@ -133,7 +133,7 @@ initSentry('main');
 // Import additional dependencies
 const pathlib = require('path');
 const { redis, notifyQueue, submitQueue, exportQueue } = require('./lib/db');
-const { queueStats } = require('./lib/queue-stats');
+const { queueStats, failedJobCount } = require('./lib/queue-stats');
 const { pruneFailedContent } = require('./lib/outbox');
 const { queueCleanAges } = require('./lib/queue-retention');
 const { packRpcError, unpackRpcError } = require('./lib/worker-rpc-error');
@@ -169,7 +169,7 @@ const {
 const { mapConcurrent } = require('./lib/utils/map-concurrent');
 const { RespawnTracker, retryWithBackoff } = require('./lib/respawn-backoff');
 const { legacySmtpOptionsInUse, REMOVAL_DATE } = require('./lib/deprecations');
-const { heartbeatDiagnostics, eventLoopDelaySeries } = require('./lib/thread-diagnostics');
+const { heartbeatDiagnostics, eventLoopDelaySeries, threadHeapSeries } = require('./lib/thread-diagnostics');
 
 const msgpack = require('./lib/msgpack');
 
@@ -579,6 +579,15 @@ const metrics = {
         labelNames: ['method', 'statusCode', 'route']
     }),
 
+    // Labelled by route, not by status: the counter above already splits by status, and a latency
+    // series per status code would multiply the route count for little an operator can act on
+    apiCallDuration: new promClient.Histogram({
+        name: 'api_call_duration_seconds',
+        help: 'Duration of API calls, from receiving the request to sending the response',
+        labelNames: ['method', 'route'],
+        buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60]
+    }),
+
     imapConnections: new promClient.Gauge({
         name: 'imap_connections',
         help: 'Current IMAP connection state',
@@ -667,6 +676,12 @@ const metrics = {
         labelNames: ['queue', 'state']
     }),
 
+    queueFailed: new promClient.Gauge({
+        name: 'queue_failed_jobs',
+        help: 'Failed jobs a queue still retains (deliveries that were given up on)',
+        labelNames: ['queue']
+    }),
+
     queuesProcessed: new promClient.Counter({
         name: 'queues_processed',
         help: 'Processed job count',
@@ -693,6 +708,18 @@ const metrics = {
     threadEventLoopDelayP99: new promClient.Gauge({
         name: 'thread_event_loop_delay_p99_seconds',
         help: '99th percentile event loop delay of a thread over the last collection window (15s)',
+        labelNames: ['type', 'thread']
+    }),
+
+    threadHeapUsed: new promClient.Gauge({
+        name: 'thread_heap_used_bytes',
+        help: 'V8 heap in use by a thread, as of the last collection (15s)',
+        labelNames: ['type', 'thread']
+    }),
+
+    threadHeapTotal: new promClient.Gauge({
+        name: 'thread_heap_total_bytes',
+        help: 'V8 heap allocated by a thread, as of the last collection (15s)',
         labelNames: ['type', 'thread']
     }),
 
@@ -2498,6 +2525,12 @@ async function updateQueueCounters() {
         metrics.threadEventLoopDelayMax.set(labels, max);
         metrics.threadEventLoopDelayP99.set(labels, p99);
     }
+    metrics.threadHeapUsed.reset();
+    metrics.threadHeapTotal.reset();
+    for (let { labels, used, total } of threadHeapSeries(threadsInfo)) {
+        metrics.threadHeapUsed.set(labels, used);
+        metrics.threadHeapTotal.set(labels, total);
+    }
     for (let workerThreadInfo of threadsInfo || []) {
         let key = workerThreadInfo.type;
         let metricKey = `${key}_total`;
@@ -2534,22 +2567,28 @@ async function updateQueueCounters() {
     // `:paused` list no longer exists (a paused queue holds its jobs in `wait`), and a leftover
     // `0:` wait-list marker from a 5.x install counts as a phantom waiting job. The `paused`
     // gauge is kept at the 0 the getter reports so existing dashboards keep their series.
+    //
+    // A queue whose count fails is skipped rather than ending the update: returning here used to
+    // leave every Redis gauge below it stale for as long as that one count kept failing.
     for (let [queue, queueObj] of [
         ['notify', notifyQueue],
-        ['submit', submitQueue]
+        ['submit', submitQueue],
+        ['export', exportQueue]
     ]) {
         let stats;
+        let failed;
         try {
-            stats = await queueStats(queueObj);
+            [stats, failed] = await Promise.all([queueStats(queueObj), failedJobCount(queueObj)]);
         } catch (err) {
             logger.error({ msg: 'Queue length count failed', queue, err });
-            return false;
+            continue;
         }
 
         metrics.queues.set({ queue: `${queue}`, state: `active` }, stats.active);
         metrics.queues.set({ queue: `${queue}`, state: `delayed` }, stats.delayed);
         metrics.queues.set({ queue: `${queue}`, state: `paused` }, stats.paused);
         metrics.queues.set({ queue: `${queue}`, state: `waiting` }, stats.waiting);
+        metrics.queueFailed.set({ queue: `${queue}` }, failed);
     }
 
     // Update Redis metrics
