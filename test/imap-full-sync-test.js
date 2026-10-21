@@ -10,8 +10,6 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { redis } = require('../lib/db');
-const { compareExisting } = require('../lib/tools');
-const { getFetchRange } = require('../lib/email-client/imap/sync-operations');
 const { createSyncHarness, countingRedis } = require('./helpers/sync-harness');
 const { forAll, gen } = require('./helpers/property');
 const registerRedisTeardown = require('./helpers/redis-teardown');
@@ -24,72 +22,6 @@ async function fullSync(state) {
     const harness = await createSyncHarness(state);
     try {
         await harness.sync.runFullSync();
-        return {
-            indexed: await harness.indexedUids(),
-            queued: await harness.queuedUids(),
-            deleted: harness.events.deleted.slice().sort((a, b) => a - b),
-            changed: harness.events.changed.map(change => change.uid)
-        };
-    } finally {
-        await harness.cleanup();
-    }
-}
-
-/**
- * The full sync loop as it was before its Redis access was batched: every fetched message read its
- * index entry on its own. Kept only as the oracle the batched implementation is compared with
- */
-async function referenceFullSync(harness) {
-    const { mailbox } = harness;
-    const fields = { uid: true, flags: true };
-    const status = mailbox.getMailboxStatus();
-    let seqMax = 0;
-    let lastHighestUid = 0;
-    let range = false;
-    while ((range = getFetchRange(status.messages, range))) {
-        for await (let messageData of mailbox.connection.imapClient.fetch(range, fields, {})) {
-            if (!messageData || !messageData.uid || !messageData.flags || messageData.uid <= lastHighestUid) {
-                continue;
-            }
-            lastHighestUid = messageData.uid;
-            messageData.flags.delete('\\Recent');
-            if (messageData.seq > seqMax) {
-                seqMax = messageData.seq;
-            }
-            let storedMessage = await mailbox.entryListGet(messageData.uid, { uid: true });
-            if (!storedMessage) {
-                let seq = await mailbox.entryListSet(messageData);
-                if (seq) {
-                    await redis.zadd(mailbox.getNotificationsKey(), messageData.uid, JSON.stringify({ uid: messageData.uid }));
-                }
-            } else {
-                let diff = storedMessage.seq - messageData.seq;
-                for (let i = diff - 1; i >= 0; i--) {
-                    let deletedEntry = await mailbox.entryListExpunge(messageData.seq + i);
-                    if (deletedEntry) {
-                        await mailbox.processDeleted(deletedEntry);
-                    }
-                }
-                let changes = compareExisting(storedMessage.entry, messageData);
-                if (changes && (await mailbox.entryListSet(messageData))) {
-                    await mailbox.processChanges(messageData, changes);
-                }
-            }
-        }
-    }
-    let diff = (await redis.zcard(mailbox.getMessagesKey())) - seqMax;
-    for (let i = diff - 1; i >= 0; i--) {
-        let deletedEntry = await mailbox.entryListExpunge(seqMax + i + 1);
-        if (deletedEntry) {
-            await mailbox.processDeleted(deletedEntry);
-        }
-    }
-}
-
-async function referenceRun(state) {
-    const harness = await createSyncHarness(state);
-    try {
-        await referenceFullSync(harness);
         return {
             indexed: await harness.indexedUids(),
             queued: await harness.queuedUids(),
@@ -141,17 +73,31 @@ test('runFullSync', async t => {
         assert.deepStrictEqual(result, { indexed: [], queued: [], deleted: [1, 2], changed: [] });
     });
 
-    // Recorded behaviour, not a claim that it is right: a partial row is skipped, so the message it
-    // stands for is neither seen nor counted, and when it is the last one the trailing pass takes
-    // the sequence number it held for gone
+    // Regression: deletions were worked out from how far an entry's index position had moved from
+    // its sequence number, so a message missing from the index among them was reported deleted
+    // right after being announced, and the one actually gone stayed indexed for good
+    await t.test('a message missing from the index next to a deleted one', async () => {
+        const result = await fullSync({ server: uids(3, 6, 12, 14), stored: uids(3, 6, 9, 14) });
+        assert.deepStrictEqual(result, { indexed: [3, 6, 12, 14], queued: [12], deleted: [9], changed: [] });
+    });
+
+    // A partial row is a message the server answered without UID or FLAGS: what it stands for is
+    // unknown, so the index entries next to it are neither compared nor taken for gone
     await t.test('a partial row in the middle leaves its message indexed', async () => {
         const result = await fullSync({ server: [{ uid: 1 }, { uid: 2, partial: true }, { uid: 3 }], stored: uids(1, 2, 3) });
         assert.deepStrictEqual(result, { indexed: [1, 2, 3], queued: [], deleted: [], changed: [] });
     });
 
-    await t.test('a partial row at the end is reported deleted', async () => {
+    // Regression: the trailing pass took the sequence number of a partial row at the end for a
+    // deleted message, and the next pass announced it as new again
+    await t.test('a partial row at the end leaves its message indexed', async () => {
         const result = await fullSync({ server: [{ uid: 1 }, { uid: 2 }, { uid: 3, partial: true }], stored: uids(1, 2, 3) });
-        assert.deepStrictEqual(result, { indexed: [1, 2], queued: [], deleted: [3], changed: [] });
+        assert.deepStrictEqual(result, { indexed: [1, 2, 3], queued: [], deleted: [], changed: [] });
+    });
+
+    await t.test('a partial row next to a deleted message keeps both until a pass can tell them apart', async () => {
+        const result = await fullSync({ server: [{ uid: 1 }, { uid: 3, partial: true }, { uid: 5 }], stored: uids(1, 2, 3, 5) });
+        assert.deepStrictEqual(result, { indexed: [1, 2, 3, 5], queued: [], deleted: [], changed: [] });
     });
 
     const FLAGS = ['\\Seen', '\\Flagged', '\\Answered', '$Label1'];
@@ -176,14 +122,71 @@ test('runFullSync', async t => {
         return { stored, server };
     };
 
-    await t.test('property: reports what the one-message-at-a-time loop reports', async () => {
+    await t.test('property: with partial rows, nothing on the server is reported deleted and gaps with no partial row are', async () => {
         await forAll(
             mailboxState,
             async state => {
-                assert.deepStrictEqual(await fullSync(state), await referenceRun(state));
+                const result = await fullSync(state);
+                const full = state.server.filter(message => !message.partial).map(message => message.uid);
+                const partial = state.server.filter(message => message.partial).map(message => message.uid);
+                const serverUids = state.server.map(message => message.uid);
+                const gone = state.stored.map(message => message.uid).filter(uid => !serverUids.includes(uid));
+
+                for (const uid of result.deleted) {
+                    assert.ok(gone.includes(uid), `uid ${uid} is on the server but was reported deleted`);
+                }
+                for (const uid of gone) {
+                    const before = Math.max(0, ...full.filter(other => other < uid));
+                    const after = Math.min(Infinity, ...full.filter(other => other > uid));
+                    if (!partial.some(other => other > before && other < after)) {
+                        assert.ok(result.deleted.includes(uid), `uid ${uid} is gone with no partial row next to it`);
+                    }
+                }
+                for (const uid of full) {
+                    assert.ok(result.indexed.includes(uid), `uid ${uid} was fetched in full but is not indexed`);
+                }
+            },
+            { runs: 200 }
+        );
+    });
+
+    await t.test('property: with no partial rows, the index ends up equal to the server', async () => {
+        await forAll(
+            random => {
+                const state = mailboxState(random);
+                state.server.forEach(message => delete message.partial);
+                return state;
+            },
+            async state => {
+                const result = await fullSync(state);
+                const serverUids = state.server.map(message => message.uid);
+                const storedUids = state.stored.map(message => message.uid);
+                assert.deepStrictEqual(result.indexed, serverUids);
+                assert.deepStrictEqual(
+                    result.queued,
+                    serverUids.filter(uid => !storedUids.includes(uid))
+                );
+                assert.deepStrictEqual(
+                    result.deleted,
+                    storedUids.filter(uid => !serverUids.includes(uid))
+                );
             },
             { runs: 150 }
         );
+    });
+
+    await t.test('an unchanged folder does not cost a Redis round trip per message', async () => {
+        const counting = countingRedis(redis);
+        const list = Array.from({ length: 300 }, (v, i) => ({ uid: i + 1 }));
+        const harness = await createSyncHarness({ server: list, stored: list, redisClient: counting.client });
+        try {
+            counting.reset();
+            await harness.sync.runFullSync();
+            assert.deepStrictEqual(harness.events, { deleted: [], changed: [] });
+            assert.ok(counting.roundTrips() < 30, `${counting.roundTrips()} round trips for 300 unchanged messages`);
+        } finally {
+            await harness.cleanup();
+        }
     });
 });
 
