@@ -393,3 +393,69 @@ test('SMTP account resolver', async t => {
         );
     });
 });
+
+test('sessionDisabledCommands', async t => {
+    const { sessionDisabledCommands } = require('../lib/smtp-auth');
+
+    await t.test('AUTH follows the setting, the server list is kept', () => {
+        assert.deepStrictEqual(sessionDisabledCommands(['STARTTLS'], false).sort(), ['AUTH', 'STARTTLS']);
+        assert.deepStrictEqual(sessionDisabledCommands(['STARTTLS'], true), ['STARTTLS']);
+        assert.deepStrictEqual(sessionDisabledCommands(['STARTTLS', 'AUTH'], true), ['STARTTLS']);
+        assert.deepStrictEqual(sessionDisabledCommands([], false), ['AUTH']);
+    });
+
+    await t.test('never changes the server list it is given (regression: the list was shared by every session)', () => {
+        const serverList = ['STARTTLS'];
+        sessionDisabledCommands(serverList, false);
+        sessionDisabledCommands(serverList, true);
+        assert.deepStrictEqual(serverList, ['STARTTLS']);
+    });
+});
+
+test('per-session AUTH on a real smtp-server', async t => {
+    const net = require('node:net');
+    const { SMTPServer } = require('smtp-server');
+    const { sessionDisabledCommands } = require('../lib/smtp-auth');
+
+    let authEnabled = false;
+    const server = new SMTPServer({
+        disabledCommands: ['STARTTLS'],
+        hideSTARTTLS: true,
+        allowInsecureAuth: true,
+        authOptional: true,
+        logger: false,
+        onConnect(session, callback) {
+            session.disabledCommands = sessionDisabledCommands(server.options.disabledCommands, authEnabled);
+            callback();
+        },
+        onAuth: (auth, session, callback) => callback(null, { user: auth.username })
+    });
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    t.after(() => new Promise(resolve => server.close(resolve)));
+    const port = server.server.address().port;
+
+    const ehlo = () =>
+        new Promise((resolve, reject) => {
+            const socket = net.connect(port, '127.0.0.1');
+            let data = '';
+            socket.on('data', chunk => {
+                data += chunk;
+                if (/^220 /m.test(data) && !data.includes('EHLO-SENT')) {
+                    data += 'EHLO-SENT';
+                    socket.write('EHLO test\r\n');
+                } else if (/^250 /m.test(data.split('EHLO-SENT')[1] || '')) {
+                    socket.end('QUIT\r\n');
+                    resolve(data.split('EHLO-SENT')[1]);
+                }
+            });
+            socket.on('error', reject);
+        });
+
+    const offered = await ehlo();
+    assert.doesNotMatch(offered, /AUTH/);
+
+    // switching the setting affects the next session, and the server's own list stays untouched
+    authEnabled = true;
+    assert.match(await ehlo(), /AUTH/);
+    assert.deepStrictEqual(server.options.disabledCommands, ['STARTTLS']);
+});

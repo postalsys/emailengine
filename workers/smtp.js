@@ -8,7 +8,7 @@ const logger = require('../lib/logger');
 
 const { getDuration, emitChangeEvent, readEnvValue, threadStats, loadTlsConfig, assertTlsCredentials, getByteSize } = require('../lib/tools');
 const { createTlsContext, applyTlsContext } = require('../lib/tls/context');
-const { createSmtpAuthHandler, createSmtpAccountResolver } = require('../lib/smtp-auth');
+const { createSmtpAuthHandler, createSmtpAccountResolver, sessionDisabledCommands } = require('../lib/smtp-auth');
 
 const { initSentry } = require('../lib/sentry');
 initSentry('smtp');
@@ -136,6 +136,10 @@ async function init() {
         disableReverseLookup: true,
         banner: 'EmailEngine MSA',
         size: MAX_SMTP_MESSAGE_SIZE,
+        // The server answers an oversized message with 552 itself, also when the client sent no
+        // SIZE= parameter. onData still has to keep the truncated message out of the queue, see
+        // the sizeExceeded check below
+        rejectOversized: true,
         maxClients: SMTP_MAX_CLIENTS,
         useProxy: await settings.get('smtpServerProxy'),
         closeTimeout: SMTP_CLOSE_TIMEOUT
@@ -149,16 +153,10 @@ async function init() {
         settings
             .get('smtpServerAuthEnabled')
             .then(authEnabled => {
-                if (authEnabled && server.options.disabledCommands.includes('AUTH')) {
-                    let disabledCommands = new Set(server.options.disabledCommands);
-                    disabledCommands.delete('AUTH');
-                    server.options.disabledCommands = Array.from(disabledCommands);
-                    logger.info({ msg: 'Enabled authentication for the SMTP server', disabledCommands: server.options.disabledCommands });
-                } else if (!authEnabled && !server.options.disabledCommands.includes('AUTH')) {
-                    server.options.disabledCommands.push('AUTH');
-                    logger.info({ msg: 'Disabled authentication for the SMTP server', disabledCommands: server.options.disabledCommands });
-                }
-
+                // Per session, so switching authentication on or off takes effect for the next
+                // connection without changing what connections already open were offered. It used
+                // to rewrite the server-wide list, which every open session reads on each command
+                session.disabledCommands = sessionDisabledCommands(server.options.disabledCommands, authEnabled);
                 session.eeAuthEnabled = !!authEnabled;
 
                 return settings.get('smtpServerProxy');
