@@ -127,6 +127,7 @@ const {
 const registerApiRoutes = require('../lib/api-routes');
 const { securityHeadersExt, attachSecurityContext, isAdminPath, isMachineRoute, isSecureOrigin, CSP_MODES } = require('../lib/security-headers');
 const { deprecationExt } = require('../lib/deprecations');
+const { addDefaultErrorCode } = require('../lib/api-error-codes');
 const { registerHandlebarsHelpers } = require('../lib/handlebars-helpers');
 
 const {
@@ -3357,7 +3358,8 @@ function registerResponseExtensions(server) {
         const wantsJsonError = routeTags.includes('api') || routeTags.includes('external');
 
         if (request.errorInfo && wantsJsonError) {
-            // JSON response for API requests
+            // JSON response for API requests. A 404 thrown without a code still gets NotFound
+            addDefaultErrorCode(request.errorInfo);
 
             let res = h.response(request.errorInfo);
             if (error.output.headers) {
