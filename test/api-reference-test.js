@@ -842,3 +842,13 @@ test('API reference formatting', async t => {
         assert.equal(typeLabel(spec, { type: 'array', items: { $ref: `#/components/schemas/${refName}` } }), 'array of object');
     });
 });
+
+test('GET /v1/settings lists its include flags as chips', () => {
+    // The flags carry a description that only restates the chip sentence ("Include the `x` setting
+    // in the response"); it must not turn the 90-odd flags back into a row each
+    const operation = allOperations.find(op => op.method === 'get' && op.path === '/v1/settings');
+    assert.ok(operation, 'GET /v1/settings is in the reference');
+    assert.ok(Array.isArray(operation.queryFlags), 'the query parameters render as a flag list');
+    assert.ok(operation.queryFlags.includes('webhooksEnabled'));
+    assert.ok(operation.queryFlags.includes('eventTypes'));
+});

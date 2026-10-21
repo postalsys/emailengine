@@ -51,7 +51,8 @@ test.describe('access token pages', () => {
         // untick is a deliberate subtraction. Starting empty would post two empty allowlists, which
         // grant nothing.
         await expect(page.locator('.permission-action:checked')).toHaveCount(4);
-        await expect(page.locator('.permission-group:checked')).toHaveCount(18);
+        // every grantable group (GRANTABLE_GROUPS in lib/api-routes/permission-map.js)
+        await expect(page.locator('.permission-group:checked')).toHaveCount(19);
 
         await toggle.uncheck();
         await expect(section).toBeHidden();
@@ -495,7 +496,7 @@ test.describe('access token pages', () => {
         await expect(page.locator('#permissionPresetRow')).toBeHidden();
         await expect(page.locator('#permissionMcpScopeNote')).toBeVisible();
 
-        // Six of the eighteen sections carry a mail tool; the management ones are out of reach for
+        // Six of the nineteen sections carry a mail tool; the management ones are out of reach for
         // a token holding only the mail scope
         await expect(page.locator('#permissionGroup_message')).toBeVisible();
         await expect(page.locator('#permissionGroup_webhook')).toBeHidden();
