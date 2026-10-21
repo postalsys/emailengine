@@ -127,7 +127,7 @@ const {
 const registerApiRoutes = require('../lib/api-routes');
 const { securityHeadersExt, attachSecurityContext, isAdminPath, isMachineRoute, isSecureOrigin, CSP_MODES } = require('../lib/security-headers');
 const { deprecationExt } = require('../lib/deprecations');
-const { addDefaultErrorCode } = require('../lib/api-error-codes');
+const { errorCodeExt } = require('../lib/api-error-codes');
 const { apiCallDuration } = require('../lib/request-timing');
 const { registerHandlebarsHelpers } = require('../lib/handlebars-helpers');
 
@@ -3360,9 +3360,8 @@ function registerResponseExtensions(server) {
         const wantsJsonError = routeTags.includes('api') || routeTags.includes('external');
 
         if (request.errorInfo && wantsJsonError) {
-            // JSON response for API requests. A 404 thrown without a code still gets NotFound
-            addDefaultErrorCode(request.errorInfo);
-
+            // JSON response for API requests. A 404 thrown without a code already got NotFound
+            // from errorCodeExt(), registered ahead of this handler
             let res = h.response(request.errorInfo);
             if (error.output.headers) {
                 for (let key of Object.keys(error.output.headers)) {
@@ -3387,6 +3386,8 @@ function registerResponseExtensions(server) {
             .code(error.output.statusCode);
     };
 
+    // First: fills in the default code of an error body before preResponse copies it
+    server.ext('onPreResponse', errorCodeExt);
     server.ext('onPreResponse', preResponse);
 
     // After preResponse on purpose: it replaces an error response with the rendered error page

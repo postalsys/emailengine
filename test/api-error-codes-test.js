@@ -10,7 +10,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const Boom = require('@hapi/boom');
 
-const { addDefaultErrorCode } = require('../lib/api-error-codes');
+const { addDefaultErrorCode, errorCodeExt } = require('../lib/api-error-codes');
 
 test('addDefaultErrorCode', async t => {
     await t.test('a 404 without a code gets NotFound', () => {
@@ -35,14 +35,22 @@ test('addDefaultErrorCode', async t => {
     });
 });
 
-test('the API worker fills it in where the JSON error body is built', () => {
-    // workers/api.js boots a server on require, so the wiring is checked in its source: the JSON
-    // error branch of the onPreResponse handler has to pass its payload through the helper before
-    // building the response
+test('errorCodeExt fills in the code of an error response and leaves others alone', () => {
+    const h = { continue: Symbol('continue') };
+    const boom = { isBoom: true, output: { payload: { statusCode: 404, message: 'Not Found' } } };
+    assert.equal(errorCodeExt({ response: boom }, h), h.continue);
+    assert.equal(boom.output.payload.code, 'NotFound');
+
+    const plain = { source: { ok: true } };
+    assert.equal(errorCodeExt({ response: plain }, h), h.continue);
+    assert.deepEqual(plain, { source: { ok: true } });
+});
+
+test('the API worker registers it ahead of the error response handler', () => {
+    // workers/api.js boots a server on require, so the wiring is checked in its source: the step
+    // has to run before preResponse copies the payload into the JSON error body
     const source = fs.readFileSync(path.join(__dirname, '..', 'workers', 'api.js'), 'utf8');
-    const branch = source.indexOf('if (request.errorInfo && wantsJsonError) {');
-    assert.ok(branch > 0, 'the JSON error branch exists');
-    const respond = source.indexOf('h.response(request.errorInfo)', branch);
-    const call = source.indexOf('addDefaultErrorCode(request.errorInfo)', branch);
-    assert.ok(call > branch && call < respond, 'addDefaultErrorCode() runs before the JSON error response is built');
+    const ext = source.indexOf("server.ext('onPreResponse', errorCodeExt);");
+    const pre = source.indexOf("server.ext('onPreResponse', preResponse);");
+    assert.ok(ext > 0 && pre > ext, 'errorCodeExt is registered before preResponse');
 });

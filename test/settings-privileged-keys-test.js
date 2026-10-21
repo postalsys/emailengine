@@ -13,10 +13,9 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const Hapi = require('@hapi/hapi');
-
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
+const { createRouteTestServer } = require('./helpers/route-test-server');
 const { captureApiRoutes } = require('./helpers/capture-api-routes');
 const { buildToolRegistry } = require('../lib/mcp/tools');
 const settings = require('../lib/settings');
@@ -43,27 +42,19 @@ async function post(payload, tokenData, extraHeaders) {
 
 test('privileged settings keys', async t => {
     t.before(async () => {
-        server = Hapi.server({});
-
-        server.auth.scheme('test-token', () => ({
-            authenticate(request, h) {
-                const tokenData = JSON.parse(request.headers['x-test-token'] || '{}');
-                if (request.headers['x-test-session']) {
-                    // What the api-token strategy sets for a browse-page session credential
-                    request.app.sessionToken = true;
+        server = await createRouteTestServer(
+            routeServer => settingsRoutes({ server: routeServer, call: async () => ({}), notify: () => {}, CORS_CONFIG: false }),
+            {
+                authenticate(request, h) {
+                    const tokenData = JSON.parse(request.headers['x-test-token'] || '{}');
+                    if (request.headers['x-test-session']) {
+                        // What the api-token strategy sets for a browse-page session credential
+                        request.app.sessionToken = true;
+                    }
+                    return h.authenticated({ credentials: { token: 'test' }, artifacts: tokenData });
                 }
-                return h.authenticated({ credentials: { token: 'test' }, artifacts: tokenData });
             }
-        }));
-        server.auth.strategy('api-token', 'test-token');
-
-        server.ext('onRequest', (request, h) => {
-            request.logger = { info() {}, error() {}, debug() {}, warn() {}, child: () => request.logger };
-            return h.continue;
-        });
-
-        await settingsRoutes({ server, call: async () => ({}), notify: () => {}, CORS_CONFIG: false });
-        await server.initialize();
+        );
     });
 
     await t.test('every privileged key is a settings key, so a renamed setting cannot fall out of the rule', () => {

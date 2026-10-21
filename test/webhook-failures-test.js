@@ -12,7 +12,6 @@ process.env.EENGINE_REDIS_PREFIX = 'test_webhook_failures';
 
 const assert = require('node:assert').strict;
 
-const Hapi = require('@hapi/hapi');
 const { Worker } = require('bullmq');
 
 const { redis, notifyQueue, queueConf } = require('../lib/db');
@@ -21,8 +20,10 @@ const webhookDeliveryRoutes = require('../lib/api-routes/webhook-delivery-routes
 const { routeAdmitsBoundToken } = require('../lib/api-routes/account-binding');
 const { routeGrant, GROUP } = require('../lib/api-routes/permission-map');
 const registerRedisTeardown = require('./helpers/redis-teardown');
+const { createRouteTestServer } = require('./helpers/route-test-server');
+const { createMockLogger } = require('./helpers/mock-logger');
 
-const logger = { info() {}, warn() {}, error() {}, debug() {}, trace() {}, child: () => logger };
+const logger = createMockLogger();
 
 const ACCOUNT = 'webhook-failures-a';
 const OTHER = 'webhook-failures-b';
@@ -64,16 +65,7 @@ test('failed webhook deliveries', async t => {
         await pause();
         await failDelivery('wf-a-2', ACCOUNT);
 
-        server = Hapi.server({});
-        server.auth.scheme('test-token', () => ({ authenticate: (request, h) => h.authenticated({ credentials: { token: 'test' }, artifacts: {} }) }));
-        server.auth.strategy('api-token', 'test-token');
-        server.ext('onRequest', (request, h) => {
-            request.logger = logger;
-            request.app.gt = { gettext: text => text };
-            return h.continue;
-        });
-        await webhookDeliveryRoutes({ server, CORS_CONFIG: false });
-        await server.initialize();
+        server = await createRouteTestServer(routeServer => webhookDeliveryRoutes({ server: routeServer, CORS_CONFIG: false }));
     });
 
     t.after(() => worker.close());

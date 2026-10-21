@@ -14,7 +14,6 @@ process.env.EENGINE_REDIS_PREFIX = 'test_api_parity_routes';
 const assert = require('node:assert').strict;
 const crypto = require('node:crypto');
 
-const Hapi = require('@hapi/hapi');
 const { SMTPServer } = require('smtp-server');
 
 const { redis } = require('../lib/db');
@@ -34,8 +33,7 @@ const accountRoutes = require('../lib/api-routes/account-routes');
 const { startCapturingServer } = require('./helpers/capture-http-server');
 const { buildMockArgs } = require('./helpers/capture-api-routes');
 const registerRedisTeardown = require('./helpers/redis-teardown');
-
-const logger = { info() {}, warn() {}, error() {}, debug() {}, trace() {}, child: () => logger };
+const { createRouteTestServer } = require('./helpers/route-test-server');
 
 const ACCOUNT = 'api-parity-account';
 const created = { gateways: [], webhooks: [], templates: [] };
@@ -56,21 +54,14 @@ test('admin parity routes', async t => {
     let server;
 
     t.before(async () => {
-        server = Hapi.server({});
-        server.auth.scheme('test-token', () => ({ authenticate: (request, h) => h.authenticated({ credentials: { token: 'test' }, artifacts: {} }) }));
-        server.auth.strategy('api-token', 'test-token');
-        server.ext('onRequest', (request, h) => {
-            request.logger = logger;
-            request.app.gt = { gettext: text => text };
-            return h.continue;
+        server = await createRouteTestServer(async routeServer => {
+            const args = buildMockArgs(routeServer);
+            await gatewayRoutes(args);
+            await webhookRouteRoutes(args);
+            await blocklistRoutes(args);
+            await templateRoutes(args);
+            await accountRoutes(args);
         });
-        const args = buildMockArgs(server);
-        await gatewayRoutes(args);
-        await webhookRouteRoutes(args);
-        await blocklistRoutes(args);
-        await templateRoutes(args);
-        await accountRoutes(args);
-        await server.initialize();
     });
 
     await t.test('POST /v1/gateway/{gateway}/verify checks the stored settings and credentials', async t => {

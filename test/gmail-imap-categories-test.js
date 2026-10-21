@@ -7,13 +7,14 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const { createMockLogger } = require('./helpers/mock-logger');
 
 require('./helpers/mock-db').installDbMock();
 
 const { Mailbox } = require('../lib/email-client/imap/mailbox');
 const { forAll, gen } = require('./helpers/property');
 
-const silentLogger = { trace() {}, debug() {}, info() {}, warn() {}, error() {} };
+const silentLogger = createMockLogger();
 
 require('./helpers/redis-teardown')();
 

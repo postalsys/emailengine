@@ -12,6 +12,8 @@ function createMockLogger() {
     for (const level of LEVELS) {
         logger[level] = entry => logger.entries.push(entry && typeof entry === 'object' ? Object.assign({ level }, entry) : { level, msg: entry });
     }
+    // a child records into the same entries
+    logger.child = () => logger;
     return logger;
 }
 

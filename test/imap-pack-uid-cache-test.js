@@ -6,6 +6,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const { createMockLogger } = require('./helpers/mock-logger');
 
 require('./helpers/mock-db').installDbMock();
 
@@ -14,7 +15,7 @@ const { forAll, gen } = require('./helpers/property');
 
 require('./helpers/redis-teardown')();
 
-const noopLogger = { trace() {}, debug() {}, info() {}, warn() {}, error() {} };
+const noopLogger = createMockLogger();
 
 function createConnection() {
     return Object.assign(Object.create(IMAPClient.prototype), {

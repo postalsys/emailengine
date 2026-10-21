@@ -14,13 +14,12 @@ process.env.EENGINE_REDIS_PREFIX = 'test_outbox_routes';
 
 const assert = require('node:assert').strict;
 
-const Hapi = require('@hapi/hapi');
-
 const { redis, submitQueue } = require('../lib/db');
 const { REDIS_PREFIX } = require('../lib/consts');
 const outboxRoutes = require('../lib/api-routes/outbox-routes');
 const { routeAdmitsBoundToken } = require('../lib/api-routes/account-binding');
 const registerRedisTeardown = require('./helpers/redis-teardown');
+const { createRouteTestServer } = require('./helpers/route-test-server');
 
 const ACCOUNT = 'outbox-routes-a';
 const OTHER = 'outbox-routes-b';
@@ -46,19 +45,7 @@ test('outbox routes', async t => {
     let server;
 
     t.before(async () => {
-        server = Hapi.server({});
-        server.auth.scheme('test-token', () => ({
-            authenticate: (request, h) => h.authenticated({ credentials: { token: 'test' }, artifacts: {} })
-        }));
-        server.auth.strategy('api-token', 'test-token');
-        server.ext('onRequest', (request, h) => {
-            request.logger = { info() {}, error() {}, debug() {}, warn() {}, child: () => request.logger };
-            // what failAction translates validation errors with
-            request.app.gt = { gettext: text => text };
-            return h.continue;
-        });
-        await outboxRoutes({ server, CORS_CONFIG: false });
-        await server.initialize();
+        server = await createRouteTestServer(routeServer => outboxRoutes({ server: routeServer, CORS_CONFIG: false }));
 
         await cleanup();
         await queueMessage(ACCOUNT, 'outbox-routes-a-1');
