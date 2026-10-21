@@ -2,22 +2,22 @@
   "spdxVersion": "SPDX-2.3",
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
-  "name": "emailengine-app@2.84.2",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.84.2-cfd397df-5eec-4e70-95c0-41de3ea668fa",
+  "name": "emailengine-app@2.85.0",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.85.0-5fd29ed1-8ce3-40d9-920a-4f0b336a1acd",
   "creationInfo": {
-    "created": "2026-10-20T18:11:14.272Z",
+    "created": "2026-10-21T13:22:03.362Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
   },
   "documentDescribes": [
-    "SPDXRef-Package-emailengine-app-2.84.2"
+    "SPDXRef-Package-emailengine-app-2.85.0"
   ],
   "packages": [
     {
       "name": "emailengine-app",
-      "SPDXID": "SPDXRef-Package-emailengine-app-2.84.2",
-      "versionInfo": "2.84.2",
+      "SPDXID": "SPDXRef-Package-emailengine-app-2.85.0",
+      "versionInfo": "2.85.0",
       "packageFileName": "",
       "description": "Email Sync Engine",
       "primaryPackagePurpose": "LIBRARY",
@@ -29,7 +29,7 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/emailengine-app@2.84.2"
+          "referenceLocator": "pkg:npm/emailengine-app@2.85.0"
         }
       ]
     },
@@ -323,11 +323,11 @@
     },
     {
       "name": "@hapi/ammo",
-      "SPDXID": "SPDXRef-Package-hapi.ammo-6.0.1",
-      "versionInfo": "6.0.1",
+      "SPDXID": "SPDXRef-Package-hapi.ammo-6.0.2",
+      "versionInfo": "6.0.2",
       "packageFileName": "node_modules/@hapi/ammo",
       "description": "HTTP Range processing utilities",
-      "downloadLocation": "https://registry.npmjs.org/@hapi/ammo/-/ammo-6.0.1.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@hapi/ammo/-/ammo-6.0.2.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "BSD-3-Clause",
@@ -335,13 +335,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40hapi/ammo@6.0.1"
+          "referenceLocator": "pkg:npm/%40hapi/ammo@6.0.2"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "a662fe9cfa1de20e7c917acc72c18ba74e4eda31783f64371a22fca9857b9ca6048777067fead5e0fe49ca2d94ab46a01a1554eb71ad69201f04464e96b267f7"
+          "checksumValue": "61e54492eaf9f26209db0c48b880c628382988d1262ce1acc208066ab66efd539150f2c18ce50f89a652976a05646102aaddf23d23450621d3c0e407e7553ebc"
         }
       ]
     },
@@ -1067,11 +1067,11 @@
     },
     {
       "name": "@hapi/subtext",
-      "SPDXID": "SPDXRef-Package-hapi.subtext-8.1.3",
-      "versionInfo": "8.1.3",
+      "SPDXID": "SPDXRef-Package-hapi.subtext-8.1.4",
+      "versionInfo": "8.1.4",
       "packageFileName": "node_modules/@hapi/subtext",
       "description": "HTTP payload parsing",
-      "downloadLocation": "https://registry.npmjs.org/@hapi/subtext/-/subtext-8.1.3.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@hapi/subtext/-/subtext-8.1.4.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "BSD-3-Clause",
@@ -1079,13 +1079,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40hapi/subtext@8.1.3"
+          "referenceLocator": "pkg:npm/%40hapi/subtext@8.1.4"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "593a446508c13f7509de01ae9cd977c39028d44389b2ebb6bedb59d8a11c1be72c48bc5cd1d23a548925da67768c3947890d80440a2a752512732d3903f347b4"
+          "checksumValue": "cf6596776502916e166c4245a053af3323c519c1850e362ee2e8e70d171498030c591675ab38431394a07e696ca82e777c88a2eb51d65d49a447f167f4fcb459"
         }
       ]
     },
@@ -2578,11 +2578,11 @@
     },
     {
       "name": "bullmq",
-      "SPDXID": "SPDXRef-Package-bullmq-6.3.19",
-      "versionInfo": "6.3.19",
+      "SPDXID": "SPDXRef-Package-bullmq-6.4.0",
+      "versionInfo": "6.4.0",
       "packageFileName": "node_modules/bullmq",
       "description": "Queue for messages and jobs based on Redis",
-      "downloadLocation": "https://registry.npmjs.org/bullmq/-/bullmq-6.3.19.tgz",
+      "downloadLocation": "https://registry.npmjs.org/bullmq/-/bullmq-6.4.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://bullmq.io/",
       "licenseDeclared": "MIT",
@@ -2590,13 +2590,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/bullmq@6.3.19"
+          "referenceLocator": "pkg:npm/bullmq@6.4.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "9e64d16921e9e4318b1ec4c28d9966e3e42550bb1744f3aa8e3f82e1c9a3717a7c0dd38e4fd013b45baeba0c2a517dfadab0a543427a47a837de374988cda066"
+          "checksumValue": "c04c7c6f8b43996d6ea403974b4482cb4368f8305302457cd8614ffeb6f4100337aad00e017017289d8e2a25aae20ef167506ff96a64c2fbc9c759b1598fad6b"
         }
       ]
     },
@@ -5628,247 +5628,247 @@
   "relationships": [
     {
       "spdxElementId": "SPDXRef-DOCUMENT",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DESCRIBES"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.accept-6.0.3",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.bell-13.2.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.boom-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.cookie-12.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.crumb-9.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.hapi-21.4.10",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.inert-7.1.2",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.vision-7.0.3",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-msgpack.msgpack-3.1.3",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-postalsys.bounce-classifier-3.1.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-postalsys.certs-2.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-postalsys.email-ai-tools-2.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-postalsys.email-content-0.1.17",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-postalsys.email-text-tools-2.5.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-postalsys.gettext-4.3.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-postalsys.joi-messages-1.4.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-postalsys.templates-2.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-sentry.node-core-10.76.2",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-simplewebauthn.server-14.0.3",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-zone-eu.mailsplit-5.4.27",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-zone-eu.wild-config-1.7.10",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-bullmq-6.3.19",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "spdxElementId": "SPDXRef-Package-bullmq-6.4.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-dotenv-18.0.8",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-encoding-japanese-2.4.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-fast-xml-parser-5.11.2",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-he-1.2.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-html-to-text-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-ical.js-2.2.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-iconv-lite-0.7.3",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-imapflow-2.5.9",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-ioredfour-2.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-ioredis-6.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-ipaddr.js-2.5.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-joi-18.3.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libbase64-1.4.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libmime-5.5.2",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libqp-3.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-mailparser-3.10.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-marked-15.0.12",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-nodemailer-10.1.7",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-pino-10.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-prom-client-15.1.3",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-pubface-1.2.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-punycode.js-2.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-qrcode-generator-2.0.4",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-smtp-server-3.20.2",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-socks-2.8.10",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-undici-7.30.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.84.2",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -5968,7 +5968,7 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.hoek-11.0.7",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.ammo-6.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.ammo-6.0.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -6147,7 +6147,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-hapi.ammo-6.0.1",
+      "spdxElementId": "SPDXRef-Package-hapi.ammo-6.0.2",
       "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6212,7 +6212,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-hapi.subtext-8.1.3",
+      "spdxElementId": "SPDXRef-Package-hapi.subtext-8.1.4",
       "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.10",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6247,7 +6247,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-hapi.ammo-6.0.1",
+      "spdxElementId": "SPDXRef-Package-hapi.ammo-6.0.2",
       "relatedSpdxElement": "SPDXRef-Package-hapi.inert-7.1.2",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6418,37 +6418,37 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.boom-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.3",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.bourne-3.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.3",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.content-6.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.3",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.file-3.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.3",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.hoek-11.0.7",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.3",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.pez-6.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.3",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.wreck-18.1.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.3",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7223,32 +7223,32 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-ioredis-6.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.3.19",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.4.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-cron-parser-5.10.2",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.3.19",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.4.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-msgpackr-2.1.0",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.3.19",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.4.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-node-abort-controller-3.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.3.19",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.4.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-semver-7.8.5",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.3.19",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.4.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.3.19",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.4.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {

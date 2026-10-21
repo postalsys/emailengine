@@ -74,7 +74,7 @@
         "@simplewebauthn/server": "14.0.3",
         "@zone-eu/mailsplit": "5.4.27",
         "@zone-eu/wild-config": "1.7.10",
-        "bullmq": "6.3.19",
+        "bullmq": "6.4.0",
         "dotenv": "18.0.8",
         "encoding-japanese": "2.4.0",
         "fast-xml-parser": "5.11.2",
