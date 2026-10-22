@@ -64,6 +64,13 @@ function stubCerts(opts) {
     };
 }
 
+// How long a background step may take before the wait gives up. These tests assert the order of
+// events, not their speed, and the unit tier runs files in parallel, several of them generating TLS
+// keys: a 4 s budget ran out three times on CI with nothing wrong (the timer pass and the button's
+// background order each starting late), so the budget is generous and counted in time, not polls.
+// The certificates themselves share one key (see issued()), so this file no longer adds to that load
+const WAIT_BUDGET_MS = 20 * 1000;
+
 /**
  * Waits for a background order to reach a state, so a test never asserts on a half-finished one.
  *
@@ -71,12 +78,6 @@ function stubCerts(opts) {
  * @param {string} message What was being waited for
  * @returns {Promise<*>} Whatever the check returned
  */
-// How long a background step may take before the wait gives up. These tests assert the order of
-// events, not their speed, and the unit tier runs files in parallel, several of them generating TLS
-// keys: a 4 s budget ran out three times on CI with nothing wrong (the timer pass and the button's
-// background order each starting late), so the budget is generous and counted in time, not polls
-const WAIT_BUDGET_MS = 20 * 1000;
-
 async function waitFor(check, message) {
     const deadline = Date.now() + WAIT_BUDGET_MS;
     while (Date.now() < deadline) {
@@ -90,8 +91,15 @@ async function waitFor(check, message) {
     throw new Error(`Timed out waiting for ${message}`);
 }
 
+// One key for every certificate this file issues: generating an RSA key per certificate, about
+// twenty of them, some inside the background steps the tests wait on, was what made those steps
+// start late on a busy runner. Each certificate is still its own, with its own fingerprint
+let sharedKey;
 async function issued(hostname) {
-    const material = await createSelfSignedCertificate({ hostnames: [hostname] });
+    if (!sharedKey) {
+        sharedKey = createSelfSignedCertificate({ hostnames: [hostname] }).then(material => material.privateKey);
+    }
+    const material = await createSelfSignedCertificate({ hostnames: [hostname], privateKey: await sharedKey });
     return {
         status: 'valid',
         cert: material.cert,

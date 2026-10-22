@@ -44,13 +44,20 @@ const STDOUT_FLUSH_GRACE_MS = 500;
 
 // One key per file however it was spelled: the runner reports a file by its real path, while the
 // list the run was given can go through a symlink (macOS keeps its temp directory behind one)
+const fileKeys = new Map();
 function fileKey(file) {
-    const resolved = pathlib.resolve(file);
-    try {
-        return fs.realpathSync(resolved);
-    } catch (err) {
-        return resolved;
+    let key = fileKeys.get(file);
+    if (!key) {
+        const resolved = pathlib.resolve(file);
+        try {
+            key = fs.realpathSync(resolved);
+        } catch (err) {
+            key = resolved;
+        }
+        // a few hundred files per run, each resolved once instead of on every event
+        fileKeys.set(file, key);
     }
+    return key;
 }
 
 // The files the run was given, as run-tests.js listed them. The file-level `test:complete` event
@@ -83,7 +90,11 @@ class StallAwareSpecReporter extends Transform {
 
         this.inner = new spec();
 
-        this.outstanding = new Set(expectedFiles());
+        // keyed by resolved path, which is how the runner reports a file; the value is the name the
+        // run was given, which is what a report prints
+        this.outstanding = new Map(expectedFiles().map(file => [fileKey(file), file]));
+        // the file-level result is reported under the name the run was given, as a test of its own
+        this.fileNames = new Set(this.outstanding.values());
         // What each file has reported so far, keyed by its resolved path: when it started, how many
         // of its tests finished, and the last one. A stall report says which state a stuck file is
         // in: its tests all reported and its process never exited, or one of them never finished
@@ -109,9 +120,9 @@ class StallAwareSpecReporter extends Transform {
 
         // Written with writeSync, not console.error: the report has to survive the process.exit()
         // below, and it goes to stderr so it cannot be confused with the spec output on stdout.
-        const waiting = [...this.outstanding];
+        const waiting = [...this.outstanding.keys()];
         const detail = waiting.length
-            ? waiting.map(file => `  - ${file}${this.describeProgress(file)}`).join('\n')
+            ? waiting.map(key => `  - ${this.outstanding.get(key)}${this.describeProgress(key)}`).join('\n')
             : '  (none - the run stalled after every file had reported)';
 
         fs.writeSync(
@@ -135,7 +146,7 @@ class StallAwareSpecReporter extends Transform {
 
     // One line on how far a stuck file got, read off the events it reported
     describeProgress(file) {
-        const progress = this.progress.get(fileKey(file));
+        const progress = this.progress.get(file);
         if (!progress) {
             return '\n      not started';
         }
@@ -160,7 +171,7 @@ class StallAwareSpecReporter extends Transform {
             progress = { startedAt: Date.now(), finished: 0, lastName: null, lastAt: 0 };
             this.progress.set(key, progress);
         }
-        if ((event.type === 'test:pass' || event.type === 'test:fail') && fileKey(data.name || '') !== key) {
+        if ((event.type === 'test:pass' || event.type === 'test:fail') && !this.fileNames.has(data.name)) {
             progress.finished++;
             progress.lastName = data.name;
             progress.lastAt = Date.now();
@@ -180,7 +191,7 @@ class StallAwareSpecReporter extends Transform {
         // The file-level result: `node --test` reports each file as a top-level test whose name is
         // the path it was given on the command line.
         if (event && event.type === 'test:complete' && event.data && event.data.nesting === 0) {
-            this.outstanding.delete(event.data.name);
+            this.outstanding.delete(fileKey(event.data.name));
         }
         this.track(event);
 
