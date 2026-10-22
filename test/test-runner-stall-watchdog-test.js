@@ -113,7 +113,9 @@ test('the test runner gives up on a file that blocks its event loop', async t =>
 
     t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
-    const result = await runWithWatchdog([healthy, blocked], { stallTimeout: 2000, deadline: 12000 });
+    // the healthy file by a relative path, as test/run-tests.js passes them: Node 20 reports a
+    // file's own result under its absolute path instead, which must still count as finished
+    const result = await runWithWatchdog([pathlib.relative(PROJECT_ROOT, healthy), blocked], { stallTimeout: 2000, deadline: 12000 });
 
     await t.test('the run ends instead of waiting for the blocked file', () => {
         assert.ok(!result.timedOut, 'the watchdog did not end the run - node --test was still waiting when the deadline expired');

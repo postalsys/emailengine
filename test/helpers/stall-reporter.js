@@ -160,6 +160,12 @@ class StallAwareSpecReporter extends Transform {
         );
     }
 
+    // A file's own result is reported as a test named after the file: by the path the run was given
+    // (Node 22+), or by its absolute path, the same as its `file` (Node 20)
+    isFileResult(data) {
+        return data.name === data.file || this.fileNames.has(data.name);
+    }
+
     track(event) {
         const data = event && event.data;
         if (!data || !data.file) {
@@ -171,7 +177,7 @@ class StallAwareSpecReporter extends Transform {
             progress = { startedAt: Date.now(), finished: 0, lastName: null, lastAt: 0 };
             this.progress.set(key, progress);
         }
-        if ((event.type === 'test:pass' || event.type === 'test:fail') && !this.fileNames.has(data.name)) {
+        if ((event.type === 'test:pass' || event.type === 'test:fail') && !this.isFileResult(data)) {
             progress.finished++;
             progress.lastName = data.name;
             progress.lastAt = Date.now();
@@ -192,7 +198,7 @@ class StallAwareSpecReporter extends Transform {
         // the path it was given on the command line.
         if (event && event.type === 'test:complete' && event.data && event.data.nesting === 0) {
             // top-level tests are nesting 0 too; only a file's own result names one of the files
-            if (this.fileNames.has(event.data.name)) {
+            if (this.isFileResult(event.data)) {
                 this.outstanding.delete(fileKey(event.data.name));
             }
         }
