@@ -3,6 +3,11 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
+// Settings of its own, set before anything opens a connection: the unit tier runs files in parallel
+// on one database, and settings-privileged-keys-test.js writes sentryEnabled to the shared settings
+// hash, which made the assertions here fail when the two overlapped on a loaded machine
+process.env.EENGINE_REDIS_PREFIX = 'test_settings_license_sentry';
+
 const { redis } = require('../lib/db');
 const settings = require('../lib/settings');
 const { REDIS_PREFIX } = require('../lib/consts');
