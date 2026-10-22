@@ -71,8 +71,15 @@ function stubCerts(opts) {
  * @param {string} message What was being waited for
  * @returns {Promise<*>} Whatever the check returned
  */
+// How long a background step may take before the wait gives up. These tests assert the order of
+// events, not their speed, and the unit tier runs files in parallel, several of them generating TLS
+// keys: a 4 s budget ran out three times on CI with nothing wrong (the timer pass and the button's
+// background order each starting late), so the budget is generous and counted in time, not polls
+const WAIT_BUDGET_MS = 20 * 1000;
+
 async function waitFor(check, message) {
-    for (let i = 0; i < 200; i++) {
+    const deadline = Date.now() + WAIT_BUDGET_MS;
+    while (Date.now() < deadline) {
         const result = await check();
         if (result) {
             return result;
