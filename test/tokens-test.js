@@ -11,6 +11,7 @@ const tokens = require('../lib/tokens');
 const tokenAuditLog = require('../lib/token-audit-log');
 const { redis } = require('../lib/db');
 const { REDIS_PREFIX } = require('../lib/consts');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 // Polls until check() resolves truthy or the deadline passes, for cleanup that production code fires
 // without awaiting. A fixed sleep either wastes time or, on a loaded runner, is not long enough.
@@ -50,7 +51,7 @@ test('Token management tests', async t => {
         redis.quit();
 
         // Force exit after cleanup to prevent hanging on any remaining connections
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     // Session token tests

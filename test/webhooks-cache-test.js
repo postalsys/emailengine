@@ -9,6 +9,7 @@ process.env.EENGINE_REDIS_PREFIX = 'test_webhooks_cache';
 const { webhooks } = require('../lib/webhooks');
 const { redis } = require('../lib/db');
 const { REDIS_PREFIX } = require('../lib/consts');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 // Regression tests for the webhook handler cache in getWebhookHandlers(). The cache version
 // marker used to be assigned backwards (v = this.handlerCacheV instead of this.handlerCacheV = v)
@@ -25,7 +26,7 @@ test('Webhook handler cache', async t => {
         redis.quit();
 
         // Force exit after cleanup to prevent hanging on any remaining connections
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     await t.test('cache version marker syncs after a refresh', async () => {

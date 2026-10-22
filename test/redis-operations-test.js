@@ -2,6 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 const {
     RedisTransaction,
@@ -20,7 +21,7 @@ const {
 
 test('Redis Operations tests', async t => {
     t.after(() => {
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     // isTransientError tests

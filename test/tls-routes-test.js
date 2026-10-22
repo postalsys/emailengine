@@ -16,11 +16,12 @@ process.env.EENGINE_REDIS_PREFIX = 'test_tls_routes';
 
 const { parseHostname, validateHostname } = require('../lib/ui-routes/tls-config-routes');
 const { redis } = require('../lib/db');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 test('TLS hostname input', async t => {
     t.after(() => {
         redis.quit();
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     await t.test('folds case and stray whitespace', () => {

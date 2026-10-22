@@ -33,6 +33,7 @@ const { redis } = require('../lib/db');
 const { REDIS_PREFIX } = require('../lib/consts');
 const { createSelfSignedCertificate } = require('../lib/tls/self-signed');
 const { fakeCerts, setEnvMaterial, clearTlsEnv, resetTlsSettings } = require('./helpers/tls-fixtures');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 const logger = { info() {}, warn() {}, error() {}, debug() {}, trace() {} };
 
@@ -89,7 +90,7 @@ test('TLS context resolution', async t => {
             await redis.del(keys);
         }
         redis.quit();
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     t.beforeEach(async () => {

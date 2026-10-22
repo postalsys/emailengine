@@ -8,11 +8,12 @@ const { after } = require('node:test');
 const assert = require('node:assert').strict;
 
 const sso = require('../lib/sso');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 after(() => {
     // Force exit after tests to prevent hanging on Redis connections pulled in by
     // lib/sso -> lib/tools -> lib/settings. Same pattern as test/tools-test.js.
-    setTimeout(() => process.exit(), 1000).unref();
+    exitWhenStandalone();
 });
 
 test('parseScopes', async t => {

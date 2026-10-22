@@ -6,6 +6,7 @@ const http = require('node:http');
 const net = require('node:net');
 const path = require('node:path');
 const { Worker } = require('node:worker_threads');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 // --- Mock setup: must happen before any production imports ---
 
@@ -220,7 +221,7 @@ const { fetch: fetchCmd } = require('undici');
 
 test('HTTP proxy agent management', async t => {
     t.after(() => {
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     t.beforeEach(() => {

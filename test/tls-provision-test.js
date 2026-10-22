@@ -29,6 +29,7 @@ const settings = require('../lib/settings');
 const { redis } = require('../lib/db');
 const { REDIS_PREFIX, TLS_RETRY_AFTER_FAILURE, BLOCK_TLS_RENEW } = require('../lib/consts');
 const { createSelfSignedCertificate } = require('../lib/tls/self-signed');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 const logger = { info() {}, warn() {}, error() {}, debug() {}, trace() {} };
 
@@ -122,7 +123,7 @@ test('certificate provisioning', async t => {
             await redis.del(keys);
         }
         redis.quit();
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     t.beforeEach(async () => {

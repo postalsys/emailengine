@@ -7,6 +7,7 @@ const fs = require('fs');
 const os = require('os');
 const pathlib = require('path');
 const msgpack = require('../lib/msgpack');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 // Mock the db module before any other imports to prevent real Redis/BullMQ
 // connections from being created.
@@ -129,7 +130,7 @@ const { REDIS_PREFIX } = require('../lib/consts');
 
 test('Export functionality tests', async t => {
     t.after(() => {
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     // Reset mock data before each test that needs it

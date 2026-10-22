@@ -15,13 +15,14 @@ const test = require('node:test');
 const { after } = require('node:test');
 const assert = require('node:assert').strict;
 const { withFakeWithLock } = require('./helpers/fake-lock');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 require('./helpers/mock-db').installDbMock();
 
 after(() => {
     // outlook-client pulls in lib/settings -> lib/tools, whose Redis handles keep the event loop
     // alive after the assertions are done. Same force-exit the other pure suites use.
-    setTimeout(() => process.exit(), 1000).unref();
+    exitWhenStandalone();
 });
 
 const { OutlookClient } = require('../lib/email-client/outlook-client');

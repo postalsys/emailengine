@@ -22,6 +22,7 @@ const assert = require('node:assert').strict;
 const { OutlookOauth } = require('../lib/oauth/outlook');
 const { buildRawSendMailRequest, buildStructuredSendMailRequest } = require('../lib/email-client/outlook/send-request');
 const { withCapturingServer } = require('./helpers/capture-http-server');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 function createOutlook() {
     return new OutlookOauth({
@@ -45,7 +46,7 @@ async function sendRaw(baseUrl, raw) {
 
 test('Outlook sendMail base64 encoding tests', async t => {
     t.after(() => {
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     await t.test('the request targets the sendMail endpoint of the configured user path', async () => {

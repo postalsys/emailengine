@@ -2,6 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 const {
     ACCOUNT_STATES,
@@ -15,7 +16,7 @@ const {
 
 test('Account State tests', async t => {
     t.after(() => {
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     // Constants tests

@@ -5,13 +5,14 @@ const assert = require('node:assert').strict;
 
 const { redis } = require('../lib/db');
 const { lists } = require('../lib/lists');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 const LIST_ID = 'lists-test.example.com';
 
 test('Suppression list handler tests', async t => {
     t.after(() => {
         // Force exit after tests to prevent hanging on Redis connections from loaded modules
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     t.beforeEach(async () => {

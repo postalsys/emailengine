@@ -8,6 +8,7 @@ const http = require('node:http');
 const { stopServer, withCapturingServer } = require('./helpers/capture-http-server');
 // The real endpoint/encoding selection GmailClient.submitMessage() calls
 const { buildSendRequest, JSON_SEND_LIMIT } = require('../lib/email-client/gmail/send-request');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 async function startTestServer(behavior) {
     const requestCounts = {};
@@ -44,7 +45,7 @@ async function startTestServer(behavior) {
 
 test('Buffer payload dispatcher and Gmail endpoint selection', async t => {
     t.after(() => {
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     const { GmailOauth } = require('../lib/oauth/gmail');

@@ -9,6 +9,7 @@ process.env.EENGINE_REDIS_PREFIX = 'test_settings_coupling';
 const settings = require('../lib/settings');
 const { redis } = require('../lib/db');
 const { REDIS_PREFIX } = require('../lib/consts');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 // Regression tests for settings.set() side effects. The AI/notifyText coupling used to be dead
 // code (`key in [...]` tests array indices, never the values) and, had it matched, its early
@@ -25,7 +26,7 @@ test('Settings AI text coupling', async t => {
         redis.quit();
 
         // Force exit after cleanup to prevent hanging on any remaining connections
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     await t.test('enabling generateEmailSummary also enables notifyText and still stores the key', async () => {

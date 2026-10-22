@@ -7,11 +7,12 @@ const assert = require('node:assert').strict;
 
 const { formatExtraScopes } = require('../lib/oauth2-apps');
 const { Account } = require('../lib/account');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 test('formatExtraScopes', async t => {
     t.after(async () => {
         // force close because we loaded ../lib/oauth2-apps that spawns the db connection and queues
-        setTimeout(() => process.exit(), 5000).unref();
+        exitWhenStandalone(5000);
     });
 
     await t.test('should filter out Gmail scopes using short form', async () => {

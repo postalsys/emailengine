@@ -8,6 +8,7 @@ const settings = require('../lib/settings');
 const { oauth2Apps } = require('../lib/oauth2-apps');
 const { encrypt } = require('../lib/encrypt');
 const { REDIS_PREFIX } = require('../lib/consts');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 const ACCOUNT_ID = 'legacy-migrate-test-account';
 
@@ -43,7 +44,7 @@ async function cleanup() {
 test('Legacy OAuth2 app migration', async t => {
     t.after(() => {
         // Force exit after tests to prevent hanging on Redis connections from loaded modules
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     t.beforeEach(async () => {

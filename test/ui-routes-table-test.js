@@ -32,6 +32,7 @@ const path = require('node:path');
 const { redis } = require('../lib/db');
 const { captureRoutes, captureRouteConfigs } = require('./helpers/capture-ui-routes');
 const { OAUTH_REDIRECT_FORM_DIRECTIVES } = require('../lib/security-headers');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 // The complete, sorted set of routes registered by lib/routes-ui.js (including the
 // already-extracted admin-entities-routes.js it wires in). 165 routes.
@@ -211,7 +212,7 @@ test('UI route table is unchanged', async t => {
     t.after(() => {
         redis.quit();
         // Force exit after cleanup - requiring routes-ui.js opens Redis/BullMQ handles.
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     const captured = captureRoutes();

@@ -3,10 +3,11 @@
 const http = require('node:http');
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 test('OAuth integration tests', async t => {
     t.after(() => {
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     const { GmailOauth, OPENID_SCOPES } = require('../lib/oauth/gmail');

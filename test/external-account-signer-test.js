@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { ExternalAccountSigner, __test__ } = require('../lib/oauth/external-account-signer');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 const { validateConfig, extractFromFormat } = __test__;
 
 const VALID_FILE_CONFIG = {
@@ -76,7 +77,7 @@ test('ExternalAccountSigner', async t => {
         // Loading lib/oauth/external-account-signer transitively pulls in lib/settings -> lib/db,
         // which opens Redis sockets that keep the event loop alive after tests finish. Force-exit
         // the test process so node:test's runner does not hang waiting for the loop to drain.
-        setTimeout(() => process.exit(), 500).unref();
+        exitWhenStandalone(500);
     });
 
     await t.test('validateConfig accepts a valid file-source config', () => {

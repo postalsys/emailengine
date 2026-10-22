@@ -2,6 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 // In-memory mock Redis data store
 let mockRedisData = {};
@@ -226,7 +227,7 @@ const { REDIS_PREFIX } = require('../lib/consts');
 
 test('Passkeys module tests', async t => {
     t.after(() => {
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     t.beforeEach(() => {

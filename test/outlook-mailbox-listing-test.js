@@ -13,6 +13,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { OutlookClient, encodeFolderSegment, decodeFolderSegment } = require('../lib/email-client/outlook-client');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 const ROOT_URL = '/me/mailFolders';
 const ROOT_PAGE2_URL = '/me/mailFolders?$skiptoken=PAGE2';
@@ -134,7 +135,7 @@ function byId(listing) {
 
 test('Outlook mailbox listing - slash/percent folder handling', async t => {
     t.after(() => {
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     await t.test('lists slash-named and percent-named folders with encoded paths', async () => {
@@ -220,7 +221,7 @@ test('Outlook mailbox listing - slash/percent folder handling', async t => {
 
 test('Outlook mailbox createMailbox/renameMailbox - leaf decode at Graph boundary', async t => {
     t.after(() => {
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     await t.test('createMailbox decodes the leaf for Graph and re-encodes the returned path', async () => {
@@ -323,7 +324,7 @@ test('Outlook mailbox createMailbox/renameMailbox - leaf decode at Graph boundar
 
 test('Outlook folder segment encode/decode helpers', async t => {
     t.after(() => {
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     await t.test('encodes "%" and "/" in the documented order', async () => {

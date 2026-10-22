@@ -9,6 +9,7 @@ const http = require('http');
 const tools = require('../lib/tools');
 const settings = require('../lib/settings');
 const { credentialErrorStatus, isTransientCredentialError } = require('../lib/email-client/credential-errors');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 // The operator's authentication server answers for every account on the instance, and its status
 // decides two different things: whether the failure is the service's or the credential's, and -
@@ -78,7 +79,7 @@ test('resolveCredentials() reports an authentication server failure', async t =>
 test('Tools utility tests', async t => {
     t.after(() => {
         // Force exit after tests to prevent hanging on Redis connections from loaded modules
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     await t.test('convertDataUrisToAttachments() turns inline images into cid attachments', () => {

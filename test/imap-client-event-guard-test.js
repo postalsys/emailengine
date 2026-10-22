@@ -13,6 +13,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { IMAPClient } = require('../lib/email-client/imap-client');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 const noopLogger = {
     trace() {},
@@ -51,7 +52,7 @@ function throwingPathEvent() {
 test('IMAP event handlers do not crash on malformed events', async t => {
     t.after(() => {
         // imap-client pulls in lib/db (Redis + queues); exit the per-file process.
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     const cases = [

@@ -25,6 +25,7 @@ const os = require('node:os');
 const crypto = require('node:crypto');
 
 const { ExternalAccountSigner } = require('../lib/oauth/external-account-signer');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 const TARGET_SA = 'integration@proj.iam.gserviceaccount.com';
 
@@ -132,7 +133,7 @@ function buildUrlConfig(baseUrl) {
 test('ExternalAccountSigner integration (mock server)', async t => {
     t.after(() => {
         // Ensure no stray timers keep the process alive after the suite is done.
-        setTimeout(() => process.exit(), 500).unref();
+        exitWhenStandalone(500);
     });
 
     await t.test('end-to-end file source: file -> STS -> signJwt', async () => {

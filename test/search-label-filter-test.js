@@ -15,13 +15,14 @@ const { searchSchema } = require('../lib/schemas');
 // These are pure unit tests that never touch the DB, so mirror the convention in
 // test/tokens-test.js: quit Redis and force-exit after cleanup so the runner does not hang.
 const { redis } = require('../lib/db');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 test.after(async () => {
     try {
         await redis.quit();
     } catch (err) {
         // ignore
     }
-    setTimeout(() => process.exit(), 1000).unref();
+    exitWhenStandalone();
 });
 
 test('Label search filter - Gmail prepareQuery', async t => {

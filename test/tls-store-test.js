@@ -22,6 +22,7 @@ const settings = require('../lib/settings');
 const { redis } = require('../lib/db');
 const { REDIS_PREFIX } = require('../lib/consts');
 const { createSelfSignedCertificate } = require('../lib/tls/self-signed');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 /**
  * A certificate and key pair to feed the upload path, generated with the same builder the fallback
@@ -54,7 +55,7 @@ test('TLS material store', async t => {
         }
         redis.quit();
         // Requiring lib/settings opens connections that outlive the tests; see tools-test.js
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     t.beforeEach(async () => {

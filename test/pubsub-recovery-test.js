@@ -2,6 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const exitWhenStandalone = require('./helpers/exit-standalone');
 // Mock Redis and BullMQ before any production imports
 const mockQueue = {
     add: async () => ({}),
@@ -361,7 +362,7 @@ function withMockedOauth2Apps(mocks, fn) {
 
 test('Pub/Sub subscription recovery tests', async t => {
     t.after(() => {
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     t.beforeEach(() => {
@@ -1640,7 +1641,7 @@ test('Pub/Sub subscription recovery tests', async t => {
 
 test('startLoop orchestration tests', async t => {
     t.after(() => {
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     t.beforeEach(() => {

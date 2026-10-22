@@ -8,6 +8,7 @@ const assert = require('node:assert').strict;
 
 const { messageWebSafeHtml, webSafeTextResponse, applyWebSafeHtmlOptions, collapseThreadHistory } = require('../lib/web-safe-html');
 const { COLLAPSE_CLASS, COLLAPSE_TOGGLE_CLASS } = require('../lib/consts');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 const MARKER = `<details class="${COLLAPSE_CLASS}">`;
 
@@ -72,7 +73,7 @@ test('collapseThreadHistory', async t => {
         // lib/web-safe-html reads its env flag through lib/tools, which transitively pulls in
         // lib/settings -> lib/db and opens Redis sockets that keep the event loop alive after the
         // tests finish. Force-exit so node:test's runner does not hang waiting for it to drain.
-        setTimeout(() => process.exit(), 500).unref();
+        exitWhenStandalone(500);
     });
 
     await t.test('folds the quoted thread of an HTML reply into one marker', async () => {

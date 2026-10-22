@@ -18,11 +18,12 @@ const { fetch: fetchCmd } = require('undici');
 const { withCapturingServer } = require('./helpers/capture-http-server');
 const { httpAgent } = require('../lib/tools');
 const { validateWebhookTarget, WEBHOOK_EGRESS_POLICY } = require('../lib/webhook-egress');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 test('webhook dispatcher enforces the egress policy', async t => {
     // lib/tools.js pulls in settings and its Redis client, which keeps the process alive
     t.after(() => {
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     await t.test('the policy under test is the one that was configured', () => {

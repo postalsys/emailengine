@@ -40,6 +40,7 @@ const {
     budgetAddress
 } = require('../lib/utils/network');
 const { REDIS_PREFIX } = require('../lib/consts');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 // The module holds its own references now, so the globals can go back
 dnsPromises.reverse = originalReverse;
@@ -64,7 +65,7 @@ function recordingRedis(existing) {
 
 test('Network Utilities tests', async t => {
     t.after(() => {
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     // matchIp tests

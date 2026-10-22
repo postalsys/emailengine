@@ -4,11 +4,12 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { resolveOAuthErrorStatus } = require('../lib/tools');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 test('resolveOAuthErrorStatus tests', async t => {
     t.after(() => {
         // Force exit after tests to prevent hanging on Redis connections from loaded modules
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     await t.test('returns numeric error code when it is a valid HTTP status', async () => {

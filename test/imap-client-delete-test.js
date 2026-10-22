@@ -11,6 +11,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { IMAPClient } = require('../lib/email-client/imap-client');
+const exitWhenStandalone = require('./helpers/exit-standalone');
 
 // Minimal logger that satisfies BaseClient.getLogger() and imapConfig.child().
 const noopLogger = {
@@ -61,7 +62,7 @@ test('IMAPClient.delete() tests', async t => {
         // The module pulls in lib/db (Redis + BullMQ queues), which keeps the event
         // loop alive. Node runs each test file in its own process, so exiting here is
         // safe and mirrors the existing redis-operations-test.js cleanup.
-        setTimeout(() => process.exit(), 1000).unref();
+        exitWhenStandalone();
     });
 
     await t.test('delete() closes all subconnections', async () => {
