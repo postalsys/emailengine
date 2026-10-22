@@ -287,3 +287,66 @@ test('applyIdleSettings() with a learned interval', async t => {
         assert.strictEqual(config.maxIdleTime, 25 * SECOND);
     });
 });
+
+// Boundaries, each pinned because mutation testing (npm run test:mutation) showed nothing else did
+test('adaptive IDLE interval boundaries', async t => {
+    const learned18 = () => run([drop(30 * SECOND, 46 * SECOND), drop(30 * SECOND, 46 * SECOND)]);
+
+    await t.test('quiet times exactly 25% apart, of the longer one, are the same timer', () => {
+        assert.strictEqual(run([drop(30 * SECOND, 46 * SECOND), drop(40 * SECOND, 56 * SECOND)]).interval, 18 * SECOND);
+        // 25% of the shorter would not be enough
+        assert.strictEqual(run([drop(30 * SECOND, 46 * SECOND), drop(40.1 * SECOND, 56 * SECOND)]).interval, null);
+    });
+
+    await t.test('a drop with no quiet time at all is not recorded', () => {
+        assert.deepStrictEqual(observe(null, drop(0, 46 * SECOND), 1e12), initialState());
+    });
+
+    await t.test('a quiet time of exactly the ceiling teaches nothing', () => {
+        assert.strictEqual(run([drop(LEARN_CEILING, LEARN_CEILING + MINUTE), drop(LEARN_CEILING, LEARN_CEILING + MINUTE)]).interval, null);
+    });
+
+    await t.test('relaxing to exactly the ceiling goes back to the default', () => {
+        const state = Object.assign(initialState(), { interval: Math.round(LEARN_CEILING / 1.5), stable: RELAX_AFTER - 1 });
+        assert.strictEqual(Math.round(state.interval * 1.5), LEARN_CEILING);
+        assert.strictEqual(observe(state, { type: 'stable', ageMs: STABLE_SESSION }, 1e12).interval, null);
+    });
+
+    await t.test('the cooldown ends exactly at cappedUntil', () => {
+        const capped = Object.assign(initialState(), { cappedUntil: 2e12 });
+        const first = observe(capped, drop(30 * SECOND, 46 * SECOND), 2e12);
+        assert.strictEqual(first.cappedUntil, 0, 'cleared at the moment it ends');
+        assert.strictEqual(first.drops, 1, 'and the drop at that moment already counts');
+        assert.strictEqual(observe(capped, drop(30 * SECOND, 46 * SECOND), 2e12 - 1).drops, 0, 'one millisecond earlier it does not');
+    });
+
+    await t.test('a last write exactly one interval in is not yet a restart', () => {
+        // IDLE starts after the setup and the auto-IDLE delay, so the first restart always lands later
+        const state = Object.assign(learned18(), { ageWhenLearned: 34 * SECOND });
+        const atBoundary = drop(16 * SECOND, 34 * SECOND, true, 18 * SECOND);
+        const after = observe(observe(state, atBoundary, 1e12), atBoundary, 1e12 + MINUTE);
+        assert.strictEqual(after.cappedUntil, 0, 'not a session cap');
+    });
+
+    await t.test('drops exactly SAME_EVENT_WINDOW apart are two events', () => {
+        const first = observe(null, drop(30 * SECOND, 46 * SECOND), 1e12);
+        assert.strictEqual(observe(first, drop(30 * SECOND, 46 * SECOND), 1e12 + SAME_EVENT_WINDOW).interval, 18 * SECOND);
+    });
+
+    await t.test('cap evidence exactly SAME_EVENT_WINDOW apart is two sessions', () => {
+        const learned = run([drop(175 * SECOND, 355 * SECOND), drop(172 * SECOND, 352 * SECOND)]);
+        const capLike = drop(40 * SECOND, 357 * SECOND, true, learned.interval);
+        const after = observe(observe(learned, capLike, 2e12), capLike, 2e12 + SAME_EVENT_WINDOW);
+        assert.ok(after.cappedUntil > 0);
+    });
+
+    await t.test('a lowering run that arrives at the current interval changes nothing, relaxedFrom included', () => {
+        // relaxed 18 -> 27 s; three similar drops whose 60% is exactly 27 s
+        let state = stableRun(learned18(), 2e12, 18 * SECOND);
+        assert.deepStrictEqual([state.interval, state.relaxedFrom], [27 * SECOND, 18 * SECOND]);
+        [45, 45, 45].forEach((quiet, i) => {
+            state = observe(state, drop(quiet * SECOND, 20 * MINUTE, true, 27 * SECOND), 3e12 + i * MINUTE);
+        });
+        assert.deepStrictEqual([state.interval, state.relaxedFrom], [27 * SECOND, 18 * SECOND]);
+    });
+});

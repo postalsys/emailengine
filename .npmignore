@@ -6,6 +6,7 @@ CLAUDE.md
 
 # Test files
 test/
+scripts/mutation-test.js
 playwright.config.js
 playwright-report/
 test-results/

@@ -98,6 +98,46 @@ test('adaptive IDLE store', async t => {
         assert.strictEqual(await learnedInterval(redis, host), 18000);
     });
 
+    await t.test('a changed state is written once, and the result reports the interval before it', async () => {
+        // pinned by mutation testing
+        const host = newHost();
+        const now = Date.now();
+        const stored = JSON.stringify(Object.assign(initialState(), { interval: 18000, stable: 1 }));
+        await redis.hset(LEARNED_KEY, host, stored);
+        const writes = [];
+        const spy = {
+            hget: (...a) => redis.hget(...a),
+            hset: (...a) => {
+                writes.push(a);
+                return redis.hset(...a);
+            },
+            hdel: (...a) => {
+                writes.push(a);
+                return redis.hdel(...a);
+            }
+        };
+        // a long session that is not yet enough to relax: stable 1 -> 2 is a change, written once
+        const longSession = { connectedAt: now - STABLE_SESSION, lastClientWrite: now, maxIdleTime: 18000, context: {} };
+        const recorded = await recordClose(spy, host, longSession, now);
+        assert.deepStrictEqual([recorded.before, recorded.after], [18000, 18000]);
+        assert.strictEqual(writes.length, 1);
+    });
+
+    await t.test('an observation that changes nothing writes nothing', async () => {
+        // pinned by mutation testing: a drop inside the cooldown leaves the state as it is
+        const host = newHost();
+        const now = Date.now();
+        await redis.hset(LEARNED_KEY, host, JSON.stringify(Object.assign(initialState(), { cappedUntil: now + 3600000 })));
+        const writes = [];
+        const spy = {
+            hget: (...a) => redis.hget(...a),
+            hset: (...a) => writes.push(a),
+            hdel: (...a) => writes.push(a)
+        };
+        await recordClose(spy, host, droppedIdle(now), now);
+        assert.deepStrictEqual(writes, []);
+    });
+
     await t.test('a close that says nothing is not stored', async () => {
         const host = newHost();
         assert.strictEqual(await recordClose(redis, host, { connectedAt: null, context: {} }), null);

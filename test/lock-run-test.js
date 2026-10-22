@@ -12,7 +12,7 @@ const crypto = require('crypto');
 const Lock = require('ioredfour');
 
 const { redis } = require('../lib/db');
-const { runLocked, refuseUnavailableLock } = require('../lib/lock-run');
+const { runLocked, refuseUnavailableLock, getSharedLock } = require('../lib/lock-run');
 const { createMockLogger } = require('./helpers/mock-logger');
 const { listFiles } = require('./helpers/list-files');
 const registerRedisTeardown = require('./helpers/redis-teardown');
@@ -155,4 +155,52 @@ test('locks are taken only through runLocked()', () => {
         }
     }
     assert.deepStrictEqual(offenders, []);
+});
+
+// Pinned because mutation testing (npm run test:mutation) showed nothing else did
+test('runLocked() waits for a holder when told to', async () => {
+    const key = id();
+    const holder = await lock.acquireLock(key, 10000);
+    setTimeout(() => lock.releaseLock(holder), 200);
+    const result = await runLocked(
+        lock,
+        key,
+        { ttl: 10000, wait: 5000 },
+        async () => 'got it',
+        () => assert.fail('a lock released within the wait is taken, not refused')
+    );
+    assert.strictEqual(result, 'got it');
+});
+
+test('refuseUnavailableLock(): a failure keeps the site message for the client and a code only when the error has one', () => {
+    const logger = createMockLogger();
+    const refuse = refuseUnavailableLock(logger, 'Failed to get flush lock', {}, { failureMessage: 'Flushing failed, try again' });
+    assert.throws(
+        () => refuse(new Error('connection lost')),
+        err => err.message === 'Flushing failed, try again' && !('code' in err.output.payload)
+    );
+});
+
+test('getSharedLock() builds one lock on first use and hands out that one', () => {
+    const first = getSharedLock();
+    assert.strictEqual(typeof first.withLock, 'function');
+    assert.strictEqual(getSharedLock(), first);
+});
+
+test('runLocked() gives up once its wait is over', async () => {
+    // ioredfour reads a wait of 0 as "wait forever", so the number has to reach it as given
+    const key = id();
+    const holder = await lock.acquireLock(key, 10000);
+    const started = Date.now();
+    const answer = await runLocked(
+        lock,
+        key,
+        { ttl: 10000, wait: 300 },
+        async () => assert.fail('the lock was held'),
+        err => err.code
+    );
+    const waited = Date.now() - started;
+    assert.strictEqual(answer, 'ELOCKNOTACQUIRED');
+    assert.ok(waited >= 250 && waited < 5000, `waited ${waited} ms`);
+    await lock.releaseLock(holder);
 });

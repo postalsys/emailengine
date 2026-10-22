@@ -33,6 +33,18 @@ test('applyIdleSettings()', async t => {
         assert.deepEqual(applied({ host: 'imap.163.com' }), { host: 'imap.163.com', maxIdleTime: 55 * 1000, missingIdleCommand: 'STATUS' });
     });
 
+    await t.test('no learned interval leaves the provider value alone, and a host with none takes the learned one', () => {
+        // pinned by mutation testing: 0 and null are "nothing learned", never an interval of zero
+        for (const learned of [0, null, undefined]) {
+            const config = { host: 'imap.mail.yahoo.com' };
+            applyIdleSettings(config, {}, learned);
+            assert.equal(config.maxIdleTime, 3 * 60 * 1000, String(learned));
+        }
+        const unset = { host: 'imap.example.com', maxIdleTime: 0 };
+        applyIdleSettings(unset, {}, 18000);
+        assert.equal(unset.maxIdleTime, 18000, 'a config interval of 0 is no interval');
+    });
+
     await t.test('the account interval applies to any host', () => {
         assert.equal(applied({ host: 'mail.zxcs.nl' }, { maxIdleTime: 120000 }).maxIdleTime, 120000);
     });
