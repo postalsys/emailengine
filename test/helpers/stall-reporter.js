@@ -36,10 +36,22 @@
 const { spec } = require('node:test/reporters');
 const { Transform } = require('node:stream');
 const fs = require('node:fs');
+const pathlib = require('node:path');
 
 // How long to let queued spec output reach the pipe before exiting on a stall. Generous because it
 // only ever runs once, on a run that has already been silent for a minute.
 const STDOUT_FLUSH_GRACE_MS = 500;
+
+// One key per file however it was spelled: the runner reports a file by its real path, while the
+// list the run was given can go through a symlink (macOS keeps its temp directory behind one)
+function fileKey(file) {
+    const resolved = pathlib.resolve(file);
+    try {
+        return fs.realpathSync(resolved);
+    } catch (err) {
+        return resolved;
+    }
+}
 
 // The files the run was given, as run-tests.js listed them. The file-level `test:complete` event
 // carries the same relative path as its `name`, which is what lets outstanding files be named rather
@@ -72,6 +84,10 @@ class StallAwareSpecReporter extends Transform {
         this.inner = new spec();
 
         this.outstanding = new Set(expectedFiles());
+        // What each file has reported so far, keyed by its resolved path: when it started, how many
+        // of its tests finished, and the last one. A stall report says which state a stuck file is
+        // in: its tests all reported and its process never exited, or one of them never finished
+        this.progress = new Map();
         this.lastEvent = Date.now();
         this.stallMs = Number(process.env.EE_TEST_STALL_TIMEOUT) || 0;
         this.watchdog = null;
@@ -94,7 +110,9 @@ class StallAwareSpecReporter extends Transform {
         // Written with writeSync, not console.error: the report has to survive the process.exit()
         // below, and it goes to stderr so it cannot be confused with the spec output on stdout.
         const waiting = [...this.outstanding];
-        const detail = waiting.length ? waiting.map(file => `  - ${file}`).join('\n') : '  (none - the run stalled after every file had reported)';
+        const detail = waiting.length
+            ? waiting.map(file => `  - ${file}${this.describeProgress(file)}`).join('\n')
+            : '  (none - the run stalled after every file had reported)';
 
         fs.writeSync(
             2,
@@ -115,6 +133,40 @@ class StallAwareSpecReporter extends Transform {
         setTimeout(() => process.exit(1), STDOUT_FLUSH_GRACE_MS);
     }
 
+    // One line on how far a stuck file got, read off the events it reported
+    describeProgress(file) {
+        const progress = this.progress.get(fileKey(file));
+        if (!progress) {
+            return '\n      not started';
+        }
+        const ago = at => `${Math.round((Date.now() - at) / 1000)}s ago`;
+        if (!progress.finished) {
+            return `\n      started ${ago(progress.startedAt)}, no test reported yet (a test is blocked, or the file is still loading)`;
+        }
+        return (
+            `\n      started ${ago(progress.startedAt)}, ${progress.finished} test(s) reported, the last ${ago(progress.lastAt)}: "${progress.lastName}"` +
+            `\n      if that was its last test, the tests are done and the process did not exit`
+        );
+    }
+
+    track(event) {
+        const data = event && event.data;
+        if (!data || !data.file) {
+            return;
+        }
+        const key = fileKey(data.file);
+        let progress = this.progress.get(key);
+        if (!progress) {
+            progress = { startedAt: Date.now(), finished: 0, lastName: null, lastAt: 0 };
+            this.progress.set(key, progress);
+        }
+        if ((event.type === 'test:pass' || event.type === 'test:fail') && fileKey(data.name || '') !== key) {
+            progress.finished++;
+            progress.lastName = data.name;
+            progress.lastAt = Date.now();
+        }
+    }
+
     forward(err, output, callback) {
         if (output) {
             this.push(output);
@@ -130,6 +182,7 @@ class StallAwareSpecReporter extends Transform {
         if (event && event.type === 'test:complete' && event.data && event.data.nesting === 0) {
             this.outstanding.delete(event.data.name);
         }
+        this.track(event);
 
         this.inner._transform(event, encoding, (err, output) => this.forward(err, output, callback));
     }

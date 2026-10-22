@@ -37,6 +37,19 @@ test('blocks the event loop', () => {
 });
 `;
 
+// Its tests pass and are reported, then the process never exits: what CI showed once for
+// test/oauth-request-dispatch-test.js, every test printed and the file never completing. The hook
+// waits a moment first so the results reach the runner before the loop is blocked
+const HELD_FIXTURE = `'use strict';
+const { test, after } = require('node:test');
+after(async () => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 15000);
+});
+test('passes first', () => {});
+test('passes second', () => {});
+`;
+
 const HEALTHY_FIXTURE = `'use strict';
 const { test } = require('node:test');
 test('finishes immediately', () => {});
@@ -117,11 +130,29 @@ test('the test runner gives up on a file that blocks its event loop', async t =>
         assert.ok(result.stderr.includes(blocked), `the stall report did not name ${blocked}:\n${result.stderr}`);
     });
 
+    await t.test('it says the blocked file never reported a test', () => {
+        assert.match(result.stderr, /no test reported yet/, result.stderr);
+    });
+
     await t.test('it does not accuse a file that finished', () => {
         // The last file to print before a stall is usually an innocent one that simply finished last,
         // which is what made the original incident so hard to read.
         assert.ok(!result.stderr.includes(healthy), `the stall report named a file that had already completed:\n${result.stderr}`);
     });
+});
+
+test('the stall report tells a file whose tests finished from one that is stuck in a test', async t => {
+    const dir = fs.mkdtempSync(pathlib.join(os.tmpdir(), 'ee-stall-held-'));
+    const held = pathlib.join(dir, 'held-test.js');
+    fs.writeFileSync(held, HELD_FIXTURE);
+    t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+    const result = await runWithWatchdog([held], { stallTimeout: 2000, deadline: 12000 });
+
+    assert.strictEqual(result.code, 1);
+    assert.ok(result.stderr.includes(held), result.stderr);
+    assert.match(result.stderr, /2 test\(s\) reported, the last \d+s ago: "passes second"/, result.stderr);
+    assert.match(result.stderr, /the tests are done and the process did not exit/, result.stderr);
 });
 
 test('the watchdog leaves an ordinary run alone', async t => {
