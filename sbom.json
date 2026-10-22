@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "emailengine-app@2.85.0",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.85.0-239294c9-afd1-4504-9be3-ed7b79ef1dbf",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.85.0-c82d147d-2082-4d4f-8a04-bb3800eee7af",
   "creationInfo": {
-    "created": "2026-10-21T23:29:11.800Z",
+    "created": "2026-10-22T09:03:53.383Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
@@ -3466,11 +3466,11 @@
     },
     {
       "name": "imapflow",
-      "SPDXID": "SPDXRef-Package-imapflow-2.8.0",
-      "versionInfo": "2.8.0",
+      "SPDXID": "SPDXRef-Package-imapflow-2.9.0",
+      "versionInfo": "2.9.0",
       "packageFileName": "node_modules/imapflow",
       "description": "IMAP Client for Node",
-      "downloadLocation": "https://registry.npmjs.org/imapflow/-/imapflow-2.8.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/imapflow/-/imapflow-2.9.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://imapflow.com/",
       "licenseDeclared": "MIT",
@@ -3478,13 +3478,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/imapflow@2.8.0"
+          "referenceLocator": "pkg:npm/imapflow@2.9.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "dc84fc2cc980200003a75af245987883774b7656fad9ae19158cc69424244d04220f79b15eb16b995d2e642fea35617ea1841419cb449be33188594ea4998aac"
+          "checksumValue": "f1dac1703998843364307ce85d5778ebf5e7660de4adc6722ecc8ec95b80c5340f3ca51cd2efdba5bde8725dfabb66fd643ffc27aaf3d987546f31f26a3d4f9b"
         }
       ]
     },
@@ -5844,7 +5844,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-imapflow-2.8.0",
+      "spdxElementId": "SPDXRef-Package-imapflow-2.9.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -7610,42 +7610,42 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-zone-eu.mailsplit-5.4.27",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.8.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.9.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-encoding-japanese-2.4.0",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.8.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.9.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-iconv-lite-0.7.3",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.8.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.9.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libbase64-1.4.1",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.8.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.9.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libmime-5.5.2",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.8.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.9.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libqp-3.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.8.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.9.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-pino-10.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.8.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.9.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-socks-2.8.10",
-      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.8.0",
+      "relatedSpdxElement": "SPDXRef-Package-imapflow-2.9.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
