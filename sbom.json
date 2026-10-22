@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "emailengine-app@2.85.0",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.85.0-514bd326-b2f9-4b72-a4ad-e950588e4bbd",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.85.0-9dca398d-8e81-4acc-9366-dcc79cd05dee",
   "creationInfo": {
-    "created": "2026-10-22T17:52:02.940Z",
+    "created": "2026-10-22T18:39:05.694Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
@@ -2986,11 +2986,11 @@
     },
     {
       "name": "dotenv",
-      "SPDXID": "SPDXRef-Package-dotenv-18.0.8",
-      "versionInfo": "18.0.8",
+      "SPDXID": "SPDXRef-Package-dotenv-18.0.9",
+      "versionInfo": "18.0.9",
       "packageFileName": "node_modules/dotenv",
       "description": "Loads environment variables from .env file",
-      "downloadLocation": "https://registry.npmjs.org/dotenv/-/dotenv-18.0.8.tgz",
+      "downloadLocation": "https://registry.npmjs.org/dotenv/-/dotenv-18.0.9.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/motdotla/dotenv#readme",
       "licenseDeclared": "BSD-2-Clause",
@@ -2998,13 +2998,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/dotenv@18.0.8"
+          "referenceLocator": "pkg:npm/dotenv@18.0.9"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "d8a0dea05a0aff346d7276ee9c20e52c6e5559531ccaa79073a88aeb9a36df59df34072e1ab2a8a9441f24552d048f90952864e472881f1c1e6c1b54977ac47c"
+          "checksumValue": "ddf54e5b8701d36474eba3d44b09fc3b84c9cb3f4d724425ec5f356e521b6aaf632819b6b5298e2a4cbb647217cc6be454f5c24a7ea3929ce204f65d185b3c4f"
         }
       ]
     },
@@ -5694,7 +5694,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-dotenv-18.0.8",
+      "spdxElementId": "SPDXRef-Package-dotenv-18.0.9",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.85.0",
       "relationshipType": "DEPENDENCY_OF"
     },
