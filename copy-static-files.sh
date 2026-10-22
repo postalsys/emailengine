@@ -95,8 +95,10 @@ node -e 'console.log("Google crawlers updated: "+require("./data/google-crawlers
 
 # The Public Suffix List, read by lib/utils/public-suffix.js. Kept verbatim (it is MPL-2.0 and carries
 # its own licence header), and only accepted when both sections arrived whole: a truncated list would
-# not fail to parse, it would just quietly know fewer suffixes.
-fetch_checked data/public_suffix_list.dat 'const t=require("fs").readFileSync(process.argv[1],"utf8");for(const m of ["===BEGIN ICANN DOMAINS===","===END ICANN DOMAINS===","===BEGIN PRIVATE DOMAINS===","===END PRIVATE DOMAINS==="])if(!t.includes(m))throw new Error("missing "+m)' wget -q -O - https://publicsuffix.org/list/public_suffix_list.dat
+# not fail to parse, it would just quietly know fewer suffixes. Nor is a list older than the one
+# already here: the site's CDN has served a copy two days behind the one committed the same morning,
+# and the refresh replaced the newer list with it. Exit code 3 keeps the current copy without a warning
+fetch_checked data/public_suffix_list.dat 'const fs=require("fs");const t=fs.readFileSync(process.argv[1],"utf8");for(const m of ["===BEGIN ICANN DOMAINS===","===END ICANN DOMAINS===","===BEGIN PRIVATE DOMAINS===","===END PRIVATE DOMAINS==="])if(!t.includes(m))throw new Error("missing "+m);const v=x=>((x.match(/^\/\/ VERSION: (\S+)/m)||[])[1]||"");let old="";try{old=v(fs.readFileSync(process.argv[2],"utf8"))}catch(e){}if(old&&v(t)<old){console.error("Public Suffix List: the download ("+(v(t)||"no version")+") is older than the copy here ("+old+"), keeping it");process.exit(3)}' wget -q -O - https://publicsuffix.org/list/public_suffix_list.dat
 grep -m1 '^// VERSION:' data/public_suffix_list.dat || true
 
 # The SBOM shipped in the binary and served at /sbom.json, generated from the installed tree by npm
