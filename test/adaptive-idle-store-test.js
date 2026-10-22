@@ -10,6 +10,7 @@ const crypto = require('crypto');
 
 const { redis } = require('../lib/db');
 const { learnedInterval, recordClose, LEARNED_KEY } = require('../lib/email-client/imap/adaptive-idle-store');
+const { initialState, STABLE_SESSION } = require('../lib/email-client/imap/adaptive-idle');
 const { IMAPClient } = require('../lib/email-client/imap-client');
 const { createMockLogger } = require('./helpers/mock-logger');
 const registerRedisTeardown = require('./helpers/redis-teardown');
@@ -56,6 +57,45 @@ test('adaptive IDLE store', async t => {
         assert.strictEqual(await redis.hexists(LEARNED_KEY, host), 1);
         await recordClose(redis, host, { connectedAt: now - 3600 * 1000, lastClientWrite: now, context: {} }, now + 60000);
         assert.strictEqual(await redis.hexists(LEARNED_KEY, host), 0);
+    });
+
+    await t.test('a host whose cooldown is over gives up its field on the next long session', async () => {
+        const host = newHost();
+        const now = Date.now();
+        await redis.hset(LEARNED_KEY, host, JSON.stringify(Object.assign(initialState(), { cappedUntil: now - 1 })));
+        await recordClose(redis, host, { connectedAt: now - STABLE_SESSION, lastClientWrite: now, context: {} }, now);
+        assert.strictEqual(await redis.hexists(LEARNED_KEY, host), 0);
+    });
+
+    await t.test('IMAPClient.close() marks the connection as closed on purpose, so nothing is learned from it', async () => {
+        // Regression: a pause, a worker shutdown, a move to another worker or a requested reconnect
+        // closed the primary connection without marking it, and the close handler took it for a
+        // server drop (an idling session an operator paused was enough to cap a host for a day)
+        const primary = Object.assign(droppedIdle(Date.now()), { close() {} });
+        const client = Object.assign(Object.create(IMAPClient.prototype), {
+            imapClient: primary,
+            commandClient: null,
+            closeSubconnections() {}
+        });
+        client.close();
+        assert.strictEqual(primary.context.disabled, true);
+        assert.strictEqual(await recordClose(redis, newHost(), primary), null, 'no observation');
+    });
+
+    await t.test('IMAPClient.recordIdleClose() measures from when the connection closed', async () => {
+        const host = newHost();
+        const client = Object.assign(Object.create(IMAPClient.prototype), { redis, account: 'a', logger: createMockLogger() });
+        const closedAt = Date.now() - 5000;
+        // lastClientWrite 30 s before the close: two of them teach 18 s, whatever the handler awaited
+        await client.recordIdleClose(
+            { options: { host }, connectedAt: closedAt - 45000, lastClientWrite: closedAt - 30000, idlingAtClose: true, context: {} },
+            closedAt
+        );
+        await client.recordIdleClose(
+            { options: { host }, connectedAt: closedAt + 15000, lastClientWrite: closedAt + 30000, idlingAtClose: true, context: {} },
+            closedAt + 60000
+        );
+        assert.strictEqual(await learnedInterval(redis, host), 18000);
     });
 
     await t.test('a close that says nothing is not stored', async () => {
