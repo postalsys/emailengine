@@ -18,6 +18,8 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const crypto = require('node:crypto');
+const { promisify } = require('node:util');
 
 process.env.EENGINE_REDIS_PREFIX = 'test_tls_provision';
 process.env.EENGINE_SECRET = 'tls-provision-test-secret';
@@ -97,7 +99,11 @@ async function waitFor(check, message) {
 let sharedKey;
 async function issued(hostname) {
     if (!sharedKey) {
-        sharedKey = createSelfSignedCertificate({ hostnames: [hostname] }).then(material => material.privateKey);
+        sharedKey = promisify(crypto.generateKeyPair)('rsa', {
+            modulusLength: 2048,
+            publicKeyEncoding: { type: 'spki', format: 'pem' },
+            privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
+        }).then(pair => pair.privateKey);
     }
     const material = await createSelfSignedCertificate({ hostnames: [hostname], privateKey: await sharedKey });
     return {

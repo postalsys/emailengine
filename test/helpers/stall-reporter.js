@@ -145,8 +145,8 @@ class StallAwareSpecReporter extends Transform {
     }
 
     // One line on how far a stuck file got, read off the events it reported
-    describeProgress(file) {
-        const progress = this.progress.get(file);
+    describeProgress(key) {
+        const progress = this.progress.get(key);
         if (!progress) {
             return '\n      not started';
         }
@@ -191,7 +191,10 @@ class StallAwareSpecReporter extends Transform {
         // The file-level result: `node --test` reports each file as a top-level test whose name is
         // the path it was given on the command line.
         if (event && event.type === 'test:complete' && event.data && event.data.nesting === 0) {
-            this.outstanding.delete(fileKey(event.data.name));
+            // top-level tests are nesting 0 too; only a file's own result names one of the files
+            if (this.fileNames.has(event.data.name)) {
+                this.outstanding.delete(fileKey(event.data.name));
+            }
         }
         this.track(event);
 
