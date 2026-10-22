@@ -573,7 +573,11 @@ test('certificate provisioning', async t => {
         const gate = new Promise(resolve => {
             release = resolve;
         });
-        const hostname = 'mail.example.com';
+        // A name of its own, also as the Service URL so the timer pass looks at it: tls-status-test.js
+        // runs in parallel and records a valid certificate for mail.example.com, which could land
+        // after this order and hide it from the wait below
+        const hostname = 'timer-pass.example.com';
+        await settings.set('serviceUrl', `https://${hostname}`);
         // Generated up front, as in the test above
         const ordered = await issued(hostname);
         const certs = stubCerts({
