@@ -2464,9 +2464,11 @@ async function gmailMissingScopesView(flow, r, grantedScopes) {
             missing: missingScopes
         });
 
-        // Best-effort revocation of the partial token
-        oAuth2Client.revokeToken(r.refresh_token || r.access_token).catch(err => {
-            request.logger.warn({ msg: 'Failed to revoke partial OAuth2 token', err });
+        // Best-effort revocation of the partial token. revokeToken() never throws, it reports
+        oAuth2Client.revokeToken(r.refresh_token || r.access_token).then(revocation => {
+            if (!revocation.revoked) {
+                request.logger.warn({ msg: 'Failed to revoke partial OAuth2 token', revocation });
+            }
         });
 
         const retryUrl = await startOAuthRetry(flow, accountData.email);
@@ -2803,14 +2805,13 @@ async function rejectOAuthIdentity(flow, { grantToken, workspaceDomain }, expect
     const { request, h, accountData, oauth2App, oAuth2Client, providerIdentities } = flow;
 
     // The code was already exchanged, so a refused setup leaves us holding a grant we will never
-    // use. Best effort, and the same duck-typing guard Account.delete({ revoke }) uses: only
-    // GmailOauth implements revokeToken, and a rejected setup must not become a 500.
+    // use. Best effort, and the same duck-typing guard Account.findRevocableGrant() uses: only
+    // GmailOauth implements revokeToken, which reports a failure rather than throwing it.
     const revokeUnusedGrant = async failureMessage => {
         if (grantToken && typeof oAuth2Client.revokeToken === 'function') {
-            try {
-                await oAuth2Client.revokeToken(grantToken);
-            } catch (err) {
-                request.logger.warn({ msg: failureMessage, err });
+            const revocation = await oAuth2Client.revokeToken(grantToken);
+            if (!revocation.revoked) {
+                request.logger.warn({ msg: failureMessage, revocation });
             }
         }
     };

@@ -1,6 +1,7 @@
 'use strict';
 
 const http = require('node:http');
+const { withCapturingServer } = require('./helpers/capture-http-server');
 const test = require('node:test');
 const assert = require('node:assert').strict;
 const exitWhenStandalone = require('./helpers/exit-standalone');
@@ -260,8 +261,9 @@ test('OAuth integration tests', async t => {
             const gmail = new GmailOauth(baseOpts);
             gmail.revokeUrl = `http://127.0.0.1:${port}/revoke`;
 
-            await gmail.revokeToken('test-access-token-123');
+            const result = await gmail.revokeToken('test-access-token-123');
 
+            assert.deepStrictEqual(result, { revoked: true, status: 200 });
             assert.strictEqual(capturedMethod, 'POST');
             assert.ok(capturedHeaders['content-type'].includes('application/x-www-form-urlencoded'));
             assert.strictEqual(capturedBody, 'token=test-access-token-123');
@@ -270,33 +272,43 @@ test('OAuth integration tests', async t => {
         }
     });
 
-    await t.test('GmailOauth.revokeToken does not throw on HTTP error', async () => {
-        const server = http.createServer((req, res) => {
-            req.on('data', () => {});
-            req.on('end', () => {
-                res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'invalid_token' }));
-            });
-        });
-
-        await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-        const { port } = server.address();
-
-        try {
+    async function revokeAgainst(status, body) {
+        let result;
+        const responder = res => {
+            res.writeHead(status, { 'Content-Type': 'application/json' });
+            res.end(body);
+        };
+        await withCapturingServer(responder, async ({ baseUrl }) => {
             const gmail = new GmailOauth(baseOpts);
-            gmail.revokeUrl = `http://127.0.0.1:${port}/revoke`;
+            gmail.revokeUrl = `${baseUrl}/revoke`;
+            result = await gmail.revokeToken('bad-token');
+        });
+        return result;
+    }
 
-            await gmail.revokeToken('bad-token');
-        } finally {
-            await new Promise(resolve => server.close(resolve));
-        }
+    await t.test('GmailOauth.revokeToken reports an already invalid token without throwing', async () => {
+        const result = await revokeAgainst(400, JSON.stringify({ error: 'invalid_token', error_description: 'Token expired or revoked' }));
+        assert.deepStrictEqual(result, { revoked: false, status: 400, reason: 'TokenInvalid', error: 'invalid_token' });
     });
 
-    await t.test('GmailOauth.revokeToken does not throw on network error', async () => {
+    await t.test('GmailOauth.revokeToken reports any other refusal as ProviderRefused', async () => {
+        const result = await revokeAgainst(503, 'Service Unavailable');
+        assert.deepStrictEqual(result, { revoked: false, status: 503, reason: 'ProviderRefused' });
+
+        const coded = await revokeAgainst(400, JSON.stringify({ error: 'unsupported_token_type' }));
+        assert.strictEqual(coded.reason, 'ProviderRefused');
+        assert.strictEqual(coded.error, 'unsupported_token_type');
+    });
+
+    await t.test('GmailOauth.revokeToken reports a network error as RequestFailed without throwing', async () => {
         const gmail = new GmailOauth(baseOpts);
         gmail.revokeUrl = 'http://127.0.0.1:1/revoke';
 
-        await gmail.revokeToken('any-token');
+        const result = await gmail.revokeToken('any-token');
+        assert.strictEqual(result.revoked, false);
+        assert.strictEqual(result.reason, 'RequestFailed');
+        assert.strictEqual(result.status, undefined);
+        assert.ok(result.error);
     });
 
     await t.test('Scope comparison detects missing functional scopes', async () => {

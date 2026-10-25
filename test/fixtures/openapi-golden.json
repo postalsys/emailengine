@@ -2852,6 +2852,51 @@
           "account"
         ]
       },
+      "AccountRevocationReason": {
+        "type": "string",
+        "description": "Why the grant was not revoked. NotOAuth2: not an OAuth2 account. NoToken: no stored token to revoke with. AppNotFound / AppError: the OAuth2 application is missing or could not be loaded. ServiceAccount: a Workspace service account, which has no per-user grant. Unsupported: the provider offers no revocation endpoint (Microsoft). TokenInvalid: the provider reports the token as already revoked or expired. ProviderRefused: the provider answered with an error. RequestFailed: no answer from the provider",
+        "example": "ProviderRefused",
+        "enum": [
+          "NotOAuth2",
+          "NoToken",
+          "AppNotFound",
+          "AppError",
+          "ServiceAccount",
+          "Unsupported",
+          "TokenInvalid",
+          "ProviderRefused",
+          "RequestFailed"
+        ]
+      },
+      "AccountRevocation": {
+        "type": "object",
+        "description": "Outcome of the OAuth2 grant revocation, included when revoke was requested",
+        "properties": {
+          "attempted": {
+            "type": "boolean",
+            "description": "Whether the provider was asked to revoke the grant",
+            "example": true
+          },
+          "revoked": {
+            "type": "boolean",
+            "description": "Whether the provider confirmed the revocation",
+            "example": true
+          },
+          "status": {
+            "type": "integer",
+            "description": "HTTP status of the provider response, when one arrived",
+            "example": 200
+          },
+          "reason": {
+            "$ref": "#/components/schemas/AccountRevocationReason"
+          },
+          "error": {
+            "type": "string",
+            "description": "OAuth2 error code the provider returned, or the network error code",
+            "example": "invalid_request"
+          }
+        }
+      },
       "DeleteAccountResponse": {
         "type": "object",
         "properties": {
@@ -2868,6 +2913,9 @@
             "type": "boolean",
             "description": "Was the account deleted",
             "default": true
+          },
+          "revocation": {
+            "$ref": "#/components/schemas/AccountRevocation"
           }
         },
         "required": [
@@ -14197,7 +14245,7 @@
       "delete": {
         "summary": "Remove account",
         "operationId": "deleteV1AccountAccount",
-        "description": "Stop processing and clear the account's cache. Pass revoke=true to also attempt revocation of the upstream OAuth2 grant at the provider before the account is removed.<br/><br/>Removes the account, its credentials, its cached data and any messages still queued for delivery. Webhook events generated before the deletion are never delivered afterwards and are discarded once the queue reaches them. Records of deliveries that had already failed permanently are not removed here; they expire on the queue retention window, seven days by default.",
+        "description": "Stop processing and clear the account's cache. Pass revoke=true to also attempt revocation of the upstream OAuth2 grant at the provider before the account is removed; the response then reports the outcome under `revocation`. Pass revoke=required to delete the account only when the grant is gone: when the provider does not confirm the revocation the request fails with code RevocationNotConfirmed (502 when the provider was asked, 409 when it could not be) and the account and its credentials are kept, so the request can be retried.<br/><br/>Removes the account, its credentials, its cached data and any messages still queued for delivery. Webhook events generated before the deletion are never delivered afterwards and are discarded once the queue reaches them. Records of deliveries that had already failed permanently are not removed here; they expire on the queue retention window, seven days by default.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -14230,14 +14278,24 @@
             "name": "revoke",
             "in": "query",
             "schema": {
-              "type": "boolean",
-              "description": "Revoke the upstream OAuth2 grant at the provider before deleting the account",
+              "description": "Revoke the upstream OAuth2 grant at the provider before deleting the account. `true` deletes the account whatever the outcome, `required` keeps it unless the grant is gone",
               "x-meta": {
-                "usage": "Set this when deleting an account should also cut EmailEngine off at the provider, for example because a user asked for their data to be disconnected rather than just removed here.\n\nIt currently works for individual Gmail OAuth2 grants. Gmail Workspace service-account integrations, Outlook and non-OAuth2 accounts ignore it. A failed revocation is logged and never blocks the deletion."
+                "usage": "Set this when deleting an account should also cut EmailEngine off at the provider, for example because a user asked for their data to be disconnected rather than just removed here.\n\nIt currently works for individual Gmail OAuth2 grants. Gmail Workspace service-account integrations, Outlook and non-OAuth2 accounts ignore it. The response reports the outcome under `revocation`. With `true` a failed revocation never blocks the deletion; use `required` when the account must stay until the grant is gone, so a failure can be retried without reading the token out of EmailEngine."
               },
-              "default": false
+              "default": false,
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "required"
+                  ]
+                }
+              ]
             },
-            "description": "Revoke the upstream OAuth2 grant at the provider before deleting the account"
+            "description": "Revoke the upstream OAuth2 grant at the provider before deleting the account. `true` deletes the account whatever the outcome, `required` keeps it unless the grant is gone"
           }
         ],
         "tags": [

@@ -1843,7 +1843,7 @@
     {
         "name": "delete_account",
         "title": "Delete account",
-        "description": "Remove an account from this instance, with its synced index and the tokens bound to it. The mailbox at the provider is untouched. Set revoke to true to also revoke the OAuth2 grant at the provider. Confirm with the user before calling this.",
+        "description": "Remove an account from this instance, with its synced index and the tokens bound to it. The mailbox at the provider is untouched. Set revoke to true to also revoke the OAuth2 grant at the provider, or to \"required\" to keep the account unless the provider confirms the revocation. Confirm with the user before calling this.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -1856,9 +1856,19 @@
                     "maxLength": 256
                 },
                 "revoke": {
-                    "type": "boolean",
-                    "description": "Revoke the upstream OAuth2 grant at the provider before deleting the account",
-                    "default": false
+                    "description": "Revoke the upstream OAuth2 grant at the provider before deleting the account. `true` deletes the account whatever the outcome, `required` keeps it unless the grant is gone",
+                    "default": false,
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "string",
+                            "enum": [
+                                "required"
+                            ]
+                        }
+                    ]
                 }
             },
             "additionalProperties": false,
