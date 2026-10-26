@@ -156,7 +156,8 @@ class StallAwareSpecReporter extends Transform {
         }
         return (
             `\n      started ${ago(progress.startedAt)}, ${progress.finished} test(s) reported, the last ${ago(progress.lastAt)}: "${progress.lastName}"` +
-            `\n      if that was its last test, the tests are done and the process did not exit`
+            `\n      if that was its last test, the tests are done and the process did not exit` +
+            `\n      (on Node 24 that can be process.exit() deadlocking, see EXIT_SAFE_V8_FLAGS in test/run-tests.js)`
         );
     }
 

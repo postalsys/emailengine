@@ -35,6 +35,17 @@ const PROJECT_ROOT = path.join(__dirname, '..');
 // take minutes against live providers.
 const TEST_TIMEOUT = 180000;
 
+// --test-force-exit ends every test file through process.exit(), and on Node 24 that can deadlock
+// (nodejs/node#64274): the exit joins V8's background threads while one of them, a concurrent
+// Maglev or Sparkplug compile, waits for a garbage collection that only the exiting main thread
+// could run. The file's tests have all reported and its process sleeps forever, which the stall
+// watchdog then reports as a file that never finished. Seen on CI for files that hold no handle at
+// all (test/stream-encrypt-test.js). Reproduced on Linux with two CPUs, 24 files per run: 3 of 30
+// runs stalled, the backtraces showing exactly those two threads, and 0 of 30 with these flags,
+// which keep the compiles on the main thread and leave the exit nothing to wait for. V8 flags given
+// to `node --test` are passed on to every test file's process, which is where the exit happens
+const EXIT_SAFE_V8_FLAGS = ['--no-concurrent-recompilation', '--no-concurrent-sparkplug'];
+
 const TIERS = {
     unit: {
         dir: 'test',
@@ -222,17 +233,21 @@ async function main() {
 
     let testTimeout = tier.testTimeout || TEST_TIMEOUT;
 
-    let runner = spawn(process.execPath, ['--test', '--test-force-exit', `--test-timeout=${testTimeout}`, ...reporterArgs, ...tier.args, ...files], {
-        cwd: PROJECT_ROOT,
-        stdio: 'inherit',
-        env: {
-            ...process.env,
-            // Read by the stall reporter: the files to account for, and how long a silence has to
-            // last before it gives up on them.
-            EE_TEST_FILES: JSON.stringify(files),
-            EE_TEST_STALL_TIMEOUT: String(tier.stallTimeout || 0)
+    let runner = spawn(
+        process.execPath,
+        ['--test', '--test-force-exit', ...EXIT_SAFE_V8_FLAGS, `--test-timeout=${testTimeout}`, ...reporterArgs, ...tier.args, ...files],
+        {
+            cwd: PROJECT_ROOT,
+            stdio: 'inherit',
+            env: {
+                ...process.env,
+                // Read by the stall reporter: the files to account for, and how long a silence has to
+                // last before it gives up on them.
+                EE_TEST_FILES: JSON.stringify(files),
+                EE_TEST_STALL_TIMEOUT: String(tier.stallTimeout || 0)
+            }
         }
-    });
+    );
 
     // A child killed by a signal reports code=null; treat that as a failure
     let [code, signal] = await once(runner, 'exit');
@@ -267,4 +282,4 @@ if (require.main === module) {
         });
 }
 
-module.exports = { assertPortFree, TIERS };
+module.exports = { assertPortFree, TIERS, EXIT_SAFE_V8_FLAGS };
