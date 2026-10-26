@@ -95,7 +95,9 @@ function runFiles(files) {
             child.kill('SIGKILL');
         }, 45000);
         child.on('error', reject);
-        child.on('exit', code => {
+        // 'close', not 'exit': 'exit' can fire while the child's stdout is still being read, and
+        // the run summary is the last thing on it
+        child.on('close', code => {
             clearTimeout(timer);
             if (timedOut) {
                 return reject(new Error('the nested run did not finish within 45 s'));
