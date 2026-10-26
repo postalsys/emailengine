@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-10-21 21:45+0000\n"
+"POT-Creation-Date: 2026-10-26 15:33+0000\n"
 
 #: lib/autodetect-imap-settings.js:160
 msgid ""
@@ -37,7 +37,7 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:1360
 #: lib/ui-routes/route-helpers.js:350
 #: lib/ui-routes/route-helpers.js:373
-#: workers/api.js:2479
+#: workers/api.js:2481
 msgid "Email Account Setup"
 msgstr ""
 
@@ -413,7 +413,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: views/error.hbs:6
-#: workers/api.js:3339
+#: workers/api.js:3340
 msgid "Something went wrong"
 msgstr ""
 
@@ -559,7 +559,7 @@ msgid ""
 "valid"
 msgstr ""
 
-#: workers/api.js:3338
-#: workers/api.js:3461
+#: workers/api.js:3339
+#: workers/api.js:3462
 msgid "Requested page not found"
 msgstr ""

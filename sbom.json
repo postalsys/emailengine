@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "emailengine-app@2.86.0",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.86.0-e3d3e56b-453a-4ef5-969d-b9703c8fe058",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.86.0-6655c729-052e-46d3-9add-77c29ff041b8",
   "creationInfo": {
-    "created": "2026-10-25T19:58:33.217Z",
+    "created": "2026-10-26T15:33:55.020Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
@@ -3394,11 +3394,11 @@
     },
     {
       "name": "import-in-the-middle",
-      "SPDXID": "SPDXRef-Package-import-in-the-middle-3.5.2",
-      "versionInfo": "3.5.2",
+      "SPDXID": "SPDXRef-Package-import-in-the-middle-3.5.3",
+      "versionInfo": "3.5.3",
       "packageFileName": "node_modules/import-in-the-middle",
       "description": "Intercept imports in Node.js",
-      "downloadLocation": "https://registry.npmjs.org/import-in-the-middle/-/import-in-the-middle-3.5.2.tgz",
+      "downloadLocation": "https://registry.npmjs.org/import-in-the-middle/-/import-in-the-middle-3.5.3.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/nodejs/import-in-the-middle#readme",
       "licenseDeclared": "Apache-2.0",
@@ -3406,13 +3406,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/import-in-the-middle@3.5.2"
+          "referenceLocator": "pkg:npm/import-in-the-middle@3.5.3"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "5ac78803fe28e7af8660edd19a538fbde8d88bbef538578911e2bf7a344eb2bf5b7635be1393574ce0f50e2f132f8d10820dc9257f5a6bdec77fc8a249520a67"
+          "checksumValue": "bac9bf22263add5b4ecb1fdd9bbb84a1957e12c6a70839b0454ae841922414b1aed4d55767c999a883a168de10209ec4b1b313b906c95f00b2482c7ea33300f2"
         }
       ]
     },
@@ -7034,7 +7034,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-import-in-the-middle-3.5.2",
+      "spdxElementId": "SPDXRef-Package-import-in-the-middle-3.5.3",
       "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.76.2",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -7410,17 +7410,17 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-cjs-module-lexer-2.3.0",
-      "relatedSpdxElement": "SPDXRef-Package-import-in-the-middle-3.5.2",
+      "relatedSpdxElement": "SPDXRef-Package-import-in-the-middle-3.5.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-es-module-lexer-3.0.4",
-      "relatedSpdxElement": "SPDXRef-Package-import-in-the-middle-3.5.2",
+      "relatedSpdxElement": "SPDXRef-Package-import-in-the-middle-3.5.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-module-details-from-path-1.0.4",
-      "relatedSpdxElement": "SPDXRef-Package-import-in-the-middle-3.5.2",
+      "relatedSpdxElement": "SPDXRef-Package-import-in-the-middle-3.5.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
