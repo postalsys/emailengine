@@ -7,10 +7,17 @@
 // thread against the test Redis db, driven over the same RPC protocol the main thread uses.
 
 const test = require('node:test');
+
+// Own key prefix, set before any module reads it (the Worker thread shares this environment): the
+// test files of the tier run in parallel on one database, and smtp-auth-test.js switches
+// smtpServerAuthEnabled on in the shared settings hash, which the worker reads on every connection
+process.env.EENGINE_REDIS_PREFIX = 'test_smtp_worker_drain';
+
 const assert = require('node:assert').strict;
 const net = require('node:net');
 
 const { redis } = require('../lib/db');
+const { REDIS_PREFIX } = require('../lib/consts');
 const settings = require('../lib/settings');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 const { startWorker } = require('./helpers/worker-rpc');
@@ -83,7 +90,13 @@ test('the SMTP worker drains its sessions when asked to close', async t => {
     await settings.setMulti({ smtpServerPort: port, smtpServerHost: '127.0.0.1', smtpServerAuthEnabled: false, smtpServerTLSEnabled: false });
 
     const { worker, ready, call } = startWorker('smtp.js');
-    t.after(() => worker.terminate());
+    t.after(async () => {
+        await worker.terminate();
+        const keys = await redis.keys(`${REDIS_PREFIX}*`);
+        if (keys.length) {
+            await redis.del(keys);
+        }
+    });
     await ready;
 
     await waitForListener(port, Date.now() + 10000);
