@@ -299,13 +299,15 @@
 
         <!-- Footer -->
         <footer class="bg-base-100 border-base-content/20 border-t py-6 mt-auto">
-            <div class="text-base-content/60 text-center text-sm">
-                <a href="{{packageData.homepage}}" target="_blank" rel="noopener noreferrer" class="link link-animated">EmailEngine</a>
-                v{{packageData.version}}.
-                <span>&copy; 2020-{{currentYear}}</span>
-                <a class="link link-animated" href="https://postalsys.com/contact" target="_blank" rel="noopener noreferrer">Postal Systems O&Uuml;</a>.
-                <a class="link link-animated" href="https://emailengine.app/support" target="_blank" rel="noopener noreferrer">Support</a>.
-                <a class="link link-animated" href="/admin/legal">License and terms</a>.
+            <div class="text-base-content/60 flex flex-col items-center gap-3 px-4 text-sm sm:px-6 lg:flex-row lg:justify-between">
+                <p>EmailEngine v{{packageData.version}} &middot; &copy; 2020-{{currentYear}} Postal Systems O&Uuml;</p>
+                <nav aria-label="Footer">
+                    <ul class="flex flex-wrap justify-center gap-x-6 gap-y-2">
+                        <li><a class="link link-animated inline-flex items-center gap-1.5" href="https://learn.emailengine.app/" target="_blank" rel="noopener noreferrer"><span class="icon-[tabler--book] size-4" aria-hidden="true"></span>Documentation</a></li>
+                        <li><a class="link link-animated inline-flex items-center gap-1.5" href="https://emailengine.app/support" target="_blank" rel="noopener noreferrer"><span class="icon-[tabler--lifebuoy] size-4" aria-hidden="true"></span>Support</a></li>
+                        <li><a class="link link-animated inline-flex items-center gap-1.5" href="/admin/legal"><span class="icon-[tabler--gavel] size-4" aria-hidden="true"></span>License and terms</a></li>
+                    </ul>
+                </nav>
             </div>
         </footer>
         <!-- End of Footer -->
