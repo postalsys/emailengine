@@ -169,6 +169,10 @@ To log raw IMAP traffic for every account instead, start EmailEngine with `--log
 
 For detailed security and data compliance information, refer to [this guide](https://learn.emailengine.app/docs/deployment/compliance).
 
+## Support
+
+See [emailengine.app/support](https://emailengine.app/support) for support options, or email [support@postalsys.com](mailto:support@postalsys.com). GitHub issues are for reproducible bugs only and are not actively monitored.
+
 ## Licensing
 
 EmailEngine is licensed under the commercial [EmailEngine License](./LICENSE_EMAILENGINE.txt).

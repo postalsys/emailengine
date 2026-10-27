@@ -111,8 +111,8 @@
     "version": "0.0.0",
     "contact": {
       "name": "EmailEngine Support",
-      "url": "https://learn.emailengine.app/docs/support",
-      "email": "support@emailengine.app"
+      "url": "https://emailengine.app/support",
+      "email": "support@postalsys.com"
     },
     "license": {
       "name": "EmailEngine License",
@@ -11029,7 +11029,7 @@
           "imapClientSupportUrl": {
             "type": "string",
             "description": "Support URL advertised via IMAP ID extension",
-            "example": "https://github.com/postalsys/emailengine/issues",
+            "example": "https://emailengine.app/support",
             "nullable": true,
             "x-format": {
               "uri": {
@@ -11842,7 +11842,7 @@
           "imapClientSupportUrl": {
             "type": "string",
             "description": "Support URL advertised via IMAP ID extension",
-            "example": "https://github.com/postalsys/emailengine/issues",
+            "example": "https://emailengine.app/support",
             "x-format": {
               "uri": {
                 "scheme": [

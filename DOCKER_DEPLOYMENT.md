@@ -492,6 +492,7 @@ docker-compose restart
 
 ## Support
 
+- Support: https://emailengine.app/support or support@postalsys.com
 - Documentation: https://learn.emailengine.app/
 - API Reference: https://learn.emailengine.app/docs/api/emailengine-api
-- Issues: https://github.com/postalsys/emailengine/issues
+- Bug reports: https://github.com/postalsys/emailengine/issues

@@ -7302,7 +7302,7 @@
                     "type": "string",
                     "description": "Support URL advertised via IMAP ID extension",
                     "examples": [
-                        "https://github.com/postalsys/emailengine/issues"
+                        "https://emailengine.app/support"
                     ]
                 },
                 "exportMaxConcurrent": {

@@ -50,7 +50,8 @@
         "url": "git+https://github.com/postalsys/emailengine.git"
     },
     "bugs": {
-        "url": "https://github.com/postalsys/emailengine/issues"
+        "url": "https://emailengine.app/support",
+        "email": "support@postalsys.com"
     },
     "homepage": "https://emailengine.app/",
     "dependencies": {
