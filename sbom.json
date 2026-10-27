@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "emailengine-app@2.86.0",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.86.0-6655c729-052e-46d3-9add-77c29ff041b8",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.86.0-49392cec-b4d6-46bc-baf1-b8816ef1c6b7",
   "creationInfo": {
-    "created": "2026-10-26T15:33:55.020Z",
+    "created": "2026-10-27T11:55:50.501Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
@@ -2170,11 +2170,11 @@
     },
     {
       "name": "@sentry/core",
-      "SPDXID": "SPDXRef-Package-sentry.core-10.76.2",
-      "versionInfo": "10.76.2",
+      "SPDXID": "SPDXRef-Package-sentry.core-10.77.1",
+      "versionInfo": "10.77.1",
       "packageFileName": "node_modules/@sentry/core",
       "description": "Base implementation for all Sentry JavaScript SDKs",
-      "downloadLocation": "https://registry.npmjs.org/@sentry/core/-/core-10.76.2.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@sentry/core/-/core-10.77.1.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/getsentry/sentry-javascript/tree/master/packages/core",
       "licenseDeclared": "MIT",
@@ -2182,23 +2182,23 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40sentry/core@10.76.2"
+          "referenceLocator": "pkg:npm/%40sentry/core@10.77.1"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "be776b41a9518b061ab5392394b5afc9febd2a871721bf53289e00f688b25a0b8bf0f258b6a2114e545ee0ea64a632ebc52d7c7ef45d5748c49b6f5cffda7785"
+          "checksumValue": "d9b11524a97bde420a25cc0f83e9f73a43d8ab0b8e205d9e457bb62069ba693b0bd41e207c645beff9c366bcf6f02d5c8295671fc8c2bdccacfd3b3722ae92bb"
         }
       ]
     },
     {
       "name": "@sentry/node-core",
-      "SPDXID": "SPDXRef-Package-sentry.node-core-10.76.2",
-      "versionInfo": "10.76.2",
+      "SPDXID": "SPDXRef-Package-sentry.node-core-10.77.1",
+      "versionInfo": "10.77.1",
       "packageFileName": "node_modules/@sentry/node-core",
       "description": "Sentry Node-Core SDK",
-      "downloadLocation": "https://registry.npmjs.org/@sentry/node-core/-/node-core-10.76.2.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@sentry/node-core/-/node-core-10.77.1.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/getsentry/sentry-javascript/tree/master/packages/node-core",
       "licenseDeclared": "MIT",
@@ -2206,23 +2206,23 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40sentry/node-core@10.76.2"
+          "referenceLocator": "pkg:npm/%40sentry/node-core@10.77.1"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "4eb80073f4af5399107e3c3ca73e88f0b2c85226e53927fd04f3cd9136d2d03cdca9ae3240b55b9ac6d2debbc64fba2deb89bd563ce7df6ed9472eb732523aff"
+          "checksumValue": "06e7c6dad5adcf5d39e3baad4fcf807ef854235547f2741aa042c95e9e57cbb4c1e8f9d528f18ec6e8d44165bee89946b903df013681892810061c26c4fef38c"
         }
       ]
     },
     {
       "name": "@sentry/opentelemetry",
-      "SPDXID": "SPDXRef-Package-sentry.opentelemetry-10.76.2",
-      "versionInfo": "10.76.2",
+      "SPDXID": "SPDXRef-Package-sentry.opentelemetry-10.77.1",
+      "versionInfo": "10.77.1",
       "packageFileName": "node_modules/@sentry/opentelemetry",
       "description": "Official Sentry utilities for OpenTelemetry",
-      "downloadLocation": "https://registry.npmjs.org/@sentry/opentelemetry/-/opentelemetry-10.76.2.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@sentry/opentelemetry/-/opentelemetry-10.77.1.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/getsentry/sentry-javascript/tree/master/packages/opentelemetry",
       "licenseDeclared": "MIT",
@@ -2230,13 +2230,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40sentry/opentelemetry@10.76.2"
+          "referenceLocator": "pkg:npm/%40sentry/opentelemetry@10.77.1"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "75ea96aca2466a4bb79e1899721837e33f16f6fea4530b73a10e1c984aba09e4fcff85fddd7e187de260a21d5d85bb30151a70a2be2943a923d0ab6d6a02ad7c"
+          "checksumValue": "e6d6d5e7e7fa06a8f17924d5edd34cfd1b938f774d1c2e34989dd57481531065a42ad1d17aa6028c9f4d475e6f0c8ec3557206284f6121dfb500416314c99911"
         }
       ]
     },
@@ -2578,11 +2578,11 @@
     },
     {
       "name": "bullmq",
-      "SPDXID": "SPDXRef-Package-bullmq-6.4.2",
-      "versionInfo": "6.4.2",
+      "SPDXID": "SPDXRef-Package-bullmq-6.5.0",
+      "versionInfo": "6.5.0",
       "packageFileName": "node_modules/bullmq",
       "description": "Queue for messages and jobs based on Redis",
-      "downloadLocation": "https://registry.npmjs.org/bullmq/-/bullmq-6.4.2.tgz",
+      "downloadLocation": "https://registry.npmjs.org/bullmq/-/bullmq-6.5.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://bullmq.io/",
       "licenseDeclared": "MIT",
@@ -2590,13 +2590,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/bullmq@6.4.2"
+          "referenceLocator": "pkg:npm/bullmq@6.5.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "7c23cf2548091706da37b9d9894fc9cd057276cb3e980dc551869ea6f2509e4494af88e6ce86d972a3122593d9ca037f7ac4192e9a44fdc4f24d84cd9e23b76d"
+          "checksumValue": "1836947c48a0da55874b9d9a388d21f1ffd6d26fb93cf98738949a84029131f8bcd8174bff612a0ae88398970d8b0829699d0a1f3ecdc42f1e34c2376e1f0d42"
         }
       ]
     },
@@ -5669,7 +5669,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-sentry.node-core-10.76.2",
+      "spdxElementId": "SPDXRef-Package-sentry.node-core-10.77.1",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5689,7 +5689,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-bullmq-6.4.2",
+      "spdxElementId": "SPDXRef-Package-bullmq-6.5.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -7000,67 +7000,67 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-sentry.conventions-0.16.0",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.core-10.76.2",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.core-10.77.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-opentelemetry.api-1.9.1",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.76.2",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.77.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-opentelemetry.core-2.12.0",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.76.2",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.77.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-opentelemetry.sdk-trace-base-2.12.0",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.76.2",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.77.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-sentry.conventions-0.16.0",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.76.2",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.77.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-sentry.core-10.76.2",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.76.2",
+      "spdxElementId": "SPDXRef-Package-sentry.core-10.77.1",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.77.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-sentry.opentelemetry-10.76.2",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.76.2",
+      "spdxElementId": "SPDXRef-Package-sentry.opentelemetry-10.77.1",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.77.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-import-in-the-middle-3.5.3",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.76.2",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.77.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-opentelemetry.api-1.9.1",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.76.2",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.77.1",
       "relationshipType": "PREREQUISITE_FOR"
     },
     {
       "spdxElementId": "SPDXRef-Package-opentelemetry.core-2.12.0",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.76.2",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.77.1",
       "relationshipType": "PREREQUISITE_FOR"
     },
     {
       "spdxElementId": "SPDXRef-Package-opentelemetry.sdk-trace-base-2.12.0",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.76.2",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.77.1",
       "relationshipType": "PREREQUISITE_FOR"
     },
     {
       "spdxElementId": "SPDXRef-Package-sentry.conventions-0.16.0",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.76.2",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.77.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-sentry.core-10.76.2",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.76.2",
+      "spdxElementId": "SPDXRef-Package-sentry.core-10.77.1",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.77.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7165,32 +7165,32 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-ioredis-6.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.4.2",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-cron-parser-5.10.2",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.4.2",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-msgpackr-2.1.2",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.4.2",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-node-abort-controller-3.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.4.2",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-semver-7.8.5",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.4.2",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.4.2",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
