@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.87.0](https://github.com/postalsys/emailengine/compare/v2.86.0...v2.87.0) (2026-10-29)
+
+
+### Features
+
+* send and read one-time passcodes through the OTP-Token header ([ad2f388](https://github.com/postalsys/emailengine/commit/ad2f388e7fb5532bbd581f5c37c0f5c65525cc96))
+
+
+### Bug Fixes
+
+* bump bullmq to 6.5.0 and @sentry/node-core to 10.77.1 ([250ec90](https://github.com/postalsys/emailengine/commit/250ec9060e1c392977961f6617e884071e426f86))
+* bump nodemailer to 10.3.0, mailparser to 3.13.0 and other dependencies ([ad88bc7](https://github.com/postalsys/emailengine/commit/ad88bc79f5f1c4958ffb3012b09ce7f7f533824b))
+* let the AI summary trust Google's authentication header on Gmail API accounts ([78038c5](https://github.com/postalsys/emailengine/commit/78038c5d7828050fd1c94af8d268e7c50081d8df))
+* move the Docker image to Node 24.22.2 for the Brotli decoder fix (CVE-2026-111497) ([b6efd8e](https://github.com/postalsys/emailengine/commit/b6efd8e4dc81199cf427185c17e0ffb0933f08be))
+* point support links at emailengine.app/support and support@postalsys.com ([795b217](https://github.com/postalsys/emailengine/commit/795b217458cf379699f68e333935ae8066310c1b))
+* report the OAuth2 revocation outcome on account delete, and add revoke=required ([cc5908d](https://github.com/postalsys/emailengine/commit/cc5908de9e286ade29e1ad50a835d81f144c827c))
+* separate the admin footer links into a labelled link list ([65aa96d](https://github.com/postalsys/emailengine/commit/65aa96d1b4ca540b670ae5c11ca441afa09b67e7))
+* update @postalsys/certs to 2.0.3 and smtp-server to 3.21.2 ([d4a1946](https://github.com/postalsys/emailengine/commit/d4a194607a083a47fcc7b9ca772fa52c5d0b67d6))
+* update bullmq to 6.4.2 ([4af5825](https://github.com/postalsys/emailengine/commit/4af582514507306dd7b677ad7d3ca4fe3f557e1c))
+* update ee-client to 1.10.0 ([6595d46](https://github.com/postalsys/emailengine/commit/6595d46f23dd7cfd7e388641f763d1310c6a3883))
+* update imapflow to 2.10.0 ([06928a5](https://github.com/postalsys/emailengine/commit/06928a507fb52696ecae1204e0641a24b43f9359))
+* update nodemailer to 10.3.1, mailparser to 3.14.1, ee-client to 1.9.0 and email-ai-tools to 2.4.0 ([8aeafb4](https://github.com/postalsys/emailengine/commit/8aeafb498f663fc749e13da7f1f497a7d577b9ba))
+
 ## [2.86.0](https://github.com/postalsys/emailengine/compare/v2.85.0...v2.86.0) (2026-10-22)
 
 
