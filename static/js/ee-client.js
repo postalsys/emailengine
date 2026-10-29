@@ -79,16 +79,11 @@ export class EmailEngineClient {
             // A containerId that matches nothing is almost always a typo; warn
             // rather than silently degrading to a UI-less, API-only client.
             if (!this.container) {
-                console.warn(
-                    `EmailEngineClient: no element found for containerId "${options.containerId}"; UI rendering disabled`
-                );
+                console.warn(`EmailEngineClient: no element found for containerId "${options.containerId}"; UI rendering disabled`);
             }
         }
-        this.confirmMethod =
-            options.confirmMethod ||
-            ((message, _title = 'Confirm', _cancelText = 'Cancel', _okText = 'OK') => confirm(message));
-        this.alertMethod =
-            options.alertMethod || ((message, _title = 'Notice', _cancelText = null, _okText = 'OK') => alert(message));
+        this.confirmMethod = options.confirmMethod || ((message, _title = 'Confirm', _cancelText = 'Cancel', _okText = 'OK') => confirm(message));
+        this.alertMethod = options.alertMethod || ((message, _title = 'Notice', _cancelText = null, _okText = 'OK') => alert(message));
 
         this.currentFolder = null;
         this.currentMessage = null;
@@ -124,8 +119,7 @@ export class EmailEngineClient {
         this.styleNonce = typeof options.styleNonce === 'string' && options.styleNonce ? options.styleNonce : null;
 
         // Get page size from localStorage or options or default
-        const savedPageSize =
-            typeof window !== 'undefined' && window.localStorage ? localStorage.getItem('ee-client-page-size') : null;
+        const savedPageSize = typeof window !== 'undefined' && window.localStorage ? localStorage.getItem('ee-client-page-size') : null;
         const requestedPageSize = savedPageSize ? parseInt(savedPageSize, 10) : parseInt(options.pageSize, 10);
         this.pageSize = requestedPageSize > 0 ? requestedPageSize : 20;
 
@@ -151,16 +145,14 @@ export class EmailEngineClient {
             try {
                 const nodeFetch = await import('node-fetch');
                 fetchFn = nodeFetch.default;
-            } catch (err) {
+            } catch {
                 // node-fetch is not installed; the guard below reports it
             }
         }
 
         if (!fetchFn) {
             // Either node-fetch is missing or it exposed no callable default export
-            throw new Error(
-                'fetch is not available. In Node.js environments, please install node-fetch: npm install node-fetch'
-            );
+            throw new Error('fetch is not available. In Node.js environments, please install node-fetch: npm install node-fetch');
         }
 
         try {
@@ -183,7 +175,7 @@ export class EmailEngineClient {
         let details;
         try {
             details = await response.json();
-        } catch (parseError) {
+        } catch {
             // Not a JSON body - the status line is all there is to go on
             details = { message: response.statusText };
         }
@@ -196,7 +188,7 @@ export class EmailEngineClient {
 
     async apiRequest(method, endpoint, data = null) {
         const options = {
-            method: method,
+            method,
             headers: {
                 'Content-Type': 'application/json',
                 ...this._authHeaders()
@@ -253,7 +245,7 @@ export class EmailEngineClient {
         this._setPaneHtml('.ee-message-list', '<div class="ee-loading">Loading messages...</div>');
 
         try {
-            const params = new URLSearchParams({ path: path, pageSize: this.pageSize });
+            const params = new URLSearchParams({ path, pageSize: this.pageSize });
             if (cursor) {
                 params.set('cursor', cursor);
             }
@@ -280,9 +272,7 @@ export class EmailEngineClient {
             };
         } catch (error) {
             console.error('Failed to load messages:', error);
-            this._renderPaneError('.ee-message-list', 'Messages unavailable', error, () =>
-                this._fireAndForget(this.loadMessages(path, cursor))
-            );
+            this._renderPaneError('.ee-message-list', 'Messages unavailable', error, () => this._fireAndForget(this.loadMessages(path, cursor)));
             throw error;
         }
     }
@@ -324,9 +314,7 @@ export class EmailEngineClient {
             return this.currentMessage;
         } catch (error) {
             console.error('Failed to load message:', error);
-            this._renderPaneError('.ee-message-viewer', 'Message unavailable', error, () =>
-                this._fireAndForget(this.loadMessage(messageId))
-            );
+            this._renderPaneError('.ee-message-viewer', 'Message unavailable', error, () => this._fireAndForget(this.loadMessage(messageId)));
             throw error;
         }
     }
@@ -408,9 +396,7 @@ export class EmailEngineClient {
     }
 
     _normalizeRecipients(to) {
-        return Array.isArray(to)
-            ? to.map(addr => (typeof addr === 'string' ? { address: addr } : addr))
-            : [typeof to === 'string' ? { address: to } : to];
+        return Array.isArray(to) ? to.map(addr => (typeof addr === 'string' ? { address: addr } : addr)) : [typeof to === 'string' ? { address: to } : to];
     }
 
     // Account details (name, email address) fetched once and cached for the lifetime
@@ -426,8 +412,8 @@ export class EmailEngineClient {
         try {
             const messageData = {
                 to: this._normalizeRecipients(to),
-                subject: subject,
-                text: text
+                subject,
+                text
             };
 
             const response = await this.apiRequest('POST', `${this._accountPath()}/submit`, messageData);
@@ -451,8 +437,8 @@ export class EmailEngineClient {
             const messageData = {
                 path: draftsFolder.path,
                 flags: ['\\Draft'],
-                subject: subject,
-                text: text
+                subject,
+                text
             };
 
             const recipients = to ? this._normalizeRecipients(to) : [];
@@ -467,7 +453,7 @@ export class EmailEngineClient {
                 if (accountInfo && accountInfo.email) {
                     messageData.from = { name: accountInfo.name || '', address: accountInfo.email };
                 }
-            } catch (err) {
+            } catch {
                 // Non-fatal: the draft is saved without a From header
             }
 
@@ -649,6 +635,84 @@ export class EmailEngineClient {
         return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
     }
 
+    /**
+     * Markup for the "Code requested" box of a message that carries a one-time passcode
+     * (EmailEngine's `otp` field, from the OTP-Token header). The site the code is for is named
+     * only when EmailEngine reports the origin as authenticated: the header itself is not, and
+     * anyone can send a message claiming a code for any site.
+     *
+     * @param {{code: string, origin: string, authenticated?: boolean}} [otp]
+     * @returns {string} HTML, or an empty string when there is no passcode
+     */
+    renderOtpBox(otp) {
+        if (!otp || typeof otp.code !== 'string' || !otp.code) {
+            return '';
+        }
+
+        // one tile per character for a code a person reads off and types, as Gmail does
+        const code = /^[A-Za-z0-9]{1,10}$/.test(otp.code)
+            ? Array.from(otp.code, ch => `<span class="ee-otp-char">${this.escapeHtml(ch)}</span>`).join('')
+            : `<span class="ee-otp-text">${this.escapeHtml(otp.code)}</span>`;
+
+        let site = '';
+        if (otp.authenticated) {
+            try {
+                site = new URL(otp.origin).host;
+            } catch {
+                // leave the site out rather than show a value that does not parse
+            }
+        }
+
+        return `
+            <div class="ee-otp" role="region" aria-label="Code requested">
+                <div class="ee-otp-title">Code requested${site ? ` for <span class="ee-otp-site">${this.escapeHtml(site)}</span>` : ''}</div>
+                <div class="ee-otp-code" aria-label="${this.escapeHtml(otp.code)}">${code}</div>
+                <div class="ee-otp-actions">
+                    <button type="button" class="ee-button ee-otp-copy" data-action="copy-otp">Copy code</button>
+                    <span class="ee-otp-status" aria-live="polite"></span>
+                </div>
+                ${site ? '' : '<div class="ee-otp-note">The sender of this code could not be verified</div>'}
+            </div>
+        `;
+    }
+
+    /**
+     * Copies text to the clipboard. The Clipboard API needs a secure context, so a page served
+     * over plain http falls back to a selected textarea and execCommand
+     *
+     * @param {string} text
+     * @returns {Promise<boolean>} Whether the text was copied
+     */
+    async copyText(text) {
+        if (typeof navigator !== 'undefined' && navigator.clipboard && typeof window !== 'undefined' && window.isSecureContext) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch {
+                // fall through to the legacy path
+            }
+        }
+
+        if (typeof document === 'undefined') {
+            return false;
+        }
+
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.top = '-1000px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            return document.execCommand('copy');
+        } catch {
+            return false;
+        } finally {
+            textarea.remove();
+        }
+    }
+
     escapeHtml(value) {
         if (value === null || value === undefined) {
             return '';
@@ -660,7 +724,7 @@ export class EmailEngineClient {
     _authHeaders() {
         const headers = {};
         if (this.accessToken) {
-            headers['Authorization'] = `Bearer ${this.accessToken}`;
+            headers.Authorization = `Bearer ${this.accessToken}`;
         }
         return headers;
     }
@@ -712,12 +776,7 @@ export class EmailEngineClient {
             this._saveBlob(blob, filename);
         } catch (error) {
             console.error('Failed to download attachment:', error);
-            this.alertMethod(
-                this._errorMessage(error, 'Failed to download attachment. Please try again.'),
-                'Download Error',
-                null,
-                'OK'
-            );
+            this.alertMethod(this._errorMessage(error, 'Failed to download attachment. Please try again.'), 'Download Error', null, 'OK');
         }
     }
 
@@ -737,12 +796,7 @@ export class EmailEngineClient {
             this._saveBlob(blob, filename);
         } catch (error) {
             console.error('Failed to download original message:', error);
-            this.alertMethod(
-                this._errorMessage(error, 'Failed to download original message. Please try again.'),
-                'Download Error',
-                null,
-                'OK'
-            );
+            this.alertMethod(this._errorMessage(error, 'Failed to download original message. Please try again.'), 'Download Error', null, 'OK');
         }
     }
 
@@ -1005,6 +1059,82 @@ export class EmailEngineClient {
             
             .ee-message-meta-row {
                 margin-bottom: 4px;
+            }
+
+            .ee-otp {
+                margin-bottom: 16px;
+                padding: 14px 16px;
+                background: #eef3fb;
+                border-radius: 8px;
+            }
+
+            .ee-otp-title {
+                font-size: 13px;
+                color: #444;
+                margin-bottom: 10px;
+                overflow-wrap: anywhere;
+            }
+
+            .ee-otp-site {
+                font-weight: 600;
+            }
+
+            .ee-otp-code {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                margin-bottom: 12px;
+                font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+                font-size: 22px;
+            }
+
+            .ee-otp-char {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 32px;
+                height: 40px;
+                background: white;
+                border-radius: 6px;
+            }
+
+            .ee-otp-text {
+                padding: 6px 10px;
+                background: white;
+                border-radius: 6px;
+                font-size: 16px;
+                overflow-wrap: anywhere;
+                user-select: all;
+            }
+
+            .ee-otp-actions {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .ee-otp .ee-otp-copy {
+                height: 32px;
+                padding: 0 16px;
+                font-size: 13px;
+                background: #007bff;
+                border-color: #007bff;
+                color: white;
+                border-radius: 16px;
+            }
+
+            .ee-otp .ee-otp-copy:hover:not(:disabled) {
+                background: #0069d9;
+            }
+
+            .ee-otp-status,
+            .ee-otp-note {
+                font-size: 12px;
+                color: #666;
+            }
+
+            .ee-otp-note {
+                margin-top: 10px;
             }
             
             .ee-message-meta-label {
@@ -1556,6 +1686,31 @@ export class EmailEngineClient {
                 color: #f0a5a5;
             }
 
+            .ee-dark-mode .ee-otp {
+                background: #23303f;
+            }
+
+            .ee-dark-mode .ee-otp-title {
+                color: #ccc;
+            }
+
+            .ee-dark-mode .ee-otp-char,
+            .ee-dark-mode .ee-otp-text {
+                background: #1a1a1a;
+                color: #e0e0e0;
+            }
+
+            .ee-dark-mode .ee-otp .ee-otp-copy {
+                background: #0056b3;
+                border-color: #0056b3;
+                color: white;
+            }
+
+            .ee-dark-mode .ee-otp-status,
+            .ee-dark-mode .ee-otp-note {
+                color: #999;
+            }
+
             .ee-dark-mode .ee-pagination {
                 background: #252525;
                 border-color: #333;
@@ -1844,7 +1999,7 @@ export class EmailEngineClient {
         const pageSizeSelect = messageList.querySelector('[data-action="page-size"]');
         if (pageSizeSelect) {
             pageSizeSelect.addEventListener('change', e => {
-                this.pageSize = parseInt(e.target.value);
+                this.pageSize = parseInt(e.target.value, 10);
                 // Save to localStorage
                 if (typeof window !== 'undefined' && window.localStorage) {
                     localStorage.setItem('ee-client-page-size', this.pageSize.toString());
@@ -1918,6 +2073,7 @@ export class EmailEngineClient {
                         ${this.escapeHtml(msg.subject || '(no subject)')}
                     </div>
                 </div>
+                ${this.renderOtpBox(msg.otp)}
                 <div class="ee-message-body"></div>
                 ${
                     msg.attachments && msg.attachments.length > 0
@@ -1985,9 +2141,7 @@ export class EmailEngineClient {
 
         viewer.querySelector('[data-action="toggle-read"]').addEventListener('click', () => {
             const currentlyUnseen = msg.unseen;
-            this.markAsRead(msg.id, currentlyUnseen).catch(error =>
-                this._alertActionFailed(error, 'Failed to update the message flags')
-            );
+            this.markAsRead(msg.id, currentlyUnseen).catch(error => this._alertActionFailed(error, 'Failed to update the message flags'));
         });
 
         viewer.querySelector('[data-action="delete"]').addEventListener('click', async () => {
@@ -1998,9 +2152,7 @@ export class EmailEngineClient {
                 'Delete'
             );
             if (result) {
-                this.deleteMessage(msg.id).catch(error =>
-                    this._alertActionFailed(error, 'Failed to delete the message')
-                );
+                this.deleteMessage(msg.id).catch(error => this._alertActionFailed(error, 'Failed to delete the message'));
             }
         });
 
@@ -2028,6 +2180,21 @@ export class EmailEngineClient {
                 this.downloadAttachment(attachmentId, attachment ? attachment.filename : null);
             });
         });
+
+        const copyOtpButton = viewer.querySelector('[data-action="copy-otp"]');
+        if (copyOtpButton) {
+            const status = viewer.querySelector('.ee-otp-status');
+            copyOtpButton.addEventListener('click', async () => {
+                const copied = await this.copyText(msg.otp.code);
+                copyOtpButton.textContent = copied ? 'Copied' : 'Copy code';
+                status.textContent = copied ? 'Code copied to the clipboard' : 'Could not copy, select the code and copy it by hand';
+                clearTimeout(this._otpCopyTimer);
+                this._otpCopyTimer = setTimeout(() => {
+                    copyOtpButton.textContent = 'Copy code';
+                    status.textContent = '';
+                }, 2500);
+            });
+        }
 
         // Message content scrolling is now handled in loadMessage method
     }
@@ -2191,12 +2358,7 @@ export class EmailEngineClient {
 
             if (!to && !subject && !message) {
                 modal.classList.remove('show');
-                await this.alertMethod(
-                    'Nothing to save - fill in at least one field first.',
-                    'Validation Error',
-                    null,
-                    'OK'
-                );
+                await this.alertMethod('Nothing to save - fill in at least one field first.', 'Validation Error', null, 'OK');
                 modal.classList.add('show');
                 setTimeout(() => form.querySelector('input[name="to"]').focus(), 100);
                 return;
@@ -2238,17 +2400,10 @@ export class EmailEngineClient {
             if (!to || !message) {
                 // Close modal temporarily to show alert, then reopen
                 modal.classList.remove('show');
-                await this.alertMethod(
-                    'Please fill in the recipient and message fields.',
-                    'Validation Error',
-                    null,
-                    'OK'
-                );
+                await this.alertMethod('Please fill in the recipient and message fields.', 'Validation Error', null, 'OK');
                 modal.classList.add('show');
                 // Re-focus the appropriate field
-                const fieldToFocus = !to
-                    ? form.querySelector('input[name="to"]')
-                    : form.querySelector('textarea[name="message"]');
+                const fieldToFocus = !to ? form.querySelector('input[name="to"]') : form.querySelector('textarea[name="message"]');
                 setTimeout(() => fieldToFocus.focus(), 100);
                 return;
             }
@@ -2372,6 +2527,7 @@ export class EmailEngineClient {
         let inThrottle;
         return function () {
             const args = arguments;
+            // eslint-disable-next-line no-invalid-this -- the wrapper forwards whatever this its caller bound
             const context = this;
             if (!inThrottle) {
                 func.apply(context, args);
