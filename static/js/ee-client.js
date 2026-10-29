@@ -65,6 +65,31 @@ const MESSAGE_BODY_STYLES = `
     }
 `;
 
+// Inline SVG icons (24x24 grid, stroked with currentColor so they follow the button's text
+// colour in both themes). Static markup only, nothing here is built from message data.
+const ICON_PATHS = {
+    back: '<path d="m15 18-6-6 6-6"/>',
+    next: '<path d="m9 18 6-6-6-6"/>',
+    chevronDown: '<path d="m6 9 6 6 6-6"/>',
+    mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+    mailOpen:
+        '<path d="M21.2 8.4c.5.38.8.97.8 1.6v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V10a2 2 0 0 1 .8-1.6l8-6a2 2 0 0 1 2.4 0l8 6Z"/><path d="m22 10-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 10"/>',
+    trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+    move: '<path d="M2 9V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1"/><path d="M2 13h10"/><path d="m9 16 3-3-3-3"/>',
+    download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+    send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+    compose: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>'
+};
+
+// Below this container width the UI shows one pane at a time and the compose button
+// drops its label. Shared by the stylesheet's container query and the compose button
+// sizing, which cannot use the query because the button is not inside .ee-client.
+const NARROW_WIDTH = 700;
+
+function icon(name, size = 16) {
+    return `<svg class="ee-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${ICON_PATHS[name]}</svg>`;
+}
+
 export class EmailEngineClient {
     constructor(options = {}) {
         this.apiUrl = options.apiUrl || 'http://127.0.0.1:3000';
@@ -242,7 +267,8 @@ export class EmailEngineClient {
     }
 
     async loadMessages(path, cursor = null) {
-        this._setPaneHtml('.ee-message-list', '<div class="ee-loading">Loading messages...</div>');
+        this._setView('list');
+        this._setPaneHtml('.ee-message-list', `${this._messageListHeader(path)}<div class="ee-loading">Loading messages...</div>`);
 
         try {
             const params = new URLSearchParams({ path, pageSize: this.pageSize });
@@ -272,13 +298,20 @@ export class EmailEngineClient {
             };
         } catch (error) {
             console.error('Failed to load messages:', error);
-            this._renderPaneError('.ee-message-list', 'Messages unavailable', error, () => this._fireAndForget(this.loadMessages(path, cursor)));
+            this._renderPaneError(
+                '.ee-message-list',
+                'Messages unavailable',
+                error,
+                () => this._fireAndForget(this.loadMessages(path, cursor)),
+                this._messageListHeader(path)
+            );
             throw error;
         }
     }
 
     async loadMessage(messageId) {
-        this._setPaneHtml('.ee-message-viewer', '<div class="ee-loading">Loading message...</div>');
+        this._setView('message');
+        this._setPaneHtml('.ee-message-viewer', `${this._messageToolbar()}<div class="ee-loading">Loading message...</div>`);
 
         try {
             const params = new URLSearchParams({
@@ -314,7 +347,13 @@ export class EmailEngineClient {
             return this.currentMessage;
         } catch (error) {
             console.error('Failed to load message:', error);
-            this._renderPaneError('.ee-message-viewer', 'Message unavailable', error, () => this._fireAndForget(this.loadMessage(messageId)));
+            this._renderPaneError(
+                '.ee-message-viewer',
+                'Message unavailable',
+                error,
+                () => this._fireAndForget(this.loadMessage(messageId)),
+                this._messageToolbar()
+            );
             throw error;
         }
     }
@@ -556,11 +595,12 @@ export class EmailEngineClient {
     // missing, optionally with a Retry button. Without this a failed request
     // leaves the pane stuck on its "Loading..." placeholder forever, with the
     // only trace of the failure in the developer console.
-    _renderPaneError(selector, title, error, retry = null) {
+    _renderPaneError(selector, title, error, retry = null, header = '') {
         const detail = this._errorMessage(error, '');
         const pane = this._setPaneHtml(
             selector,
             `
+            ${header}
             <div class="ee-error">
                 <div class="ee-error-title">${this.escapeHtml(title)}</div>
                 ${detail ? `<div class="ee-error-detail">${this.escapeHtml(detail)}</div>` : ''}
@@ -604,12 +644,52 @@ export class EmailEngineClient {
     // The message list before any folder is opened. Shared with createLayout so the
     // pane header markup lives in one place.
     _messageListPlaceholder() {
+        return `${this._messageListHeader(null)}<div class="ee-empty-state">Select a folder</div>`;
+    }
+
+    // Header for every state of the message list pane, titled with the folder
+    // being shown. In the single-pane layout its back button leads to the folders.
+    _messageListHeader(path, controls = '') {
+        const folder = path && this.folders.find(f => f.path === path);
         return `
             <div class="ee-pane-header">
-                <span class="ee-pane-title">Messages</span>
+                <div class="ee-pane-heading">
+                    ${this._iconButton('show-folders', 'back', 'Folders', 'ee-nav-button')}
+                    <span class="ee-pane-title">${this.escapeHtml(folder ? folder.name : 'Messages')}</span>
+                </div>
+                ${controls}
             </div>
-            <div class="ee-empty-state">Select a folder</div>
         `;
+    }
+
+    // The viewer's toolbar row. It stays up in the loading, empty and error states
+    // too, so the header band runs unbroken across the panes and the single-pane
+    // layout always has its way back to the list.
+    _messageToolbar(actions = '') {
+        return `
+            <div class="ee-message-actions">
+                ${this._iconButton('back-to-list', 'back', 'Back to messages', 'ee-nav-button')}
+                ${actions}
+            </div>
+        `;
+    }
+
+    _messageViewerPlaceholder() {
+        return `${this._messageToolbar()}<div class="ee-empty-state">Select a message to view</div>`;
+    }
+
+    // Which pane the single-pane (narrow) layout shows: folders, list or message.
+    // Wider layouts show all three and ignore it.
+    _getView() {
+        const client = this.container && this.container.querySelector('.ee-client');
+        return client ? client.dataset.view : null;
+    }
+
+    _setView(view) {
+        const client = this.container && this.container.querySelector('.ee-client');
+        if (client) {
+            client.dataset.view = view;
+        }
     }
 
     formatDate(dateStr) {
@@ -830,6 +910,9 @@ export class EmailEngineClient {
                 background: #fff;
                 border: 1px solid #ddd;
                 position: relative;
+                /* Layout breakpoints follow the widget's own width, not the viewport:
+                   hosts embed it in pages of any shape */
+                container: ee-client / inline-size;
             }
             
             .ee-client * {
@@ -837,7 +920,8 @@ export class EmailEngineClient {
             }
             
             .ee-sidebar {
-                width: 200px;
+                width: clamp(160px, 18%, 220px);
+                flex-shrink: 0;
                 background: #ffffff;
                 border-right: 1px solid #ddd;
                 display: flex;
@@ -917,7 +1001,8 @@ export class EmailEngineClient {
             }
             
             .ee-message-list {
-                width: 350px;
+                width: clamp(260px, 32%, 380px);
+                flex-shrink: 0;
                 border-right: 1px solid #ddd;
                 background: #ffffff;
                 display: flex;
@@ -998,44 +1083,116 @@ export class EmailEngineClient {
             
             .ee-message-viewer {
                 flex: 1;
+                min-width: 0;
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
+                container: ee-viewer / inline-size;
             }
             
             .ee-message-actions {
-                padding: 10px 16px;
+                padding: 0 12px;
                 background: #e9ecef;
                 background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
                 border-bottom: 2px solid #dee2e6;
                 display: flex;
-                gap: 8px;
+                gap: 6px;
                 height: 44px;
                 align-items: center;
                 flex-shrink: 0;
                 box-sizing: border-box;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                overflow-x: auto;
+                scrollbar-width: none;
             }
             
             .ee-button {
-                padding: 4px 10px;
-                border: 1px solid #ddd;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                flex-shrink: 0;
+                padding: 0 10px;
+                border: 1px solid #d0d4d9;
                 background: white;
-                border-radius: 4px;
+                color: #333;
+                border-radius: 6px;
                 cursor: pointer;
-                font-size: 12px;
-                height: 24px;
+                font-family: inherit;
+                font-size: 13px;
+                font-weight: 500;
+                height: 30px;
                 line-height: 1;
+                white-space: nowrap;
                 box-sizing: border-box;
-            }
-            
-            select.ee-button {
-                padding: 3px 10px;
-                height: 24px;
             }
             
             .ee-button:hover:not(:disabled) {
                 background: #f0f0f0;
+            }
+
+            .ee-button:focus-visible,
+            .ee-move-button:focus-within,
+            .ee-compose-button:focus-visible {
+                outline: 2px solid #4d9fff;
+                outline-offset: 1px;
+            }
+
+            .ee-icon {
+                flex-shrink: 0;
+            }
+
+            .ee-icon-button {
+                width: 30px;
+                padding: 0;
+            }
+
+            .ee-nav-button {
+                display: none;
+            }
+
+            /* Borderless, so a back arrow beside the title does not read as one
+               of the pagination arrows */
+            .ee-client .ee-button.ee-nav-button {
+                background: transparent;
+                border-color: transparent;
+                margin-left: -6px;
+            }
+
+            .ee-toolbar-spacer {
+                flex: 1;
+            }
+
+            .ee-button-primary {
+                background: #007bff;
+                border-color: #007bff;
+                color: white;
+            }
+
+            .ee-button-primary:hover:not(:disabled) {
+                background: #0069d9;
+            }
+
+            .ee-button-danger:hover:not(:disabled) {
+                background: #fdecea;
+                border-color: #f1b0ab;
+                color: #c62828;
+            }
+
+            .ee-move-button {
+                position: relative;
+            }
+
+            /* The native select covers the whole button, invisibly, so a click
+               anywhere on it opens the platform folder picker */
+            .ee-move-select {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                opacity: 0;
+                cursor: pointer;
+                font-size: 14px;
             }
             
             .ee-button:disabled {
@@ -1047,18 +1204,35 @@ export class EmailEngineClient {
             
             .ee-message-content {
                 flex: 1;
-                padding: 16px;
+                /* The bottom padding lets the end of the message scroll clear of
+                   the floating compose button */
+                padding: 20px 20px 88px;
                 overflow-y: auto;
+            }
+
+            .ee-message-title {
+                margin: 0 0 12px;
+                font-size: 20px;
+                font-weight: 600;
+                line-height: 1.3;
+                overflow-wrap: anywhere;
             }
             
             .ee-message-meta {
+                display: grid;
+                grid-template-columns: auto minmax(0, 1fr);
+                gap: 2px 12px;
                 margin-bottom: 16px;
                 padding-bottom: 16px;
                 border-bottom: 1px solid #e0e0e0;
             }
             
             .ee-message-meta-row {
-                margin-bottom: 4px;
+                display: contents;
+            }
+
+            .ee-message-meta-value {
+                overflow-wrap: anywhere;
             }
 
             .ee-otp {
@@ -1138,8 +1312,6 @@ export class EmailEngineClient {
             }
             
             .ee-message-meta-label {
-                display: inline-block;
-                width: 60px;
                 color: #666;
                 font-weight: 500;
             }
@@ -1249,7 +1421,8 @@ export class EmailEngineClient {
             }
             
             .ee-pane-header {
-                padding: 10px 16px;
+                gap: 8px;
+                padding: 0 12px 0 16px;
                 background: #e9ecef;
                 background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
                 border-bottom: 2px solid #dee2e6;
@@ -1262,10 +1435,20 @@ export class EmailEngineClient {
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
             
+            .ee-pane-heading {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                min-width: 0;
+            }
+
             .ee-pane-title {
-                font-weight: 500;
+                font-weight: 600;
                 font-size: 14px;
                 color: #333;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
             
             .ee-folder-tree {
@@ -1275,15 +1458,16 @@ export class EmailEngineClient {
             
             .ee-pagination-controls {
                 display: flex;
-                gap: 8px;
+                gap: 6px;
                 align-items: center;
+                flex-shrink: 0;
             }
             
             .ee-page-size-selector {
                 display: flex;
-                gap: 4px;
+                gap: 6px;
                 align-items: center;
-                margin-left: auto;
+                margin-left: 4px;
             }
             
             .ee-page-size-label {
@@ -1292,48 +1476,99 @@ export class EmailEngineClient {
             }
             
             .ee-page-size-select {
-                font-size: 11px;
-                padding: 2px 4px;
-                border: 1px solid #ddd;
-                border-radius: 3px;
-                background: white;
-                cursor: pointer;
-                height: 22px;
-            }
-            
-            .ee-pagination-btn {
-                font-size: 11px;
-                padding: 3px 8px;
-                height: 22px;
-                line-height: 1;
+                padding: 0 4px;
             }
             
             .ee-message-items {
                 flex: 1;
                 overflow-y: auto;
+                padding-bottom: 88px;
             }
             
             .ee-compose-button {
                 position: fixed;
                 bottom: 20px;
                 right: 20px;
-                width: 56px;
-                height: 56px;
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                height: 52px;
+                padding: 0 22px 0 18px;
                 background: #007bff;
                 border: none;
-                border-radius: 50%;
+                border-radius: 16px;
                 color: white;
-                font-size: 24px;
+                font-family: var(--ee-font, inherit);
+                font-size: 15px;
+                font-weight: 600;
                 cursor: pointer;
                 box-shadow: 0 4px 12px rgba(0,123,255,0.3);
                 z-index: 1000;
-                transition: all 0.2s ease;
+                transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
             }
             
             .ee-compose-button:hover {
                 background: #0056b3;
-                transform: scale(1.05);
+                transform: translateY(-1px);
                 box-shadow: 0 6px 16px rgba(0,123,255,0.4);
+            }
+
+            .ee-compose-button.ee-compose-compact {
+                width: 56px;
+                height: 56px;
+                padding: 0;
+                justify-content: center;
+                border-radius: 50%;
+            }
+
+            .ee-compose-compact .ee-compose-button-label {
+                display: none;
+            }
+
+            /* Medium widths: the viewer is too narrow for labelled buttons, so the
+               toolbar goes icon-only, as webmail toolbars usually are */
+            @container ee-viewer (max-width: 559px) {
+                .ee-message-actions .ee-button:not(.ee-keep-label) .ee-button-label {
+                    display: none;
+                }
+
+                .ee-message-actions .ee-button:not(.ee-keep-label) {
+                    width: 30px;
+                    padding: 0;
+                }
+
+                .ee-message-actions .ee-move-button {
+                    width: 44px;
+                    gap: 2px;
+                }
+            }
+
+            /* Narrow widths: one pane at a time, in the order a phone mail app uses
+               (folders, list, message), with back buttons in the pane headers. The
+               shown pane follows data-view on .ee-client. */
+            @container ee-client (max-width: ${NARROW_WIDTH - 1}px) {
+                .ee-sidebar,
+                .ee-message-list,
+                .ee-message-viewer {
+                    display: none;
+                    width: 100%;
+                    flex: 1;
+                    border-right: 0;
+                }
+
+                .ee-client[data-view="folders"] .ee-sidebar,
+                .ee-client[data-view="list"] .ee-message-list,
+                .ee-client[data-view="message"] .ee-message-viewer {
+                    display: flex;
+                }
+
+                .ee-nav-button {
+                    display: inline-flex;
+                }
+
+                .ee-message-content {
+                    padding: 16px 16px 88px;
+                }
             }
             
             .ee-compose-modal {
@@ -1515,24 +1750,21 @@ export class EmailEngineClient {
                 opacity: 0.6;
             }
 
-            /* Dark mode toggle button */
+            /* Dark mode toggle button, in the Folders pane header */
             .ee-dark-mode-toggle {
-                position: absolute;
-                top: 8px;
-                right: 16px;
                 background: #f8f9fa;
                 border: 1px solid #dee2e6;
-                border-radius: 3px;
-                padding: 6px 10px;
-                font-size: 12px;
+                border-radius: 6px;
+                padding: 0;
+                width: 30px;
+                height: 30px;
+                flex-shrink: 0;
                 cursor: pointer;
-                z-index: 100;
                 transition: all 0.2s ease;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: #495057;
-                font-weight: 500;
             }
 
             .ee-dark-mode-toggle:hover {
@@ -1645,6 +1877,27 @@ export class EmailEngineClient {
                 border-color: #555;
             }
 
+            .ee-dark-mode .ee-button-primary,
+            .ee-dark-mode .ee-button-primary:hover:not(:disabled) {
+                background: #0056b3;
+                border-color: #0056b3;
+                color: white;
+            }
+
+            .ee-dark-mode .ee-button-danger:hover:not(:disabled) {
+                background: #4a2323;
+                border-color: #7a3434;
+                color: #f0a5a5;
+            }
+
+            .ee-dark-mode .ee-message-meta {
+                border-color: #333;
+            }
+
+            .ee-dark-mode .ee-message-meta-label {
+                color: #999;
+            }
+
             .ee-dark-mode .ee-button:disabled {
                 background: #222;
                 color: #666;
@@ -1662,8 +1915,16 @@ export class EmailEngineClient {
             }
 
             .ee-dark-mode .ee-attachments {
-                background: #252525;
                 border-color: #333;
+            }
+
+            .ee-dark-mode .ee-attachments-title,
+            .ee-dark-mode .ee-attachment-name {
+                color: #e0e0e0;
+            }
+
+            .ee-dark-mode .ee-attachment-size {
+                color: #999;
             }
 
             .ee-dark-mode .ee-attachment-item {
@@ -1716,17 +1977,28 @@ export class EmailEngineClient {
                 border-color: #333;
             }
 
-            .ee-dark-mode .ee-compose-button {
+            /* The compose button and modal sit beside .ee-client, not inside it, so
+               setDarkMode puts the ee-dark-mode class on them directly */
+            .ee-compose-button.ee-dark-mode {
                 background: #0056b3;
+                color: white;
             }
 
-            .ee-dark-mode .ee-compose-modal {
+            .ee-compose-button.ee-dark-mode:hover {
+                background: #004a99;
+            }
+
+            .ee-compose-modal.ee-dark-mode {
                 background: rgba(0, 0, 0, 0.7);
             }
 
-            .ee-dark-mode .ee-compose-content {
+            .ee-dark-mode .ee-compose-dialog {
                 background: #202020;
                 color: #e0e0e0;
+            }
+
+            .ee-dark-mode .ee-compose-label {
+                color: #ccc;
             }
 
             .ee-dark-mode .ee-compose-header {
@@ -1920,41 +2192,39 @@ export class EmailEngineClient {
         }
 
         if (!this.messages.length) {
-            messageList.innerHTML = `
-                <div class="ee-pane-header">
-                    <span class="ee-pane-title">Messages</span>
-                </div>
-                <div class="ee-empty-state">No messages</div>
-            `;
+            messageList.innerHTML = `${this._messageListHeader(this.currentFolder)}<div class="ee-empty-state">No messages</div>`;
             return;
         }
 
         const hasPagination = this.nextPageCursor || this.prevPageCursor;
 
-        const html = `
-            <div class="ee-pane-header">
-                <span class="ee-pane-title">Messages</span>
+        // Both arrows stay in place once there is more than one page, the unavailable
+        // one disabled, so the controls do not shift under the pointer between pages
+        const controls = `
                 <div class="ee-pagination-controls">
                     ${
                         hasPagination
                             ? `
-                        ${this.prevPageCursor ? `<button class="ee-button ee-pagination-btn" data-action="prev-page">← Previous</button>` : ''}
-                        ${this.nextPageCursor ? `<button class="ee-button ee-pagination-btn" data-action="next-page">Next →</button>` : ''}
+                        ${this._iconButton('prev-page', 'back', 'Previous page', '', !this.prevPageCursor)}
+                        ${this._iconButton('next-page', 'next', 'Next page', '', !this.nextPageCursor)}
                     `
                             : ''
                     }
-                    <div class="ee-page-size-selector">
-                        <span class="ee-page-size-label">Show:</span>
-                        <select class="ee-page-size-select" data-action="page-size">
+                    <label class="ee-page-size-selector" title="Messages per page">
+                        <span class="ee-page-size-label">Show</span>
+                        <select class="ee-button ee-page-size-select" data-action="page-size">
                             <option value="10" ${this.pageSize === 10 ? 'selected' : ''}>10</option>
                             <option value="20" ${this.pageSize === 20 ? 'selected' : ''}>20</option>
                             <option value="30" ${this.pageSize === 30 ? 'selected' : ''}>30</option>
                             <option value="50" ${this.pageSize === 50 ? 'selected' : ''}>50</option>
                             <option value="100" ${this.pageSize === 100 ? 'selected' : ''}>100</option>
                         </select>
-                    </div>
+                    </label>
                 </div>
-            </div>
+        `;
+
+        const html = `
+            ${this._messageListHeader(this.currentFolder, controls)}
             <div class="ee-message-items">
                 ${this.messages
                     .map(
@@ -2020,57 +2290,68 @@ export class EmailEngineClient {
         }
 
         if (!this.currentMessage) {
-            viewer.innerHTML = '<div class="ee-empty-state">Select a message to view</div>';
+            viewer.innerHTML = this._messageViewerPlaceholder();
+            // Nothing left to show in the single-pane layout (the message was deleted
+            // or moved), so return to the list it came from
+            if (this._getView() === 'message') {
+                this._setView('list');
+            }
             return;
         }
 
         const msg = this.currentMessage;
         const isUnseen = msg.unseen;
         const isDraft = this._isDraftMessage(msg);
+        // Labels drop to icons when the viewer is narrow (see the ee-viewer container
+        // query); aria-label and title carry the full name either way. The move control
+        // is a native select laid invisibly over a button so it looks like the rest of
+        // the toolbar while keeping the platform's own folder picker.
+        const actions = `
+                ${isDraft ? this._toolbarButton('send-draft', 'send', 'Send draft', 'Send this draft now', 'ee-button-primary ee-keep-label') : ''}
+                ${this._toolbarButton('toggle-read', isUnseen ? 'mailOpen' : 'mail', isUnseen ? 'Mark read' : 'Mark unread', isUnseen ? 'Mark as read' : 'Mark as unread')}
+                <span class="ee-button ee-move-button" title="Move to folder">
+                    ${icon('move')}<span class="ee-button-label">Move</span>${icon('chevronDown', 12)}
+                    <select class="ee-move-select" data-action="move" aria-label="Move to folder">
+                        <option value="">Move to...</option>
+                        ${this.buildFolderTree()
+                            .map(({ folder, depth }) => {
+                                const indent = '　'.repeat(depth);
+                                const prefix = depth > 0 ? '└ ' : '';
+                                return `<option value="${this.escapeHtml(folder.path)}" ${folder.path === this.currentFolder ? 'disabled' : ''}>${indent}${prefix}${this.escapeHtml(folder.name)}</option>`;
+                            })
+                            .join('')}
+                    </select>
+                </span>
+                ${this._toolbarButton('delete', 'trash', 'Delete', 'Delete', 'ee-button-danger')}
+                <span class="ee-toolbar-spacer"></span>
+                ${this._toolbarButton('download-original', 'download', 'Download', 'Download the original message (.eml)')}
+        `;
         const html = `
-            <div class="ee-message-actions">
-                ${isDraft ? '<button class="ee-button" data-action="send-draft">Send Draft</button>' : ''}
-                <button class="ee-button" data-action="toggle-read">Mark as ${isUnseen ? 'seen' : 'unseen'}</button>
-                <button class="ee-button" data-action="delete">Delete</button>
-                <button class="ee-button" data-action="download-original">Download Original</button>
-                <select class="ee-button" data-action="move">
-                    <option value="">Move to...</option>
-                    ${this.buildFolderTree()
-                        .map(({ folder, depth }) => {
-                            const indent = '　'.repeat(depth);
-                            const prefix = depth > 0 ? '└ ' : '';
-                            return `<option value="${this.escapeHtml(folder.path)}" ${folder.path === this.currentFolder ? 'disabled' : ''}>${indent}${prefix}${this.escapeHtml(folder.name)}</option>`;
-                        })
-                        .join('')}
-                </select>
-            </div>
+            ${this._messageToolbar(actions)}
             <div class="ee-message-content">
+                <h2 class="ee-message-title">${this.escapeHtml(msg.subject || '(no subject)')}</h2>
                 <div class="ee-message-meta">
                     <div class="ee-message-meta-row">
-                        <span class="ee-message-meta-label">From:</span>
-                        ${msg.from ? `${this.escapeHtml(msg.from.name || '')} &lt;${this.escapeHtml(msg.from.address)}&gt;` : 'Unknown'}
+                        <span class="ee-message-meta-label">From</span>
+                        <span class="ee-message-meta-value">${msg.from ? `${this.escapeHtml(msg.from.name || '')} &lt;${this.escapeHtml(msg.from.address)}&gt;` : 'Unknown'}</span>
                     </div>
                     <div class="ee-message-meta-row">
-                        <span class="ee-message-meta-label">To:</span>
-                        ${msg.to ? msg.to.map(t => `${this.escapeHtml(t.name || '')} &lt;${this.escapeHtml(t.address)}&gt;`).join(', ') : ''}
+                        <span class="ee-message-meta-label">To</span>
+                        <span class="ee-message-meta-value">${msg.to ? msg.to.map(t => `${this.escapeHtml(t.name || '')} &lt;${this.escapeHtml(t.address)}&gt;`).join(', ') : ''}</span>
                     </div>
                     ${
                         msg.cc && msg.cc.length
                             ? `
                         <div class="ee-message-meta-row">
-                            <span class="ee-message-meta-label">Cc:</span>
-                            ${msg.cc.map(c => `${this.escapeHtml(c.name || '')} &lt;${this.escapeHtml(c.address)}&gt;`).join(', ')}
+                            <span class="ee-message-meta-label">Cc</span>
+                            <span class="ee-message-meta-value">${msg.cc.map(c => `${this.escapeHtml(c.name || '')} &lt;${this.escapeHtml(c.address)}&gt;`).join(', ')}</span>
                         </div>
                     `
                             : ''
                     }
                     <div class="ee-message-meta-row">
-                        <span class="ee-message-meta-label">Date:</span>
-                        ${new Date(msg.date).toLocaleString()}
-                    </div>
-                    <div class="ee-message-meta-row">
-                        <span class="ee-message-meta-label">Subject:</span>
-                        ${this.escapeHtml(msg.subject || '(no subject)')}
+                        <span class="ee-message-meta-label">Date</span>
+                        <span class="ee-message-meta-value">${this.escapeHtml(new Date(msg.date).toLocaleString())}</span>
                     </div>
                 </div>
                 ${this.renderOtpBox(msg.otp)}
@@ -2117,9 +2398,11 @@ export class EmailEngineClient {
                     return;
                 }
 
-                const originalText = sendDraftButton.textContent;
+                // Only the label changes, the icon stays
+                const label = sendDraftButton.querySelector('.ee-button-label');
+                const originalText = label.textContent;
                 sendDraftButton.disabled = true;
-                sendDraftButton.textContent = 'Sending...';
+                label.textContent = 'Sending...';
 
                 try {
                     await this.submitDraft(msg.id);
@@ -2134,7 +2417,7 @@ export class EmailEngineClient {
                     const errorMessage = this._formatSendError(error);
                     await this.alertMethod(errorMessage, 'Send Error', null, 'OK');
                     sendDraftButton.disabled = false;
-                    sendDraftButton.textContent = originalText;
+                    label.textContent = originalText;
                 }
             });
         }
@@ -2199,6 +2482,16 @@ export class EmailEngineClient {
         // Message content scrolling is now handled in loadMessage method
     }
 
+    // An icon-only button. Static arguments only, never message data.
+    _iconButton(action, iconName, label, extraClass = '', disabled = false) {
+        return `<button type="button" class="ee-button ee-icon-button ${extraClass}" data-action="${action}" aria-label="${label}" title="${label}"${disabled ? ' disabled' : ''}>${icon(iconName)}</button>`;
+    }
+
+    // A message toolbar button. Static arguments only, never message data.
+    _toolbarButton(action, iconName, label, title, extraClass = '') {
+        return `<button type="button" class="ee-button ${extraClass}" data-action="${action}" aria-label="${label}" title="${title}">${icon(iconName)}<span class="ee-button-label">${label}</span></button>`;
+    }
+
     // The message body goes into a shadow root on its container. Sanitised message HTML still
     // carries class and id attributes, and in the host document those would pick up the host's
     // own stylesheet (a utility class like "fixed inset-0" could cover the whole page) or collide
@@ -2248,27 +2541,25 @@ export class EmailEngineClient {
         }
 
         this.container.innerHTML = `
-            <div class="ee-client${this.darkMode ? ' ee-dark-mode' : ''}">
-                ${
-                    this.showDarkModeToggle
-                        ? `<button class="ee-dark-mode-toggle" title="Toggle dark mode">
-                    <span class="ee-dark-mode-icon">${this.darkMode ? '☀️' : '🌙'}</span>
-                </button>`
-                        : ''
-                }
+            <div class="ee-client${this.darkMode ? ' ee-dark-mode' : ''}" data-view="list">
                 <div class="ee-sidebar">
                     <div class="ee-pane-header">
                         <span class="ee-pane-title">Folders</span>
+                        ${
+                            this.showDarkModeToggle
+                                ? `<button type="button" class="ee-dark-mode-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">
+                            <span class="ee-dark-mode-icon">${this.darkMode ? '☀️' : '🌙'}</span>
+                        </button>`
+                                : ''
+                        }
                     </div>
                     <div class="ee-folder-tree"></div>
                 </div>
                 <div class="ee-message-list">${this._messageListPlaceholder()}</div>
-                <div class="ee-message-viewer">
-                    <div class="ee-empty-state">Select a message to view</div>
-                </div>
+                <div class="ee-message-viewer">${this._messageViewerPlaceholder()}</div>
             </div>
-            <button class="ee-compose-button" title="Compose Email">✉</button>
-            <div class="ee-compose-modal">
+            <button type="button" class="ee-compose-button${this.darkMode ? ' ee-dark-mode' : ''}" title="Compose email" aria-label="Compose">${icon('compose', 22)}<span class="ee-compose-button-label">Compose</span></button>
+            <div class="ee-compose-modal${this.darkMode ? ' ee-dark-mode' : ''}">
                 <div class="ee-compose-dialog">
                     <div class="ee-compose-header">
                         <h3 class="ee-compose-title">Compose Email</h3>
@@ -2296,6 +2587,15 @@ export class EmailEngineClient {
                 </div>
             </div>
         `;
+
+        // Pane navigation in the single-pane layout, delegated because the panes
+        // re-render their headers on every load
+        this.container.querySelector('.ee-client').addEventListener('click', e => {
+            const nav = e.target.closest('[data-action="show-folders"], [data-action="back-to-list"]');
+            if (nav) {
+                this._setView(nav.dataset.action === 'show-folders' ? 'folders' : 'list');
+            }
+        });
 
         // Wire up compose modal events
         this.setupComposeModal();
@@ -2458,7 +2758,6 @@ export class EmailEngineClient {
 
         const updateButtonPosition = () => {
             const containerRect = this.container.getBoundingClientRect();
-            const buttonSize = 56; // Button width/height
             const margin = 20; // Desired margin from edges
 
             // A hidden container (display: none) reports a zero-size rect; positioning
@@ -2471,6 +2770,11 @@ export class EmailEngineClient {
                 return;
             }
             composeButton.style.display = '';
+
+            // A labelled pill on roomy layouts, a round icon button where width is
+            // short and the button would cover too much of the single pane
+            composeButton.classList.toggle('ee-compose-compact', containerRect.width < NARROW_WIDTH);
+            const buttonSize = composeButton.offsetWidth || 56;
 
             // Calculate the ideal position (bottom-right of container with margin)
             const idealBottom = window.innerHeight - containerRect.bottom + margin;
@@ -2634,15 +2938,9 @@ export class EmailEngineClient {
             return;
         }
 
-        // Update UI
-        const client = this.container.querySelector('.ee-client');
-        if (client) {
-            if (this.darkMode) {
-                client.classList.add('ee-dark-mode');
-            } else {
-                client.classList.remove('ee-dark-mode');
-            }
-        }
+        // Update UI. The compose button and modal are siblings of .ee-client, so
+        // they carry the class themselves.
+        this.container.querySelectorAll('.ee-client, .ee-compose-button, .ee-compose-modal').forEach(el => el.classList.toggle('ee-dark-mode', this.darkMode));
 
         // Update toggle button icon
         const icon = this.container.querySelector('.ee-dark-mode-icon');
