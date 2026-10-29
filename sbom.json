@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "emailengine-app@2.86.0",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.86.0-6361cc33-7184-4413-8de0-441d80eb245e",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.86.0-58d44fa5-18da-4d14-8b3c-ea8948ff6980",
   "creationInfo": {
-    "created": "2026-10-29T10:31:29.214Z",
+    "created": "2026-10-29T11:45:28.583Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
@@ -1955,11 +1955,11 @@
     },
     {
       "name": "@postalsys/certs",
-      "SPDXID": "SPDXRef-Package-postalsys.certs-2.0.2",
-      "versionInfo": "2.0.2",
+      "SPDXID": "SPDXRef-Package-postalsys.certs-2.0.3",
+      "versionInfo": "2.0.3",
       "packageFileName": "node_modules/@postalsys/certs",
       "description": "Manage Let's Encrypt certificates",
-      "downloadLocation": "https://registry.npmjs.org/@postalsys/certs/-/certs-2.0.2.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@postalsys/certs/-/certs-2.0.3.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/postalsys/certs#readme",
       "licenseDeclared": "ISC",
@@ -1967,37 +1967,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40postalsys/certs@2.0.2"
+          "referenceLocator": "pkg:npm/%40postalsys/certs@2.0.3"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "b813daf63454b07c892b0749e5bb5f234ba416fc49de020320e9c0796af4970f1ee4bc833c490c692563ad75adbb95315f66ad8d7c5ab01b94e5903d88527e82"
-        }
-      ]
-    },
-    {
-      "name": "joi",
-      "SPDXID": "SPDXRef-Package-joi-18.3.0",
-      "versionInfo": "18.3.0",
-      "packageFileName": "node_modules/@postalsys/certs/node_modules/joi",
-      "description": "Object schema validation",
-      "downloadLocation": "https://registry.npmjs.org/joi/-/joi-18.3.0.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "BSD-3-Clause",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/joi@18.3.0"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "fd1c002b80407f371d6dd160d3bdedceae3fc6163a43b94c7790268ea4cbea9bb440525d126b6cc209bc06f8305ef38ab8f35843c5eb750aeb5bf805eb92e237"
+          "checksumValue": "d032fddf8a68495db618ef8178eb25c45a43b6b5073ab3468de263324737665e87721458a72381dc57378b1a0b4dfb589e35127b14e6142847c4e9f7a49d9b58"
         }
       ]
     },
@@ -4834,11 +4810,11 @@
     },
     {
       "name": "smtp-server",
-      "SPDXID": "SPDXRef-Package-smtp-server-3.21.1",
-      "versionInfo": "3.21.1",
+      "SPDXID": "SPDXRef-Package-smtp-server-3.21.2",
+      "versionInfo": "3.21.2",
       "packageFileName": "node_modules/smtp-server",
       "description": "Create custom SMTP servers on the fly",
-      "downloadLocation": "https://registry.npmjs.org/smtp-server/-/smtp-server-3.21.1.tgz",
+      "downloadLocation": "https://registry.npmjs.org/smtp-server/-/smtp-server-3.21.2.tgz",
       "filesAnalyzed": false,
       "homepage": "https://nodemailer.com/extras/smtp-server/",
       "licenseDeclared": "MIT-0",
@@ -4846,37 +4822,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/smtp-server@3.21.1"
+          "referenceLocator": "pkg:npm/smtp-server@3.21.2"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "823f797fa62170bd2ebb79b716f46743a2d2a2dbabb2e800b958cae55e1fd1fd82ff83925699fffa1dbc178a4f245a1bfe6ca58bd57e17bfc7c71f43255770be"
-        }
-      ]
-    },
-    {
-      "name": "nodemailer",
-      "SPDXID": "SPDXRef-Package-nodemailer-10.2.1",
-      "versionInfo": "10.2.1",
-      "packageFileName": "node_modules/smtp-server/node_modules/nodemailer",
-      "description": "Easy as cake e-mail sending from your Node.js applications",
-      "downloadLocation": "https://registry.npmjs.org/nodemailer/-/nodemailer-10.2.1.tgz",
-      "filesAnalyzed": false,
-      "homepage": "https://nodemailer.com/",
-      "licenseDeclared": "MIT-0",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/nodemailer@10.2.1"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "66b0cdb0f1680ccc1e7cdb3bb09c2b622109fc21b80a52560d9bf4e62349b040566bc1910ebcb54091d3271b2e4c063d7830ca8d7e24faadd2c6c95724e6a8ef"
+          "checksumValue": "404d3af994d00c5a4e427673a1d695370e85c7667db119834c815ece71c2fdd8d5f0f86aea6fd21f0eb74395cd7417eac9f6ff0dc79823b0f336b78c7b480fd2"
         }
       ]
     },
@@ -5682,7 +5634,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-postalsys.certs-2.0.2",
+      "spdxElementId": "SPDXRef-Package-postalsys.certs-2.0.3",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5847,7 +5799,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-smtp-server-3.21.1",
+      "spdxElementId": "SPDXRef-Package-smtp-server-3.21.2",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6923,67 +6875,32 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-msgpack.msgpack-3.1.3",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.2",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-ioredfour-2.2.0",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.2",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-joi-18.3.0",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.2",
+      "spdxElementId": "SPDXRef-Package-joi-18.3.1",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-pino-10.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.2",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-punycode.js-2.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.2",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-undici-7.30.1",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.2",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-hapi.address-5.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-hapi.formula-3.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-hapi.hoek-11.0.7",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-hapi.pinpoint-2.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-hapi.tlds-1.1.7",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-hapi.topo-6.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-standard-schema.spec-1.1.0",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7888,17 +7805,17 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-ipv6-normalize-1.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-smtp-server-3.21.1",
+      "relatedSpdxElement": "SPDXRef-Package-smtp-server-3.21.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-nodemailer-10.2.1",
-      "relatedSpdxElement": "SPDXRef-Package-smtp-server-3.21.1",
+      "spdxElementId": "SPDXRef-Package-nodemailer-10.3.0",
+      "relatedSpdxElement": "SPDXRef-Package-smtp-server-3.21.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-punycode.js-2.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-smtp-server-3.21.1",
+      "relatedSpdxElement": "SPDXRef-Package-smtp-server-3.21.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
