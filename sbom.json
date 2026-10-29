@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "emailengine-app@2.86.0",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.86.0-49392cec-b4d6-46bc-baf1-b8816ef1c6b7",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.86.0-6361cc33-7184-4413-8de0-441d80eb245e",
   "creationInfo": {
-    "created": "2026-10-27T11:55:50.501Z",
+    "created": "2026-10-29T10:31:29.214Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
@@ -371,11 +371,11 @@
     },
     {
       "name": "@hapi/bell",
-      "SPDXID": "SPDXRef-Package-hapi.bell-13.2.0",
-      "versionInfo": "13.2.0",
+      "SPDXID": "SPDXRef-Package-hapi.bell-13.2.1",
+      "versionInfo": "13.2.1",
       "packageFileName": "node_modules/@hapi/bell",
       "description": "Third-party login plugin for hapi",
-      "downloadLocation": "https://registry.npmjs.org/@hapi/bell/-/bell-13.2.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@hapi/bell/-/bell-13.2.1.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "BSD-3-Clause",
@@ -383,13 +383,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40hapi/bell@13.2.0"
+          "referenceLocator": "pkg:npm/%40hapi/bell@13.2.1"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "5c4a51a4e9f2da3dc3295c44e4cbd8d2a52c2f47527c437e821098bd0a42f888372dafcfa05ff8a974f5b23e1631c639860baba3c058db27e916cde06e6d6e06"
+          "checksumValue": "a043284247292f3e2e2eedcb44e3216babbedb249d47c851d1da97fbb48ac297eb5ce253d554d494aaf0199d79861df07593354df710f8cfa9fa088d7ea5809b"
         }
       ]
     },
@@ -443,11 +443,11 @@
     },
     {
       "name": "joi",
-      "SPDXID": "SPDXRef-Package-joi-17.13.8",
-      "versionInfo": "17.13.8",
+      "SPDXID": "SPDXRef-Package-joi-17.13.9",
+      "versionInfo": "17.13.9",
       "packageFileName": "node_modules/@hapi/bell/node_modules/joi",
       "description": "Object schema validation",
-      "downloadLocation": "https://registry.npmjs.org/joi/-/joi-17.13.8.tgz",
+      "downloadLocation": "https://registry.npmjs.org/joi/-/joi-17.13.9.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "BSD-3-Clause",
@@ -455,13 +455,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/joi@17.13.8"
+          "referenceLocator": "pkg:npm/joi@17.13.9"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "88f28e1a6891c358f17ff24e3f0c6609c51000e745df9f667736223f60c9f93317d182b6ce32b70fecd839a1a3a6e996c4e145fe5db15568d154ae5b1922dd13"
+          "checksumValue": "9651424f6ad5b5fc20042688ab1b638a6fa21eaae0b2ce0e3621926228861fd8e78d6abdd29a5245f7ea9aa2afc296bc5be61f20bc9057a5f219c7a05d7d93e2"
         }
       ]
     },
@@ -755,11 +755,11 @@
     },
     {
       "name": "@hapi/hapi",
-      "SPDXID": "SPDXRef-Package-hapi.hapi-21.4.11",
-      "versionInfo": "21.4.11",
+      "SPDXID": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "versionInfo": "21.4.12",
       "packageFileName": "node_modules/@hapi/hapi",
       "description": "HTTP Server framework",
-      "downloadLocation": "https://registry.npmjs.org/@hapi/hapi/-/hapi-21.4.11.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@hapi/hapi/-/hapi-21.4.12.tgz",
       "filesAnalyzed": false,
       "homepage": "https://hapi.dev",
       "licenseDeclared": "BSD-3-Clause",
@@ -767,13 +767,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40hapi/hapi@21.4.11"
+          "referenceLocator": "pkg:npm/%40hapi/hapi@21.4.12"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "c268f4a73fcc94891c5511a3200bba98f0b890d5ee1e84ee2e40fe8b5e29739a834f192970370419b8aee6c4aea1fe19cc3f9683482d626c52ed36970dda1231"
+          "checksumValue": "4d3e8446ba79aaffe9377b9b3482e3235fcc65f5d0314ba6d885561f6847476dcb1e3d567b982c23c5856af7da3516b1f93f16daa49492b8bd97b140ef6fd777"
         }
       ]
     },
@@ -923,11 +923,11 @@
     },
     {
       "name": "@hapi/pez",
-      "SPDXID": "SPDXRef-Package-hapi.pez-6.1.1",
-      "versionInfo": "6.1.1",
+      "SPDXID": "SPDXRef-Package-hapi.pez-6.1.2",
+      "versionInfo": "6.1.2",
       "packageFileName": "node_modules/@hapi/pez",
       "description": "Multipart parser",
-      "downloadLocation": "https://registry.npmjs.org/@hapi/pez/-/pez-6.1.1.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@hapi/pez/-/pez-6.1.2.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "BSD-3-Clause",
@@ -935,13 +935,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40hapi/pez@6.1.1"
+          "referenceLocator": "pkg:npm/%40hapi/pez@6.1.2"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "ca0d8e4b5b42d12d6c1d7be152d5ac7d19fa96b2a5f632ad46167e108d30a0e5bf82a5f9bccd8f675e39f72a42bc260344b27d9c8cae79e107e4c255d590ea22"
+          "checksumValue": "26f7dd030fbd895cd2f556118a68bd048be649464fadd82d27f75ebedd97ba3c03ebb3265b92893cd250f85db4b997c78f7714b2f6bcbb5921b1c237efacc364"
         }
       ]
     },
@@ -1067,11 +1067,11 @@
     },
     {
       "name": "@hapi/subtext",
-      "SPDXID": "SPDXRef-Package-hapi.subtext-8.1.4",
-      "versionInfo": "8.1.4",
+      "SPDXID": "SPDXRef-Package-hapi.subtext-8.1.5",
+      "versionInfo": "8.1.5",
       "packageFileName": "node_modules/@hapi/subtext",
       "description": "HTTP payload parsing",
-      "downloadLocation": "https://registry.npmjs.org/@hapi/subtext/-/subtext-8.1.4.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@hapi/subtext/-/subtext-8.1.5.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "BSD-3-Clause",
@@ -1079,13 +1079,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40hapi/subtext@8.1.4"
+          "referenceLocator": "pkg:npm/%40hapi/subtext@8.1.5"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "cf6596776502916e166c4245a053af3323c519c1850e362ee2e8e70d171498030c591675ab38431394a07e696ca82e777c88a2eb51d65d49a447f167f4fcb459"
+          "checksumValue": "552a0bef9758a8c7ecd94469ad63eef515dd2fff9ce696792f4b2249add92a0d1540a1909f662771dd39265ff5e7856f5583bfca6ace5b74d1fdaf69b29d7e90"
         }
       ]
     },
@@ -1235,11 +1235,11 @@
     },
     {
       "name": "@hapi/wreck",
-      "SPDXID": "SPDXRef-Package-hapi.wreck-18.1.2",
-      "versionInfo": "18.1.2",
+      "SPDXID": "SPDXRef-Package-hapi.wreck-18.1.3",
+      "versionInfo": "18.1.3",
       "packageFileName": "node_modules/@hapi/wreck",
       "description": "HTTP Client Utilities",
-      "downloadLocation": "https://registry.npmjs.org/@hapi/wreck/-/wreck-18.1.2.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@hapi/wreck/-/wreck-18.1.3.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "BSD-3-Clause",
@@ -1247,13 +1247,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40hapi/wreck@18.1.2"
+          "referenceLocator": "pkg:npm/%40hapi/wreck@18.1.3"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "ddd327576a5f8508b212abbc0cbdd5066c6474b8910e28940ee1bbf43a7e50ad602fd67101f0ce52107a9370f930ba9c809275200472185870a1cd4d213affa6"
+          "checksumValue": "3d9d454299390d66c41456221eefe40a459e487c14840c4349476fe99b29d6a8b672850fdb6727610969eb8eca092b02738b850782ce4ec1e8f5fe64eef82d1e"
         }
       ]
     },
@@ -1523,11 +1523,11 @@
     },
     {
       "name": "@opentelemetry/semantic-conventions",
-      "SPDXID": "SPDXRef-Package-opentelemetry.semantic-conventions-1.43.0",
-      "versionInfo": "1.43.0",
+      "SPDXID": "SPDXRef-Package-opentelemetry.semantic-conventions-1.44.0",
+      "versionInfo": "1.44.0",
       "packageFileName": "node_modules/@opentelemetry/semantic-conventions",
       "description": "OpenTelemetry semantic conventions",
-      "downloadLocation": "https://registry.npmjs.org/@opentelemetry/semantic-conventions/-/semantic-conventions-1.43.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@opentelemetry/semantic-conventions/-/semantic-conventions-1.44.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/open-telemetry/opentelemetry-js/tree/main/semantic-conventions",
       "licenseDeclared": "Apache-2.0",
@@ -1535,13 +1535,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40opentelemetry/semantic-conventions@1.43.0"
+          "referenceLocator": "pkg:npm/%40opentelemetry/semantic-conventions@1.44.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "7926164e6eb6d2d4e4e3910a49e75a50bf0c15823c856d7ae21217b20207cb1bb75686d40777c50aee6dd2141bcba3a85913ec1b52a42941b633951a7622e256"
+          "checksumValue": "1372643a53018b737c3861a46e5eed172aa4d8c012ebf9724916412b732eec0ce31757d3f28202847f42844e3c4945b30e7f4a770b5af86fe9e4b278c56e022d"
         }
       ]
     },
@@ -1978,6 +1978,30 @@
       ]
     },
     {
+      "name": "joi",
+      "SPDXID": "SPDXRef-Package-joi-18.3.0",
+      "versionInfo": "18.3.0",
+      "packageFileName": "node_modules/@postalsys/certs/node_modules/joi",
+      "description": "Object schema validation",
+      "downloadLocation": "https://registry.npmjs.org/joi/-/joi-18.3.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "NOASSERTION",
+      "licenseDeclared": "BSD-3-Clause",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/joi@18.3.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "fd1c002b80407f371d6dd160d3bdedceae3fc6163a43b94c7790268ea4cbea9bb440525d126b6cc209bc06f8305ef38ab8f35843c5eb750aeb5bf805eb92e237"
+        }
+      ]
+    },
+    {
       "name": "@postalsys/email-ai-tools",
       "SPDXID": "SPDXRef-Package-postalsys.email-ai-tools-2.3.2",
       "versionInfo": "2.3.2",
@@ -2170,11 +2194,11 @@
     },
     {
       "name": "@sentry/core",
-      "SPDXID": "SPDXRef-Package-sentry.core-10.77.1",
-      "versionInfo": "10.77.1",
+      "SPDXID": "SPDXRef-Package-sentry.core-10.78.0",
+      "versionInfo": "10.78.0",
       "packageFileName": "node_modules/@sentry/core",
       "description": "Base implementation for all Sentry JavaScript SDKs",
-      "downloadLocation": "https://registry.npmjs.org/@sentry/core/-/core-10.77.1.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@sentry/core/-/core-10.78.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/getsentry/sentry-javascript/tree/master/packages/core",
       "licenseDeclared": "MIT",
@@ -2182,23 +2206,23 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40sentry/core@10.77.1"
+          "referenceLocator": "pkg:npm/%40sentry/core@10.78.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "d9b11524a97bde420a25cc0f83e9f73a43d8ab0b8e205d9e457bb62069ba693b0bd41e207c645beff9c366bcf6f02d5c8295671fc8c2bdccacfd3b3722ae92bb"
+          "checksumValue": "30c478304f9a82b8dbbd0d03b53609272a66f90942a33f5426058df208dc5ea9720e3624ebd2f03e39daa1c60dd49c90332d9dc791e4e12fd1b75da04d0e5c1b"
         }
       ]
     },
     {
       "name": "@sentry/node-core",
-      "SPDXID": "SPDXRef-Package-sentry.node-core-10.77.1",
-      "versionInfo": "10.77.1",
+      "SPDXID": "SPDXRef-Package-sentry.node-core-10.78.0",
+      "versionInfo": "10.78.0",
       "packageFileName": "node_modules/@sentry/node-core",
       "description": "Sentry Node-Core SDK",
-      "downloadLocation": "https://registry.npmjs.org/@sentry/node-core/-/node-core-10.77.1.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@sentry/node-core/-/node-core-10.78.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/getsentry/sentry-javascript/tree/master/packages/node-core",
       "licenseDeclared": "MIT",
@@ -2206,23 +2230,23 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40sentry/node-core@10.77.1"
+          "referenceLocator": "pkg:npm/%40sentry/node-core@10.78.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "06e7c6dad5adcf5d39e3baad4fcf807ef854235547f2741aa042c95e9e57cbb4c1e8f9d528f18ec6e8d44165bee89946b903df013681892810061c26c4fef38c"
+          "checksumValue": "1c9de4ef120d062893cdcfd068844776de6e81cb5562d7199e3aee4f115adad5c5252258855b60084f83ccb4a41d76d5025552feb8a500c19c3bd194888a964d"
         }
       ]
     },
     {
       "name": "@sentry/opentelemetry",
-      "SPDXID": "SPDXRef-Package-sentry.opentelemetry-10.77.1",
-      "versionInfo": "10.77.1",
+      "SPDXID": "SPDXRef-Package-sentry.opentelemetry-10.78.0",
+      "versionInfo": "10.78.0",
       "packageFileName": "node_modules/@sentry/opentelemetry",
       "description": "Official Sentry utilities for OpenTelemetry",
-      "downloadLocation": "https://registry.npmjs.org/@sentry/opentelemetry/-/opentelemetry-10.77.1.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@sentry/opentelemetry/-/opentelemetry-10.78.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/getsentry/sentry-javascript/tree/master/packages/opentelemetry",
       "licenseDeclared": "MIT",
@@ -2230,13 +2254,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40sentry/opentelemetry@10.77.1"
+          "referenceLocator": "pkg:npm/%40sentry/opentelemetry@10.78.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "e6d6d5e7e7fa06a8f17924d5edd34cfd1b938f774d1c2e34989dd57481531065a42ad1d17aa6028c9f4d475e6f0c8ec3557206284f6121dfb500416314c99911"
+          "checksumValue": "b38eeea8d687adeb3a8a388cb1aa08ebf0d17aff34bd4a93a91324d2efc37c5f71009b6d2bb80e1aa641112af4603d815c0db53beb143ec3de5ae1e560789270"
         }
       ]
     },
@@ -2578,11 +2602,11 @@
     },
     {
       "name": "bullmq",
-      "SPDXID": "SPDXRef-Package-bullmq-6.5.0",
-      "versionInfo": "6.5.0",
+      "SPDXID": "SPDXRef-Package-bullmq-6.5.1",
+      "versionInfo": "6.5.1",
       "packageFileName": "node_modules/bullmq",
       "description": "Queue for messages and jobs based on Redis",
-      "downloadLocation": "https://registry.npmjs.org/bullmq/-/bullmq-6.5.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/bullmq/-/bullmq-6.5.1.tgz",
       "filesAnalyzed": false,
       "homepage": "https://bullmq.io/",
       "licenseDeclared": "MIT",
@@ -2590,13 +2614,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/bullmq@6.5.0"
+          "referenceLocator": "pkg:npm/bullmq@6.5.1"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "1836947c48a0da55874b9d9a388d21f1ffd6d26fb93cf98738949a84029131f8bcd8174bff612a0ae88398970d8b0829699d0a1f3ecdc42f1e34c2376e1f0d42"
+          "checksumValue": "a74bbe954236b36e77108f2bfa4346097a4ad52bb04835bc16952f685f2fae7d5b3eff596d79a492aff2161a708c824cb63cc752e640b65a6f75698996e728a1"
         }
       ]
     },
@@ -3586,11 +3610,11 @@
     },
     {
       "name": "joi",
-      "SPDXID": "SPDXRef-Package-joi-18.3.0",
-      "versionInfo": "18.3.0",
+      "SPDXID": "SPDXRef-Package-joi-18.3.1",
+      "versionInfo": "18.3.1",
       "packageFileName": "node_modules/joi",
       "description": "Object schema validation",
-      "downloadLocation": "https://registry.npmjs.org/joi/-/joi-18.3.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/joi/-/joi-18.3.1.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "BSD-3-Clause",
@@ -3598,13 +3622,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/joi@18.3.0"
+          "referenceLocator": "pkg:npm/joi@18.3.1"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "fd1c002b80407f371d6dd160d3bdedceae3fc6163a43b94c7790268ea4cbea9bb440525d126b6cc209bc06f8305ef38ab8f35843c5eb750aeb5bf805eb92e237"
+          "checksumValue": "995f4ce0b961e2f6b7353f74a7b281b5086866a8ecf312d7ec4598138cbf186df22c5e9111b2011074946f4517d495d186ddb0e6d88b4acbe6a587396a48aa23"
         }
       ]
     },
@@ -3826,11 +3850,11 @@
     },
     {
       "name": "mailparser",
-      "SPDXID": "SPDXRef-Package-mailparser-3.12.4",
-      "versionInfo": "3.12.4",
+      "SPDXID": "SPDXRef-Package-mailparser-3.13.0",
+      "versionInfo": "3.13.0",
       "packageFileName": "node_modules/mailparser",
       "description": "Parse e-mails",
-      "downloadLocation": "https://registry.npmjs.org/mailparser/-/mailparser-3.12.4.tgz",
+      "downloadLocation": "https://registry.npmjs.org/mailparser/-/mailparser-3.13.0.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "MIT",
@@ -3838,13 +3862,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/mailparser@3.12.4"
+          "referenceLocator": "pkg:npm/mailparser@3.13.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "15da0c17e4bcf7f0106891d8ed2b704df0013c767c55ecbe083c949e8e63f933b48c5d14c4cfa56b83def4c7aa2aa04ee18f59301d9ea267728398be8f3a5f67"
+          "checksumValue": "ebccdf1ad1a1d64415117e9d84372d2853130d79aeed8d5cfea0aff007d5c226c00a87c90f6d892cad54da64866e0b7b9b023dc8a0a2380c7f74a293829883b7"
         }
       ]
     },
@@ -4114,11 +4138,11 @@
     },
     {
       "name": "nodemailer",
-      "SPDXID": "SPDXRef-Package-nodemailer-10.2.1",
-      "versionInfo": "10.2.1",
+      "SPDXID": "SPDXRef-Package-nodemailer-10.3.0",
+      "versionInfo": "10.3.0",
       "packageFileName": "node_modules/nodemailer",
       "description": "Easy as cake e-mail sending from your Node.js applications",
-      "downloadLocation": "https://registry.npmjs.org/nodemailer/-/nodemailer-10.2.1.tgz",
+      "downloadLocation": "https://registry.npmjs.org/nodemailer/-/nodemailer-10.3.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://nodemailer.com/",
       "licenseDeclared": "MIT-0",
@@ -4126,13 +4150,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/nodemailer@10.2.1"
+          "referenceLocator": "pkg:npm/nodemailer@10.3.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "66b0cdb0f1680ccc1e7cdb3bb09c2b622109fc21b80a52560d9bf4e62349b040566bc1910ebcb54091d3271b2e4c063d7830ca8d7e24faadd2c6c95724e6a8ef"
+          "checksumValue": "2eca8cf92c636a9f01320c50b95bc006811c9bd79dd9fde1d9ed28841ee4577b25f7ee086979710b40d3f0241e960fd2d217b7f204f8c93d111f5a6f6711dff8"
         }
       ]
     },
@@ -4833,6 +4857,30 @@
       ]
     },
     {
+      "name": "nodemailer",
+      "SPDXID": "SPDXRef-Package-nodemailer-10.2.1",
+      "versionInfo": "10.2.1",
+      "packageFileName": "node_modules/smtp-server/node_modules/nodemailer",
+      "description": "Easy as cake e-mail sending from your Node.js applications",
+      "downloadLocation": "https://registry.npmjs.org/nodemailer/-/nodemailer-10.2.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://nodemailer.com/",
+      "licenseDeclared": "MIT-0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/nodemailer@10.2.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "66b0cdb0f1680ccc1e7cdb3bb09c2b622109fc21b80a52560d9bf4e62349b040566bc1910ebcb54091d3271b2e4c063d7830ca8d7e24faadd2c6c95724e6a8ef"
+        }
+      ]
+    },
+    {
       "name": "socks",
       "SPDXID": "SPDXRef-Package-socks-2.8.10",
       "versionInfo": "2.8.10",
@@ -5074,11 +5122,11 @@
     },
     {
       "name": "tldts-core",
-      "SPDXID": "SPDXRef-Package-tldts-core-7.4.19",
-      "versionInfo": "7.4.19",
+      "SPDXID": "SPDXRef-Package-tldts-core-7.4.20",
+      "versionInfo": "7.4.20",
       "packageFileName": "node_modules/tldts-core",
       "description": "tldts core primitives (internal module)",
-      "downloadLocation": "https://registry.npmjs.org/tldts-core/-/tldts-core-7.4.19.tgz",
+      "downloadLocation": "https://registry.npmjs.org/tldts-core/-/tldts-core-7.4.20.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/remusao/tldts#readme",
       "licenseDeclared": "MIT",
@@ -5086,13 +5134,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/tldts-core@7.4.19"
+          "referenceLocator": "pkg:npm/tldts-core@7.4.20"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "82835757a1e8f5320e7e92596a74dde82286e43c9881800bfa4fb6d93d122e1f25ebe28721f0543c5b9e3ee499bf4e54b6d21a68b988f6d6fb4e618874ae4091"
+          "checksumValue": "0badf44d65d909998bab41766d6e10ab09da6b1090fecbe902abc9c270b826f804339a218419c6b04cd32d239770dfb18f3fa411a1d2e6ea16230da4967a9dd0"
         }
       ]
     },
@@ -5589,7 +5637,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-hapi.bell-13.2.0",
+      "spdxElementId": "SPDXRef-Package-hapi.bell-13.2.1",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5609,7 +5657,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "spdxElementId": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5669,7 +5717,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-sentry.node-core-10.77.1",
+      "spdxElementId": "SPDXRef-Package-sentry.node-core-10.78.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5689,7 +5737,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-bullmq-6.5.0",
+      "spdxElementId": "SPDXRef-Package-bullmq-6.5.1",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5739,7 +5787,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-joi-18.3.0",
+      "spdxElementId": "SPDXRef-Package-joi-18.3.1",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5759,7 +5807,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-mailparser-3.12.4",
+      "spdxElementId": "SPDXRef-Package-mailparser-3.13.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5769,7 +5817,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-nodemailer-10.2.1",
+      "spdxElementId": "SPDXRef-Package-nodemailer-10.3.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5920,32 +5968,32 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.boom-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.bell-13.2.0",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.bell-13.2.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.bounce-3.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.bell-13.2.0",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.bell-13.2.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.cryptiles-6.0.3",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.bell-13.2.0",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.bell-13.2.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.hoek-11.0.7",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.bell-13.2.0",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.bell-13.2.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-hapi.wreck-18.1.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.bell-13.2.0",
+      "spdxElementId": "SPDXRef-Package-hapi.wreck-18.1.3",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.bell-13.2.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-joi-17.13.8",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.bell-13.2.0",
+      "spdxElementId": "SPDXRef-Package-joi-17.13.9",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.bell-13.2.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -5955,27 +6003,27 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.hoek-9.3.0",
-      "relatedSpdxElement": "SPDXRef-Package-joi-17.13.8",
+      "relatedSpdxElement": "SPDXRef-Package-joi-17.13.9",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.topo-5.1.0",
-      "relatedSpdxElement": "SPDXRef-Package-joi-17.13.8",
+      "relatedSpdxElement": "SPDXRef-Package-joi-17.13.9",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-sideway.address-4.1.5",
-      "relatedSpdxElement": "SPDXRef-Package-joi-17.13.8",
+      "relatedSpdxElement": "SPDXRef-Package-joi-17.13.9",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-sideway.formula-3.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-joi-17.13.8",
+      "relatedSpdxElement": "SPDXRef-Package-joi-17.13.9",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-sideway.pinpoint-2.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-joi-17.13.8",
+      "relatedSpdxElement": "SPDXRef-Package-joi-17.13.9",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -6085,92 +6133,92 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.accept-6.0.3",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.ammo-6.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.boom-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.bounce-3.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.call-9.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.catbox-12.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.catbox-memory-6.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.heavy-8.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.hoek-11.0.7",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.mimos-7.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.podium-5.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.shot-6.0.3",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.somever-4.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.statehood-8.2.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-hapi.subtext-8.1.4",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "spdxElementId": "SPDXRef-Package-hapi.subtext-8.1.5",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.teamwork-6.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.topo-6.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.validate-2.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.11",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -6265,27 +6313,27 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.b64-6.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.1",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.boom-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.1",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.content-6.0.3",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.1",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.hoek-11.0.7",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.1",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.nigel-5.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.1",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -6360,37 +6408,37 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.boom-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.4",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.5",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.bourne-3.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.4",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.5",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.content-6.0.3",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.4",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.5",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.file-3.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.4",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.5",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.hoek-11.0.7",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.4",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.5",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-hapi.pez-6.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.4",
+      "spdxElementId": "SPDXRef-Package-hapi.pez-6.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.5",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-hapi.wreck-18.1.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.4",
+      "spdxElementId": "SPDXRef-Package-hapi.wreck-18.1.3",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.5",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -6435,17 +6483,17 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.boom-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.wreck-18.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.wreck-18.1.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.bourne-3.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.wreck-18.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.wreck-18.1.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.hoek-11.0.7",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.wreck-18.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.wreck-18.1.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -6454,7 +6502,7 @@
       "relationshipType": "PREREQUISITE_FOR"
     },
     {
-      "spdxElementId": "SPDXRef-Package-opentelemetry.semantic-conventions-1.43.0",
+      "spdxElementId": "SPDXRef-Package-opentelemetry.semantic-conventions-1.44.0",
       "relatedSpdxElement": "SPDXRef-Package-opentelemetry.core-2.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6469,7 +6517,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-opentelemetry.semantic-conventions-1.43.0",
+      "spdxElementId": "SPDXRef-Package-opentelemetry.semantic-conventions-1.44.0",
       "relatedSpdxElement": "SPDXRef-Package-opentelemetry.resources-2.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6489,7 +6537,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-opentelemetry.semantic-conventions-1.43.0",
+      "spdxElementId": "SPDXRef-Package-opentelemetry.semantic-conventions-1.44.0",
       "relatedSpdxElement": "SPDXRef-Package-opentelemetry.sdk-trace-2.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6514,7 +6562,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-opentelemetry.semantic-conventions-1.43.0",
+      "spdxElementId": "SPDXRef-Package-opentelemetry.semantic-conventions-1.44.0",
       "relatedSpdxElement": "SPDXRef-Package-opentelemetry.sdk-trace-base-2.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6904,6 +6952,41 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
+      "spdxElementId": "SPDXRef-Package-hapi.address-5.1.1",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-hapi.formula-3.0.2",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-hapi.hoek-11.0.7",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-hapi.pinpoint-2.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-hapi.tlds-1.1.7",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-hapi.topo-6.0.2",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-standard-schema.spec-1.1.0",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
       "spdxElementId": "SPDXRef-Package-postalsys.email-text-tools-2.6.1",
       "relatedSpdxElement": "SPDXRef-Package-postalsys.email-ai-tools-2.3.2",
       "relationshipType": "DEPENDENCY_OF"
@@ -7000,67 +7083,67 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-sentry.conventions-0.16.0",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.core-10.77.1",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.core-10.78.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-opentelemetry.api-1.9.1",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.77.1",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.78.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-opentelemetry.core-2.12.0",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.77.1",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.78.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-opentelemetry.sdk-trace-base-2.12.0",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.77.1",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.78.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-sentry.conventions-0.16.0",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.77.1",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.78.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-sentry.core-10.77.1",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.77.1",
+      "spdxElementId": "SPDXRef-Package-sentry.core-10.78.0",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.78.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-sentry.opentelemetry-10.77.1",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.77.1",
+      "spdxElementId": "SPDXRef-Package-sentry.opentelemetry-10.78.0",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.78.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-import-in-the-middle-3.5.3",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.77.1",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.78.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-opentelemetry.api-1.9.1",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.77.1",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.78.0",
       "relationshipType": "PREREQUISITE_FOR"
     },
     {
       "spdxElementId": "SPDXRef-Package-opentelemetry.core-2.12.0",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.77.1",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.78.0",
       "relationshipType": "PREREQUISITE_FOR"
     },
     {
       "spdxElementId": "SPDXRef-Package-opentelemetry.sdk-trace-base-2.12.0",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.77.1",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.78.0",
       "relationshipType": "PREREQUISITE_FOR"
     },
     {
       "spdxElementId": "SPDXRef-Package-sentry.conventions-0.16.0",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.77.1",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.78.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-sentry.core-10.77.1",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.77.1",
+      "spdxElementId": "SPDXRef-Package-sentry.core-10.78.0",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.opentelemetry-10.78.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7165,32 +7248,32 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-ioredis-6.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.0",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-cron-parser-5.10.2",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.0",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-msgpackr-2.1.2",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.0",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-node-abort-controller-3.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.0",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-semver-7.8.5",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.0",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.0",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7455,37 +7538,37 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.address-5.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.formula-3.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.hoek-11.0.7",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.pinpoint-2.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.tlds-1.1.7",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.topo-6.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-standard-schema.spec-1.1.0",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.0",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7640,42 +7723,42 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-zone-eu.mailsplit-5.4.29",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.4",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.13.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-he-1.2.0",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.4",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.13.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-html-to-text-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.4",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.13.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libmime-5.6.3",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.4",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.13.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-linkify-it-5.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.4",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.13.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-nodemailer-10.2.1",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.4",
+      "spdxElementId": "SPDXRef-Package-nodemailer-10.3.0",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.13.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-punycode.js-2.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.4",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.13.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-tlds-1.261.0",
-      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.12.4",
+      "relatedSpdxElement": "SPDXRef-Package-mailparser-3.13.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7844,7 +7927,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tldts-core-7.4.19",
+      "spdxElementId": "SPDXRef-Package-tldts-core-7.4.20",
       "relatedSpdxElement": "SPDXRef-Package-tldts-7.4.19",
       "relationshipType": "DEPENDENCY_OF"
     },
