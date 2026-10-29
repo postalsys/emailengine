@@ -6968,7 +6968,7 @@
                 },
                 "notifyHeaders": {
                     "type": "array",
-                    "description": "Email headers to include in webhook payloads for additional context",
+                    "description": "Email headers to include in webhook payloads for additional context. Listing OTP-Token also adds the otp field (the one-time passcode) to messageNew payloads",
                     "items": {
                         "type": "string",
                         "examples": [

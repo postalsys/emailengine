@@ -4199,6 +4199,27 @@
           }
         }
       },
+      "MessageOtp": {
+        "type": "object",
+        "description": "One-time passcode from the OTP-Token header (draft-goto-otp-token), present when the message carries exactly one valid header. Experimental, follows the Internet-Draft. The header is not authenticated by itself, so name the origin to a user only when authenticated is true",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The passcode",
+            "example": "123456"
+          },
+          "origin": {
+            "type": "string",
+            "description": "The origin the passcode is bound to",
+            "example": "https://example.com"
+          },
+          "authenticated": {
+            "type": "boolean",
+            "description": "Whether the receiving server vouches for the origin: its Authentication-Results header records a passing DKIM signature from the origin's organizational domain. Only Gmail and Microsoft 365 mailboxes can report true, for other servers this is always false",
+            "example": true
+          }
+        }
+      },
       "MessageCategory": {
         "type": "string",
         "description": "Gmail inbox tab/category of the message (Gmail API accounts only)",
@@ -4393,6 +4414,9 @@
             "type": "string",
             "description": "Message-ID of the message that bounced. Set together with isBounce",
             "example": "<original@example.com>"
+          },
+          "otp": {
+            "$ref": "#/components/schemas/MessageOtp"
           },
           "preview": {
             "type": "string",
@@ -6494,6 +6518,38 @@
           "orderId": "4815"
         }
       },
+      "MailMergeOtp": {
+        "type": "object",
+        "description": "One-time passcode for this recipient. Overrides message level `otp` value.",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The passcode, printable ASCII. It should also appear in the message body",
+            "example": "123456",
+            "maxLength": 256,
+            "pattern": "^[\\x20-\\x7e]+$"
+          },
+          "origin": {
+            "type": "string",
+            "description": "The site the passcode is for, https (or http on a loopback host). A full URL is reduced to its origin",
+            "example": "https://example.com",
+            "maxLength": 2048,
+            "x-format": {
+              "uri": {
+                "scheme": [
+                  "https",
+                  "http"
+                ],
+                "allowRelative": false
+              }
+            }
+          }
+        },
+        "required": [
+          "code",
+          "origin"
+        ]
+      },
       "MailMergeListEntry": {
         "type": "object",
         "properties": {
@@ -6514,6 +6570,9 @@
             "format": "date-time",
             "description": "Send message at specified time. Overrides message level `sendAt` value.",
             "example": "2021-07-08T07:06:34.336Z"
+          },
+          "otp": {
+            "$ref": "#/components/schemas/MailMergeOtp"
           }
         },
         "required": [
@@ -6777,6 +6836,38 @@
           "$ref": "#/components/schemas/SubmitAttachment"
         }
       },
+      "SubmitOtp": {
+        "type": "object",
+        "description": "Adds an OTP-Token header (draft-goto-otp-token) so that mail clients and browsers can offer the passcode. Experimental, follows the Internet-Draft. Cannot be combined with useStructuredFormat",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The passcode, printable ASCII. It should also appear in the message body",
+            "example": "123456",
+            "maxLength": 256,
+            "pattern": "^[\\x20-\\x7e]+$"
+          },
+          "origin": {
+            "type": "string",
+            "description": "The site the passcode is for, https (or http on a loopback host). A full URL is reduced to its origin",
+            "example": "https://example.com",
+            "maxLength": 2048,
+            "x-format": {
+              "uri": {
+                "scheme": [
+                  "https",
+                  "http"
+                ],
+                "allowRelative": false
+              }
+            }
+          }
+        },
+        "required": [
+          "code",
+          "origin"
+        ]
+      },
       "DSN": {
         "type": "object",
         "description": "Request DSN notifications",
@@ -6932,6 +7023,9 @@
           },
           "headers": {
             "$ref": "#/components/schemas/CustomHeaders"
+          },
+          "otp": {
+            "$ref": "#/components/schemas/SubmitOtp"
           },
           "trackOpens": {
             "type": "boolean",
@@ -10242,7 +10336,7 @@
       },
       "SettingNotifyHeaders": {
         "type": "array",
-        "description": "Email headers to include in webhook payloads for additional context",
+        "description": "Email headers to include in webhook payloads for additional context. Listing OTP-Token also adds the otp field (the one-time passcode) to messageNew payloads",
         "nullable": true,
         "items": {
           "type": "string",
@@ -11126,7 +11220,7 @@
       },
       "NotifyHeaders": {
         "type": "array",
-        "description": "Email headers to include in webhook payloads for additional context",
+        "description": "Email headers to include in webhook payloads for additional context. Listing OTP-Token also adds the otp field (the one-time passcode) to messageNew payloads",
         "items": {
           "type": "string",
           "example": "List-ID",
