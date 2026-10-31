@@ -15,6 +15,59 @@
 </div>
 {{/if}}
 
+{{#if instances}}
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="card-header flex flex-wrap items-start justify-between gap-3">
+        <div>
+            <h6 class="card-title text-primary mb-0">Instances</h6>
+            <p class="text-base-content/60 text-sm mt-1 mb-0 max-w-2xl">EmailEngine instances sharing this Redis
+                database. Each serves its own share of the accounts and passes requests for the others on. The worker
+                threads below belong to <code>{{selfInstance}}</code>.</p>
+        </div>
+        {{> ui/badge label=(concat instances.length " running") variant="neutral"}}
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="table ee-table-stack">
+            <thead>
+                <tr>
+                    <th>Instance</th>
+                    <th>Status</th>
+                    <th>Version</th>
+                    <th class="text-end">Accounts</th>
+                    <th class="text-end">Connected</th>
+                    <th>Last heartbeat</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each instances}}
+                <tr>
+                    <td>
+                        <span class="inline-flex flex-wrap items-center gap-2">
+                            <span class="font-mono text-sm">{{id}}</span>
+                            {{#if self}}{{> ui/badge label="This instance" variant="primary" soft=true}}{{/if}}
+                        </span>
+                    </td>
+                    <td data-label="Status">
+                        <span class="inline-flex items-center gap-2">
+                            <span class="size-2.5 rounded-full bg-{{statusVariant}} shrink-0"></span>
+                            <span>{{statusLabel}}</span>
+                        </span>
+                    </td>
+                    <td data-label="Version">{{#if version}}{{version}}{{else}}<span class="text-base-content/40">-</span>{{/if}}</td>
+                    <td class="text-end" data-label="Accounts">{{formatInteger accounts userLocale}}</td>
+                    <td class="text-end" data-label="Connected">{{formatInteger connected userLocale}}</td>
+                    <td data-label="Last heartbeat">
+                        {{#if heartbeatTime}}<span class="relative-time" data-time="{{heartbeatTime}}"></span>{{else}}<span class="text-base-content/40">-</span>{{/if}}
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+</div>
+{{/if}}
+
 {{#each groups}}
 <div class="card bg-base-100 shadow-md mb-6">
 

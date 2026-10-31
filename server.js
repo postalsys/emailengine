@@ -135,6 +135,7 @@ const pathlib = require('path');
 const { redis, notifyQueue, submitQueue, exportQueue } = require('./lib/db');
 const { queueStats } = require('./lib/queue-stats');
 const { pruneFailedContent } = require('./lib/outbox');
+const { Export } = require('./lib/export');
 const { queueCleanAges } = require('./lib/queue-retention');
 const { getFailedJobRetention } = require('./lib/env-setting-overrides');
 const { packRpcError, unpackRpcError } = require('./lib/worker-rpc-error');
@@ -156,6 +157,7 @@ const { checkRateLimit } = require('./lib/rate-limit');
 const getSecret = require('./lib/get-secret');
 
 const { rejectWorkerCalls } = require('./lib/reject-worker-calls');
+const { getSharedLock, runLocked } = require('./lib/lock-run');
 const {
     pickLeastLoadedWorker,
     rollbackAssignment,
@@ -174,6 +176,7 @@ const { heartbeatDiagnostics, eventLoopDelaySeries, threadHeapSeries } = require
 
 const msgpack = require('./lib/msgpack');
 const { ClusterCoordinator, resolveInstanceId, resolveAddress, notOwnedHereError } = require('./lib/cluster/coordinator');
+const { summarizeFleet } = require('./lib/cluster/fleet');
 const { MessagePortReadable, MessagePortWritable, sendToMessagePort } = require('./lib/message-port-stream');
 
 // Initialize default configuration values if not set
@@ -2845,7 +2848,15 @@ async function commandStructuredMetrics() {
         }
     }
 
-    return { connections, redisPing: await getRedisPing() };
+    // Every instance counts only the accounts it serves; the stats are for all of them
+    let fleet = summarizeFleet(cluster ? [...cluster.live.values()] : [], CLUSTER_INSTANCE_ID, connections);
+
+    return { connections: fleet.connections, instances: fleet.instances, redisPing: await getRedisPing() };
+}
+
+async function commandClusterInstances() {
+    // The instances sharing this Redis, for the Workers page
+    return summarizeFleet(cluster ? [...cluster.live.values()] : [], CLUSTER_INSTANCE_ID, lastConnectionCounts).instances;
 }
 
 async function commandImapWorkerCount() {
@@ -3267,6 +3278,33 @@ async function commandAccountOperation(worker, message) {
 }
 
 /**
+ * Streams the file of an export another instance wrote into the MessagePort of the API worker
+ * that serves the download
+ * @param {Worker} worker
+ * @param {Object} message - `{ account, exportId, instance, port }`
+ * @returns {Promise<Object>}
+ */
+async function commandExportFile(worker, message) {
+    let writable = new MessagePortWritable(message.port);
+    let result;
+    try {
+        if (!cluster) {
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
+        }
+        result = await cluster.callInstance(
+            message.instance,
+            { cmd: 'exportFile', account: message.account, exportId: message.exportId },
+            { timeout: EENGINE_TIMEOUT, stream: true }
+        );
+    } catch (err) {
+        writable.releaseListeners();
+        throw err;
+    }
+    sendToMessagePort(writable, result.body, logger);
+    return result.meta;
+}
+
+/**
  * An account command that resolves to `fallback` when no instance owns the account, instead of
  * failing with WorkerNotAvailable. A worker that dies while running it still fails the command
  */
@@ -3386,6 +3424,7 @@ const COMMAND_HANDLERS = new Map([
     ['metrics', commandMetrics],
     ['structuredMetrics', commandStructuredMetrics],
     ['imapWorkerCount', commandImapWorkerCount],
+    ['clusterInstances', commandClusterInstances],
     ['checkLicense', commandCheckLicense],
     ['license', commandLicense],
     ['updateLicense', commandUpdateLicense],
@@ -3415,7 +3454,8 @@ const COMMAND_HANDLERS = new Map([
     ['googlePubSub', commandGooglePubSub],
     ['googlePubSubRemove', commandGooglePubSub],
     ['externalNotify', commandExternalNotify],
-    ['subscriptionLifecycle', commandSubscriptionLifecycle]
+    ['subscriptionLifecycle', commandSubscriptionLifecycle],
+    ['exportFile', commandExportFile]
 ]);
 
 async function onCommand(worker, message) {
@@ -3908,10 +3948,9 @@ const seedServiceSettings = async () => {
  */
 const seedDefaultSettings = async () => {
     // Initialize required settings
-    let existingServiceId = await settings.get('serviceId');
-    if (existingServiceId === null) {
-        await settings.set('serviceId', crypto.randomBytes(16).toString('hex'));
-    }
+    // Set only when missing, in one step: instances that start together would otherwise each
+    // write their own random value and the last one would win
+    await settings.setIfMissing('serviceId', crypto.randomBytes(16).toString('hex'));
 
     await seedSmtpServerSettings();
     await seedImapProxySettings();
@@ -3976,12 +4015,10 @@ const ensureInstanceSecrets = async () => {
         });
     }
 
-    // Ensure cookie password
-    let cookiePassword = await settings.get('cookiePassword');
-    if (!cookiePassword) {
-        cookiePassword = crypto.randomBytes(32).toString('base64');
-        await settings.set('cookiePassword', cookiePassword);
-    }
+    // Ensure cookie password. Set only when missing, in one step: every instance seals admin
+    // sessions with it, and two instances that started together and each kept their own value would
+    // reject each other's session cookies
+    await settings.setIfMissing('cookiePassword', crypto.randomBytes(32).toString('base64'));
 };
 
 // CLUSTER (lib/cluster/coordinator.js calls these)
@@ -4053,6 +4090,11 @@ async function stopServingAllAccounts() {
  * @returns {Promise<Object>} `{ response }`, or `{ stream: { meta, readable } }` for a download
  */
 async function handleClusterCall(message) {
+    if (message.cmd === 'exportFile' && typeof message.account === 'string' && typeof message.exportId === 'string') {
+        // The raw file of an export this instance wrote; the requester decrypts it
+        return { stream: { meta: null, readable: await Export.openLocalFile(message.account, message.exportId) } };
+    }
+
     if (!CLUSTER_ACCOUNT_COMMANDS.has(message.cmd) || typeof message.account !== 'string') {
         let err = new Error('Unsupported cluster command');
         err.statusCode = 400;
@@ -4355,7 +4397,18 @@ const startApplication = async () => {
         logger.warn({ msg: 'Update check failed', err });
     });
 
-    await runStartupMigrations();
+    // Instances that start together take turns; the migrations are idempotent, so a lock that
+    // cannot be had only costs running them side by side
+    await runLocked(
+        getSharedLock(),
+        'startup-migrations',
+        { ttl: 60 * 1000, wait: 5 * 60 * 1000, extend: true },
+        () => runStartupMigrations(),
+        err => {
+            logger.warn({ msg: 'Running the startup migrations without the lock', err });
+            return runStartupMigrations();
+        }
+    );
 
     await applyPreparedSettings();
 

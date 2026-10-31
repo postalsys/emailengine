@@ -107,7 +107,9 @@ class FleetInstance {
                 EENGINE_CLUSTER_HEARTBEAT_TTL: this.fleet.heartbeatTtl,
                 EENGINE_LOG_LEVEL: this.fleet.logLevel,
                 EENGINE_LOG_RAW: 'false',
-                EENGINE_SETTINGS: JSON.stringify(this.fleet.settings)
+                EENGINE_SETTINGS: JSON.stringify(this.fleet.settings),
+                // Separate disks, as separate pods have: an export file is only on its writer
+                EENGINE_EXPORT_PATH: path.join(this.fleet.logDir, `${this.id}-exports`)
             },
             this.fleet.extraEnv,
             this.extraEnv || {}

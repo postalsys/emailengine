@@ -12221,6 +12221,65 @@
           }
         }
       },
+      "InstanceConnectionsStats": {
+        "type": "object",
+        "description": "Counts of the accounts it serves, by connection state"
+      },
+      "InstanceStats": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Instance id",
+            "example": "emailengine-7d9f-2"
+          },
+          "self": {
+            "type": "boolean",
+            "description": "Whether this is the instance that answered",
+            "example": true
+          },
+          "version": {
+            "type": "string",
+            "description": "EmailEngine version the instance runs",
+            "example": "0.0.0",
+            "nullable": true
+          },
+          "ready": {
+            "type": "boolean",
+            "description": "Whether the instance takes accounts",
+            "example": true
+          },
+          "accounts": {
+            "type": "integer",
+            "description": "Accounts the instance serves",
+            "example": 120
+          },
+          "started": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the instance joined",
+            "example": "2026-10-31T10:00:00.000Z",
+            "nullable": true
+          },
+          "lastHeartbeat": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Its last heartbeat",
+            "example": "2026-10-31T10:05:00.000Z",
+            "nullable": true
+          },
+          "connections": {
+            "$ref": "#/components/schemas/InstanceConnectionsStats"
+          }
+        }
+      },
+      "InstancesStats": {
+        "type": "array",
+        "description": "The EmailEngine instances sharing this Redis, when there are several. Each serves its share of the accounts, and `connections` above is the sum over all of them",
+        "items": {
+          "$ref": "#/components/schemas/InstanceStats"
+        }
+      },
       "CounterStats": {
         "type": "object"
       },
@@ -12293,6 +12352,9 @@
           },
           "connections": {
             "$ref": "#/components/schemas/ConnectionsStats"
+          },
+          "instances": {
+            "$ref": "#/components/schemas/InstancesStats"
           },
           "counters": {
             "$ref": "#/components/schemas/CounterStats"
