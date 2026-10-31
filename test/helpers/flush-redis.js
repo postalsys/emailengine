@@ -13,11 +13,12 @@
 const config = require('@zone-eu/wild-config');
 const Redis = require('ioredis');
 
-async function flushRedis() {
-    const redis = new Redis(config.dbs.redis);
+// `redisUrl` defaults to the database of the current NODE_ENV; the multi-instance fleet passes its own
+async function flushRedis(redisUrl = config.dbs.redis) {
+    const redis = new Redis(redisUrl);
     try {
         await redis.flushdb();
-        console.log(`Flushed Redis DB ${config.dbs.redis}`);
+        console.log(`Flushed Redis DB ${redisUrl}`);
     } finally {
         await redis.quit();
     }

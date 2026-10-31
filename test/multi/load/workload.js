@@ -11,6 +11,7 @@ const { startFleet, REDIS_URL } = require('../../helpers/instance-fleet');
 const { startLatencyProxy } = require('../../helpers/latency-proxy');
 const { startCaptureSmtp } = require('../../helpers/capture-smtp');
 const { startHarnessHost } = require('./harness-client');
+const { mapConcurrent } = require('../../../lib/utils/map-concurrent');
 const { summarize } = require('./metrics');
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -41,17 +42,6 @@ function seedMessage() {
         `--${boundary}--`,
         ''
     ].join('\r\n');
-}
-
-async function mapLimit(items, limit, fn) {
-    let index = 0;
-    const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
-        while (index < items.length) {
-            const item = items[index++];
-            await fn(item);
-        }
-    });
-    await Promise.all(runners);
 }
 
 class Recorder {
@@ -200,7 +190,7 @@ async function setupWorkload(opts) {
     try {
         // Registered through every instance, as a load balancer would spread them
         let created = 0;
-        await mapLimit(accounts, 16, async account => {
+        await mapConcurrent(accounts, 16, async account => {
             const instance = fleet.pick(created++);
             const res = await instance.request('POST', '/v1/account', {
                 account,
@@ -240,7 +230,7 @@ async function setupWorkload(opts) {
                     await host.call('inject', { account: accounts[i], raw: seedMessage(), label: 'Seed' });
                 }
             }
-            await mapLimit(accounts, 32, async account => {
+            await mapConcurrent(accounts, 32, async account => {
                 for (let attempt = 0; attempt < 120; attempt++) {
                     const res = await fleet.pick(attempt).request('GET', `/v1/account/${account}/messages?path=INBOX&pageSize=5`);
                     const message = res.status === 200 && res.body.messages.find(entry => entry.attachments && entry.attachments.length);

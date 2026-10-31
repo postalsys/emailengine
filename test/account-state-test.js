@@ -10,7 +10,6 @@ const {
     BYPASS_RUN_INDEX_STATES,
     calculateEffectiveState,
     validateAccountState,
-    getDisplayState,
     isCurrentRunState,
     formatLastError
 } = require('../lib/account/account-state');
@@ -170,14 +169,6 @@ test('Account State tests', async t => {
             assert.strictEqual(err.output.payload.code, 'NoAvailable');
             assert.strictEqual(err.output.payload.state, 'unknownState');
         }
-    });
-
-    // getDisplayState tests
-    await t.test('getDisplayState() follows calculateEffectiveState()', async () => {
-        assert.strictEqual(getDisplayState({ state: ACCOUNT_STATES.SYNCING, runIndex: 10, ownerRun: 10 }), ACCOUNT_STATES.SYNCING);
-        assert.strictEqual(getDisplayState({ state: ACCOUNT_STATES.CONNECTED, runIndex: 5, ownerRun: 15 }), ACCOUNT_STATES.CONNECTING);
-        assert.strictEqual(getDisplayState({ state: ACCOUNT_STATES.UNSET, runIndex: 5, ownerRun: 15 }), ACCOUNT_STATES.UNSET);
-        assert.strictEqual(getDisplayState({ state: ACCOUNT_STATES.CONNECTED, runIndex: 5, ownerRun: 15, isApi: true }), ACCOUNT_STATES.CONNECTED);
     });
 
     // formatLastError tests

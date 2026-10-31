@@ -196,6 +196,35 @@ jobs:
               env:
                   EENGINE_DOVECOT_PLATFORM: linux/amd64
 
+    multi:
+        # Several EmailEngine processes against one Redis and an in-memory ImapKit farm: account
+        # ownership, forwarding, broadcasts, exports, crashes, freezes and graceful stops. Hermetic,
+        # needs no external accounts. See "Multi-instance tier" in .claude/rules/testing.md
+        name: Multi-instance Tests
+        if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
+        timeout-minutes: 25
+        runs-on: ubuntu-24.04
+        services:
+            redis:
+                image: redis:8.2.10-alpine
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+                ports:
+                    - 6379:6379
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - name: Use Node.js 24
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+              with:
+                  node-version: 24
+                  cache: npm
+            - run: npm ci
+            - name: Run multi-instance tests
+              run: npm run test:multi
+
     # Nothing else in CI bundles a binary, so pkg failures used to surface only when a release
     # was cut by hand on a Mac - the one place they are most expensive and least expected. Two
     # landed in a single day: a local helper named `require` in lib/openapi/ that pkg's module

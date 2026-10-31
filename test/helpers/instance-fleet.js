@@ -14,8 +14,9 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const net = require('node:net');
-const Redis = require('ioredis');
 const { fetch, Agent } = require('undici');
+const { flushRedis } = require('./flush-redis');
+const { waitForServer } = require('./wait-for-server');
 
 const PROJECT_ROOT = path.join(__dirname, '..', '..');
 
@@ -57,14 +58,7 @@ function portIsFree(port) {
     });
 }
 
-async function flushFleetDatabase(redisUrl = REDIS_URL) {
-    const redis = new Redis(redisUrl);
-    try {
-        await redis.flushdb();
-    } finally {
-        await redis.quit();
-    }
-}
+const flushFleetDatabase = (redisUrl = REDIS_URL) => flushRedis(redisUrl);
 
 class FleetInstance {
     constructor(fleet, index) {
@@ -148,26 +142,15 @@ class FleetInstance {
         });
     }
 
-    /** Polls /health until it answers 200, failing fast if the process dies */
+    /** Polls /health until it answers 200, failing fast if the process dies, then takes traffic */
     async waitReady(timeout = 90000) {
-        const deadline = Date.now() + timeout;
-        while (Date.now() < deadline) {
-            if (!this.child) {
-                throw new Error(`${this.id} exited during startup (${JSON.stringify(this.lastExit)}), see ${this.logPath}`);
-            }
-            try {
-                const res = await fetch(`${this.apiUrl}/health`, { dispatcher, signal: AbortSignal.timeout(2000) });
-                await res.arrayBuffer();
-                if (res.status === 200) {
-                    this.outOfRotation = false;
-                    return;
-                }
-            } catch (err) {
-                // not listening yet
-            }
-            await new Promise(r => setTimeout(r, 250));
+        try {
+            await waitForServer({ child: this.child, url: `${this.apiUrl}/health`, timeout, quiet: true });
+        } catch (err) {
+            err.message = `${this.id}: ${err.message}, see ${this.logPath}`;
+            throw err;
         }
-        throw new Error(`${this.id} did not become ready within ${timeout}ms, see ${this.logPath}`);
+        this.outOfRotation = false;
     }
 
     /** Sends a signal and waits for the process to go away */

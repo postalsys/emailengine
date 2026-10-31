@@ -29,10 +29,12 @@ function exitDescription(child) {
     return null;
 }
 
-async function waitForServer({ child } = {}) {
-    const url = `http://127.0.0.1:${config.api.port}/health`;
+// `url` and `timeout` default to the test server from the config; the multi-instance fleet passes
+// each instance's own (test/helpers/instance-fleet.js), and `quiet` keeps a fleet's starts out of the
+// run output
+async function waitForServer({ child, url = `http://127.0.0.1:${config.api.port}/health`, timeout = TIMEOUT, quiet = false } = {}) {
     let started = Date.now();
-    while (Date.now() - started < TIMEOUT) {
+    while (Date.now() - started < timeout) {
         let ready = false;
         try {
             let res = await fetch(url);
@@ -50,12 +52,14 @@ async function waitForServer({ child } = {}) {
         }
 
         if (ready) {
-            console.log(`Server is ready at ${url} (waited ${((Date.now() - started) / 1000).toFixed(1)}s)`);
+            if (!quiet) {
+                console.log(`Server is ready at ${url} (waited ${((Date.now() - started) / 1000).toFixed(1)}s)`);
+            }
             return;
         }
         await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
     }
-    throw new Error(`Server did not become ready at ${url} within ${TIMEOUT / 1000}s`);
+    throw new Error(`Server did not become ready at ${url} within ${timeout / 1000}s`);
 }
 
 module.exports = { waitForServer };

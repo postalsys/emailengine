@@ -28,6 +28,10 @@ const msgpack = require('../lib/msgpack');
 const getSecret = require('../lib/get-secret');
 const { setWorkerLease } = require('../lib/cluster/lease');
 const { waitUntilStarted } = require('../lib/email-client/connection-readiness');
+const { statusError } = require('../lib/utils/status-error');
+
+// Longest a handover waits for the account's running commands before it closes the connection
+const UNASSIGN_DRAIN_WAIT = 5 * 1000;
 
 // Longest a command waits for an account connection that is still starting up, and how long after
 // the assignment a connection counts as starting up
@@ -79,6 +83,8 @@ class ConnectionHandler {
         // consulted to decide whether a cleanup or an init retry still concerns the entry this
         // assign registered.
         this.assignTokens = new Map();
+        // Commands running per account, so a connection handed over is closed after them, see unassignConnection()
+        this.running = new Map();
     }
 
     async init() {
@@ -193,20 +199,16 @@ class ConnectionHandler {
      * is only moving to another worker or being assigned here again
      * @param {string} account - Account ID
      * @param {Object} accountObject - The entry that was removed from this.accounts
+     * @param {Object} [opts] - `{ lost }`: another instance owns the account now
      */
     async closeReleasedConnection(account, accountObject, opts = {}) {
         if (!accountObject || !accountObject.connection) {
             return;
         }
-        if (opts.lost) {
-            // Another instance owns the account now and announces what this connection still had
-            // pending, see BaseClient.notify()
-            accountObject.connection.lostOwnership = true;
-        }
         // The account moves to another worker or instance, it is not disconnected: the new owner
-        // records its state, and a 'disconnected' written now would make the API refuse requests
-        // for it until the new connection is up
-        accountObject.connection.released = true;
+        // records its state. When it was lost, what the connection still had pending is the new
+        // owner's to announce too. See BaseClient.setStateVal() and notify()
+        accountObject.connection.retired = opts.lost ? 'lost' : 'moved';
         try {
             await accountObject.connection.close();
         } catch (err) {
@@ -215,14 +217,40 @@ class ConnectionHandler {
     }
 
     // The main thread takes an account back after an `assign` it gave up waiting for, or to move
-    // it onto another worker. An assignment still being set up notices the missing entry and stops.
+    // it onto another worker or instance. An assignment still being set up notices the missing entry
+    // and stops. A command that arrives from now on is refused as not held here (and the main thread
+    // sends it to where the account went); the ones already running finish first, unless the account
+    // was lost, in which case another instance owns it and nothing here may touch it further
     async unassignConnection(account, opts = {}) {
         logger.info({ msg: 'Account unassign requested', account, lost: !!opts.lost });
         this.assignTokens.delete(account);
         let accountObject = this.accounts.get(account);
         this.accounts.delete(account);
+        if (accountObject && !opts.lost) {
+            await this.commandsSettled(account, UNASSIGN_DRAIN_WAIT);
+        }
         await this.closeReleasedConnection(account, accountObject, opts);
         return true;
+    }
+
+    /**
+     * Resolves once no command for the account is running, or after `timeout`
+     * @param {string} account
+     * @param {number} timeout
+     */
+    async commandsSettled(account, timeout) {
+        const entry = this.running.get(account);
+        if (!entry || !entry.count) {
+            return;
+        }
+        let timer;
+        await Promise.race([
+            new Promise(resolve => entry.waiters.push(resolve)),
+            new Promise(resolve => {
+                timer = setTimeout(resolve, timeout);
+            })
+        ]);
+        clearTimeout(timer);
     }
 
     async assignConnection(account, runIndex, initOpts) {
@@ -971,25 +999,33 @@ class ConnectionHandler {
     }
 
     /**
-     * Runs an account command. One that fails because its connection was closed for a move to
-     * another worker or instance says so (503 AccountReleased) instead of reporting the closed
-     * connection, so the main thread can send a read on to where the account went
+     * Runs an account command. One for an account this worker does not hold (any more) is refused
+     * before anything runs, as NotOwnedHere, so the main thread can send it to where the account
+     * went; a running one holds off a handover until it is done, see unassignConnection()
      * @param {Object} message
      * @returns {Promise<*>}
      */
     async runAccountCommand(message) {
-        await this.waitForStartingConnection(message);
-        const accountObject = this.accounts.get(message.account);
+        const { account } = message;
+        if (!this.accounts.has(account)) {
+            throw statusError('This worker does not hold the requested account', 'NotOwnedHere', 503);
+        }
+        let entry = this.running.get(account);
+        if (!entry) {
+            entry = { count: 0, waiters: [] };
+            this.running.set(account, entry);
+        }
+        entry.count++;
         try {
+            await this.waitForStartingConnection(message);
             return await this[message.cmd](message);
-        } catch (err) {
-            if (accountObject && accountObject.connection && accountObject.connection.released) {
-                const released = new Error('The account moved while the command ran. Try again.');
-                released.code = 'AccountReleased';
-                released.statusCode = 503;
-                throw released;
+        } finally {
+            if (--entry.count === 0) {
+                this.running.delete(account);
+                for (const resolve of entry.waiters) {
+                    resolve();
+                }
             }
-            throw err;
         }
     }
 
@@ -1030,7 +1066,7 @@ class ConnectionHandler {
             if (accountObject && accountObject.connection) {
                 // The instance is going away and its accounts to whoever takes them next, which
                 // records their state; see closeReleasedConnection()
-                accountObject.connection.released = true;
+                accountObject.connection.retired = 'moved';
                 // Gmail and Graph close() write state to Redis; a rejection here is only worth a log line
                 Promise.resolve()
                     .then(() => accountObject.connection.close())

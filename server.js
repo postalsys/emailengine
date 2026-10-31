@@ -177,6 +177,7 @@ const { heartbeatDiagnostics, eventLoopDelaySeries, threadHeapSeries } = require
 const msgpack = require('./lib/msgpack');
 const { ClusterCoordinator, resolveInstanceId, resolveAddress, notOwnedHereError } = require('./lib/cluster/coordinator');
 const { summarizeFleet } = require('./lib/cluster/fleet');
+const { statusError } = require('./lib/utils/status-error');
 const { MessagePortReadable, MessagePortWritable, sendToMessagePort } = require('./lib/message-port-stream');
 
 // Initialize default configuration values if not set
@@ -333,11 +334,6 @@ if (legacySmtpOptions.length) {
         removal: REMOVAL_DATE
     });
 }
-
-// Standard response for when no active worker is available
-const NO_ACTIVE_HANDLER_RESP_ERR = new Error('No active handler for requested account. Try again later.');
-NO_ACTIVE_HANDLER_RESP_ERR.statusCode = 503;
-NO_ACTIVE_HANDLER_RESP_ERR.code = 'WorkerNotAvailable';
 
 // Shared rejection for in-flight calls whose target worker terminated mid-request.
 // Reused across concurrent rejections - never attach per-call fields to this instance.
@@ -898,7 +894,7 @@ let assignRequested = false; // Was a pass asked for while one was running?
 const REBALANCE_CONCURRENCY = 8;
 
 // Account assignment tracking
-let unassigned = false; // Set of unassigned accounts
+let unassigned = new Set(); // Accounts this instance owns that no worker holds yet
 let assigned = new Map(); // Map of account -> worker
 let workerAssigned = new WeakMap(); // Map of worker -> Set of accounts
 let onlineWorkers = new WeakSet(); // Set of workers that are online
@@ -1324,7 +1320,7 @@ let spawnWorker = async (type, opts, slot) => {
             {
                 httpProxyUrl: httpAgent.proxyUrl,
                 // The ownership lease, see lib/cluster/lease.js; the IMAP workers check it before announcing anything
-                clusterLease: cluster ? cluster.leaseBuffer : null,
+                clusterLease: cluster.leaseBuffer,
                 instanceId: CLUSTER_INSTANCE_ID
             },
             opts && opts.workerData
@@ -1428,31 +1424,19 @@ let spawnWorker = async (type, opts, slot) => {
                         // Account tracking was lost fleet-wide - the same class of event as the
                         // warn above, and equally invisible to an operator running above info
                         logger.warn({
-                            msg: 'All IMAP workers exited, reloading accounts from Redis for reassignment'
+                            msg: 'All IMAP workers exited, assigning the accounts this instance owns again',
+                            accountCount: cluster.held.size
                         });
 
-                        // Reload the accounts this instance owns since we lost track
-                        try {
-                            let accounts = cluster ? [...cluster.held] : [];
-                            unassigned = new Set(accounts);
-                            assigned.clear();
-                            workerAssigned = new WeakMap();
-
-                            logger.warn({
-                                msg: 'Reloaded accounts from Redis',
-                                accountCount: accounts.length
-                            });
-                        } catch (err) {
-                            logger.error({
-                                msg: 'Failed to reload accounts from Redis',
-                                err
-                            });
-                        }
+                        // The cluster coordinator knows which accounts this instance owns
+                        unassigned = new Set(cluster.held);
+                        assigned.clear();
+                        workerAssigned = new WeakMap();
                     }
                 }
 
                 // Don't reassign immediately - wait for the worker to restart
-                if (unassigned && unassigned.size > 0) {
+                if (unassigned.size > 0) {
                     reassignmentPending = true;
 
                     // If the worker does not restart in time, its accounts go to the others anyway
@@ -1695,9 +1679,7 @@ let spawnWorker = async (type, opts, slot) => {
                 case 'settings':
                     fanOutSettings(message);
                     // The other instances' workers keep the same in-memory state
-                    if (cluster) {
-                        cluster.broadcast('settings', message.data || null);
-                    }
+                    cluster.broadcast('settings', message.data || null);
                     return;
 
                 case 'change':
@@ -1712,9 +1694,7 @@ let spawnWorker = async (type, opts, slot) => {
                         default:
                             fanOutChange(message);
                             // A live feed on another instance's API is as interested as one here
-                            if (cluster) {
-                                cluster.broadcast('change', message);
-                            }
+                            cluster.broadcast('change', message);
                     }
                     break;
             }
@@ -1738,7 +1718,7 @@ let spawnWorker = async (type, opts, slot) => {
                             threadId: worker.threadId,
                             currentWorkers: availableIMAPWorkers.size,
                             expectedWorkers: config.workers.imap,
-                            unassignedCount: unassigned ? unassigned.size : 0,
+                            unassignedCount: unassigned.size,
                             assignedCount: assigned.size,
                             imapInitialWorkersLoaded,
                             reassignmentPending
@@ -1755,7 +1735,7 @@ let spawnWorker = async (type, opts, slot) => {
                                 }
                                 reassignmentPending = false;
 
-                                if (unassigned && unassigned.size > 0) {
+                                if (unassigned.size > 0) {
                                     logger.info({
                                         msg: 'All expected workers ready, reassigning unassigned accounts',
                                         workers: availableIMAPWorkers.size,
@@ -1768,7 +1748,7 @@ let spawnWorker = async (type, opts, slot) => {
                                         workers: availableIMAPWorkers.size
                                     });
                                 }
-                            } else if (unassigned && unassigned.size > 0) {
+                            } else if (unassigned.size > 0) {
                                 // Still waiting for more workers to restart
                                 logger.info({
                                     msg: 'Worker ready, waiting for all workers before reassignment',
@@ -1978,7 +1958,7 @@ function armReassignmentFailsafe() {
 
     reassignmentTimer = setTimeout(() => {
         reassignmentTimer = null;
-        if (!reassignmentPending || !unassigned || !unassigned.size) {
+        if (!reassignmentPending || !unassigned.size) {
             return;
         }
 
@@ -2083,12 +2063,8 @@ async function assignAccounts() {
     // unassigned in the finally block, so no throw can strand them.
     let failedAccounts = [];
     try {
-        if (!unassigned) {
-            // The accounts this instance serves are the ones the cluster coordinator claimed for
-            // it, handed over through serveAccounts()
-            unassigned = new Set();
-        }
-
+        // unassigned holds the accounts the cluster coordinator claimed for this instance and
+        // handed over through serveAccounts()
         if (!availableIMAPWorkers.size || !unassigned.size) {
             // Nothing to do
             return;
@@ -2210,7 +2186,7 @@ async function assignAccounts() {
 
         // Safety net: if accounts remain unassigned, schedule a retry with backoff, and keep
         // retrying slowly after the quick ones, see assignRetryDelay()
-        if (!rerun && unassigned && unassigned.size > 0 && availableIMAPWorkers.size > 0 && !isClosing) {
+        if (!rerun && unassigned.size > 0 && availableIMAPWorkers.size > 0 && !isClosing) {
             assignRetryCount++;
             let delay = assignRetryDelay(assignRetryCount);
             logger[assignRetryCount <= QUICK_ASSIGN_RETRIES ? 'warn' : 'error']({
@@ -2850,20 +2826,20 @@ async function commandStructuredMetrics() {
     }
 
     // Every instance counts only the accounts it serves; the stats are for all of them
-    let fleet = summarizeFleet(cluster ? [...cluster.live.values()] : [], CLUSTER_INSTANCE_ID, connections);
+    let fleet = summarizeFleet([...cluster.live.values()], CLUSTER_INSTANCE_ID, connections);
 
     return { connections: fleet.connections, instances: fleet.instances, redisPing: await getRedisPing() };
 }
 
 async function commandClusterInstances() {
     // The instances sharing this Redis, for the Workers page
-    return summarizeFleet(cluster ? [...cluster.live.values()] : [], CLUSTER_INSTANCE_ID, lastConnectionCounts).instances;
+    return summarizeFleet([...cluster.live.values()], CLUSTER_INSTANCE_ID, lastConnectionCounts).instances;
 }
 
 async function commandImapWorkerCount() {
     // Return number of available IMAP workers, and whether the cluster has settled which accounts
     // this instance serves (lib/health.js)
-    return { workers: availableIMAPWorkers.size, clusterReady: cluster ? cluster.isReady() : false };
+    return { workers: availableIMAPWorkers.size, clusterReady: cluster.isReady() };
 }
 
 async function commandCheckLicense() {
@@ -3110,9 +3086,7 @@ async function commandNewAccount(worker, message) {
     // Handle new account. The account is already in `ia:accounts`: the instance placement picks
     // claims it (this one, or another that is told over the bus), and a full ownership pass finds
     // it in any case, including when it was created before this instance finished starting
-    if (cluster) {
-        cluster.accountAdded(message.account);
-    }
+    cluster.accountAdded(message.account);
     sendWebhook(message.account, ACCOUNT_ADDED_NOTIFY, { account: message.account }).catch(err =>
         logger.error({ msg: 'Account added webhook failed', account: message.account, err })
     );
@@ -3125,9 +3099,7 @@ async function commandNewAccount(worker, message) {
  */
 function deleteLocalAccount(message) {
     let assignedWorker = forgetAccount({ workerAssigned, assigned, unassigned }, message.account);
-    if (cluster) {
-        cluster.accountDeleted(message.account);
-    }
+    cluster.accountDeleted(message.account);
     if (assignedWorker) {
         // Notify worker to clean up
         call(assignedWorker, message)
@@ -3156,14 +3128,7 @@ async function commandRunIndex() {
 
 async function commandForwardToAccountWorker(worker, message) {
     // Fire and forget, to the worker that serves the account here or to the instance that does
-    let run;
-    if (assigned.has(message.account)) {
-        run = call(assigned.get(message.account), message);
-    } else if (cluster) {
-        run = cluster.forward(message);
-    } else {
-        return;
-    }
+    let run = assigned.has(message.account) ? call(assigned.get(message.account), message) : cluster.forward(message);
     run.then(() => logger.debug('Worker command completed')).catch(err => {
         // Nobody serving the account is the normal case for a paused or failed account
         let level = err.code === 'WorkerNotAvailable' ? 'debug' : 'error';
@@ -3173,9 +3138,7 @@ async function commandForwardToAccountWorker(worker, message) {
 
 async function commandReloadServer(worker, message) {
     // Every instance runs its own listeners
-    if (cluster) {
-        cluster.broadcast('reloadServer', { cmd: message.cmd });
-    }
+    cluster.broadcast('reloadServer', { cmd: message.cmd });
     return await reloadServerLocal(message);
 }
 
@@ -3200,9 +3163,7 @@ async function reloadServerLocal(message) {
 
 async function commandReloadCertificates(worker, message) {
     // The certificate is stored in Redis; every instance's listeners have to pick it up
-    if (cluster) {
-        cluster.broadcast('reloadCertificates', { cmd: message.cmd });
-    }
+    cluster.broadcast('reloadCertificates', { cmd: message.cmd });
     return reloadCertificatesLocal(message);
 }
 
@@ -3236,71 +3197,76 @@ async function runLocalAccountOperation(message) {
 }
 
 /**
+ * How long a command may take: its own timeout, or EENGINE_TIMEOUT
+ * @param {Object} message
+ * @returns {number}
+ */
+function commandTimeout(message) {
+    return typeof message.timeout === 'number' && message.timeout > 0 ? message.timeout : EENGINE_TIMEOUT;
+}
+
+/**
+ * Passes a download another instance streams back on into the MessagePort a worker of this instance
+ * is reading. The destination is built when the port arrives, see the MessagePortWritable constructor
+ * @param {MessagePort} port
+ * @param {Function} fetchStream - async () => `{ meta, body }` from a cluster call
+ * @returns {Promise<*>} What the remote worker answered alongside the bytes
+ */
+async function streamIntoPort(port, fetchStream) {
+    let writable = new MessagePortWritable(port);
+    let result;
+    try {
+        result = await fetchStream();
+    } catch (err) {
+        // Nothing to send; the requester is handed the error and closes its end
+        writable.releaseListeners();
+        throw err;
+    }
+    sendToMessagePort(writable, result.body, logger);
+    return result.meta;
+}
+
+/**
  * Runs an account command on the instance that owns the account. A download comes back over the
  * network and is passed on into the MessagePort the requesting worker is reading
  * @param {Object} message - The command
+ * @param {Object} [opts] - `{ unowned }`, see ClusterCoordinator.forward()
  * @returns {Promise<*>}
  */
 async function forwardAccountOperation(message, opts = {}) {
-    if (!cluster) {
-        if ('unowned' in opts) {
-            return opts.unowned;
-        }
-        throw NO_ACTIVE_HANDLER_RESP_ERR;
-    }
-
-    let timeout = typeof message.timeout === 'number' && message.timeout > 0 ? message.timeout : EENGINE_TIMEOUT;
-
+    let timeout = commandTimeout(message);
     if (STREAM_COMMANDS.has(message.cmd) && message.port) {
-        // Built when the port arrives, see the MessagePortWritable constructor
-        let writable = new MessagePortWritable(message.port);
-        let { port, ...payload } = message; // eslint-disable-line no-unused-vars
-        let result;
-        try {
-            result = await cluster.forward(payload, { timeout, stream: true });
-        } catch (err) {
-            // Nothing to send; the requester is handed the error and closes its end
-            writable.releaseListeners();
-            throw err;
-        }
-        sendToMessagePort(writable, result.body, logger);
-        return result.meta;
+        let { port, ...payload } = message;
+        return await streamIntoPort(port, () => cluster.forward(payload, { timeout, stream: true }));
     }
-
     return await cluster.forward(message, Object.assign({ timeout }, opts));
+}
+
+/** What an API caller is told when no worker serves an account (the code it has always been) */
+function workerNotAvailableError() {
+    return statusError('No active handler for requested account. Try again later.', 'WorkerNotAvailable', 503);
 }
 
 // How long an account command waits for an account that is between owners
 const OWNER_SETTLE_WAIT = 5000;
 
-// Commands that only read, so one cut short by the account moving can run again where it went.
-// Downloads are not among them: their MessagePort went to the worker with the first attempt
-const REPEATABLE_COMMANDS = new Set(['listMessages', 'getText', 'getMessage', 'getMessages', 'listMailboxes', 'getQuota', 'listSignatures']);
-
 // IMAP operations - run where the account is served, here or on another instance
 async function commandAccountOperation(worker, message) {
-    let timeout = typeof message.timeout === 'number' && message.timeout > 0 ? message.timeout : EENGINE_TIMEOUT;
-    let deadline = Date.now() + Math.min(OWNER_SETTLE_WAIT, timeout / 2);
+    let deadline = Date.now() + Math.min(OWNER_SETTLE_WAIT, commandTimeout(message) / 2);
     for (;;) {
-        if (assigned.has(message.account)) {
-            try {
-                return await runLocalAccountOperation(message);
-            } catch (err) {
-                if (err.code !== 'AccountReleased' || !REPEATABLE_COMMANDS.has(message.cmd) || isClosing || Date.now() >= deadline) {
-                    throw err;
-                }
-                continue;
-            }
-        }
         try {
+            if (assigned.has(message.account)) {
+                return await runLocalAccountOperation(message);
+            }
             return await forwardAccountOperation(message);
         } catch (err) {
-            // While an account moves between instances it has no reachable owner for a moment, or
-            // the owner closes it under a running read. Asking again shortly gets the new owner, or
-            // this instance once it took the account
-            let retryable = err.ownerUnsettled || (err.code === 'AccountReleased' && REPEATABLE_COMMANDS.has(message.cmd));
-            if (!retryable || isClosing || Date.now() >= deadline) {
-                throw err;
+            // While an account moves between workers or instances it has no owner that serves it
+            // for a moment. Asking again shortly gets the new owner, or this instance once it took
+            // the account. NotOwnedHere comes from a worker that let the account go before the
+            // command started; a download's port went to it with the command and cannot be resent
+            let unsettled = err.ownerUnsettled || (err.code === 'NotOwnedHere' && !(STREAM_COMMANDS.has(message.cmd) && message.port));
+            if (!unsettled || isClosing || Date.now() >= deadline) {
+                throw err.code === 'NotOwnedHere' ? workerNotAvailableError() : err;
             }
             await new Promise(resolve => setTimeout(resolve, 100));
         }
@@ -3315,23 +3281,13 @@ async function commandAccountOperation(worker, message) {
  * @returns {Promise<Object>}
  */
 async function commandExportFile(worker, message) {
-    let writable = new MessagePortWritable(message.port);
-    let result;
-    try {
-        if (!cluster) {
-            throw NO_ACTIVE_HANDLER_RESP_ERR;
-        }
-        result = await cluster.callInstance(
+    return await streamIntoPort(message.port, () =>
+        cluster.callInstance(
             message.instance,
             { cmd: 'exportFile', account: message.account, exportId: message.exportId },
             { timeout: EENGINE_TIMEOUT, stream: true }
-        );
-    } catch (err) {
-        writable.releaseListeners();
-        throw err;
-    }
-    sendToMessagePort(writable, result.body, logger);
-    return result.meta;
+        )
+    );
 }
 
 /**
@@ -3339,10 +3295,18 @@ async function commandExportFile(worker, message) {
  * failing with WorkerNotAvailable. A worker that dies while running it still fails the command
  */
 async function accountOperationOr(message, fallback) {
-    if (assigned.has(message.account)) {
-        return await runLocalAccountOperation(message);
+    if (!assigned.has(message.account)) {
+        return await forwardAccountOperation(message, { unowned: fallback });
     }
-    return await forwardAccountOperation(message, { unowned: fallback });
+    try {
+        return await runLocalAccountOperation(message);
+    } catch (err) {
+        // The worker let the account go before the command started
+        if (err.code === 'NotOwnedHere') {
+            return fallback;
+        }
+        throw err;
+    }
 }
 
 async function commandSubconnections(worker, message) {
@@ -3352,9 +3316,7 @@ async function commandSubconnections(worker, message) {
 
 async function commandGooglePubSub(worker, message) {
     // Every instance runs webhook workers that pull Pub/Sub messages
-    if (cluster) {
-        cluster.broadcast('googlePubSub', message);
-    }
+    cluster.broadcast('googlePubSub', message);
     return await googlePubSubLocal(message);
 }
 
@@ -3435,6 +3397,11 @@ const ACCOUNT_OPERATION_COMMANDS = [
     'listSignatures'
 ];
 
+// Commands every instance runs for itself, broadcast to the others (onClusterBroadcast())
+const LISTENER_RELOAD_COMMANDS = ['smtpReload', 'imapProxyReload'];
+const CERTIFICATE_RELOAD_COMMANDS = ['apiReloadCertificates', 'smtpReloadCertificates', 'imapProxyReloadCertificates'];
+const PUBSUB_COMMANDS = ['googlePubSub', 'googlePubSubRemove'];
+
 // Account commands the requester does not wait for
 const FIRE_AND_FORGET_COMMANDS = ['update', 'sync', 'pause', 'resume', 'reconnect'];
 
@@ -3477,12 +3444,11 @@ const COMMAND_HANDLERS = new Map([
     ['teardown', (worker, message) => accountOperationOr(message, false)],
     ['runIndex', commandRunIndex],
     ...FIRE_AND_FORGET_COMMANDS.map(cmd => [cmd, commandForwardToAccountWorker]),
-    ...['smtpReload', 'imapProxyReload'].map(cmd => [cmd, commandReloadServer]),
-    ...['apiReloadCertificates', 'smtpReloadCertificates', 'imapProxyReloadCertificates'].map(cmd => [cmd, commandReloadCertificates]),
+    ...LISTENER_RELOAD_COMMANDS.map(cmd => [cmd, commandReloadServer]),
+    ...CERTIFICATE_RELOAD_COMMANDS.map(cmd => [cmd, commandReloadCertificates]),
     ...ACCOUNT_OPERATION_COMMANDS.map(cmd => [cmd, commandAccountOperation]),
     ['subconnections', commandSubconnections],
-    ['googlePubSub', commandGooglePubSub],
-    ['googlePubSubRemove', commandGooglePubSub],
+    ...PUBSUB_COMMANDS.map(cmd => [cmd, commandGooglePubSub]),
     ['externalNotify', commandExternalNotify],
     ['subscriptionLifecycle', commandSubscriptionLifecycle],
     ['exportFile', commandExportFile]
@@ -3567,7 +3533,7 @@ async function collectConnectionMetrics() {
     }
 
     // Add unassigned accounts to disconnected count
-    metricsResult.disconnected = (Number(metricsResult.disconnected) || 0) + (unassigned ? unassigned.size : 0);
+    metricsResult.disconnected = (Number(metricsResult.disconnected) || 0) + unassigned.size;
 
     // Update Prometheus metrics for connections
     Object.keys(metricsResult).forEach(status => {
@@ -3576,10 +3542,8 @@ async function collectConnectionMetrics() {
     });
 
     lastConnectionCounts = Object.assign({}, metricsResult);
-    if (cluster) {
-        metrics.clusterMembers.set(cluster.live.size);
-        metrics.clusterOwnedAccounts.set(cluster.held.size);
-    }
+    metrics.clusterMembers.set(cluster.live.size);
+    metrics.clusterOwnedAccounts.set(cluster.held.size);
 
     // Update Prometheus metrics for MS Graph subscriptions
     Object.keys(subscriptionResults).forEach(status => {
@@ -4061,9 +4025,6 @@ let lastConnectionCounts = {};
  * @param {string[]} accounts
  */
 function serveAccounts(accounts) {
-    if (!unassigned) {
-        unassigned = new Set();
-    }
     for (let account of accounts) {
         if (!assigned.has(account)) {
             unassigned.add(account);
@@ -4162,17 +4123,17 @@ async function onClusterBroadcast(type, data) {
             }
             return;
         case 'reloadServer':
-            if (data && ['smtpReload', 'imapProxyReload'].includes(data.cmd)) {
+            if (data && LISTENER_RELOAD_COMMANDS.includes(data.cmd)) {
                 await reloadServerLocal(data);
             }
             return;
         case 'reloadCertificates':
-            if (data && ['apiReloadCertificates', 'smtpReloadCertificates', 'imapProxyReloadCertificates'].includes(data.cmd)) {
+            if (data && CERTIFICATE_RELOAD_COMMANDS.includes(data.cmd)) {
                 reloadCertificatesLocal(data);
             }
             return;
         case 'googlePubSub':
-            if (data && ['googlePubSub', 'googlePubSubRemove'].includes(data.cmd)) {
+            if (data && PUBSUB_COMMANDS.includes(data.cmd)) {
                 await googlePubSubLocal(data);
             }
             return;
