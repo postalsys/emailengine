@@ -74,7 +74,7 @@ process.env.TF_CPP_MIN_LOG_LEVEL = '2';
 // Cache command line arguments before @zone-eu/wild-config processes them
 const argv = process.argv.slice(2);
 
-const { Worker: WorkerThread, SHARE_ENV } = require('worker_threads');
+const { Worker: WorkerThread, SHARE_ENV, MessageChannel } = require('worker_threads');
 const packageData = require('./package.json');
 const config = require('@zone-eu/wild-config');
 const logger = require('./lib/logger');
@@ -173,6 +173,8 @@ const { legacySmtpOptionsInUse, REMOVAL_DATE } = require('./lib/deprecations');
 const { heartbeatDiagnostics, eventLoopDelaySeries, threadHeapSeries } = require('./lib/thread-diagnostics');
 
 const msgpack = require('./lib/msgpack');
+const { ClusterCoordinator, resolveInstanceId, resolveAddress, notOwnedHereError } = require('./lib/cluster/coordinator');
+const { MessagePortReadable, MessagePortWritable, sendToMessagePort } = require('./lib/message-port-stream');
 
 // Initialize default configuration values if not set
 config.service = config.service || {};
@@ -188,6 +190,11 @@ config.workers = config.workers || {
 config.dbs = config.dbs || {
     redis: 'redis://127.0.0.1:6379/8'
 };
+
+// Running several instances against one Redis (lib/cluster/). Ownership and fencing always run;
+// the call listener only when a port is configured, without one an instance cannot serve the
+// accounts other instances own and answers WorkerNotAvailable for them, as a lone instance always has
+config.cluster = config.cluster || {};
 
 config.log = config.log || {
     level: 'trace'
@@ -275,6 +282,12 @@ const IMAP_PROXY_HOST = readEnvValue('EENGINE_IMAP_PROXY_HOST') || config['imap-
 const IMAP_PROXY_PROXY = hasEnvValue('EENGINE_IMAP_PROXY_PROXY')
     ? getBoolean(readEnvValue('EENGINE_IMAP_PROXY_PROXY'))
     : getBoolean(config['imap-proxy'].proxy);
+
+const CLUSTER_INSTANCE_ID = resolveInstanceId(readEnvValue('EENGINE_INSTANCE_ID') || config.cluster.instanceId);
+const CLUSTER_PORT = Number(readEnvValue('EENGINE_CLUSTER_PORT') || config.cluster.port) || 0;
+const CLUSTER_HOST = readEnvValue('EENGINE_CLUSTER_HOST') || config.cluster.host || config.api.host;
+const CLUSTER_ADDRESS = resolveAddress({ configured: readEnvValue('EENGINE_CLUSTER_ADDRESS') || config.cluster.address, port: CLUSTER_PORT });
+const CLUSTER_HEARTBEAT_TTL = getDuration(readEnvValue('EENGINE_CLUSTER_HEARTBEAT_TTL') || config.cluster.heartbeatTtl) || undefined;
 
 // Metrics collection interval - consider connections recent if started within 10 minutes
 const METRIC_RECENT = 10 * 60 * 1000; // 10min
@@ -390,6 +403,12 @@ const THREAD_CONFIG_VALUES = {
 
 // Unique run index for this server instance
 let runIndex;
+
+// This instance's part of the cluster, created once the run index is known (startApplication)
+let cluster = null;
+
+// Account commands whose answer is a download streamed through a MessagePort
+const STREAM_COMMANDS = new Set(['getRawMessage', 'getAttachment']);
 
 // Whether multiple API workers may share the listen port via SO_REUSEPORT.
 // Determined once at startup by probeReusePort(); false means a single API worker.
@@ -837,6 +856,30 @@ const metrics = {
         name: 'redis_command_runs_fail',
         help: 'Redis command counts',
         labelNames: ['command', 'status']
+    }),
+
+    // Several instances on one Redis, see lib/cluster/
+    clusterMembers: new promClient.Gauge({
+        name: 'cluster_members',
+        help: 'Live EmailEngine instances in the cluster, this one included'
+    }),
+
+    clusterOwnedAccounts: new promClient.Gauge({
+        name: 'cluster_owned_accounts',
+        help: 'Accounts this instance owns'
+    }),
+
+    clusterForwardedCalls: new promClient.Counter({
+        name: 'cluster_forwarded_calls',
+        help: 'Account commands sent to the instance that owns the account',
+        labelNames: ['cmd', 'outcome']
+    }),
+
+    clusterForwardDuration: new promClient.Histogram({
+        name: 'cluster_forward_duration_seconds',
+        help: 'Time from sending an account command to another instance to its answer',
+        labelNames: ['cmd'],
+        buckets: [0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30]
     })
 };
 
@@ -847,6 +890,7 @@ let mids = 0; // Message ID counter
 // Application state flags
 let isClosing = false; // Is the application shutting down?
 let assigning = false; // Is account assignment in progress?
+let assignRequested = false; // Was a pass asked for while one was running?
 // Unassign calls in flight at once while rebalanceOnto() holds the assignment lock
 const REBALANCE_CONCURRENCY = 8;
 
@@ -1273,7 +1317,15 @@ let spawnWorker = async (type, opts, slot) => {
         env: SHARE_ENV,
         // every worker builds its HTTP dispatchers from the proxy in effect before its first line of
         // code runs (lib/tools.js); this thread resolved it from settings before spawning anything
-        workerData: Object.assign({ httpProxyUrl: httpAgent.proxyUrl }, opts && opts.workerData),
+        workerData: Object.assign(
+            {
+                httpProxyUrl: httpAgent.proxyUrl,
+                // The ownership lease, see lib/cluster/lease.js; the IMAP workers check it before announcing anything
+                clusterLease: cluster ? cluster.leaseBuffer : null,
+                instanceId: CLUSTER_INSTANCE_ID
+            },
+            opts && opts.workerData
+        ),
         trackUnmanagedFds: true
     });
     metrics.threadStarts.inc();
@@ -1376,9 +1428,9 @@ let spawnWorker = async (type, opts, slot) => {
                             msg: 'All IMAP workers exited, reloading accounts from Redis for reassignment'
                         });
 
-                        // Reload all accounts from Redis since we lost track
+                        // Reload the accounts this instance owns since we lost track
                         try {
-                            let accounts = await redis.smembers(`${REDIS_PREFIX}ia:accounts`);
+                            let accounts = cluster ? [...cluster.held] : [];
                             unassigned = new Set(accounts);
                             assigned.clear();
                             workerAssigned = new WeakMap();
@@ -1638,36 +1690,10 @@ let spawnWorker = async (type, opts, slot) => {
                 }
 
                 case 'settings':
-                    // Reload the HTTP proxy agent in the main thread when proxy settings change
-                    maybeReloadHttpProxyAgent(message.data);
-
-                    // Forward settings changes to all IMAP workers
-                    availableIMAPWorkers.forEach(worker => {
-                        try {
-                            postMessage(worker, message);
-                        } catch (err) {
-                            logger.error({
-                                msg: 'Unable to forward settings to worker',
-                                worker: worker.threadId,
-                                settingsKeys: Object.keys(message.data || {}),
-                                err
-                            });
-                        }
-                    });
-
-                    // Forward settings changes to every other worker type (the IMAP workers were
-                    // handled above); each reloads its HTTP proxy agent from the 'settings' message
-                    for (let [type, typeWorkers] of workers) {
-                        if (type === 'imap') {
-                            continue;
-                        }
-                        typeWorkers.forEach(worker => {
-                            try {
-                                postMessage(worker, message);
-                            } catch (err) {
-                                logger.error({ msg: 'Unable to forward settings to worker', type, worker: worker.threadId, err });
-                            }
-                        });
+                    fanOutSettings(message);
+                    // The other instances' workers keep the same in-memory state
+                    if (cluster) {
+                        cluster.broadcast('settings', message.data || null);
                     }
                     return;
 
@@ -1681,13 +1707,10 @@ let spawnWorker = async (type, opts, slot) => {
                             break;
                         }
                         default:
-                            // Forward all other state changes to API workers
-                            for (let worker of workers.get('api') || []) {
-                                try {
-                                    postMessage(worker, message, true);
-                                } catch (err) {
-                                    logger.error({ msg: 'Unable to forward state change to worker', worker: worker.threadId, callPayload: message, err });
-                                }
+                            fanOutChange(message);
+                            // A live feed on another instance's API is as interested as one here
+                            if (cluster) {
+                                cluster.broadcast('change', message);
                             }
                     }
                     break;
@@ -1793,6 +1816,60 @@ let spawnWorker = async (type, opts, slot) => {
         });
     });
 };
+
+/**
+ * Hands a settings change to every worker of this instance: the IMAP workers apply logging
+ * changes, and every worker reloads its HTTP proxy agent from it
+ * @param {Object} message - `{ cmd: 'settings', data }`
+ */
+function fanOutSettings(message) {
+    // Reload the HTTP proxy agent in the main thread when proxy settings change
+    maybeReloadHttpProxyAgent(message.data);
+
+    // Forward settings changes to all IMAP workers
+    availableIMAPWorkers.forEach(worker => {
+        try {
+            postMessage(worker, message);
+        } catch (err) {
+            logger.error({
+                msg: 'Unable to forward settings to worker',
+                worker: worker.threadId,
+                settingsKeys: Object.keys(message.data || {}),
+                err
+            });
+        }
+    });
+
+    // Forward settings changes to every other worker type (the IMAP workers were
+    // handled above); each reloads its HTTP proxy agent from the 'settings' message
+    for (let [type, typeWorkers] of workers) {
+        if (type === 'imap') {
+            continue;
+        }
+        typeWorkers.forEach(worker => {
+            try {
+                postMessage(worker, message);
+            } catch (err) {
+                logger.error({ msg: 'Unable to forward settings to worker', type, worker: worker.threadId, err });
+            }
+        });
+    }
+}
+
+/**
+ * Hands a change event to this instance's API workers, which feed /v1/changes, the MCP listen
+ * streams and the admin UI
+ * @param {Object} message - `{ cmd: 'change', account, type, key, payload }`
+ */
+function fanOutChange(message) {
+    for (let worker of workers.get('api') || []) {
+        try {
+            postMessage(worker, message, true);
+        } catch (err) {
+            logger.error({ msg: 'Unable to forward state change to worker', worker: worker.threadId, callPayload: message, err });
+        }
+    }
+}
 
 /**
  * Call a command on a worker thread and wait for response
@@ -1989,8 +2066,9 @@ async function rebalanceOnto(worker) {
  * @returns {Promise<boolean>} Success status
  */
 async function assignAccounts() {
-    // Prevent concurrent assignment
+    // Prevent concurrent assignment; a pass asked for meanwhile runs once this one is done
     if (assigning) {
+        assignRequested = true;
         return false;
     }
 
@@ -2002,9 +2080,9 @@ async function assignAccounts() {
     let failedAccounts = [];
     try {
         if (!unassigned) {
-            // First run - load all accounts from Redis
-            let accounts = await redis.smembers(`${REDIS_PREFIX}ia:accounts`);
-            unassigned = new Set(accounts);
+            // The accounts this instance serves are the ones the cluster coordinator claimed for
+            // it, handed over through serveAccounts()
+            unassigned = new Set();
         }
 
         if (!availableIMAPWorkers.size || !unassigned.size) {
@@ -2118,9 +2196,17 @@ async function assignAccounts() {
 
         assigning = false;
 
+        // Accounts handed over while this pass ran are not a failure, so they get a pass at once
+        // rather than the backoff below
+        let rerun = assignRequested && !isClosing;
+        assignRequested = false;
+        if (rerun) {
+            setImmediate(() => assignAccounts().catch(err => logger.error({ msg: 'Unable to assign accounts', err })));
+        }
+
         // Safety net: if accounts remain unassigned, schedule a retry with backoff, and keep
         // retrying slowly after the quick ones, see assignRetryDelay()
-        if (unassigned && unassigned.size > 0 && availableIMAPWorkers.size > 0 && !isClosing) {
+        if (!rerun && unassigned && unassigned.size > 0 && availableIMAPWorkers.size > 0 && !isClosing) {
             assignRetryCount++;
             let delay = assignRetryDelay(assignRetryCount);
             logger[assignRetryCount <= QUICK_ASSIGN_RETRIES ? 'warn' : 'error']({
@@ -2763,8 +2849,9 @@ async function commandStructuredMetrics() {
 }
 
 async function commandImapWorkerCount() {
-    // Return number of available IMAP workers
-    return { workers: availableIMAPWorkers.size };
+    // Return number of available IMAP workers, and whether the cluster has settled which accounts
+    // this instance serves (lib/health.js)
+    return { workers: availableIMAPWorkers.size, clusterReady: cluster ? cluster.isReady() : false };
 }
 
 async function commandCheckLicense() {
@@ -3008,33 +3095,43 @@ async function commandSubscribe(worker, message) {
 }
 
 async function commandNewAccount(worker, message) {
-    // Handle new account.
-    //
-    // `unassigned` is `false` until assignAccounts() loads the account list from Redis on
-    // its first run, which waits for an IMAP worker to report ready. An account created
-    // before that used to throw here and fail the request with a 500. Skipping the add is
-    // safe rather than merely quiet: the account is already in `ia:accounts` by the time
-    // this message is sent, so the first load picks it up.
-    if (unassigned) {
-        unassigned.add(message.account);
+    // Handle new account. The account is already in `ia:accounts`: the instance placement picks
+    // claims it (this one, or another that is told over the bus), and a full ownership pass finds
+    // it in any case, including when it was created before this instance finished starting
+    if (cluster) {
+        cluster.accountAdded(message.account);
     }
-    assignAccounts()
-        .then(() => sendWebhook(message.account, ACCOUNT_ADDED_NOTIFY, { account: message.account }))
-        .catch(err => logger.error({ msg: 'Account assignment failed', err }));
+    sendWebhook(message.account, ACCOUNT_ADDED_NOTIFY, { account: message.account }).catch(err =>
+        logger.error({ msg: 'Account added webhook failed', account: message.account, err })
+    );
 }
 
-async function commandDeleteAccount(worker, message) {
-    // Handle account deletion
-    //
-    // Guarded for the same reason as commandNewAccount() above, and here the throw was
-    // answered with a 500 for a deletion that had in fact succeeded: the account was
-    // already gone from Redis by the time this message was sent.
+/**
+ * Stops a deleted account in the worker that holds it here. Returns whether it was held here
+ * @param {Object} message - The delete command
+ * @returns {boolean}
+ */
+function deleteLocalAccount(message) {
     let assignedWorker = forgetAccount({ workerAssigned, assigned, unassigned }, message.account);
+    if (cluster) {
+        cluster.accountDeleted(message.account);
+    }
     if (assignedWorker) {
         // Notify worker to clean up
         call(assignedWorker, message)
             .then(() => logger.debug('Account cleanup completed'))
             .catch(err => logger.error({ msg: 'Account cleanup failed', account: message.account, err }));
+    }
+    return !!assignedWorker;
+}
+
+async function commandDeleteAccount(worker, message) {
+    // Handle account deletion. The records are already gone from Redis by the time this message is
+    // sent, the owner record included, so nothing here may fail the request and the instance that
+    // serves the account cannot be looked up any more. Every instance is told; the one serving it
+    // closes it, and an instance that missed the broadcast stops it on its next full ownership pass
+    if (!deleteLocalAccount(message) && cluster) {
+        cluster.broadcast('accountDeleted', { account: message.account });
     }
     sendWebhook(message.account, ACCOUNT_DELETED_NOTIFY, { account: message.account }).catch(err =>
         logger.error({ msg: 'Account deletion webhook failed', account: message.account, err })
@@ -3046,16 +3143,31 @@ async function commandRunIndex() {
 }
 
 async function commandForwardToAccountWorker(worker, message) {
-    // Forward to assigned worker
+    // Fire and forget, to the worker that serves the account here or to the instance that does
+    let run;
     if (assigned.has(message.account)) {
-        let assignedWorker = assigned.get(message.account);
-        call(assignedWorker, message)
-            .then(() => logger.debug('Worker command completed'))
-            .catch(err => logger.error({ msg: 'Worker command failed', account: message.account, cmd: message.cmd, err }));
+        run = call(assigned.get(message.account), message);
+    } else if (cluster) {
+        run = cluster.forward(message);
+    } else {
+        return;
     }
+    run.then(() => logger.debug('Worker command completed')).catch(err => {
+        // Nobody serving the account is the normal case for a paused or failed account
+        let level = err.code === 'WorkerNotAvailable' ? 'debug' : 'error';
+        logger[level]({ msg: 'Worker command failed', account: message.account, cmd: message.cmd, err });
+    });
 }
 
 async function commandReloadServer(worker, message) {
+    // Every instance runs its own listeners
+    if (cluster) {
+        cluster.broadcast('reloadServer', { cmd: message.cmd });
+    }
+    return await reloadServerLocal(message);
+}
+
+async function reloadServerLocal(message) {
     // Reload proxy server
     let type = message.cmd.replace(/Reload$/, '');
     let hasWorkers = workers.has(type) && workers.get(type).size;
@@ -3075,6 +3187,14 @@ async function commandReloadServer(worker, message) {
 }
 
 async function commandReloadCertificates(worker, message) {
+    // The certificate is stored in Redis; every instance's listeners have to pick it up
+    if (cluster) {
+        cluster.broadcast('reloadCertificates', { cmd: message.cmd });
+    }
+    return reloadCertificatesLocal(message);
+}
+
+function reloadCertificatesLocal(message) {
     // A renewed certificate, handed to a running listener. Forwarded to the worker
     // rather than terminating it: a restart would cut every session in flight, and
     // every listener can swap its secure context between handshakes. Sent to every
@@ -3087,37 +3207,90 @@ async function commandReloadCertificates(worker, message) {
     return NOT_HANDLED;
 }
 
-// IMAP operations - forward to assigned worker
-async function commandAccountOperation(worker, message) {
-    if (!assigned.has(message.account)) {
-        throw NO_ACTIVE_HANDLER_RESP_ERR;
-    }
-
+// Runs an account command in the worker that serves the account here
+async function runLocalAccountOperation(message) {
     let assignedWorker = assigned.get(message.account);
 
     let transferList = [];
     // Handle transferable objects
-    if (['getRawMessage', 'getAttachment'].includes(message.cmd) && message.port) {
+    if (STREAM_COMMANDS.has(message.cmd) && message.port) {
         transferList.push(message.port);
     }
-    if (['submitMessage', 'queueMessage'].includes(message.cmd) && typeof message.raw === 'object') {
+    if (['submitMessage', 'queueMessage'].includes(message.cmd) && message.raw instanceof ArrayBuffer) {
         transferList.push(message.raw);
     }
 
     return await call(assignedWorker, message, transferList);
 }
 
-async function commandSubconnections(worker, message) {
-    // Get submission connections
-    if (!assigned.has(message.account)) {
-        return [];
+/**
+ * Runs an account command on the instance that owns the account. A download comes back over the
+ * network and is passed on into the MessagePort the requesting worker is reading
+ * @param {Object} message - The command
+ * @returns {Promise<*>}
+ */
+async function forwardAccountOperation(message, opts = {}) {
+    if (!cluster) {
+        if ('unowned' in opts) {
+            return opts.unowned;
+        }
+        throw NO_ACTIVE_HANDLER_RESP_ERR;
     }
 
-    let assignedWorker = assigned.get(message.account);
-    return await call(assignedWorker, message, []);
+    let timeout = typeof message.timeout === 'number' && message.timeout > 0 ? message.timeout : EENGINE_TIMEOUT;
+
+    if (STREAM_COMMANDS.has(message.cmd) && message.port) {
+        // Built when the port arrives, see the MessagePortWritable constructor
+        let writable = new MessagePortWritable(message.port);
+        let { port, ...payload } = message; // eslint-disable-line no-unused-vars
+        let result;
+        try {
+            result = await cluster.forward(payload, { timeout, stream: true });
+        } catch (err) {
+            // Nothing to send; the requester is handed the error and closes its end
+            writable.releaseListeners();
+            throw err;
+        }
+        sendToMessagePort(writable, result.body, logger);
+        return result.meta;
+    }
+
+    return await cluster.forward(message, Object.assign({ timeout }, opts));
+}
+
+// IMAP operations - forward to assigned worker
+async function commandAccountOperation(worker, message) {
+    if (assigned.has(message.account)) {
+        return await runLocalAccountOperation(message);
+    }
+    return await forwardAccountOperation(message);
+}
+
+/**
+ * An account command that resolves to `fallback` when no instance owns the account, instead of
+ * failing with WorkerNotAvailable. A worker that dies while running it still fails the command
+ */
+async function accountOperationOr(message, fallback) {
+    if (assigned.has(message.account)) {
+        return await runLocalAccountOperation(message);
+    }
+    return await forwardAccountOperation(message, { unowned: fallback });
+}
+
+async function commandSubconnections(worker, message) {
+    // Get submission connections; none when nobody serves the account
+    return await accountOperationOr(message, []);
 }
 
 async function commandGooglePubSub(worker, message) {
+    // Every instance runs webhook workers that pull Pub/Sub messages
+    if (cluster) {
+        cluster.broadcast('googlePubSub', message);
+    }
+    return await googlePubSubLocal(message);
+}
+
+async function googlePubSubLocal(message) {
     // Notify all webhook workers about PubSub app changes
     if (!workers.has('webhooks')) {
         return true;
@@ -3135,16 +3308,12 @@ async function commandGooglePubSub(worker, message) {
 }
 
 async function commandExternalNotify(worker, message) {
-    // External notification (e.g., Google Push)
+    // External notification (e.g., Google Push). Pulled by whichever instance's webhook worker got
+    // the Pub/Sub message, and delivered to the instance that serves each account
     let proms = [];
     for (let account of message.accounts || []) {
-        if (!assigned.has(account)) {
-            continue;
-        }
-
-        let assignedWorker = assigned.get(account);
         proms.push(
-            call(assignedWorker, { cmd: 'externalNotify', account, historyId: message.historyId }).catch(err => {
+            accountOperationOr({ cmd: 'externalNotify', account, historyId: message.historyId }, false).catch(err => {
                 logger.error({ msg: 'External notification failed', cmd: 'externalNotify', account, historyId: message.historyId, err });
             })
         );
@@ -3155,7 +3324,14 @@ async function commandExternalNotify(worker, message) {
 
 async function commandSubscriptionLifecycle(worker, message) {
     // MS Graph subscription lifecycle event (reauthorizationRequired, subscriptionRemoved)
-    if (!assigned.has(message.account)) {
+    let command = {
+        cmd: 'subscriptionLifecycle',
+        account: message.account,
+        event: message.event,
+        timeout: message.timeout
+    };
+    let result = await accountOperationOr(command, null);
+    if (result === null) {
         logger.warn({
             msg: 'Subscription lifecycle event for unassigned account',
             account: message.account,
@@ -3163,14 +3339,46 @@ async function commandSubscriptionLifecycle(worker, message) {
         });
         return false;
     }
-    let assignedWorker = assigned.get(message.account);
-    return await call(assignedWorker, {
-        cmd: 'subscriptionLifecycle',
-        account: message.account,
-        event: message.event,
-        timeout: message.timeout
-    });
+    return result;
 }
+
+// Commands that run in the IMAP worker serving an account and answer
+const ACCOUNT_OPERATION_COMMANDS = [
+    'submitMessage',
+    'queueMessage',
+    'listMessages',
+    'getRawMessage',
+    'getText',
+    'getMessage',
+    'getMessages',
+    'updateMessage',
+    'updateMessages',
+    'listMailboxes',
+    'moveMessage',
+    'moveMessages',
+    'deleteMessage',
+    'deleteMessages',
+    'getQuota',
+    'createMailbox',
+    'modifyMailbox',
+    'deleteMailbox',
+    'uploadMessage',
+    'getAttachment',
+    'listSignatures'
+];
+
+// Account commands the requester does not wait for
+const FIRE_AND_FORGET_COMMANDS = ['update', 'sync', 'pause', 'resume', 'reconnect'];
+
+// Every account command another instance may ask this one to run against an account it serves
+const CLUSTER_ACCOUNT_COMMANDS = new Set([
+    ...ACCOUNT_OPERATION_COMMANDS,
+    ...FIRE_AND_FORGET_COMMANDS,
+    'teardown',
+    'subconnections',
+    'externalNotify',
+    'subscriptionLifecycle'
+]);
 
 // A Map rather than an object literal, so a command name like `constructor` or `__proto__` is an
 // unknown command and not an inherited property
@@ -3197,34 +3405,12 @@ const COMMAND_HANDLERS = new Map([
     ['delete', commandDeleteAccount],
     // an account no worker holds has nothing of the provider's open; answering false here keeps
     // that apart from WorkerNotAvailable, which a worker dying mid-teardown also answers
-    ['teardown', (worker, message) => (assigned.has(message.account) ? commandAccountOperation(worker, message) : false)],
+    ['teardown', (worker, message) => accountOperationOr(message, false)],
     ['runIndex', commandRunIndex],
-    ...['update', 'sync', 'pause', 'resume', 'reconnect'].map(cmd => [cmd, commandForwardToAccountWorker]),
+    ...FIRE_AND_FORGET_COMMANDS.map(cmd => [cmd, commandForwardToAccountWorker]),
     ...['smtpReload', 'imapProxyReload'].map(cmd => [cmd, commandReloadServer]),
     ...['apiReloadCertificates', 'smtpReloadCertificates', 'imapProxyReloadCertificates'].map(cmd => [cmd, commandReloadCertificates]),
-    ...[
-        'submitMessage',
-        'queueMessage',
-        'listMessages',
-        'getRawMessage',
-        'getText',
-        'getMessage',
-        'getMessages',
-        'updateMessage',
-        'updateMessages',
-        'listMailboxes',
-        'moveMessage',
-        'moveMessages',
-        'deleteMessage',
-        'deleteMessages',
-        'getQuota',
-        'createMailbox',
-        'modifyMailbox',
-        'deleteMailbox',
-        'uploadMessage',
-        'getAttachment',
-        'listSignatures'
-    ].map(cmd => [cmd, commandAccountOperation]),
+    ...ACCOUNT_OPERATION_COMMANDS.map(cmd => [cmd, commandAccountOperation]),
     ['subconnections', commandSubconnections],
     ['googlePubSub', commandGooglePubSub],
     ['googlePubSubRemove', commandGooglePubSub],
@@ -3319,6 +3505,12 @@ async function collectConnectionMetrics() {
         metrics.imapConnections.set({ status }, metricsResult[status]);
     });
 
+    lastConnectionCounts = Object.assign({}, metricsResult);
+    if (cluster) {
+        metrics.clusterMembers.set(cluster.live.size);
+        metrics.clusterOwnedAccounts.set(cluster.held.size);
+    }
+
     // Update Prometheus metrics for MS Graph subscriptions
     Object.keys(subscriptionResults).forEach(status => {
         metrics.outlookSubscriptions.set({ status }, subscriptionResults[status]);
@@ -3375,28 +3567,50 @@ const closeQueues = cb => {
     });
 };
 
-// Handle graceful shutdown
-process.on('SIGTERM', () => {
-    logger.info({ msg: 'Shutdown signal received', signal: 'SIGTERM', isClosing });
-    if (isClosing) {
-        return;
-    }
-    isClosing = true;
-    closeQueues(() => {
-        logger.flush(() => process.exit());
-    });
-});
+// How long leaving the cluster may take on the way out; the records expire on their own anyway
+const CLUSTER_LEAVE_TIMEOUT = 1500;
 
-process.on('SIGINT', () => {
-    logger.info({ msg: 'Shutdown signal received', signal: 'SIGINT', isClosing });
+/**
+ * Leaves the cluster once the workers have closed their connections, so the other instances take
+ * the accounts over at once instead of after the heartbeat expires
+ * @returns {Promise<void>}
+ */
+const leaveCluster = async () => {
+    if (!cluster) {
+        return;
+    }
+    let timer;
+    await Promise.race([
+        cluster.leave().then(() => cluster.close()),
+        new Promise(resolve => {
+            timer = setTimeout(resolve, CLUSTER_LEAVE_TIMEOUT);
+        })
+    ]).catch(err => logger.error({ msg: 'Failed to leave the cluster', err }));
+    clearTimeout(timer);
+};
+
+/**
+ * Graceful shutdown: stop taking cluster calls and accounts, drain the workers (which closes every
+ * account connection), then hand the accounts over and exit
+ * @param {string} signal
+ */
+const shutdown = signal => {
+    logger.info({ msg: 'Shutdown signal received', signal, isClosing });
     if (isClosing) {
         return;
     }
     isClosing = true;
-    closeQueues(() => {
-        logger.flush(() => process.exit());
-    });
-});
+    let stopping = cluster ? cluster.stopListening().catch(err => logger.error({ msg: 'Failed to stop cluster calls', err })) : Promise.resolve();
+    stopping.then(() =>
+        closeQueues(() => {
+            leaveCluster().finally(() => logger.flush(() => process.exit()));
+        })
+    );
+};
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 // START APPLICATION
 
@@ -3770,6 +3984,185 @@ const ensureInstanceSecrets = async () => {
     }
 };
 
+// CLUSTER (lib/cluster/coordinator.js calls these)
+
+// Connection counts of the last metrics pass, carried on the heartbeat for fleet-wide stats
+let lastConnectionCounts = {};
+
+/**
+ * Starts serving accounts the coordinator claimed for this instance
+ * @param {string[]} accounts
+ */
+function serveAccounts(accounts) {
+    if (!unassigned) {
+        unassigned = new Set();
+    }
+    for (let account of accounts) {
+        if (!assigned.has(account)) {
+            unassigned.add(account);
+        }
+    }
+    assignAccounts().catch(err => logger.error({ msg: 'Unable to assign accounts', err }));
+}
+
+/**
+ * Stops serving one account here. Resolves true once no worker of this instance holds it: the
+ * coordinator releases the account to another instance only after that
+ * @param {string} account
+ * @returns {Promise<boolean>}
+ */
+async function stopServingAccount(account) {
+    let worker = forgetAccount({ workerAssigned, assigned, unassigned }, account);
+    if (!worker || (await unassignFromWorker(worker, account))) {
+        return true;
+    }
+    // The worker did not confirm, so its connection may still be open. Restarting the worker is the
+    // only way to be sure; its other accounts are assigned again once it is back
+    logger.error({ msg: 'Restarting an IMAP worker that did not release an account', account, threadId: worker.threadId });
+    try {
+        await worker.terminate();
+    } catch (err) {
+        logger.error({ msg: 'Failed to terminate IMAP worker', threadId: worker.threadId, err });
+    }
+    return true;
+}
+
+/**
+ * Stops serving every account after this instance lost its cluster membership (fencing)
+ * @returns {Promise<void>}
+ */
+async function stopServingAllAccounts() {
+    if (unassigned) {
+        unassigned.clear();
+    }
+    clearTimeout(assignRetryTimer);
+    assignRetryTimer = null;
+    reassignmentPending = false;
+    clearTimeout(reassignmentTimer);
+    reassignmentTimer = null;
+
+    let accounts = [...assigned.keys()];
+    await mapConcurrent(accounts, REBALANCE_CONCURRENCY * 4, account => stopServingAccount(account));
+}
+
+/**
+ * Runs a command another instance sent about an account this instance serves. Never forwards
+ * again: an instance that does not serve the account says so, and the sender retries with the
+ * owner it reads anew
+ * @param {Object} message
+ * @returns {Promise<Object>} `{ response }`, or `{ stream: { meta, readable } }` for a download
+ */
+async function handleClusterCall(message) {
+    if (!CLUSTER_ACCOUNT_COMMANDS.has(message.cmd) || typeof message.account !== 'string') {
+        let err = new Error('Unsupported cluster command');
+        err.statusCode = 400;
+        err.code = 'UnsupportedCommand';
+        throw err;
+    }
+
+    let assignedWorker = assigned.get(message.account);
+    if (!assignedWorker) {
+        throw notOwnedHereError();
+    }
+
+    if (STREAM_COMMANDS.has(message.cmd)) {
+        let { port1, port2 } = new MessageChannel();
+        let readable = new MessagePortReadable(port1);
+        let meta;
+        try {
+            meta = await call(assignedWorker, Object.assign({}, message, { port: port2 }), [port2]);
+        } catch (err) {
+            readable.destroy();
+            throw err;
+        }
+        return { stream: { meta, readable } };
+    }
+
+    return { response: await call(assignedWorker, message) };
+}
+
+/**
+ * What another instance broadcast. Each type is re-dispatched to this instance's workers the same
+ * way as when it originates here, without broadcasting it again
+ * @param {string} type
+ * @param {*} data
+ */
+async function onClusterBroadcast(type, data) {
+    switch (type) {
+        case 'settings':
+            fanOutSettings({ cmd: 'settings', data });
+            return;
+        case 'change':
+            if (data && data.cmd === 'change') {
+                fanOutChange(data);
+            }
+            return;
+        case 'reloadServer':
+            if (data && ['smtpReload', 'imapProxyReload'].includes(data.cmd)) {
+                await reloadServerLocal(data);
+            }
+            return;
+        case 'reloadCertificates':
+            if (data && ['apiReloadCertificates', 'smtpReloadCertificates', 'imapProxyReloadCertificates'].includes(data.cmd)) {
+                reloadCertificatesLocal(data);
+            }
+            return;
+        case 'googlePubSub':
+            if (data && ['googlePubSub', 'googlePubSubRemove'].includes(data.cmd)) {
+                await googlePubSubLocal(data);
+            }
+            return;
+        case 'accountDeleted':
+            if (data && typeof data.account === 'string') {
+                deleteLocalAccount({ cmd: 'delete', account: data.account });
+            }
+            return;
+    }
+}
+
+/**
+ * Creates this instance's cluster coordinator. Joining happens in joinCluster(), once the API is up
+ */
+const createCluster = () => {
+    let subscriber = redis.duplicate();
+    subscriber.on('error', err => logger.warn({ msg: 'Cluster bus connection error', err }));
+
+    cluster = new ClusterCoordinator({
+        redis,
+        subscriber,
+        logger: logger.child({ component: 'cluster' }),
+        instanceId: CLUSTER_INSTANCE_ID,
+        address: CLUSTER_ADDRESS,
+        ttl: CLUSTER_HEARTBEAT_TTL,
+        runIndex,
+        version: packageData.version,
+        hooks: {
+            serve: serveAccounts,
+            stopServing: stopServingAccount,
+            stopServingAll: stopServingAllAccounts,
+            handleCall: handleClusterCall,
+            onBroadcast: onClusterBroadcast,
+            recordExtras: () => ({ connections: lastConnectionCounts }),
+            onForward: ({ cmd, outcome, seconds }) => {
+                try {
+                    metrics.clusterForwardedCalls.inc({ cmd, outcome });
+                    metrics.clusterForwardDuration.observe({ cmd }, seconds);
+                } catch (err) {
+                    logger.error({ msg: 'Unable to record a cluster metric', cmd, err });
+                }
+            }
+        }
+    });
+};
+
+/**
+ * Joins the cluster: registers, starts the heartbeat and, with a cluster port, the call listener
+ * @returns {Promise<void>}
+ */
+const joinCluster = async () => {
+    await cluster.start(CLUSTER_PORT ? { port: CLUSTER_PORT, host: CLUSTER_HOST } : null);
+};
+
 /**
  * Starts the API workers, several sharing the listen port when SO_REUSEPORT allows it
  * @returns {Promise<void>}
@@ -3848,12 +4241,9 @@ const startImapWorkers = async () => {
     // Wait a brief moment to ensure all workers have sent their 'ready' messages
     await new Promise(r => setTimeout(r, 100));
 
-    // Assign accounts to workers after all are ready
-    try {
-        await assignAccounts();
-    } catch (err) {
-        logger.error({ msg: 'Initial account assignment failed', err });
-    }
+    // From here on the coordinator claims accounts for this instance and hands them to
+    // serveAccounts(), which assigns them to the workers
+    cluster.setReady(true);
 };
 
 /**
@@ -3984,10 +4374,16 @@ const startApplication = async () => {
 
     // -- START WORKER THREADS
 
+    // Before any worker is spawned: every worker gets the ownership lease the coordinator keeps
+    createCluster();
+
     await startApiWorkers();
 
     // Small delay to allow API to start
     await new Promise(r => setTimeout(r, 100));
+
+    // Registered before the IMAP workers start, so the first claims go to a known member
+    await joinCluster();
 
     await startImapWorkers();
 

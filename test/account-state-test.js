@@ -11,6 +11,7 @@ const {
     calculateEffectiveState,
     validateAccountState,
     getDisplayState,
+    isCurrentRunState,
     formatLastError
 } = require('../lib/account/account-state');
 
@@ -43,51 +44,50 @@ test('Account State tests', async t => {
         assert.strictEqual(BYPASS_RUN_INDEX_STATES.length, 2);
     });
 
-    // calculateEffectiveState tests
-    await t.test('calculateEffectiveState() returns current state when runIndex is falsy', async () => {
+    // calculateEffectiveState tests. The claiming instance records its run as ownerRun, the
+    // connection records its run as runIndex with every state it reaches (lib/cluster/)
+    await t.test('calculateEffectiveState() returns the stored state once the owning run wrote it', async () => {
+        const accountData = { state: ACCOUNT_STATES.CONNECTED, runIndex: 7, ownerRun: 7 };
+        assert.strictEqual(calculateEffectiveState(accountData), ACCOUNT_STATES.CONNECTED);
+    });
+
+    await t.test('calculateEffectiveState() returns INIT for an account claimed but not connected yet', async () => {
+        // Claimed by run 9; the stored state is what run 7 left behind
+        const accountData = { state: ACCOUNT_STATES.CONNECTED, runIndex: 7, ownerRun: 9 };
+        assert.strictEqual(calculateEffectiveState(accountData), ACCOUNT_STATES.INIT);
+    });
+
+    await t.test('calculateEffectiveState() does not depend on run numbers growing across instances', async () => {
+        // An instance started earlier (a lower run) takes over from one started later
+        const accountData = { state: ACCOUNT_STATES.CONNECTED, runIndex: 12, ownerRun: 4 };
+        assert.strictEqual(calculateEffectiveState(accountData), ACCOUNT_STATES.INIT);
+        assert.strictEqual(calculateEffectiveState(Object.assign({}, accountData, { runIndex: 4 })), ACCOUNT_STATES.CONNECTED);
+    });
+
+    await t.test('calculateEffectiveState() takes the stored state of a record nobody claimed yet', async () => {
         const accountData = { state: ACCOUNT_STATES.CONNECTED, runIndex: 5 };
-
-        assert.strictEqual(calculateEffectiveState(accountData, 0), ACCOUNT_STATES.CONNECTED);
-        assert.strictEqual(calculateEffectiveState(accountData, null), ACCOUNT_STATES.CONNECTED);
-        assert.strictEqual(calculateEffectiveState(accountData, undefined), ACCOUNT_STATES.CONNECTED);
+        assert.strictEqual(calculateEffectiveState(accountData), ACCOUNT_STATES.CONNECTED);
     });
 
-    await t.test('calculateEffectiveState() returns current state when runIndex <= accountRunIndex', async () => {
-        const accountData = { state: ACCOUNT_STATES.CONNECTED, runIndex: 10 };
-
-        assert.strictEqual(calculateEffectiveState(accountData, 5), ACCOUNT_STATES.CONNECTED);
-        assert.strictEqual(calculateEffectiveState(accountData, 10), ACCOUNT_STATES.CONNECTED);
-    });
-
-    await t.test('calculateEffectiveState() returns current state for INIT bypass state', async () => {
-        const accountData = { state: ACCOUNT_STATES.INIT, runIndex: 5 };
-
-        assert.strictEqual(calculateEffectiveState(accountData, 15), ACCOUNT_STATES.INIT);
-    });
-
-    await t.test('calculateEffectiveState() returns current state for UNSET bypass state', async () => {
-        const accountData = { state: ACCOUNT_STATES.UNSET, runIndex: 5 };
-
-        assert.strictEqual(calculateEffectiveState(accountData, 15), ACCOUNT_STATES.UNSET);
+    await t.test('calculateEffectiveState() returns current state for INIT and UNSET bypass states', async () => {
+        assert.strictEqual(calculateEffectiveState({ state: ACCOUNT_STATES.INIT, runIndex: 5, ownerRun: 9 }), ACCOUNT_STATES.INIT);
+        assert.strictEqual(calculateEffectiveState({ state: ACCOUNT_STATES.UNSET, runIndex: 5, ownerRun: 9 }), ACCOUNT_STATES.UNSET);
     });
 
     await t.test('calculateEffectiveState() returns current state for API accounts', async () => {
-        const accountData = { state: ACCOUNT_STATES.CONNECTED, runIndex: 5, isApi: true };
-
-        assert.strictEqual(calculateEffectiveState(accountData, 15), ACCOUNT_STATES.CONNECTED);
+        const accountData = { state: ACCOUNT_STATES.CONNECTED, runIndex: 5, ownerRun: 9, isApi: true };
+        assert.strictEqual(calculateEffectiveState(accountData), ACCOUNT_STATES.CONNECTED);
     });
 
-    await t.test('calculateEffectiveState() returns INIT when account not processed by current worker', async () => {
-        const accountData = { state: ACCOUNT_STATES.CONNECTED, runIndex: 5, isApi: false };
-
-        assert.strictEqual(calculateEffectiveState(accountData, 15), ACCOUNT_STATES.INIT);
+    await t.test('calculateEffectiveState() reports an error state of an earlier run as INIT', async () => {
+        const accountData = { state: ACCOUNT_STATES.AUTHENTICATION_ERROR, runIndex: 5, ownerRun: 15 };
+        assert.strictEqual(calculateEffectiveState(accountData), ACCOUNT_STATES.INIT);
     });
 
-    await t.test('calculateEffectiveState() handles authentication error state correctly', async () => {
-        const accountData = { state: ACCOUNT_STATES.AUTHENTICATION_ERROR, runIndex: 5 };
-
-        // When runIndex > accountRunIndex and not a bypass state, should return INIT
-        assert.strictEqual(calculateEffectiveState(accountData, 15), ACCOUNT_STATES.INIT);
+    await t.test('isCurrentRunState() compares runs as numbers', async () => {
+        assert.strictEqual(isCurrentRunState({ runIndex: '7', ownerRun: 7 }), true);
+        assert.strictEqual(isCurrentRunState({ runIndex: 0, ownerRun: 7 }), false);
+        assert.strictEqual(isCurrentRunState({}), true);
     });
 
     // validateAccountState tests
@@ -172,38 +172,11 @@ test('Account State tests', async t => {
     });
 
     // getDisplayState tests
-    await t.test('getDisplayState() returns current state when runIndex is falsy', async () => {
-        const accountData = { state: ACCOUNT_STATES.CONNECTED, runIndex: 5 };
-
-        assert.strictEqual(getDisplayState(accountData, 0), ACCOUNT_STATES.CONNECTED);
-        assert.strictEqual(getDisplayState(accountData, null), ACCOUNT_STATES.CONNECTED);
-    });
-
-    await t.test('getDisplayState() returns current state when runIndex <= accountRunIndex', async () => {
-        const accountData = { state: ACCOUNT_STATES.SYNCING, runIndex: 10 };
-
-        assert.strictEqual(getDisplayState(accountData, 5), ACCOUNT_STATES.SYNCING);
-        assert.strictEqual(getDisplayState(accountData, 10), ACCOUNT_STATES.SYNCING);
-    });
-
-    await t.test('getDisplayState() returns current state for bypass states', async () => {
-        const initAccount = { state: ACCOUNT_STATES.INIT, runIndex: 5 };
-        const unsetAccount = { state: ACCOUNT_STATES.UNSET, runIndex: 5 };
-
-        assert.strictEqual(getDisplayState(initAccount, 15), ACCOUNT_STATES.INIT);
-        assert.strictEqual(getDisplayState(unsetAccount, 15), ACCOUNT_STATES.UNSET);
-    });
-
-    await t.test('getDisplayState() returns current state for API accounts', async () => {
-        const accountData = { state: ACCOUNT_STATES.CONNECTED, runIndex: 5, isApi: true };
-
-        assert.strictEqual(getDisplayState(accountData, 15), ACCOUNT_STATES.CONNECTED);
-    });
-
-    await t.test('getDisplayState() returns INIT when not processed by current worker', async () => {
-        const accountData = { state: ACCOUNT_STATES.CONNECTED, runIndex: 5, isApi: false };
-
-        assert.strictEqual(getDisplayState(accountData, 15), ACCOUNT_STATES.INIT);
+    await t.test('getDisplayState() follows calculateEffectiveState()', async () => {
+        assert.strictEqual(getDisplayState({ state: ACCOUNT_STATES.SYNCING, runIndex: 10, ownerRun: 10 }), ACCOUNT_STATES.SYNCING);
+        assert.strictEqual(getDisplayState({ state: ACCOUNT_STATES.CONNECTED, runIndex: 5, ownerRun: 15 }), ACCOUNT_STATES.INIT);
+        assert.strictEqual(getDisplayState({ state: ACCOUNT_STATES.UNSET, runIndex: 5, ownerRun: 15 }), ACCOUNT_STATES.UNSET);
+        assert.strictEqual(getDisplayState({ state: ACCOUNT_STATES.CONNECTED, runIndex: 5, ownerRun: 15, isApi: true }), ACCOUNT_STATES.CONNECTED);
     });
 
     // formatLastError tests

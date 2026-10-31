@@ -1,5 +1,5 @@
 'use strict';
-const { parentPort } = require('worker_threads');
+const { parentPort, workerData } = require('worker_threads');
 
 const packageData = require('../package.json');
 const config = require('@zone-eu/wild-config');
@@ -26,6 +26,10 @@ const settings = require('../lib/settings');
 const msgpack = require('../lib/msgpack');
 
 const getSecret = require('../lib/get-secret');
+const { setWorkerLease } = require('../lib/cluster/lease');
+
+// The ownership lease the main thread renews, checked before an account announces anything
+setWorkerLease(workerData && workerData.clusterLease);
 
 config.service = config.service || {};
 

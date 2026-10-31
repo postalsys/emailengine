@@ -72,6 +72,11 @@ async function rejectsWith(promise, code) {
 }
 
 test('health checks', async t => {
+    await t.test('not ready until the cluster has settled which accounts this instance serves', async () => {
+        await rejectsWith(checks({ answer: { workers: 4, clusterReady: false } }).health.ready(), 'ClusterNotReady');
+        assert.deepStrictEqual(await checks({ answer: { workers: 4, clusterReady: true } }).health.ready(), { success: true });
+    });
+
     await t.test('ready when every IMAP worker is up and Redis round-trips', async () => {
         const { health, calls, redis } = checks();
         assert.deepStrictEqual(await health.ready(5000), { success: true });

@@ -90,6 +90,7 @@ const { mcpOptions } = require('../lib/api-routes/route-metadata');
 
 const { redis } = require('../lib/db');
 const { createHealthChecks } = require('../lib/health');
+const { createAdminAuthWatch } = require('../lib/admin-auth-watch');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
 
@@ -1572,8 +1573,10 @@ async function registerServerPlugins(server) {
     }
 
     // From here on a first password set on another API worker switches the session strategy on
-    // through the settings dispatcher (see the authData branch there)
+    // through the settings dispatcher (see the authData branch there), or this watch when the
+    // broadcast never arrives
     sessionAuthServer = server;
+    createAdminAuthWatch({ getServer: () => sessionAuthServer, isInstanceSecured: () => settings.isInstanceSecured(), logger });
 
     await server.register({
         plugin: requestLogger,

@@ -90,6 +90,16 @@ const TIERS = {
         // Every IMAP exchange is logged at trace level; keep it out of the job output unless the
         // run fails
         serverLog: true
+    },
+    multi: {
+        dir: 'test/multi',
+        // Serial: every file runs its own fleet of EmailEngine processes on the same ports and the
+        // same Redis database (15, see test/helpers/instance-fleet.js), which the files flush
+        // themselves. No server is booted here, the files manage their fleets
+        args: ['--test-concurrency=1'],
+        // A file waits out IDLE, failovers and restarts of several processes
+        testTimeout: 600000,
+        stallTimeout: 600000 + 60000
     }
 };
 

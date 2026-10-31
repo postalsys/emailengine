@@ -273,6 +273,20 @@ function makeLiveClient() {
                 return 1;
             },
             hDelIfEquals: hDelIfEqualsOn(hash),
+            // lib/lua/account-set-state.lua against the same hash
+            accountSetState: async (key, state, runIndex) => {
+                const ownerRun = hash.get('ownerRun');
+                if (ownerRun && ownerRun !== runIndex) {
+                    return [-1];
+                }
+                const counterKey = `state:count:${state}`;
+                const previous = hash.get(counterKey) ?? null;
+                hash.set('state', state);
+                hash.set('runIndex', runIndex);
+                const current = Number(previous || 0) + 1;
+                hash.set(counterKey, String(current));
+                return [1, previous, current];
+            },
             multi() {
                 const queued = [];
                 const chain = new Proxy(
