@@ -93,14 +93,16 @@ async function startMember(id, { listen = true, ready = true } = {}) {
                 }
                 events.push(['serve', accounts.length]);
             },
-            async stopServing(account) {
+            async stopServing(account, opts = {}) {
                 served.delete(account);
-                events.push(['stop', account]);
+                events.push(['stop', account, !!opts.lost]);
                 return true;
             },
-            async stopServingAll() {
-                events.push(['stopAll', served.size]);
-                served.clear();
+            async stopServingAll(accounts, opts = {}) {
+                events.push(['stopAll', accounts.length, !!opts.lost]);
+                for (const account of accounts) {
+                    served.delete(account);
+                }
             },
             async handleCall(message) {
                 events.push(['call', message.cmd, message.account]);
@@ -227,18 +229,73 @@ test('ownership life cycle', async t => {
         }
     });
 
-    await t.test('a member that loses its heartbeat stops serving everything, then rejoins', async () => {
+    await t.test('a member that loses its heartbeat keeps the accounts nobody took over', async () => {
         const list = await createAccounts(20);
         const a = await startMember('a');
         try {
             await waitUntil(() => a.served.size === list.length, 15000, 'a serves everything');
             const generation = a.member.lease.generation();
-            // The record expiring while the process was frozen looks like this from inside
+            // The record expiring (a Redis stall, a frozen process) looks like this from inside
             await redis.del(clusterKeys.instance('a'));
-            await waitUntil(() => a.events.some(([kind]) => kind === 'stopAll'), 10000, 'fencing');
-            assert.equal(a.member.lease.generation(), generation + 1, 'the workers see the lease revoked');
-            await waitUntil(() => a.served.size === list.length, 15000, 'a serves everything again');
-            assert.equal(a.member.stats.fences, 1);
+            await waitUntil(() => a.member.stats.fences === 1 && !a.member.fencing, 10000, 'fencing');
+            assert.equal(a.served.size, list.length, 'nothing was taken over, so nothing was closed');
+            assert.equal(a.member.lease.generation(), generation, 'held back announcements go out');
+            assert.equal(a.member.lease.isValid(), true);
+            assert.equal(
+                a.events.some(([kind]) => kind === 'stopAll' || kind === 'stop'),
+                false
+            );
+        } finally {
+            await stopAll(a);
+        }
+    });
+
+    await t.test('after a lost heartbeat, accounts another member took over are closed as lost', async () => {
+        const list = await createAccounts(20);
+        const a = await startMember('a');
+        try {
+            await waitUntil(() => a.served.size === list.length, 15000, 'a serves everything');
+            const takenOver = list.slice(0, 5);
+            // While a was frozen another member claimed some of its accounts
+            await redis.del(clusterKeys.instance('a'));
+            for (const account of takenOver) {
+                await redis.set(clusterKeys.owner(account), 'b');
+            }
+            await waitUntil(() => a.member.stats.fences === 1 && !a.member.fencing, 10000, 'fencing');
+            assert.deepEqual(
+                a.events.filter(([kind]) => kind === 'stopAll'),
+                [['stopAll', 5, true]]
+            );
+            assert.equal(a.served.size, 15);
+            assert.ok(takenOver.every(account => !a.served.has(account)));
+        } finally {
+            for (const account of list.slice(0, 5)) {
+                await redis.del(clusterKeys.owner(account));
+            }
+            await stopAll(a);
+        }
+    });
+
+    await t.test('a member that cannot rejoin gives up every account', async () => {
+        const list = await createAccounts(10);
+        const a = await startMember('a');
+        try {
+            await waitUntil(() => a.served.size === list.length, 15000, 'a serves everything');
+            const generation = a.member.lease.generation();
+            // Another live process registered with the same id meanwhile
+            await redis.del(clusterKeys.instance('a'));
+            await redis.hset(clusterKeys.instance('a'), { token: 'someone-else' });
+            await redis.pexpire(clusterKeys.instance('a'), TTL * 4);
+            await waitUntil(() => a.events.some(([kind]) => kind === 'stopAll'), TTL * 4, 'giving up');
+            assert.deepEqual(
+                a.events.find(([kind]) => kind === 'stopAll'),
+                ['stopAll', list.length, true]
+            );
+            assert.equal(a.member.lease.generation(), generation + 1, 'what was held back is dropped');
+            assert.equal(a.served.size, 0);
+            // Once the other record is gone it registers and claims again
+            await redis.del(clusterKeys.instance('a'));
+            await waitUntil(() => a.served.size === list.length, 20000, 'a serves everything again');
         } finally {
             await stopAll(a);
         }
@@ -260,6 +317,24 @@ test('ownership life cycle', async t => {
         } finally {
             await a.member.close();
             await stopAll(b);
+        }
+    });
+
+    await t.test('a steady stream of pass requests does not starve the heartbeat', async () => {
+        const list = await createAccounts(5);
+        const a = await startMember('a');
+        try {
+            await waitUntil(() => a.served.size === list.length, 15000, 'a serves everything');
+            // Claim hints arriving faster than the debounce, for three heartbeat periods
+            const until = Date.now() + TTL * 3;
+            while (Date.now() < until) {
+                a.member.requestPass(['acc0']);
+                await sleep(20);
+            }
+            assert.equal(a.member.stats.fences, 0, 'the heartbeat kept being renewed');
+            assert.equal(a.member.lease.isValid(), true);
+        } finally {
+            await stopAll(a);
         }
     });
 

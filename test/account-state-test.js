@@ -51,16 +51,16 @@ test('Account State tests', async t => {
         assert.strictEqual(calculateEffectiveState(accountData), ACCOUNT_STATES.CONNECTED);
     });
 
-    await t.test('calculateEffectiveState() returns INIT for an account claimed but not connected yet', async () => {
+    await t.test('calculateEffectiveState() returns CONNECTING for an account claimed but not connected yet', async () => {
         // Claimed by run 9; the stored state is what run 7 left behind
         const accountData = { state: ACCOUNT_STATES.CONNECTED, runIndex: 7, ownerRun: 9 };
-        assert.strictEqual(calculateEffectiveState(accountData), ACCOUNT_STATES.INIT);
+        assert.strictEqual(calculateEffectiveState(accountData), ACCOUNT_STATES.CONNECTING);
     });
 
     await t.test('calculateEffectiveState() does not depend on run numbers growing across instances', async () => {
         // An instance started earlier (a lower run) takes over from one started later
         const accountData = { state: ACCOUNT_STATES.CONNECTED, runIndex: 12, ownerRun: 4 };
-        assert.strictEqual(calculateEffectiveState(accountData), ACCOUNT_STATES.INIT);
+        assert.strictEqual(calculateEffectiveState(accountData), ACCOUNT_STATES.CONNECTING);
         assert.strictEqual(calculateEffectiveState(Object.assign({}, accountData, { runIndex: 4 })), ACCOUNT_STATES.CONNECTED);
     });
 
@@ -79,9 +79,10 @@ test('Account State tests', async t => {
         assert.strictEqual(calculateEffectiveState(accountData), ACCOUNT_STATES.CONNECTED);
     });
 
-    await t.test('calculateEffectiveState() reports an error state of an earlier run as INIT', async () => {
+    await t.test('calculateEffectiveState() reports an error state of an earlier run as CONNECTING', async () => {
+        // The new owner tries again; the old failure is not what it is doing now
         const accountData = { state: ACCOUNT_STATES.AUTHENTICATION_ERROR, runIndex: 5, ownerRun: 15 };
-        assert.strictEqual(calculateEffectiveState(accountData), ACCOUNT_STATES.INIT);
+        assert.strictEqual(calculateEffectiveState(accountData), ACCOUNT_STATES.CONNECTING);
     });
 
     await t.test('isCurrentRunState() compares runs as numbers', async () => {
@@ -174,7 +175,7 @@ test('Account State tests', async t => {
     // getDisplayState tests
     await t.test('getDisplayState() follows calculateEffectiveState()', async () => {
         assert.strictEqual(getDisplayState({ state: ACCOUNT_STATES.SYNCING, runIndex: 10, ownerRun: 10 }), ACCOUNT_STATES.SYNCING);
-        assert.strictEqual(getDisplayState({ state: ACCOUNT_STATES.CONNECTED, runIndex: 5, ownerRun: 15 }), ACCOUNT_STATES.INIT);
+        assert.strictEqual(getDisplayState({ state: ACCOUNT_STATES.CONNECTED, runIndex: 5, ownerRun: 15 }), ACCOUNT_STATES.CONNECTING);
         assert.strictEqual(getDisplayState({ state: ACCOUNT_STATES.UNSET, runIndex: 5, ownerRun: 15 }), ACCOUNT_STATES.UNSET);
         assert.strictEqual(getDisplayState({ state: ACCOUNT_STATES.CONNECTED, runIndex: 5, ownerRun: 15, isApi: true }), ACCOUNT_STATES.CONNECTED);
     });

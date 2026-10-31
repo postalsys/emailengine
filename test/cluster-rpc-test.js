@@ -9,7 +9,17 @@ const crypto = require('node:crypto');
 const net = require('node:net');
 const { Readable } = require('node:stream');
 
-const { createRpcServer, createRpcClient, signRequest, verifyRequest, NonceCache, toWire, CALL_PATH, CLOCK_WINDOW } = require('../lib/cluster/rpc');
+const {
+    createRpcServer,
+    createRpcClient,
+    signRequest,
+    verifyRequest,
+    precheckRequest,
+    NonceCache,
+    toWire,
+    CALL_PATH,
+    CLOCK_WINDOW
+} = require('../lib/cluster/rpc');
 
 const SECRET = crypto.randomBytes(32);
 const logger = { info() {}, warn() {}, error() {}, debug() {} };
@@ -63,6 +73,13 @@ test('verifyRequest()', async t => {
         assert.equal(verifyRequest(SECRET, request), 'missing signature');
     });
 
+    await t.test('the header checks need no body, so a stranger is refused before it sends one', () => {
+        const headers = signed().headers;
+        assert.equal(precheckRequest({ headers, me: 'b' }), null);
+        assert.equal(precheckRequest({ headers, me: 'c' }), 'addressed to another instance');
+        assert.equal(precheckRequest({ headers: {}, me: 'b' }), 'missing signature');
+    });
+
     await t.test('an unsigned call does not use up nonce space', () => {
         const nonces = new NonceCache();
         verifyRequest(crypto.randomBytes(32), signed({ request: { nonces } }));
@@ -81,6 +98,7 @@ test('toWire()', () => {
 test('calls between two instances', async t => {
     const port = await freePort();
     const handled = [];
+    let slowReadable = null;
     const server = createRpcServer({
         instanceId: 'b',
         getSecret: async () => SECRET,
@@ -100,6 +118,12 @@ test('calls between two instances', async t => {
                     return {
                         stream: { meta: { headers: { 'content-type': 'text/plain' } }, readable: Readable.from([Buffer.from('hello '), Buffer.from('world')]) }
                     };
+                case 'slowDownload': {
+                    // The worker gets the download ready only after the caller has given up
+                    await new Promise(resolve => setTimeout(resolve, 2500));
+                    slowReadable = new Readable({ read() {} });
+                    return { stream: { meta: null, readable: slowReadable } };
+                }
             }
             throw new Error('unexpected');
         }
@@ -134,6 +158,14 @@ test('calls between two instances', async t => {
             chunks.push(chunk);
         }
         assert.equal(Buffer.concat(chunks).toString(), 'hello world');
+    });
+
+    await t.test('a download the caller gave up on is released, not piped into the closed response', async () => {
+        // The headers have to arrive within the timeout plus the hop margin (2 s)
+        await assert.rejects(client.call(peer, { cmd: 'slowDownload' }, { stream: true, timeout: 100 }), err => err.code === 'Timeout');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        assert.ok(slowReadable, 'the handler got as far as the download');
+        assert.equal(slowReadable.destroyed, true, 'the worker download was released');
     });
 
     await t.test('a call signed with another key is refused before it runs', async () => {

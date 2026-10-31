@@ -8,6 +8,7 @@ This guide covers everything from local development to production deployment of 
 - [Configuration](#configuration)
 - [Production Deployment](#production-deployment)
 - [Operations & Maintenance](#operations--maintenance)
+- [Running several instances](#running-several-instances)
 - [Troubleshooting](#troubleshooting)
 
 ## Quick Start
@@ -339,6 +340,97 @@ Since resource limits are not enforced:
 3. Set up alerts for high memory usage (especially important for Redis)
 4. Ensure sufficient swap space as a safety measure
 5. Consider using monitoring solutions like Prometheus + Grafana
+
+## Running several instances
+
+Several EmailEngine instances can share one Redis database, for example as the replicas of a Kubernetes Deployment behind a Service. Each email account is served by exactly one instance at a time, and any instance answers API requests for any account.
+
+### How it works
+
+- **Ownership.** Every instance keeps a heartbeat record in Redis and claims a share of the accounts, spread evenly across the instances that are running. An account is served by the instance recorded as its owner, which keeps one connection to the mail server for it, exactly as a single instance does.
+- **Requests for other accounts.** An API request that reaches an instance which does not serve the account is passed to the instance that does, over the cluster port, and the answer comes back unchanged, downloads included. The SMTP server, the IMAP proxy, outgoing mail and exports work the same way.
+- **Failover.** When an instance stops gracefully, it hands its accounts over before it exits, and the others take them within a second or two. When an instance crashes or is cut off, the others take its accounts once its heartbeat expires (`EENGINE_CLUSTER_HEARTBEAT_TTL`, 20 seconds by default). An instance that was frozen or cut off for longer than that checks which of its accounts were taken over before it announces anything for them, so no webhook is sent twice.
+- **Scaling.** A new instance takes its share from the others, about 1/N of the accounts, which are handed over without a gap: the old owner closes the connection before the new one opens it, and a request that arrives in between waits for the new owner.
+- **Settings and live updates.** Settings changes, certificate renewals, listener restarts and the live change feed reach every instance through Redis.
+
+### Requirements
+
+- Every instance uses the same Redis database, the same `EENGINE_SECRET` and the same EmailEngine version. Do not run an older version (before multi-instance support) next to a newer one: it does not know about account ownership and connects every account itself.
+- Every instance sets `EENGINE_CLUSTER_PORT` and can reach the others on it. The port carries account data in plain HTTP, authenticated with a key the instances share through Redis, so keep it on the private network between the instances and do not publish it.
+- The address an instance announces is its first external IPv4 address by default, which is the pod IP in Kubernetes. Set `EENGINE_CLUSTER_ADDRESS` when that address is not reachable from the other instances.
+- Leave `EENGINE_INSTANCE_ID` unset unless you need stable names. The default, the host name plus a random suffix, makes every start a new member. A process that starts with the id of a member whose heartbeat has not expired yet, such as a container restarted in place with a fixed id, waits for it to expire before it serves anything.
+- Export files are written to the disk of the instance that runs the export, and a download through another instance fetches the file from it. Mount a shared volume at `EENGINE_EXPORT_PATH` if finished exports have to survive the instance that wrote them.
+- Plan Redis for more connections: every worker thread of every instance holds its own.
+
+### Kubernetes example
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: emailengine
+spec:
+    replicas: 3
+    selector:
+        matchLabels:
+            app: emailengine
+    template:
+        metadata:
+            labels:
+                app: emailengine
+        spec:
+            # Above the preStop sleep plus the time a graceful stop takes (at most about 10 seconds),
+            # so accounts are handed over rather than waiting for the heartbeat to expire
+            terminationGracePeriodSeconds: 30
+            containers:
+                - name: emailengine
+                  image: postalsys/emailengine:v2
+                  env:
+                      - name: EENGINE_REDIS
+                        valueFrom:
+                            secretKeyRef: { name: emailengine, key: redis-url }
+                      - name: EENGINE_SECRET
+                        valueFrom:
+                            secretKeyRef: { name: emailengine, key: secret }
+                      - name: EENGINE_CLUSTER_PORT
+                        value: '3001'
+                  ports:
+                      - containerPort: 3000
+                        name: api
+                      - containerPort: 3001
+                        name: cluster
+                  readinessProbe:
+                      httpGet: { path: /health/ready, port: api }
+                      periodSeconds: 5
+                  livenessProbe:
+                      httpGet: { path: /health/live, port: api }
+                      periodSeconds: 10
+                  lifecycle:
+                      # Gives the Service time to stop sending requests before the process is told to stop
+                      preStop:
+                          exec: { command: ['sleep', '5'] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: emailengine
+spec:
+    selector:
+        app: emailengine
+    ports:
+        # Only the API: the cluster port is for the instances themselves
+        - name: api
+          port: 3000
+          targetPort: api
+```
+
+The readiness check stays negative until an instance has settled which accounts it serves, so a new pod gets traffic only once it can answer. A HorizontalPodAutoscaler can scale the Deployment on CPU. Every scale step moves about 1/N of the accounts, so scale in steps of one and leave a few minutes between them.
+
+### Monitoring
+
+- `GET /v1/stats` counts the accounts of every instance and lists the instances, and the Workers page of the admin UI shows them when there are several.
+- Each instance exports `cluster_members`, `cluster_owned_accounts`, `cluster_forwarded_calls` (by command and outcome) and `cluster_forward_duration_seconds` on `/metrics`.
+- A log line `Lost cluster membership` means an instance missed its heartbeat for longer than the TTL: a stalled process, or Redis unreachable from it.
 
 ## Troubleshooting
 

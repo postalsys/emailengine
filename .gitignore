@@ -39,3 +39,4 @@ core.*
 *.log
 # intermediate output of npm run gettext
 translations/messages.pot.tmp
+test/multi/results/

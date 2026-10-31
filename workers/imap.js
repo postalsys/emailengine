@@ -27,6 +27,12 @@ const msgpack = require('../lib/msgpack');
 
 const getSecret = require('../lib/get-secret');
 const { setWorkerLease } = require('../lib/cluster/lease');
+const { waitUntilStarted } = require('../lib/email-client/connection-readiness');
+
+// Longest a command waits for an account connection that is still starting up, and how long after
+// the assignment a connection counts as starting up
+const CONNECTION_START_WAIT = 10 * 1000;
+const CONNECTION_START_WINDOW = 60 * 1000;
 
 // The ownership lease the main thread renews, checked before an account announces anything
 setWorkerLease(workerData && workerData.clusterLease);
@@ -188,10 +194,19 @@ class ConnectionHandler {
      * @param {string} account - Account ID
      * @param {Object} accountObject - The entry that was removed from this.accounts
      */
-    async closeReleasedConnection(account, accountObject) {
+    async closeReleasedConnection(account, accountObject, opts = {}) {
         if (!accountObject || !accountObject.connection) {
             return;
         }
+        if (opts.lost) {
+            // Another instance owns the account now and announces what this connection still had
+            // pending, see BaseClient.notify()
+            accountObject.connection.lostOwnership = true;
+        }
+        // The account moves to another worker or instance, it is not disconnected: the new owner
+        // records its state, and a 'disconnected' written now would make the API refuse requests
+        // for it until the new connection is up
+        accountObject.connection.released = true;
         try {
             await accountObject.connection.close();
         } catch (err) {
@@ -201,12 +216,12 @@ class ConnectionHandler {
 
     // The main thread takes an account back after an `assign` it gave up waiting for, or to move
     // it onto another worker. An assignment still being set up notices the missing entry and stops.
-    async unassignConnection(account) {
-        logger.info({ msg: 'Account unassign requested', account });
+    async unassignConnection(account, opts = {}) {
+        logger.info({ msg: 'Account unassign requested', account, lost: !!opts.lost });
         this.assignTokens.delete(account);
         let accountObject = this.accounts.get(account);
         this.accounts.delete(account);
-        await this.closeReleasedConnection(account, accountObject);
+        await this.closeReleasedConnection(account, accountObject, opts);
         return true;
     }
 
@@ -235,6 +250,8 @@ class ConnectionHandler {
             // this worker (e.g. auto-reconnect after OAuth re-auth in an error state).
             call: msg => this.call(msg)
         });
+        // A command right after the assignment waits for the connection to start, see waitForStartingConnection()
+        accountObject.assignedAt = Date.now();
 
         if (!isCurrent()) {
             logger.info({ msg: 'Dropped superseded account assignment', account });
@@ -953,6 +970,52 @@ class ConnectionHandler {
         }
     }
 
+    /**
+     * Runs an account command. One that fails because its connection was closed for a move to
+     * another worker or instance says so (503 AccountReleased) instead of reporting the closed
+     * connection, so the main thread can send a read on to where the account went
+     * @param {Object} message
+     * @returns {Promise<*>}
+     */
+    async runAccountCommand(message) {
+        await this.waitForStartingConnection(message);
+        const accountObject = this.accounts.get(message.account);
+        try {
+            return await this[message.cmd](message);
+        } catch (err) {
+            if (accountObject && accountObject.connection && accountObject.connection.released) {
+                const released = new Error('The account moved while the command ran. Try again.');
+                released.code = 'AccountReleased';
+                released.statusCode = 503;
+                throw released;
+            }
+            throw err;
+        }
+    }
+
+    /**
+     * Holds a command for an account whose connection was just set up until it can answer, see
+     * lib/email-client/connection-readiness.js. Bounded by half the command's own timeout, so the
+     * command still runs (and answers as before) in time
+     * @param {Object} message
+     */
+    async waitForStartingConnection(message) {
+        const assigned = this.accounts.get(message.account);
+        // Only a connection set up moments ago: one that dropped and keeps reconnecting is also
+        // 'connecting', and a command for it fails at once as it always has
+        if (!assigned || !assigned.assignedAt || Date.now() - assigned.assignedAt > CONNECTION_START_WINDOW) {
+            return;
+        }
+        const timeout = Math.min(CONNECTION_START_WAIT, Math.max(message.timeout || 0, EENGINE_TIMEOUT) / 2);
+        const getConnection = () => {
+            const accountObject = this.accounts.get(message.account);
+            return accountObject && accountObject.connection;
+        };
+        if (await waitUntilStarted(getConnection, timeout)) {
+            logger.debug({ msg: 'Command waited for the account connection to start', account: message.account, cmd: message.cmd });
+        }
+    }
+
     // Shutdown teardown: closes every account connection this worker owns. The main thread owns
     // the worker's lifetime and terminates it once the drain returns, so this deliberately does
     // not exit the process itself.
@@ -965,6 +1028,9 @@ class ConnectionHandler {
 
         this.accounts.forEach((accountObject, account) => {
             if (accountObject && accountObject.connection) {
+                // The instance is going away and its accounts to whoever takes them next, which
+                // records their state; see closeReleasedConnection()
+                accountObject.connection.released = true;
                 // Gmail and Graph close() write state to Redis; a rejection here is only worth a log line
                 Promise.resolve()
                     .then(() => accountObject.connection.close())
@@ -1021,9 +1087,11 @@ class ConnectionHandler {
             case 'sync':
                 return await this.syncConnection(message.account, { since: message.since });
 
+            case 'unassign':
+                return await this.unassignConnection(message.account, { lost: message.lost });
+
             case 'delete':
             case 'teardown':
-            case 'unassign':
             case 'update':
             case 'pause':
             case 'resume':
@@ -1057,7 +1125,7 @@ class ConnectionHandler {
             case 'externalNotify':
             case 'subscriptionLifecycle':
             case 'listSignatures':
-                return await this[message.cmd](message);
+                return await this.runAccountCommand(message);
 
             case 'countConnections': {
                 let results = Object.assign({}, DEFAULT_STATES);

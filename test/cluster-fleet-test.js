@@ -38,3 +38,38 @@ test('summarizeFleet()', async t => {
         assert.deepEqual(connections, { connected: 1 });
     });
 });
+
+test('instanceRows()', () => {
+    const { instanceRows } = require('../lib/cluster/fleet');
+    const rows = instanceRows([
+        { id: 'c', ready: true, connections: { connected: 4 }, lastHeartbeat: '2026-10-31T10:00:00.000Z' },
+        { id: 'b', ready: false, self: true },
+        { id: 'a', ready: true }
+    ]);
+    assert.deepEqual(
+        rows.map(row => row.id),
+        ['b', 'a', 'c'],
+        'this instance first, then by id'
+    );
+    assert.equal(rows[0].statusLabel, 'Not taking accounts');
+    assert.equal(rows[2].statusVariant, 'success');
+    assert.equal(rows[2].connected, 4);
+    assert.equal(rows[2].heartbeatTime, '2026-10-31T10:00:00.000Z');
+    assert.deepEqual(instanceRows({}), [], 'anything but a list is no rows');
+});
+
+test('loadFleetView()', async () => {
+    const { loadFleetView } = require('../lib/cluster/fleet');
+    const logger = { warn() {} };
+    const two = [
+        { id: 'a', self: true, ready: true },
+        { id: 'b', ready: true }
+    ];
+    assert.deepEqual((await loadFleetView(async () => two, logger)).selfInstance, 'a');
+    assert.equal((await loadFleetView(async () => two, logger)).instances.length, 2);
+    assert.equal((await loadFleetView(async () => [two[0]], logger)).instances, false, 'a lone instance shows no card');
+    const failed = await loadFleetView(async () => {
+        throw new Error('timeout');
+    }, logger);
+    assert.deepEqual(failed, { instances: false, selfInstance: null });
+});

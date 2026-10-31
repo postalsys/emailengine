@@ -65,6 +65,14 @@ test('waitForLease()', async t => {
         assert.equal(await waitForLease(lease, { timeout: 2000, interval: 10 }), false);
     });
 
+    await t.test('a suspended lease holds announcements and lets them go once extended again', async () => {
+        const lease = new LeaseView(createLeaseBuffer());
+        lease.extend(monotonicNow() + 10000);
+        lease.suspend();
+        setTimeout(() => lease.extend(monotonicNow() + 10000), 40);
+        assert.equal(await waitForLease(lease, { timeout: 2000, interval: 10 }), true);
+    });
+
     await t.test('gives up when nothing is decided in time', async () => {
         const lease = new LeaseView(createLeaseBuffer());
         assert.equal(await waitForLease(lease, { timeout: 50, interval: 10 }), false);

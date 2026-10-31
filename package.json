@@ -18,6 +18,8 @@
         "test:mutation": "NODE_ENV=test node scripts/mutation-test.js",
         "test:dovecot": "./test/dovecot/run-dovecot-tests.sh",
         "test:multi": "NODE_ENV=test node test/run-tests.js multi",
+        "test:load": "NODE_ENV=test node test/multi/load/run-load.js",
+        "test:chaos": "NODE_ENV=test node test/multi/load/run-chaos.js",
         "test:e2e": "playwright test",
         "test:e2e:install": "playwright install --with-deps chromium",
         "lint": "eslint .",

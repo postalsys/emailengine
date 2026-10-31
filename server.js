@@ -1954,13 +1954,14 @@ async function isRegisteredAccount(account) {
  * @param {string} account
  * @returns {Promise<boolean>}
  */
-async function unassignFromWorker(worker, account) {
+async function unassignFromWorker(worker, account, lost) {
     if (!onlineWorkers.has(worker)) {
         // An exited worker holds no connections
         return true;
     }
     try {
-        await call(worker, { cmd: 'unassign', account });
+        // `lost`: another instance owns the account now, so the worker drops what it held back
+        await call(worker, { cmd: 'unassign', account, lost: !!lost });
         return true;
     } catch (err) {
         logger.error({ msg: 'Failed to unassign account from worker', account, threadId: worker.threadId, err });
@@ -3269,12 +3270,41 @@ async function forwardAccountOperation(message, opts = {}) {
     return await cluster.forward(message, Object.assign({ timeout }, opts));
 }
 
-// IMAP operations - forward to assigned worker
+// How long an account command waits for an account that is between owners
+const OWNER_SETTLE_WAIT = 5000;
+
+// Commands that only read, so one cut short by the account moving can run again where it went.
+// Downloads are not among them: their MessagePort went to the worker with the first attempt
+const REPEATABLE_COMMANDS = new Set(['listMessages', 'getText', 'getMessage', 'getMessages', 'listMailboxes', 'getQuota', 'listSignatures']);
+
+// IMAP operations - run where the account is served, here or on another instance
 async function commandAccountOperation(worker, message) {
-    if (assigned.has(message.account)) {
-        return await runLocalAccountOperation(message);
+    let timeout = typeof message.timeout === 'number' && message.timeout > 0 ? message.timeout : EENGINE_TIMEOUT;
+    let deadline = Date.now() + Math.min(OWNER_SETTLE_WAIT, timeout / 2);
+    for (;;) {
+        if (assigned.has(message.account)) {
+            try {
+                return await runLocalAccountOperation(message);
+            } catch (err) {
+                if (err.code !== 'AccountReleased' || !REPEATABLE_COMMANDS.has(message.cmd) || isClosing || Date.now() >= deadline) {
+                    throw err;
+                }
+                continue;
+            }
+        }
+        try {
+            return await forwardAccountOperation(message);
+        } catch (err) {
+            // While an account moves between instances it has no reachable owner for a moment, or
+            // the owner closes it under a running read. Asking again shortly gets the new owner, or
+            // this instance once it took the account
+            let retryable = err.ownerUnsettled || (err.code === 'AccountReleased' && REPEATABLE_COMMANDS.has(message.cmd));
+            if (!retryable || isClosing || Date.now() >= deadline) {
+                throw err;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
     }
-    return await forwardAccountOperation(message);
 }
 
 /**
@@ -4048,9 +4078,9 @@ function serveAccounts(accounts) {
  * @param {string} account
  * @returns {Promise<boolean>}
  */
-async function stopServingAccount(account) {
+async function stopServingAccount(account, opts = {}) {
     let worker = forgetAccount({ workerAssigned, assigned, unassigned }, account);
-    if (!worker || (await unassignFromWorker(worker, account))) {
+    if (!worker || (await unassignFromWorker(worker, account, opts.lost))) {
         return true;
     }
     // The worker did not confirm, so its connection may still be open. Restarting the worker is the
@@ -4065,21 +4095,13 @@ async function stopServingAccount(account) {
 }
 
 /**
- * Stops serving every account after this instance lost its cluster membership (fencing)
+ * Stops serving many accounts at once, after fencing found other instances own them now
+ * @param {string[]} accounts
+ * @param {Object} [opts] - `{ lost }`, see stopServingAccount()
  * @returns {Promise<void>}
  */
-async function stopServingAllAccounts() {
-    if (unassigned) {
-        unassigned.clear();
-    }
-    clearTimeout(assignRetryTimer);
-    assignRetryTimer = null;
-    reassignmentPending = false;
-    clearTimeout(reassignmentTimer);
-    reassignmentTimer = null;
-
-    let accounts = [...assigned.keys()];
-    await mapConcurrent(accounts, REBALANCE_CONCURRENCY * 4, account => stopServingAccount(account));
+async function stopServingAccounts(accounts, opts) {
+    await mapConcurrent(accounts, REBALANCE_CONCURRENCY * 4, account => stopServingAccount(account, opts));
 }
 
 /**
@@ -4181,7 +4203,7 @@ const createCluster = () => {
         hooks: {
             serve: serveAccounts,
             stopServing: stopServingAccount,
-            stopServingAll: stopServingAllAccounts,
+            stopServingAll: stopServingAccounts,
             handleCall: handleClusterCall,
             onBroadcast: onClusterBroadcast,
             recordExtras: () => ({ connections: lastConnectionCounts }),

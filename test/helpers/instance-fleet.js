@@ -133,6 +133,8 @@ class FleetInstance {
         fs.closeSync(fd);
         this.child = child;
         this.frozen = false;
+        // As a load balancer would: no traffic until the readiness check passes (waitReady())
+        this.outOfRotation = true;
         this.starts++;
         running.add(child);
         child.unref();
@@ -157,6 +159,7 @@ class FleetInstance {
                 const res = await fetch(`${this.apiUrl}/health`, { dispatcher, signal: AbortSignal.timeout(2000) });
                 await res.arrayBuffer();
                 if (res.status === 200) {
+                    this.outOfRotation = false;
                     return;
                 }
             } catch (err) {
@@ -284,6 +287,7 @@ class FleetInstance {
  * @param {Object} [opts.env] - Extra environment for every instance
  * @param {boolean} [opts.flush] - Flush the fleet database first (default true)
  * @param {boolean} [opts.wait] - Wait for every instance to be ready (default true)
+ * @param {Function} [opts.prepare] - async (fleet) before any instance starts
  * @returns {Promise<Object>} The fleet
  */
 async function startFleet(opts) {
@@ -330,7 +334,7 @@ async function startFleet(opts) {
 
         /** A running, unfrozen instance, round robin */
         pick(seq) {
-            const candidates = fleet.instances.filter(instance => instance.running && !instance.frozen);
+            const candidates = fleet.instances.filter(instance => instance.running && !instance.frozen && !instance.outOfRotation);
             if (!candidates.length) {
                 throw new Error('No running instance');
             }
@@ -354,6 +358,11 @@ async function startFleet(opts) {
 
     if (opts.flush !== false) {
         await flushFleetDatabase(fleet.redisUrl);
+    }
+
+    // A chance to reroute instances (latency proxies) before anything starts
+    if (opts.prepare) {
+        await opts.prepare(fleet);
     }
 
     if (opts.wait !== false) {
