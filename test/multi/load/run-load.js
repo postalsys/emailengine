@@ -90,13 +90,10 @@ async function main() {
     const opts = parseArgs(process.argv.slice(2));
     const startedAt = new Date();
     console.log(`profile=${opts.profile} instances=${opts.instances} accounts=${opts.accounts} servers=${opts.servers} hopDelay=${opts.hopDelay}ms`);
-    const license = licenseNote();
-    if (license) {
-        console.warn(`WARNING ${license}`);
-    }
 
     const workload = await setupWorkload(Object.assign({}, opts, { seed: opts.profile !== 'events' }));
     console.log(`${opts.accounts} accounts connected in ${workload.connectSeconds}s, logs in ${workload.fleet.logDir}`);
+    const license = licenseNote(workload.licensed);
 
     try {
         const recorder = new Recorder();
@@ -175,6 +172,7 @@ async function main() {
             accountMoves: moves,
             actions,
             failures: recorder.failures,
+            license,
             redisCommandsPerSecond: Math.round((after.redis - before.redis) / seconds),
             // The farm and ledger process: near 100 means the harness, not EmailEngine, set the pace
             harnessCpuPercent: Math.round(((hostCpu(after.host) - hostCpu(before.host)) / 1e6 / seconds) * 100),

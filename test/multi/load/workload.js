@@ -17,17 +17,21 @@ const { summarize } = require('./metrics');
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
- * What the report says about licensing. Without a license an API worker answers every API request
- * with a bare 500 once its periodic license check (TLS_RENEW_CHECK_INTERVAL, ten minutes) has run,
- * so an instance that lives longer than that fails all of its traffic for a reason that has nothing
- * to do with the cluster. EENGINE_PREPARED_LICENSE in the environment reaches every instance
- * @returns {string|null} null when a license is supplied
+ * What the report says about licensing, printed as a warning when the fleet runs without one.
+ * Without a license an API worker answers every API request with a bare 500 once its periodic
+ * license check (TLS_RENEW_CHECK_INTERVAL, ten minutes) has run, so an instance that lives longer
+ * than that fails all of its traffic for a reason that has nothing to do with the cluster.
+ * EENGINE_PREPARED_LICENSE in the environment reaches every instance
+ * @param {boolean} licensed - What the fleet itself reports (setupWorkload() asks /v1/license)
+ * @returns {string} The line for the report
  */
-function licenseNote() {
-    if (process.env.EENGINE_PREPARED_LICENSE) {
-        return null;
+function licenseNote(licensed) {
+    if (licensed) {
+        return 'active';
     }
-    return 'No license (EENGINE_PREPARED_LICENSE unset): an instance running longer than 10 minutes answers every API request with 500, keep runs shorter or supply a license';
+    const note = 'none: an instance running longer than 10 minutes answers every API request with 500, keep runs shorter or set EENGINE_PREPARED_LICENSE';
+    console.warn(`WARNING license ${note}`);
+    return note;
 }
 
 const ATTACHMENT = Buffer.alloc(200 * 1024, 'x');
@@ -75,7 +79,6 @@ class Recorder {
         this.failures = [];
         this.failureGroups = new Map();
         this.phase = 'run';
-        this.phases = new Map();
         this.startedAt = Date.now();
     }
 
@@ -103,6 +106,15 @@ class Recorder {
         return [...this.failureGroups.values()].sort((a, b) => b.count - a.count);
     }
 
+    /** Failed requests per phase */
+    failuresByPhase() {
+        const phases = {};
+        for (const group of this.failureGroups.values()) {
+            phases[group.phase] = (phases[group.phase] || 0) + group.count;
+        }
+        return phases;
+    }
+
     record(op, hop, ms, status) {
         if (status >= 200 && status < 300) {
             this.ok++;
@@ -114,7 +126,6 @@ class Recorder {
             return;
         }
         this.failed++;
-        this.phases.set(this.phase, (this.phases.get(this.phase) || 0) + 1);
         const errorKey = `${op}\t${hop}\t${status}`;
         this.errors.set(errorKey, (this.errors.get(errorKey) || 0) + 1);
     }
@@ -246,6 +257,10 @@ async function setupWorkload(opts) {
                 throw new Error(`Creating ${account}: ${res.status} ${JSON.stringify(res.body)}`);
             }
         });
+
+        // Asked of the fleet rather than read off this process, so a license from any source counts
+        const license = await fleet.instances[0].request('GET', '/v1/license');
+        workload.licensed = !!(license.body && license.body.active);
 
         const connectStarted = Date.now();
         for (;;) {
@@ -419,6 +434,7 @@ function traffic(workload, recorder, running) {
                     }
                 } catch (err) {
                     recorder.record('submit', hop, 0, 'network');
+                    recorder.fail({ op: 'submit', account, instance: instance.id, status: 'network', error: err.message });
                 }
                 await sleep(1000 / perSecond);
             }

@@ -65,10 +65,6 @@ async function main() {
     const random = seededRandom(opts.seed);
     const startedAt = new Date();
     console.log(`chaos: instances=${opts.instances} accounts=${opts.accounts} ttl=${opts.ttl} seed=${opts.seed}`);
-    const license = licenseNote();
-    if (license) {
-        console.warn(`WARNING ${license}`);
-    }
 
     const workload = await setupWorkload({
         instances: opts.instances,
@@ -82,6 +78,7 @@ async function main() {
     });
     const { fleet, host, redis, accounts } = workload;
     console.log(`${accounts.length} accounts connected in ${workload.connectSeconds}s, logs in ${fleet.logDir}`);
+    const license = licenseNote(workload.licensed);
 
     const runStartedAt = Date.now();
     const recorder = new Recorder();
@@ -416,7 +413,7 @@ async function main() {
     const report = {
         options: opts,
         startedAt: startedAt.toISOString(),
-        license: license || 'supplied',
+        license,
         runSeconds: (Date.now() - runStartedAt) / 1000,
         experiments: results,
         violations,
@@ -427,7 +424,7 @@ async function main() {
             ok: recorder.ok,
             failed: recorder.failed,
             errors: recorder.report().errors,
-            byPhase: Object.fromEntries(recorder.phases),
+            byPhase: recorder.failuresByPhase(),
             kinds: recorder.failureSummary()
         },
         failures: recorder.failures
