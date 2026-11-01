@@ -1,9 +1,9 @@
 'use strict';
 
-// A message moved or copied into a folder the connection has not registered yet (created moments
-// earlier through the API) used to answer with `id: false`: packUid() knew neither the folder nor its
-// UIDVALIDITY. The server reports that UIDVALIDITY in the COPYUID of the same MOVE or COPY, so the
-// id is built from it. Found by the multi-instance tier on a slower Linux runner, where the folder's
+// A message moved, copied or uploaded into a folder the connection has not registered yet (created
+// moments earlier through the API) used to answer with `id: false`: packUid() knew neither the folder nor its
+// UIDVALIDITY. The server reports that UIDVALIDITY in the COPYUID of the same MOVE or COPY (and
+// the APPENDUID of an APPEND), so the id is built from it. Found by the multi-instance tier on a slower Linux runner, where the folder's
 // registration had not caught up.
 
 const test = require('node:test');
@@ -16,14 +16,14 @@ const { IMAPClient } = require('../lib/email-client/imap-client');
 
 require('./helpers/redis-teardown')();
 
-const noopLogger = { trace() {}, debug() {}, info() {}, warn() {}, error() {} };
+const { createMockLogger } = require('./helpers/mock-logger');
 
 function client({ mailboxes = new Map() } = {}) {
     const calls = [];
     return {
         calls,
         client: Object.assign(Object.create(IMAPClient.prototype), {
-            logger: noopLogger,
+            logger: createMockLogger(),
             mailboxes,
             pathCache: new Map(),
             idCache: new Map(),
@@ -74,11 +74,26 @@ test('packUid() with a UIDVALIDITY the server just reported', async t => {
         assert.equal(calls[0].readBigUInt64BE(0), 11n);
     });
 
-    await t.test('the reported UIDVALIDITY wins over a stored one, which may be stale', async () => {
-        const mailbox = { path: 'Forwarded', getStoredStatus: async () => ({ path: 'Forwarded', uidValidity: 4n }) };
+    await t.test('the reported UIDVALIDITY wins over a stored one, which is not read at all', async () => {
+        let reads = 0;
+        const mailbox = {
+            path: 'Forwarded',
+            getStoredStatus: async () => {
+                reads++;
+                return { path: 'Forwarded', uidValidity: 4n };
+            }
+        };
         const { client: imap, calls } = client({ mailboxes: new Map([['Forwarded', mailbox]]) });
         await imap.packUid('Forwarded', 5, null, 11n);
         assert.equal(calls[0].readBigUInt64BE(0), 11n);
+        assert.equal(reads, 0);
+    });
+
+    await t.test('a registered folder is named the way the server spells it', async () => {
+        const mailbox = { path: 'INBOX', getStoredStatus: async () => ({ path: 'INBOX', uidValidity: 4n }) };
+        const { client: imap, calls } = client({ mailboxes: new Map([['INBOX', mailbox]]) });
+        await imap.packUid('Inbox', 5, null, 11n);
+        assert.equal(calls[0].subarray(8).toString(), 'INBOX');
     });
 
     await t.test('without a reported one the stored UIDVALIDITY is used as before', async () => {
