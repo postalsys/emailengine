@@ -313,6 +313,29 @@ async function main() {
             return { pausedMs: ttl * 1.5, rejoinMs: Date.now() - t0 };
         },
 
+        async redisOutageLong() {
+            // Longer than an instance tries to register again: every instance gives up its
+            // accounts and drops what it held back, and every new message must still be announced
+            // once, by whichever instance owns the account afterwards
+            for (const proxy of workload.redisProxies.values()) {
+                proxy.pause();
+            }
+            await sleep(ttl * 4);
+            for (const proxy of workload.redisProxies.values()) {
+                proxy.resume();
+            }
+            const t0 = Date.now();
+            await waitFor(
+                async () => {
+                    const owners = await workload.refreshOwners();
+                    return accounts.every(account => owners.get(account));
+                },
+                ttl * 10 + 60000,
+                'every account owned again'
+            );
+            return { pausedMs: ttl * 4, reownedMs: Date.now() - t0 };
+        },
+
         async redisCut() {
             // Connections reset: every IMAP worker exits on the reconnect and comes back
             for (const proxy of workload.redisProxies.values()) {
@@ -346,7 +369,20 @@ async function main() {
         }
     };
 
-    const order = ['crash', 'graceful', 'freeze', 'slowPod', 'slowRedis', 'slowMailServer', 'mailDisconnect', 'partition', 'scale', 'redisOutage', 'redisCut'];
+    const order = [
+        'crash',
+        'graceful',
+        'freeze',
+        'slowPod',
+        'slowRedis',
+        'slowMailServer',
+        'mailDisconnect',
+        'partition',
+        'scale',
+        'redisOutage',
+        'redisOutageLong',
+        'redisCut'
+    ];
     const selected = opts.experiments === 'all' ? order : opts.experiments.split(',');
     const results = [];
 
