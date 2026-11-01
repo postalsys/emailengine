@@ -16,6 +16,20 @@ const { summarize } = require('./metrics');
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+/**
+ * What the report says about licensing. Without a license an API worker answers every API request
+ * with a bare 500 once its periodic license check (TLS_RENEW_CHECK_INTERVAL, ten minutes) has run,
+ * so an instance that lives longer than that fails all of its traffic for a reason that has nothing
+ * to do with the cluster. EENGINE_PREPARED_LICENSE in the environment reaches every instance
+ * @returns {string|null} null when a license is supplied
+ */
+function licenseNote() {
+    if (process.env.EENGINE_PREPARED_LICENSE) {
+        return null;
+    }
+    return 'No license (EENGINE_PREPARED_LICENSE unset): an instance running longer than 10 minutes answers every API request with 500, keep runs shorter or supply a license';
+}
+
 const ATTACHMENT = Buffer.alloc(200 * 1024, 'x');
 
 function seedMessage() {
@@ -44,6 +58,14 @@ function seedMessage() {
     ].join('\r\n');
 }
 
+function safeJson(text) {
+    try {
+        return JSON.parse(text);
+    } catch (err) {
+        return null;
+    }
+}
+
 class Recorder {
     constructor() {
         this.samples = new Map();
@@ -51,14 +73,34 @@ class Recorder {
         this.ok = 0;
         this.failed = 0;
         this.failures = [];
+        this.failureGroups = new Map();
+        this.phase = 'run';
+        this.phases = new Map();
         this.startedAt = Date.now();
     }
 
-    /** One failed request in detail, for the report */
+    /**
+     * One failed request in detail, for the report. A few samples are kept of every kind of failure
+     * (operation, status, error code and phase), so a rare kind is not crowded out by a common one
+     */
     fail(details) {
-        if (this.failures.length < 500) {
-            this.failures.push(Object.assign({ at: Date.now() - this.startedAt }, details));
+        let code = details.error || '';
+        const body = typeof details.body === 'string' ? safeJson(details.body) : details.body;
+        if (body && typeof body === 'object') {
+            code = body.code || body.error || code;
         }
+        const key = `${details.op}\t${details.status}\t${code}\t${this.phase}`;
+        const group = this.failureGroups.get(key) || { op: details.op, status: details.status, code, phase: this.phase, count: 0 };
+        group.count++;
+        this.failureGroups.set(key, group);
+        if (group.count <= 3 && this.failures.length < 2000) {
+            this.failures.push(Object.assign({ at: Date.now() - this.startedAt, phase: this.phase }, details));
+        }
+    }
+
+    /** Failure kinds by phase, most frequent first */
+    failureSummary() {
+        return [...this.failureGroups.values()].sort((a, b) => b.count - a.count);
     }
 
     record(op, hop, ms, status) {
@@ -72,6 +114,7 @@ class Recorder {
             return;
         }
         this.failed++;
+        this.phases.set(this.phase, (this.phases.get(this.phase) || 0) + 1);
         const errorKey = `${op}\t${hop}\t${status}`;
         this.errors.set(errorKey, (this.errors.get(errorKey) || 0) + 1);
     }
@@ -322,7 +365,8 @@ function traffic(workload, recorder, running) {
                                     instance: instance.id,
                                     owner: workload.ownerMap.get(account),
                                     status: res.status,
-                                    body
+                                    body,
+                                    headers: res.status >= 500 ? res.headers : undefined
                                 });
                             }
                         } catch (err) {
@@ -412,4 +456,12 @@ function submissionReport(load, capture) {
     return { accepted: load.submitted, delivered: counts.size, duplicated, acceptedNotDelivered, deliveredAfterClientError };
 }
 
-module.exports = { setupWorkload, traffic, submissionReport, Recorder, ATTACHMENT, sleep };
+module.exports = {
+    licenseNote,
+    setupWorkload,
+    traffic,
+    submissionReport,
+    Recorder,
+    ATTACHMENT,
+    sleep
+};

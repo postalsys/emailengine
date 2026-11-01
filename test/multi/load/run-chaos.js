@@ -23,7 +23,7 @@ process.env.NODE_ENV = process.env.NODE_ENV || 'test';
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { setupWorkload, traffic, submissionReport, Recorder, sleep } = require('./workload');
+const { setupWorkload, traffic, submissionReport, Recorder, sleep, licenseNote } = require('./workload');
 const { summarize } = require('./metrics');
 
 // "6s", "500ms", "1m"; lib/tools is not loaded here, it would open Redis connections of its own
@@ -65,6 +65,10 @@ async function main() {
     const random = seededRandom(opts.seed);
     const startedAt = new Date();
     console.log(`chaos: instances=${opts.instances} accounts=${opts.accounts} ttl=${opts.ttl} seed=${opts.seed}`);
+    const license = licenseNote();
+    if (license) {
+        console.warn(`WARNING ${license}`);
+    }
 
     const workload = await setupWorkload({
         instances: opts.instances,
@@ -354,6 +358,7 @@ async function main() {
         const okBefore = recorder.ok;
         const started = Date.now();
         console.log(`-> ${name}`);
+        recorder.phase = name;
         let result;
         try {
             result = Object.assign({ name, ok: true }, await EXPERIMENTS[name]());
@@ -367,6 +372,7 @@ async function main() {
         results.push(result);
         console.log(`   ${JSON.stringify(result)}`);
         // Let the fleet settle before the next one
+        recorder.phase = `after ${name}`;
         await sleep(ttl * 2);
     };
 
@@ -410,13 +416,20 @@ async function main() {
     const report = {
         options: opts,
         startedAt: startedAt.toISOString(),
+        license: license || 'supplied',
         runSeconds: (Date.now() - runStartedAt) / 1000,
         experiments: results,
         violations,
         maxUnownedMs: maxUnowned,
         webhooks: { expected: events.injected, latency: summarize(events.latencies), missing: events.missing.length, duplicates: events.duplicates.length },
         submits,
-        requests: { ok: recorder.ok, failed: recorder.failed, errors: recorder.report().errors },
+        requests: {
+            ok: recorder.ok,
+            failed: recorder.failed,
+            errors: recorder.report().errors,
+            byPhase: Object.fromEntries(recorder.phases),
+            kinds: recorder.failureSummary()
+        },
         failures: recorder.failures
     };
     writeReport(report);
@@ -435,6 +448,7 @@ function writeReport(report) {
         `Ran ${report.runSeconds}s. ${report.violations.length} invariant violations. Longest time an account was without a live owner: ${report.maxUnownedMs} ms.`,
         `Webhooks: ${report.webhooks.expected} expected, ${report.webhooks.missing} missing, ${report.webhooks.duplicates} duplicated. Submits: ${report.submits.accepted} accepted, ${report.submits.delivered} delivered, ${report.submits.duplicated} sent twice, ${report.submits.acceptedNotDelivered} accepted but not delivered, ${report.submits.deliveredAfterClientError} delivered after the client saw an error.`,
         `Requests: ${report.requests.ok} succeeded, ${report.requests.failed} failed.`,
+        `License: ${report.license}.`,
         '',
         '| Experiment | OK | Duration s | Failed requests | Details |',
         '| --- | --- | ---: | ---: | --- |'
@@ -442,6 +456,12 @@ function writeReport(report) {
     for (const result of report.experiments) {
         const { name, ok, ms, requestsFailed, requestsOk, ...details } = result; // eslint-disable-line no-unused-vars
         lines.push(`| ${name} | ${ok ? 'yes' : 'no'} | ${(ms / 1000).toFixed(1)} | ${requestsFailed} | ${JSON.stringify(details)} |`);
+    }
+    if (report.requests.kinds.length) {
+        lines.push('', '| Failed requests by kind | Phase | Status | Code | Count |', '| --- | --- | --- | --- | ---: |');
+        for (const kind of report.requests.kinds) {
+            lines.push(`| ${kind.op} | ${kind.phase} | ${kind.status} | ${String(kind.code).slice(0, 80)} | ${kind.count} |`);
+        }
     }
     if (report.violations.length) {
         lines.push('', 'Violations:', '');

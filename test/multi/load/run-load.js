@@ -29,7 +29,7 @@ const path = require('node:path');
 const { fetch } = require('undici');
 
 const { ACCESS_TOKEN, dispatcher } = require('../../helpers/instance-fleet');
-const { setupWorkload, traffic, submissionReport, Recorder, sleep } = require('./workload');
+const { setupWorkload, traffic, submissionReport, Recorder, sleep, licenseNote } = require('./workload');
 const { summarize, parsePrometheus } = require('./metrics');
 
 const RESULTS_DIR = path.join(__dirname, '..', 'results');
@@ -90,6 +90,10 @@ async function main() {
     const opts = parseArgs(process.argv.slice(2));
     const startedAt = new Date();
     console.log(`profile=${opts.profile} instances=${opts.instances} accounts=${opts.accounts} servers=${opts.servers} hopDelay=${opts.hopDelay}ms`);
+    const license = licenseNote();
+    if (license) {
+        console.warn(`WARNING ${license}`);
+    }
 
     const workload = await setupWorkload(Object.assign({}, opts, { seed: opts.profile !== 'events' }));
     console.log(`${opts.accounts} accounts connected in ${workload.connectSeconds}s, logs in ${workload.fleet.logDir}`);
