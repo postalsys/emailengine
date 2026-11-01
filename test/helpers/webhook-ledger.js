@@ -148,7 +148,7 @@ async function startLedger(opts = {}) {
             for (const { account, token, injectedAt } of injections) {
                 const found = distinctEmissions(deliveries.get(`${account}\n${token}`) || []);
                 if (!found.length) {
-                    missing.push({ account, token });
+                    missing.push({ account, token, injectedAt });
                     continue;
                 }
                 if (found.length > 1) {

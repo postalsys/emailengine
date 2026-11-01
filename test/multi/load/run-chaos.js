@@ -8,6 +8,7 @@
 //   - no message is announced twice, ever (checked every two seconds)
 //   - no account goes without a live owner for longer than the failover allows
 //   - no instance exits unless the runner made it
+//   - no instance holds more than twice its share while Redis comes back after an outage
 //   - at the end, every message that arrived during the run was announced
 //
 // Every instance's Redis and cluster port go through TCP proxies, so Redis can be slowed or cut and
@@ -17,6 +18,7 @@
 //
 // Options: --instances N --accounts N --servers N --ttl DURATION --experiments LIST|all
 // --mix-minutes N (a seeded random schedule after the experiments) --seed N --label TEXT
+// --log-level LEVEL (of the instances, warn by default)
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
 
@@ -38,7 +40,7 @@ function getDuration(value) {
 const RESULTS_DIR = path.join(__dirname, '..', 'results');
 
 function parseArgs(argv) {
-    const opts = { instances: 3, accounts: 120, servers: 40, ttl: '6s', experiments: 'all', mixMinutes: 0, seed: 1, label: '' };
+    const opts = { instances: 3, accounts: 120, servers: 40, ttl: '6s', experiments: 'all', mixMinutes: 0, seed: 1, label: '', logLevel: 'warn' };
     for (let i = 0; i < argv.length; i++) {
         const key = argv[i].replace(/^--/, '').replace(/-([a-z])/g, (m, c) => c.toUpperCase());
         if (!(key in opts)) {
@@ -71,6 +73,7 @@ async function main() {
         accounts: opts.accounts,
         servers: opts.servers,
         ttl: opts.ttl,
+        logLevel: opts.logLevel,
         seed: true,
         redisProxies: true,
         peerProxies: true,
@@ -197,6 +200,57 @@ async function main() {
         await workload.drainAndStop(instance);
         expectedExits.add(instance.lastExit && instance.lastExit.at);
     };
+    // Samples how the accounts are spread while `until` runs; an instance holding more than twice
+    // an even share of them is a violation (the first instance back after a Redis outage once took
+    // every account)
+    const MAX_SHARE = 2;
+    const watchSpread = async (label, until) => {
+        let done = false;
+        let worst = { ratio: 0 };
+        const sampler = (async () => {
+            while (!done) {
+                const owners = await workload.refreshOwners();
+                const running = fleet.instances.filter(instance => instance.running).length;
+                const counts = new Map();
+                for (const owner of owners.values()) {
+                    if (owner) {
+                        counts.set(owner, (counts.get(owner) || 0) + 1);
+                    }
+                }
+                for (const [id, count] of counts) {
+                    const ratio = count / (accounts.length / Math.max(1, running));
+                    if (ratio > worst.ratio) {
+                        worst = { ratio: Number(ratio.toFixed(2)), instance: id, accounts: count };
+                    }
+                }
+                await sleep(250);
+            }
+        })();
+        try {
+            return await until();
+        } finally {
+            done = true;
+            await sampler;
+            if (worst.ratio > MAX_SHARE) {
+                violate('concentrated', Object.assign({ during: label }, worst));
+            }
+        }
+    };
+    // Gives Redis back to the instances one by one, in a seeded order, the way their clients
+    // reconnect on their own retry schedules. Spaced so every instance is back within one TTL
+    const resumeRedisStaggered = async () => {
+        const proxies = [...workload.redisProxies.values()].sort(() => random() - 0.5);
+        const spacing = Math.floor(ttl / proxies.length);
+        for (const [i, proxy] of proxies.entries()) {
+            if (i) {
+                await sleep(spacing);
+            }
+            proxy.resume();
+        }
+        return spacing;
+    };
+    const runningInstances = () => fleet.instances.filter(instance => instance.running);
+
     const restart = async instance => {
         await instance.start();
         await instance.waitReady();
@@ -291,26 +345,31 @@ async function main() {
         },
 
         async redisOutage() {
-            // Every instance loses Redis for longer than its heartbeat; each fences and rejoins
+            // Every instance loses Redis for longer than its heartbeat; each fences and rejoins,
+            // keeping its own accounts however far apart they get Redis back
             for (const proxy of workload.redisProxies.values()) {
                 proxy.pause();
             }
             await sleep(ttl * 1.5);
-            for (const proxy of workload.redisProxies.values()) {
-                proxy.resume();
-            }
             const t0 = Date.now();
-            await waitFor(
-                async () =>
-                    (await workload.refreshOwners()) &&
-                    fleet.instances.every(
-                        instance =>
-                            !instance.running || instance.logEntries('Rejoined the cluster').length > 0 || instance.logEntries('Joined the cluster').length > 1
-                    ),
-                ttl * 6 + 60000,
-                'every instance to rejoin'
-            );
-            return { pausedMs: ttl * 1.5, rejoinMs: Date.now() - t0 };
+            let spacing;
+            await watchSpread('redisOutage', async () => {
+                spacing = await resumeRedisStaggered();
+                await waitFor(
+                    async () =>
+                        (await workload.refreshOwners()) &&
+                        fleet.instances.every(
+                            instance =>
+                                !instance.running ||
+                                instance.logEntries('Rejoined the cluster').length > 0 ||
+                                instance.logEntries('Joined the cluster').length > 1
+                        ),
+                    ttl * 6 + 60000,
+                    'every instance to rejoin'
+                );
+                await sleep(ttl * 2);
+            });
+            return { pausedMs: ttl * 1.5, resumeSpacingMs: spacing, rejoinMs: Date.now() - t0 };
         },
 
         async redisOutageLong() {
@@ -321,19 +380,134 @@ async function main() {
                 proxy.pause();
             }
             await sleep(ttl * 4);
-            for (const proxy of workload.redisProxies.values()) {
-                proxy.resume();
-            }
             const t0 = Date.now();
+            let spacing;
+            let reownedMs;
+            await watchSpread('redisOutageLong', async () => {
+                spacing = await resumeRedisStaggered();
+                await waitFor(
+                    async () => {
+                        const owners = await workload.refreshOwners();
+                        return accounts.every(account => owners.get(account));
+                    },
+                    ttl * 10 + 60000,
+                    'every account owned again'
+                );
+                reownedMs = Date.now() - t0;
+                await sleep(ttl * 2);
+            });
+            return { pausedMs: ttl * 4, resumeSpacingMs: spacing, reownedMs };
+        },
+
+        async redisPartition() {
+            // One instance loses Redis while the others keep it: they take its accounts once its
+            // heartbeat expires, while its mail connections are still open. It holds back what
+            // it would announce, and drops the accounts once it reaches Redis again
+            const victim = pickVictim();
+            const owned = await ownedBy(victim.id);
+            const proxy = workload.redisProxies.get(victim.id);
+            proxy.pause();
+            const t0 = Date.now();
+            const rehomed = await waitFor(() => movedAway(owned, victim.id), ttl * 6 + 30000, 'the cut off instance accounts to move');
+            await sleep(ttl);
+            proxy.resume();
+            await waitFor(async () => victim.logEntries('Rejoined the cluster').length > 0, ttl * 6 + 30000, 'the cut off instance to rejoin');
+            await waitFor(async () => (await ownedBy(victim.id)).length > 0, ttl * 10 + 30000, 'the cut off instance to own accounts again');
+            return { victim: victim.id, accounts: owned.length, rehomeMs: rehomed - t0 };
+        },
+
+        async redisOverload() {
+            // Redis answers every instance slowly enough that renewals take longer than the
+            // heartbeat interval and some records may expire: nothing may move, since every
+            // instance sees the same slow Redis and none of them is gone
+            const before = await workload.refreshOwners();
+            const delay = Math.floor(ttl / 6);
+            for (const proxy of workload.redisProxies.values()) {
+                proxy.setDelay(delay);
+            }
+            await sleep(20000);
+            for (const proxy of workload.redisProxies.values()) {
+                proxy.setDelay(0);
+            }
+            await sleep(ttl * 2);
+            const after = await workload.refreshOwners();
+            const moved = accounts.filter(account => before.get(account) !== after.get(account));
+            const fenced = runningInstances().filter(instance => instance.logEntries('Lost cluster membership').length > 0).length;
+            if (moved.length) {
+                violate('moved while Redis was slow for everyone', { moved: moved.length, delay });
+            }
+            return { delayEachWayMs: delay, moved: moved.length, instancesThatEverFenced: fenced };
+        },
+
+        async crashTwo() {
+            // Two instances fail together (a node or a zone): the rest take both shares
+            const victims = [];
+            while (victims.length < 2 && runningInstances().length - victims.length > 1) {
+                const victim = pickVictim();
+                if (!victims.includes(victim)) {
+                    victims.push(victim);
+                    victim.outOfRotation = true;
+                }
+            }
+            const owned = [];
+            for (const victim of victims) {
+                owned.push(...(await ownedBy(victim.id)));
+            }
+            await Promise.all(victims.map(killExpected));
+            const t0 = Date.now();
+            const rehomed = await waitFor(
+                async () => {
+                    for (const victim of victims) {
+                        if (!(await movedAway(owned, victim.id))) {
+                            return false;
+                        }
+                    }
+                    return true;
+                },
+                ttl * 6 + 30000,
+                'the accounts of both crashed instances to move'
+            );
+            await Promise.all(victims.map(restart));
+            return { victims: victims.map(victim => victim.id), accounts: owned.length, rehomeMs: rehomed - t0 };
+        },
+
+        async crashDuringHandoff() {
+            // A new instance is taking its share when one of the donors crashes
+            const added = await workload.addInstance();
+            await waitFor(async () => (await ownedBy(added.id)).length > 0, ttl * 6 + 30000, 'the new instance to take accounts');
+            const donors = runningInstances().filter(instance => instance !== added && !instance.outOfRotation);
+            const victim = donors[Math.floor(random() * donors.length)];
+            const owned = await ownedBy(victim.id);
+            await killExpected(victim);
+            const t0 = Date.now();
+            const rehomed = await waitFor(() => movedAway(owned, victim.id), ttl * 6 + 30000, 'the crashed donor accounts to move');
+            await restart(victim);
+            await stopExpected(added);
+            await waitFor(() => movedAway(accounts, added.id), ttl * 4 + 30000, 'the added instance accounts to move');
+            return { added: added.id, victim: victim.id, accounts: owned.length, rehomeMs: rehomed - t0 };
+        },
+
+        async fleetRestart() {
+            // Every instance crashes and the whole fleet starts again at once: every account is
+            // owned again and announces new mail once
+            const instances = runningInstances();
+            await Promise.all(instances.map(killExpected));
+            const t0 = Date.now();
+            await Promise.all(instances.map(instance => instance.start()));
+            await Promise.all(instances.map(instance => instance.waitReady()));
+            const ready = Date.now();
+            // The owner records name the same instance ids before and after, so the check is the
+            // state the API reports, which reads connecting until the new run has connected
             await waitFor(
                 async () => {
-                    const owners = await workload.refreshOwners();
-                    return accounts.every(account => owners.get(account));
+                    const res = await instances[0].request('GET', `/v1/accounts?pageSize=1000`).catch(() => null);
+                    const listed = (res && res.status === 200 && res.body.accounts) || [];
+                    return listed.filter(entry => accounts.includes(entry.account) && entry.state === 'connected').length === accounts.length;
                 },
                 ttl * 10 + 60000,
-                'every account owned again'
+                'every account connected by a restarted instance'
             );
-            return { pausedMs: ttl * 4, reownedMs: Date.now() - t0 };
+            return { instances: instances.length, readyMs: ready - t0, connectedMs: Date.now() - t0 };
         },
 
         async redisCut() {
@@ -379,9 +553,15 @@ async function main() {
         'mailDisconnect',
         'partition',
         'scale',
+        // Restarts every instance, so the ones after it run on a fresh uptime (see licenseNote())
+        'fleetRestart',
         'redisOutage',
         'redisOutageLong',
-        'redisCut'
+        'redisCut',
+        'redisPartition',
+        'redisOverload',
+        'crashTwo',
+        'crashDuringHandoff'
     ];
     const selected = opts.experiments === 'all' ? order : opts.experiments.split(',');
     const results = [];
