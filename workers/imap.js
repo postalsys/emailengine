@@ -783,8 +783,9 @@ class ConnectionHandler {
         return await sendQueuedOnce({
             lock: getSharedLock(),
             redis,
+            logger,
             account: message.account,
-            data: message.data,
+            queueId: message.data && message.data.queueId,
             send: () => accountData.connection.submitMessage(message.data)
         });
     }

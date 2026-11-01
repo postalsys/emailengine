@@ -10,7 +10,7 @@ const assert = require('node:assert').strict;
 
 const { redis } = require('../lib/db');
 const { getSharedLock } = require('../lib/lock-run');
-const { sendQueuedOnce, sentKey } = require('../lib/submit-lock');
+const { sendQueuedOnce, clearSent, sentKey } = require('../lib/submit-lock');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
 const account = `submit-lock-${process.pid}`;
@@ -24,7 +24,7 @@ test('sendQueuedOnce()', async t => {
             lock: getSharedLock(),
             account,
             redis,
-            data: { queueId: 'q1' },
+            queueId: 'q1',
             send: () => new Promise(resolve => (release = resolve))
         });
         // Let the first attempt take the lock
@@ -36,7 +36,7 @@ test('sendQueuedOnce()', async t => {
                 lock: getSharedLock(),
                 account,
                 redis,
-                data: { queueId: 'q1' },
+                queueId: 'q1',
                 send: async () => {
                     sent = true;
                 }
@@ -58,7 +58,7 @@ test('sendQueuedOnce()', async t => {
                 lock: getSharedLock(),
                 redis,
                 account,
-                data: { queueId: 'q1' },
+                queueId: 'q1',
                 send: async () => {
                     sent = true;
                 }
@@ -69,13 +69,31 @@ test('sendQueuedOnce()', async t => {
     });
 
     await t.test('a failed send is not recorded as sent and releases the lock', async () => {
-        const data = { queueId: 'q3' };
-        await assert.rejects(sendQueuedOnce({ lock: getSharedLock(), redis, account, data, send: () => Promise.reject(new Error('421 try later')) }), /421/);
+        const queueId = 'q3';
+        await assert.rejects(sendQueuedOnce({ lock: getSharedLock(), redis, account, queueId, send: () => Promise.reject(new Error('421 try later')) }), /421/);
         assert.equal(await redis.exists(sentKey(account, 'q3')), 0);
-        assert.equal(await sendQueuedOnce({ lock: getSharedLock(), redis, account, data, send: async () => 'sent' }), 'sent');
+        assert.equal(await sendQueuedOnce({ lock: getSharedLock(), redis, account, queueId, send: async () => 'sent' }), 'sent');
+    });
+
+    await t.test('a completed job forgets the marker, a failed marker write does not fail the send', async () => {
+        await clearSent(redis, account, 'q1');
+        assert.equal(await redis.exists(sentKey(account, 'q1')), 0);
+
+        const failingRedis = { exists: redis.exists.bind(redis), set: () => Promise.reject(new Error('READONLY')) };
+        const logged = [];
+        const result = await sendQueuedOnce({
+            lock: getSharedLock(),
+            redis: failingRedis,
+            logger: { error: entry => logged.push(entry.msg) },
+            account,
+            queueId: 'q2',
+            send: async () => 'sent'
+        });
+        assert.equal(result, 'sent');
+        assert.deepEqual(logged, ['Failed to record a sent message']);
     });
 
     await t.test('a submission without a queue entry is sent as before', async () => {
-        assert.equal(await sendQueuedOnce({ lock: getSharedLock(), redis, account, data: {}, send: async () => 'direct' }), 'direct');
+        assert.equal(await sendQueuedOnce({ lock: getSharedLock(), redis, account, send: async () => 'direct' }), 'direct');
     });
 });

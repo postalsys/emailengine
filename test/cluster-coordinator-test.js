@@ -401,8 +401,15 @@ test('ownership life cycle', async t => {
 
             // Only a cold start: an instance that has been running takes a crashed member's
             // accounts at once, whoever else happens to be starting then
-            a.member.started = Date.now() - a.member.orphanGrace * 10;
-            assert.deepEqual(a.member.starting(), []);
+            const d = await startMember('d', { ready: false });
+            try {
+                await a.member.refreshLive();
+                assert.deepEqual(a.member.starting(), ['d'], 'reserved while a is young');
+                a.member.coldStartUntil = Date.now() - 1;
+                assert.deepEqual(a.member.starting(), [], 'not once a has been running a while');
+            } finally {
+                await stopAll(d);
+            }
         } finally {
             await stopAll(a, b, c);
         }

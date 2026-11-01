@@ -44,6 +44,13 @@ const SUBMIT_DELAY = getDuration(readEnvValue('EENGINE_SUBMIT_DELAY') || config.
 
 const { shouldDiscardJob, willBeFinalAttempt, isFinalFailedAttempt, nextAttemptWhileProcessing } = require('../lib/delivery-error');
 const { isAlreadySent } = require('../lib/submit-progress');
+const { clearSent } = require('../lib/submit-lock');
+
+// The send lock's marker is only needed while the job may run again (lib/submit-lock.js)
+const forgetSent = job =>
+    clearSent(redis, job.data.account, job.data.queueId).catch(err =>
+        logger.warn({ msg: 'Failed to clear the sent marker of a completed message', job: job.id, account: job.data.account, err })
+    );
 const { packRpcError, unpackRpcError } = require('../lib/worker-rpc-error');
 
 let callQueue = new Map();
@@ -247,44 +254,45 @@ const submitWorker = new Worker(
             } catch (err) {
                 // ignore
             }
+            await forgetSent(job);
         } catch (err) {
-            if (err.code === 'AlreadySent') {
-                // An earlier attempt sent it, its call failed after the fact (lib/submit-lock.js)
+            // The message went out even though this run failed: an earlier attempt sent it and its
+            // call failed after the fact (AlreadySent, lib/submit-lock.js), or this run failed after
+            // the accept
+            let alreadySent = err.code === 'AlreadySent';
+            if (!alreadySent) {
+                try {
+                    const submitJobEntry = await submitQueue.getJob(job.id);
+                    alreadySent = !!submitJobEntry && isAlreadySent(submitJobEntry.progress);
+                } catch (err) {
+                    logger.error({
+                        msg: 'Failed to fetch job status',
+                        job: job.id,
+                        account: job.data.account,
+                        err
+                    });
+                }
+            }
+            if (alreadySent) {
                 logger.info({
-                    msg: 'Skipping re-run of an already sent message',
+                    msg: 'Message was already sent, counting the job as sent',
                     action: 'submit',
                     queue: job.queue.name,
                     code: 'result_success',
                     job: job.id,
+                    event: job.name,
                     account: job.data.account,
-                    queueId: job.data.queueId
-                });
-                return;
-            }
-            try {
-                const submitJobEntry = await submitQueue.getJob(job.id);
-                if (submitJobEntry && isAlreadySent(submitJobEntry.progress)) {
-                    // SMTP transition succeeded, can accept even if the process yielded in error
-                    logger.trace({
-                        msg: 'Submitted queued message for delivery',
-                        action: 'submit',
-                        queue: job.queue.name,
-                        code: 'result_success',
-                        job: job.id,
-                        event: job.name,
-                        data: job.data,
-                        account: job.data.account,
-                        err
-                    });
-                    return;
-                }
-            } catch (err) {
-                logger.error({
-                    msg: 'Failed to fetch job status',
-                    job: job.id,
-                    account: job.data.account,
+                    queueId: job.data.queueId,
                     err
                 });
+                try {
+                    // The retry wrote 'processing' over the sent state
+                    await job.updateProgress({ status: 'submitted' });
+                } catch (err) {
+                    // ignore
+                }
+                await forgetSent(job);
+                return;
             }
 
             const discardJob = shouldDiscardJob(err, job);
