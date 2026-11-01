@@ -13,8 +13,8 @@ const {
     createRpcServer,
     createRpcClient,
     signRequest,
-    verifyRequest,
-    precheckRequest,
+    verifyHeaders,
+    bodyMatches,
     NonceCache,
     toWire,
     CALL_PATH,
@@ -40,49 +40,59 @@ function signed(overrides = {}) {
     return Object.assign({ method: 'POST', path: CALL_PATH, headers, body, me: 'b', nonces: new NonceCache() }, overrides.request || {});
 }
 
-test('verifyRequest()', async t => {
+test('verifyHeaders() and bodyMatches()', async t => {
     await t.test('accepts a correctly signed call', () => {
-        assert.equal(verifyRequest(SECRET, signed()), null);
+        assert.equal(verifyHeaders(SECRET, signed()), null);
     });
 
     await t.test('refuses a call signed with another key', () => {
-        assert.equal(verifyRequest(crypto.randomBytes(32), signed()), 'bad signature');
+        assert.equal(verifyHeaders(crypto.randomBytes(32), signed()), 'bad signature');
     });
 
     await t.test('refuses a call addressed to another instance', () => {
-        assert.equal(verifyRequest(SECRET, signed({ request: { me: 'c' } })), 'addressed to another instance');
+        assert.equal(verifyHeaders(SECRET, signed({ request: { me: 'c' } })), 'addressed to another instance');
     });
 
     await t.test('refuses a changed body', () => {
-        assert.equal(verifyRequest(SECRET, signed({ request: { body: Buffer.from('other') } })), 'bad signature');
+        const { headers, body } = signed();
+        assert.equal(bodyMatches(headers, body), true);
+        assert.equal(bodyMatches(headers, Buffer.from('other')), false);
     });
 
     await t.test('refuses a replay', () => {
         const request = signed();
-        assert.equal(verifyRequest(SECRET, request), null);
-        assert.equal(verifyRequest(SECRET, request), 'replayed');
+        assert.equal(verifyHeaders(SECRET, request), null);
+        assert.equal(verifyHeaders(SECRET, request), 'replayed');
     });
 
     await t.test('refuses a call from outside the clock window', () => {
-        assert.equal(verifyRequest(SECRET, signed({ now: Date.now() - CLOCK_WINDOW - 1000 })), 'timestamp outside the accepted window');
+        assert.equal(verifyHeaders(SECRET, signed({ now: Date.now() - CLOCK_WINDOW - 1000 })), 'timestamp outside the accepted window');
     });
 
     await t.test('refuses a call without a signature', () => {
         const request = signed();
         delete request.headers['x-ee-cluster-signature'];
-        assert.equal(verifyRequest(SECRET, request), 'missing signature');
+        assert.equal(verifyHeaders(SECRET, request), 'missing signature');
     });
 
-    await t.test('the header checks need no body, so a stranger is refused before it sends one', () => {
-        const headers = signed().headers;
-        assert.equal(precheckRequest({ headers, me: 'b' }), null);
-        assert.equal(precheckRequest({ headers, me: 'c' }), 'addressed to another instance');
-        assert.equal(precheckRequest({ headers: {}, me: 'b' }), 'missing signature');
+    await t.test('the signature is checked from the headers alone, so a stranger is refused before it sends a body', () => {
+        const { headers } = signed();
+        assert.equal(verifyHeaders(SECRET, { method: 'POST', path: CALL_PATH, headers, me: 'b', nonces: new NonceCache() }), null);
+        assert.equal(verifyHeaders(SECRET, { method: 'POST', path: CALL_PATH, headers, me: 'c', nonces: new NonceCache() }), 'addressed to another instance');
+        assert.equal(verifyHeaders(crypto.randomBytes(32), { method: 'POST', path: CALL_PATH, headers, me: 'b', nonces: new NonceCache() }), 'bad signature');
+        assert.equal(verifyHeaders(SECRET, { method: 'POST', path: CALL_PATH, headers: {}, me: 'b', nonces: new NonceCache() }), 'missing signature');
+    });
+
+    await t.test('a body hash header swapped for another one breaks the signature', () => {
+        const request = signed();
+        request.headers['x-ee-cluster-body'] = crypto.createHash('sha256').update('other').digest('hex');
+        request.body = Buffer.from('other');
+        assert.equal(verifyHeaders(SECRET, request), 'bad signature');
     });
 
     await t.test('an unsigned call does not use up nonce space', () => {
         const nonces = new NonceCache();
-        verifyRequest(crypto.randomBytes(32), signed({ request: { nonces } }));
+        verifyHeaders(crypto.randomBytes(32), signed({ request: { nonces } }));
         assert.equal(nonces.entries.size, 0);
     });
 });
@@ -174,6 +184,21 @@ test('calls between two instances', async t => {
         await assert.rejects(stranger.call(peer, { cmd: 'echo' }), err => err.code === 'ClusterAuthFailed');
         assert.equal(handled.length, before);
         await stranger.close();
+    });
+
+    await t.test('a stranger is answered before it has sent its body', async () => {
+        // Signed with another key and a body that never ends: the answer has to come from the headers
+        const headers = signRequest(crypto.randomBytes(32), { method: 'POST', path: CALL_PATH, from: 'a', to: 'b', body: Buffer.alloc(0) });
+        const statusCode = await new Promise((resolve, reject) => {
+            const req = require('node:http').request({ host: '127.0.0.1', port, method: 'POST', path: CALL_PATH, headers }, res => {
+                res.resume();
+                resolve(res.statusCode);
+                req.destroy();
+            });
+            req.on('error', reject);
+            req.write(Buffer.alloc(64 * 1024));
+        });
+        assert.equal(statusCode, 401);
     });
 
     await t.test('a call meant for another instance is refused', async () => {

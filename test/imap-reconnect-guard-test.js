@@ -41,7 +41,7 @@ function makeClient() {
     return new IMAPClient('test-account', {
         logger: noopLogger,
         accountLogger: { enabled: false, log() {} },
-        redis: { del: async () => 1, hget: async () => null, hdel: async () => 1 }
+        redis: { del: async () => 1, hget: async () => null, hdel: async () => 1, accountSetState: async () => [1, false, 1] }
     });
 }
 

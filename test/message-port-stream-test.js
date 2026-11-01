@@ -12,7 +12,7 @@ const assert = require('node:assert').strict;
 const { Readable, PassThrough } = require('node:stream');
 const { MessageChannel } = require('node:worker_threads');
 
-const { MessagePortWritable, MessagePortReadable, pipeToMessagePort, sendToMessagePort } = require('../lib/message-port-stream');
+const { MessagePortWritable, MessagePortReadable, pipeToMessagePort, sendToMessagePort, createPortReadable } = require('../lib/message-port-stream');
 
 function tick() {
     return new Promise(resolve => setImmediate(resolve));
@@ -752,4 +752,17 @@ test('a partial ack counts as progress for the stall timeout', async () => {
         port1.close();
         port2.close();
     }
+});
+
+test('createPortReadable() takes a failure reported before anything consumes the stream', async () => {
+    // The writer fails while the call that started the download is still pending; without the
+    // listener the 'error' event would end the thread
+    const errors = [];
+    const { stream, port } = createPortReadable(err => errors.push(err));
+    port.postMessage({ error: 'mailbox lock lost' });
+    await new Promise(resolve => stream.once('close', resolve));
+    assert.equal(errors.length, 1);
+    assert.match(errors[0].message, /mailbox lock lost/);
+    assert.equal(stream.destroyed, true);
+    port.close();
 });

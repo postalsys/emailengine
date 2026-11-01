@@ -74,7 +74,7 @@ process.env.TF_CPP_MIN_LOG_LEVEL = '2';
 // Cache command line arguments before @zone-eu/wild-config processes them
 const argv = process.argv.slice(2);
 
-const { Worker: WorkerThread, SHARE_ENV, MessageChannel } = require('worker_threads');
+const { Worker: WorkerThread, SHARE_ENV } = require('worker_threads');
 const packageData = require('./package.json');
 const config = require('@zone-eu/wild-config');
 const logger = require('./lib/logger');
@@ -178,7 +178,7 @@ const msgpack = require('./lib/msgpack');
 const { ClusterCoordinator, resolveInstanceId, resolveAddress, notOwnedHereError } = require('./lib/cluster/coordinator');
 const { summarizeFleet } = require('./lib/cluster/fleet');
 const { statusError } = require('./lib/utils/status-error');
-const { MessagePortReadable, MessagePortWritable, sendToMessagePort } = require('./lib/message-port-stream');
+const { MessagePortWritable, sendToMessagePort, createPortReadable } = require('./lib/message-port-stream');
 
 // Initialize default configuration values if not set
 config.service = config.service || {};
@@ -3207,21 +3207,14 @@ function commandTimeout(message) {
 
 /**
  * Passes a download another instance streams back on into the MessagePort a worker of this instance
- * is reading. The destination is built when the port arrives, see the MessagePortWritable constructor
- * @param {MessagePort} port
+ * is reading
+ * @param {MessagePortWritable} writable - On the requester's port, built when the port arrived (see
+ *   the MessagePortWritable constructor); the caller releases it when this fails
  * @param {Function} fetchStream - async () => `{ meta, body }` from a cluster call
  * @returns {Promise<*>} What the remote worker answered alongside the bytes
  */
-async function streamIntoPort(port, fetchStream) {
-    let writable = new MessagePortWritable(port);
-    let result;
-    try {
-        result = await fetchStream();
-    } catch (err) {
-        // Nothing to send; the requester is handed the error and closes its end
-        writable.releaseListeners();
-        throw err;
-    }
+async function streamIntoPort(writable, fetchStream) {
+    let result = await fetchStream();
     sendToMessagePort(writable, result.body, logger);
     return result.meta;
 }
@@ -3230,16 +3223,19 @@ async function streamIntoPort(port, fetchStream) {
  * Runs an account command on the instance that owns the account. A download comes back over the
  * network and is passed on into the MessagePort the requesting worker is reading
  * @param {Object} message - The command
- * @param {Object} [opts] - `{ unowned }`, see ClusterCoordinator.forward()
+ * @param {Object} [opts]
+ * @param {MessagePortWritable} [opts.download] - Where a download goes, see streamIntoPort()
+ * @param {*} [opts.unowned] - See ClusterCoordinator.forward()
  * @returns {Promise<*>}
  */
-async function forwardAccountOperation(message, opts = {}) {
+async function forwardAccountOperation(message, { download, ...forwardOpts } = {}) {
     let timeout = commandTimeout(message);
-    if (STREAM_COMMANDS.has(message.cmd) && message.port) {
-        let { port, ...payload } = message;
-        return await streamIntoPort(port, () => cluster.forward(payload, { timeout, stream: true }));
+    if (download) {
+        // The port stays here; the bytes come back over the network
+        let { port: _port, ...payload } = message;
+        return await streamIntoPort(download, () => cluster.forward(payload, { timeout, stream: true }));
     }
-    return await cluster.forward(message, Object.assign({ timeout }, opts));
+    return await cluster.forward(message, Object.assign({ timeout }, forwardOpts));
 }
 
 /** What an API caller is told when no worker serves an account (the code it has always been) */
@@ -3253,23 +3249,42 @@ const OWNER_SETTLE_WAIT = 5000;
 // IMAP operations - run where the account is served, here or on another instance
 async function commandAccountOperation(worker, message) {
     let deadline = Date.now() + Math.min(OWNER_SETTLE_WAIT, commandTimeout(message) / 2);
-    for (;;) {
-        try {
-            if (assigned.has(message.account)) {
-                return await runLocalAccountOperation(message);
+    let isDownload = STREAM_COMMANDS.has(message.cmd) && !!message.port;
+    // A forwarded download is written into the requester's port from here. Built once and kept
+    // across retries: the requester closing its end (the HTTP client went away) is reported only to
+    // a listener attached at the time, and a retry must not start a transfer nobody reads
+    let download = null;
+    try {
+        for (;;) {
+            try {
+                if (assigned.has(message.account)) {
+                    // The port goes to the worker with the command
+                    download?.releaseListeners();
+                    download = null;
+                    return await runLocalAccountOperation(message);
+                }
+                if (isDownload && !download) {
+                    download = new MessagePortWritable(message.port);
+                }
+                let result = await forwardAccountOperation(message, { download });
+                // The bytes are on their way into the port
+                download = null;
+                return result;
+            } catch (err) {
+                // While an account moves between workers or instances it has no owner that serves it
+                // for a moment. Asking again shortly gets the new owner, or this instance once it took
+                // the account. NotOwnedHere comes from a worker that let the account go before the
+                // command started; a download's port went to it with the command and cannot be resent
+                let unsettled = err.ownerUnsettled || (err.code === 'NotOwnedHere' && !isDownload);
+                if (!unsettled || isClosing || Date.now() >= deadline || download?.destroyed) {
+                    throw err.code === 'NotOwnedHere' ? workerNotAvailableError() : err;
+                }
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
-            return await forwardAccountOperation(message);
-        } catch (err) {
-            // While an account moves between workers or instances it has no owner that serves it
-            // for a moment. Asking again shortly gets the new owner, or this instance once it took
-            // the account. NotOwnedHere comes from a worker that let the account go before the
-            // command started; a download's port went to it with the command and cannot be resent
-            let unsettled = err.ownerUnsettled || (err.code === 'NotOwnedHere' && !(STREAM_COMMANDS.has(message.cmd) && message.port));
-            if (!unsettled || isClosing || Date.now() >= deadline) {
-                throw err.code === 'NotOwnedHere' ? workerNotAvailableError() : err;
-            }
-            await new Promise(resolve => setTimeout(resolve, 100));
         }
+    } finally {
+        // Nothing was sent: the requester is handed the error and closes its end
+        download?.releaseListeners();
     }
 }
 
@@ -3281,13 +3296,19 @@ async function commandAccountOperation(worker, message) {
  * @returns {Promise<Object>}
  */
 async function commandExportFile(worker, message) {
-    return await streamIntoPort(message.port, () =>
-        cluster.callInstance(
-            message.instance,
-            { cmd: 'exportFile', account: message.account, exportId: message.exportId },
-            { timeout: EENGINE_TIMEOUT, stream: true }
-        )
-    );
+    let download = new MessagePortWritable(message.port);
+    try {
+        return await streamIntoPort(download, () =>
+            cluster.callInstance(
+                message.instance,
+                { cmd: 'exportFile', account: message.account, exportId: message.exportId },
+                { timeout: EENGINE_TIMEOUT, stream: true }
+            )
+        );
+    } catch (err) {
+        download.releaseListeners();
+        throw err;
+    }
 }
 
 /**
@@ -4091,11 +4112,11 @@ async function handleClusterCall(message) {
     }
 
     if (STREAM_COMMANDS.has(message.cmd)) {
-        let { port1, port2 } = new MessageChannel();
-        let readable = new MessagePortReadable(port1);
+        // The worker can fail the download before the call answers; the caller's pipeline reports it
+        let { stream: readable, port } = createPortReadable();
         let meta;
         try {
-            meta = await call(assignedWorker, Object.assign({}, message, { port: port2 }), [port2]);
+            meta = await call(assignedWorker, Object.assign({}, message, { port }), [port]);
         } catch (err) {
             readable.destroy();
             throw err;
@@ -4148,7 +4169,7 @@ async function onClusterBroadcast(type, data) {
 /**
  * Creates this instance's cluster coordinator. Joining happens in joinCluster(), once the API is up
  */
-const createCluster = () => {
+const createCluster = async () => {
     let subscriber = redis.duplicate();
     subscriber.on('error', err => logger.warn({ msg: 'Cluster bus connection error', err }));
 
@@ -4161,6 +4182,7 @@ const createCluster = () => {
         ttl: CLUSTER_HEARTBEAT_TTL,
         runIndex,
         version: packageData.version,
+        localSecret: await getSecret(),
         hooks: {
             serve: serveAccounts,
             stopServing: stopServingAccount,
@@ -4411,7 +4433,7 @@ const startApplication = async () => {
     // -- START WORKER THREADS
 
     // Before any worker is spawned: every worker gets the ownership lease the coordinator keeps
-    createCluster();
+    await createCluster();
 
     await startApiWorkers();
 

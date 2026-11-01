@@ -47,6 +47,7 @@ function makeFakePrevClient({ closeThrows } = {}) {
 
 function makeClient() {
     const hSetExistsCalls = [];
+    const stateWrites = [];
     const client = new IMAPClient('test-account', {
         logger: noopLogger,
         accountLogger: { enabled: false, log() {} },
@@ -57,6 +58,10 @@ function makeClient() {
             hSetExists: async (...args) => {
                 hSetExistsCalls.push(args);
                 return 1;
+            },
+            accountSetState: async (key, state, runIndex) => {
+                stateWrites.push({ state, runIndex });
+                return [1, false, 1];
             }
         }
     });
@@ -67,7 +72,7 @@ function makeClient() {
     // Matching initial state keeps the state-sync logic in start()'s finally inert
     client.state = 'unset';
 
-    return { client, hSetExistsCalls };
+    return { client, hSetExistsCalls, stateWrites };
 }
 
 test('IMAPClient.start() previous client cleanup', async t => {
@@ -129,5 +134,16 @@ test('IMAPClient.start() previous client cleanup', async t => {
 
         assert.equal(client.connections.size, 0);
         assert.equal(hSetExistsCalls.filter(args => args[1] === 'connections').length, 1, 'counter must not be written again');
+    });
+
+    await t.test('an account that can not connect records its state, so it does not read as connecting', async () => {
+        // The claim gives the account a new owner run; a state left by an earlier run would stay
+        // `connecting` in the API forever (lib/account/account-state.js)
+        const { client, stateWrites } = makeClient();
+        client.runIndex = 7;
+
+        await client.start();
+
+        assert.deepEqual(stateWrites, [{ state: 'unset', runIndex: '7' }]);
     });
 });

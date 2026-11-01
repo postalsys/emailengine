@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const pathlib = require('path');
+const { PassThrough } = require('stream');
 const msgpack = require('../lib/msgpack');
 const exitWhenStandalone = require('./helpers/exit-standalone');
 
@@ -125,8 +126,13 @@ require.cache[dbPath] = {
     }
 };
 
+// The encryption secret, null as in an instance without EENGINE_SECRET unless a test sets one
+let mockSecret = null;
+const secretPath = require.resolve('../lib/get-secret');
+require.cache[secretPath] = { id: secretPath, filename: secretPath, loaded: true, parent: null, children: [], exports: async () => mockSecret };
+
 // Now safe to import production modules
-const { Export, generateExportId, calculateScore, getExportKey, getExportQueueKey, exportFilePath } = require('../lib/export');
+const { Export, generateExportId, calculateScore, getExportKey, getExportQueueKey, exportFilePath, openExportReadStream } = require('../lib/export');
 const { REDIS_PREFIX } = require('../lib/consts');
 
 test('Export functionality tests', async t => {
@@ -1117,4 +1123,21 @@ test('Export retention is settable', async t => {
         assert.strictEqual(value.exportMaxAge, 86400000);
         assert.strictEqual(value.exportMaxMessageSize, 52428800);
     });
+});
+
+test('an encrypted export whose source fails reports it once, without an unhandled error', async () => {
+    // A missing file, or a remote instance cutting the stream
+    mockSecret = 'test-secret';
+    try {
+        const errors = [];
+        const source = new PassThrough();
+        process.nextTick(() => source.destroy(Object.assign(new Error('gone'), { code: 'ENOENT' })));
+        const stream = await openExportReadStream({ source, isEncrypted: true }, err => errors.push(err));
+        stream.resume();
+        await new Promise(resolve => stream.once('close', resolve));
+        assert.equal(errors.length, 1);
+        assert.equal(errors[0].code, 'ENOENT');
+    } finally {
+        mockSecret = null;
+    }
 });

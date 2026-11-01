@@ -538,3 +538,28 @@ test('forwarding and the bus', async t => {
         }
     });
 });
+
+test('the signing key mixes in the encryption secret', async () => {
+    await cleanup();
+    const keyOf = async localSecret => {
+        const member = new ClusterCoordinator({
+            redis,
+            subscriber: redis,
+            logger,
+            instanceId: 'k',
+            address: null,
+            runIndex: 1,
+            version: 'test',
+            localSecret,
+            hooks: {}
+        });
+        const key = await member.getSecret();
+        await member.rpcClient.close();
+        return key.toString('hex');
+    };
+    const stored = await keyOf(undefined);
+    assert.equal(stored, await redis.get(clusterKeys.secret), 'without one the stored key is used as it is');
+    assert.notEqual(await keyOf('one'), stored, 'the stored key alone does not sign a call');
+    assert.equal(await keyOf('one'), await keyOf('one'));
+    assert.notEqual(await keyOf('one'), await keyOf('two'));
+});

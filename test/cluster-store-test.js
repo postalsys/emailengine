@@ -130,6 +130,19 @@ test('account ownership', async t => {
         assert.deepEqual((await store.claim(redis, [{ account: 'acc', expected: 'dead' }], 'b', 2)).claimed, ['acc']);
     });
 
+    await t.test('a takeover is refused when the expected owner registered again since it was read', async () => {
+        await createAccount('acc');
+        await store.claim(redis, [{ account: 'acc', expected: '' }], 'a', 1);
+        // b read a as dead; a thawed and registered again before b's claim landed
+        await store.register(redis, { id: 'a', token: 'run2', ttl: 5000, record: {} });
+        const outcome = await store.claim(redis, [{ account: 'acc', expected: 'a' }], 'b', 2);
+        assert.deepEqual(outcome.claimed, []);
+        assert.deepEqual(outcome.lost, [{ account: 'acc', owner: 'a' }]);
+        assert.equal(await store.readOwner(redis, 'acc'), 'a');
+        // An instance claiming again what is recorded as its own is not refused by its own record
+        assert.deepEqual((await store.claim(redis, [{ account: 'acc', expected: 'a' }], 'a', 3)).claimed, ['acc']);
+    });
+
     await t.test('a deleted account is not claimed, and a stale owner record is removed', async () => {
         await redis.set(clusterKeys.owner('gone'), 'dead');
         const outcome = await store.claim(redis, [{ account: 'gone', expected: 'dead' }], 'a', 1);
