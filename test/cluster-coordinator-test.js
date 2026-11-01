@@ -210,6 +210,25 @@ test('ownership life cycle', async t => {
         }
     });
 
+    await t.test('a large handoff goes on in paced batches, not one batch per full pass', async () => {
+        // Over twice the per-pass budget moves to the new member
+        const list = await createAccounts(500);
+        const a = await startMember('a');
+        await waitUntil(() => a.served.size === list.length, 20000, 'a serves everything');
+        const b = await startMember('b');
+        try {
+            const started = Date.now();
+            await waitUntil(() => a.served.size + b.served.size === list.length && b.served.size > 200, 20000, 'b takes its share');
+            const took = Date.now() - started;
+            // A full pass every five seconds would need at least ten for three batches
+            assert.ok(took < a.member.fullPassInterval * 1.5, `the handoff took ${took} ms`);
+            await sleep(TTL);
+            await assertSingleOwners(list, [a, b]);
+        } finally {
+            await stopAll(a, b);
+        }
+    });
+
     await t.test('the accounts of a crashed member are taken over once its heartbeat expires', async () => {
         const list = await createAccounts(30);
         const a = await startMember('a');
@@ -338,6 +357,57 @@ test('ownership life cycle', async t => {
         }
     });
 
+    await t.test('the accounts of a live instance of another protocol are left to it', async () => {
+        const list = await createAccounts(10);
+        // A newer release running next to this one during a rolling deploy: it owns every account
+        const store = require('../lib/cluster/store');
+        const record = { protocol: 99, ready: 1, address: '127.0.0.1:1' };
+        assert.ok(await store.register(redis, { id: 'next', token: 'n', ttl: TTL, record }));
+        await store.claim(
+            redis,
+            list.map(account => ({ account, expected: '' })),
+            'next',
+            1
+        );
+        const renew = setInterval(() => store.renew(redis, { id: 'next', token: 'n', ttl: TTL, record }).catch(() => false), TTL / 4);
+        const a = await startMember('a');
+        try {
+            await sleep(TTL * 4);
+            assert.equal(a.served.size, 0, 'nothing of the live instance was claimed');
+            assert.equal(await a.member.peer('next'), null, 'and no call is forwarded to it');
+        } finally {
+            clearInterval(renew);
+            await stopAll(a);
+        }
+    });
+
+    await t.test('on a cold start the first ready member takes only its own share', async () => {
+        const list = await createAccounts(60);
+        const a = await startMember('a', { ready: false });
+        const b = await startMember('b', { ready: false });
+        const c = await startMember('c', { ready: false });
+        try {
+            a.member.setReady(true);
+            // Well within the orphan grace (two TTLs): b and c are starting, so their share waits
+            await sleep(TTL / 2);
+            assert.ok(a.served.size > 5 && a.served.size < 40, `a took ${a.served.size} of ${list.length}`);
+            assert.equal(a.events.filter(([kind]) => kind === 'stop').length, 0, 'nothing had to be handed on');
+
+            b.member.setReady(true);
+            c.member.setReady(true);
+            await waitUntil(allServed(list, [a, b, c]), 15000, 'every account served');
+            await sleep(TTL);
+            await assertSingleOwners(list, [a, b, c]);
+
+            // Only a cold start: an instance that has been running takes a crashed member's
+            // accounts at once, whoever else happens to be starting then
+            a.member.started = Date.now() - a.member.orphanGrace * 10;
+            assert.deepEqual(a.member.starting(), []);
+        } finally {
+            await stopAll(a, b, c);
+        }
+    });
+
     await t.test('a member that is not ready takes nothing and is not handed anything', async () => {
         const list = await createAccounts(20);
         const a = await startMember('a');
@@ -396,6 +466,20 @@ test('forwarding and the bus', async t => {
             assert.equal(b.events.filter(([kind, , account]) => kind === 'call' && account === remote).length, 2, 'one retry');
         } finally {
             await stopAll(a, b);
+        }
+    });
+
+    await t.test('an instance checks that its advertised address leads back to it', async () => {
+        const a = await startMember('a');
+        try {
+            assert.equal(await a.member.checkOwnAddress(), true);
+            const advertised = a.member.address;
+            // An address nothing listens on, as a wrong EENGINE_CLUSTER_ADDRESS would give
+            a.member.address = `127.0.0.1:${await freePort()}`;
+            assert.equal(await a.member.checkOwnAddress(), false);
+            a.member.address = advertised;
+        } finally {
+            await stopAll(a);
         }
     });
 

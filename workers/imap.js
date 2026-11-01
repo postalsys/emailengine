@@ -29,6 +29,8 @@ const getSecret = require('../lib/get-secret');
 const { setWorkerLease } = require('../lib/cluster/lease');
 const { waitUntilStarted } = require('../lib/email-client/connection-readiness');
 const { statusError } = require('../lib/utils/status-error');
+const { getSharedLock } = require('../lib/lock-run');
+const { sendQueuedOnce } = require('../lib/submit-lock');
 
 // Longest a handover waits for the account's running commands before it closes the connection
 const UNASSIGN_DRAIN_WAIT = 5 * 1000;
@@ -776,7 +778,15 @@ class ConnectionHandler {
             throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
-        return await accountData.connection.submitMessage(message.data);
+        // A queued message is sent under a lock, so a retry never runs next to a send still in
+        // progress (lib/submit-lock.js)
+        return await sendQueuedOnce({
+            lock: getSharedLock(),
+            redis,
+            account: message.account,
+            data: message.data,
+            send: () => accountData.connection.submitMessage(message.data)
+        });
     }
 
     async queueMessage(message) {

@@ -158,6 +158,25 @@ test('planPass()', async t => {
         assert.deepEqual(plan.release, []);
     });
 
+    await t.test('leaves an unowned account placed on a starting instance for it, until the grace runs out', () => {
+        // Placed on c among a, b and c; c is registered but still starting
+        const forC = accounts(600).find(account => desiredOwner(account, ['a', 'b', 'c']) === 'c' && desiredOwner(account, ['a', 'b']) === 'a');
+        const unownedSince = new Map();
+        const waiting = planPass(basePlan({ accounts: [forC], live: new Set(['a', 'b', 'c']), starting: ['c'], unownedSince }));
+        assert.deepEqual(waiting.claim, [], 'a cold start does not hand the first ready instance every account');
+
+        const late = planPass(basePlan({ accounts: [forC], live: new Set(['a', 'b', 'c']), starting: ['c'], unownedSince: new Map([[forC, 100000 - 10000]]) }));
+        assert.deepEqual(late.claim, [{ account: forC, expected: '' }], 'an instance that never gets ready does not strand its share');
+    });
+
+    await t.test('never hands an account to an instance that is still starting', () => {
+        const forC = accounts(600).find(account => desiredOwner(account, ['a', 'b', 'c']) === 'c' && desiredOwner(account, ['a', 'b']) === 'a');
+        const plan = planPass(
+            basePlan({ accounts: [forC], owners: new Map([[forC, 'a']]), held: new Set([forC]), live: new Set(['a', 'b', 'c']), starting: ['c'] })
+        );
+        assert.deepEqual(plan, { claim: [], release: [], drop: [] });
+    });
+
     await t.test('an instance that is not taking accounts claims nothing', () => {
         const plan = planPass(basePlan({ accounts: [mine, theirs], candidates: ['b'] }));
         assert.deepEqual(plan.claim, []);

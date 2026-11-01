@@ -248,6 +248,19 @@ const submitWorker = new Worker(
                 // ignore
             }
         } catch (err) {
+            if (err.code === 'AlreadySent') {
+                // An earlier attempt sent it, its call failed after the fact (lib/submit-lock.js)
+                logger.info({
+                    msg: 'Skipping re-run of an already sent message',
+                    action: 'submit',
+                    queue: job.queue.name,
+                    code: 'result_success',
+                    job: job.id,
+                    account: job.data.account,
+                    queueId: job.data.queueId
+                });
+                return;
+            }
             try {
                 const submitJobEntry = await submitQueue.getJob(job.id);
                 if (submitJobEntry && isAlreadySent(submitJobEntry.progress)) {
