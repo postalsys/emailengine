@@ -4190,6 +4190,7 @@ const createCluster = async () => {
             handleCall: handleClusterCall,
             onBroadcast: onClusterBroadcast,
             recordExtras: () => ({ connections: lastConnectionCounts }),
+            backlog: () => unassigned.size,
             onForward: ({ cmd, outcome, seconds }) => {
                 try {
                     metrics.clusterForwardedCalls.inc({ cmd, outcome });

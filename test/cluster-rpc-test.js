@@ -218,3 +218,75 @@ test('calls between two instances', async t => {
         assert.equal(res.status, 404);
     });
 });
+
+test('closing the listener', async t => {
+    // A shutdown waits for close(), and the callers keep their connections open for a minute: one
+    // that was answering a call when close() came must not hold the shutdown up for that long
+    await t.test('a call in flight finishes, and its connection does not keep close() waiting', async () => {
+        const port = await freePort();
+        let release;
+        const server = createRpcServer({
+            instanceId: 'b',
+            getSecret: async () => SECRET,
+            logger,
+            handle: async () => {
+                await new Promise(resolve => {
+                    release = resolve;
+                });
+                return { response: 'done' };
+            }
+        });
+        await server.listen(port, '127.0.0.1');
+        const client = createRpcClient({ instanceId: 'a', getSecret: async () => SECRET });
+        try {
+            const peer = { id: 'b', address: `127.0.0.1:${port}` };
+            const answer = client.call(peer, { cmd: 'slow' }, { timeout: 5000 });
+            while (!release) {
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+            let closed = false;
+            const closing = server.close().then(() => {
+                closed = true;
+            });
+            release();
+            assert.equal(await answer, 'done');
+            await Promise.race([closing, new Promise(resolve => setTimeout(resolve, 2000))]);
+            assert.ok(closed, 'close() resolved once the call was answered');
+        } finally {
+            await client.close();
+        }
+    });
+
+    await t.test('a download that had started before close() does not keep it waiting either', async () => {
+        const port = await freePort();
+        const readable = new Readable({ read() {} });
+        // Headers go out with the first chunk
+        readable.push('hel');
+        const server = createRpcServer({
+            instanceId: 'b',
+            getSecret: async () => SECRET,
+            logger,
+            handle: async () => ({ stream: { meta: { size: 5 }, readable } })
+        });
+        await server.listen(port, '127.0.0.1');
+        const client = createRpcClient({ instanceId: 'a', getSecret: async () => SECRET });
+        try {
+            const { body } = await client.call({ id: 'b', address: `127.0.0.1:${port}` }, { cmd: 'download' }, { timeout: 5000, stream: true });
+            let closed = false;
+            const closing = server.close().then(() => {
+                closed = true;
+            });
+            readable.push('lo');
+            readable.push(null);
+            const chunks = [];
+            for await (const chunk of body) {
+                chunks.push(chunk);
+            }
+            assert.equal(Buffer.concat(chunks).toString(), 'hello');
+            await Promise.race([closing, new Promise(resolve => setTimeout(resolve, 2000))]);
+            assert.ok(closed, 'close() resolved once the download ended');
+        } finally {
+            await client.close();
+        }
+    });
+});

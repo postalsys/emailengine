@@ -70,7 +70,7 @@ async function createAccounts(count) {
 }
 
 /** A coordinator whose "workers" are a set of served accounts, with a log of what happened */
-async function startMember(id, { listen = true, ready = true } = {}) {
+async function startMember(id, { listen = true, ready = true, backlog } = {}) {
     const port = listen ? await freePort() : 0;
     const subscriber = redis.duplicate();
     subscribers.push(subscriber);
@@ -116,7 +116,8 @@ async function startMember(id, { listen = true, ready = true } = {}) {
             },
             onBroadcast(type, data, from) {
                 events.push(['broadcast', type, data, from]);
-            }
+            },
+            backlog
         }
     });
     await member.start(port ? { port, host: '127.0.0.1' } : null);
@@ -124,6 +125,24 @@ async function startMember(id, { listen = true, ready = true } = {}) {
         member.setReady(true);
     }
     return { id, member, served, events };
+}
+
+/**
+ * Holds the next heartbeat of a member until the returned function is called, the way a renewal
+ * waits in the client's queue while Redis cannot be reached
+ */
+function holdHeartbeat(entry) {
+    const tick = entry.member.tick.bind(entry.member);
+    let release;
+    const gate = new Promise(resolve => {
+        release = resolve;
+    });
+    entry.member.tick = async () => {
+        await gate;
+        entry.member.tick = tick;
+        return await tick();
+    };
+    return release;
 }
 
 /** Stops a member the way a crash would: no leave, no further heartbeats */
@@ -535,6 +554,61 @@ test('forwarding and the bus', async t => {
             await assertSingleOwners(list, [a, b]);
         } finally {
             await stopAll(a, b);
+        }
+    });
+});
+
+test('Redis outages and claim pacing', async t => {
+    t.beforeEach(cleanup);
+
+    await t.test("after an outage that expired every record, the member back first takes no other member's accounts", async () => {
+        const list = await createAccounts(60);
+        const a = await startMember('a', { listen: false });
+        const b = await startMember('b', { listen: false });
+        const c = await startMember('c', { listen: false });
+        try {
+            await waitUntil(allServed(list, [a, b, c]), 15000, 'every account served');
+            await sleep(TTL);
+            const before = new Map([a, b, c].map(entry => [entry.id, new Set(entry.served)]));
+
+            const releases = [a, b, c].map(holdHeartbeat);
+            await sleep(TTL * 1.5);
+            await redis.del([a, b, c].map(entry => clusterKeys.instance(entry.id)));
+
+            // Redis is back: a reconnects first, b a while later, c never (it died meanwhile)
+            releases[0]();
+            const aBack = Date.now();
+            await sleep(TTL * 0.75);
+            assert.deepEqual([...a.served].sort(), [...before.get('a')].sort(), 'a took nothing while the others reconnect');
+            releases[1]();
+            await sleep(TTL * 0.5);
+            await crash(c);
+            assert.deepEqual([...b.served].sort(), [...before.get('b')].sort(), 'b kept its accounts');
+            assert.deepEqual([...a.served].sort(), [...before.get('a')].sort(), 'a still took nothing');
+
+            // The accounts of the member that did not come back move once the grace has passed
+            await waitUntil(allServed(list, [a, b]), 15000, 'the dead member accounts taken over');
+            assert.ok(Date.now() - aBack >= TTL * 2 - 500, `taken over ${Date.now() - aBack} ms after a was back`);
+            await assertSingleOwners(list, [a, b]);
+        } finally {
+            await stopAll(a, b);
+        }
+    });
+
+    await t.test('claims are paced by the accounts still waiting for a worker', async () => {
+        const list = await createAccounts(1500);
+        // 700 waiting leaves room for 300 more claims per pass
+        const a = await startMember('a', { listen: false, backlog: () => 700 });
+        try {
+            await waitUntil(() => a.served.size === list.length, 20000, 'every account served');
+            const batches = a.events.filter(event => event[0] === 'serve').map(event => event[1]);
+            assert.ok(batches.length >= 5, `claimed in ${JSON.stringify(batches)}`);
+            assert.ok(
+                batches.every(count => count <= 300),
+                `claimed in ${JSON.stringify(batches)}`
+            );
+        } finally {
+            await stopAll(a);
         }
     });
 });
