@@ -96,7 +96,7 @@ test('planPass()', async t => {
 
     await t.test('claims an unowned account placed here, with an empty expected owner', () => {
         const plan = planPass(basePlan({ accounts: [mine] }));
-        assert.deepEqual(plan, { claim: [{ account: mine, expected: '' }], release: [], drop: [], deferred: 0 });
+        assert.deepEqual(plan, { claim: [{ account: mine, expected: '' }], release: [], drop: [], redirect: [], deferred: 0 });
     });
 
     await t.test('claims an account placed here whose owner is dead, expecting that owner', () => {
@@ -107,8 +107,31 @@ test('planPass()', async t => {
     await t.test('leaves an account placed elsewhere to that instance', () => {
         const unownedSince = new Map();
         const plan = planPass(basePlan({ accounts: [theirs], unownedSince }));
-        assert.deepEqual(plan, { claim: [], release: [], drop: [], deferred: 0 });
+        assert.deepEqual(plan, { claim: [], release: [], drop: [], redirect: [], deferred: 0 });
         assert.equal(unownedSince.get(theirs), 100000, 'starts the grace clock');
+    });
+
+    await t.test('passes on an account handed here that placement gives to another ready instance', () => {
+        const unownedSince = new Map();
+        const plan = planPass(basePlan({ accounts: [theirs], exempt: new Set([theirs]), unownedSince }));
+        assert.deepEqual(plan.redirect, [{ account: theirs, to: 'b' }]);
+        assert.deepEqual(plan.claim, []);
+        assert.equal(unownedSince.get(theirs), 100000, 'still starts the grace clock, in case the hint is lost');
+    });
+
+    await t.test('does not pass on an account that was not handed here, has an owner, or belongs to a starting instance', () => {
+        assert.deepEqual(planPass(basePlan({ accounts: [theirs] })).redirect, [], 'found by a full pass');
+        assert.deepEqual(
+            planPass(basePlan({ accounts: [theirs], exempt: new Set([theirs]), owners: new Map([[theirs, 'gone']]) })).redirect,
+            [],
+            'a dead owner: the ready instance claims it on its own pass'
+        );
+        const starting = accounts(400).find(account => desiredOwner(account, ['a', 'c']) === 'c');
+        assert.deepEqual(
+            planPass(basePlan({ accounts: [starting], exempt: new Set([starting]), live: new Set(['a', 'c']), candidates: ['a'], starting: ['c'] })).redirect,
+            [],
+            'a starting instance claims on its first pass'
+        );
     });
 
     await t.test('takes an account placed elsewhere once nobody claimed it within the grace period', () => {
@@ -120,7 +143,7 @@ test('planPass()', async t => {
 
     await t.test('never claims an account a live instance owns, even one placed here', () => {
         const plan = planPass(basePlan({ accounts: [mine], owners: new Map([[mine, 'b']]) }));
-        assert.deepEqual(plan, { claim: [], release: [], drop: [], deferred: 0 });
+        assert.deepEqual(plan, { claim: [], release: [], drop: [], redirect: [], deferred: 0 });
     });
 
     await t.test('drops an account it serves that a live instance owns', () => {
@@ -130,7 +153,7 @@ test('planPass()', async t => {
 
     await t.test('drops an account it serves whose owner record was removed', () => {
         const plan = planPass(basePlan({ accounts: [mine], held: new Set([mine]) }));
-        assert.deepEqual(plan, { claim: [], release: [], drop: [mine], deferred: 0 });
+        assert.deepEqual(plan, { claim: [], release: [], drop: [mine], redirect: [], deferred: 0 });
     });
 
     await t.test('hands an account over to the instance placement prefers, within the limit', () => {
@@ -143,7 +166,7 @@ test('planPass()', async t => {
 
     await t.test('keeps an account it owns and serves when placement agrees', () => {
         const plan = planPass(basePlan({ accounts: [mine], owners: new Map([[mine, 'a']]), held: new Set([mine]) }));
-        assert.deepEqual(plan, { claim: [], release: [], drop: [], deferred: 0 });
+        assert.deepEqual(plan, { claim: [], release: [], drop: [], redirect: [], deferred: 0 });
     });
 
     await t.test('claims again an account an earlier run with the same id owned', () => {
@@ -174,7 +197,7 @@ test('planPass()', async t => {
         const plan = planPass(
             basePlan({ accounts: [forC], owners: new Map([[forC, 'a']]), held: new Set([forC]), live: new Set(['a', 'b', 'c']), starting: ['c'] })
         );
-        assert.deepEqual(plan, { claim: [], release: [], drop: [], deferred: 0 });
+        assert.deepEqual(plan, { claim: [], release: [], drop: [], redirect: [], deferred: 0 });
     });
 
     await t.test('an instance that is not taking accounts claims nothing', () => {

@@ -15,6 +15,7 @@ const { redis } = require('../lib/db');
 const { REDIS_PREFIX } = require('../lib/consts');
 const { clusterKeys } = require('../lib/cluster/keys');
 const { ClusterCoordinator, resolveAddress, resolveInstanceId } = require('../lib/cluster/coordinator');
+const { desiredOwner } = require('../lib/cluster/placement');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
 const TTL = 2000;
@@ -200,6 +201,17 @@ test('resolveInstanceId() and resolveAddress()', () => {
         }),
         '10.0.0.7:3001'
     );
+});
+
+test('a failed forward warns once per owner and error, and never for an account moving', () => {
+    const member = new ClusterCoordinator({ redis, subscriber: redis, logger, instanceId: 'x', ttl: TTL, runIndex: 1, version: 'test', hooks: {} });
+    assert.equal(member.forwardFailureLevel('a', 'NotOwnedHere'), 'debug');
+    assert.equal(member.forwardFailureLevel('a', 'ClusterUnreachable'), 'warn');
+    assert.equal(member.forwardFailureLevel('a', 'ClusterUnreachable'), 'debug', 'the same failure again');
+    assert.equal(member.forwardFailureLevel('b', 'ClusterUnreachable'), 'warn', 'another owner');
+    assert.equal(member.forwardFailureLevel('a', 'ClusterAuthFailed'), 'warn', 'another error');
+    member.forwardWarnedAt.set('a:ClusterUnreachable', Date.now() - 60 * 1000);
+    assert.equal(member.forwardFailureLevel('a', 'ClusterUnreachable'), 'warn', 'once the window has passed');
 });
 
 test('ownership life cycle', async t => {
@@ -561,6 +573,73 @@ test('forwarding and the bus', async t => {
             // Well before the periodic full pass would find them
             await waitUntil(allServed(list, [a, b]), 4000, 'new accounts served');
             await assertSingleOwners(list, [a, b]);
+        } finally {
+            await stopAll(a, b);
+        }
+    });
+});
+
+test('claim hints worked out from an older view of the members', async t => {
+    t.beforeEach(cleanup);
+
+    // Account records only, left out of the account set: no full pass finds them, so whatever claims
+    // them was told to by a hint
+    async function hintOnlyAccounts(count, prefix) {
+        const list = Array.from({ length: count }, (_, i) => `${prefix}${i}`);
+        for (const account of list) {
+            await redis.hset(clusterKeys.account(account), { account, state: 'init' });
+        }
+        return list;
+    }
+
+    function recordPublished(entry) {
+        const published = [];
+        const publish = entry.member.bus.publish.bind(entry.member.bus);
+        entry.member.bus.publish = (type, data) => {
+            published.push([type, data]);
+            return publish(type, data);
+        };
+        return () => published.filter(([type]) => type === 'claim').map(([, data]) => data);
+    }
+
+    const ownersOf = async list => await redis.mget(list.map(account => clusterKeys.owner(account)));
+
+    await t.test('a hint naming a member placement does not pick is passed on to the one it does, once', async () => {
+        const a = await startMember('a');
+        const b = await startMember('b');
+        const c = await startMember('c');
+        try {
+            await sleep(TTL);
+            const list = (await hintOnlyAccounts(60, 'hint')).filter(account => desiredOwner(account, ['a', 'b', 'c']) === 'c').slice(0, 4);
+            const claims = recordPublished(b);
+
+            // Sent by a member that did not know c was ready yet
+            b.member.onBusMessage('claim', { to: 'b', accounts: list }, 'a');
+
+            await waitUntil(async () => (await ownersOf(list)).every(owner => owner === 'c'), 2000, 'c to claim the accounts');
+            assert.deepEqual(claims(), [{ to: 'c', accounts: list, passedOn: true }]);
+        } finally {
+            await stopAll(a, b, c);
+        }
+    });
+
+    await t.test('a hint that was passed on already is not passed on again', async () => {
+        const a = await startMember('a');
+        const b = await startMember('b');
+        try {
+            await sleep(TTL);
+            const list = (await hintOnlyAccounts(40, 'bounce')).filter(account => desiredOwner(account, ['a', 'b']) === 'a').slice(0, 3);
+            const claims = recordPublished(b);
+
+            b.member.onBusMessage('claim', { to: 'b', accounts: list, passedOn: true }, 'a');
+            await sleep(500);
+
+            assert.deepEqual(claims(), []);
+            assert.deepEqual(
+                await ownersOf(list),
+                list.map(() => null),
+                'left for the grace or the next full pass'
+            );
         } finally {
             await stopAll(a, b);
         }
