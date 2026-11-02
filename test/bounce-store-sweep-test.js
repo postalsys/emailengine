@@ -45,6 +45,23 @@ test('sweepBounceStore()', async t => {
         assert.ok(await redis.get(SWEEP_KEY), 'the completion key is set');
     });
 
+    await t.test('two instances that start together sweep side by side without harm', async () => {
+        // Startup migrations run without a lock: they are idempotent, so a second run at the same
+        // time only repeats the work
+        await redis.sadd(ACCOUNTS_KEY, ...accounts);
+        for (const account of accounts) {
+            await redis.hset(storeKey(account), '<orig@example.com>', 'record');
+        }
+        await redis.hset(bystander, 'field', 'value');
+
+        const counts = await Promise.all([sweepBounceStore({ redis, logger: noopLogger }), sweepBounceStore({ redis, logger: noopLogger })]);
+
+        assert.ok(counts.every(count => count <= accounts.length));
+        assert.equal(await redis.exists(...accounts.map(storeKey)), 0, 'every store is gone');
+        assert.equal(await redis.exists(bystander), 1, 'the other per-account keys stay');
+        assert.ok(await redis.get(SWEEP_KEY), 'the completion key is set');
+    });
+
     await t.test('does not run again once it has completed', async () => {
         await redis.set(SWEEP_KEY, new Date().toISOString());
         await redis.sadd(ACCOUNTS_KEY, accounts[0]);

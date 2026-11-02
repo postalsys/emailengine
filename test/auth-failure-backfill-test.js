@@ -174,6 +174,17 @@ test('backfillAuthFailureDisabled', async t => {
         assert.strictEqual((await imapOf(legacy.accountKey)).disabled, true, 'the backfill records provenance, it does not resume anything');
     });
 
+    await t.test('two instances that start together backfill side by side without harm', async () => {
+        // Startup migrations run without a lock: run again at the same time, the backfill writes the
+        // same markers and keeps the time a real park recorded
+        await redis.del(BACKFILL_KEY);
+        await Promise.all([backfillAuthFailureDisabled({ redis, logger: noopLogger }), backfillAuthFailureDisabled({ redis, logger: noopLogger })]);
+        assert.ok(await markerOf(legacy.accountKey), 'the legacy park keeps its marker');
+        assert.strictEqual(await markerOf(operator.accountKey), null, "the operator's send-only switch is still left alone");
+        assert.strictEqual(await markerOf(marked.accountKey), '2026-08-24T21:00:00.000Z', 'a real park time is still not overwritten');
+        assert.ok(await redis.get(BACKFILL_KEY), 'the completion key is set');
+    });
+
     await t.test('a backfilled account is recoverable by re-authorization', async () => {
         // The call both Account.create() and Account.update() reach through
         // resolveAuthFailureDisable() when fresh credentials arrive. Before the backfill it

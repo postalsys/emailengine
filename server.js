@@ -157,7 +157,6 @@ const { checkRateLimit } = require('./lib/rate-limit');
 const getSecret = require('./lib/get-secret');
 
 const { rejectWorkerCalls } = require('./lib/reject-worker-calls');
-const { getSharedLock, runLocked } = require('./lib/lock-run');
 const {
     pickLeastLoadedWorker,
     rollbackFailedAssignment,
@@ -4412,18 +4411,10 @@ const startApplication = async () => {
         logger.warn({ msg: 'Update check failed', err });
     });
 
-    // Instances that start together take turns; the migrations are idempotent, so a lock that
-    // cannot be had only costs running them side by side
-    await runLocked(
-        getSharedLock(),
-        'startup-migrations',
-        { ttl: 60 * 1000, wait: 5 * 60 * 1000, extend: true },
-        () => runStartupMigrations(),
-        err => {
-            logger.warn({ msg: 'Running the startup migrations without the lock', err });
-            return runStartupMigrations();
-        }
-    );
+    // Not under a lock: every migration is idempotent and records its completion last, so
+    // instances that start together at most repeat each other's work, and none of them waits on
+    // another's start-up (the legacy OAuth2 app migration takes its own lock)
+    await runStartupMigrations();
 
     await applyPreparedSettings();
 
