@@ -56,10 +56,6 @@ const handlers = {
         return true;
     },
 
-    serverCount() {
-        return farm.servers.length;
-    },
-
     /** CPU this process used, so a run can tell when the harness itself was the limit */
     usage() {
         return { cpu: process.cpuUsage(), uptime: process.uptime() };

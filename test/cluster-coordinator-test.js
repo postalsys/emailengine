@@ -768,6 +768,26 @@ test('Redis outages and claim pacing', async t => {
         }
     });
 
+    await t.test('a pass for one account does not push back the claims left over', async () => {
+        // Every pass that ran while claims were left over set their resume time again, so a stream
+        // of single account passes (claim hints, accounts added) kept the next batch from coming
+        const list = await createAccounts(3);
+        const a = await startMember('a');
+        try {
+            await waitUntil(() => a.served.size === list.length, 15000, 'a serves everything');
+            const resumeAt = Date.now() + 60000;
+            a.member.deferredClaims.add('elsewhere');
+            a.member.claimResumeAt = resumeAt;
+            a.member.pendingAccounts.add(list[0]);
+            await a.member.runPass({ full: false });
+            assert.equal(a.member.claimResumeAt, resumeAt);
+        } finally {
+            a.member.deferredClaims.clear();
+            a.member.claimResumeAt = 0;
+            await stopAll(a);
+        }
+    });
+
     await t.test('claims left over follow early when the workers took the earlier ones', async () => {
         const list = await createAccounts(3000);
         // Each resumed batch reads the claims left over, not the whole account list again
@@ -779,7 +799,16 @@ test('Redis outages and claim pacing', async t => {
             }
             return smembers.call(this, key, ...args);
         };
-        // A thousand claims per pass; without the drain each further batch waits a whole CLAIM_PAUSE
+        // And only the next batch of them: reading every claim still left over for each batch
+        // made a takeover of N accounts read about N squared / 2000 owner records
+        let ownerReads = 0;
+        const mget = redis.mget;
+        redis.mget = function (keys, ...args) {
+            const list = Array.isArray(keys) ? keys : [keys, ...args];
+            ownerReads += list.filter(key => String(key).startsWith(clusterKeys.owner(''))).length;
+            return mget.call(this, keys, ...args);
+        };
+        // A thousand claims per pass; without the drain each further batch waits a whole PASS_PAUSE
         const a = await startMember('a', { listen: false, drain: true });
         try {
             await waitUntil(() => a.served.size === list.length, 20000, 'every account served');
@@ -788,8 +817,11 @@ test('Redis outages and claim pacing', async t => {
             const spread = batches[batches.length - 1].at - batches[0].at;
             assert.ok(spread < 1500, `the batches were ${spread} ms apart in all`);
             assert.equal(listReads, 1, 'one full pass');
+            // The full pass reads every owner, each resumed pass one batch of a thousand
+            assert.ok(ownerReads <= list.length + (batches.length - 1) * 1000, `read ${ownerReads} owner records`);
         } finally {
             redis.smembers = smembers;
+            redis.mget = mget;
             await stopAll(a);
         }
     });

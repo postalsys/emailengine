@@ -32,16 +32,12 @@ function newToken() {
 }
 
 /**
- * Starts the receiving server.
- * @param {Object} [opts]
- * @param {number} [opts.port] - 0 picks a free port
- * @param {number} [opts.status] - Status every delivery is answered with
+ * Starts the receiving server, on a free port
  * @returns {Promise<Object>} The ledger
  */
-async function startLedger(opts = {}) {
+async function startLedger() {
     // `${account}\n${token}` -> [{ receivedAt, event, instance, attempt }]
     const deliveries = new Map();
-    const events = [];
     const waiters = new Set();
 
     const notify = () => {
@@ -72,7 +68,6 @@ async function startLedger(opts = {}) {
                     deliveryId: req.headers['x-ee-wh-id'] || null,
                     payload
                 };
-                events.push(entry);
 
                 const subject = (payload.data && payload.data.subject) || '';
                 const match = TOKEN_RE.exec(subject);
@@ -86,32 +81,21 @@ async function startLedger(opts = {}) {
                 notify();
             }
 
-            res.writeHead(opts.status || 200, { 'Content-Type': 'application/json' });
+            res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end('{"ok":true}');
         });
     });
 
-    await new Promise(resolve => server.listen(opts.port || 0, '127.0.0.1', resolve));
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     const port = server.address().port;
 
     return {
         port,
         url: `http://127.0.0.1:${port}/webhooks`,
-        events,
 
         newToken,
         subjectFor(token, label) {
             return `${label || 'Ledger message'} [ledger:${token}]`;
-        },
-
-        /** Every messageNew delivery for an account and token */
-        deliveriesFor(account, token) {
-            return deliveries.get(`${account}\n${token}`) || [];
-        },
-
-        /** Distinct emissions for an account and token: retries of one job count once */
-        emissionsFor(account, token) {
-            return distinctEmissions(deliveries.get(`${account}\n${token}`) || []);
         },
 
         /** Resolves once `predicate()` holds, or rejects after `timeout` */
@@ -157,11 +141,6 @@ async function startLedger(opts = {}) {
                 latencies.push(found[0].receivedAt - injectedAt);
             }
             return { latencies, duplicates, missing };
-        },
-
-        reset() {
-            deliveries.clear();
-            events.length = 0;
         },
 
         async stop() {

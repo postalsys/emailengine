@@ -106,8 +106,7 @@ test('account ownership', async t => {
 
     await t.test('claim with the expected owner, and record the run', async () => {
         await createAccount('acc');
-        const outcome = await store.claim(redis, [{ account: 'acc', expected: '' }], 'a', 7);
-        assert.deepEqual(outcome.claimed, ['acc']);
+        assert.deepEqual(await store.claim(redis, [{ account: 'acc', expected: '' }], 'a', 7), ['acc']);
         assert.equal(await store.readOwner(redis, 'acc'), 'a');
         assert.equal(await redis.hget(clusterKeys.account('acc'), 'ownerRun'), '7');
     });
@@ -118,17 +117,15 @@ test('account ownership', async t => {
             store.claim(redis, [{ account: 'acc', expected: '' }], 'a', 1),
             store.claim(redis, [{ account: 'acc', expected: '' }], 'b', 2)
         ]);
-        assert.equal(first.claimed.length + second.claimed.length, 1);
-        const loser = first.claimed.length ? second : first;
-        assert.equal(loser.lost.length, 1);
-        assert.equal(loser.lost[0].owner, first.claimed.length ? 'a' : 'b', 'the loser learns who won');
+        assert.equal(first.length + second.length, 1);
+        assert.equal(await store.readOwner(redis, 'acc'), first.length ? 'a' : 'b', 'the winner is recorded');
     });
 
     await t.test('takeover from a dead owner needs that owner to still be recorded', async () => {
         await createAccount('acc');
         await store.claim(redis, [{ account: 'acc', expected: '' }], 'dead', 1);
-        assert.deepEqual((await store.claim(redis, [{ account: 'acc', expected: 'other' }], 'b', 2)).claimed, []);
-        assert.deepEqual((await store.claim(redis, [{ account: 'acc', expected: 'dead' }], 'b', 2)).claimed, ['acc']);
+        assert.deepEqual(await store.claim(redis, [{ account: 'acc', expected: 'other' }], 'b', 2), []);
+        assert.deepEqual(await store.claim(redis, [{ account: 'acc', expected: 'dead' }], 'b', 2), ['acc']);
     });
 
     await t.test('a takeover is refused when the expected owner registered again since it was read', async () => {
@@ -136,18 +133,15 @@ test('account ownership', async t => {
         await store.claim(redis, [{ account: 'acc', expected: '' }], 'a', 1);
         // b read a as dead; a thawed and registered again before b's claim landed
         await store.register(redis, { id: 'a', token: 'run2', ttl: 5000, record: {} });
-        const outcome = await store.claim(redis, [{ account: 'acc', expected: 'a' }], 'b', 2);
-        assert.deepEqual(outcome.claimed, []);
-        assert.deepEqual(outcome.lost, [{ account: 'acc', owner: 'a' }]);
+        assert.deepEqual(await store.claim(redis, [{ account: 'acc', expected: 'a' }], 'b', 2), []);
         assert.equal(await store.readOwner(redis, 'acc'), 'a');
         // An instance claiming again what is recorded as its own is not refused by its own record
-        assert.deepEqual((await store.claim(redis, [{ account: 'acc', expected: 'a' }], 'a', 3)).claimed, ['acc']);
+        assert.deepEqual(await store.claim(redis, [{ account: 'acc', expected: 'a' }], 'a', 3), ['acc']);
     });
 
     await t.test('a deleted account is not claimed, and a stale owner record is removed', async () => {
         await redis.set(clusterKeys.owner('gone'), 'dead');
-        const outcome = await store.claim(redis, [{ account: 'gone', expected: 'dead' }], 'a', 1);
-        assert.deepEqual(outcome.gone, ['gone']);
+        assert.deepEqual(await store.claim(redis, [{ account: 'gone', expected: 'dead' }], 'a', 1), []);
         assert.equal(await redis.exists(clusterKeys.owner('gone')), 0);
         assert.equal(await redis.exists(clusterKeys.account('gone')), 0, 'the account record is not recreated');
     });
@@ -166,13 +160,13 @@ test('account ownership', async t => {
         for (const account of list) {
             await createAccount(account);
         }
-        const outcome = await store.claim(
+        const claimed = await store.claim(
             redis,
             list.map(account => ({ account, expected: '' })),
             'a',
             1
         );
-        assert.equal(outcome.claimed.length, list.length);
+        assert.equal(claimed.length, list.length);
         const owners = await store.readOwners(redis, list);
         assert.equal([...owners.values()].filter(owner => owner === 'a').length, list.length);
     });

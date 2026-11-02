@@ -27,7 +27,6 @@ const msgpack = require('../lib/msgpack');
 
 const getSecret = require('../lib/get-secret');
 const { setWorkerLease } = require('../lib/cluster/lease');
-const { waitUntilStarted } = require('../lib/email-client/connection-readiness');
 const { statusError } = require('../lib/utils/status-error');
 const { commandBudget, connectionWaitTimeout, remainingTimeout } = require('../lib/command-budget');
 
@@ -38,10 +37,8 @@ const { sendQueuedOnce } = require('../lib/submit-lock');
 // Longest a handover waits for the account's running commands before it closes the connection
 const UNASSIGN_DRAIN_WAIT = 5 * 1000;
 
-// Longest a command waits for an account connection that is still starting up, and how long after
-// the assignment a connection counts as starting up
+// Longest a command waits for an account connection that is still starting up
 const CONNECTION_START_WAIT = 10 * 1000;
-const CONNECTION_START_WINDOW = 60 * 1000;
 
 // The ownership lease the main thread renews, checked before an account announces anything
 setWorkerLease(workerData && workerData.clusterLease);
@@ -214,6 +211,8 @@ class ConnectionHandler {
         // records its state. When it was lost, what the connection still had pending is the new
         // owner's to announce too. See BaseClient.setStateVal() and notify()
         accountObject.connection.retired = opts.lost ? 'lost' : 'moved';
+        // A command waiting for it to start goes on at once, and finds the account gone
+        accountObject.connection.startSignal.release();
         try {
             await accountObject.connection.close();
         } catch (err) {
@@ -283,8 +282,6 @@ class ConnectionHandler {
             // this worker (e.g. auto-reconnect after OAuth re-auth in an error state).
             call: msg => this.call(msg)
         });
-        // A command right after the assignment waits for the connection to start, see waitForStartingConnection()
-        accountObject.assignedAt = Date.now();
 
         if (!isCurrent()) {
             logger.info({ msg: 'Dropped superseded account assignment', account });
@@ -589,6 +586,7 @@ class ConnectionHandler {
                     msg: 'Account reconnection requested'
                 });
 
+                accountObject.connection.startSignal.release();
                 try {
                     await accountObject.connection.close();
                 } catch (err) {
@@ -1057,18 +1055,21 @@ class ConnectionHandler {
      */
     async waitForStartingConnection(message) {
         const assigned = this.accounts.get(message.account);
-        // Only a connection set up moments ago: one that dropped and keeps reconnecting is also
-        // 'connecting', and a command for it fails at once as it always has
-        if (!assigned || !assigned.assignedAt || Date.now() - assigned.assignedAt > CONNECTION_START_WINDOW) {
+        const connection = assigned && assigned.connection;
+        if (!connection) {
+            return;
+        }
+        // A connection whose state nothing has set yet has not started: the API clients set their
+        // first state in init(), which runs after the connection is registered here
+        if (connection.state !== undefined) {
+            connection.startSignal.note(connection);
+        }
+        if (connection.startSignal.started) {
             return;
         }
         const startedAt = Date.now();
         const budget = commandBudget(message.timeout, EENGINE_TIMEOUT);
-        const getConnection = () => {
-            const accountObject = this.accounts.get(message.account);
-            return accountObject && accountObject.connection;
-        };
-        if (await waitUntilStarted(getConnection, connectionWaitTimeout(budget, CONNECTION_START_WAIT))) {
+        if (await connection.startSignal.wait(connectionWaitTimeout(budget, CONNECTION_START_WAIT))) {
             logger.debug({ msg: 'Command waited for the account connection to start', account: message.account, cmd: message.cmd });
         }
         // The wait leaves half the budget unless the worker stalled meanwhile, and a command with

@@ -9,6 +9,7 @@ const Redis = require('ioredis');
 
 const { startFleet, REDIS_URL } = require('../../helpers/instance-fleet');
 const { startLatencyProxy } = require('../../helpers/latency-proxy');
+const { IDLE_SETTLE, accountPayload, readOwners, redisProxyFor } = require('../../helpers/fleet-scenario');
 const { startCaptureSmtp } = require('../../helpers/capture-smtp');
 const { startHarnessHost } = require('./harness-client');
 const { mapConcurrent } = require('../../../lib/utils/map-concurrent');
@@ -73,7 +74,6 @@ function safeJson(text) {
 class Recorder {
     constructor() {
         this.samples = new Map();
-        this.errors = new Map();
         this.ok = 0;
         this.failed = 0;
         this.failures = [];
@@ -83,17 +83,20 @@ class Recorder {
     }
 
     /**
-     * One failed request in detail, for the report. A few samples are kept of every kind of failure
-     * (operation, status, error code and phase), so a rare kind is not crowded out by a common one
+     * A failed request, counted by kind (operation, hop, status, error code and phase) and kept in
+     * detail for the report: a few samples of every kind, so a rare kind is not crowded out by a
+     * common one
+     * @param {Object} details - `{ op, hop, status, ... }`
      */
     fail(details) {
+        this.failed++;
         let code = details.error || '';
         const body = typeof details.body === 'string' ? safeJson(details.body) : details.body;
         if (body && typeof body === 'object') {
             code = body.code || body.error || code;
         }
-        const key = `${details.op}\t${details.status}\t${code}\t${this.phase}`;
-        const group = this.failureGroups.get(key) || { op: details.op, status: details.status, code, phase: this.phase, count: 0 };
+        const key = `${details.op}\t${details.hop}\t${details.status}\t${code}\t${this.phase}`;
+        const group = this.failureGroups.get(key) || { op: details.op, hop: details.hop, status: details.status, code, phase: this.phase, count: 0 };
         group.count++;
         this.failureGroups.set(key, group);
         if (group.count <= 3 && this.failures.length < 2000) {
@@ -115,19 +118,14 @@ class Recorder {
         return phases;
     }
 
-    record(op, hop, ms, status) {
-        if (status >= 200 && status < 300) {
-            this.ok++;
-            const key = `${op}\t${hop}`;
-            if (!this.samples.has(key)) {
-                this.samples.set(key, []);
-            }
-            this.samples.get(key).push(ms);
-            return;
+    /** A request that succeeded, with its latency */
+    record(op, hop, ms) {
+        this.ok++;
+        const key = `${op}\t${hop}`;
+        if (!this.samples.has(key)) {
+            this.samples.set(key, []);
         }
-        this.failed++;
-        const errorKey = `${op}\t${hop}\t${status}`;
-        this.errors.set(errorKey, (this.errors.get(errorKey) || 0) + 1);
+        this.samples.get(key).push(ms);
     }
 
     report() {
@@ -137,11 +135,15 @@ class Recorder {
             rows.push(Object.assign({ op, hop }, summarize(samples)));
         }
         rows.sort((a, b) => (a.op === b.op ? a.hop.localeCompare(b.hop) : a.op.localeCompare(b.op)));
-        const errors = [...this.errors].map(([key, count]) => {
-            const [op, hop, status] = key.split('\t');
-            return { op, hop, status: /^\d+$/.test(status) ? Number(status) : status, count };
-        });
-        return { rows, errors };
+        // Failures by operation, hop and status, whatever their code and phase
+        const errors = new Map();
+        for (const { op, hop, status, count } of this.failureGroups.values()) {
+            const key = `${op}\t${hop}\t${status}`;
+            const entry = errors.get(key) || { op, hop, status, count: 0 };
+            entry.count += count;
+            errors.set(key, entry);
+        }
+        return { rows, errors: [...errors.values()] };
     }
 }
 
@@ -175,10 +177,8 @@ async function setupWorkload(opts) {
             instance.clusterAddress = `127.0.0.1:${proxy.port}`;
         }
         if (opts.redisProxies) {
-            // resp: the chaos runs fail individual Redis calls through it, see setFaults()
-            const proxy = await startLatencyProxy({ port: 6379, resp: true });
-            redisProxies.set(instance.id, proxy);
-            instance.redisUrl = `redis://127.0.0.1:${proxy.port}/15`;
+            // The chaos runs slow, cut and fail Redis calls through it
+            redisProxies.set(instance.id, await redisProxyFor(instance));
         }
     };
 
@@ -209,8 +209,7 @@ async function setupWorkload(opts) {
         ownerTimer: null,
 
         async refreshOwners() {
-            const values = await redis.mget(accounts.map(account => `cluster:own:${account}`));
-            workload.ownerMap = new Map(accounts.map((account, i) => [account, values[i]]));
+            workload.ownerMap = await readOwners(redis, accounts);
             return workload.ownerMap;
         },
 
@@ -247,13 +246,7 @@ async function setupWorkload(opts) {
         let created = 0;
         await mapConcurrent(accounts, 16, async account => {
             const instance = fleet.pick(created++);
-            const res = await instance.request('POST', '/v1/account', {
-                account,
-                name: account,
-                email: `${account}@example.com`,
-                imap: imap[account],
-                smtp: { host: '127.0.0.1', port: capture.port, secure: false, requireTLS: false, auth: { user: account, pass: 'pass' } }
-            });
+            const res = await instance.request('POST', '/v1/account', accountPayload(account, imap[account], { smtpPort: capture.port }));
             if (res.status !== 200) {
                 throw new Error(`Creating ${account}: ${res.status} ${JSON.stringify(res.body)}`);
             }
@@ -277,8 +270,7 @@ async function setupWorkload(opts) {
         }
         workload.connectSeconds = (Date.now() - connectStarted) / 1000;
 
-        // IDLE starts after 15 quiet seconds; only then is a new message noticed at once
-        await sleep(17000);
+        await sleep(IDLE_SETTLE);
 
         if (opts.seed) {
             const seeded = new Set();
@@ -372,23 +364,32 @@ function traffic(workload, recorder, running) {
                                 timeout: 30000
                             });
                             const truncated = entry.raw && res.status === 200 && res.body.length !== ATTACHMENT.length;
-                            recorder.record(entry.op, hop, res.ms, truncated ? 'truncated' : res.status);
-                            if (res.status !== 200 || truncated) {
+                            if (res.status === 200 && !truncated) {
+                                recorder.record(entry.op, hop, res.ms);
+                            } else {
                                 const body = Buffer.isBuffer(res.body) ? res.body.toString().slice(0, 200) : res.body;
                                 recorder.fail({
                                     op: entry.op,
+                                    hop,
                                     account,
                                     instance: instance.id,
                                     owner: workload.ownerMap.get(account),
-                                    status: res.status,
+                                    status: truncated ? 'truncated' : res.status,
                                     body,
                                     headers: res.status >= 500 ? res.headers : undefined
                                 });
                             }
                         } catch (err) {
                             const status = err.name === 'TimeoutError' ? 'timeout' : 'network';
-                            recorder.record(entry.op, hop, 0, status);
-                            recorder.fail({ op: entry.op, account, instance: instance.id, owner: workload.ownerMap.get(account), status, error: err.message });
+                            recorder.fail({
+                                op: entry.op,
+                                hop,
+                                account,
+                                instance: instance.id,
+                                owner: workload.ownerMap.get(account),
+                                status,
+                                error: err.message
+                            });
                         }
                     }
                 })
@@ -426,16 +427,15 @@ function traffic(workload, recorder, running) {
                         subject: `Load submit ${token}`,
                         text: 'Load'
                     });
-                    recorder.record('submit', hop, res.ms, res.status);
                     if (res.status === 200) {
+                        recorder.record('submit', hop, res.ms);
                         this.submitted++;
                         this.submissions.set(token, true);
                     } else {
-                        recorder.fail({ op: 'submit', account, instance: instance.id, status: res.status, body: res.body });
+                        recorder.fail({ op: 'submit', hop, account, instance: instance.id, status: res.status, body: res.body });
                     }
                 } catch (err) {
-                    recorder.record('submit', hop, 0, 'network');
-                    recorder.fail({ op: 'submit', account, instance: instance.id, status: 'network', error: err.message });
+                    recorder.fail({ op: 'submit', hop, account, instance: instance.id, status: 'network', error: err.message });
                 }
                 await sleep(1000 / perSecond);
             }

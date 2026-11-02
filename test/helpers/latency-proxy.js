@@ -55,10 +55,8 @@ class Direction {
 
 /**
  * @param {Object} opts
- * @param {string} [opts.host] - Target host, 127.0.0.1 by default
- * @param {number} opts.port - Target port
+ * @param {number} opts.port - Target port on 127.0.0.1
  * @param {number} [opts.delay] - Milliseconds added in each direction
- * @param {number} [opts.listenPort] - 0 picks a free port
  * @param {boolean} [opts.resp] - The target is Redis: parse the traffic so setFaults() can fail commands
  * @returns {Promise<Object>} The proxy
  */
@@ -74,7 +72,7 @@ async function startLatencyProxy(opts) {
     const decide = faultDecider(proxy.faults);
 
     const server = net.createServer(client => {
-        const upstream = net.connect(opts.port, opts.host || '127.0.0.1');
+        const upstream = net.connect(opts.port, '127.0.0.1');
         const up = new Direction(upstream, proxy);
         const down = new Direction(client, proxy);
         const pair = { client, upstream, up, down };
@@ -102,14 +100,10 @@ async function startLatencyProxy(opts) {
         upstream.on('close', close);
     });
 
-    await new Promise(resolve => server.listen(opts.listenPort || 0, '127.0.0.1', resolve));
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     proxy.port = server.address().port;
 
     return Object.assign(proxy, {
-        get connections() {
-            return pairs.size;
-        },
-
         setDelay(ms) {
             proxy.delay = Math.max(0, Number(ms) || 0);
         },

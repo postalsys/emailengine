@@ -13,8 +13,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 const { startScenario, waitUntil, sleep, assertDeliveredOnce, IDLE_SETTLE } = require('./helpers');
-const { REDIS_URL } = require('../helpers/instance-fleet');
-const { startLatencyProxy } = require('../helpers/latency-proxy');
+const { redisProxyFor } = require('../helpers/fleet-scenario');
 // Seeded, so a failure can be replayed with the same faults
 const { createRandom } = require('../helpers/property');
 
@@ -26,11 +25,7 @@ test('Redis refusing writes for a while (OOM): every message is still announced 
         fleet: {
             prepare: async fleet => {
                 for (const instance of fleet.instances) {
-                    const target = new URL(REDIS_URL);
-                    const proxy = await startLatencyProxy({ port: Number(target.port) || 6379, resp: true });
-                    proxies.push(proxy);
-                    target.port = String(proxy.port);
-                    instance.redisUrl = target.toString();
+                    proxies.push(await redisProxyFor(instance));
                 }
             }
         }
@@ -65,9 +60,8 @@ test('Redis refusing writes for a while (OOM): every message is still announced 
     await assertDeliveredOnce(scenario, injections, 150000);
 
     for (const instance of scenario.fleet.instances) {
-        const fatal = [...instance.logEntries('uncaughtException'), ...instance.logEntries('unhandledRejection')];
         assert.deepEqual(
-            fatal.map(entry => entry.err && entry.err.message),
+            instance.fatalEntries().map(entry => entry.err && entry.err.message),
             [],
             `no thread of ${instance.id} died of an unhandled error`
         );

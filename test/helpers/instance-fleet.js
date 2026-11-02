@@ -58,8 +58,6 @@ function portIsFree(port) {
     });
 }
 
-const flushFleetDatabase = (redisUrl = REDIS_URL) => flushRedis(redisUrl);
-
 class FleetInstance {
     constructor(fleet, index) {
         this.fleet = fleet;
@@ -71,7 +69,6 @@ class FleetInstance {
         this.logPath = path.join(fleet.logDir, `${this.id}.log`);
         this.child = null;
         this.frozen = false;
-        this.starts = 0;
         // Set by the test to route this instance's Redis traffic through a latency proxy
         this.redisUrl = fleet.redisUrl;
     }
@@ -85,29 +82,23 @@ class FleetInstance {
     }
 
     env() {
-        return Object.assign(
-            {},
-            process.env,
-            {
-                NODE_ENV: 'test',
-                EENGINE_REDIS: this.redisUrl,
-                EENGINE_PORT: String(this.apiPort),
-                EENGINE_HOST: '127.0.0.1',
-                EENGINE_WORKERS: String(this.fleet.imapWorkers),
-                EENGINE_INSTANCE_ID: this.id,
-                EENGINE_CLUSTER_PORT: String(this.clusterPort),
-                EENGINE_CLUSTER_HOST: '127.0.0.1',
-                EENGINE_CLUSTER_ADDRESS: this.fleet.clusterAddressFor(this),
-                EENGINE_CLUSTER_HEARTBEAT_TTL: this.fleet.heartbeatTtl,
-                EENGINE_LOG_LEVEL: this.fleet.logLevel,
-                EENGINE_LOG_RAW: 'false',
-                EENGINE_SETTINGS: JSON.stringify(this.fleet.settings),
-                // Separate disks, as separate pods have: an export file is only on its writer
-                EENGINE_EXPORT_PATH: path.join(this.fleet.logDir, `${this.id}-exports`)
-            },
-            this.fleet.extraEnv,
-            this.extraEnv || {}
-        );
+        return Object.assign({}, process.env, {
+            NODE_ENV: 'test',
+            EENGINE_REDIS: this.redisUrl,
+            EENGINE_PORT: String(this.apiPort),
+            EENGINE_HOST: '127.0.0.1',
+            EENGINE_WORKERS: String(this.fleet.imapWorkers),
+            EENGINE_INSTANCE_ID: this.id,
+            EENGINE_CLUSTER_PORT: String(this.clusterPort),
+            EENGINE_CLUSTER_HOST: '127.0.0.1',
+            EENGINE_CLUSTER_ADDRESS: this.fleet.clusterAddressFor(this),
+            EENGINE_CLUSTER_HEARTBEAT_TTL: this.fleet.heartbeatTtl,
+            EENGINE_LOG_LEVEL: this.fleet.logLevel,
+            EENGINE_LOG_RAW: 'false',
+            EENGINE_SETTINGS: JSON.stringify(this.fleet.settings),
+            // Separate disks, as separate pods have: an export file is only on its writer
+            EENGINE_EXPORT_PATH: path.join(this.fleet.logDir, `${this.id}-exports`)
+        });
     }
 
     async start() {
@@ -129,7 +120,6 @@ class FleetInstance {
         this.frozen = false;
         // As a load balancer would: no traffic until the readiness check passes (waitReady())
         this.outOfRotation = true;
-        this.starts++;
         running.add(child);
         child.unref();
 
@@ -226,6 +216,15 @@ class FleetInstance {
         return { status: res.status, body: payload, headers: Object.fromEntries(res.headers), ms: performance.now() - started };
     }
 
+    /**
+     * What reached a global handler (lib/logger.js) in any thread of this instance. Such an error
+     * ends the thread it happened in, an IMAP worker say, without ending the instance
+     * @returns {Object[]} Parsed log entries
+     */
+    fatalEntries() {
+        return [...this.logEntries('uncaughtException'), ...this.logEntries('unhandledRejection')];
+    }
+
     /** Parsed pino lines of this instance's log, optionally filtered by message text */
     logEntries(msg) {
         let text;
@@ -250,26 +249,15 @@ class FleetInstance {
         }
         return entries;
     }
-
-    logTail(lines = 40) {
-        try {
-            return fs.readFileSync(this.logPath, 'utf8').trim().split('\n').slice(-lines).join('\n');
-        } catch (err) {
-            return '';
-        }
-    }
 }
 
 /**
  * @param {Object} opts
  * @param {number} opts.size - Instances to start
- * @param {Object} [opts.settings] - Prepared settings, merged over the fleet defaults
  * @param {string} [opts.webhookUrl] - Where every instance delivers webhooks
  * @param {number} [opts.imapWorkers] - IMAP worker threads per instance
  * @param {string} [opts.heartbeatTtl] - Cluster heartbeat TTL, short so tests move quickly
- * @param {Object} [opts.env] - Extra environment for every instance
- * @param {boolean} [opts.flush] - Flush the fleet database first (default true)
- * @param {boolean} [opts.wait] - Wait for every instance to be ready (default true)
+ * @param {string} [opts.logLevel]
  * @param {Function} [opts.prepare] - async (fleet) before any instance starts
  * @returns {Promise<Object>} The fleet
  */
@@ -278,22 +266,18 @@ async function startFleet(opts) {
 
     const fleet = {
         logDir,
-        redisUrl: opts.redisUrl || REDIS_URL,
+        redisUrl: REDIS_URL,
         imapWorkers: opts.imapWorkers || 2,
         heartbeatTtl: opts.heartbeatTtl || '4s',
         logLevel: opts.logLevel || 'info',
-        extraEnv: opts.env || {},
-        settings: Object.assign(
-            {
-                serviceUrl: `http://127.0.0.1:${BASE_PORT}`,
-                webhooksEnabled: !!opts.webhookUrl,
-                webhooks: opts.webhookUrl || '',
-                webhookEvents: ['*'],
-                notifyText: true,
-                sentryEnabled: false
-            },
-            opts.settings
-        ),
+        settings: {
+            serviceUrl: `http://127.0.0.1:${BASE_PORT}`,
+            webhooksEnabled: !!opts.webhookUrl,
+            webhooks: opts.webhookUrl || '',
+            webhookEvents: ['*'],
+            notifyText: true,
+            sentryEnabled: false
+        },
         instances: [],
         // Peers reach an instance at its cluster port unless a test reroutes it through a proxy
         clusterAddressFor: instance => (instance.clusterAddress ? instance.clusterAddress : `127.0.0.1:${instance.clusterPort}`)
@@ -331,30 +315,19 @@ async function startFleet(opts) {
 
         async stopAll() {
             await Promise.all(fleet.instances.map(instance => instance.kill()));
-        },
-
-        /** Log tails of every instance, for a failure message */
-        describe() {
-            return fleet.instances.map(instance => `--- ${instance.id} (${instance.logPath})\n${instance.logTail(25)}`).join('\n');
         }
     });
 
-    if (opts.flush !== false) {
-        await flushFleetDatabase(fleet.redisUrl);
-    }
+    await flushRedis(fleet.redisUrl);
 
     // A chance to reroute instances (latency proxies) before anything starts
     if (opts.prepare) {
         await opts.prepare(fleet);
     }
 
-    if (opts.wait !== false) {
-        await fleet.startAll();
-    } else {
-        await Promise.all(fleet.instances.map(instance => instance.start()));
-    }
+    await fleet.startAll();
 
     return fleet;
 }
 
-module.exports = { startFleet, flushFleetDatabase, ACCESS_TOKEN, REDIS_URL, REDIS_DB, dispatcher };
+module.exports = { startFleet, ACCESS_TOKEN, REDIS_URL, dispatcher };

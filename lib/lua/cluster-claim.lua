@@ -26,10 +26,9 @@ ARGV:
   [3] ownerRun - Run index of the claiming instance
 
 Returns:
-  {1, owner} when claimed
-  {0, current} when the record changed or the expected owner is alive again, current being the
-     owner it holds now
-  {-1, ''} when the account no longer exists; a stale owner record is removed
+  1 when claimed
+  0 when the record changed or the expected owner is alive again
+  -1 when the account no longer exists; a stale owner record is removed
 --]]
 
 local ownerKey = KEYS[1];
@@ -38,19 +37,19 @@ local expectedKey = KEYS[3];
 
 local current = redis.call("GET", ownerKey) or "";
 if current ~= ARGV[1] then
-    return {0, current};
+    return 0;
 end;
 
 if current ~= "" and current ~= ARGV[2] and redis.call("EXISTS", expectedKey) == 1 then
-    return {0, current};
+    return 0;
 end;
 
 if redis.call("EXISTS", accountKey) == 0 then
     redis.call("DEL", ownerKey);
-    return {-1, ""};
+    return -1;
 end;
 
 redis.call("SET", ownerKey, ARGV[2]);
 redis.call("HSET", accountKey, "ownerRun", ARGV[3]);
 
-return {1, ARGV[2]};
+return 1;

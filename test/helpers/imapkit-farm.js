@@ -34,10 +34,9 @@ const STORAGE = {
  * @param {Object} opts
  * @param {string[]} opts.accounts - EmailEngine account ids, in placement order
  * @param {number} [opts.servers] - Server count, defaults to one per account
- * @param {Object[]} [opts.script] - ImapKit script rules every server starts with
  * @returns {Promise<Object>} The farm
  */
-async function startFarm({ accounts, servers, script }) {
+async function startFarm({ accounts, servers }) {
     const serverCount = Math.max(1, Math.min(servers || accounts.length, accounts.length));
     const placement = new Map();
     const usersPerServer = Array.from({ length: serverCount }, () => ({}));
@@ -55,7 +54,7 @@ async function startFarm({ accounts, servers, script }) {
             plugins: PLUGINS,
             users: usersPerServer[i],
             storage: JSON.parse(JSON.stringify(STORAGE)),
-            script: script || []
+            script: []
         });
         const port = await server.start(0, '127.0.0.1');
         farmServers.push({ server, port, index: i });
@@ -157,4 +156,4 @@ async function startFarm({ accounts, servers, script }) {
     };
 }
 
-module.exports = { startFarm, PASSWORD };
+module.exports = { startFarm };

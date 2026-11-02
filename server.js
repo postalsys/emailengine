@@ -1679,12 +1679,8 @@ let spawnWorker = async (type, opts, slot) => {
                 }
 
                 case 'settings':
-                    fanOutSettings(message);
-                    // The other instances' workers keep the same in-memory state. Only the names go
-                    // out: the values include secrets that Redis holds encrypted, and anything
-                    // subscribed to the channel (a replica, a monitoring user) would read them in the
-                    // clear. Each instance reads them back from Redis, see onClusterBroadcast()
-                    cluster.broadcast('settings', { keys: Object.keys(message.data || {}) });
+                    // The other instances' workers keep the same in-memory state
+                    everywhere('settings', message).catch(err => logger.error({ msg: 'Failed to dispatch settings change', err }));
                     return;
 
                 case 'change':
@@ -1697,9 +1693,8 @@ let spawnWorker = async (type, opts, slot) => {
                             break;
                         }
                         default:
-                            fanOutChange(message);
                             // A live feed on another instance's API is as interested as one here
-                            cluster.broadcast('change', message);
+                            everywhere('change', message).catch(err => logger.error({ msg: 'Failed to dispatch change event', err }));
                     }
                     break;
             }
@@ -3152,8 +3147,7 @@ async function commandForwardToAccountWorker(worker, message) {
 
 async function commandReloadServer(worker, message) {
     // Every instance runs its own listeners
-    cluster.broadcast('reloadServer', { cmd: message.cmd });
-    return await reloadServerLocal(message);
+    return await everywhere('reloadServer', message);
 }
 
 async function reloadServerLocal(message) {
@@ -3177,8 +3171,7 @@ async function reloadServerLocal(message) {
 
 async function commandReloadCertificates(worker, message) {
     // The certificate is stored in Redis; every instance's listeners have to pick it up
-    cluster.broadcast('reloadCertificates', { cmd: message.cmd });
-    return reloadCertificatesLocal(message);
+    return await everywhere('reloadCertificates', message);
 }
 
 function reloadCertificatesLocal(message) {
@@ -3346,8 +3339,7 @@ async function commandSubconnections(worker, message) {
 
 async function commandGooglePubSub(worker, message) {
     // Every instance runs webhook workers that pull Pub/Sub messages
-    cluster.broadcast('googlePubSub', message);
-    return await googlePubSubLocal(message);
+    return await everywhere('googlePubSub', message);
 }
 
 async function googlePubSubLocal(message) {
@@ -4124,46 +4116,64 @@ async function handleClusterCall(message) {
 }
 
 /**
- * What another instance broadcast. Each type is re-dispatched to this instance's workers the same
- * way as when it originates here, without broadcasting it again
+ * What runs on every instance. A type is sent on the bus as `wire(message)` and run here with
+ * `local(message)`; another instance checks it with `accepts(data)` and runs `received(data)`,
+ * which is `local` unless the wire form differs. Redis pub/sub loses messages during a disconnect,
+ * so none of these may be the only way the others learn something (see lib/cluster/bus.js)
+ */
+const CLUSTER_BROADCASTS = {
+    settings: {
+        // Names only: the values include secrets that Redis holds encrypted, and anything
+        // subscribed to the channel (a replica, a monitoring user) would read them in the clear.
+        // Each instance reads them back and decrypts them with its own secret
+        wire: message => ({ keys: Object.keys(message.data || {}) }),
+        accepts: data => Array.isArray(data.keys),
+        local: fanOutSettings,
+        received: async data => {
+            const keys = data.keys.filter(key => typeof key === 'string');
+            fanOutSettings({ cmd: 'settings', data: keys.length ? await settings.getMulti(...keys) : {} });
+        }
+    },
+    change: { accepts: data => data.cmd === 'change', local: fanOutChange },
+    reloadServer: { wire: message => ({ cmd: message.cmd }), accepts: data => LISTENER_RELOAD_COMMANDS.includes(data.cmd), local: reloadServerLocal },
+    reloadCertificates: {
+        wire: message => ({ cmd: message.cmd }),
+        accepts: data => CERTIFICATE_RELOAD_COMMANDS.includes(data.cmd),
+        local: reloadCertificatesLocal
+    },
+    googlePubSub: { accepts: data => PUBSUB_COMMANDS.includes(data.cmd), local: googlePubSubLocal },
+    // Received only: commandDeleteAccount() broadcasts it itself, and only when this instance did not
+    // serve the account, so it has no `local` and never goes through everywhere()
+    accountDeleted: { accepts: data => typeof data.account === 'string', received: data => deleteLocalAccount({ cmd: 'delete', account: data.account }) }
+};
+
+/**
+ * Runs a broadcast type here and on every other instance
+ * @param {string} type - A key of CLUSTER_BROADCASTS
+ * @param {Object} message
+ * @returns {Promise<*>} What the local run answers
+ */
+async function everywhere(type, message) {
+    const entry = CLUSTER_BROADCASTS[type];
+    if (!entry || !entry.local) {
+        throw new Error(`${type} is not a broadcast that runs everywhere`);
+    }
+    cluster.broadcast(type, entry.wire ? entry.wire(message) : message);
+    return await entry.local(message);
+}
+
+/**
+ * What another instance broadcast, run the way it runs when it originates here and not
+ * broadcast again
  * @param {string} type
  * @param {*} data
  */
 async function onClusterBroadcast(type, data) {
-    switch (type) {
-        case 'settings': {
-            // Names only (see the sender in spawnWorker()); the values are read here and decrypted
-            // with this instance's own secret
-            const keys = data && Array.isArray(data.keys) ? data.keys.filter(key => typeof key === 'string') : [];
-            fanOutSettings({ cmd: 'settings', data: keys.length ? await settings.getMulti(...keys) : {} });
-            return;
-        }
-        case 'change':
-            if (data && data.cmd === 'change') {
-                fanOutChange(data);
-            }
-            return;
-        case 'reloadServer':
-            if (data && LISTENER_RELOAD_COMMANDS.includes(data.cmd)) {
-                await reloadServerLocal(data);
-            }
-            return;
-        case 'reloadCertificates':
-            if (data && CERTIFICATE_RELOAD_COMMANDS.includes(data.cmd)) {
-                reloadCertificatesLocal(data);
-            }
-            return;
-        case 'googlePubSub':
-            if (data && PUBSUB_COMMANDS.includes(data.cmd)) {
-                await googlePubSubLocal(data);
-            }
-            return;
-        case 'accountDeleted':
-            if (data && typeof data.account === 'string') {
-                deleteLocalAccount({ cmd: 'delete', account: data.account });
-            }
-            return;
+    const entry = Object.prototype.hasOwnProperty.call(CLUSTER_BROADCASTS, type) ? CLUSTER_BROADCASTS[type] : null;
+    if (!entry || !data || typeof data !== 'object' || !entry.accepts(data)) {
+        return;
     }
+    await (entry.received || entry.local)(data);
 }
 
 /**

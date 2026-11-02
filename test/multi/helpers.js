@@ -7,14 +7,11 @@ const Redis = require('ioredis');
 const { startFleet, REDIS_URL } = require('../helpers/instance-fleet');
 const { startFarm } = require('../helpers/imapkit-farm');
 const { startLedger } = require('../helpers/webhook-ledger');
+const { IDLE_SETTLE, accountPayload, readOwners } = require('../helpers/fleet-scenario');
 
 const assert = require('node:assert').strict;
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-// ImapFlow starts IDLE after 15 seconds of quiet, and only an idling session hears about a new
-// message at once. A message injected sooner is still found, just at the next command
-const IDLE_SETTLE = 17000;
 
 // One owner opens one session per account against the farm
 const SESSIONS_PER_OWNER = 1;
@@ -64,18 +61,10 @@ async function startScenario(opts) {
         accounts,
         redis,
 
-        async createAccounts(list = accounts, via = fleet.instances[0]) {
+        async createAccounts(list = accounts) {
+            const via = fleet.instances[0];
             for (const account of list) {
-                const payload = {
-                    account,
-                    name: `Fleet ${account}`,
-                    email: `${account}@example.com`,
-                    imap: farm.imapSettings(account)
-                };
-                if (opts.smtpPort) {
-                    // A capture server (test/helpers/capture-smtp.js); it speaks no TLS
-                    payload.smtp = { host: '127.0.0.1', port: opts.smtpPort, secure: false, requireTLS: false, auth: { user: account, pass: 'pass' } };
-                }
+                const payload = accountPayload(account, farm.imapSettings(account), { name: `Fleet ${account}`, smtpPort: opts.smtpPort });
                 const res = await via.request('POST', '/v1/account', payload);
                 if (res.status !== 200) {
                     throw new Error(`Creating ${account} failed with ${res.status}: ${JSON.stringify(res.body)}`);
@@ -102,8 +91,7 @@ async function startScenario(opts) {
 
         /** Instance id currently recorded as each account's owner */
         async owners(list = accounts) {
-            const values = await redis.mget(list.map(account => `cluster:own:${account}`));
-            return new Map(list.map((account, i) => [account, values[i]]));
+            return await readOwners(redis, list);
         },
 
         /** Accounts with more IMAP sessions on the farm than one owner opens */
@@ -128,9 +116,7 @@ async function startScenario(opts) {
         }
     };
 
-    if (opts.create !== false) {
-        await scenario.createAccounts();
-    }
+    await scenario.createAccounts();
 
     return scenario;
 }

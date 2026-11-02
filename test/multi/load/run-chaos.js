@@ -15,9 +15,9 @@
 // Every instance's Redis and cluster port go through TCP proxies, so Redis can be slowed or cut and
 // an instance can be partitioned from its peers without Docker.
 //
-//   npm run test:chaos -- --experiments all --mix-minutes 10 --seed 7
+//   npm run test:chaos -- --mix-minutes 10 --seed 7
 //
-// Options: --instances N --accounts N --servers N --ttl DURATION --experiments LIST|all
+// Options: --instances N --accounts N --servers N --ttl DURATION --experiments LIST|default|all
 // --mix-minutes N (a seeded random schedule after the experiments) --seed N --label TEXT
 // --log-level LEVEL (of the instances, warn by default)
 
@@ -43,7 +43,7 @@ function getDuration(value) {
 const RESULTS_DIR = path.join(__dirname, '..', 'results');
 
 function parseArgs(argv) {
-    const opts = { instances: 3, accounts: 120, servers: 40, ttl: '6s', experiments: 'all', mixMinutes: 0, seed: 1, label: '', logLevel: 'warn' };
+    const opts = { instances: 3, accounts: 120, servers: 40, ttl: '6s', experiments: 'default', mixMinutes: 0, seed: 1, label: '', logLevel: 'warn' };
     for (let i = 0; i < argv.length; i++) {
         const key = argv[i].replace(/^--/, '').replace(/-([a-z])/g, (m, c) => c.toUpperCase());
         if (!(key in opts)) {
@@ -125,7 +125,7 @@ async function main() {
     const fatalSeen = new Map();
     const checkFatal = () => {
         for (const instance of fleet.instances) {
-            const entries = [...instance.logEntries('uncaughtException'), ...instance.logEntries('unhandledRejection')];
+            const entries = instance.fatalEntries();
             const seen = fatalSeen.get(instance) || 0;
             for (const entry of entries.slice(seen)) {
                 violate('uncaught', { instance: instance.id, msg: entry.msg, error: entry.err && entry.err.message, stack: entry.err && entry.err.stack });
@@ -208,11 +208,16 @@ async function main() {
         const live = await liveInstances(redis);
         return list.every(account => owners.get(account) && owners.get(account) !== id && live.has(owners.get(account)));
     };
-    const stableOwners = async (id, list, windowMs) => {
+    // Runs `disturb`, during which nothing may move: an owner change among `list` is a violation
+    const nothingMoves = async (label, list, disturb, details = {}) => {
         const before = await workload.refreshOwners();
-        await sleep(windowMs);
+        await disturb();
         const after = await workload.refreshOwners();
-        return list.filter(account => before.get(account) === id && after.get(account) !== id);
+        const moved = list.filter(account => before.get(account) !== after.get(account)).length;
+        if (moved) {
+            violate(label, Object.assign({ moved }, details));
+        }
+        return moved;
     };
     const killExpected = async instance => {
         await instance.kill();
@@ -336,46 +341,47 @@ async function main() {
             // Stalls shorter than the heartbeat interval: nothing may move
             const victim = pickVictim();
             const owned = await ownedBy(victim.id);
-            const before = await workload.refreshOwners();
-            const until = Date.now() + 20000;
-            while (Date.now() < until) {
-                victim.freeze();
-                await sleep(Math.min(400, ttl / 8));
-                victim.thaw();
-                await sleep(600);
-            }
-            const after = await workload.refreshOwners();
-            const moved = owned.filter(account => before.get(account) !== after.get(account));
-            if (moved.length) {
-                violate('moved while slow', { victim: victim.id, moved: moved.length });
-            }
-            return { victim: victim.id, accounts: owned.length, moved: moved.length };
+            const moved = await nothingMoves(
+                'moved while slow',
+                owned,
+                async () => {
+                    const until = Date.now() + 20000;
+                    while (Date.now() < until) {
+                        victim.freeze();
+                        await sleep(Math.min(400, ttl / 8));
+                        victim.thaw();
+                        await sleep(600);
+                    }
+                },
+                { victim: victim.id }
+            );
+            return { victim: victim.id, accounts: owned.length, moved };
         },
 
         async slowRedis() {
             const victim = pickVictim();
             const owned = await ownedBy(victim.id);
             const proxy = workload.redisProxies.get(victim.id);
-            proxy.setDelay(150);
-            const moved = await stableOwners(victim.id, owned, 20000);
-            proxy.setDelay(0);
-            if (moved.length) {
-                violate('moved while Redis was slow', { victim: victim.id, moved: moved.length });
-            }
-            return { victim: victim.id, accounts: owned.length, moved: moved.length };
+            const moved = await nothingMoves(
+                'moved while Redis was slow',
+                owned,
+                async () => {
+                    proxy.setDelay(150);
+                    await sleep(20000);
+                    proxy.setDelay(0);
+                },
+                { victim: victim.id }
+            );
+            return { victim: victim.id, accounts: owned.length, moved };
         },
 
         async slowMailServer() {
-            const all = await workload.refreshOwners();
-            await host.call('addRule', { rule: { on: 'command', command: 'FETCH', delay: 500 }, account: accounts[0] });
-            await sleep(20000);
-            await host.call('clearRules');
-            const after = await workload.refreshOwners();
-            const moved = accounts.filter(account => all.get(account) !== after.get(account));
-            if (moved.length) {
-                violate('moved while a mail server was slow', { moved: moved.length });
-            }
-            return { moved: moved.length };
+            const moved = await nothingMoves('moved while a mail server was slow', accounts, async () => {
+                await host.call('addRule', { rule: { on: 'command', command: 'FETCH', delay: 500 }, account: accounts[0] });
+                await sleep(20000);
+                await host.call('clearRules');
+            });
+            return { moved };
         },
 
         async mailDisconnect() {
@@ -460,23 +466,24 @@ async function main() {
             // Redis answers every instance slowly enough that renewals take longer than the
             // heartbeat interval and some records may expire: nothing may move, since every
             // instance sees the same slow Redis and none of them is gone
-            const before = await workload.refreshOwners();
             const delay = Math.floor(ttl / 6);
-            for (const proxy of workload.redisProxies.values()) {
-                proxy.setDelay(delay);
-            }
-            await sleep(20000);
-            for (const proxy of workload.redisProxies.values()) {
-                proxy.setDelay(0);
-            }
-            await sleep(ttl * 2);
-            const after = await workload.refreshOwners();
-            const moved = accounts.filter(account => before.get(account) !== after.get(account));
+            const moved = await nothingMoves(
+                'moved while Redis was slow for everyone',
+                accounts,
+                async () => {
+                    for (const proxy of workload.redisProxies.values()) {
+                        proxy.setDelay(delay);
+                    }
+                    await sleep(20000);
+                    for (const proxy of workload.redisProxies.values()) {
+                        proxy.setDelay(0);
+                    }
+                    await sleep(ttl * 2);
+                },
+                { delay }
+            );
             const fenced = runningInstances().filter(instance => instance.logEntries('Lost cluster membership').length > 0).length;
-            if (moved.length) {
-                violate('moved while Redis was slow for everyone', { moved: moved.length, delay });
-            }
-            return { delayEachWayMs: delay, moved: moved.length, instancesThatEverFenced: fenced };
+            return { delayEachWayMs: delay, moved, instancesThatEverFenced: fenced };
         },
 
         async crashTwo() {
@@ -659,16 +666,17 @@ async function main() {
         }
     };
 
+    // The default run leaves out what the tiers that run on every push already cover (a crash, a
+    // graceful stop, a freeze, a scale-up and the OOM window in test/multi; the fence whose owner
+    // read keeps failing in test/cluster-redis-faults-test.js). They stay available by name, in
+    // `--experiments all`, and the random schedule of --mix-minutes picks from them
+    const ciCovered = ['crash', 'graceful', 'freeze', 'scale', 'redisFaults', 'redisFaultsDuringFence'];
     const order = [
-        'crash',
-        'graceful',
-        'freeze',
         'slowPod',
         'slowRedis',
         'slowMailServer',
         'mailDisconnect',
         'partition',
-        'scale',
         // Restarts every instance, so the ones after it run on a fresh uptime (see licenseNote())
         'fleetRestart',
         'redisOutage',
@@ -676,13 +684,15 @@ async function main() {
         'redisCut',
         'redisPartition',
         'redisOverload',
-        'redisFaults',
         'redisLoading',
-        'redisFaultsDuringFence',
         'crashTwo',
         'crashDuringHandoff'
     ];
-    const selected = opts.experiments === 'all' ? order : opts.experiments.split(',');
+    const selected = opts.experiments === 'default' ? order : opts.experiments === 'all' ? [...ciCovered, ...order] : opts.experiments.split(',');
+    const unknown = selected.filter(name => !EXPERIMENTS[name]);
+    if (unknown.length) {
+        throw new Error(`Unknown experiment ${unknown.join(', ')}`);
+    }
     const results = [];
 
     const runExperiment = async name => {
