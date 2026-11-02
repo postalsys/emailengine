@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "emailengine-app@2.87.0",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.87.0-0c1b6416-3481-4e01-a085-1d0e10d7067b",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.87.0-cfc59cfb-feff-4032-80d1-6bd2285ee21f",
   "creationInfo": {
-    "created": "2026-11-01T09:24:11.302Z",
+    "created": "2026-11-02T16:34:55.523Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
@@ -1355,11 +1355,11 @@
     },
     {
       "name": "@msgpackr-extract/msgpackr-extract-darwin-arm64",
-      "SPDXID": "SPDXRef-Package-msgpackr-extract.msgpackr-extract-darwin-arm64-3.0.4",
-      "versionInfo": "3.0.4",
+      "SPDXID": "SPDXRef-Package-msgpackr-extract.msgpackr-extract-darwin-arm64-3.0.6",
+      "versionInfo": "3.0.6",
       "packageFileName": "node_modules/@msgpackr-extract/msgpackr-extract-darwin-arm64",
       "description": "Platform specific binary for msgpackr-extract on darwin OS with arm64 architecture",
-      "downloadLocation": "https://registry.npmjs.org/@msgpackr-extract/msgpackr-extract-darwin-arm64/-/msgpackr-extract-darwin-arm64-3.0.4.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@msgpackr-extract/msgpackr-extract-darwin-arm64/-/msgpackr-extract-darwin-arm64-3.0.6.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "MIT",
@@ -1367,13 +1367,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4"
+          "referenceLocator": "pkg:npm/%40msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.6"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "2c2906a3a2437da0618124fb5293d680d80b20da5ca5a6da1dfcb3e4e071ef99d463106c6843f18e7c8d8d6a5e6ffc41ba9ffaf3642705f441cb6fcbbcfbad65"
+          "checksumValue": "ba0303d5740f434bac0b71757eb7d9cd9b0db3db9ff57cb17bce863b4efc320d1d558f85400f1394f2fc3f9110c1abd9b347547b62e35899ede13c90977a54bf"
         }
       ]
     },
@@ -3970,11 +3970,11 @@
     },
     {
       "name": "msgpackr-extract",
-      "SPDXID": "SPDXRef-Package-msgpackr-extract-3.0.4",
-      "versionInfo": "3.0.4",
+      "SPDXID": "SPDXRef-Package-msgpackr-extract-3.0.6",
+      "versionInfo": "3.0.6",
       "packageFileName": "node_modules/msgpackr-extract",
       "description": "Node addon for string extraction for msgpackr",
-      "downloadLocation": "https://registry.npmjs.org/msgpackr-extract/-/msgpackr-extract-3.0.4.tgz",
+      "downloadLocation": "https://registry.npmjs.org/msgpackr-extract/-/msgpackr-extract-3.0.6.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "MIT",
@@ -3982,13 +3982,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/msgpackr-extract@3.0.4"
+          "referenceLocator": "pkg:npm/msgpackr-extract@3.0.6"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "e2498efcc77250890b22f4cfafc5472e297802da0a2289e258f204939f820f2d319d60bce1ace14859ae27b3f165db18b623f9904790b0e44054878c8314fe1f"
+          "checksumValue": "a6b501f3e19cff5ac4cda368fb7463a341dd8ba8058d0f53774983b2f008912194ca9e8400374406253bd593f9323e23086faf6a2d2a48d57eca2b1000c62e49"
         }
       ]
     },
@@ -7577,18 +7577,18 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-msgpackr-extract-3.0.4",
+      "spdxElementId": "SPDXRef-Package-msgpackr-extract-3.0.6",
       "relatedSpdxElement": "SPDXRef-Package-msgpackr-2.1.2",
       "relationshipType": "OPTIONAL_DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-node-gyp-build-optional-packages-5.2.2",
-      "relatedSpdxElement": "SPDXRef-Package-msgpackr-extract-3.0.4",
+      "relatedSpdxElement": "SPDXRef-Package-msgpackr-extract-3.0.6",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-msgpackr-extract.msgpackr-extract-darwin-arm64-3.0.4",
-      "relatedSpdxElement": "SPDXRef-Package-msgpackr-extract-3.0.4",
+      "spdxElementId": "SPDXRef-Package-msgpackr-extract.msgpackr-extract-darwin-arm64-3.0.6",
+      "relatedSpdxElement": "SPDXRef-Package-msgpackr-extract-3.0.6",
       "relationshipType": "OPTIONAL_DEPENDENCY_OF"
     },
     {
