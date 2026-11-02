@@ -170,12 +170,14 @@ const {
     planRebalance
 } = require('./lib/account-assignment');
 const { mapConcurrent } = require('./lib/utils/map-concurrent');
+// Looked up at call time, so a suite can stub the waits (test/helpers/instant-timers.js)
+const timers = require('node:timers/promises');
 const { RespawnTracker, retryWithBackoff } = require('./lib/respawn-backoff');
 const { legacySmtpOptionsInUse, REMOVAL_DATE } = require('./lib/deprecations');
 const { heartbeatDiagnostics, eventLoopDelaySeries, threadHeapSeries } = require('./lib/thread-diagnostics');
 
 const msgpack = require('./lib/msgpack');
-const { ClusterCoordinator, resolveInstanceId, resolveAddress, notOwnedHereError } = require('./lib/cluster/coordinator');
+const { ClusterCoordinator, resolveInstanceId, resolveAddress, notOwnedHereError, noHandlerError } = require('./lib/cluster/coordinator');
 const { remainingTimeout } = require('./lib/command-budget');
 const { summarizeFleet } = require('./lib/cluster/fleet');
 const { statusError } = require('./lib/utils/status-error');
@@ -3089,9 +3091,9 @@ async function commandSubscribe(worker, message) {
 }
 
 async function commandNewAccount(worker, message) {
-    // Handle new account. The account is already in `ia:accounts`: the instance placement picks
-    // claims it (this one, or another that is told over the bus), and a full ownership pass finds
-    // it in any case, including when it was created before this instance finished starting
+    // Handle new account. The account is already in `ia:accounts`: whichever instance placement
+    // picks claims it once told over the bus, and a full ownership pass finds it in any case,
+    // including when it was created before this instance finished starting
     cluster.accountAdded(message.account);
     sendWebhook(message.account, ACCOUNT_ADDED_NOTIFY, { account: message.account }).catch(err =>
         logger.error({ msg: 'Account added webhook failed', account: message.account, err })
@@ -3120,7 +3122,7 @@ async function commandDeleteAccount(worker, message) {
     // sent, the owner record included, so nothing here may fail the request and the instance that
     // serves the account cannot be looked up any more. Every instance is told; the one serving it
     // closes it, and an instance that missed the broadcast stops it on its next full ownership pass
-    if (!deleteLocalAccount(message) && cluster) {
+    if (!deleteLocalAccount(message)) {
         cluster.broadcast('accountDeleted', { account: message.account });
     }
     sendWebhook(message.account, ACCOUNT_DELETED_NOTIFY, { account: message.account }).catch(err =>
@@ -3244,11 +3246,6 @@ async function forwardAccountOperation(message, { download, ...forwardOpts } = {
     return await cluster.forward(message, Object.assign({ timeout }, forwardOpts));
 }
 
-/** What an API caller is told when no worker serves an account (the code it has always been) */
-function workerNotAvailableError() {
-    return statusError('No active handler for requested account. Try again later.', 'WorkerNotAvailable', 503);
-}
-
 // How long an account command waits for an account that is between owners
 const OWNER_SETTLE_WAIT = 5000;
 
@@ -3293,9 +3290,9 @@ async function commandAccountOperation(worker, message) {
                 // command started; a download's port went to it with the command and cannot be resent
                 let unsettled = err.ownerUnsettled || (err.code === 'NotOwnedHere' && !isDownload);
                 if (!unsettled || isClosing || Date.now() >= settleUntil || download?.destroyed) {
-                    throw err.code === 'NotOwnedHere' ? workerNotAvailableError() : err;
+                    throw err.code === 'NotOwnedHere' ? noHandlerError(false) : err;
                 }
-                await new Promise(resolve => setTimeout(resolve, 100));
+                await timers.setTimeout(100);
             }
         }
     } finally {
@@ -4071,15 +4068,16 @@ function serveAccounts(accounts) {
 }
 
 /**
- * Stops serving one account here. Resolves true once no worker of this instance holds it: the
+ * Stops serving one account here. Resolves once no worker of this instance holds it: the
  * coordinator releases the account to another instance only after that
  * @param {string} account
- * @returns {Promise<boolean>}
+ * @param {Object} [opts] - `{ lost }`: another instance owns the account now
+ * @returns {Promise<void>}
  */
 async function stopServingAccount(account, opts = {}) {
     let worker = forgetAccount({ workerAssigned, assigned, unassigned }, account);
     if (!worker || (await unassignFromWorker(worker, account, opts.lost))) {
-        return true;
+        return;
     }
     // The worker did not confirm, so its connection may still be open. Restarting the worker is the
     // only way to be sure; its other accounts are assigned again once it is back
@@ -4089,17 +4087,6 @@ async function stopServingAccount(account, opts = {}) {
     } catch (err) {
         logger.error({ msg: 'Failed to terminate IMAP worker', threadId: worker.threadId, err });
     }
-    return true;
-}
-
-/**
- * Stops serving many accounts at once, after fencing found other instances own them now
- * @param {string[]} accounts
- * @param {Object} [opts] - `{ lost }`, see stopServingAccount()
- * @returns {Promise<void>}
- */
-async function stopServingAccounts(accounts, opts) {
-    await mapConcurrent(accounts, REBALANCE_CONCURRENCY * 4, account => stopServingAccount(account, opts));
 }
 
 /**
@@ -4116,10 +4103,7 @@ async function handleClusterCall(message) {
     }
 
     if (!CLUSTER_ACCOUNT_COMMANDS.has(message.cmd) || typeof message.account !== 'string') {
-        let err = new Error('Unsupported cluster command');
-        err.statusCode = 400;
-        err.code = 'UnsupportedCommand';
-        throw err;
+        throw statusError('Unsupported cluster command', 'UnsupportedCommand', 400);
     }
 
     let assignedWorker = assigned.get(message.account);
@@ -4202,7 +4186,6 @@ const createCluster = async () => {
         hooks: {
             serve: serveAccounts,
             stopServing: stopServingAccount,
-            stopServingAll: stopServingAccounts,
             handleCall: handleClusterCall,
             onBroadcast: onClusterBroadcast,
             recordExtras: () => ({ connections: lastConnectionCounts }),

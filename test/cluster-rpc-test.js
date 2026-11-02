@@ -122,6 +122,15 @@ test('toWire()', () => {
     assert.deepEqual([...wired.raw], [1, 2]);
     assert.ok(Buffer.isBuffer(wired.nested[0].deep));
     assert.ok(wired.date instanceof Date);
+
+    const plain = { list: [1, { a: 'b' }], buffer: Buffer.from('x') };
+    assert.equal(toWire(plain), plain, 'nothing to convert: the value itself, not a copy');
+
+    const original = { keep: { a: 1 }, convert: [new Uint8Array([4]).buffer] };
+    const converted = toWire(original);
+    assert.notEqual(converted, original);
+    assert.equal(converted.keep, original.keep, 'an unchanged branch is shared, not copied');
+    assert.ok(original.convert[0] instanceof ArrayBuffer, 'the original is left as it was');
 });
 
 test('calls between two instances', async t => {

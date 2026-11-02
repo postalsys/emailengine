@@ -319,9 +319,6 @@ function makeLiveClient() {
             case 'hSetExists':
                 hash.set(args[0], args[1]);
                 return 1;
-            case 'hSetBigger':
-                hash.set(args[0], args[1]);
-                return 1;
             case 'hget':
                 return hash.get(args[0]) ?? null;
             case 'hIncrbyExists': {

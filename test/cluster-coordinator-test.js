@@ -103,12 +103,6 @@ async function startMember(id, { listen = true, ready = true, backlog, drain = f
                 events.push(['stop', account, !!opts.lost]);
                 return true;
             },
-            async stopServingAll(accounts, opts = {}) {
-                events.push(['stopAll', accounts.length, !!opts.lost]);
-                for (const account of accounts) {
-                    served.delete(account);
-                }
-            },
             async handleCall(message) {
                 events.push(['call', message.cmd, message.account]);
                 if (!served.has(message.account)) {
@@ -301,7 +295,7 @@ test('ownership life cycle', async t => {
             assert.equal(a.member.lease.generation(), generation, 'held back announcements go out');
             assert.equal(a.member.lease.isValid(), true);
             assert.equal(
-                a.events.some(([kind]) => kind === 'stopAll' || kind === 'stop'),
+                a.events.some(([kind]) => kind === 'stop'),
                 false
             );
         } finally {
@@ -321,10 +315,7 @@ test('ownership life cycle', async t => {
                 await redis.set(clusterKeys.owner(account), 'b');
             }
             await waitUntil(() => a.member.stats.fences === 1 && !a.member.fencing, 10000, 'fencing');
-            assert.deepEqual(
-                a.events.filter(([kind]) => kind === 'stopAll'),
-                [['stopAll', 5, true]]
-            );
+            assert.deepEqual(a.events.filter(([kind]) => kind === 'stop').sort(), takenOver.map(account => ['stop', account, true]).sort());
             assert.equal(a.served.size, 15);
             assert.ok(takenOver.every(account => !a.served.has(account)));
         } finally {
@@ -345,10 +336,10 @@ test('ownership life cycle', async t => {
             await redis.del(clusterKeys.instance('a'));
             await redis.hset(clusterKeys.instance('a'), { token: 'someone-else' });
             await redis.pexpire(clusterKeys.instance('a'), TTL * 4);
-            await waitUntil(() => a.events.some(([kind]) => kind === 'stopAll'), TTL * 4, 'giving up');
-            assert.deepEqual(
-                a.events.find(([kind]) => kind === 'stopAll'),
-                ['stopAll', list.length, true]
+            await waitUntil(() => a.events.filter(([kind]) => kind === 'stop').length === list.length, TTL * 4, 'giving up');
+            assert.ok(
+                a.events.filter(([kind]) => kind === 'stop').every(([, , lost]) => lost),
+                'every account closed as lost'
             );
             assert.equal(a.member.lease.generation(), generation + 1, 'what was held back is dropped');
             assert.equal(a.served.size, 0);
@@ -579,7 +570,7 @@ test('forwarding and the bus', async t => {
     });
 });
 
-test('claim hints worked out from an older view of the members', async t => {
+test('claim hints', async t => {
     t.beforeEach(cleanup);
 
     // Account records only, left out of the account set: no full pass finds them, so whatever claims
@@ -604,44 +595,28 @@ test('claim hints worked out from an older view of the members', async t => {
 
     const ownersOf = async list => await redis.mget(list.map(account => clusterKeys.owner(account)));
 
-    await t.test('a hint naming a member placement does not pick is passed on to the one it does, once', async () => {
+    await t.test('every member plans a hint with its own view, and only the one placement picks claims', async () => {
         const a = await startMember('a');
         const b = await startMember('b');
         const c = await startMember('c');
         try {
             await sleep(TTL);
             const list = (await hintOnlyAccounts(60, 'hint')).filter(account => desiredOwner(account, ['a', 'b', 'c']) === 'c').slice(0, 4);
-            const claims = recordPublished(b);
+            const claims = recordPublished(a);
 
-            // Sent by a member that did not know c was ready yet
-            b.member.onBusMessage('claim', { to: 'b', accounts: list }, 'a');
+            // Added through a, whatever a knows about the members: the hint names no member
+            for (const account of list) {
+                a.member.accountAdded(account);
+            }
+            assert.deepEqual(
+                claims(),
+                list.map(account => ({ accounts: [account] }))
+            );
 
             await waitUntil(async () => (await ownersOf(list)).every(owner => owner === 'c'), 2000, 'c to claim the accounts');
-            assert.deepEqual(claims(), [{ to: 'c', accounts: list, passedOn: true }]);
+            assert.ok(list.every(account => c.served.has(account) && !a.served.has(account) && !b.served.has(account)));
         } finally {
             await stopAll(a, b, c);
-        }
-    });
-
-    await t.test('a hint that was passed on already is not passed on again', async () => {
-        const a = await startMember('a');
-        const b = await startMember('b');
-        try {
-            await sleep(TTL);
-            const list = (await hintOnlyAccounts(40, 'bounce')).filter(account => desiredOwner(account, ['a', 'b']) === 'a').slice(0, 3);
-            const claims = recordPublished(b);
-
-            b.member.onBusMessage('claim', { to: 'b', accounts: list, passedOn: true }, 'a');
-            await sleep(500);
-
-            assert.deepEqual(claims(), []);
-            assert.deepEqual(
-                await ownersOf(list),
-                list.map(() => null),
-                'left for the grace or the next full pass'
-            );
-        } finally {
-            await stopAll(a, b);
         }
     });
 });
@@ -702,6 +677,15 @@ test('Redis outages and claim pacing', async t => {
 
     await t.test('claims left over follow early when the workers took the earlier ones', async () => {
         const list = await createAccounts(3000);
+        // Each resumed batch reads the claims left over, not the whole account list again
+        let listReads = 0;
+        const smembers = redis.smembers;
+        redis.smembers = function (key, ...args) {
+            if (key === clusterKeys.accounts) {
+                listReads++;
+            }
+            return smembers.call(this, key, ...args);
+        };
         // A thousand claims per pass; without the drain each further batch waits a whole CLAIM_PAUSE
         const a = await startMember('a', { listen: false, drain: true });
         try {
@@ -710,7 +694,9 @@ test('Redis outages and claim pacing', async t => {
             assert.ok(batches.length >= 3, `claimed in ${JSON.stringify(batches)}`);
             const spread = batches[batches.length - 1].at - batches[0].at;
             assert.ok(spread < 1500, `the batches were ${spread} ms apart in all`);
+            assert.equal(listReads, 1, 'one full pass');
         } finally {
+            redis.smembers = smembers;
             await stopAll(a);
         }
     });

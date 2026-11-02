@@ -68,6 +68,49 @@ test('announcements held back for the owner of the account', async t => {
         assert.deepEqual(delivered, []);
     });
 
+    await t.test('a state is announced only once it was recorded', async () => {
+        // Outside a worker thread an emitted change cannot be posted anywhere, and says so
+        const announced = ctx => ctx.logger.entries.some(entry => entry.msg === 'Failed to post state change to parent');
+        const stateClient = (overrides, reply) => {
+            const writes = [];
+            const { ctx } = client(
+                Object.assign(
+                    {
+                        state: 'disconnected',
+                        runIndex: 7,
+                        getAccountKey: () => 'iad:held',
+                        redis: {
+                            accountSetState: async (...args) => {
+                                writes.push(args);
+                                return reply;
+                            }
+                        }
+                    },
+                    overrides
+                )
+            );
+            return { ctx, writes };
+        };
+
+        const owned = stateClient({}, [1, '1', 2]);
+        await owned.ctx.setStateVal({ announce: true });
+        assert.equal(owned.writes.length, 1);
+        assert.equal(announced(owned.ctx), true);
+
+        const quiet = stateClient({}, [1, '1', 2]);
+        await quiet.ctx.setStateVal();
+        assert.equal(announced(quiet.ctx), false, 'announce is opt-in');
+
+        const moved = stateClient({ retired: 'moved' }, [1, '1', 2]);
+        await moved.ctx.setStateVal({ announce: true });
+        assert.deepEqual(moved.writes, [], 'the next owner records the state');
+        assert.equal(announced(moved.ctx), false);
+
+        const taken = stateClient({}, [-1]);
+        await taken.ctx.setStateVal({ announce: true });
+        assert.equal(announced(taken.ctx), false, 'refused: another instance owns the account');
+    });
+
     await t.test('the IMAP queue keeps an arrival whose announcement was held back', () => {
         assert.equal(heldAnnouncementError().code, HELD_ANNOUNCEMENT);
         assert.equal(keepsArrivalQueued(heldAnnouncementError()), true);

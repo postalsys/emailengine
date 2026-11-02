@@ -8,7 +8,7 @@ Purpose: Records the connection state of an account, together with the run of th
          that lost the account (frozen past its heartbeat while another instance took over, then
          thawed) still runs its connection for a moment before it notices; its state writes would
          overwrite the new owner's, so they are refused here. A record that has no `ownerRun` was
-         never claimed through the cluster and is written as before.
+         never claimed through the cluster and is always written.
 
          The stored `runIndex` equal to `ownerRun` is what tells the API the state is current
          (lib/account/account-state.js).

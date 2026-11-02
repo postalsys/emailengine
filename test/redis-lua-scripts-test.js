@@ -61,58 +61,6 @@ test('zHeadScores', async t => {
     });
 });
 
-test('hSetBigger', async t => {
-    t.beforeEach(async () => {
-        await redis.del(HASH);
-    });
-
-    await t.test('does nothing when the hash does not exist', async () => {
-        assert.equal(await redis.hSetBigger(HASH, 'runIndex', '5'), 0);
-        assert.equal(await redis.exists(HASH), 0);
-    });
-
-    await t.test('creates the field on an existing hash', async () => {
-        await redis.hset(HASH, 'account', 'a');
-        assert.equal(await redis.hSetBigger(HASH, 'runIndex', '5'), 2);
-        assert.equal(await redis.hget(HASH, 'runIndex'), '5');
-    });
-
-    await t.test('replaces only with a bigger value', async () => {
-        await redis.hset(HASH, 'runIndex', '5');
-        assert.equal(await redis.hSetBigger(HASH, 'runIndex', '4'), 1);
-        assert.equal(await redis.hSetBigger(HASH, 'runIndex', '5'), 1);
-        assert.equal(await redis.hget(HASH, 'runIndex'), '5');
-        assert.equal(await redis.hSetBigger(HASH, 'runIndex', '12'), 3);
-        assert.equal(await redis.hget(HASH, 'runIndex'), '12', 'compared as numbers, not strings');
-    });
-
-    await t.test('replaces a stored value that is not a number instead of raising an error', async () => {
-        await redis.hset(HASH, 'runIndex', 'garbage');
-        assert.equal(await redis.hSetBigger(HASH, 'runIndex', '3'), 3);
-        assert.equal(await redis.hget(HASH, 'runIndex'), '3');
-    });
-
-    await t.test('never stores a new value that is not a number', async () => {
-        await redis.hset(HASH, 'runIndex', '3');
-        assert.equal(await redis.hSetBigger(HASH, 'runIndex', 'NaN-ish'), 1);
-        assert.equal(await redis.hget(HASH, 'runIndex'), '3');
-
-        await redis.hdel(HASH, 'runIndex');
-        assert.equal(await redis.hSetBigger(HASH, 'runIndex', 'NaN-ish'), 1);
-        assert.equal(await redis.hexists(HASH, 'runIndex'), 0);
-    });
-
-    await t.test('an error in a MULTI no longer fails the neighbouring commands', async () => {
-        await redis.hset(HASH, 'runIndex', 'garbage');
-        const results = await redis.multi().hSetBigger(HASH, 'runIndex', '7').hset(HASH, 'other', 'x').exec();
-        assert.deepEqual(
-            results.map(([err]) => err),
-            [null, null]
-        );
-        assert.equal(await redis.hget(HASH, 'other'), 'x');
-    });
-});
-
 test('hUpdateBigger', async t => {
     t.beforeEach(async () => {
         await redis.del(HASH);
