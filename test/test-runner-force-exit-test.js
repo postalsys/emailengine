@@ -88,9 +88,8 @@ test('the test runner turns off the background compiles an exit can deadlock on'
     });
 });
 
-// What --test-force-exit discarded when it ended a file's process: results still in the file's
-// stdout write queue (test/helpers/drain-results.js). Eight 600-result files at once lost results
-// in every one of 6 runs on macOS without it, and in none of 15 with it
+// What --test-force-exit discarded when it ended a process: results still in its stdout write queue
+// (test/helpers/drain-results.js, measurements in .claude/rules/testing.md)
 test('every test file writes its results out before the forced exit', async t => {
     await t.test('the drain is part of the node --test spawn', () => {
         const spawnCall = fs.readFileSync(RUNNER, 'utf8').match(SPAWN_CALL);
@@ -127,5 +126,32 @@ test('every test file writes its results out before the forced exit', async t =>
         assert.equal(signal, null, 'the nested run finished within 45 s');
         assert.equal(code, 0);
         assert.equal((stdout.match(/^\s*(not )?ok \d+ /gm) || []).length, files.length * 600);
+    });
+});
+
+// The wrapper itself, in a process of its own: 4MB is far more than any pipe holds, so most of it is
+// still in the write queue when process.exit() runs
+test('process.exit() under the drain helper', async t => {
+    const script = "process.stdout.write('x'.repeat(4 * 1024 * 1024)); process.exit(3);";
+
+    await t.test('waits for queued stdout and keeps the exit code', async () => {
+        const child = spawn(process.execPath, [...DRAIN_RESULTS_FLAGS, '-e', script], { stdio: ['ignore', 'pipe', 'ignore'] });
+        let bytes = 0;
+        child.stdout.on('data', chunk => (bytes += chunk.length));
+        const [code] = await once(child, 'close');
+        assert.equal(code, 3);
+        assert.equal(bytes, 4 * 1024 * 1024);
+    });
+
+    await t.test('still ends the process when the reader stops reading', async () => {
+        const child = spawn(process.execPath, [...DRAIN_RESULTS_FLAGS, '-e', script], { stdio: ['ignore', 'pipe', 'ignore'] });
+        // never read, so the pipe stays full and the queued write never completes
+        child.stdout.pause();
+        const timer = setTimeout(() => child.kill('SIGKILL'), 30000);
+        const [code, signal] = await once(child, 'exit');
+        clearTimeout(timer);
+        assert.equal(signal, null, 'the process ended on its own within 30 s');
+        assert.equal(code, 3);
+        child.stdout.destroy();
     });
 });
