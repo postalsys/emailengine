@@ -11,9 +11,10 @@
 
 const { isMainThread } = require('node:worker_threads');
 
-// Only in a file's own process, which node --test marks with NODE_TEST_CONTEXT: --require loads this
-// into the runner process too, and into a file's worker threads, whose stdout is not the file's
-if (process.env.NODE_TEST_CONTEXT && isMainThread) {
+// The runner process loads it too (--require reaches it as well as every file's process), and its
+// forced exit loses the tail of its own output the same way. Not in a worker thread: --require also
+// reaches a file's workers, whose process.exit() ends only the thread and whose stdout is not the file's
+if (isMainThread) {
     const exit = process.exit;
     process.exit = function (code) {
         if (!process.stdout.writableLength) {
