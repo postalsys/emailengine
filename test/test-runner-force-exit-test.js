@@ -29,15 +29,17 @@ const { EXIT_SAFE_V8_FLAGS, DRAIN_RESULTS_FLAGS } = require('./run-tests');
 
 const RUNNER = pathlib.join(__dirname, 'run-tests.js');
 const FLAG = '--test-force-exit';
+// The argument list of the spawn that runs the tests. Anchored on the leading '--test' because
+// run-tests.js also spawns process.execPath to boot the server for the integration tier
+const SPAWN_CALL = /spawn\(\s*process\.execPath,\s*\['--test'([^\]]*)\]/;
 
 test('the test runner forces the process to exit', async t => {
     const runner = fs.readFileSync(RUNNER, 'utf8');
 
     await t.test(`spawns node --test with ${FLAG}`, () => {
         // Matched inside the spawn argument list rather than anywhere in the file, so the flag being
-        // mentioned in a comment cannot satisfy this. Anchored on the leading '--test' because
-        // run-tests.js also spawns process.execPath to boot the server for the integration tier.
-        const spawnCall = runner.match(/spawn\(\s*process\.execPath,\s*\['--test'([^\]]*)\]/);
+        // mentioned in a comment cannot satisfy this
+        const spawnCall = runner.match(SPAWN_CALL);
 
         assert.ok(spawnCall, "could not find the `spawn(process.execPath, ['--test', ...])` call that runs the tests in test/run-tests.js");
         assert.ok(
@@ -62,7 +64,7 @@ test('the test runner forces the process to exit', async t => {
 // of every test file, which is the one that exits
 test('the test runner turns off the background compiles an exit can deadlock on', async t => {
     await t.test('the flags are part of the node --test spawn', () => {
-        const spawnCall = fs.readFileSync(RUNNER, 'utf8').match(/spawn\(\s*process\.execPath,\s*\['--test'([^\]]*)\]/);
+        const spawnCall = fs.readFileSync(RUNNER, 'utf8').match(SPAWN_CALL);
         assert.ok(spawnCall && spawnCall[1].includes('...EXIT_SAFE_V8_FLAGS'), 'test/run-tests.js must pass EXIT_SAFE_V8_FLAGS to node --test');
         assert.deepStrictEqual(EXIT_SAFE_V8_FLAGS, ['--no-concurrent-recompilation', '--no-concurrent-sparkplug']);
     });
@@ -86,40 +88,44 @@ test('the test runner turns off the background compiles an exit can deadlock on'
     });
 });
 
-// What --test-force-exit discards when it ends a file's process: the results the file's reporter
-// had not written out yet (test/helpers/drain-results.js). A file of 600 results arrived short in
-// about one run of five without the drain, more often under load, and complete with it
-test('every test file waits for its results to reach the runner before the forced exit', async t => {
+// What --test-force-exit discarded when it ended a file's process: results still queued for a
+// non-blocking stdout (test/helpers/drain-results.js). 16 copies of a 600-result file at once lost
+// results in about two runs of five without it, and in none of 80 with it
+test('every test file writes its results out before the forced exit', async t => {
     await t.test('the drain is part of the node --test spawn', () => {
-        const spawnCall = fs.readFileSync(RUNNER, 'utf8').match(/spawn\(\s*process\.execPath,\s*\['--test'([^\]]*)\]/);
+        const spawnCall = fs.readFileSync(RUNNER, 'utf8').match(SPAWN_CALL);
         assert.ok(spawnCall && spawnCall[1].includes('...DRAIN_RESULTS_FLAGS'), 'test/run-tests.js must pass DRAIN_RESULTS_FLAGS to node --test');
         assert.ok(fs.existsSync(DRAIN_RESULTS_FLAGS[1]));
     });
 
-    await t.test('a file of many results reports all of them, run after run', async t => {
+    await t.test('files of many results running at once report all of them', async t => {
         const dir = fs.mkdtempSync(pathlib.join(os.tmpdir(), 'ee-drain-'));
         t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
-        const file = pathlib.join(dir, 'many-test.js');
-        fs.writeFileSync(
-            file,
-            `const test = require('node:test');\nfor (let i = 0; i < 200; i++) {\n    test('t' + i, async t => {\n        await t.test('a', () => {});\n        await t.test('b', () => {});\n    });\n}\n`
-        );
+        // Run together, as the tier runs them: the loss came with a runner too busy to keep reading
+        const files = Array.from({ length: 8 }, (_, i) => pathlib.join(dir, `many-${i}-test.js`));
+        for (const file of files) {
+            fs.writeFileSync(
+                file,
+                `const test = require('node:test');\nfor (let i = 0; i < 200; i++) {\n    test('t' + i, async t => {\n        await t.test('a', () => {});\n        await t.test('b', () => {});\n    });\n}\n`
+            );
+        }
         const env = { ...process.env };
         // a nested run of its own, see test/test-runner-stall-watchdog-test.js
         delete env.NODE_TEST_CONTEXT;
         delete env.NODE_TEST_WORKER_ID;
-        const counts = [];
-        for (let run = 0; run < 8; run++) {
-            const child = spawn(process.execPath, ['--test', '--test-force-exit', ...DRAIN_RESULTS_FLAGS, '--test-reporter=tap', file], {
-                stdio: ['ignore', 'pipe', 'ignore'],
-                env
-            });
-            let stdout = '';
-            child.stdout.on('data', chunk => (stdout += chunk));
-            // 'close', not 'exit', so the whole of stdout has been read
-            await once(child, 'close');
-            counts.push((stdout.match(/^\s*(not )?ok \d+ /gm) || []).length);
-        }
-        assert.deepStrictEqual(counts, new Array(8).fill(600), `results counted per run: ${counts.join(', ')}`);
+        const child = spawn(process.execPath, ['--test', '--test-force-exit', ...DRAIN_RESULTS_FLAGS, '--test-reporter=tap', ...files], {
+            stdio: ['ignore', 'pipe', 'ignore'],
+            env
+        });
+        let stdout = '';
+        child.stdout.on('data', chunk => (stdout += chunk));
+        // A nested run that stops is reported as that, not as this test running out of time
+        const timer = setTimeout(() => child.kill('SIGKILL'), 45000);
+        // 'close', not 'exit', so the whole of stdout has been read
+        const [code, signal] = await once(child, 'close');
+        clearTimeout(timer);
+        assert.equal(signal, null, 'the nested run finished within 45 s');
+        assert.equal(code, 0);
+        assert.equal((stdout.match(/^\s*(not )?ok \d+ /gm) || []).length, files.length * 600);
     });
 });

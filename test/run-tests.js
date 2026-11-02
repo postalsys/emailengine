@@ -46,8 +46,8 @@ const TEST_TIMEOUT = 180000;
 // to `node --test` are passed on to every test file's process, which is where the exit happens
 const EXIT_SAFE_V8_FLAGS = ['--no-concurrent-recompilation', '--no-concurrent-sparkplug'];
 
-// Lets each file's results reach the runner before --test-force-exit ends its process, see
-// test/helpers/drain-results.js. Handed on to every file's process like the flags above
+// Makes each file's stdout blocking, so --test-force-exit cannot end its process with results still
+// queued, see test/helpers/drain-results.js. Handed on to every file's process like the flags above
 const DRAIN_RESULTS_FLAGS = ['--require', path.join(__dirname, 'helpers', 'drain-results.js')];
 
 const TIERS = {
@@ -247,69 +247,24 @@ async function main() {
 
     let testTimeout = tier.testTimeout || TEST_TIMEOUT;
 
-    // Results lost between a file's process and the runner (see the reporter's note on lost results,
-    // and "lost results" in .claude/rules/testing.md: Node's forced exit discards what the file's
-    // reporter still has queued) are recovered by running the files they belong to again, one at a
-    // time: every real file run on its own has reported everything so far, and the loss happens in
-    // the parallel tier on CI often enough (two of four Linux legs of one run were 19 and 51 results
-    // short, all green) that failing the tier for it would block most pushes. The reporter writes the
-    // files to this path instead of failing the run itself; a loss in the serial run again does fail it
-    let lostResultsPath = path.join(os.tmpdir(), `emailengine-lost-results-${process.pid}.json`);
-
-    let runTests = async (testFiles, { serial = false } = {}) => {
-        fs.rmSync(lostResultsPath, { force: true });
-        let runArgs = [`--test-timeout=${testTimeout}`, ...reporterArgs, ...new Set([...tier.args, ...(serial ? ['--test-concurrency=1'] : [])])];
-        let runner = spawn(process.execPath, ['--test', '--test-force-exit', ...EXIT_SAFE_V8_FLAGS, ...DRAIN_RESULTS_FLAGS, ...runArgs, ...testFiles], {
-            cwd: PROJECT_ROOT,
-            stdio: 'inherit',
-            env: {
-                ...process.env,
-                // Read by the stall reporter: the files to account for, how long a silence has
-                // to last before it gives up on them, and where to record lost results
-                EE_TEST_FILES: JSON.stringify(testFiles),
-                EE_TEST_STALL_TIMEOUT: String(tier.stallTimeout || 0),
-                EE_TEST_LOST_RESULTS: lostResultsPath
-            }
-        });
-
-        // A child killed by a signal reports code=null; treat that as a failure
-        let [code, signal] = await once(runner, 'exit');
-        return { failed: signal ? true : code !== 0, lost: readLostResults(lostResultsPath) };
-    };
-
-    let run = await runTests(files);
-    if (run.failed) {
-        process.exitCode = 1;
-        return;
-    }
-    if (run.lost.length) {
-        let again = [...new Set(run.lost.map(entry => entry.file))];
-        console.error(
-            `\nRunning ${again.length} file(s) again, one at a time, because results of theirs were lost on the way to the runner:\n` +
-                again.map(file => `  - ${file}`).join('\n') +
-                '\n'
-        );
-        let rerun = await runTests(again, { serial: true });
-        if (rerun.failed || rerun.lost.length) {
-            process.exitCode = 1;
+    let runArgs = [`--test-timeout=${testTimeout}`, ...reporterArgs, ...tier.args];
+    let runner = spawn(process.execPath, ['--test', '--test-force-exit', ...EXIT_SAFE_V8_FLAGS, ...DRAIN_RESULTS_FLAGS, ...runArgs, ...files], {
+        cwd: PROJECT_ROOT,
+        stdio: 'inherit',
+        env: {
+            ...process.env,
+            // Read by the stall reporter: the files to account for, and how long a silence has to
+            // last before it gives up on them. A result lost on the way to the runner fails the run
+            // there (DRAIN_RESULTS_FLAGS is what keeps that from happening)
+            EE_TEST_FILES: JSON.stringify(files),
+            EE_TEST_STALL_TIMEOUT: String(tier.stallTimeout || 0)
         }
-    }
-}
+    });
 
-/**
- * What the reporter recorded as lost, and removes the record
- * @param {string} lostResultsPath
- * @returns {Array<{file: string, names: string[]}>}
- */
-function readLostResults(lostResultsPath) {
-    try {
-        let lost = JSON.parse(fs.readFileSync(lostResultsPath, 'utf-8'));
-        return Array.isArray(lost) ? lost : [];
-    } catch (err) {
-        // never written: nothing was lost
-        return [];
-    } finally {
-        fs.rmSync(lostResultsPath, { force: true });
+    // A child killed by a signal reports code=null; treat that as a failure
+    let [code, signal] = await once(runner, 'exit');
+    if (signal || code !== 0) {
+        process.exitCode = 1;
     }
 }
 
@@ -341,4 +296,4 @@ if (require.main === module) {
         });
 }
 
-module.exports = { assertPortFree, TIERS, EXIT_SAFE_V8_FLAGS, DRAIN_RESULTS_FLAGS, readLostResults };
+module.exports = { assertPortFree, TIERS, EXIT_SAFE_V8_FLAGS, DRAIN_RESULTS_FLAGS };

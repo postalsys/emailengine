@@ -254,52 +254,6 @@ test('a run that ends with a test started and never reported fails', async t => 
     });
 });
 
-test('under the runner the lost results are handed back for a serial run instead of failing', async t => {
-    const file = pathlib.join(PROJECT_ROOT, 'test', 'handed-back-fixture-test.js');
-    const name = pathlib.relative(PROJECT_ROOT, file);
-    const dir = fs.mkdtempSync(pathlib.join(os.tmpdir(), 'ee-lost-'));
-    const lostResultsPath = pathlib.join(dir, 'lost.json');
-    const previous = process.env.EE_TEST_LOST_RESULTS;
-    process.env.EE_TEST_LOST_RESULTS = lostResultsPath;
-    // The real report, minus its stderr line
-    const writeSync = fs.writeSync;
-    fs.writeSync = () => 0;
-    t.after(() => {
-        fs.writeSync = writeSync;
-        fs.rmSync(dir, { recursive: true, force: true });
-        if (previous === undefined) {
-            delete process.env.EE_TEST_LOST_RESULTS;
-        } else {
-            process.env.EE_TEST_LOST_RESULTS = previous;
-        }
-    });
-
-    const exitCode = process.exitCode;
-    const r = reporterFor([name], { real: true });
-    await r.start(file, 0, 'lost');
-    await r.complete(file, name);
-    await r.end();
-
-    assert.deepEqual(JSON.parse(fs.readFileSync(lostResultsPath, 'utf-8')), [{ file: name, names: ['0:lost'] }]);
-    assert.equal(process.exitCode, exitCode, "the exit code is the runner's call");
-});
-
-test('readLostResults() reads what the reporter recorded and removes the record', () => {
-    const { readLostResults } = require('./run-tests');
-    const dir = fs.mkdtempSync(pathlib.join(os.tmpdir(), 'ee-lost-read-'));
-    const lostResultsPath = pathlib.join(dir, 'lost.json');
-    try {
-        assert.deepEqual(readLostResults(lostResultsPath), [], 'nothing recorded');
-        fs.writeFileSync(lostResultsPath, JSON.stringify([{ file: 'test/a-test.js', names: ['0:a'] }]));
-        assert.deepEqual(readLostResults(lostResultsPath), [{ file: 'test/a-test.js', names: ['0:a'] }]);
-        assert.equal(fs.existsSync(lostResultsPath), false, 'read once');
-        fs.writeFileSync(lostResultsPath, 'not json');
-        assert.deepEqual(readLostResults(lostResultsPath), [], 'an unreadable record is no record');
-    } finally {
-        fs.rmSync(dir, { recursive: true, force: true });
-    }
-});
-
 test('results that arrive after their file completed are not lost', async () => {
     // Seen on Node 20.19.0 in CI: the file's own test:complete came before the last suite's start
     // and pass, which arrived a second later and were counted by the summary
@@ -345,11 +299,6 @@ test('the runner wires the stall watchdog in', async t => {
             `test/run-tests.js must pass exactly one --test-reporter, found ${reporters}. ` +
                 `Extend test/helpers/stall-reporter.js instead of adding a second one - with --test-force-exit, two reporters silently drop results from the summary.`
         );
-    });
-
-    await t.test('it runs the files whose results were lost again, one at a time', () => {
-        assert.match(runner, /EE_TEST_LOST_RESULTS: lostResultsPath/, 'test/run-tests.js no longer tells the reporter where to record lost results');
-        assert.match(runner, /runTests\(again, \{ serial: true \}\)/, 'test/run-tests.js no longer runs the files with lost results again serially');
     });
 
     await t.test('every tier sets a stall budget', () => {
