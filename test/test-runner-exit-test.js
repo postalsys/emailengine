@@ -106,7 +106,10 @@ function runFiles(files) {
             if (timedOut) {
                 return reject(new Error('the nested run did not finish within 45 s'));
             }
-            resolve({ code, counted: Number((stdout.match(/^# tests (\d+)$/m) || [])[1]) });
+            // Counted from the result lines rather than read off the summary: the summary is the last
+            // thing the nested runner prints, and once a run of 40000 lost it whole (NaN) while the
+            // results this test is about had all arrived
+            resolve({ code, counted: (stdout.match(/^ok \d+ - a test whose result has to reach the runner /gm) || []).length });
         });
     });
 }

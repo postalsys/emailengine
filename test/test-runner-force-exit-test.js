@@ -25,7 +25,7 @@ const pathlib = require('path');
 const { spawn } = require('child_process');
 const { once } = require('events');
 
-const { EXIT_SAFE_V8_FLAGS } = require('./run-tests');
+const { EXIT_SAFE_V8_FLAGS, DRAIN_RESULTS_FLAGS } = require('./run-tests');
 
 const RUNNER = pathlib.join(__dirname, 'run-tests.js');
 const FLAG = '--test-force-exit';
@@ -83,5 +83,43 @@ test('the test runner turns off the background compiles an exit can deadlock on'
         const child = spawn(process.execPath, ['--test', '--test-force-exit', ...EXIT_SAFE_V8_FLAGS, file], { stdio: 'ignore', env });
         const [code] = await once(child, 'exit');
         assert.strictEqual(code, 0, 'a test file ran without the flags');
+    });
+});
+
+// What --test-force-exit discards when it ends a file's process: the results the file's reporter
+// had not written out yet (test/helpers/drain-results.js). A file of 600 results arrived short in
+// about one run of five without the drain, more often under load, and complete with it
+test('every test file waits for its results to reach the runner before the forced exit', async t => {
+    await t.test('the drain is part of the node --test spawn', () => {
+        const spawnCall = fs.readFileSync(RUNNER, 'utf8').match(/spawn\(\s*process\.execPath,\s*\['--test'([^\]]*)\]/);
+        assert.ok(spawnCall && spawnCall[1].includes('...DRAIN_RESULTS_FLAGS'), 'test/run-tests.js must pass DRAIN_RESULTS_FLAGS to node --test');
+        assert.ok(fs.existsSync(DRAIN_RESULTS_FLAGS[1]));
+    });
+
+    await t.test('a file of many results reports all of them, run after run', async t => {
+        const dir = fs.mkdtempSync(pathlib.join(os.tmpdir(), 'ee-drain-'));
+        t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+        const file = pathlib.join(dir, 'many-test.js');
+        fs.writeFileSync(
+            file,
+            `const test = require('node:test');\nfor (let i = 0; i < 200; i++) {\n    test('t' + i, async t => {\n        await t.test('a', () => {});\n        await t.test('b', () => {});\n    });\n}\n`
+        );
+        const env = { ...process.env };
+        // a nested run of its own, see test/test-runner-stall-watchdog-test.js
+        delete env.NODE_TEST_CONTEXT;
+        delete env.NODE_TEST_WORKER_ID;
+        const counts = [];
+        for (let run = 0; run < 8; run++) {
+            const child = spawn(process.execPath, ['--test', '--test-force-exit', ...DRAIN_RESULTS_FLAGS, '--test-reporter=tap', file], {
+                stdio: ['ignore', 'pipe', 'ignore'],
+                env
+            });
+            let stdout = '';
+            child.stdout.on('data', chunk => (stdout += chunk));
+            // 'close', not 'exit', so the whole of stdout has been read
+            await once(child, 'close');
+            counts.push((stdout.match(/^\s*(not )?ok \d+ /gm) || []).length);
+        }
+        assert.deepStrictEqual(counts, new Array(8).fill(600), `results counted per run: ${counts.join(', ')}`);
     });
 });

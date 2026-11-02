@@ -46,6 +46,10 @@ const TEST_TIMEOUT = 180000;
 // to `node --test` are passed on to every test file's process, which is where the exit happens
 const EXIT_SAFE_V8_FLAGS = ['--no-concurrent-recompilation', '--no-concurrent-sparkplug'];
 
+// Lets each file's results reach the runner before --test-force-exit ends its process, see
+// test/helpers/drain-results.js. Handed on to every file's process like the flags above
+const DRAIN_RESULTS_FLAGS = ['--require', path.join(__dirname, 'helpers', 'drain-results.js')];
+
 const TIERS = {
     unit: {
         dir: 'test',
@@ -255,7 +259,7 @@ async function main() {
     let runTests = async (testFiles, { serial = false } = {}) => {
         fs.rmSync(lostResultsPath, { force: true });
         let runArgs = [`--test-timeout=${testTimeout}`, ...reporterArgs, ...new Set([...tier.args, ...(serial ? ['--test-concurrency=1'] : [])])];
-        let runner = spawn(process.execPath, ['--test', '--test-force-exit', ...EXIT_SAFE_V8_FLAGS, ...runArgs, ...testFiles], {
+        let runner = spawn(process.execPath, ['--test', '--test-force-exit', ...EXIT_SAFE_V8_FLAGS, ...DRAIN_RESULTS_FLAGS, ...runArgs, ...testFiles], {
             cwd: PROJECT_ROOT,
             stdio: 'inherit',
             env: {
@@ -337,4 +341,4 @@ if (require.main === module) {
         });
 }
 
-module.exports = { assertPortFree, TIERS, EXIT_SAFE_V8_FLAGS, readLostResults };
+module.exports = { assertPortFree, TIERS, EXIT_SAFE_V8_FLAGS, DRAIN_RESULTS_FLAGS, readLostResults };
