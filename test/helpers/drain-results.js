@@ -11,8 +11,9 @@ const fs = require('node:fs');
 const { isMainThread } = require('node:worker_threads');
 
 // How long an exit waits for stdout before ending the process anyway: a reader that is alive but has
-// stopped reading must not keep a process, the stall watchdog's own exit included, from ending
-const FLUSH_TIMEOUT = 10 * 1000;
+// stopped reading must not keep a process, the stall watchdog's own exit included, from ending.
+// EE_DRAIN_FLUSH_TIMEOUT (ms) only shortens it for the test that waits it out
+const FLUSH_TIMEOUT = Number(process.env.EE_DRAIN_FLUSH_TIMEOUT) || 10 * 1000;
 
 // Not in a worker thread, where process.exit() ends only the thread and stdout is not the process's
 if (isMainThread) {
@@ -25,11 +26,11 @@ if (isMainThread) {
         // whichever comes first ends the process, so the other never runs
         process.stdout.write('', () => exit.call(process, code));
         setTimeout(() => {
-            // said, because the output cut off here would otherwise look complete
+            // report it, or the cut-off output would look complete
             try {
                 fs.writeSync(
                     2,
-                    `drain-results: stdout did not flush within ${FLUSH_TIMEOUT / 1000} s, exiting with ${process.stdout.writableLength} bytes unwritten\n`
+                    `drain-results: stdout did not flush within ${FLUSH_TIMEOUT} ms, exiting with ${process.stdout.writableLength} bytes unwritten\n`
                 );
             } catch {
                 // nowhere to say it, the exit still has to happen

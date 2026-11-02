@@ -154,8 +154,8 @@ class StallAwareSpecReporter extends Transform {
         // Not immediately, though: the spec reporter may not have handed everything to stdout yet.
         // `node --test` holds spec output until the run reaches that file in order, so on a stall
         // there is often nothing queued at all - but where there is, this is what lets it reach
-        // stdout. What reaches stdout is then held for by test/helpers/drain-results.js, whose
-        // wrapped process.exit() waits for it to flush.
+        // stdout. The process.exit() wrapped by test/helpers/drain-results.js then waits for that
+        // to flush.
         setTimeout(() => process.exit(1), STDOUT_FLUSH_GRACE_MS);
     }
 

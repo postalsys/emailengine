@@ -25,9 +25,8 @@ const EXIT_HELPER = pathlib.join(TEST_DIR, 'helpers', 'exit-standalone.js');
 
 // The files that may end a process: the runner and its helpers, which run outside any test file's
 // process, the load and chaos runners and their harness process (standalone programs, never run by
-// node --test), the wrapper that holds Node's own forced exit back until stdout has flushed and the
-// test that runs a script exiting under it in a process of its own, and this file and the helper
-// itself
+// node --test), the wrapper that holds Node's own forced exit back until stdout has flushed, and this
+// file and the helper itself
 const MAY_EXIT = new Set(
     [
         'run-tests.js',
@@ -36,7 +35,6 @@ const MAY_EXIT = new Set(
         'multi/load/harness-host.js',
         'helpers/exit-standalone.js',
         'helpers/drain-results.js',
-        'test-runner-force-exit-test.js',
         'helpers/stall-reporter.js',
         'helpers/wait-for-server.js',
         'helpers/flush-redis.js',

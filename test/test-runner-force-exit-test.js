@@ -133,9 +133,13 @@ test('every test file writes its results out before the forced exit', async t =>
 // in the write queue when process.exit() runs
 test('process.exit() under the drain helper', async t => {
     const SIZE = 4 * 1024 * 1024;
-    const run = () =>
-        spawn(process.execPath, [...DRAIN_RESULTS_FLAGS, '-e', `process.stdout.write('x'.repeat(${SIZE})); process.exit(3);`], {
-            stdio: ['ignore', 'pipe', 'pipe']
+    // a quoted string, not a template literal: test/test-runner-exit-test.js reads code out of a
+    // template literal and would take this child's exit for one of this file's own
+    const script = "process.stdout.write('x'.repeat(" + SIZE + ')); process.exit(3);';
+    const run = env =>
+        spawn(process.execPath, [...DRAIN_RESULTS_FLAGS, '-e', script], {
+            stdio: ['ignore', 'pipe', 'pipe'],
+            env: { ...process.env, ...env }
         });
 
     await t.test('waits for queued stdout and keeps the exit code', async () => {
@@ -149,13 +153,16 @@ test('process.exit() under the drain helper', async t => {
     });
 
     await t.test('still ends the process when the reader stops reading', async () => {
-        const child = run();
+        // the timeout itself is what is tested, not its length
+        const child = run({ EE_DRAIN_FLUSH_TIMEOUT: '500' });
         // never read, so the pipe stays full and the queued write never completes
         child.stdout.pause();
         let stderr = '';
         child.stderr.on('data', chunk => (stderr += chunk));
         const timer = setTimeout(() => child.kill('SIGKILL'), 30000);
-        const [code, signal] = await once(child, 'exit');
+        // stdout cannot end while it is never read, and 'close' waits for it: wait for the exit and
+        // for stderr to be read to the end, then let stdout go
+        const [[code, signal]] = await Promise.all([once(child, 'exit'), once(child.stderr, 'end')]);
         clearTimeout(timer);
         child.stdout.destroy();
         assert.equal(signal, null, 'the process ended on its own within 30 s');
