@@ -6,6 +6,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const net = require('node:net');
 
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
@@ -62,6 +63,34 @@ test('IMAP worker assignment bookkeeping', async t => {
             1
         );
         await call({ cmd: 'unassign', account });
+    });
+
+    await t.test('a command unassigned while it waited for the connection to start answers NotOwnedHere', async () => {
+        // A command right after the assignment waits for the connection to start. An unassign
+        // meanwhile removed the account, and the command then answered WorkerNotAvailable, which the
+        // main thread does not send on to where the account went
+        const silent = net.createServer(() => {});
+        await new Promise(resolve => silent.listen(0, '127.0.0.1', resolve));
+        t.after(() => silent.close());
+        const account = `start-wait-${process.pid}`;
+        await new Account({ redis, secret: await getSecret(), call: async () => 0 }).create({
+            account,
+            name: 'Start wait',
+            email: 'wait@example.com',
+            imap: { host: '127.0.0.1', port: silent.address().port, secure: false, auth: { user: 'u', pass: 'p' } },
+            smtp: false
+        });
+        t.after(() => redis.del(`${REDIS_PREFIX}iad:${account}`).then(() => redis.srem(`${REDIS_PREFIX}ia:accounts`, account)));
+
+        await call({ cmd: 'assign', account });
+        // The server accepts and never greets, so the connection stays connecting
+        const command = call({ cmd: 'listMailboxes', account, timeout: 6000 });
+        await new Promise(resolve => setTimeout(resolve, 300));
+        const unassigned = await call({ cmd: 'unassign', account });
+        assert.equal(unassigned.response, true);
+
+        const resp = await command;
+        assert.equal(resp.code, 'NotOwnedHere', `answered ${resp.code}: ${resp.error}`);
     });
 
     await t.test('unassign is a known command and tolerates an account the worker does not hold (WORK-3)', async () => {

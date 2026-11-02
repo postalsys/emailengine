@@ -31,7 +31,8 @@ if #ARGV > 3 then
     redis.call("HSET", instanceKey, unpack(ARGV, 4));
 end;
 redis.call("PEXPIRE", instanceKey, ARGV[3]);
--- Idempotent, and it repairs a set member removed by a prune that raced the registration
+-- Idempotent, and it puts back a set member lost some other way (the set evicted or edited by
+-- hand); a prune cannot race this, cluster-prune.lua checks the record and removes in one step
 redis.call("SADD", instancesKey, ARGV[1]);
 
 return 1;

@@ -3142,7 +3142,7 @@ async function commandRunIndex() {
 
 async function commandForwardToAccountWorker(worker, message) {
     // Fire and forget, to the worker that serves the account here or to the instance that does
-    let run = assigned.has(message.account) ? call(assigned.get(message.account), message) : cluster.forward(message);
+    let run = commandAccountOperation(worker, message);
     run.then(() => logger.debug('Worker command completed')).catch(err => {
         // Nobody serving the account is the normal case for a paused or failed account
         let level = err.code === 'WorkerNotAvailable' ? 'debug' : 'error';
@@ -3228,26 +3228,33 @@ async function streamIntoPort(writable, fetchStream) {
  * Runs an account command on the instance that owns the account. A download comes back over the
  * network and is passed on into the MessagePort the requesting worker is reading
  * @param {Object} message - The command
- * @param {Object} [opts]
- * @param {MessagePortWritable} [opts.download] - Where a download goes, see streamIntoPort()
- * @param {*} [opts.unowned] - See ClusterCoordinator.forward()
+ * @param {MessagePortWritable} [download] - Where a download goes, see streamIntoPort()
  * @returns {Promise<*>}
  */
-async function forwardAccountOperation(message, { download, ...forwardOpts } = {}) {
+async function forwardAccountOperation(message, download) {
     let timeout = commandBudget(message.timeout, EENGINE_TIMEOUT);
     if (download) {
         // The port stays here; the bytes come back over the network
         let { port: _port, ...payload } = message;
         return await streamIntoPort(download, () => cluster.forward(payload, { timeout, stream: true }));
     }
-    return await cluster.forward(message, Object.assign({ timeout }, forwardOpts));
+    return await cluster.forward(message, { timeout });
 }
 
 // How long an account command waits for an account that is between owners
 const OWNER_SETTLE_WAIT = 5000;
 
-// IMAP operations - run where the account is served, here or on another instance
-async function commandAccountOperation(worker, message) {
+/**
+ * IMAP operations - run where the account is served, here or on another instance. Every retry
+ * while the account is between owners happens here, each on what is left of the budget
+ * @param {Worker} worker - The requesting worker (unused)
+ * @param {Object} message - The command
+ * @param {Object} [opts]
+ * @param {*} [opts.orElse] - Resolved with, instead of failing, when no instance serves the account
+ *   once the wait for an owner is over
+ * @returns {Promise<*>}
+ */
+async function commandAccountOperation(worker, message, opts = {}) {
     let startedAt = Date.now();
     let budget = commandBudget(message.timeout, EENGINE_TIMEOUT);
     // How long to keep asking while the account is between owners
@@ -3276,7 +3283,7 @@ async function commandAccountOperation(worker, message) {
                 if (isDownload && !download) {
                     download = new MessagePortWritable(message.port);
                 }
-                let result = await forwardAccountOperation(message, { download });
+                let result = await forwardAccountOperation(message, download);
                 // The bytes are on their way into the port
                 download = null;
                 return result;
@@ -3287,6 +3294,9 @@ async function commandAccountOperation(worker, message) {
                 // command started; a download's port went to it with the command and cannot be resent
                 let unsettled = err.ownerUnsettled || (err.code === 'NotOwnedHere' && !isDownload);
                 if (!unsettled || isClosing || Date.now() >= settleUntil || download?.destroyed) {
+                    if (unsettled && 'orElse' in opts) {
+                        return opts.orElse;
+                    }
                     throw err.code === 'NotOwnedHere' ? noHandlerError(false) : err;
                 }
                 await timers.setTimeout(100);
@@ -3322,22 +3332,11 @@ async function commandExportFile(worker, message) {
 }
 
 /**
- * An account command that resolves to `fallback` when no instance owns the account, instead of
+ * An account command that resolves to `fallback` when no instance serves the account, instead of
  * failing with WorkerNotAvailable. A worker that dies while running it still fails the command
  */
 async function accountOperationOr(message, fallback) {
-    if (!assigned.has(message.account)) {
-        return await forwardAccountOperation(message, { unowned: fallback });
-    }
-    try {
-        return await runLocalAccountOperation(message);
-    } catch (err) {
-        // The worker let the account go before the command started
-        if (err.code === 'NotOwnedHere') {
-            return fallback;
-        }
-        throw err;
-    }
+    return await commandAccountOperation(null, message, { orElse: fallback });
 }
 
 async function commandSubconnections(worker, message) {

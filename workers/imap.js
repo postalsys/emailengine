@@ -30,6 +30,8 @@ const { setWorkerLease } = require('../lib/cluster/lease');
 const { waitUntilStarted } = require('../lib/email-client/connection-readiness');
 const { statusError } = require('../lib/utils/status-error');
 const { commandBudget, connectionWaitTimeout, remainingTimeout } = require('../lib/command-budget');
+
+const notOwnedHere = () => statusError('This worker does not hold the requested account', 'NotOwnedHere', 503);
 const { getSharedLock } = require('../lib/lock-run');
 const { sendQueuedOnce } = require('../lib/submit-lock');
 
@@ -1020,7 +1022,7 @@ class ConnectionHandler {
     async runAccountCommand(message) {
         const { account } = message;
         if (!this.accounts.has(account)) {
-            throw statusError('This worker does not hold the requested account', 'NotOwnedHere', 503);
+            throw notOwnedHere();
         }
         let entry = this.running.get(account);
         if (!entry) {
@@ -1030,6 +1032,12 @@ class ConnectionHandler {
         entry.count++;
         try {
             await this.waitForStartingConnection(message);
+            if (!this.accounts.has(account)) {
+                // Unassigned while it waited for the connection: nothing ran yet, so the main thread
+                // may send it to where the account went. The command itself would have answered
+                // WorkerNotAvailable, which is not retried there
+                throw notOwnedHere();
+            }
             return await this[message.cmd](message);
         } finally {
             if (--entry.count === 0) {

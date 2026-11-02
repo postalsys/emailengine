@@ -841,6 +841,26 @@ test('Export functionality tests', async t => {
         }
     });
 
+    await t.test("Export.getFile() reads a live writer's file here when the export directory is shared", async () => {
+        // Relayed through the writer every time before, which also failed for a writer that takes no
+        // cluster calls while the file sat on this disk
+        const account = 'contain-acct';
+        const exportId = generateExportId();
+        const dir = await fs.promises.mkdtemp(pathlib.join(os.tmpdir(), 'ee-export-'));
+        const filePath = pathlib.join(dir, `${exportId}.ndjson.gz`);
+        await fs.promises.writeFile(filePath, 'data');
+        mockRedisData['cluster:inst:writer-1'] = { token: 'x' };
+        try {
+            mockRedisData[getExportKey(account, exportId)] = { exportId, account, status: 'completed', filePath, isEncrypted: '0', instance: 'writer-1' };
+            const info = await Export.getFile(account, exportId);
+            assert.strictEqual(info.filePath, filePath);
+            assert.strictEqual(info.instance, undefined, 'no relay');
+        } finally {
+            delete mockRedisData['cluster:inst:writer-1'];
+            await fs.promises.rm(dir, { recursive: true, force: true });
+        }
+    });
+
     await t.test('Export.getFile() answers 410 when the writer is gone and its file with it', async () => {
         const account = 'contain-acct';
         const exportId = generateExportId();

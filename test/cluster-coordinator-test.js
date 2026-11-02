@@ -567,21 +567,20 @@ test('forwarding and the bus', async t => {
         }
     });
 
-    await t.test('an account nobody owns is WorkerNotAvailable, or the fallback the caller gives', async () => {
+    await t.test('an account nobody owns is WorkerNotAvailable, marked as between owners', async () => {
         await createAccounts(1);
         const a = await startMember('a', { ready: false });
         try {
             await assert.rejects(
                 a.member.forward({ cmd: 'listMailboxes', account: 'acc0' }),
-                err => err.code === 'WorkerNotAvailable' && err.statusCode === 503
+                err => err.code === 'WorkerNotAvailable' && err.statusCode === 503 && err.ownerUnsettled === true
             );
-            assert.equal(await a.member.forward({ cmd: 'teardown', account: 'acc0' }, { unowned: false }), false);
         } finally {
             await stopAll(a);
         }
     });
 
-    await t.test('an owner that no longer serves the account is asked again, then WorkerNotAvailable', async () => {
+    await t.test('an owner that no longer serves the account is asked once, and the caller is told to retry', async () => {
         const list = await createAccounts(10);
         const a = await startMember('a');
         const b = await startMember('b');
@@ -589,8 +588,13 @@ test('forwarding and the bus', async t => {
             await waitUntil(allServed(list, [a, b]), 15000, 'every account served');
             const remote = [...b.served][0];
             b.served.delete(remote);
-            await assert.rejects(a.member.forward({ cmd: 'getText', account: remote }), err => err.code === 'WorkerNotAvailable');
-            assert.equal(b.events.filter(([kind, , account]) => kind === 'call' && account === remote).length, 2, 'one retry');
+            // The retry is the caller's (server.js commandAccountOperation()), on what is left of the
+            // command's budget; a second attempt in here ran on the budget of the first
+            await assert.rejects(
+                a.member.forward({ cmd: 'getText', account: remote }),
+                err => err.code === 'WorkerNotAvailable' && err.ownerUnsettled === true
+            );
+            assert.equal(b.events.filter(([kind, , account]) => kind === 'call' && account === remote).length, 1, 'asked once');
         } finally {
             await stopAll(a, b);
         }

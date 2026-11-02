@@ -107,7 +107,7 @@ async function startScenario(opts) {
         },
 
         /** Accounts with more IMAP sessions on the farm than one owner opens */
-        overConnected(list = accounts, perOwner = 2) {
+        overConnected(list = accounts, perOwner = SESSIONS_PER_OWNER) {
             return list.map(account => ({ account, sessions: farm.sessionsFor(account).length })).filter(entry => entry.sessions > perOwner);
         },
 
