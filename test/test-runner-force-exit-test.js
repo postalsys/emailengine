@@ -88,9 +88,9 @@ test('the test runner turns off the background compiles an exit can deadlock on'
     });
 });
 
-// What --test-force-exit discarded when it ended a file's process: results the file's reporter had
-// not written out yet (test/helpers/drain-results.js). 16 copies of a 600-result file at once lost
-// results in about two runs of five without it, and in none of 80 with it
+// What --test-force-exit discarded when it ended a file's process: results still in the file's
+// stdout write queue (test/helpers/drain-results.js). Eight 600-result files at once lost results
+// in every one of 6 runs on macOS without it, and in none of 15 with it
 test('every test file writes its results out before the forced exit', async t => {
     await t.test('the drain is part of the node --test spawn', () => {
         const spawnCall = fs.readFileSync(RUNNER, 'utf8').match(SPAWN_CALL);
