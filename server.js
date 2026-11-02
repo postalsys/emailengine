@@ -176,6 +176,7 @@ const { heartbeatDiagnostics, eventLoopDelaySeries, threadHeapSeries } = require
 
 const msgpack = require('./lib/msgpack');
 const { ClusterCoordinator, resolveInstanceId, resolveAddress, notOwnedHereError } = require('./lib/cluster/coordinator');
+const { remainingTimeout } = require('./lib/command-budget');
 const { summarizeFleet } = require('./lib/cluster/fleet');
 const { statusError } = require('./lib/utils/status-error');
 const { MessagePortWritable, sendToMessagePort, createPortReadable } = require('./lib/message-port-stream');
@@ -3253,7 +3254,10 @@ const OWNER_SETTLE_WAIT = 5000;
 
 // IMAP operations - run where the account is served, here or on another instance
 async function commandAccountOperation(worker, message) {
-    let deadline = Date.now() + Math.min(OWNER_SETTLE_WAIT, commandTimeout(message) / 2);
+    let startedAt = Date.now();
+    let budget = commandTimeout(message);
+    // How long to keep asking while the account is between owners
+    let settleUntil = startedAt + Math.min(OWNER_SETTLE_WAIT, budget / 2);
     let isDownload = STREAM_COMMANDS.has(message.cmd) && !!message.port;
     // A forwarded download is written into the requester's port from here. Built once and kept
     // across retries: the requester closing its end (the HTTP client went away) is reported only to
@@ -3261,6 +3265,13 @@ async function commandAccountOperation(worker, message) {
     let download = null;
     try {
         for (;;) {
+            // The requesting worker gives up on the whole command once the budget is spent, so a
+            // command that waited for the account runs, here or elsewhere, on what is left of it
+            // (lib/command-budget.js); with too little left it is not started at all
+            message.timeout = remainingTimeout(budget, startedAt);
+            if (!message.timeout) {
+                throw statusError('Request timed out', 'Timeout', 504);
+            }
             try {
                 if (assigned.has(message.account)) {
                     // The port goes to the worker with the command
@@ -3281,7 +3292,7 @@ async function commandAccountOperation(worker, message) {
                 // the account. NotOwnedHere comes from a worker that let the account go before the
                 // command started; a download's port went to it with the command and cannot be resent
                 let unsettled = err.ownerUnsettled || (err.code === 'NotOwnedHere' && !isDownload);
-                if (!unsettled || isClosing || Date.now() >= deadline || download?.destroyed) {
+                if (!unsettled || isClosing || Date.now() >= settleUntil || download?.destroyed) {
                     throw err.code === 'NotOwnedHere' ? workerNotAvailableError() : err;
                 }
                 await new Promise(resolve => setTimeout(resolve, 100));

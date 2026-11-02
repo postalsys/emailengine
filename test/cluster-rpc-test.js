@@ -21,6 +21,8 @@ const {
     CLOCK_WINDOW
 } = require('../lib/cluster/rpc');
 
+const { createMockLogger } = require('./helpers/mock-logger');
+
 const SECRET = crypto.randomBytes(32);
 const logger = { info() {}, warn() {}, error() {}, debug() {} };
 
@@ -97,6 +99,23 @@ test('verifyHeaders() and bodyMatches()', async t => {
     });
 });
 
+test('NonceCache forgets expired nonces oldest first, and only those', () => {
+    const nonces = new NonceCache(1000);
+    const start = 1000000;
+    // Entries live two windows; these expire at start + 2000, start + 2500 and start + 3000
+    nonces.remember('first', start);
+    nonces.remember('second', start + 500);
+    nonces.remember('third', start + 1000);
+
+    nonces.prune(start + 2600);
+    assert.deepEqual([...nonces.entries.keys()], ['third'], 'the scan drops the expired ones and ends at the first still alive');
+    assert.equal(nonces.remember('third', start + 2700), false, 'still a replay');
+
+    // remember() prunes as it goes
+    assert.equal(nonces.remember('fourth', start + 3100), true);
+    assert.deepEqual([...nonces.entries.keys()], ['fourth']);
+});
+
 test('toWire()', () => {
     const wired = toWire({ raw: new Uint8Array([1, 2]).buffer, nested: [{ deep: new Uint8Array([3]).buffer }], date: new Date(0), text: 'x' });
     assert.ok(Buffer.isBuffer(wired.raw));
@@ -109,10 +128,11 @@ test('calls between two instances', async t => {
     const port = await freePort();
     const handled = [];
     let slowReadable = null;
+    const serverLogger = createMockLogger();
     const server = createRpcServer({
         instanceId: 'b',
         getSecret: async () => SECRET,
-        logger,
+        logger: serverLogger,
         async handle(message) {
             handled.push(message);
             switch (message.cmd) {
@@ -203,6 +223,21 @@ test('calls between two instances', async t => {
 
     await t.test('a call meant for another instance is refused', async () => {
         await assert.rejects(client.call({ id: 'c', address: peer.address }, { cmd: 'echo' }), err => err.code === 'ClusterAuthFailed');
+    });
+
+    await t.test('a refused signed call is logged at warn, a request without a signature at debug', async () => {
+        // The two refusals above were signed: a peer with the wrong key or the wrong address is
+        // something an operator has to see
+        const refused = level =>
+            serverLogger.entries.filter(entry => entry.level === level && entry.msg === 'Refused a cluster call').map(entry => entry.reason);
+        assert.deepEqual(refused('warn'), ['bad signature', 'bad signature', 'addressed to another instance']);
+        assert.deepEqual(refused('debug'), []);
+
+        // A scanner on the pod network is not
+        const res = await fetch(`http://${peer.address}${CALL_PATH}`, { method: 'POST', body: 'hello' });
+        assert.equal(res.status, 401);
+        assert.deepEqual(refused('debug'), ['missing signature']);
+        assert.equal(refused('warn').length, 3);
     });
 
     await t.test('an unreachable instance is reported as not delivered', async () => {
