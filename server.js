@@ -2206,6 +2206,11 @@ async function assignAccounts() {
         } else {
             assignRetryCount = 0;
         }
+
+        // Every claimed account has a worker: the claims left over may follow at once
+        if (!unassigned.size && !isClosing) {
+            cluster?.backlogDrained();
+        }
     }
 }
 

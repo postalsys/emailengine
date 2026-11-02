@@ -70,7 +70,7 @@ async function createAccounts(count) {
 }
 
 /** A coordinator whose "workers" are a set of served accounts, with a log of what happened */
-async function startMember(id, { listen = true, ready = true, backlog } = {}) {
+async function startMember(id, { listen = true, ready = true, backlog, drain = false } = {}) {
     const port = listen ? await freePort() : 0;
     const subscriber = redis.duplicate();
     subscribers.push(subscriber);
@@ -91,7 +91,11 @@ async function startMember(id, { listen = true, ready = true, backlog } = {}) {
                     assert.equal(served.has(account), false, `${id} was told to serve ${account} twice`);
                     served.add(account);
                 }
-                events.push(['serve', accounts.length]);
+                events.push(['serve', accounts.length, Date.now()]);
+                if (drain) {
+                    // The workers take the accounts at once
+                    setImmediate(() => member.backlogDrained());
+                }
             },
             async stopServing(account, opts = {}) {
                 served.delete(account);
@@ -125,6 +129,11 @@ async function startMember(id, { listen = true, ready = true, backlog } = {}) {
         member.setReady(true);
     }
     return { id, member, served, events };
+}
+
+/** The batches a member was told to serve, as `{ count, at }` */
+function serveBatches(entry) {
+    return entry.events.filter(event => event[0] === 'serve').map(event => ({ count: event[1], at: event[2] }));
 }
 
 /**
@@ -601,12 +610,27 @@ test('Redis outages and claim pacing', async t => {
         const a = await startMember('a', { listen: false, backlog: () => 700 });
         try {
             await waitUntil(() => a.served.size === list.length, 20000, 'every account served');
-            const batches = a.events.filter(event => event[0] === 'serve').map(event => event[1]);
+            const batches = serveBatches(a).map(batch => batch.count);
             assert.ok(batches.length >= 5, `claimed in ${JSON.stringify(batches)}`);
             assert.ok(
                 batches.every(count => count <= 300),
                 `claimed in ${JSON.stringify(batches)}`
             );
+        } finally {
+            await stopAll(a);
+        }
+    });
+
+    await t.test('claims left over follow early when the workers took the earlier ones', async () => {
+        const list = await createAccounts(3000);
+        // A thousand claims per pass; without the drain each further batch waits a whole CLAIM_PAUSE
+        const a = await startMember('a', { listen: false, drain: true });
+        try {
+            await waitUntil(() => a.served.size === list.length, 20000, 'every account served');
+            const batches = serveBatches(a);
+            assert.ok(batches.length >= 3, `claimed in ${JSON.stringify(batches)}`);
+            const spread = batches[batches.length - 1].at - batches[0].at;
+            assert.ok(spread < 1500, `the batches were ${spread} ms apart in all`);
         } finally {
             await stopAll(a);
         }
