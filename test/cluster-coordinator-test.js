@@ -350,6 +350,71 @@ test('ownership life cycle', async t => {
         }
     });
 
+    await t.test('a failed owner read while rejoining is retried, not skipped', async () => {
+        const list = await createAccounts(10);
+        const a = await startMember('a');
+        const store = require('../lib/cluster/store');
+        const readOwners = store.readOwners;
+        try {
+            await waitUntil(() => a.served.size === list.length, 15000, 'a serves everything');
+            const generation = a.member.lease.generation();
+            let failures = 0;
+            store.readOwners = async (...args) => {
+                if (a.member.fencing && failures < 1) {
+                    failures++;
+                    throw new Error('Redis went away');
+                }
+                return readOwners(...args);
+            };
+            await redis.del(clusterKeys.instance('a'));
+            await redis.set(clusterKeys.owner(list[0]), 'b');
+            await waitUntil(() => a.member.stats.fences === 1 && !a.member.fencing, 10000, 'fencing');
+            assert.equal(failures, 1);
+            assert.deepEqual(
+                a.events.filter(([kind]) => kind === 'stop'),
+                [['stop', list[0], true]],
+                'the account taken over was closed before the lease resumed'
+            );
+            assert.equal(a.member.lease.generation(), generation);
+            assert.equal(a.member.lease.isValid(), true);
+        } finally {
+            store.readOwners = readOwners;
+            await redis.del(clusterKeys.owner(list[0]));
+            await stopAll(a);
+        }
+    });
+
+    await t.test('an owner read that keeps failing while rejoining gives up every account', async () => {
+        // Before, the failure was only logged and the next renewal resumed the lease with every
+        // account still connected, including the ones another member had taken
+        const list = await createAccounts(10);
+        const a = await startMember('a');
+        const store = require('../lib/cluster/store');
+        const readOwners = store.readOwners;
+        try {
+            await waitUntil(() => a.served.size === list.length, 15000, 'a serves everything');
+            const generation = a.member.lease.generation();
+            let failing = true;
+            store.readOwners = async (...args) => {
+                if (failing && a.member.fencing) {
+                    throw new Error('Redis went away');
+                }
+                return readOwners(...args);
+            };
+            await redis.del(clusterKeys.instance('a'));
+            await waitUntil(() => a.member.stats.fences === 1 && !a.member.fencing, 10000, 'fencing');
+            failing = false;
+            assert.equal(a.events.filter(([kind, , lost]) => kind === 'stop' && lost).length, list.length, 'every account closed as lost');
+            assert.equal(a.member.lease.generation(), generation + 1, 'what was held back is dropped');
+            assert.equal(a.member.registered, true, 'the record it registered is kept');
+            // The next passes claim the accounts back
+            await waitUntil(() => a.served.size === list.length, 20000, 'a serves everything again');
+        } finally {
+            store.readOwners = readOwners;
+            await stopAll(a);
+        }
+    });
+
     await t.test('a member that cannot rejoin gives up every account', async () => {
         const list = await createAccounts(10);
         const a = await startMember('a');

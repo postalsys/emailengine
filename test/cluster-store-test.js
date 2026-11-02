@@ -14,6 +14,7 @@ const { redis } = require('../lib/db');
 const { REDIS_PREFIX } = require('../lib/consts');
 const { clusterKeys } = require('../lib/cluster/keys');
 const store = require('../lib/cluster/store');
+const { BaseClient } = require('../lib/email-client/base-client');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
 async function cleanup() {
@@ -191,15 +192,61 @@ test('account-set-state.lua', async t => {
 
     await t.test('writes the state and the run, and counts it', async () => {
         await createAccount('acc', { 'state:count:connected': '0' });
-        assert.deepEqual(await redis.accountSetState(key, 'connected', '5'), [1, '0', 1]);
+        assert.deepEqual(await redis.accountSetState(key, 'connected', '5'), [1, '0', 1, 1]);
         assert.equal(await redis.hget(key, 'state'), 'connected');
         assert.equal(await redis.hget(key, 'runIndex'), '5');
-        assert.deepEqual(await redis.accountSetState(key, 'connected', '5'), [1, '1', 2]);
+        assert.deepEqual(await redis.accountSetState(key, 'connected', '5'), [1, '1', 2, 1], 'still due until announced');
+        await redis.hdel(key, 'state:initPending');
+        assert.deepEqual(await redis.accountSetState(key, 'connected', '5'), [1, '2', 3, 0]);
+    });
+
+    await t.test('accountInitialized is due only for an account whose counter was reset', async () => {
+        // An account that connected before the marker existed has a counter above 0 and no marker
+        await createAccount('acc', { 'state:count:connected': '4' });
+        assert.deepEqual(await redis.accountSetState(key, 'connected', '5'), [1, '4', 5, 0]);
+        // A re-initialized one is due again
+        await redis.hset(key, 'state:count:connected', '0');
+        assert.deepEqual(await redis.accountSetState(key, 'connected', '5'), [1, '0', 1, 1]);
+    });
+
+    await t.test('a held accountInitialized is announced by the next owner, once', async () => {
+        // The first connected write spent the one-shot counter even when its announcement was held
+        // back, so the next owner saw a count of 1 and never announced the account at all
+        await createAccount('acc', { 'state:count:connected': '0' });
+        const connection = overrides => {
+            const delivered = [];
+            const ctx = Object.assign(Object.create(BaseClient.prototype), {
+                account: 'acc',
+                state: 'connected',
+                runIndex: 5,
+                redis,
+                logger: { info() {}, warn() {}, error() {}, debug() {}, trace() {} },
+                getAccountKey: () => key,
+                notificationHandler: { notify: async (mailbox, event) => delivered.push(event) },
+                ...overrides
+            });
+            return { ctx, delivered };
+        };
+
+        // Held back by the instance that may have lost the account (its connection is retired as
+        // lost by the time the event would go out)
+        const old = connection();
+        old.ctx.notify = async () => false;
+        await old.ctx.setStateVal();
+        assert.equal(await redis.hget(key, 'state:initPending'), '1', 'still due');
+
+        const next = connection();
+        await next.ctx.setStateVal();
+        assert.deepEqual(next.delivered, ['accountInitialized']);
+        assert.equal(await redis.hget(key, 'state:initPending'), null);
+
+        await next.ctx.setStateVal();
+        assert.deepEqual(next.delivered, ['accountInitialized'], 'announced only once');
     });
 
     await t.test('a state without a counter yet reports no previous count', async () => {
         await createAccount('acc');
-        assert.deepEqual(await redis.accountSetState(key, 'syncing', '5'), [1, null, 1]);
+        assert.deepEqual(await redis.accountSetState(key, 'syncing', '5'), [1, null, 1, 0]);
     });
 
     await t.test('refuses a run that does not own the account', async () => {

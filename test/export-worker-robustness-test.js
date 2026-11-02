@@ -171,6 +171,57 @@ test('Export.markInterruptedAsFailed() unlinks only the export file itself', asy
     }
 });
 
+test('Export.markInterruptedAsFailed() leaves an export another instance is still running', async () => {
+    // Its writer's heartbeat record can be gone for a while (a Redis outage, a stalled process)
+    // while its worker still holds the job. Recovery failed the export and deleted the file it was
+    // writing; only the job lock tells a running writer from a dead one
+    const { exportQueue } = require('../lib/db');
+    const getJob = exportQueue.getJob;
+    const dir = await fs.promises.mkdtemp(pathlib.join(os.tmpdir(), 'ee-export-recovery-'));
+    const states = new Map();
+    exportQueue.getJob = async id => (states.has(id) ? { isActive: async () => states.get(id) === 'active', remove: async () => {} } : null);
+    try {
+        const exports = {};
+        for (const [name, instance, state] of [
+            ['running', 'another-instance', 'active'],
+            ['stalled', 'another-instance', 'wait'],
+            ['jobless', 'another-instance', null]
+        ]) {
+            const exportId = generateExportId();
+            const filePath = pathlib.join(dir, `${exportId}.ndjson.gz`);
+            await fs.promises.writeFile(filePath, name);
+            if (state) {
+                states.set(exportId, state);
+            }
+            const key = getExportKey(ACCOUNT, exportId);
+            createdKeys.add(key);
+            createdKeys.add(getExportQueueKey(ACCOUNT, exportId));
+            await redis.hset(key, { exportId, account: ACCOUNT, status: 'processing', filePath, instance });
+            await redis.expire(key, 600);
+            const entry = buildActiveEntry(ACCOUNT, exportId);
+            createdEntries.add(entry);
+            await redis.sadd(ACTIVE_EXPORTS_KEY, entry);
+            exports[name] = { exportId, filePath };
+        }
+
+        await Export.markInterruptedAsFailed();
+
+        assert.strictEqual(await redis.hget(getExportKey(ACCOUNT, exports.running.exportId), 'status'), 'processing', 'a running export is left alone');
+        assert.strictEqual(await fs.promises.readFile(exports.running.filePath, 'utf8'), 'running', 'and so is its file');
+        for (const name of ['stalled', 'jobless']) {
+            assert.strictEqual(await redis.hget(getExportKey(ACCOUNT, exports[name].exportId), 'status'), 'failed', `${name}: failed as before`);
+            await assert.rejects(fs.promises.access(exports[name].filePath), `${name}: its file is removed`);
+        }
+    } finally {
+        exportQueue.getJob = getJob;
+        // The export left running would otherwise count against the account in the tests below
+        for (const entry of createdEntries) {
+            await redis.srem(ACTIVE_EXPORTS_KEY, entry);
+        }
+        await fs.promises.rm(dir, { recursive: true, force: true });
+    }
+});
+
 test('Export.create() gives the concurrency slot back when a step after taking it fails', async () => {
     // Only a failed queue add released the slot. An unwritable export path failed earlier and left
     // an entry in the active set on every attempt, so the account's exports answered 429 until the

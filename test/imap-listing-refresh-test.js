@@ -75,6 +75,22 @@ async function runSync(client) {
 }
 
 test('IMAPClient.syncMailboxes() folder listing refresh', async t => {
+    await t.test('a connected state another instance refused is not announced', async () => {
+        // Outside a worker thread an emitted change cannot be posted anywhere, and says so
+        const announced = logCalls =>
+            logCalls.some(entry => entry.level === 'error' && entry.args[0] && entry.args[0].msg === 'Failed to post state change to parent');
+
+        const refused = makeClient({ mailboxPaths: ['INBOX'] });
+        refused.client.setStateVal = async () => false;
+        await runSync(refused.client);
+        assert.equal(announced(refused.logCalls), false, 'the state was not recorded, so it is not this connection to announce');
+
+        const recorded = makeClient({ mailboxPaths: ['INBOX'] });
+        recorded.client.setStateVal = async () => true;
+        await runSync(recorded.client);
+        assert.equal(announced(recorded.logCalls), true);
+    });
+
     await t.test('skips the refresh right after connect() listed the folders', async () => {
         const { client, refreshCalls, syncedPaths } = makeClient({ mailboxPaths: ['INBOX', 'Sent'] });
         // Set by connect() once every listed folder has a Mailbox instance

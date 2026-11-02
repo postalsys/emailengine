@@ -20,9 +20,15 @@ ARGV:
   [1] state - New connection state
   [2] runIndex - Run of the writing process
 
+         The first connected write after the counter was set to 0 (a new or re-initialized account)
+         arms `state:initPending`, and every connected write reports it until the client that
+         announced accountInitialized deletes it. An announcement held back because the instance may
+         have lost the account leaves it armed, so the next owner announces it instead.
+
 Returns:
-  {1, previousCount, newCount} when written; previousCount is the state's counter before this
-     write (false when it had none), newCount after it
+  {1, previousCount, newCount, initPending} when written; previousCount is the state's counter
+     before this write (false when it had none), newCount after it, initPending whether the
+     accountInitialized announcement is due (connected writes only)
   {0} when the account no longer exists
   {-1} when another run owns the account
 --]]
@@ -46,4 +52,12 @@ local previous = redis.call("HGET", accountKey, counterKey);
 redis.call("HSET", accountKey, "state", state, "runIndex", runIndex);
 local current = redis.call("HINCRBY", accountKey, counterKey, 1);
 
-return {1, previous, current};
+local initPending = false;
+if state == "connected" then
+    if previous == "0" then
+        redis.call("HSET", accountKey, "state:initPending", "1");
+    end;
+    initPending = redis.call("HGET", accountKey, "state:initPending") == "1";
+end;
+
+return {1, previous, current, initPending and 1 or 0};
