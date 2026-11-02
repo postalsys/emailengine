@@ -136,6 +136,22 @@ test('Export.incrementCounters() adds a batch of progress at once', async () => 
     assert.deepStrictEqual(await redis.hmget(exportKey, 'messagesExported', 'bytesWritten', 'messagesSkipped'), ['5', '350', '3']);
 });
 
+test('Export.startProcessing() forgets the file size an earlier attempt recorded', async () => {
+    // complete() records the size of the finished file, which getFile() compares a copy with. A
+    // rerun whose own record of it failed must not leave the earlier attempt's size behind
+    const exportId = generateExportId();
+    const key = getExportKey(ACCOUNT, exportId);
+    createdKeys.add(key);
+    createdKeys.add(getExportQueueKey(ACCOUNT, exportId));
+    await redis.hset(key, { exportId, account: ACCOUNT, status: 'queued', fileSize: '1234' });
+    await redis.expire(key, 600);
+
+    await Export.startProcessing(ACCOUNT, exportId);
+
+    assert.strictEqual(await redis.hget(key, 'fileSize'), null);
+    assert.strictEqual(await redis.hget(key, 'status'), 'processing');
+});
+
 test('Export.markInterruptedAsFailed() unlinks only the export file itself', async () => {
     const dir = await fs.promises.mkdtemp(pathlib.join(os.tmpdir(), 'ee-export-recovery-'));
     try {
