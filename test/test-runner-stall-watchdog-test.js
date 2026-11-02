@@ -185,6 +185,59 @@ test('the watchdog leaves an ordinary run alone', async t => {
     });
 });
 
+test('a file that completes with a test started and never reported fails the run', async t => {
+    // The reporter is driven in process with the event shapes `node --test` produces (checked on
+    // Node 20, 22 and 24): every test reports a start and then a pass or fail, and the file's own
+    // completion comes last. A result that never arrived is what the unit tier lost once, 29 results
+    // short with `fail 0` still printed
+    const file = pathlib.join(PROJECT_ROOT, 'test', 'lost-results-fixture-test.js');
+    const name = pathlib.relative(PROJECT_ROOT, file);
+    const previous = process.env.EE_TEST_FILES;
+    process.env.EE_TEST_FILES = JSON.stringify([name]);
+    const Reporter = require('./helpers/stall-reporter');
+    let reporter;
+    try {
+        reporter = new Reporter({});
+    } finally {
+        if (previous === undefined) {
+            delete process.env.EE_TEST_FILES;
+        } else {
+            process.env.EE_TEST_FILES = previous;
+        }
+    }
+    const reports = [];
+    // Never touch this process's own exit code
+    reporter.reportDroppedResults = (reportedFile, names) => reports.push({ file: reportedFile, names });
+    reporter.resume();
+    const feed = event => new Promise((resolve, reject) => reporter.write(event, err => (err ? reject(err) : resolve())));
+    const start = (nesting, testName) => feed({ type: 'test:start', data: { name: testName, nesting, file } });
+    const pass = (nesting, testName) => feed({ type: 'test:pass', data: { name: testName, nesting, file, details: { duration_ms: 1 } } });
+
+    await start(0, 'a suite');
+    await start(1, 'reported');
+    await pass(1, 'reported');
+    await start(1, 'twice named');
+    await pass(1, 'twice named');
+    await start(1, 'twice named');
+    await pass(1, 'twice named');
+    await start(1, 'lost');
+    // 'lost' and the suite never report, the file completes anyway
+    await feed({ type: 'test:complete', data: { name, nesting: 0, file, details: { duration_ms: 5 } } });
+
+    await t.test('it names the file and the tests that never reported', () => {
+        assert.deepEqual(reports, [{ file: name, names: ['0:a suite', '1:lost'] }]);
+    });
+
+    await t.test('a file whose tests all reported is left alone', async () => {
+        reports.length = 0;
+        const other = pathlib.join(PROJECT_ROOT, 'test', 'complete-fixture-test.js');
+        await feed({ type: 'test:start', data: { name: 'fine', nesting: 0, file: other } });
+        await feed({ type: 'test:pass', data: { name: 'fine', nesting: 0, file: other, details: { duration_ms: 1 } } });
+        await feed({ type: 'test:complete', data: { name: pathlib.relative(PROJECT_ROOT, other), nesting: 0, file: other, details: { duration_ms: 2 } } });
+        assert.deepEqual(reports, []);
+    });
+});
+
 test('the runner wires the stall watchdog in', async t => {
     const runner = fs.readFileSync(pathlib.join(__dirname, 'run-tests.js'), 'utf8');
 

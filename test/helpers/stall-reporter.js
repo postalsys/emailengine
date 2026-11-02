@@ -32,6 +32,15 @@
 // tests across five otherwise identical runs, all with `fail 0` - the process exits as soon as the
 // run finishes and the reporters have not finished draining, so results go missing silently. Since a
 // dropped result could just as easily be a failing one, this must stay a single reporter.
+//
+// It also guards against a result lost on its way from a file's process to the runner. Seen once, on
+// 2026-11-02 in the unit tier on macOS: a suite of test/views-csp-guardrail-test.js printed a
+// subtest's start and nothing more, 28 subtests and the suite's own result never arrived, the file's
+// later tests reported as usual, and the run said `fail 0` with 29 tests fewer than the next run.
+// Every test, skipped or todo ones included, reports `test:start` and then `test:pass` or `test:fail`
+// (checked on Node 20, 22 and 24), and a file's own `test:complete` comes after all of them. So a
+// test still open when its file completes is a lost result, and the run fails rather than counting
+// it as passed.
 
 const { spec } = require('node:test/reporters');
 const { Transform } = require('node:stream');
@@ -99,6 +108,8 @@ class StallAwareSpecReporter extends Transform {
         // of its tests finished, and the last one. A stall report says which state a stuck file is
         // in: its tests all reported and its process never exited, or one of them never finished
         this.progress = new Map();
+        // Files that completed with a test still open, see reportDroppedResults()
+        this.dropped = [];
         this.lastEvent = Date.now();
         this.stallMs = Number(process.env.EE_TEST_STALL_TIMEOUT) || 0;
         this.watchdog = null;
@@ -175,14 +186,55 @@ class StallAwareSpecReporter extends Transform {
         const key = fileKey(data.file);
         let progress = this.progress.get(key);
         if (!progress) {
-            progress = { startedAt: Date.now(), finished: 0, lastName: null, lastAt: 0 };
+            // `open`: tests that started and have not reported, by name within their nesting level,
+            // counted because a loop can give several tests one name
+            progress = { startedAt: Date.now(), finished: 0, lastName: null, lastAt: 0, open: new Map() };
             this.progress.set(key, progress);
         }
-        if ((event.type === 'test:pass' || event.type === 'test:fail') && !this.isFileResult(data)) {
-            progress.finished++;
-            progress.lastName = data.name;
-            progress.lastAt = Date.now();
+        const started = event.type === 'test:start';
+        const finished = event.type === 'test:pass' || event.type === 'test:fail';
+        if ((!started && !finished) || this.isFileResult(data)) {
+            return;
         }
+        const id = `${data.nesting}:${data.name}`;
+        if (started) {
+            progress.open.set(id, (progress.open.get(id) || 0) + 1);
+            return;
+        }
+        progress.finished++;
+        progress.lastName = data.name;
+        progress.lastAt = Date.now();
+        const left = (progress.open.get(id) || 0) - 1;
+        if (left > 0) {
+            progress.open.set(id, left);
+        } else {
+            progress.open.delete(id);
+        }
+    }
+
+    // The file's own `test:complete` comes after every result of its tests, so a test still open then
+    // never reported: its result was lost between the file's process and the runner
+    checkDroppedResults(data) {
+        const progress = this.progress.get(fileKey(data.file || data.name));
+        if (progress && progress.open.size) {
+            this.reportDroppedResults(data.name, [...progress.open.keys()]);
+        }
+    }
+
+    // Fails the run through the exit code rather than ending it here: the other files finish and the
+    // summary prints as usual, it just cannot be trusted, which the report on stderr says. The exit
+    // code survives --test-force-exit (verified on Node 20, 22 and 24: the forced exit takes
+    // process.exitCode)
+    reportDroppedResults(file, names) {
+        this.dropped.push({ file, count: names.length });
+        process.exitCode = 1;
+        fs.writeSync(
+            2,
+            `\nResults lost: ${file} completed with ${names.length} test(s) that started and never reported:\n` +
+                names.map(name => `  - ${name}`).join('\n') +
+                `\nThe run fails rather than count them as passed; a lost result can be a failing one.\n` +
+                `See the note on lost results in test/helpers/stall-reporter.js.\n\n`
+        );
     }
 
     forward(err, output, callback) {
@@ -201,6 +253,7 @@ class StallAwareSpecReporter extends Transform {
             // top-level tests are nesting 0 too; only a file's own result names one of the files
             if (this.isFileResult(event.data)) {
                 this.outstanding.delete(fileKey(event.data.name));
+                this.checkDroppedResults(event.data);
             }
         }
         this.track(event);
@@ -212,7 +265,14 @@ class StallAwareSpecReporter extends Transform {
         if (this.watchdog) {
             clearInterval(this.watchdog);
         }
-        this.inner._flush((err, output) => this.forward(err, output, callback));
+        this.inner._flush((err, output) => {
+            if (this.dropped.length) {
+                // Next to the summary, which is what a reader looks at
+                const files = this.dropped.map(entry => `${entry.file} (${entry.count})`).join(', ');
+                fs.writeSync(2, `\nResults were lost in ${this.dropped.length} file(s), the summary above is incomplete: ${files}\n`);
+            }
+            this.forward(err, output, callback);
+        });
     }
 }
 
