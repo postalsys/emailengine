@@ -49,7 +49,18 @@ test('an error wrapping a transient reply counts too', () => {
     assert.equal(isTransientRedisError(new Error('Sync failed', { cause: loading })), true);
     assert.equal(isTransientRedisError(new Error('Sync failed', { cause: new Error('Sync failed', { cause: loading }) })), true);
     assert.equal(isTransientRedisError(new Error('Sync failed', { cause: new Error('parse failure') })), false);
+    const abort = reply('EXECABORT Transaction discarded because of previous errors.');
+    abort.previousErrors = [abort];
+    assert.equal(isTransientRedisError(abort), false, 'an abort that lists itself ends too');
     const loop = new Error('loop');
     loop.cause = loop;
     assert.equal(isTransientRedisError(loop), false, 'a cause chain that loops ends');
+});
+
+test('an aborted transaction with many failed commands is still transient', () => {
+    // every() handed the index in as the depth argument, so from the seventh failed command on the
+    // depth limit read the abort as permanent and the work was dropped
+    const oom = reply("OOM command not allowed when used memory > 'maxmemory'.");
+    const previousErrors = Array.from({ length: 50 }, () => oom);
+    assert.equal(isTransientRedisError(reply('EXECABORT Transaction discarded because of previous errors.', { previousErrors })), true);
 });

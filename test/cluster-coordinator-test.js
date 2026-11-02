@@ -600,6 +600,40 @@ test('forwarding and the bus', async t => {
         }
     });
 
+    await t.test('the owner lookups come out of the budget, and a command with too little left is not sent', async () => {
+        // A 1 s command whose owner lookup took 600 ms ran on the owner at 1.6 s, after its caller
+        // had answered Timeout: a retried upload or submission then ran twice
+        const list = await createAccounts(10);
+        const a = await startMember('a');
+        const b = await startMember('b');
+        const store = require('../lib/cluster/store');
+        const readOwner = store.readOwner;
+        try {
+            await waitUntil(allServed(list, [a, b]), 15000, 'every account served');
+            const remote = [...b.served][0];
+            const received = [];
+            const handleCall = b.member.hooks.handleCall;
+            b.member.hooks.handleCall = async message => {
+                received.push(message.timeout);
+                return handleCall(message);
+            };
+            store.readOwner = async (...args) => {
+                await sleep(600);
+                return readOwner(...args);
+            };
+
+            await assert.rejects(a.member.forward({ cmd: 'getText', account: remote, timeout: 1000 }, { timeout: 1000 }), err => err.code === 'Timeout');
+            assert.deepEqual(received, [], 'not sent');
+
+            await a.member.forward({ cmd: 'getText', account: remote, timeout: 3000 }, { timeout: 3000 });
+            assert.equal(received.length, 1);
+            assert.ok(received[0] <= 2450 && received[0] >= 1000, `the owner was given ${received[0]} ms`);
+        } finally {
+            store.readOwner = readOwner;
+            await stopAll(a, b);
+        }
+    });
+
     await t.test('an instance checks that its advertised address leads back to it', async () => {
         const a = await startMember('a');
         try {

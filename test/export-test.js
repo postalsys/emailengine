@@ -31,6 +31,7 @@ function createMockRedis() {
             mockRedisData[key][field] = value;
         },
         hgetall: async key => mockRedisData[key] || null,
+        hmget: async (key, ...fields) => fields.map(field => (mockRedisData[key] && mockRedisData[key][field]) || null),
         hdel: async () => {},
         hSetExists: async () => {},
         hgetallBuffer: async () => ({}),
@@ -841,24 +842,58 @@ test('Export functionality tests', async t => {
         }
     });
 
-    await t.test("Export.getFile() reads a live writer's file here when the export directory is shared", async () => {
-        // Relayed through the writer every time before, which also failed for a writer that takes no
-        // cluster calls while the file sat on this disk
+    // A file named like the export, written by another instance: the completed file in a shared
+    // export directory, or the partial file an interrupted earlier attempt left on this disk
+    const localCopy = async (t, { instance, fileSize, contents = 'data', alive = true }) => {
         const account = 'contain-acct';
         const exportId = generateExportId();
         const dir = await fs.promises.mkdtemp(pathlib.join(os.tmpdir(), 'ee-export-'));
         const filePath = pathlib.join(dir, `${exportId}.ndjson.gz`);
-        await fs.promises.writeFile(filePath, 'data');
-        mockRedisData['cluster:inst:writer-1'] = { token: 'x' };
-        try {
-            mockRedisData[getExportKey(account, exportId)] = { exportId, account, status: 'completed', filePath, isEncrypted: '0', instance: 'writer-1' };
-            const info = await Export.getFile(account, exportId);
-            assert.strictEqual(info.filePath, filePath);
-            assert.strictEqual(info.instance, undefined, 'no relay');
-        } finally {
-            delete mockRedisData['cluster:inst:writer-1'];
-            await fs.promises.rm(dir, { recursive: true, force: true });
+        await fs.promises.writeFile(filePath, contents);
+        if (alive) {
+            mockRedisData[`cluster:inst:${instance}`] = { token: 'x' };
         }
+        mockRedisData[getExportKey(account, exportId)] = Object.assign(
+            { exportId, account, status: 'completed', filePath, isEncrypted: '0', instance },
+            fileSize === undefined ? {} : { fileSize: String(fileSize) }
+        );
+        t.after(async () => {
+            delete mockRedisData[`cluster:inst:${instance}`];
+            await fs.promises.rm(dir, { recursive: true, force: true });
+        });
+        return { account, exportId, filePath };
+    };
+
+    await t.test("Export.getFile() reads a live writer's completed file here when the export directory is shared", async t => {
+        // Relayed through the writer every time before, which also failed for a writer that takes no
+        // cluster calls while the file sat on this disk
+        const { account, exportId, filePath } = await localCopy(t, { instance: 'writer-1', fileSize: 4 });
+        const info = await Export.getFile(account, exportId);
+        assert.strictEqual(info.filePath, filePath);
+        assert.strictEqual(info.instance, undefined, 'no relay');
+    });
+
+    await t.test('Export.getFile() never serves the partial file of an earlier attempt', async t => {
+        // The export was interrupted here and completed on writer-1: this disk still holds the
+        // partial file under the same name, which existing did not tell from the completed one
+        const live = await localCopy(t, { instance: 'writer-1', fileSize: 1000, contents: 'part' });
+        assert.strictEqual((await Export.getFile(live.account, live.exportId)).instance, 'writer-1', 'fetched from the writer');
+
+        const gone = await localCopy(t, { instance: 'gone-2', fileSize: 1000, contents: 'part', alive: false });
+        await assert.rejects(Export.getFile(gone.account, gone.exportId), err => err.code === 'ExportInstanceGone' && err.statusCode === 410);
+    });
+
+    await t.test('Export.complete() records the size of the finished file', async t => {
+        const account = 'contain-acct';
+        const exportId = generateExportId();
+        const dir = await fs.promises.mkdtemp(pathlib.join(os.tmpdir(), 'ee-export-'));
+        t.after(() => fs.promises.rm(dir, { recursive: true, force: true }));
+        const filePath = pathlib.join(dir, `${exportId}.ndjson.gz`);
+        await fs.promises.writeFile(filePath, 'finished');
+        mockRedisData[getExportKey(account, exportId)] = { exportId, account, status: 'processing', filePath, isEncrypted: '0' };
+        await Export.complete(account, exportId);
+        assert.strictEqual(mockRedisData[getExportKey(account, exportId)].fileSize, '8');
+        assert.strictEqual(mockRedisData[getExportKey(account, exportId)].status, 'completed');
     });
 
     await t.test('Export.getFile() answers 410 when the writer is gone and its file with it', async () => {
