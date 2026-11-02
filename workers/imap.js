@@ -29,6 +29,7 @@ const getSecret = require('../lib/get-secret');
 const { setWorkerLease } = require('../lib/cluster/lease');
 const { waitUntilStarted } = require('../lib/email-client/connection-readiness');
 const { statusError } = require('../lib/utils/status-error');
+const { commandBudget, connectionWaitTimeout, remainingTimeout } = require('../lib/command-budget');
 const { getSharedLock } = require('../lib/lock-run');
 const { sendQueuedOnce } = require('../lib/submit-lock');
 
@@ -1053,13 +1054,19 @@ class ConnectionHandler {
         if (!assigned || !assigned.assignedAt || Date.now() - assigned.assignedAt > CONNECTION_START_WINDOW) {
             return;
         }
-        const timeout = Math.min(CONNECTION_START_WAIT, Math.max(message.timeout || 0, EENGINE_TIMEOUT) / 2);
+        const startedAt = Date.now();
+        const budget = commandBudget(message.timeout, EENGINE_TIMEOUT);
         const getConnection = () => {
             const accountObject = this.accounts.get(message.account);
             return accountObject && accountObject.connection;
         };
-        if (await waitUntilStarted(getConnection, timeout)) {
+        if (await waitUntilStarted(getConnection, connectionWaitTimeout(budget, CONNECTION_START_WAIT))) {
             logger.debug({ msg: 'Command waited for the account connection to start', account: message.account, cmd: message.cmd });
+        }
+        // The wait leaves half the budget unless the worker stalled meanwhile, and a command with
+        // too little left would act after its caller was told it timed out
+        if (!remainingTimeout(budget, startedAt)) {
+            throw statusError('Request timed out', 'Timeout', 504);
         }
     }
 

@@ -11,8 +11,8 @@ const assert = require('node:assert').strict;
 const {
     pickLeastLoadedWorker,
     rollbackAssignment,
+    rollbackFailedAssignment,
     releaseWorkerAccounts,
-    requeueFailedAccounts,
     forgetAccount,
     shouldRequeueFailedAssignment,
     planRebalance
@@ -53,27 +53,15 @@ test('a worker exiting while its assign call is in flight', async t => {
         trackAssignment(state, 'acc1', dead);
 
         assert.deepEqual(workerExited(state, dead), new Set(['acc1']));
-        assert.doesNotThrow(() => rollbackAssignment(state, 'acc1', dead, true));
+        let stillOurs;
+        assert.doesNotThrow(() => {
+            stillOurs = rollbackFailedAssignment(state, 'acc1', dead, true);
+        });
 
-        requeueFailedAccounts(state, ['acc1']);
+        // The exit handler requeued it already, so the pass leaves it be
+        assert.equal(stillOurs, false);
         assert.deepEqual(state.unassigned, new Set(['acc1']));
         assert.equal(state.assigned.has('acc1'), false);
-    });
-
-    await t.test('an account the same pass assigned again is not also left unassigned', () => {
-        const [dead, alive] = [{ threadId: 1 }, { threadId: 2 }];
-        const state = makeState([dead, alive]);
-        trackAssignment(state, 'acc1', dead);
-        workerExited(state, dead);
-        rollbackAssignment(state, 'acc1', dead, true);
-
-        // the exit handler requeued it into the Set being iterated, so the pass visits it again
-        assert.ok(state.unassigned.has('acc1'));
-        trackAssignment(state, 'acc1', alive);
-
-        requeueFailedAccounts(state, ['acc1']);
-        assert.equal(state.unassigned.has('acc1'), false);
-        assert.equal(state.assigned.get('acc1'), alive);
     });
 
     await t.test('the next pick skips the exited worker', () => {
@@ -84,6 +72,33 @@ test('a worker exiting while its assign call is in flight', async t => {
 
         assert.equal(pickLeastLoadedWorker(state.availableWorkers, state.workerLoadMap, 1), alive);
     });
+});
+
+// The coordinator handing an account to another instance (or the account being deleted) while the
+// assign call to a worker is in flight, through stopServingAccount() and forgetAccount() in
+// server.js. The pass used to requeue the failure after the release, and the old instance went on
+// to connect an account it no longer owned
+test('an account released while its assign call was in flight is not requeued', () => {
+    const worker = { threadId: 1 };
+    const state = makeState([worker]);
+    trackAssignment(state, 'acc1', worker);
+
+    assert.equal(forgetAccount(state, 'acc1'), worker, 'the worker is told to unassign it');
+    assert.equal(rollbackFailedAssignment(state, 'acc1', worker, true), false, 'the pass does not requeue it');
+    assert.equal(state.workerLoadMap.get(worker), 0);
+    assert.equal(state.unassigned.has('acc1'), false);
+});
+
+test('a failed assignment still ours is requeued, and a release before the retry takes it out again', () => {
+    const worker = { threadId: 1 };
+    const state = makeState([worker]);
+    trackAssignment(state, 'acc1', worker);
+
+    assert.equal(rollbackFailedAssignment(state, 'acc1', worker, true), true);
+    // What assignAccounts() does with it: back to unassigned at once, where a release finds it
+    state.unassigned.add('acc1');
+    assert.equal(forgetAccount(state, 'acc1'), null);
+    assert.equal(state.unassigned.has('acc1'), false);
 });
 
 test('rollbackAssignment() reverts the load it counted, and only that', () => {

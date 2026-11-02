@@ -160,11 +160,10 @@ const { rejectWorkerCalls } = require('./lib/reject-worker-calls');
 const { getSharedLock, runLocked } = require('./lib/lock-run');
 const {
     pickLeastLoadedWorker,
-    rollbackAssignment,
+    rollbackFailedAssignment,
     assignRetryDelay,
     QUICK_ASSIGN_RETRIES,
     releaseWorkerAccounts,
-    requeueFailedAccounts,
     forgetAccount,
     shouldRequeueFailedAssignment,
     planRebalance
@@ -178,7 +177,7 @@ const { heartbeatDiagnostics, eventLoopDelaySeries, threadHeapSeries } = require
 
 const msgpack = require('./lib/msgpack');
 const { ClusterCoordinator, resolveInstanceId, resolveAddress, notOwnedHereError, noHandlerError } = require('./lib/cluster/coordinator');
-const { remainingTimeout } = require('./lib/command-budget');
+const { remainingTimeout, commandBudget } = require('./lib/command-budget');
 const { summarizeFleet } = require('./lib/cluster/fleet');
 const { statusError } = require('./lib/utils/status-error');
 const { MessagePortWritable, sendToMessagePort, createPortReadable } = require('./lib/message-port-stream');
@@ -2063,11 +2062,6 @@ async function assignAccounts() {
     }
 
     assigning = true;
-    // Collect accounts that fail assignment so we do not re-insert into
-    // the Set we are iterating (re-insertion during for..of would cause
-    // the same account to be visited again in the same pass). Returned to
-    // unassigned in the finally block, so no throw can strand them.
-    let failedAccounts = [];
     try {
         // unassigned holds the accounts the cluster coordinator claimed for this instance and
         // handed over through serveAccounts()
@@ -2095,7 +2089,13 @@ async function assignAccounts() {
         let targetPerWorker = Math.ceil(totalAccounts / availableIMAPWorkers.size);
 
         // Assign each unassigned account
-        for (let account of unassigned) {
+        // A copy, so an account that failed and went straight back to unassigned is not visited
+        // again in this pass. One that left unassigned meanwhile (handed off, deleted, lost) is
+        // skipped: this instance no longer serves it
+        for (let account of [...unassigned]) {
+            if (!unassigned.has(account)) {
+                continue;
+            }
             if (!availableIMAPWorkers.size) {
                 // No more workers available
                 break;
@@ -2139,7 +2139,7 @@ async function assignAccounts() {
             } catch (err) {
                 // Roll back -- account was never actually assigned. Also reverts the load map so
                 // subsequent iterations see accurate counts
-                rollbackAssignment({ workerAssigned, assigned, workerLoadMap }, account, worker, !isReassignment);
+                let stillOurs = rollbackFailedAssignment({ workerAssigned, assigned, workerLoadMap }, account, worker, !isReassignment);
 
                 if (err.code === 'Timeout') {
                     // A timed-out assign is still running in the worker and would connect the
@@ -2151,9 +2151,15 @@ async function assignAccounts() {
 
                 logger.error({ msg: 'Failed to assign account to worker', account, threadId: worker.threadId, err });
 
-                if (await shouldRequeueFailedAssignment(err, account, isRegisteredAccount)) {
-                    failedAccounts.push(account);
-                } else {
+                if (!stillOurs) {
+                    // Handed off, deleted or requeued by the worker exit handler while the call ran
+                    continue;
+                }
+                // Requeued before the membership check, so an account that stops being served here
+                // while the check runs is taken out again by forgetAccount()
+                unassigned.add(account);
+                if (!(await shouldRequeueFailedAssignment(err, account, isRegisteredAccount))) {
+                    unassigned.delete(account);
                     logger.info({ msg: 'Dropped assignment of an account that no longer exists', account });
                 }
                 continue;
@@ -2177,9 +2183,6 @@ async function assignAccounts() {
             totalAssigned: assigned.size
         });
     } finally {
-        // Re-add failed accounts after iteration completes
-        requeueFailedAccounts({ assigned, unassigned }, failedAccounts);
-
         assigning = false;
 
         // Accounts handed over while this pass ran are not a failure, so they get a pass at once
@@ -3208,15 +3211,6 @@ async function runLocalAccountOperation(message) {
 }
 
 /**
- * How long a command may take: its own timeout, or EENGINE_TIMEOUT
- * @param {Object} message
- * @returns {number}
- */
-function commandTimeout(message) {
-    return typeof message.timeout === 'number' && message.timeout > 0 ? message.timeout : EENGINE_TIMEOUT;
-}
-
-/**
  * Passes a download another instance streams back on into the MessagePort a worker of this instance
  * is reading
  * @param {MessagePortWritable} writable - On the requester's port, built when the port arrived (see
@@ -3240,7 +3234,7 @@ async function streamIntoPort(writable, fetchStream) {
  * @returns {Promise<*>}
  */
 async function forwardAccountOperation(message, { download, ...forwardOpts } = {}) {
-    let timeout = commandTimeout(message);
+    let timeout = commandBudget(message.timeout, EENGINE_TIMEOUT);
     if (download) {
         // The port stays here; the bytes come back over the network
         let { port: _port, ...payload } = message;
@@ -3255,7 +3249,7 @@ const OWNER_SETTLE_WAIT = 5000;
 // IMAP operations - run where the account is served, here or on another instance
 async function commandAccountOperation(worker, message) {
     let startedAt = Date.now();
-    let budget = commandTimeout(message);
+    let budget = commandBudget(message.timeout, EENGINE_TIMEOUT);
     // How long to keep asking while the account is between owners
     let settleUntil = startedAt + Math.min(OWNER_SETTLE_WAIT, budget / 2);
     let isDownload = STREAM_COMMANDS.has(message.cmd) && !!message.port;

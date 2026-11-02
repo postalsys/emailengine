@@ -8,6 +8,7 @@ const assert = require('node:assert').strict;
 const crypto = require('node:crypto');
 const net = require('node:net');
 const { Readable } = require('node:stream');
+const { finished } = require('node:stream/promises');
 
 const {
     createRpcServer,
@@ -329,6 +330,43 @@ test('closing the listener', async t => {
             assert.equal(Buffer.concat(chunks).toString(), 'hello');
             await Promise.race([closing, new Promise(resolve => setTimeout(resolve, 2000))]);
             assert.ok(closed, 'close() resolved once the download ended');
+        } finally {
+            await client.close();
+        }
+    });
+
+    await t.test('a download that does not end is cut once the close timeout runs out', async () => {
+        // A forwarded download of a large attachment held the shutdown up for as long as it ran, past
+        // an orchestrator's grace period, with the workers not even drained yet
+        const port = await freePort();
+        const readable = new Readable({ read() {} });
+        readable.push('hel');
+        const server = createRpcServer({
+            instanceId: 'b',
+            getSecret: async () => SECRET,
+            logger,
+            handle: async () => ({ stream: { meta: { size: 5 }, readable } })
+        });
+        await server.listen(port, '127.0.0.1');
+        const client = createRpcClient({ instanceId: 'a', getSecret: async () => SECRET });
+        try {
+            const { body } = await client.call({ id: 'b', address: `127.0.0.1:${port}` }, { cmd: 'download' }, { timeout: 5000, stream: true });
+            body.resume();
+            const reading = finished(body);
+            const startedAt = Date.now();
+            let closed = false;
+            const closing = server.close(200).then(() => {
+                closed = true;
+            });
+            await Promise.race([closing, new Promise(resolve => setTimeout(resolve, 2000))]);
+            assert.ok(closed, 'close() resolved without the download ending');
+            assert.ok(Date.now() - startedAt >= 150, 'the download had its grace period first');
+            await assert.rejects(reading, 'the caller sees a cut transfer');
+            // The caller can see the cut before the listener's pipeline has torn the source down
+            if (!readable.destroyed) {
+                await Promise.race([new Promise(resolve => readable.once('close', resolve)), new Promise(resolve => setTimeout(resolve, 1000))]);
+            }
+            assert.ok(readable.destroyed, 'the source of the download was released');
         } finally {
             await client.close();
         }

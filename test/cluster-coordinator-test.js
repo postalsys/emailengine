@@ -208,6 +208,30 @@ test('a failed forward warns once per owner and error, and never for an account 
     assert.equal(member.forwardFailureLevel('a', 'ClusterUnreachable'), 'warn', 'once the window has passed');
 });
 
+test('the broadcast channel names the Redis database', async () => {
+    // Pub/sub spans every database of a server, so a deployment in database 12 used to receive the
+    // change events and account deletions of one in database 11 sharing its key prefix
+    assert.notEqual(clusterKeys.bus(11), clusterKeys.bus(12));
+    assert.equal(clusterKeys.bus(undefined), clusterKeys.bus(0), 'no database given is database 0');
+
+    const member = new ClusterCoordinator({ redis, subscriber: redis, logger, instanceId: 'x', ttl: TTL, runIndex: 1, version: 'test', hooks: {} });
+    assert.equal(member.bus.channel, clusterKeys.bus(redis.options.db));
+    assert.equal(member.bus.channel, `${REDIS_PREFIX}cluster:bus:${redis.options.db}`);
+
+    // And the isolation holds on a real server: a message published for another database's channel
+    // does not reach this one's subscriber
+    const subscriber = redis.duplicate();
+    subscribers.push(subscriber);
+    const received = [];
+    subscriber.on('messageBuffer', channel => received.push(channel.toString()));
+    await subscriber.subscribe(member.bus.channel);
+    await redis.publish(clusterKeys.bus(Number(redis.options.db) + 1), 'other deployment');
+    await redis.publish(member.bus.channel, 'this deployment');
+    await waitUntil(() => received.length > 0, 2000, 'the own message');
+    await sleep(50);
+    assert.deepEqual(received, [member.bus.channel]);
+});
+
 test('ownership life cycle', async t => {
     t.beforeEach(cleanup);
 
