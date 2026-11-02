@@ -15,7 +15,7 @@ const registerRedisTeardown = require('./helpers/redis-teardown');
 
 const account = `submit-lock-${process.pid}`;
 
-registerRedisTeardown(redis, () => redis.del(...['q1', 'q2', 'q3'].map(queueId => sentKey(account, queueId))));
+registerRedisTeardown(redis, () => redis.del(...['q1', 'q2', 'q3', 'q4'].map(queueId => sentKey(account, queueId))));
 
 test('sendQueuedOnce()', async t => {
     await t.test('a retry while the first send is running is refused as in progress', async () => {
@@ -95,5 +95,29 @@ test('sendQueuedOnce()', async t => {
 
     await t.test('a submission without a queue entry is sent as before', async () => {
         assert.equal(await sendQueuedOnce({ lock: getSharedLock(), redis, account, send: async () => 'direct' }), 'direct');
+    });
+    await t.test('a marker write Redis refuses for now is retried before the lock goes', async () => {
+        // A Redis at maxmemory refused the marker, the job's completion failed the same way, and
+        // the stalled job's retry sent the message a second time
+        const oom = Object.assign(new Error("OOM command not allowed when used memory > 'maxmemory'."), { name: 'ReplyError' });
+        let refusals = 2;
+        const flaky = new Proxy(redis, {
+            get(target, prop) {
+                if (prop === 'set') {
+                    return (...args) => (refusals-- > 0 ? Promise.reject(oom) : target.set(...args));
+                }
+                const value = target[prop];
+                return typeof value === 'function' ? value.bind(target) : value;
+            }
+        });
+        let sends = 0;
+        const send = async () => {
+            sends++;
+            return 'sent';
+        };
+        assert.equal(await sendQueuedOnce({ lock: getSharedLock(), account, redis: flaky, queueId: 'q4', send }), 'sent');
+        assert.equal(await redis.exists(sentKey(account, 'q4')), 1, 'the marker was written in the end');
+        await assert.rejects(sendQueuedOnce({ lock: getSharedLock(), account, redis, queueId: 'q4', send }), err => err.code === 'AlreadySent');
+        assert.equal(sends, 1);
     });
 });

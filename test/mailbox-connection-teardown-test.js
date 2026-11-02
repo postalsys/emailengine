@@ -92,6 +92,14 @@ test('keepsArrivalQueued()', async t => {
         assert.equal(keepsArrivalQueued(withCode('ECONNRESET')), true);
     });
 
+    await t.test('keeps a message whose processing Redis refused for now', () => {
+        // Queueing the webhook failed with OOM, and the entry was removed as if it had gone out
+        const reply = message => Object.assign(new Error(message), { name: 'ReplyError' });
+        assert.equal(keepsArrivalQueued(reply("OOM command not allowed when used memory > 'maxmemory'.")), true);
+        assert.equal(keepsArrivalQueued(reply('LOADING Redis is loading the dataset in memory')), true);
+        assert.equal(keepsArrivalQueued(reply('WRONGTYPE Operation against a key holding the wrong kind of value')), false);
+    });
+
     await t.test('a throttled arrival is counted per queued entry', () => {
         const { Mailbox } = require('../lib/email-client/imap/mailbox');
         const mailbox = Object.create(Mailbox.prototype);
@@ -105,6 +113,62 @@ test('keepsArrivalQueued()', async t => {
         assert.equal(keepsArrivalQueued(withCode('DownloadIncomplete')), false);
         assert.equal(keepsArrivalQueued(new TypeError('broken')), false);
     });
+});
+
+test('a partial sync Redis refused runs again after a backoff', async t => {
+    // The main mailbox is synced only on its own changes, so an arrival a failed pass kept queued,
+    // or a check that failed before anything was fetched, waited for the next message in the folder
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const mailbox = Object.create(Mailbox.prototype);
+    mailbox.logger = { debug() {}, warn() {} };
+    const oom = Object.assign(new Error("OOM command not allowed when used memory > 'maxmemory'."), { name: 'ReplyError' });
+    const runs = [];
+    let failures = 2;
+    mailbox.partialSync = async () => {
+        runs.push('sync');
+        if (failures-- > 0) {
+            throw oom;
+        }
+    };
+    const settle = async ms => {
+        t.mock.timers.tick(ms);
+        for (let i = 0; i < 10; i++) {
+            await Promise.resolve();
+        }
+    };
+
+    // The check after EXISTS fails too, before any sync ran
+    let checks = 0;
+    mailbox.schedulePartialSync(async () => {
+        checks++;
+        throw oom;
+    }, 'EXISTS');
+    await settle(1000);
+    assert.equal(checks, 1);
+    assert.deepEqual(runs, [], 'nothing ran yet');
+
+    await settle(2000);
+    assert.deepEqual(runs, ['sync'], 'the retry syncs without asking the check again');
+    await settle(3999);
+    assert.deepEqual(runs, ['sync'], 'the next one waits twice as long');
+    await settle(1);
+    assert.deepEqual(runs, ['sync', 'sync']);
+    await settle(8000);
+    assert.deepEqual(runs, ['sync', 'sync', 'sync'], 'until it succeeds');
+    assert.equal(mailbox.partialSyncRetries, 0);
+    await settle(120000);
+    assert.equal(runs.length, 3, 'and then stops');
+
+    // An error that is not Redis saying "not now" is not retried
+    mailbox.partialSync = async () => {
+        runs.push('sync');
+        throw new Error('parse failure');
+    };
+    mailbox.schedulePartialSync(async () => true, 'EXISTS');
+    await settle(1000);
+    await settle(120000);
+    assert.equal(runs.length, 4);
+    clearTimeout(mailbox.runPartialSyncTimer);
 });
 
 test('Mailbox.loadAttachmentContent()', async t => {

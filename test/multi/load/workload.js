@@ -175,7 +175,8 @@ async function setupWorkload(opts) {
             instance.clusterAddress = `127.0.0.1:${proxy.port}`;
         }
         if (opts.redisProxies) {
-            const proxy = await startLatencyProxy({ port: 6379 });
+            // resp: the chaos runs fail individual Redis calls through it, see setFaults()
+            const proxy = await startLatencyProxy({ port: 6379, resp: true });
             redisProxies.set(instance.id, proxy);
             instance.redisUrl = `redis://127.0.0.1:${proxy.port}/15`;
         }
@@ -444,7 +445,7 @@ function traffic(workload, recorder, running) {
 
 /**
  * What the capture SMTP server received of the traffic's submissions
- * @returns {{ accepted: number, delivered: number, duplicated: number, acceptedNotDelivered: number, deliveredAfterClientError: number }}
+ * @returns {{ accepted: number, delivered: number, duplicated: number, acceptedNotDelivered: number, deliveredAfterClientError: number, undelivered: string[], duplicatedTokens: string[] }}
  */
 function submissionReport(load, capture) {
     const counts = new Map();
@@ -457,19 +458,24 @@ function submissionReport(load, capture) {
     let duplicated = 0;
     let acceptedNotDelivered = 0;
     let deliveredAfterClientError = 0;
+    // Named, so a lost one can be looked up in the instance logs by its subject
+    const undelivered = [];
+    const duplicatedTokens = [];
     for (const [token, accepted] of load.submissions) {
         const delivered = counts.get(token) || 0;
         if (delivered > 1) {
             duplicated++;
+            duplicatedTokens.push(token);
         }
         if (accepted && !delivered) {
             acceptedNotDelivered++;
+            undelivered.push(token);
         }
         if (!accepted && delivered) {
             deliveredAfterClientError++;
         }
     }
-    return { accepted: load.submitted, delivered: counts.size, duplicated, acceptedNotDelivered, deliveredAfterClientError };
+    return { accepted: load.submitted, delivered: counts.size, duplicated, acceptedNotDelivered, deliveredAfterClientError, undelivered, duplicatedTokens };
 }
 
 module.exports = {

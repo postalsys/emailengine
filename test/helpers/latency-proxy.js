@@ -7,9 +7,11 @@
 //
 // Delay keeps byte order: every chunk is released no earlier than `delay` after it arrived and
 // never before the chunk ahead of it. Pausing holds the bytes (a black hole that later recovers);
-// cutting resets every connection (a restart of whatever is behind the proxy).
+// cutting resets every connection (a restart of whatever is behind the proxy). A proxy started
+// with `resp` can also answer chosen Redis commands with an error, see redis-fault-gate.js.
 
 const net = require('node:net');
+const { RespFaultGate, faultDecider } = require('./redis-fault-gate');
 
 class Direction {
     constructor(destination, proxy) {
@@ -57,6 +59,7 @@ class Direction {
  * @param {number} opts.port - Target port
  * @param {number} [opts.delay] - Milliseconds added in each direction
  * @param {number} [opts.listenPort] - 0 picks a free port
+ * @param {boolean} [opts.resp] - The target is Redis: parse the traffic so setFaults() can fail commands
  * @returns {Promise<Object>} The proxy
  */
 async function startLatencyProxy(opts) {
@@ -65,8 +68,10 @@ async function startLatencyProxy(opts) {
     const proxy = {
         delay: opts.delay || 0,
         paused: false,
-        port: null
+        port: null,
+        faults: { rate: 0, injected: 0 }
     };
+    const decide = faultDecider(proxy.faults);
 
     const server = net.createServer(client => {
         const upstream = net.connect(opts.port, opts.host || '127.0.0.1');
@@ -83,8 +88,14 @@ async function startLatencyProxy(opts) {
             upstream.destroy();
         };
 
-        client.on('data', chunk => up.push(chunk));
-        upstream.on('data', chunk => down.push(chunk));
+        if (opts.resp) {
+            const gate = new RespFaultGate({ toServer: chunk => up.push(chunk), toClient: chunk => down.push(chunk), decide });
+            client.on('data', chunk => gate.fromClient(chunk));
+            upstream.on('data', chunk => gate.fromServer(chunk));
+        } else {
+            client.on('data', chunk => up.push(chunk));
+            upstream.on('data', chunk => down.push(chunk));
+        }
         client.on('error', close);
         upstream.on('error', close);
         client.on('close', close);
@@ -114,6 +125,17 @@ async function startLatencyProxy(opts) {
                 pair.up.pump();
                 pair.down.pump();
             }
+        },
+
+        /**
+         * Fails `rate` of the Redis commands that pass (a `resp` proxy only); 0 stops it
+         * @param {Object} faults - `{ rate, kind, random, only }`, see faultDecider()
+         * @returns {number} How many commands were failed since the last call
+         */
+        setFaults({ rate = 0, kind = 'oom', random = Math.random, only = null } = {}) {
+            const injected = proxy.faults.injected;
+            Object.assign(proxy.faults, { rate, kind, random, only, injected: 0 });
+            return injected;
         },
 
         /** Resets every open connection; new ones are accepted again at once */

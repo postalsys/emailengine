@@ -92,6 +92,24 @@ test('resolveOverridableSetting(): unknown keys are a programming error', () => 
     assert.throws(() => resolveOverridableSetting('queueKeep', { envSet: false }), /Unknown overridable setting/);
 });
 
+test('getOverridableSettings() survives a failed read of several keys', async () => {
+    // A failed read deletes its cache entries once it settles, and the second key was looked up after
+    // the first one's await: a TypeError that failed whatever asked (queueing a webhook)
+    overrides.resetOverridableSettingsCache();
+    const getMulti = settings.getMulti;
+    settings.getMulti = async () => {
+        throw Object.assign(new Error('LOADING Redis is loading the dataset in memory'), { name: 'ReplyError' });
+    };
+    try {
+        const values = await overrides.getFailedJobRetention();
+        assert.equal(typeof values.age, 'number', 'the defaults apply');
+        assert.equal(typeof values.count, 'number');
+    } finally {
+        settings.getMulti = getMulti;
+        overrides.resetOverridableSettingsCache();
+    }
+});
+
 test('getOverridableSettings() reads stored settings and caches them', async () => {
     overrides.resetOverridableSettingsCache();
     await settings.setMulti({ queueKeepFailed: 1234, queueKeepFailedAge: 5678 });

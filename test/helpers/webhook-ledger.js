@@ -152,7 +152,7 @@ async function startLedger(opts = {}) {
                     continue;
                 }
                 if (found.length > 1) {
-                    duplicates.push({ account, token, count: found.length });
+                    duplicates.push({ account, token, injectedAt, count: found.length });
                 }
                 latencies.push(found[0].receivedAt - injectedAt);
             }

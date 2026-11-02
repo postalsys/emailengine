@@ -104,6 +104,23 @@ test('BaseClient.deferFailedChangeEvent()', async t => {
         assert.equal(client.deferredDueAt, store.deferred[0].dueTime, 'the earliest due time is remembered');
     });
 
+    await t.test('a step Redis refused for now is deferred too, a lasting Redis error is not', async () => {
+        const store = stubStore();
+        const client = makeOutlook(store);
+        client.deferredDueAt = null;
+        const reply = message => Object.assign(new Error(message), { name: 'ReplyError' });
+
+        await client.deferFailedChangeEvent({ type: 'created', message: 'm1' }, reply("OOM command not allowed when used memory > 'maxmemory'."), ['m1']);
+        await client.deferFailedChangeEvent({ type: 'created', message: 'm2' }, reply('WRONGTYPE Operation against a key holding the wrong kind of value'), [
+            'm2'
+        ]);
+
+        assert.deepEqual(
+            store.deferred.map(entry => entry.event.message),
+            ['m1']
+        );
+    });
+
     await t.test('an unknown due time stays unknown, so an earlier stored change is not skipped', async () => {
         const client = makeOutlook(stubStore());
         client.deferredDueAt = undefined;
