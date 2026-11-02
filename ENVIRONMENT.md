@@ -47,7 +47,7 @@ Several EmailEngine instances can share one Redis. Each account is served by exa
 | `EENGINE_CLUSTER_HOST`          | the `EENGINE_HOST` value       | Address that port binds to. Outside Docker that default is `127.0.0.1`, which the other instances cannot reach; the Docker image binds `0.0.0.0`.                                                                      |
 | `EENGINE_CLUSTER_ADDRESS`       | first external IPv4 address    | Where the other instances reach this one, `host` or `host:port`. Set it when the detected address is not routable between instances.                                                                                   |
 | `EENGINE_INSTANCE_ID`           | host name plus a random suffix | Name of the instance in the cluster. A process that starts with the id of a live instance waits for that one's record to expire.                                                                                       |
-| `EENGINE_CLUSTER_HEARTBEAT_TTL` | `20s`                          | How long an instance keeps its accounts without renewing its heartbeat (duration). It is also roughly how long the accounts of a crashed instance wait before others take them over.                                   |
+| `EENGINE_CLUSTER_HEARTBEAT_TTL` | `20s`                          | How long an instance keeps its accounts without renewing its heartbeat (duration). It is also roughly how long the accounts of a crashed instance wait before they are connected again.                                |
 
 ## Workers and queues
 

@@ -345,6 +345,8 @@ Since resource limits are not enforced:
 
 Several EmailEngine instances can share one Redis database, for example as the replicas of a Kubernetes Deployment behind a Service. Each email account is served by exactly one instance at a time, and any instance answers API requests for any account.
 
+An instance that runs alone needs none of the settings below. After a crash, the restarted process waits for the crashed one's heartbeat to expire before it connects its accounts, as described under **Failover** below; after a graceful stop it does not wait.
+
 ### How it works
 
 - **Ownership.** Every instance keeps a heartbeat record in Redis and claims a share of the accounts, spread evenly across the instances that are running. An account is served by the instance recorded as its owner, which keeps one connection to the mail server for it, exactly as a single instance does.
