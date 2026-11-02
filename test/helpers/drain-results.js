@@ -1,43 +1,37 @@
 'use strict';
 
 // Preloaded into every test file's process by test/run-tests.js (DRAIN_RESULTS_FLAGS) so that the
-// file's results all reach the runner, the "lost results" of .claude/rules/testing.md.
+// file's results all reach the runner, the "lost results" of .claude/rules/testing.md, which has the
+// measurements. Under --test-force-exit Node ends a file's process as soon as its reporter stream has
+// unpiped from stdout, and results the reporter had not written out by then were lost. A root after()
+// hook holds the root back until the reporter has caught up: it yields the event loop until stdout
+// has had nothing pending for QUIET_TURNS turns in a row, then waits for it to flush. It counts turns,
+// not time, because a loaded machine gives the process less time and the reporter's own callbacks
+// are what has to run first.
 //
-// Under --test-force-exit, Node ends a file's process once its reporter stream has unpiped from
-// stdout (lib/internal/test_runner/test.js, the root's forceExit branch), which only means the
-// results were handed to stdout.write(). Two things keep what is left from being discarded:
-//   - stdout is made blocking, so a write is in the kernel before it returns. A stdout pipe is
-//     non-blocking on macOS, and with the runner reading slowly the rest waited in libuv's queue
-//   - a root after() hook yields the event loop until stdout has had nothing pending for
-//     QUIET_TURNS turns in a row, so the reporter has caught up before the exit starts. Blocking
-//     alone still lost 150 of 4800 results once on a loaded Linux CI runner; the wait alone passed
-//     there
-//
-// Measured with a file of 600 results, 16 copies at once on macOS: as it was, 20 runs of 48 arrived
-// short (down to 555); with the wait, none of 80; blocking, none of 80. In a Linux container with
-// 2 CPUs: as it was, 37 of 40 short; with either or both, none. A result lost anyway fails the run,
-// see test/helpers/stall-reporter.js.
+// stdout is deliberately left non-blocking: blocking it lost results in CI where this wait did not,
+// and a blocking write to a full pipe freezes the file's event loop, --test-timeout included.
 
 // Consecutive turns with nothing pending on stdout before the reporter counts as caught up
 const QUIET_TURNS = 20;
 
 // Only in a file's own process, which node --test marks with NODE_TEST_CONTEXT: --require loads this
-// into the runner process too, which reads every file's output and must not block on its own, and
-// where a root hook turned the runner into a test of its own and stalled the tier
+// into the runner process too, where a root hook turns the runner into a test of its own and its
+// reporter stops attributing the files' events (the whole tier stalled)
 if (process.env.NODE_TEST_CONTEXT) {
-    const handle = process.stdout._handle;
-    if (handle && typeof handle.setBlocking === 'function') {
-        handle.setBlocking(true);
-    }
-
     const { after } = require('node:test');
     after(
         () =>
             new Promise(resolve => {
                 let quiet = 0;
                 const turn = () => {
-                    quiet = process.stdout.writableLength ? 0 : quiet + 1;
-                    if (quiet >= QUIET_TURNS) {
+                    if (process.stdout.writableLength) {
+                        // backed up: wait for the pipe instead of spinning, then count again
+                        quiet = 0;
+                        process.stdout.once('drain', turn);
+                        return;
+                    }
+                    if (++quiet >= QUIET_TURNS) {
                         process.stdout.write('', () => resolve());
                         return;
                     }

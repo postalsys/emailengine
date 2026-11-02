@@ -46,8 +46,8 @@ const TEST_TIMEOUT = 180000;
 // to `node --test` are passed on to every test file's process, which is where the exit happens
 const EXIT_SAFE_V8_FLAGS = ['--no-concurrent-recompilation', '--no-concurrent-sparkplug'];
 
-// Makes each file's stdout blocking, so --test-force-exit cannot end its process with results still
-// queued, see test/helpers/drain-results.js. Handed on to every file's process like the flags above
+// Holds each file's root back until its reporter has written its results out, so --test-force-exit
+// cannot end the process with results still queued, see test/helpers/drain-results.js. Handed on to every file's process like the flags above
 const DRAIN_RESULTS_FLAGS = ['--require', path.join(__dirname, 'helpers', 'drain-results.js')];
 
 const TIERS = {
