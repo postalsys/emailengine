@@ -151,10 +151,11 @@ class StallAwareSpecReporter extends Transform {
         // Non-zero so the tier fails, rather than the run being killed later by a CI job timeout with
         // nothing printed at all.
         //
-        // Not immediately, though: process.stdout is asynchronous when it is a pipe, and
-        // process.exit() discards whatever is still buffered there. `node --test` holds spec output
-        // until the run reaches that file in order, so on a stall there is often nothing queued at
-        // all - but where there is, this is what lets it land.
+        // Not immediately, though: the spec reporter may not have handed everything to stdout yet.
+        // `node --test` holds spec output until the run reaches that file in order, so on a stall
+        // there is often nothing queued at all - but where there is, this is what lets it reach
+        // stdout. What reaches stdout is then held for by test/helpers/drain-results.js, whose
+        // wrapped process.exit() waits for it to flush.
         setTimeout(() => process.exit(1), STDOUT_FLUSH_GRACE_MS);
     }
 

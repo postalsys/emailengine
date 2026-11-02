@@ -7,6 +7,7 @@
 // with the reader slow, the pipe fills, the rest waits in the process's own write queue, and the exit
 // discarded it. The exit therefore waits for that queue to empty first.
 
+const fs = require('node:fs');
 const { isMainThread } = require('node:worker_threads');
 
 // How long an exit waits for stdout before ending the process anyway: a reader that is alive but has
@@ -20,11 +21,20 @@ if (isMainThread) {
         if (!process.stdout.writableLength) {
             return exit.call(process, code);
         }
-        const timer = setTimeout(() => exit.call(process, code), FLUSH_TIMEOUT);
-        // a write's callback runs once everything queued before it is written, or the pipe failed
-        process.stdout.write('', () => {
-            clearTimeout(timer);
+        // a write's callback runs once everything queued before it is written, or the pipe failed;
+        // whichever comes first ends the process, so the other never runs
+        process.stdout.write('', () => exit.call(process, code));
+        setTimeout(() => {
+            // said, because the output cut off here would otherwise look complete
+            try {
+                fs.writeSync(
+                    2,
+                    `drain-results: stdout did not flush within ${FLUSH_TIMEOUT / 1000} s, exiting with ${process.stdout.writableLength} bytes unwritten\n`
+                );
+            } catch {
+                // nowhere to say it, the exit still has to happen
+            }
             exit.call(process, code);
-        });
+        }, FLUSH_TIMEOUT);
     };
 }

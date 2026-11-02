@@ -4,7 +4,7 @@
 //
 // test/run-tests.js runs every tier with --test-force-exit, which node:test passes on to each test
 // file's process, and its forced exit waits for the file's results to reach the runner before it
-// ends the process (test/helpers/drain-results.js holds it until stdout has flushed). An exit of
+// ends the process (test/helpers/drain-results.js holds it until stdout has flushed, for up to 10 seconds). An exit of
 // our own a second after the last test does not wait: when the runner drains a file's results
 // slowly (a loaded machine), it cuts them off, and the results
 // that never arrived are simply not counted - the run still passes. Measured with two files of

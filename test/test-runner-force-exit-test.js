@@ -129,29 +129,37 @@ test('every test file writes its results out before the forced exit', async t =>
     });
 });
 
-// The wrapper itself, in a process of its own: 4MB is far more than any pipe holds, so most of it is
-// still in the write queue when process.exit() runs
+// The wrapper itself, in a process of its own: far more than any pipe holds, so most of it is still
+// in the write queue when process.exit() runs
 test('process.exit() under the drain helper', async t => {
-    const script = "process.stdout.write('x'.repeat(4 * 1024 * 1024)); process.exit(3);";
+    const SIZE = 4 * 1024 * 1024;
+    const run = () =>
+        spawn(process.execPath, [...DRAIN_RESULTS_FLAGS, '-e', `process.stdout.write('x'.repeat(${SIZE})); process.exit(3);`], {
+            stdio: ['ignore', 'pipe', 'pipe']
+        });
 
     await t.test('waits for queued stdout and keeps the exit code', async () => {
-        const child = spawn(process.execPath, [...DRAIN_RESULTS_FLAGS, '-e', script], { stdio: ['ignore', 'pipe', 'ignore'] });
+        const child = run();
         let bytes = 0;
         child.stdout.on('data', chunk => (bytes += chunk.length));
+        child.stderr.resume();
         const [code] = await once(child, 'close');
         assert.equal(code, 3);
-        assert.equal(bytes, 4 * 1024 * 1024);
+        assert.equal(bytes, SIZE);
     });
 
     await t.test('still ends the process when the reader stops reading', async () => {
-        const child = spawn(process.execPath, [...DRAIN_RESULTS_FLAGS, '-e', script], { stdio: ['ignore', 'pipe', 'ignore'] });
+        const child = run();
         // never read, so the pipe stays full and the queued write never completes
         child.stdout.pause();
+        let stderr = '';
+        child.stderr.on('data', chunk => (stderr += chunk));
         const timer = setTimeout(() => child.kill('SIGKILL'), 30000);
         const [code, signal] = await once(child, 'exit');
         clearTimeout(timer);
+        child.stdout.destroy();
         assert.equal(signal, null, 'the process ended on its own within 30 s');
         assert.equal(code, 3);
-        child.stdout.destroy();
+        assert.match(stderr, /stdout did not flush/);
     });
 });
