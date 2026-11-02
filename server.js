@@ -1681,8 +1681,11 @@ let spawnWorker = async (type, opts, slot) => {
 
                 case 'settings':
                     fanOutSettings(message);
-                    // The other instances' workers keep the same in-memory state
-                    cluster.broadcast('settings', message.data || null);
+                    // The other instances' workers keep the same in-memory state. Only the names go
+                    // out: the values include secrets that Redis holds encrypted, and anything
+                    // subscribed to the channel (a replica, a monitoring user) would read them in the
+                    // clear. Each instance reads them back from Redis, see onClusterBroadcast()
+                    cluster.broadcast('settings', { keys: Object.keys(message.data || {}) });
                     return;
 
                 case 'change':
@@ -4135,9 +4138,13 @@ async function handleClusterCall(message) {
  */
 async function onClusterBroadcast(type, data) {
     switch (type) {
-        case 'settings':
-            fanOutSettings({ cmd: 'settings', data });
+        case 'settings': {
+            // Names only (see the sender in spawnWorker()); the values are read here and decrypted
+            // with this instance's own secret
+            const keys = data && Array.isArray(data.keys) ? data.keys.filter(key => typeof key === 'string') : [];
+            fanOutSettings({ cmd: 'settings', data: keys.length ? await settings.getMulti(...keys) : {} });
             return;
+        }
         case 'change':
             if (data && data.cmd === 'change') {
                 fanOutChange(data);
