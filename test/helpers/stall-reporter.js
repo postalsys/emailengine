@@ -39,10 +39,12 @@
 // later tests reported as usual, and the run said `fail 0` with 29 tests fewer than the next run.
 // Every test, skipped or todo ones included, reports `test:start` and then `test:pass` or `test:fail`
 // (checked on Node 20, 22 and 24). So a test still open once every event of the run has arrived is a
-// lost result, and the run fails rather than counting it as passed. The decision is made at the end
-// of the run, not when the file's own `test:complete` arrives: on Node 20.19.0 in CI that event came
-// before the last suite's own start and pass events, which arrived a second later, and a check at
-// that point reported two results as lost that the summary then counted.
+// lost result. The decision is made at the end of the run, not when the file's own `test:complete`
+// arrives: on Node 20.19.0 in CI that event came before the last suite's own start and pass events,
+// which arrived a second later, and a check at that point reported two results as lost that the
+// summary then counted. Under test/run-tests.js the files are handed back to the runner, which runs
+// them again one at a time (EE_TEST_LOST_RESULTS); a bare `node --test` with this reporter fails the
+// run instead, rather than counting the results as passed.
 
 const { spec } = require('node:test/reporters');
 const { Transform } = require('node:stream');
@@ -226,16 +228,24 @@ class StallAwareSpecReporter extends Transform {
         return dropped;
     }
 
-    // Fails the run through the exit code: the summary prints as usual, it just cannot be trusted,
-    // which the report next to it says. The exit code survives --test-force-exit also when it is set
-    // this late (verified on Node 20, 22 and 24: the forced exit takes process.exitCode)
+    // Under the runner the files go to EE_TEST_LOST_RESULTS, and test/run-tests.js runs them again
+    // one at a time. Otherwise the run fails through the exit code: the summary prints as usual, it
+    // just cannot be trusted, which the report next to it says. The exit code survives
+    // --test-force-exit also when it is set this late (verified on Node 20, 22 and 24: the forced
+    // exit takes process.exitCode)
     reportDroppedResults(dropped) {
-        process.exitCode = 1;
         const detail = dropped.map(entry => `  - ${entry.file}:\n` + entry.names.map(name => `      ${name}`).join('\n')).join('\n');
+        const heading = `\nResults lost: ${dropped.length} file(s) ended with tests that started and never reported, so the summary is incomplete:\n${detail}\n`;
+        const lostResultsPath = process.env.EE_TEST_LOST_RESULTS;
+        if (lostResultsPath) {
+            fs.writeFileSync(lostResultsPath, JSON.stringify(dropped));
+            fs.writeSync(2, `${heading}The runner runs these files again, one at a time.\n`);
+            return;
+        }
+        process.exitCode = 1;
         fs.writeSync(
             2,
-            `\nResults lost: ${dropped.length} file(s) ended with tests that started and never reported, so the summary is incomplete:\n${detail}\n` +
-                `The run fails rather than count them as passed; a lost result can be a failing one.\n` +
+            `${heading}The run fails rather than count them as passed; a lost result can be a failing one.\n` +
                 `See the note on lost results in test/helpers/stall-reporter.js.\n`
         );
     }
