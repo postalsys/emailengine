@@ -26,6 +26,8 @@ const settings = require('../lib/settings');
 const msgpack = require('../lib/msgpack');
 
 const getSecret = require('../lib/get-secret');
+const { getSharedLock } = require('../lib/lock-run');
+const { sendQueuedOnce } = require('../lib/submit-lock');
 
 config.service = config.service || {};
 
@@ -727,7 +729,16 @@ class ConnectionHandler {
             throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
-        return await accountData.connection.submitMessage(message.data);
+        // A queued message is sent under a lock, so a retry never runs next to a send still in
+        // progress (lib/submit-lock.js)
+        return await sendQueuedOnce({
+            lock: getSharedLock(),
+            redis,
+            logger,
+            account: message.account,
+            queueId: message.data && message.data.queueId,
+            send: () => accountData.connection.submitMessage(message.data)
+        });
     }
 
     async queueMessage(message) {
