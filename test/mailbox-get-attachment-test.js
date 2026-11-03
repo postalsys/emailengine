@@ -31,13 +31,13 @@ function createMockContext({
     const events = [];
 
     const connectionClient = {
-        download: async () => {
+        download: async (uid, part, options) => {
             if (downloadError) {
                 throw downloadError;
             }
             return {
                 meta,
-                content: makeContent()
+                content: makeContent(options)
             };
         }
     };
@@ -212,6 +212,51 @@ test('Mailbox.getText() lock handling', async t => {
         await Mailbox.prototype.getText.call(ctx, { uid: 42 }, ['1'], { skipLock: true }, {});
 
         assert.deepEqual(events, [], 'skipLock means an outer operation owns the lock and gives it back itself');
+    });
+});
+
+// ImapFlow applies maxBytes to the decoded bytes of a part, so a long part arrives cut at that
+// many bytes. getText() compared the string it built from them against the same limit, and both
+// multibyte characters and the CRLF to LF normalization leave that string shorter than the byte
+// count, so a cut body was reported with hasMore: false.
+test('Mailbox.getText() reports a body cut by maxBytes', async t => {
+    // Stands in for ImapFlow: the decoded part, cut at the byte limit getText() asked for
+    const cappedStream = body => options => endedStream(Buffer.from(body).subarray(0, options.maxBytes));
+    const getText = (body, maxBytes) => {
+        const { ctx } = createMockContext({ meta: { contentType: 'text/plain' }, makeContent: cappedStream(body) });
+        return Mailbox.prototype.getText.call(ctx, { uid: 42 }, ['1'], { maxBytes }, {});
+    };
+
+    await t.test('a CRLF body longer than the limit', async () => {
+        const result = await getText('line of text\r\n'.repeat(1000), 1000);
+        assert.ok(result.plain.length < 1000, 'the normalized string is shorter than the limit');
+        assert.strictEqual(result.hasMore, true);
+    });
+
+    await t.test('a multibyte body longer than the limit', async () => {
+        const result = await getText('\u00e4\u00f6\u00fc\u20ac'.repeat(1000), 1000);
+        assert.ok(result.plain.length < 1000, 'the string has fewer characters than the limit has bytes');
+        assert.strictEqual(result.hasMore, true);
+        assert.ok(!result.plain.includes('\ufffd'), 'a sequence cut at the limit is dropped, not rendered as a replacement character');
+    });
+
+    await t.test('an ASCII body longer than the limit is still cut to it', async () => {
+        const result = await getText('x'.repeat(5000), 1000);
+        assert.strictEqual(result.plain.length, 1000);
+        assert.strictEqual(result.hasMore, true);
+    });
+
+    await t.test('a body within the limit is complete', async () => {
+        const body = 'line of text\r\n\u00e4\u20ac\r\n';
+        const result = await getText(body, 1000);
+        assert.strictEqual(result.plain, body.replace(/\r\n/g, '\n'));
+        assert.strictEqual(result.hasMore, false);
+    });
+
+    await t.test('no limit means nothing is cut', async () => {
+        const result = await getText('x'.repeat(5000));
+        assert.strictEqual(result.plain.length, 5000);
+        assert.strictEqual(result.hasMore, false);
     });
 });
 
