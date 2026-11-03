@@ -25,19 +25,21 @@ const pathlib = require('path');
 const { spawn } = require('child_process');
 const { once } = require('events');
 
-const { EXIT_SAFE_V8_FLAGS } = require('./run-tests');
+const { EXIT_SAFE_V8_FLAGS, DRAIN_RESULTS_FLAGS } = require('./run-tests');
 
 const RUNNER = pathlib.join(__dirname, 'run-tests.js');
 const FLAG = '--test-force-exit';
+// The argument list of the spawn that runs the tests. Anchored on the leading '--test' because
+// run-tests.js also spawns process.execPath to boot the server for the integration tier
+const SPAWN_CALL = /spawn\(\s*process\.execPath,\s*\['--test'([^\]]*)\]/;
 
 test('the test runner forces the process to exit', async t => {
     const runner = fs.readFileSync(RUNNER, 'utf8');
 
     await t.test(`spawns node --test with ${FLAG}`, () => {
         // Matched inside the spawn argument list rather than anywhere in the file, so the flag being
-        // mentioned in a comment cannot satisfy this. Anchored on the leading '--test' because
-        // run-tests.js also spawns process.execPath to boot the server for the integration tier.
-        const spawnCall = runner.match(/spawn\(\s*process\.execPath,\s*\['--test'([^\]]*)\]/);
+        // mentioned in a comment cannot satisfy this
+        const spawnCall = runner.match(SPAWN_CALL);
 
         assert.ok(spawnCall, "could not find the `spawn(process.execPath, ['--test', ...])` call that runs the tests in test/run-tests.js");
         assert.ok(
@@ -62,7 +64,7 @@ test('the test runner forces the process to exit', async t => {
 // of every test file, which is the one that exits
 test('the test runner turns off the background compiles an exit can deadlock on', async t => {
     await t.test('the flags are part of the node --test spawn', () => {
-        const spawnCall = fs.readFileSync(RUNNER, 'utf8').match(/spawn\(\s*process\.execPath,\s*\['--test'([^\]]*)\]/);
+        const spawnCall = fs.readFileSync(RUNNER, 'utf8').match(SPAWN_CALL);
         assert.ok(spawnCall && spawnCall[1].includes('...EXIT_SAFE_V8_FLAGS'), 'test/run-tests.js must pass EXIT_SAFE_V8_FLAGS to node --test');
         assert.deepStrictEqual(EXIT_SAFE_V8_FLAGS, ['--no-concurrent-recompilation', '--no-concurrent-sparkplug']);
     });
@@ -83,5 +85,88 @@ test('the test runner turns off the background compiles an exit can deadlock on'
         const child = spawn(process.execPath, ['--test', '--test-force-exit', ...EXIT_SAFE_V8_FLAGS, file], { stdio: 'ignore', env });
         const [code] = await once(child, 'exit');
         assert.strictEqual(code, 0, 'a test file ran without the flags');
+    });
+});
+
+// What --test-force-exit discarded when it ended a process: results still in its stdout write queue
+// (test/helpers/drain-results.js, measurements in .claude/rules/testing.md)
+test('every test file writes its results out before the forced exit', async t => {
+    await t.test('the drain is part of the node --test spawn', () => {
+        const spawnCall = fs.readFileSync(RUNNER, 'utf8').match(SPAWN_CALL);
+        assert.ok(spawnCall && spawnCall[1].includes('...DRAIN_RESULTS_FLAGS'), 'test/run-tests.js must pass DRAIN_RESULTS_FLAGS to node --test');
+        assert.ok(fs.existsSync(DRAIN_RESULTS_FLAGS[1]));
+    });
+
+    await t.test('files of many results running at once report all of them', async t => {
+        const dir = fs.mkdtempSync(pathlib.join(os.tmpdir(), 'ee-drain-'));
+        t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+        // Run together, as the tier runs them: the loss came with a runner too busy to keep reading
+        const files = Array.from({ length: 8 }, (_, i) => pathlib.join(dir, `many-${i}-test.js`));
+        for (const file of files) {
+            fs.writeFileSync(
+                file,
+                `const test = require('node:test');\nfor (let i = 0; i < 200; i++) {\n    test('t' + i, async t => {\n        await t.test('a', () => {});\n        await t.test('b', () => {});\n    });\n}\n`
+            );
+        }
+        const env = { ...process.env };
+        // a nested run of its own, see test/test-runner-stall-watchdog-test.js
+        delete env.NODE_TEST_CONTEXT;
+        delete env.NODE_TEST_WORKER_ID;
+        const child = spawn(process.execPath, ['--test', '--test-force-exit', ...DRAIN_RESULTS_FLAGS, '--test-reporter=tap', ...files], {
+            stdio: ['ignore', 'pipe', 'ignore'],
+            env
+        });
+        let stdout = '';
+        child.stdout.on('data', chunk => (stdout += chunk));
+        // A nested run that stops is reported as that, not as this test running out of time
+        const timer = setTimeout(() => child.kill('SIGKILL'), 45000);
+        // 'close', not 'exit', so the whole of stdout has been read
+        const [code, signal] = await once(child, 'close');
+        clearTimeout(timer);
+        assert.equal(signal, null, 'the nested run finished within 45 s');
+        assert.equal(code, 0);
+        assert.equal((stdout.match(/^\s*(not )?ok \d+ /gm) || []).length, files.length * 600);
+    });
+});
+
+// The wrapper itself, in a process of its own: far more than any pipe holds, so most of it is still
+// in the write queue when process.exit() runs
+test('process.exit() under the drain helper', async t => {
+    const SIZE = 4 * 1024 * 1024;
+    // a quoted string, not a template literal: test/test-runner-exit-test.js reads code out of a
+    // template literal and would take this child's exit for one of this file's own
+    const script = "process.stdout.write('x'.repeat(" + SIZE + ')); process.exit(3);';
+    const run = env =>
+        spawn(process.execPath, [...DRAIN_RESULTS_FLAGS, '-e', script], {
+            stdio: ['ignore', 'pipe', 'pipe'],
+            env: { ...process.env, ...env }
+        });
+
+    await t.test('waits for queued stdout and keeps the exit code', async () => {
+        const child = run();
+        let bytes = 0;
+        child.stdout.on('data', chunk => (bytes += chunk.length));
+        child.stderr.resume();
+        const [code] = await once(child, 'close');
+        assert.equal(code, 3);
+        assert.equal(bytes, SIZE);
+    });
+
+    await t.test('still ends the process when the reader stops reading', async () => {
+        // the timeout itself is what is tested, not its length
+        const child = run({ EE_DRAIN_FLUSH_TIMEOUT: '500' });
+        // never read, so the pipe stays full and the queued write never completes
+        child.stdout.pause();
+        let stderr = '';
+        child.stderr.on('data', chunk => (stderr += chunk));
+        const timer = setTimeout(() => child.kill('SIGKILL'), 30000);
+        // stdout cannot end while it is never read, and 'close' waits for it: wait for the exit and
+        // for stderr to be read to the end, then let stdout go
+        const [[code, signal]] = await Promise.all([once(child, 'exit'), once(child.stderr, 'end')]);
+        clearTimeout(timer);
+        child.stdout.destroy();
+        assert.equal(signal, null, 'the process ended on its own within 30 s');
+        assert.equal(code, 3);
+        assert.match(stderr, /stdout did not flush/);
     });
 });
