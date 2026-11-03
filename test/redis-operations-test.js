@@ -268,6 +268,53 @@ test('Redis Operations tests', async t => {
         }, err);
     });
 
+    await t.test('RedisTransaction.exec() retries a refused transaction, never a partly applied one', async () => {
+        // A transaction runs every command whatever the others answer: retrying one where some
+        // command went through would apply that one twice
+        const oom = Object.assign(new Error("OOM command not allowed when used memory > 'maxmemory'."), { name: 'ReplyError' });
+        const transaction = answers => {
+            let calls = 0;
+            const multi = {
+                hincrby() {
+                    return this;
+                },
+                async exec() {
+                    return answers[Math.min(calls++, answers.length - 1)];
+                }
+            };
+            return { redis: { multi: () => multi }, calls: () => calls };
+        };
+
+        const partly = transaction([
+            [
+                [null, 1],
+                [oom, null]
+            ]
+        ]);
+        const txn = new RedisTransaction(partly.redis, { retryOptions: { maxAttempts: 3, baseDelay: 1, maxDelay: 1 } });
+        txn.add('hincrby', 'key', 'a', 1);
+        txn.add('hincrby', 'key', 'b', 1);
+        const result = await txn.exec();
+        assert.equal(partly.calls(), 1, 'not run again');
+        assert.equal(result.error, oom);
+
+        const refused = transaction([
+            [
+                [oom, null],
+                [oom, null]
+            ],
+            [
+                [null, 1],
+                [null, 1]
+            ]
+        ]);
+        const again = new RedisTransaction(refused.redis, { retryOptions: { maxAttempts: 3, baseDelay: 1, maxDelay: 1 } });
+        again.add('hincrby', 'key', 'a', 1);
+        again.add('hincrby', 'key', 'b', 1);
+        assert.deepEqual(await again.execOrThrow(), [1, 1]);
+        assert.equal(refused.calls(), 2, 'nothing was applied, so it was tried again');
+    });
+
     // createTransaction tests
     await t.test('createTransaction() returns RedisTransaction instance', async () => {
         const mockRedis = {};

@@ -108,3 +108,70 @@ test('a failing sync still gives the lock back', async () => {
     assert.equal(ctx.connection.syncing, false);
     assert.equal(ctx.mailbox.syncing, false);
 });
+
+test('runPartialSync indexes a new message and queues it for processing in one transaction', async () => {
+    // Written apart, a queue write Redis refused (OOM) after the index write went through left a
+    // message that the retried FETCH found indexed already, so it was never announced
+    const message = { uid: 5, flags: new Set(['\\Seen']), modseq: 9n, internalDate: new Date('2026-11-02T10:00:00Z') };
+    const { ctx, calls } = createSyncOperationsContext({ messages: [message] });
+    const transactions = [];
+    ctx.connection.redis.multi = () => {
+        const commands = [];
+        const multi = new Proxy(
+            {},
+            {
+                get: (target, command) =>
+                    command === 'exec'
+                        ? async () => {
+                              transactions.push(commands);
+                              return commands.map(() => [null, 1]);
+                          }
+                        : (...args) => {
+                              commands.push([command, ...args]);
+                              return multi;
+                          }
+            }
+        );
+        return multi;
+    };
+    ctx.mailbox.entryListSetMany = (txn, messages) => {
+        for (const data of messages) {
+            txn.add('zSet', 'index', data.uid);
+        }
+        return messages;
+    };
+
+    await SyncOperations.prototype.runPartialSync.call(ctx);
+
+    assert.deepEqual(calls.entryListSet, [], 'never indexed on its own');
+    assert.equal(transactions.length, 1);
+    assert.deepEqual(
+        transactions[0].map(([command, key, uid]) => [command, key, uid]),
+        [
+            ['zSet', 'index', 5],
+            ['zadd', 'iam:acc:n:KEY', 5]
+        ]
+    );
+});
+
+test('runPartialSync ends at once when Redis refuses to store what it fetched', async () => {
+    // Treated as a failed FETCH, it fetched the same messages again for up to five minutes while
+    // holding the mailbox lock, and ended in a FetchRetryTimeout nothing recognised as transient,
+    // so the retry Mailbox.schedulePartialSync() makes after a Redis refusal never ran
+    const message = { uid: 5, flags: new Set(), modseq: 9n, internalDate: new Date('2026-11-02T10:00:00Z') };
+    const { ctx, calls } = createSyncOperationsContext({ messages: [message] });
+    const oom = Object.assign(new Error("OOM command not allowed when used memory > 'maxmemory'."), { name: 'ReplyError' });
+    ctx.mailbox.entryListGet = async () => {
+        throw oom;
+    };
+    let fetches = 0;
+    const fetch = ctx.connection.imapClient.fetch;
+    ctx.connection.imapClient.fetch = (...args) => {
+        fetches++;
+        return fetch(...args);
+    };
+
+    await assert.rejects(() => SyncOperations.prototype.runPartialSync.call(ctx), oom);
+    assert.equal(fetches, 1, 'not fetched again');
+    assertLockReleased(calls);
+});
