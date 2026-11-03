@@ -185,6 +185,94 @@ test('the watchdog leaves an ordinary run alone', async t => {
     });
 });
 
+// The reporter driven in process with the event shapes `node --test` produces (checked on Node 20,
+// 22 and 24): every test reports a start and then a pass or fail. `files` are the run's files, by
+// the relative names the runner passes
+function reporterFor(files, { real = false } = {}) {
+    const previous = process.env.EE_TEST_FILES;
+    process.env.EE_TEST_FILES = JSON.stringify(files);
+    const Reporter = require('./helpers/stall-reporter');
+    let reporter;
+    try {
+        reporter = new Reporter({});
+    } finally {
+        if (previous === undefined) {
+            delete process.env.EE_TEST_FILES;
+        } else {
+            process.env.EE_TEST_FILES = previous;
+        }
+    }
+    const reports = [];
+    if (!real) {
+        // Never touch this process's own exit code
+        reporter.reportDroppedResults = dropped => reports.push(...dropped);
+    }
+    reporter.resume();
+    const feed = event => new Promise((resolve, reject) => reporter.write(event, err => (err ? reject(err) : resolve())));
+    const end = () => new Promise(resolve => reporter.end(resolve));
+    return {
+        reports,
+        end,
+        start: (file, nesting, name) => feed({ type: 'test:start', data: { name, nesting, file } }),
+        pass: (file, nesting, name) => feed({ type: 'test:pass', data: { name, nesting, file, details: { duration_ms: 1 } } }),
+        complete: (file, name) => feed({ type: 'test:complete', data: { name, nesting: 0, file, details: { duration_ms: 5 } } })
+    };
+}
+
+test('a run that ends with a test started and never reported fails', async t => {
+    // A result that never arrived is what the unit tier lost once, 29 results short with `fail 0`
+    // still printed
+    const file = pathlib.join(PROJECT_ROOT, 'test', 'lost-results-fixture-test.js');
+    const other = pathlib.join(PROJECT_ROOT, 'test', 'complete-fixture-test.js');
+    const name = pathlib.relative(PROJECT_ROOT, file);
+    const r = reporterFor([name, pathlib.relative(PROJECT_ROOT, other)]);
+
+    await r.start(file, 0, 'a suite');
+    await r.start(file, 1, 'reported');
+    await r.pass(file, 1, 'reported');
+    await r.start(file, 1, 'twice named');
+    await r.pass(file, 1, 'twice named');
+    await r.start(file, 1, 'twice named');
+    await r.pass(file, 1, 'twice named');
+    await r.start(file, 1, 'lost');
+    // 'lost' and the suite never report, the file completes anyway
+    await r.complete(file, name);
+
+    // The other file reports everything
+    await r.start(other, 0, 'fine');
+    await r.pass(other, 0, 'fine');
+    await r.complete(other, pathlib.relative(PROJECT_ROOT, other));
+
+    await t.test('nothing is decided before the run ends', () => {
+        assert.deepEqual(r.reports, []);
+    });
+
+    await r.end();
+
+    await t.test('it names the file and the tests that never reported, and only those', () => {
+        assert.deepEqual(r.reports, [{ file: name, names: ['0:a suite', '1:lost'] }]);
+    });
+});
+
+test('results that arrive after their file completed are not lost', async () => {
+    // Seen on Node 20.19.0 in CI: the file's own test:complete came before the last suite's start
+    // and pass, which arrived a second later and were counted by the summary
+    const file = pathlib.join(PROJECT_ROOT, 'test', 'late-results-fixture-test.js');
+    const name = pathlib.relative(PROJECT_ROOT, file);
+    const r = reporterFor([name]);
+
+    await r.start(file, 0, 'a suite');
+    await r.start(file, 1, 'early');
+    await r.pass(file, 1, 'early');
+    await r.complete(file, name);
+    await r.start(file, 1, 'late');
+    await r.pass(file, 1, 'late');
+    await r.pass(file, 0, 'a suite');
+    await r.end();
+
+    assert.deepEqual(r.reports, []);
+});
+
 test('the runner wires the stall watchdog in', async t => {
     const runner = fs.readFileSync(pathlib.join(__dirname, 'run-tests.js'), 'utf8');
 

@@ -441,4 +441,29 @@ test('IMAP null guard tests', async t => {
         assert.strictEqual(result.uid, 99);
         assert.ok(!idleCalled, 'IDLE should not be called when connectionClient !== imapClient');
     });
+
+    await t.test('uploadMessage() builds the id from the UIDVALIDITY of APPENDUID', async () => {
+        // A folder created moments earlier is not registered yet, so the id needs the value the
+        // server reported for the append
+        let { logger } = createMockLogger();
+        let packed;
+        let connectionClient = createMockImapClient({
+            append: async () => ({ uid: 7, path: 'INBOX', destination: 'Fresh', uidValidity: 12n })
+        });
+        let ctx = createBaseUploadCtx({
+            logger,
+            imapClient: createMockImapClient(),
+            isConnected: () => true,
+            getImapConnection: async () => connectionClient,
+            packUid: async (...args) => {
+                packed = args;
+                return 'encodedId';
+            }
+        });
+
+        let result = await IMAPClient.prototype.uploadMessage.call(ctx, { path: 'Fresh', flags: [], raw: Buffer.from('test') }, { allowSecondary: true });
+
+        assert.strictEqual(result.id, 'encodedId');
+        assert.deepStrictEqual(packed, ['Fresh', 7, null, 12n]);
+    });
 });

@@ -53,7 +53,8 @@ module.exports = {
     //                       from the CommonJS rule); the Node requirement does, since the tooling has to
     //                       run on the Node 20 floor too.
     //   undici            - 8.x requires Node >=22.19 and crashes at require() on Node 20. Permanent while the
-    //                       Node 20 floor above stands.
+    //                       Node 20 floor above stands. lib/net-tos-guard.js covers a 7.x crash 8.x fixed
+    //                       itself (unguarded setTypeOfService); remove it with the upgrade.
     //   marked            - 16.x dropped the CommonJS build (ESM-only, needs require(esm)/Node >=20.19); 15.x is the
     //                       last require()-compatible line. 15.0.12 verified on Node 20-24 and in a yao/pkg node24 build.
     //                       Permanent: an ESM-only release cannot be bundled by pkg, whatever the Node floor.

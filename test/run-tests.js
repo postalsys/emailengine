@@ -46,6 +46,10 @@ const TEST_TIMEOUT = 180000;
 // to `node --test` are passed on to every test file's process, which is where the exit happens
 const EXIT_SAFE_V8_FLAGS = ['--no-concurrent-recompilation', '--no-concurrent-sparkplug'];
 
+// Holds every forced exit, the runner's and each file's, until stdout has flushed, so no result is
+// discarded on its way out, see test/helpers/drain-results.js
+const DRAIN_RESULTS_FLAGS = ['--require', path.join(__dirname, 'helpers', 'drain-results.js')];
+
 const TIERS = {
     unit: {
         dir: 'test',
@@ -233,25 +237,25 @@ async function main() {
 
     let testTimeout = tier.testTimeout || TEST_TIMEOUT;
 
-    let runner = spawn(
-        process.execPath,
-        ['--test', '--test-force-exit', ...EXIT_SAFE_V8_FLAGS, `--test-timeout=${testTimeout}`, ...reporterArgs, ...tier.args, ...files],
-        {
-            cwd: PROJECT_ROOT,
-            stdio: 'inherit',
-            env: {
-                ...process.env,
-                // Read by the stall reporter: the files to account for, and how long a silence has to
-                // last before it gives up on them.
-                EE_TEST_FILES: JSON.stringify(files),
-                EE_TEST_STALL_TIMEOUT: String(tier.stallTimeout || 0)
-            }
+    let runArgs = [`--test-timeout=${testTimeout}`, ...reporterArgs, ...tier.args];
+    let runner = spawn(process.execPath, ['--test', '--test-force-exit', ...EXIT_SAFE_V8_FLAGS, ...DRAIN_RESULTS_FLAGS, ...runArgs, ...files], {
+        cwd: PROJECT_ROOT,
+        stdio: 'inherit',
+        env: {
+            ...process.env,
+            // Read by the stall reporter: the files to account for, and how long a silence has to
+            // last before it gives up on them. A result lost on the way to the runner fails the run
+            // there (DRAIN_RESULTS_FLAGS is what keeps that from happening)
+            EE_TEST_FILES: JSON.stringify(files),
+            EE_TEST_STALL_TIMEOUT: String(tier.stallTimeout || 0)
         }
-    );
+    });
 
     // A child killed by a signal reports code=null; treat that as a failure
     let [code, signal] = await once(runner, 'exit');
-    process.exitCode = signal ? 1 : code;
+    if (signal || code !== 0) {
+        process.exitCode = 1;
+    }
 }
 
 function printServerLogTail() {
@@ -282,4 +286,4 @@ if (require.main === module) {
         });
 }
 
-module.exports = { assertPortFree, TIERS, EXIT_SAFE_V8_FLAGS };
+module.exports = { assertPortFree, TIERS, EXIT_SAFE_V8_FLAGS, DRAIN_RESULTS_FLAGS };
