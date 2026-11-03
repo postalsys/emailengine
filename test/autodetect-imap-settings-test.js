@@ -386,6 +386,42 @@ test('processAutodiscoverResponse', async t => {
         assert.strictEqual(hasResolvedHost(res), true);
     });
 
+    await t.test('reads the TLS mode from <Encryption> when there is no <SSL> (IONOS)', () => {
+        // IONOS answers with <Encryption> only. Reading <SSL> alone left `secure` unset, and the
+        // hosted form defaulted it to false, so IMAP on 993 was attempted without TLS.
+        const res = processAutodiscoverResponse(
+            pox(`<Account>
+              <AccountType>email</AccountType>
+              <Protocol><Type>IMAP</Type><Server>imap.ionos.fr</Server><Port>993</Port><Encryption>SSL</Encryption></Protocol>
+              <Protocol><Type>SMTP</Type><Server>smtp.ionos.fr</Server><Port>587</Port><Encryption>Auto</Encryption></Protocol>
+            </Account>`),
+            'autodiscover'
+        );
+        assert.deepStrictEqual(res.imap, { host: 'imap.ionos.fr', port: 993, secure: true });
+        assert.deepStrictEqual(res.smtp, { host: 'smtp.ionos.fr', port: 587, secure: false });
+    });
+
+    await t.test('maps every <Encryption> value, and it overrides <SSL>', () => {
+        const parse = (encryption, port, ssl) =>
+            processAutodiscoverResponse(
+                pox(`<Account>
+                  <AccountType>email</AccountType>
+                  <Protocol><Type>IMAP</Type><Server>imap.example.com</Server><Port>${port}</Port>${ssl ? `<SSL>${ssl}</SSL>` : ''}<Encryption>${encryption}</Encryption></Protocol>
+                </Account>`)
+            ).imap.secure;
+
+        assert.strictEqual(parse('SSL', 993), true);
+        assert.strictEqual(parse('ssl', 993), true, 'case-insensitive');
+        assert.strictEqual(parse('TLS', 143), false, 'TLS is STARTTLS');
+        assert.strictEqual(parse('None', 143), false);
+        assert.strictEqual(parse('Auto', 993), true, 'Auto on an implicit TLS port');
+        assert.strictEqual(parse('Auto', 143), false, 'Auto on a cleartext port');
+        assert.strictEqual(parse('SSL', 993, 'off'), true, '<Encryption> wins over <SSL>');
+        assert.strictEqual(parse('TLS', 143, 'on'), false, '<Encryption> wins over <SSL>');
+        assert.strictEqual(parse('Bogus', 993, 'on'), true, 'an unknown value falls back to <SSL>');
+        assert.strictEqual(parse('Bogus', 993), undefined, 'nothing to go by leaves it unset');
+    });
+
     await t.test('a protocol block with no Server names nothing, so it is not an entry', () => {
         // The parser used to build the entry out of whatever elements were present, which made
         // this one an object that was truthy and named no server at all.
