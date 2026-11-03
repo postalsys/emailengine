@@ -16,11 +16,12 @@ function createMailbox(opts) {
     const locks = [];
     const client = {
         mailbox: { path: 'INBOX', uidValidity: 7n },
-        messageMove: async () => {
+        // Like ImapFlow, reports the folder the message went to
+        messageMove: async (range, destination) => {
             if (opts.moveError) {
                 throw opts.moveError;
             }
-            return { destination: 'Archive', uidMap: new Map([[5, 50]]) };
+            return { destination, uidMap: new Map([[5, 50]]) };
         },
         messageDelete: async () => true
     };
@@ -117,7 +118,7 @@ test('the API methods release their lock on every path', async t => {
     await t.test('deleteMessage() moves to Trash under the lock', async () => {
         const { ctx, locks } = createMailbox();
         const result = await ctx.deleteMessage({ uid: 5, uidValidity: 7n }, false);
-        assert.deepStrictEqual(result, { deleted: false, moved: { destination: 'Archive', message: 'Trash:50' } });
+        assert.deepStrictEqual(result, { deleted: false, moved: { destination: 'Trash', message: 'Trash:50' } });
         assert.strictEqual(locks[0].released, 1);
     });
 });
