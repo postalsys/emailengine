@@ -9,7 +9,7 @@
 //   open leaked the descriptor (WORK-11).
 // - Export.queueMessage(): a retried folder counted its already-queued messages again (DELIV-19).
 // - Export.markInterruptedAsFailed(): unlinked the stored filePath without the ownership check the
-//   delete and download routes apply (DELIV-16).
+//   delete and download routes apply (DELIV-16), and failed queued exports whose job still waited.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -168,6 +168,65 @@ test('Export.markInterruptedAsFailed() unlinks only the export file itself', asy
         assert.strictEqual(await redis.hget(getExportKey(ACCOUNT, foreign), 'status'), 'failed', 'the record is still failed');
     } finally {
         await fs.promises.rm(dir, { recursive: true, force: true });
+    }
+});
+
+test('Export.markInterruptedAsFailed() leaves a queued export whose job is still waiting', async () => {
+    // A restart used to fail every export that had not started yet, although its job was still in
+    // the queue and the export worker would have run it
+    const { exportQueue } = require('../lib/db');
+    const getJob = exportQueue.getJob;
+    const states = new Map();
+    const removed = new Set();
+    exportQueue.getJob = async id =>
+        states.has(id)
+            ? {
+                  getState: async () => states.get(id),
+                  remove: async () => {
+                      removed.add(id);
+                  }
+              }
+            : null;
+    try {
+        const exports = {};
+        for (const [name, status, state] of [
+            ['waiting', 'queued', 'waiting'],
+            ['delayed', 'queued', 'delayed'],
+            ['jobFailed', 'queued', 'failed'],
+            ['jobless', 'queued', null],
+            ['processing', 'processing', 'waiting']
+        ]) {
+            const exportId = generateExportId();
+            if (state) {
+                states.set(exportId, state);
+            }
+            const key = getExportKey(ACCOUNT, exportId);
+            createdKeys.add(key);
+            createdKeys.add(getExportQueueKey(ACCOUNT, exportId));
+            await redis.hset(key, { exportId, account: ACCOUNT, status });
+            await redis.expire(key, 600);
+            const entry = buildActiveEntry(ACCOUNT, exportId);
+            createdEntries.add(entry);
+            await redis.sadd(ACTIVE_EXPORTS_KEY, entry);
+            exports[name] = exportId;
+        }
+
+        await Export.markInterruptedAsFailed();
+
+        for (const name of ['waiting', 'delayed']) {
+            assert.strictEqual(await redis.hget(getExportKey(ACCOUNT, exports[name]), 'status'), 'queued', `${name}: left for the export worker`);
+            assert.ok(!removed.has(exports[name]), `${name}: its job stays in the queue`);
+        }
+        for (const name of ['jobFailed', 'jobless', 'processing']) {
+            assert.strictEqual(await redis.hget(getExportKey(ACCOUNT, exports[name]), 'status'), 'failed', `${name}: failed as before`);
+        }
+        assert.ok(removed.has(exports.processing), 'an interrupted export has its job removed');
+    } finally {
+        exportQueue.getJob = getJob;
+        // The exports left queued would otherwise count against the account in the tests below
+        for (const entry of createdEntries) {
+            await redis.srem(ACTIVE_EXPORTS_KEY, entry);
+        }
     }
 });
 
