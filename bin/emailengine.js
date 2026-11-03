@@ -412,10 +412,8 @@ function runPassword() {
             let returnValue = argv.hash || argv.r ? Buffer.from(res.passwordHash).toString('base64url') : res.password;
             process.stdout.write(returnValue);
             // The password is stored, and every existing session is ended by the
-            // version bump; the login requirement itself is installed by each API
-            // worker at startup, so an instance that was running without a password
-            // keeps serving the admin pages without one until it is restarted
-            process.stderr.write('\nRestart running EmailEngine instances for the new password to take effect\n');
+            // version bump; a running instance that had no password asks for a login
+            // from its next admin request on (lib/session-default.js)
             return process.exit(0);
         })
         .catch(err => {

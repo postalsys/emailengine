@@ -90,6 +90,7 @@ const { mcpOptions } = require('../lib/api-routes/route-metadata');
 
 const { redis } = require('../lib/db');
 const { createHealthChecks } = require('../lib/health');
+const { requireSessionOnceSecured } = require('../lib/session-default');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
 
@@ -1572,8 +1573,10 @@ async function registerServerPlugins(server) {
     }
 
     // From here on a first password set on another API worker switches the session strategy on
-    // through the settings dispatcher (see the authData branch there)
+    // through the settings dispatcher (see the authData branch there), and a password written with no
+    // broadcast (the CLI) is noticed by the first request that would use the default
     sessionAuthServer = server;
+    requireSessionOnceSecured({ server, isInstanceSecured: () => settings.isInstanceSecured(), logger });
 
     await server.register({
         plugin: requestLogger,
