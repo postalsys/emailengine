@@ -2,22 +2,22 @@
   "spdxVersion": "SPDX-2.3",
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
-  "name": "emailengine-app@2.86.0",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.86.0-646bd759-6086-4f9e-a1fa-ce9f0b1bc2ac",
+  "name": "emailengine-app@2.87.0",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.87.0-92dba847-c8ce-4f2c-a33e-3fc17c78d8fb",
   "creationInfo": {
-    "created": "2026-10-29T14:26:47.932Z",
+    "created": "2026-11-03T13:20:11.957Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
   },
   "documentDescribes": [
-    "SPDXRef-Package-emailengine-app-2.86.0"
+    "SPDXRef-Package-emailengine-app-2.87.0"
   ],
   "packages": [
     {
       "name": "emailengine-app",
-      "SPDXID": "SPDXRef-Package-emailengine-app-2.86.0",
-      "versionInfo": "2.86.0",
+      "SPDXID": "SPDXRef-Package-emailengine-app-2.87.0",
+      "versionInfo": "2.87.0",
       "packageFileName": "",
       "description": "Email Sync Engine",
       "primaryPackagePurpose": "LIBRARY",
@@ -29,7 +29,7 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/emailengine-app@2.86.0"
+          "referenceLocator": "pkg:npm/emailengine-app@2.87.0"
         }
       ]
     },
@@ -227,11 +227,11 @@
     },
     {
       "name": "@csstools/css-syntax-patches-for-csstree",
-      "SPDXID": "SPDXRef-Package-csstools.css-syntax-patches-for-csstree-1.1.15",
-      "versionInfo": "1.1.15",
+      "SPDXID": "SPDXRef-Package-csstools.css-syntax-patches-for-csstree-1.1.16",
+      "versionInfo": "1.1.16",
       "packageFileName": "node_modules/@csstools/css-syntax-patches-for-csstree",
       "description": "CSS syntax patches for CSS tree",
-      "downloadLocation": "https://registry.npmjs.org/@csstools/css-syntax-patches-for-csstree/-/css-syntax-patches-for-csstree-1.1.15.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@csstools/css-syntax-patches-for-csstree/-/css-syntax-patches-for-csstree-1.1.16.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/csstools/postcss-plugins/tree/main/packages/css-syntax-patches-for-csstree#readme",
       "licenseDeclared": "MIT-0",
@@ -239,13 +239,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40csstools/css-syntax-patches-for-csstree@1.1.15"
+          "referenceLocator": "pkg:npm/%40csstools/css-syntax-patches-for-csstree@1.1.16"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "274bbb1e4565da7cd2961b224cea78026c1c510dc3fa618410a7c1cbfed3a39ff2ec5d8e1f0c8bad77eb851d12320af8a792e8f9e68c55279a8b6e3351c048c4"
+          "checksumValue": "2ec0db24f3ff07c70f6ac509c930394bdf45ec2e06f779e05bc85496e5f3f0215e39a6919c13ed062225be070f614d07987373f025e0fb5bf016b201e05e8383"
         }
       ]
     },
@@ -1355,11 +1355,11 @@
     },
     {
       "name": "@msgpackr-extract/msgpackr-extract-darwin-arm64",
-      "SPDXID": "SPDXRef-Package-msgpackr-extract.msgpackr-extract-darwin-arm64-3.0.4",
-      "versionInfo": "3.0.4",
+      "SPDXID": "SPDXRef-Package-msgpackr-extract.msgpackr-extract-darwin-arm64-3.0.6",
+      "versionInfo": "3.0.6",
       "packageFileName": "node_modules/@msgpackr-extract/msgpackr-extract-darwin-arm64",
       "description": "Platform specific binary for msgpackr-extract on darwin OS with arm64 architecture",
-      "downloadLocation": "https://registry.npmjs.org/@msgpackr-extract/msgpackr-extract-darwin-arm64/-/msgpackr-extract-darwin-arm64-3.0.4.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@msgpackr-extract/msgpackr-extract-darwin-arm64/-/msgpackr-extract-darwin-arm64-3.0.6.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "MIT",
@@ -1367,13 +1367,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4"
+          "referenceLocator": "pkg:npm/%40msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.6"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "2c2906a3a2437da0618124fb5293d680d80b20da5ca5a6da1dfcb3e4e071ef99d463106c6843f18e7c8d8d6a5e6ffc41ba9ffaf3642705f441cb6fcbbcfbad65"
+          "checksumValue": "ba0303d5740f434bac0b71757eb7d9cd9b0db3db9ff57cb17bce863b4efc320d1d558f85400f1394f2fc3f9110c1abd9b347547b62e35899ede13c90977a54bf"
         }
       ]
     },
@@ -2578,11 +2578,11 @@
     },
     {
       "name": "bullmq",
-      "SPDXID": "SPDXRef-Package-bullmq-6.5.1",
-      "versionInfo": "6.5.1",
+      "SPDXID": "SPDXRef-Package-bullmq-6.5.4",
+      "versionInfo": "6.5.4",
       "packageFileName": "node_modules/bullmq",
       "description": "Queue for messages and jobs based on Redis",
-      "downloadLocation": "https://registry.npmjs.org/bullmq/-/bullmq-6.5.1.tgz",
+      "downloadLocation": "https://registry.npmjs.org/bullmq/-/bullmq-6.5.4.tgz",
       "filesAnalyzed": false,
       "homepage": "https://bullmq.io/",
       "licenseDeclared": "MIT",
@@ -2590,13 +2590,37 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/bullmq@6.5.1"
+          "referenceLocator": "pkg:npm/bullmq@6.5.4"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "a74bbe954236b36e77108f2bfa4346097a4ad52bb04835bc16952f685f2fae7d5b3eff596d79a492aff2161a708c824cb63cc752e640b65a6f75698996e728a1"
+          "checksumValue": "e9dc1b6d52fa43edd7b07c18843d365922b7b1ed127b8be16efaef63cb6736abf459e7a352e7167db65aa2c9d8c9c435c975b632e3212838543a5bd0444abf48"
+        }
+      ]
+    },
+    {
+      "name": "tslib",
+      "SPDXID": "SPDXRef-Package-tslib-2.8.1",
+      "versionInfo": "2.8.1",
+      "packageFileName": "node_modules/bullmq/node_modules/tslib",
+      "description": "Runtime library for TypeScript helper functions",
+      "downloadLocation": "https://registry.npmjs.org/tslib/-/tslib-2.8.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://www.typescriptlang.org/",
+      "licenseDeclared": "0BSD",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/tslib@2.8.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "a0916ef781d06fe29576e49440bef09e99aa9df98bb0e03f9c087a6fa107d30084a0ad3f98f79753a737c0a0d5f373243ae1cf447b525ca294f7d2016b34bfdb"
         }
       ]
     },
@@ -3154,11 +3178,11 @@
     },
     {
       "name": "fast-xml-parser",
-      "SPDXID": "SPDXRef-Package-fast-xml-parser-5.11.2",
-      "versionInfo": "5.11.2",
+      "SPDXID": "SPDXRef-Package-fast-xml-parser-5.12.0",
+      "versionInfo": "5.12.0",
       "packageFileName": "node_modules/fast-xml-parser",
       "description": "Validate XML, Parse XML, Build XML without C/C++ based libraries",
-      "downloadLocation": "https://registry.npmjs.org/fast-xml-parser/-/fast-xml-parser-5.11.2.tgz",
+      "downloadLocation": "https://registry.npmjs.org/fast-xml-parser/-/fast-xml-parser-5.12.0.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "MIT",
@@ -3166,13 +3190,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/fast-xml-parser@5.11.2"
+          "referenceLocator": "pkg:npm/fast-xml-parser@5.12.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "47d883b8dad061e42eb78e9c9f6af6c072a7e07633543bc39b9275c16fa4a197b0ca4bf4cae3b61c285361e66dad42f21c80ccf5c8fd4d45e5a02b2e782414a2"
+          "checksumValue": "fe95f1441b70c58f70f33ed86e0b2f20f3dc3ef143b136c8916c134098733493e8923f936cde9fb6672fe23fe91100ef3823672860f3ba4e41a36a288083a216"
         }
       ]
     },
@@ -3562,11 +3586,11 @@
     },
     {
       "name": "is-unsafe",
-      "SPDXID": "SPDXRef-Package-is-unsafe-2.0.2",
-      "versionInfo": "2.0.2",
+      "SPDXID": "SPDXRef-Package-is-unsafe-2.0.3",
+      "versionInfo": "2.0.3",
       "packageFileName": "node_modules/is-unsafe",
       "description": "Zero-dependency, DOM-free, pure predicate for detecting unsafe strings across HTML, XML, SVG, SQL, SHELL, and REGEX contexts",
-      "downloadLocation": "https://registry.npmjs.org/is-unsafe/-/is-unsafe-2.0.2.tgz",
+      "downloadLocation": "https://registry.npmjs.org/is-unsafe/-/is-unsafe-2.0.3.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "MIT",
@@ -3574,13 +3598,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/is-unsafe@2.0.2"
+          "referenceLocator": "pkg:npm/is-unsafe@2.0.3"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "1e06c81cf047d0a1c709c8cb7c6b02be1b4f4d5c636806655e3c1dcfbfc6402e344a349ee2c7d0b1aafc279545a3c24e49b6ab92957438b1bde5b6da35df5a01"
+          "checksumValue": "6419657330823b6ebbbe07456fa4eade9bfe2e11da0a218c76bf99b2e2fe3a8a6bb8083b4bedd90ecd6f0f444f0b4b92ae48f36eb6b16868ed5f5601c633de15"
         }
       ]
     },
@@ -3946,11 +3970,11 @@
     },
     {
       "name": "msgpackr",
-      "SPDXID": "SPDXRef-Package-msgpackr-2.1.2",
-      "versionInfo": "2.1.2",
+      "SPDXID": "SPDXRef-Package-msgpackr-2.1.3",
+      "versionInfo": "2.1.3",
       "packageFileName": "node_modules/msgpackr",
       "description": "Ultra-fast MessagePack implementation with extensions for records and structured cloning",
-      "downloadLocation": "https://registry.npmjs.org/msgpackr/-/msgpackr-2.1.2.tgz",
+      "downloadLocation": "https://registry.npmjs.org/msgpackr/-/msgpackr-2.1.3.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "MIT",
@@ -3958,23 +3982,23 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/msgpackr@2.1.2"
+          "referenceLocator": "pkg:npm/msgpackr@2.1.3"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "24701dc2e6d634469d1d0b050226fab973b3285c58f103961eef4b08292c38834c0be4e381a292d9376bc3b756e526342cbcfc60adbf62a2d28b6be2810b74e7"
+          "checksumValue": "0bca50f12263c07f42f498827b96ac5d6bc90b799e94ec4cb818fbbe94d8f79d3de9acbaaf5c0f5c6d17379eb031a469cd13c4de175fe2e7ee9226bf8fe6de29"
         }
       ]
     },
     {
       "name": "msgpackr-extract",
-      "SPDXID": "SPDXRef-Package-msgpackr-extract-3.0.4",
-      "versionInfo": "3.0.4",
+      "SPDXID": "SPDXRef-Package-msgpackr-extract-3.0.6",
+      "versionInfo": "3.0.6",
       "packageFileName": "node_modules/msgpackr-extract",
       "description": "Node addon for string extraction for msgpackr",
-      "downloadLocation": "https://registry.npmjs.org/msgpackr-extract/-/msgpackr-extract-3.0.4.tgz",
+      "downloadLocation": "https://registry.npmjs.org/msgpackr-extract/-/msgpackr-extract-3.0.6.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "MIT",
@@ -3982,13 +4006,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/msgpackr-extract@3.0.4"
+          "referenceLocator": "pkg:npm/msgpackr-extract@3.0.6"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "e2498efcc77250890b22f4cfafc5472e297802da0a2289e258f204939f820f2d319d60bce1ace14859ae27b3f165db18b623f9904790b0e44054878c8314fe1f"
+          "checksumValue": "a6b501f3e19cff5ac4cda368fb7463a341dd8ba8058d0f53774983b2f008912194ca9e8400374406253bd593f9323e23086faf6a2d2a48d57eca2b1000c62e49"
         }
       ]
     },
@@ -4037,30 +4061,6 @@
         {
           "algorithm": "SHA512",
           "checksumValue": "b3ec3eac15a7a533304856da134517b11960ee15381637a4294e1ec808a1e53f2726e3594f59cdb2c917a7199ea922bd53390197a5204659ca73c873f0812a3b"
-        }
-      ]
-    },
-    {
-      "name": "detect-libc",
-      "SPDXID": "SPDXRef-Package-detect-libc-2.1.2",
-      "versionInfo": "2.1.2",
-      "packageFileName": "node_modules/node-gyp-build-optional-packages/node_modules/detect-libc",
-      "description": "Node.js module to detect the C standard library (libc) implementation family and version",
-      "downloadLocation": "https://registry.npmjs.org/detect-libc/-/detect-libc-2.1.2.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "Apache-2.0",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/detect-libc@2.1.2"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "06d8f604e38ef37a375b21f9f5ef0c817b3111055c6ab9143a9118aee6c1d2eaf09cdd74c90dfae2bb22072535d67665a966199b4e62fe87fb8a8e26ce2841b5"
         }
       ]
     },
@@ -4978,11 +4978,11 @@
     },
     {
       "name": "thread-stream",
-      "SPDXID": "SPDXRef-Package-thread-stream-4.2.0",
-      "versionInfo": "4.2.0",
+      "SPDXID": "SPDXRef-Package-thread-stream-4.2.1",
+      "versionInfo": "4.2.1",
       "packageFileName": "node_modules/thread-stream",
       "description": "A streaming way to send data to a Node.js Worker Thread",
-      "downloadLocation": "https://registry.npmjs.org/thread-stream/-/thread-stream-4.2.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/thread-stream/-/thread-stream-4.2.1.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/mcollina/thread-stream#readme",
       "licenseDeclared": "MIT",
@@ -4990,13 +4990,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/thread-stream@4.2.0"
+          "referenceLocator": "pkg:npm/thread-stream@4.2.1"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "7b6cd9f7ac120a16b306c6c435ffcf726ff8b301edd9c10a43ddab8548e42fd1822a24c324869305e9e313f9bd0d78b44019933039050dd3a8994cb6d00d6d0d"
+          "checksumValue": "4ad83a79d2570bfebfc6a1b0497c05a24ad4842849d7c6a6123a4a1fcf56ad0434a1514317ea5451c4e98b05a1154ac4f3d55fd7a1413a5c216b0fa57ac73131"
         }
       ]
     },
@@ -5170,11 +5170,11 @@
     },
     {
       "name": "tslib",
-      "SPDXID": "SPDXRef-Package-tslib-2.8.1",
-      "versionInfo": "2.8.1",
+      "SPDXID": "SPDXRef-Package-tslib-2.9.1",
+      "versionInfo": "2.9.1",
       "packageFileName": "node_modules/tslib",
       "description": "Runtime library for TypeScript helper functions",
-      "downloadLocation": "https://registry.npmjs.org/tslib/-/tslib-2.8.1.tgz",
+      "downloadLocation": "https://registry.npmjs.org/tslib/-/tslib-2.9.1.tgz",
       "filesAnalyzed": false,
       "homepage": "https://www.typescriptlang.org/",
       "licenseDeclared": "0BSD",
@@ -5182,13 +5182,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/tslib@2.8.1"
+          "referenceLocator": "pkg:npm/tslib@2.9.1"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "a0916ef781d06fe29576e49440bef09e99aa9df98bb0e03f9c087a6fa107d30084a0ad3f98f79753a737c0a0d5f373243ae1cf447b525ca294f7d2016b34bfdb"
+          "checksumValue": "6b8531f552ae20c1ec392ec435b12aea12b66466084f6ed1b65d04e1e0fd2aac3184a89078c644ffdc5bdc8758c166923b220140b1318508170d3628882c6758"
         }
       ]
     },
@@ -5482,11 +5482,11 @@
     },
     {
       "name": "ws",
-      "SPDXID": "SPDXRef-Package-ws-8.22.0",
-      "versionInfo": "8.22.0",
+      "SPDXID": "SPDXRef-Package-ws-8.22.1",
+      "versionInfo": "8.22.1",
       "packageFileName": "node_modules/ws",
       "description": "Simple to use, blazing fast and thoroughly tested websocket client and server for Node.js",
-      "downloadLocation": "https://registry.npmjs.org/ws/-/ws-8.22.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/ws/-/ws-8.22.1.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/websockets/ws",
       "licenseDeclared": "MIT",
@@ -5494,13 +5494,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/ws@8.22.0"
+          "referenceLocator": "pkg:npm/ws@8.22.1"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "61d82073df3bf913b40275ad67fed6abd16d36f72b2f56ff44ed2e77d9968d43e00ebb00030412179d6c9b6866d57a1f6d4ff88e4a4612c2c5b1967153ed433a"
+          "checksumValue": "a322fa38f6267bf0a6885bcdb86cdea31089e273ab644d8ed45c0cf4c58cd40b06ae2ea72d7076a60fa5340f1a2de5cc49abf427a788552d63eaf50fcd4b4af6"
         }
       ]
     },
@@ -5580,237 +5580,237 @@
   "relationships": [
     {
       "spdxElementId": "SPDXRef-DOCUMENT",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DESCRIBES"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.accept-6.0.3",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.bell-13.2.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.boom-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.cookie-12.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.crumb-9.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.hapi-21.4.12",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.inert-7.1.3",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.vision-7.0.3",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-msgpack.msgpack-3.1.3",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-postalsys.bounce-classifier-3.1.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-postalsys.certs-2.0.3",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-postalsys.email-ai-tools-2.4.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-postalsys.email-content-0.1.18",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-postalsys.email-text-tools-2.6.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-postalsys.gettext-4.3.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-postalsys.joi-messages-1.4.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-postalsys.templates-2.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-sentry.node-core-10.78.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-simplewebauthn.server-14.0.3",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-zone-eu.mailsplit-5.4.29",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-zone-eu.wild-config-1.7.10",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-bullmq-6.5.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "spdxElementId": "SPDXRef-Package-bullmq-6.5.4",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-dotenv-18.0.9",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-fast-xml-parser-5.11.2",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "spdxElementId": "SPDXRef-Package-fast-xml-parser-5.12.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-he-1.2.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-html-to-text-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-ical.js-2.2.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-imapflow-2.10.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-ioredfour-2.2.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-ioredis-6.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-ipaddr.js-2.5.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-joi-18.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libbase64-1.4.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libmime-5.6.3",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libqp-3.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-mailparser-3.14.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-marked-15.0.12",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-nodemailer-10.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-pino-10.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-prom-client-15.1.3",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-pubface-1.2.0",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-punycode.js-2.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-qrcode-generator-2.0.4",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-smtp-server-3.21.3",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-socks-2.8.10",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-undici-7.30.1",
-      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.86.0",
+      "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -6529,7 +6529,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
+      "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
       "relatedSpdxElement": "SPDXRef-Package-peculiar.asn1-android-2.11.1",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6554,7 +6554,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
+      "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
       "relatedSpdxElement": "SPDXRef-Package-peculiar.asn1-asym-key-2.11.1",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6579,7 +6579,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
+      "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
       "relatedSpdxElement": "SPDXRef-Package-peculiar.asn1-cms-2.11.1",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6599,7 +6599,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
+      "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
       "relatedSpdxElement": "SPDXRef-Package-peculiar.asn1-csr-2.11.1",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6619,7 +6619,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
+      "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
       "relatedSpdxElement": "SPDXRef-Package-peculiar.asn1-ecc-2.11.1",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6649,7 +6649,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
+      "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
       "relatedSpdxElement": "SPDXRef-Package-peculiar.asn1-pfx-2.11.1",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6669,7 +6669,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
+      "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
       "relatedSpdxElement": "SPDXRef-Package-peculiar.asn1-pkcs8-2.11.1",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6709,7 +6709,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
+      "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
       "relatedSpdxElement": "SPDXRef-Package-peculiar.asn1-pkcs9-2.11.1",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6729,7 +6729,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
+      "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
       "relatedSpdxElement": "SPDXRef-Package-peculiar.asn1-rsa-2.11.1",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6744,7 +6744,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
+      "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
       "relatedSpdxElement": "SPDXRef-Package-peculiar.asn1-schema-2.11.1",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6764,7 +6764,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
+      "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
       "relatedSpdxElement": "SPDXRef-Package-peculiar.asn1-x509-2.11.1",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6784,7 +6784,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
+      "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
       "relatedSpdxElement": "SPDXRef-Package-peculiar.asn1-x509-attr-2.11.1",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6809,12 +6809,12 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
+      "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
       "relatedSpdxElement": "SPDXRef-Package-peculiar.asn1-x509-post-quantum-2.11.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
+      "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
       "relatedSpdxElement": "SPDXRef-Package-peculiar.utils-2.0.3",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6864,7 +6864,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
+      "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
       "relatedSpdxElement": "SPDXRef-Package-peculiar.x509-2.2.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -7154,7 +7154,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
+      "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
       "relatedSpdxElement": "SPDXRef-Package-asn1js-3.1.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -7165,32 +7165,32 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-ioredis-6.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.1",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-cron-parser-5.10.2",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.1",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-msgpackr-2.1.2",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.1",
+      "spdxElementId": "SPDXRef-Package-msgpackr-2.1.3",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-node-abort-controller-3.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.1",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-semver-7.8.5",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.1",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.1",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.5.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7259,7 +7259,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-csstools.css-syntax-patches-for-csstree-1.1.15",
+      "spdxElementId": "SPDXRef-Package-csstools.css-syntax-patches-for-csstree-1.1.16",
       "relatedSpdxElement": "SPDXRef-Package-cssstyle-5.3.7",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -7305,32 +7305,32 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-nodable.entities-3.1.0",
-      "relatedSpdxElement": "SPDXRef-Package-fast-xml-parser-5.11.2",
+      "relatedSpdxElement": "SPDXRef-Package-fast-xml-parser-5.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-fast-xml-builder-1.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-fast-xml-parser-5.11.2",
+      "relatedSpdxElement": "SPDXRef-Package-fast-xml-parser-5.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-is-unsafe-2.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-fast-xml-parser-5.11.2",
+      "spdxElementId": "SPDXRef-Package-is-unsafe-2.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-fast-xml-parser-5.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-path-expression-matcher-1.6.2",
-      "relatedSpdxElement": "SPDXRef-Package-fast-xml-parser-5.11.2",
+      "relatedSpdxElement": "SPDXRef-Package-fast-xml-parser-5.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-strnum-2.5.1",
-      "relatedSpdxElement": "SPDXRef-Package-fast-xml-parser-5.11.2",
+      "relatedSpdxElement": "SPDXRef-Package-fast-xml-parser-5.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-xml-naming-0.3.0",
-      "relatedSpdxElement": "SPDXRef-Package-fast-xml-parser-5.11.2",
+      "relatedSpdxElement": "SPDXRef-Package-fast-xml-parser-5.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7579,7 +7579,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-ws-8.22.0",
+      "spdxElementId": "SPDXRef-Package-ws-8.22.1",
       "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -7679,24 +7679,19 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-msgpackr-extract-3.0.4",
-      "relatedSpdxElement": "SPDXRef-Package-msgpackr-2.1.2",
+      "spdxElementId": "SPDXRef-Package-msgpackr-extract-3.0.6",
+      "relatedSpdxElement": "SPDXRef-Package-msgpackr-2.1.3",
       "relationshipType": "OPTIONAL_DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-node-gyp-build-optional-packages-5.2.2",
-      "relatedSpdxElement": "SPDXRef-Package-msgpackr-extract-3.0.4",
+      "relatedSpdxElement": "SPDXRef-Package-msgpackr-extract-3.0.6",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-msgpackr-extract.msgpackr-extract-darwin-arm64-3.0.4",
-      "relatedSpdxElement": "SPDXRef-Package-msgpackr-extract-3.0.4",
+      "spdxElementId": "SPDXRef-Package-msgpackr-extract.msgpackr-extract-darwin-arm64-3.0.6",
+      "relatedSpdxElement": "SPDXRef-Package-msgpackr-extract-3.0.6",
       "relationshipType": "OPTIONAL_DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-detect-libc-2.1.2",
-      "relatedSpdxElement": "SPDXRef-Package-node-gyp-build-optional-packages-5.2.2",
-      "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-css-select-5.2.2",
@@ -7769,7 +7764,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-thread-stream-4.2.0",
+      "spdxElementId": "SPDXRef-Package-thread-stream-4.2.1",
       "relatedSpdxElement": "SPDXRef-Package-pino-10.3.1",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -7789,7 +7784,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tslib-2.8.1",
+      "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
       "relatedSpdxElement": "SPDXRef-Package-pvtsutils-1.3.6",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -7840,7 +7835,7 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-real-require-1.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-thread-stream-4.2.0",
+      "relatedSpdxElement": "SPDXRef-Package-thread-stream-4.2.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
