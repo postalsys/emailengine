@@ -218,6 +218,24 @@ test('GmailClient.prepareNewMessage()', async t => {
 
         await assert.rejects(gmail.prepareNewMessage({ id: 'm1' }, {}), /Backend Error/);
     });
+
+    // The IMAP path reports a message carrying the \Sent label as not new, wherever it is listed;
+    // over the Gmail API every new message used to be reported as new, the account's own sends too
+    for (const [labels, expected] of [
+        [['\\Inbox'], true],
+        [['\\Sent'], false],
+        [['\\Sent', '\\Inbox'], false],
+        [['Label_1'], true]
+    ]) {
+        await t.test(`seemsLikeNew is ${expected} for labels ${labels.join(', ')}`, async () => {
+            const gmail = makeClient();
+            gmail.listingEntry = { specialUse: '\\All' };
+            gmail.getMessage = async () => ({ id: 'm1', labels });
+
+            const messageData = await gmail.prepareNewMessage({ id: 'm1' }, {});
+            assert.equal(messageData.seemsLikeNew, expected);
+        });
+    }
 });
 
 test('GmailClient.getMessage() bounce detection option', async t => {

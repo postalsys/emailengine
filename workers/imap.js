@@ -20,7 +20,8 @@ const { Account } = require('../lib/account');
 const { oauth2Apps, isApiBasedApp } = require('../lib/oauth2-apps');
 const { redis, notifyQueue, submitQueue, watchRedisReconnect } = require('../lib/db');
 const { sendToMessagePort, MessagePortWritable } = require('../lib/message-port-stream');
-const { packRpcError, unpackRpcError, describeRpcCommand } = require('../lib/worker-rpc-error');
+const { describeRpcCommand } = require('../lib/worker-rpc-error');
+const { createRpcClient, respond, isCall } = require('../lib/worker-rpc');
 const { ImapFlowErrorCode } = require('imapflow');
 const settings = require('../lib/settings');
 const msgpack = require('../lib/msgpack');
@@ -58,8 +59,7 @@ NO_ACTIVE_HANDLER_RESP_ERR.code = 'WorkerNotAvailable';
 
 class ConnectionHandler {
     constructor() {
-        this.callQueue = new Map();
-        this.mids = 0;
+        this.rpc = createRpcClient({ port: parentPort, defaultTimeout: EENGINE_TIMEOUT, timeoutTag: 'T3' });
 
         this.accounts = new Map();
 
@@ -1101,27 +1101,8 @@ class ConnectionHandler {
         }
     }
 
-    async call(message) {
-        return new Promise((resolve, reject) => {
-            let mid = `${Date.now()}:${++this.mids}`;
-
-            let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
-            let timer = setTimeout(() => {
-                let err = new Error('Timeout waiting for command response [T3]');
-                err.statusCode = 504;
-                err.code = 'Timeout';
-                err.ttl = ttl;
-                this.callQueue.delete(mid);
-                reject(err);
-            }, ttl);
-
-            this.callQueue.set(mid, { resolve, reject, timer });
-            parentPort.postMessage({
-                cmd: 'call',
-                mid,
-                message
-            });
-        });
+    call(message) {
+        return this.rpc.call(message);
     }
 
     metrics(key, method, ...args) {
@@ -1145,42 +1126,28 @@ async function main() {
 }
 
 parentPort.on('message', message => {
-    if (message && message.cmd === 'resp' && message.mid && connectionHandler.callQueue.has(message.mid)) {
-        let { resolve, reject, timer } = connectionHandler.callQueue.get(message.mid);
-        clearTimeout(timer);
-        connectionHandler.callQueue.delete(message.mid);
-        if (message.error) {
-            return reject(unpackRpcError(message));
-        } else {
-            return resolve(message.response);
-        }
+    if (connectionHandler.rpc.handleResponse(message)) {
+        return;
     }
 
-    if (message && message.cmd === 'call' && message.mid) {
-        return connectionHandler
-            .onCommand(message.message)
-            .then(response => {
-                parentPort.postMessage({
-                    cmd: 'resp',
-                    mid: message.mid,
-                    response
-                });
-            })
-            .catch(err => {
+    if (isCall(message)) {
+        return respond(parentPort, message, command => connectionHandler.onCommand(command), {
+            logger,
+            onError(err) {
                 // Anything with a client-facing status (404 not found, 503 no active handler) is
                 // reported back to the caller as the command response, so it is not a server fault.
                 // 503 is excluded from the error branch on purpose: both "no active handler" and
                 // IMAPConnectionClosing carry it, and a worker taking over accounts answers every
                 // in-flight command with one until the reassignment settles.
-                if (err.code === ImapFlowErrorCode.ETHROTTLE && !err.statusCode) {
+                if (err && err.code === ImapFlowErrorCode.ETHROTTLE && !err.statusCode) {
                     // ImapFlow gave up after the server throttled every retry: the caller should
                     // back off, the same answer a throttled Gmail or Graph request gets
                     err.statusCode = 429;
                 }
-                let isServerFault = !err.statusCode || (err.statusCode >= 500 && err.statusCode !== 503);
+                let isServerFault = !err || !err.statusCode || (err.statusCode >= 500 && err.statusCode !== 503);
                 logger[isServerFault ? 'error' : 'debug'](Object.assign(describeRpcCommand(message), { msg: 'Command failed', err }));
-                parentPort.postMessage(Object.assign({ cmd: 'resp', mid: message.mid }, packRpcError(err)));
-            });
+            }
+        });
     }
 
     connectionHandler.onMessage(message).catch(err => logger.error({ msg: 'Failed to process IPC message', err }));

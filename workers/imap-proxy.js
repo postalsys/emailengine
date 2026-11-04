@@ -8,6 +8,7 @@ const logger = require('../lib/logger');
 const { threadStats } = require('../lib/tools');
 
 const { run, reloadCertificates } = require('../lib/imapproxy/imap-server');
+const { respond, isCall } = require('../lib/worker-rpc');
 
 const { initSentry } = require('../lib/sentry');
 initSentry('imapProxy');
@@ -37,25 +38,11 @@ setInterval(() => {
 // Send initial ready signal
 parentPort.postMessage({ cmd: 'ready' });
 
+// Responses to this worker's own calls are settled by lib/imapproxy/imap-server.js, which owns the
+// calling half
 parentPort.on('message', message => {
-    if (message && message.cmd === 'call' && message.mid) {
-        return onCommand(message.message)
-            .then(response => {
-                parentPort.postMessage({
-                    cmd: 'resp',
-                    mid: message.mid,
-                    response
-                });
-            })
-            .catch(err => {
-                parentPort.postMessage({
-                    cmd: 'resp',
-                    mid: message.mid,
-                    error: err.message,
-                    code: err.code,
-                    statusCode: err.statusCode
-                });
-            });
+    if (isCall(message)) {
+        return respond(parentPort, message, onCommand, { logger });
     }
 });
 

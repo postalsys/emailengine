@@ -30,7 +30,8 @@ smtpPool.getMailTransport = () => ({
 });
 
 const { SmtpConfigBuilder } = require('../lib/email-client/message-builder');
-const { BaseClient, buildReferences, isFailedDelivery } = require('../lib/email-client/base-client');
+const { BaseClient, buildReferences } = require('../lib/email-client/base-client');
+const { isFailedDelivery } = require('../lib/email-client/new-message-steps');
 const { Account } = require('../lib/account');
 const { EMAIL_SENT_NOTIFY, EMAIL_DELIVERY_ERROR_NOTIFY } = require('../lib/consts');
 const { noopLogger } = require('./helpers/auth-failure');

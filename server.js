@@ -54,6 +54,7 @@ if (Number(process.versions.node.split('.')[0]) < 20) {
 // runtime, so it is named here. Only a warning: one-click DigitalOcean images upgrade EmailEngine on
 // their own but not the Node they run on, and an instance that works today must not stop at its next
 // self-upgrade over a minor version it may never exercise.
+const { accountDataKey } = require('./lib/redis-keys');
 const { MIN_SUPPORTED_NODE, isBelowSupportedNode } = require('./lib/node-version');
 if (isBelowSupportedNode(process.versions.node)) {
     console.error(
@@ -1611,14 +1612,14 @@ let spawnWorker = async (type, opts, slot) => {
 
                         if (account && accountUpdateKey) {
                             // Update account-specific counter
-                            let accountKey = `${REDIS_PREFIX}iad:${account}`;
+                            let accountKey = accountDataKey(account);
                             update = update.hIncrbyExists(accountKey, `stats:count:${accountUpdateKey}`, 1);
                         }
 
                         update.exec().catch(() => false);
                     } else if (account && accountUpdateKey) {
                         // Update only account-specific counter
-                        let accountKey = `${REDIS_PREFIX}iad:${account}`;
+                        let accountKey = accountDataKey(account);
                         redis.hIncrbyExists(accountKey, `stats:count:${accountUpdateKey}`, 1).catch(() => false);
                     }
 

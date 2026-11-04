@@ -35,41 +35,9 @@ const EXPORT_TIMEOUT = getDuration(readEnvValue('EENGINE_EXPORT_TIMEOUT')) || DE
 
 const EXPORT_QC = (readEnvValue('EENGINE_EXPORT_QC') && Number(readEnvValue('EENGINE_EXPORT_QC'))) || config.queues.export || 1;
 
-let callQueue = new Map();
-let mids = 0;
-
-async function call(message, transferList) {
-    return new Promise((resolve, reject) => {
-        let mid = `${Date.now()}:${++mids}`;
-
-        let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
-        let timer = setTimeout(() => {
-            callQueue.delete(mid);
-            let err = new Error('Timeout waiting for command response [T6]');
-            err.statusCode = 504;
-            err.code = 'Timeout';
-            err.ttl = ttl;
-            reject(err);
-        }, ttl);
-
-        callQueue.set(mid, { resolve, reject, timer });
-
-        try {
-            parentPort.postMessage(
-                {
-                    cmd: 'call',
-                    mid,
-                    message
-                },
-                transferList
-            );
-        } catch (err) {
-            clearTimeout(timer);
-            callQueue.delete(mid);
-            return reject(err);
-        }
-    });
-}
+const { createRpcClient, respond, isCall } = require('../lib/worker-rpc');
+const rpc = createRpcClient({ port: parentPort, defaultTimeout: EENGINE_TIMEOUT, timeoutTag: 'T6' });
+const call = rpc.call;
 
 async function metrics(logger, key, method, ...args) {
     try {
@@ -335,25 +303,12 @@ async function onCommand(command) {
 })();
 
 parentPort.on('message', message => {
-    if (message && message.cmd === 'resp' && message.mid && callQueue.has(message.mid)) {
-        const { resolve, reject, timer } = callQueue.get(message.mid);
-        clearTimeout(timer);
-        callQueue.delete(message.mid);
-
-        if (message.error) {
-            const err = new Error(message.error);
-            if (message.code) err.code = message.code;
-            if (message.statusCode) err.statusCode = message.statusCode;
-            if (message.info) err.info = message.info;
-            return reject(err);
-        }
-        return resolve(message.response);
+    if (rpc.handleResponse(message)) {
+        return;
     }
 
-    if (message && message.cmd === 'call' && message.mid) {
-        Promise.resolve(onCommand(message.message))
-            .then(response => parentPort.postMessage({ cmd: 'resp', mid: message.mid, response }))
-            .catch(err => parentPort.postMessage({ cmd: 'resp', mid: message.mid, error: err.message, code: err.code, statusCode: err.statusCode }));
+    if (isCall(message)) {
+        return respond(parentPort, message, onCommand, { logger });
     }
 });
 

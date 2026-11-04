@@ -45,7 +45,6 @@ const SUBMIT_DELAY = getDuration(readEnvValue('EENGINE_SUBMIT_DELAY') || config.
 const { shouldDiscardJob, willBeFinalAttempt, isFinalFailedAttempt, nextAttemptWhileProcessing } = require('../lib/delivery-error');
 const { isAlreadySent } = require('../lib/submit-progress');
 const { clearSent } = require('../lib/submit-lock');
-const { packRpcError, unpackRpcError } = require('../lib/worker-rpc-error');
 
 // The send lock's marker is only needed while the job may run again (lib/submit-lock.js)
 const forgetSent = job =>
@@ -53,41 +52,9 @@ const forgetSent = job =>
         logger.warn({ msg: 'Failed to clear the sent marker of a completed message', job: job.id, account: job.data.account, err })
     );
 
-let callQueue = new Map();
-let mids = 0;
-
-async function call(message, transferList) {
-    return new Promise((resolve, reject) => {
-        let mid = `${Date.now()}:${++mids}`;
-
-        let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
-        let timer = setTimeout(() => {
-            let err = new Error('Timeout waiting for command response [T5]');
-            err.statusCode = 504;
-            err.code = 'Timeout';
-            err.ttl = ttl;
-            callQueue.delete(mid);
-            reject(err);
-        }, ttl);
-
-        callQueue.set(mid, { resolve, reject, timer });
-
-        try {
-            parentPort.postMessage(
-                {
-                    cmd: 'call',
-                    mid,
-                    message
-                },
-                transferList
-            );
-        } catch (err) {
-            clearTimeout(timer);
-            callQueue.delete(mid);
-            return reject(err);
-        }
-    });
-}
+const { createRpcClient, respond, isCall } = require('../lib/worker-rpc');
+const rpc = createRpcClient({ port: parentPort, defaultTimeout: EENGINE_TIMEOUT, timeoutTag: 'T5' });
+const call = rpc.call;
 
 async function metrics(logger, key, method, ...args) {
     try {
@@ -516,29 +483,12 @@ setInterval(() => {
 parentPort.postMessage({ cmd: 'ready' });
 
 parentPort.on('message', message => {
-    if (message && message.cmd === 'resp' && message.mid && callQueue.has(message.mid)) {
-        let { resolve, reject, timer } = callQueue.get(message.mid);
-        clearTimeout(timer);
-        callQueue.delete(message.mid);
-        if (message.error) {
-            return reject(unpackRpcError(message));
-        } else {
-            return resolve(message.response);
-        }
+    if (rpc.handleResponse(message)) {
+        return;
     }
 
-    if (message && message.cmd === 'call' && message.mid) {
-        return onCommand(message.message)
-            .then(response => {
-                parentPort.postMessage({
-                    cmd: 'resp',
-                    mid: message.mid,
-                    response
-                });
-            })
-            .catch(err => {
-                parentPort.postMessage(Object.assign({ cmd: 'resp', mid: message.mid }, packRpcError(err)));
-            });
+    if (isCall(message)) {
+        return respond(parentPort, message, onCommand, { logger });
     }
 });
 
