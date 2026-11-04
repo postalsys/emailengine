@@ -22,6 +22,16 @@ test('Templates', async t => {
         }
     });
 
+    await t.test('unpackId() refuses an id whose timestamp is out of range as not found', () => {
+        // Long enough for the header, but its first eight bytes are no time a Date can hold, so the
+        // timestamp read threw "RangeError: Invalid time value" and a send naming such a template
+        // failed with a 500 instead of "not found" (Sentry EMAILENGINE-COMMUNITY-J). A name typed
+        // into the template field instead of a generated id is the usual way to get here
+        for (const id of [Buffer.alloc(16, 0xff).toString('base64url'), 'my-welcome-template', 'newsletter-2026-11']) {
+            assert.throws(() => templates.unpackId(id), isNotFound, `id "${id}" should be refused`);
+        }
+    });
+
     await t.test('unpackId() round-trips a generated id', async () => {
         const id = await templates.generateId('tpl-account');
         const unpacked = templates.unpackId(id);
