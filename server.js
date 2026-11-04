@@ -99,6 +99,7 @@ const {
     maybeReloadHttpProxyAgent,
     redactValidationError
 } = require('./lib/tools');
+const { apiPort, apiHost } = require('./lib/api-listener');
 const MetricsCollector = require('./lib/metrics-collector');
 
 // Import constants
@@ -250,9 +251,8 @@ config.workers.export = workerPoolSize(readEnvValue('EENGINE_WORKERS_EXPORT'), c
 // API worker count. Values >1 require SO_REUSEPORT (Linux); on unsupported platforms it falls back to 1 at startup.
 config.workers.api = workerPoolSize(readEnvValue('EENGINE_WORKERS_API'), config.workers.api);
 
-config.api.port =
-    (hasEnvValue('EENGINE_PORT') && Number(readEnvValue('EENGINE_PORT'))) || (hasEnvValue('PORT') && Number(readEnvValue('PORT'))) || config.api.port;
-config.api.host = readEnvValue('EENGINE_HOST') || config.api.host;
+config.api.port = apiPort(config.api);
+config.api.host = apiHost(config.api);
 
 config.log.level = readEnvValue('EENGINE_LOG_LEVEL') || config.log.level;
 

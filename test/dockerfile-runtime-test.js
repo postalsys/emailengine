@@ -7,19 +7,23 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { readDockerfile } = require('./helpers/dockerfile');
+const { readDockerfile, copiedSources } = require('./helpers/dockerfile');
 
 const dockerfile = readDockerfile();
 // Everything after the last FROM is the image that ships
 const runtimeStage = dockerfile.slice(dockerfile.lastIndexOf('\nFROM '));
 
-test('the runtime image declares a health check on the liveness endpoint', () => {
+test('the runtime image declares a health check that follows the API listener', () => {
     const healthcheck = runtimeStage.match(/^HEALTHCHECK\b[\s\S]*?CMD\s+(.+)$/m);
     assert.ok(healthcheck, 'the runtime stage has a HEALTHCHECK instruction');
-    assert.match(healthcheck[1], /\/health\/live\b/, 'the check asks the liveness endpoint, not readiness');
-    // BusyBox wget on musl tries ::1 only for localhost while EmailEngine listens on IPv4
-    assert.match(healthcheck[1], /127\.0\.0\.1/);
-    assert.doesNotMatch(healthcheck[1], /localhost/);
+    // A fixed http URL failed on every instance serving the API over HTTPS; bin/healthcheck.js
+    // resolves the port, bind address and TLS switch the way the API worker does
+    assert.match(healthcheck[1], /bin\/healthcheck\.js/);
+    assert.doesNotMatch(healthcheck[1], /wget|http:\/\//, 'no hard-coded protocol');
+});
+
+test('the health check script ships in the image', () => {
+    assert.ok(copiedSources(dockerfile).has('bin'), 'bin/ is copied, so bin/healthcheck.js is there to run');
 });
 
 test('the runtime image exposes the default API port', () => {

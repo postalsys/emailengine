@@ -114,11 +114,10 @@ EXPOSE 3000
 
 # The liveness check: answers while the process can serve HTTP, without waiting on Redis or the
 # workers, so an orchestrator restarts the container only when restarting can help. Readiness
-# (workers and Redis) is /health/ready, for whatever routes traffic to it. 127.0.0.1 rather than
-# localhost for the reason docker-compose.yml gives: BusyBox wget on musl tries ::1 only, and
-# EmailEngine listens on IPv4. Shell form so a changed EENGINE_PORT (or PORT) is followed.
+# (workers and Redis) is /health/ready, for whatever routes traffic to it. A Node script rather than
+# wget so the probe follows the API's own port, bind address and TLS switch (lib/health-probe.js).
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider "http://127.0.0.1:${EENGINE_PORT:-${PORT:-3000}}/health/live" || exit 1
+    CMD ["node", "/emailengine/bin/healthcheck.js"]
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD ["node", "/emailengine/server.js"]

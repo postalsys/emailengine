@@ -104,7 +104,8 @@ const { registerOpenApiRoute } = require('../lib/openapi');
 const { getModel: getApiReferenceModel, clearServiceUrlCache } = require('../lib/api-reference');
 
 const { createCertHandler } = require('../lib/cert-handler');
-const { createTlsContext, applyTlsContext, apiTlsConfig } = require('../lib/tls/context');
+const { createTlsContext, applyTlsContext } = require('../lib/tls/context');
+const { apiPort, apiHost, apiTlsConfig } = require('../lib/api-listener');
 const { reconcileCertificates, requestProvisioning } = require('../lib/tls/provision');
 const { buildCertificateStatus } = require('../lib/tls/status');
 
@@ -207,12 +208,11 @@ const oidcAllowGroups = sso.parseGroupList(sso.OIDC_ALLOWED_GROUPS);
 const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const MAX_ATTACHMENT_SIZE = getByteSize(readEnvValue('EENGINE_MAX_SIZE') || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
 
-const API_PORT =
-    (hasEnvValue('EENGINE_PORT') && Number(readEnvValue('EENGINE_PORT'))) || (hasEnvValue('PORT') && Number(readEnvValue('PORT'))) || config.api.port;
-const API_HOST = readEnvValue('EENGINE_HOST') || config.api.host;
+const API_PORT = apiPort(config.api);
+const API_HOST = apiHost(config.api);
 
 // Either an object (TLS enabled) or `false` (TLS disabled)
-const API_TLS = apiTlsConfig();
+const API_TLS = apiTlsConfig(config.api);
 
 // Merge TLS settings from config params and environment
 loadTlsConfig(API_TLS, 'EENGINE_API_TLS_');
