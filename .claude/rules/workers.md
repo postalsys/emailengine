@@ -93,7 +93,7 @@ The webhooks system (`workers/webhooks.js`, `lib/webhooks.js`) delivers real-tim
 **Custom routes** (`lib/webhooks.js`):
 - `fn` - JavaScript filter function returning boolean (include/exclude event)
 - `map` - JavaScript transform function to modify payload before delivery
-- Functions run via the SubScript wrapper (Node `vm`) with a 30s synchronous-execution timeout and a 1MB code-size cap. This is NOT a security sandbox - `vm` is not a security boundary, so scripts execute with full server privileges (they can reach `process`, host modules, and secrets). Only trusted operators may author `fn`/`map`/pre-processing scripts; never expose script authoring to untrusted users. Real isolation (isolated-vm / out-of-process) is a tracked follow-up.
+- Functions run via the SubScript wrapper (Node `vm`) with a 30s synchronous-execution timeout and a 1MB code-size cap. This is NOT a security sandbox - `vm` is not a security boundary, so scripts execute with full server privileges (they can reach `process`, host modules, and secrets). Only trusted operators may author `fn`/`map`/pre-processing scripts; never expose script authoring to untrusted users. No pure-JS isolate exists to replace it (isolated-vm is native, QuickJS builds are WASM, vm2 is abandoned with known escapes and must never be adopted); a dedicated worker with `resourceLimits` could bound time and memory, never privilege.
 
 ## Submit Worker
 
