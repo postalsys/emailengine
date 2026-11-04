@@ -362,7 +362,7 @@ test('Stream encryption tests', async t => {
 
     await t.test('exported constants have expected values', async () => {
         assert.deepStrictEqual(MAGIC, Buffer.from('EE01'));
-        assert.strictEqual(VERSION, 2);
+        assert.strictEqual(VERSION, 3);
         assert.strictEqual(CHUNK_SIZE, 64 * 1024);
         assert.strictEqual(HEADER_SIZE, 4 + 4 + 4 + 16); // magic + version + chunkSize + salt
     });
@@ -396,9 +396,9 @@ test('Stream encryption tests', async t => {
     });
 });
 
-// Version 2 derives the key with PBKDF2-HMAC-SHA256; version 1 did so with scrypt, which an
-// OpenSSL FIPS provider does not offer. A version 1 file written by an earlier release still
-// decrypts, and the version 2 parameters are pinned through a file built by hand
+// Versions 2 and 3 derive the key with PBKDF2-HMAC-SHA256; version 1 did so with scrypt, which an
+// OpenSSL FIPS provider does not offer. Files of versions 1 and 2, written by earlier releases,
+// still decrypt, and the PBKDF2 parameters are pinned through a file built by hand
 test('Stream encryption versions', async t => {
     const secret = 'pinned-export-secret';
     const salt = Buffer.from('101112131415161718191a1b1c1d1e1f', 'hex');
@@ -422,9 +422,9 @@ test('Stream encryption versions', async t => {
 
     const decryptAll = async buffer => (await streamToBuffer(bufferToStream(buffer).pipe(await createDecryptStream(secret)))).toString();
 
-    await t.test('writes version 2', async () => {
+    await t.test('writes version 3', async () => {
         const encrypted = await streamToBuffer(bufferToStream(Buffer.from('hello')).pipe(await createEncryptStream(secret)));
-        assert.strictEqual(encrypted.readUInt32LE(MAGIC.length), 2);
+        assert.strictEqual(encrypted.readUInt32LE(MAGIC.length), 3);
     });
 
     await t.test('a version 1 file still decrypts', async () => {
@@ -437,6 +437,98 @@ test('Stream encryption versions', async t => {
 
     await t.test('an unknown version is refused', async () => {
         // refused at the header, before any key is derived
-        await assert.rejects(() => decryptAll(build(3, Buffer.alloc(32), 'x')), /Unsupported encryption version: 3/);
+        await assert.rejects(() => decryptAll(build(4, Buffer.alloc(32), 'x')), /Unsupported encryption version: 4/);
+    });
+});
+
+// Version 3 binds every chunk to the file header, its index and its final flag, so a file whose
+// chunks were moved around, or that was cut short, is refused instead of decrypting to something
+// other than what was written
+test('Stream encryption chunk binding', async t => {
+    const secret = 'chunk-binding-secret';
+    // chunk header in version 3: IV, ciphertext length, flags byte
+    const CHUNK_HEADER = 12 + 4 + 1;
+
+    const encrypt = async data => streamToBuffer(bufferToStream(data).pipe(await createEncryptStream(secret)));
+    const decrypt = async buffer => streamToBuffer(bufferToStream(buffer).pipe(await createDecryptStream(secret)));
+
+    // Splits a version 3 file into its header and its sealed chunks
+    const split = file => {
+        const chunks = [];
+        let offset = HEADER_SIZE;
+        while (offset < file.length) {
+            const length = CHUNK_HEADER + file.readUInt32LE(offset + 12) + 16;
+            chunks.push(file.subarray(offset, offset + length));
+            offset += length;
+        }
+        return { header: file.subarray(0, HEADER_SIZE), chunks };
+    };
+
+    const data = crypto.randomBytes(CHUNK_SIZE * 3 + 100);
+
+    await t.test('a file of whole chunks ends with an empty final chunk', async () => {
+        const { chunks } = split(await encrypt(crypto.randomBytes(CHUNK_SIZE * 2)));
+        assert.strictEqual(chunks.length, 2);
+        assert.strictEqual(chunks[1][16], 1, 'the second chunk is flagged final');
+        assert.strictEqual(chunks[0][16], 0);
+    });
+
+    await t.test('an empty input still has a final chunk', async () => {
+        const encrypted = await encrypt(Buffer.alloc(0));
+        assert.strictEqual(split(encrypted).chunks.length, 1);
+        assert.deepStrictEqual(await decrypt(encrypted), Buffer.alloc(0));
+    });
+
+    await t.test('reordered chunks are refused', async () => {
+        const { header, chunks } = split(await encrypt(data));
+        await assert.rejects(decrypt(Buffer.concat([header, chunks[1], chunks[0], chunks[2], chunks[3]])), /Decryption failed/);
+    });
+
+    await t.test('a dropped chunk is refused', async () => {
+        const { header, chunks } = split(await encrypt(data));
+        await assert.rejects(decrypt(Buffer.concat([header, chunks[0], chunks[2], chunks[3]])), /Decryption failed/);
+    });
+
+    await t.test('a duplicated chunk is refused', async () => {
+        const { header, chunks } = split(await encrypt(data));
+        await assert.rejects(decrypt(Buffer.concat([header, chunks[0], chunks[0], chunks[1], chunks[2], chunks[3]])), /Decryption failed/);
+    });
+
+    await t.test('a file cut at a chunk boundary is refused', async () => {
+        const { header, chunks } = split(await encrypt(data));
+        await assert.rejects(decrypt(Buffer.concat([header, chunks[0], chunks[1]])), /final chunk is missing/);
+    });
+
+    await t.test('a header without chunks is refused', async () => {
+        const { header } = split(await encrypt(data));
+        await assert.rejects(decrypt(header), /final chunk is missing/);
+    });
+
+    await t.test('an empty file is refused', async () => {
+        await assert.rejects(decrypt(Buffer.alloc(0)), /incomplete header/);
+    });
+
+    await t.test('a chunk flagged final early is refused', async () => {
+        const { header, chunks } = split(await encrypt(data));
+        const forged = Buffer.from(chunks[1]);
+        forged[16] = 1;
+        await assert.rejects(decrypt(Buffer.concat([header, chunks[0], forged])), /Decryption failed/);
+    });
+
+    await t.test('data after the final chunk is refused', async () => {
+        const { header, chunks } = split(await encrypt(data));
+        await assert.rejects(decrypt(Buffer.concat([header, ...chunks, chunks[3]])), /data after the final chunk/);
+    });
+
+    await t.test('a chunk from another file with the same secret is refused', async () => {
+        const first = split(await encrypt(data));
+        const second = split(await encrypt(data));
+        await assert.rejects(decrypt(Buffer.concat([first.header, second.chunks[0], ...first.chunks.slice(1)])), /Decryption failed/);
+    });
+
+    await t.test('a changed chunk size in the header is refused', async () => {
+        const encrypted = Buffer.from(await encrypt(data));
+        encrypted.writeUInt32LE(CHUNK_SIZE * 2, MAGIC.length + 4);
+        await assert.rejects(decrypt(encrypted), /Decryption failed/);
     });
 });
