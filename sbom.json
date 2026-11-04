@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "emailengine-app@2.87.0",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.87.0-ea4e0c8e-08e9-4df1-b972-8740416bb5b0",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.87.0-efda8b7f-1bdf-40dd-bcf8-13012233c7f8",
   "creationInfo": {
-    "created": "2026-11-04T13:48:30.857Z",
+    "created": "2026-11-04T21:03:46.123Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
@@ -30,246 +30,6 @@
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
           "referenceLocator": "pkg:npm/emailengine-app@2.87.0"
-        }
-      ]
-    },
-    {
-      "name": "@asamuzakjp/css-color",
-      "SPDXID": "SPDXRef-Package-asamuzakjp.css-color-4.1.1",
-      "versionInfo": "4.1.1",
-      "packageFileName": "node_modules/@asamuzakjp/css-color",
-      "description": "CSS color - Resolve and convert CSS colors.",
-      "downloadLocation": "https://registry.npmjs.org/@asamuzakjp/css-color/-/css-color-4.1.1.tgz",
-      "filesAnalyzed": false,
-      "homepage": "https://github.com/asamuzaK/cssColor#readme",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40asamuzakjp/css-color@4.1.1"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "0741efe86de0586327d31289d2dc448bf8cce621694f731f0f19a16456f85b4e3b1afcad09fd431d0d43ebd5b7cc7238c967b66936400342676cc67b5dcf03b9"
-        }
-      ]
-    },
-    {
-      "name": "lru-cache",
-      "SPDXID": "SPDXRef-Package-lru-cache-11.5.3",
-      "versionInfo": "11.5.3",
-      "packageFileName": "node_modules/@asamuzakjp/css-color/node_modules/lru-cache",
-      "description": "A cache object that deletes the least-recently-used items.",
-      "downloadLocation": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.5.3.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "BlueOak-1.0.0",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/lru-cache@11.5.3"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "53837c160ce65b173c935547f0aafa950835f14ec58ef6f2eb05c75515ff659ec8c166d1320ad16cfd16adbe6ae4d5629ebca9e1241a9a91ca76fb5e708b7152"
-        }
-      ]
-    },
-    {
-      "name": "@asamuzakjp/dom-selector",
-      "SPDXID": "SPDXRef-Package-asamuzakjp.dom-selector-6.8.1",
-      "versionInfo": "6.8.1",
-      "packageFileName": "node_modules/@asamuzakjp/dom-selector",
-      "description": "A CSS selector engine.",
-      "downloadLocation": "https://registry.npmjs.org/@asamuzakjp/dom-selector/-/dom-selector-6.8.1.tgz",
-      "filesAnalyzed": false,
-      "homepage": "https://github.com/asamuzaK/domSelector#readme",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40asamuzakjp/dom-selector@6.8.1"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "32f473d670aa5b47eccbc433e1d9cb22f84e94ccea0d505a6d9c7a947f98cb01437635e1318dfb4a6a55d57157dc9cc6e465879fade3e875fa40faf79595c7bd"
-        }
-      ]
-    },
-    {
-      "name": "@asamuzakjp/nwsapi",
-      "SPDXID": "SPDXRef-Package-asamuzakjp.nwsapi-2.3.9",
-      "versionInfo": "2.3.9",
-      "packageFileName": "node_modules/@asamuzakjp/nwsapi",
-      "description": "Fast CSS Selectors API Engine",
-      "downloadLocation": "https://registry.npmjs.org/@asamuzakjp/nwsapi/-/nwsapi-2.3.9.tgz",
-      "filesAnalyzed": false,
-      "homepage": "http://javascript.nwbox.com/nwsapi/",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40asamuzakjp/nwsapi@2.3.9"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "9fc1ae612ac8f5b17b14567f4a38707af94773cc5a5656ffec79877a59dcfcf657043d99478f4d9cdf6c30cb8374418f79e450e5dd21aa54a51298025f75a5d1"
-        }
-      ]
-    },
-    {
-      "name": "@csstools/color-helpers",
-      "SPDXID": "SPDXRef-Package-csstools.color-helpers-5.1.0",
-      "versionInfo": "5.1.0",
-      "packageFileName": "node_modules/@csstools/color-helpers",
-      "description": "Color helpers to ease transformation between formats, gamut, etc",
-      "downloadLocation": "https://registry.npmjs.org/@csstools/color-helpers/-/color-helpers-5.1.0.tgz",
-      "filesAnalyzed": false,
-      "homepage": "https://github.com/csstools/postcss-plugins/tree/main/packages/color-helpers#readme",
-      "licenseDeclared": "MIT-0",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40csstools/color-helpers@5.1.0"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "4b5d445d6272cb4333e5262f46663c9c96131457752c2355fbb717c80810b4e3aecdbe04b207ea0ee7cbfbd7acc7bdbf78b86c45d199c1a95dbbf87e138b7804"
-        }
-      ]
-    },
-    {
-      "name": "@csstools/css-calc",
-      "SPDXID": "SPDXRef-Package-csstools.css-calc-2.1.4",
-      "versionInfo": "2.1.4",
-      "packageFileName": "node_modules/@csstools/css-calc",
-      "description": "Solve CSS math expressions",
-      "downloadLocation": "https://registry.npmjs.org/@csstools/css-calc/-/css-calc-2.1.4.tgz",
-      "filesAnalyzed": false,
-      "homepage": "https://github.com/csstools/postcss-plugins/tree/main/packages/css-calc#readme",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40csstools/css-calc@2.1.4"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "dcdf286a3fb48ee530ff51f76309830c95c281307580a53a1dcfdb079d36bbdcd1d2adaf77bf3a5c91fd41faca2048059599a1662aba7a95e5e2b1ea873b0881"
-        }
-      ]
-    },
-    {
-      "name": "@csstools/css-color-parser",
-      "SPDXID": "SPDXRef-Package-csstools.css-color-parser-3.1.0",
-      "versionInfo": "3.1.0",
-      "packageFileName": "node_modules/@csstools/css-color-parser",
-      "description": "Parse CSS color values",
-      "downloadLocation": "https://registry.npmjs.org/@csstools/css-color-parser/-/css-color-parser-3.1.0.tgz",
-      "filesAnalyzed": false,
-      "homepage": "https://github.com/csstools/postcss-plugins/tree/main/packages/css-color-parser#readme",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40csstools/css-color-parser@3.1.0"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "9dbb4ac21ddaeb1355229fd546e5d5eb8c932a76f52234c01048778abcd2f8790a8c03982d318d6fda6654d9ed67c8950477160c0d83a1fd10b4f80523505a4c"
-        }
-      ]
-    },
-    {
-      "name": "@csstools/css-parser-algorithms",
-      "SPDXID": "SPDXRef-Package-csstools.css-parser-algorithms-3.0.5",
-      "versionInfo": "3.0.5",
-      "packageFileName": "node_modules/@csstools/css-parser-algorithms",
-      "description": "Algorithms to help you parse CSS from an array of tokens.",
-      "downloadLocation": "https://registry.npmjs.org/@csstools/css-parser-algorithms/-/css-parser-algorithms-3.0.5.tgz",
-      "filesAnalyzed": false,
-      "homepage": "https://github.com/csstools/postcss-plugins/tree/main/packages/css-parser-algorithms#readme",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40csstools/css-parser-algorithms@3.0.5"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "0da0de5245d92a374686061a1cd25357da55ed8f41ddbeb8e2308bb3d52973755e34683a2d6011013e8ef90fbf08ea3eda083f6cce6b869300b5fef45aa7c175"
-        }
-      ]
-    },
-    {
-      "name": "@csstools/css-syntax-patches-for-csstree",
-      "SPDXID": "SPDXRef-Package-csstools.css-syntax-patches-for-csstree-1.1.16",
-      "versionInfo": "1.1.16",
-      "packageFileName": "node_modules/@csstools/css-syntax-patches-for-csstree",
-      "description": "CSS syntax patches for CSS tree",
-      "downloadLocation": "https://registry.npmjs.org/@csstools/css-syntax-patches-for-csstree/-/css-syntax-patches-for-csstree-1.1.16.tgz",
-      "filesAnalyzed": false,
-      "homepage": "https://github.com/csstools/postcss-plugins/tree/main/packages/css-syntax-patches-for-csstree#readme",
-      "licenseDeclared": "MIT-0",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40csstools/css-syntax-patches-for-csstree@1.1.16"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "2ec0db24f3ff07c70f6ac509c930394bdf45ec2e06f779e05bc85496e5f3f0215e39a6919c13ed062225be070f614d07987373f025e0fb5bf016b201e05e8383"
-        }
-      ]
-    },
-    {
-      "name": "@csstools/css-tokenizer",
-      "SPDXID": "SPDXRef-Package-csstools.css-tokenizer-3.0.4",
-      "versionInfo": "3.0.4",
-      "packageFileName": "node_modules/@csstools/css-tokenizer",
-      "description": "Tokenize CSS",
-      "downloadLocation": "https://registry.npmjs.org/@csstools/css-tokenizer/-/css-tokenizer-3.0.4.tgz",
-      "filesAnalyzed": false,
-      "homepage": "https://github.com/csstools/postcss-plugins/tree/main/packages/css-tokenizer#readme",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40csstools/css-tokenizer@3.0.4"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "55dffd1150e2bba3cf26df72021eaba193fa125d711eb76f2151a3c81b07474458c0d1e02fb1493f22085b87c0349346e85b7265fbe544fa4523864cfe5b9bbf"
         }
       ]
     },
@@ -755,11 +515,11 @@
     },
     {
       "name": "@hapi/hapi",
-      "SPDXID": "SPDXRef-Package-hapi.hapi-21.4.12",
-      "versionInfo": "21.4.12",
+      "SPDXID": "SPDXRef-Package-hapi.hapi-21.4.13",
+      "versionInfo": "21.4.13",
       "packageFileName": "node_modules/@hapi/hapi",
       "description": "HTTP Server framework",
-      "downloadLocation": "https://registry.npmjs.org/@hapi/hapi/-/hapi-21.4.12.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@hapi/hapi/-/hapi-21.4.13.tgz",
       "filesAnalyzed": false,
       "homepage": "https://hapi.dev",
       "licenseDeclared": "BSD-3-Clause",
@@ -767,13 +527,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40hapi/hapi@21.4.12"
+          "referenceLocator": "pkg:npm/%40hapi/hapi@21.4.13"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "4d3e8446ba79aaffe9377b9b3482e3235fcc65f5d0314ba6d885561f6847476dcb1e3d567b982c23c5856af7da3516b1f93f16daa49492b8bd97b140ef6fd777"
+          "checksumValue": "7aea4b012bbc8c8ac5be8f32bbec4afc2e6fda4c9da8aeefe375c87c1b455b836b24aca5b9dd2c121112a2aee86117b5bb13888a8c09033ea6558982c42db0d6"
         }
       ]
     },
@@ -923,11 +683,11 @@
     },
     {
       "name": "@hapi/pez",
-      "SPDXID": "SPDXRef-Package-hapi.pez-6.1.2",
-      "versionInfo": "6.1.2",
+      "SPDXID": "SPDXRef-Package-hapi.pez-6.1.3",
+      "versionInfo": "6.1.3",
       "packageFileName": "node_modules/@hapi/pez",
       "description": "Multipart parser",
-      "downloadLocation": "https://registry.npmjs.org/@hapi/pez/-/pez-6.1.2.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@hapi/pez/-/pez-6.1.3.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "BSD-3-Clause",
@@ -935,13 +695,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40hapi/pez@6.1.2"
+          "referenceLocator": "pkg:npm/%40hapi/pez@6.1.3"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "26f7dd030fbd895cd2f556118a68bd048be649464fadd82d27f75ebedd97ba3c03ebb3265b92893cd250f85db4b997c78f7714b2f6bcbb5921b1c237efacc364"
+          "checksumValue": "862b7f61bee362ffeb00a0cc4c924884fb25c4782df56c6615f52f67deeb1cbb2af87a48e9e404e876c684513f7e13874fc965911113723257e3eeeeb7b185df"
         }
       ]
     },
@@ -1955,11 +1715,11 @@
     },
     {
       "name": "@postalsys/certs",
-      "SPDXID": "SPDXRef-Package-postalsys.certs-2.0.3",
-      "versionInfo": "2.0.3",
+      "SPDXID": "SPDXRef-Package-postalsys.certs-2.0.4",
+      "versionInfo": "2.0.4",
       "packageFileName": "node_modules/@postalsys/certs",
       "description": "Manage Let's Encrypt certificates",
-      "downloadLocation": "https://registry.npmjs.org/@postalsys/certs/-/certs-2.0.3.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@postalsys/certs/-/certs-2.0.4.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/postalsys/certs#readme",
       "licenseDeclared": "ISC",
@@ -1967,23 +1727,23 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40postalsys/certs@2.0.3"
+          "referenceLocator": "pkg:npm/%40postalsys/certs@2.0.4"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "d032fddf8a68495db618ef8178eb25c45a43b6b5073ab3468de263324737665e87721458a72381dc57378b1a0b4dfb589e35127b14e6142847c4e9f7a49d9b58"
+          "checksumValue": "a78653ff538c5e13c1f99429ba7e7890d03730c4cfbdb027aab1336235d05aa8ed1f0c5f8bb00d0c83f7bfe5b7be33cd08575b5641a33ba304c8ee1f25cc3d1f"
         }
       ]
     },
     {
       "name": "@postalsys/email-ai-tools",
-      "SPDXID": "SPDXRef-Package-postalsys.email-ai-tools-2.4.1",
-      "versionInfo": "2.4.1",
+      "SPDXID": "SPDXRef-Package-postalsys.email-ai-tools-2.4.2",
+      "versionInfo": "2.4.2",
       "packageFileName": "node_modules/@postalsys/email-ai-tools",
       "description": "Summarize and risk-score email messages with an OpenAI-compatible chat model",
-      "downloadLocation": "https://registry.npmjs.org/@postalsys/email-ai-tools/-/email-ai-tools-2.4.1.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@postalsys/email-ai-tools/-/email-ai-tools-2.4.2.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/postalsys/email-ai-tools#readme",
       "licenseDeclared": "MIT",
@@ -1991,13 +1751,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40postalsys/email-ai-tools@2.4.1"
+          "referenceLocator": "pkg:npm/%40postalsys/email-ai-tools@2.4.2"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "b099fa4ba875e963c540c643a389e9a1287ba8a9585f319b008d63fdd3e8925a3136ff3d2254c6fb6d26faaa3f1f0693fbddcd7398213a355acf4d92f88037a1"
+          "checksumValue": "e4f26d8233334ca65ff52366136677b6990db1c8a29119ba71451e44e0751826e790c2877b3d00f5f99b8f3050927ce3989516dd438b2fe661372a39b7e90360"
         }
       ]
     },
@@ -2027,11 +1787,11 @@
     },
     {
       "name": "@postalsys/email-text-tools",
-      "SPDXID": "SPDXRef-Package-postalsys.email-text-tools-2.6.2",
-      "versionInfo": "2.6.2",
+      "SPDXID": "SPDXRef-Package-postalsys.email-text-tools-2.6.3",
+      "versionInfo": "2.6.3",
       "packageFileName": "node_modules/@postalsys/email-text-tools",
       "description": "Email text tools",
-      "downloadLocation": "https://registry.npmjs.org/@postalsys/email-text-tools/-/email-text-tools-2.6.2.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@postalsys/email-text-tools/-/email-text-tools-2.6.3.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/postalsys/email-text-tools#readme",
       "licenseDeclared": "MIT",
@@ -2039,13 +1799,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40postalsys/email-text-tools@2.6.2"
+          "referenceLocator": "pkg:npm/%40postalsys/email-text-tools@2.6.3"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "b1e8774587772d7c4bac0157ab7a2b63679bf011ecefb610fc2d42a6625af22c230593c3c0803f1d24af7e7d05199744c46e507b8a74905cfb448866f0990568"
+          "checksumValue": "86c20b5c21e1bcd4c38e212595b87e6f47e10bf41910c29d2c43cd4022f2a1a653431bbd7d326922b5ff2116eae6e8b468723a3b1c7bdcbf9ee03d7688744341"
         }
       ]
     },
@@ -2433,30 +2193,6 @@
       ]
     },
     {
-      "name": "agent-base",
-      "SPDXID": "SPDXRef-Package-agent-base-7.1.4",
-      "versionInfo": "7.1.4",
-      "packageFileName": "node_modules/agent-base",
-      "description": "Turn a function into an `http.Agent` instance",
-      "downloadLocation": "https://registry.npmjs.org/agent-base/-/agent-base-7.1.4.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/agent-base@7.1.4"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "32703e613f1fc1f24f801c779bad0c36a6a49b7d173a4c88a07d72ea1b9342f0b43f0646ee48bc35a70b05cacf6cda28f2f119cbb269ba4efe8cc3be094a2f4d"
-        }
-      ]
-    },
-    {
       "name": "ansi-colors",
       "SPDXID": "SPDXRef-Package-ansi-colors-4.1.3",
       "versionInfo": "4.1.3",
@@ -2529,30 +2265,6 @@
       ]
     },
     {
-      "name": "bidi-js",
-      "SPDXID": "SPDXRef-Package-bidi-js-1.1.0",
-      "versionInfo": "1.1.0",
-      "packageFileName": "node_modules/bidi-js",
-      "description": "A JavaScript implementation of the Unicode Bidirectional Algorithm",
-      "downloadLocation": "https://registry.npmjs.org/bidi-js/-/bidi-js-1.1.0.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/bidi-js@1.1.0"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "7d7d4e9e4d2d7553c2ee86cf581e446c9d73ecd5612eae26db164bab6617064c7331720646934c53cf27d043e05ac78a975d89ef35eceeaac3c4f2b8b11b367e"
-        }
-      ]
-    },
-    {
       "name": "bintrees",
       "SPDXID": "SPDXRef-Package-bintrees-1.0.2",
       "versionInfo": "1.0.2",
@@ -2578,11 +2290,11 @@
     },
     {
       "name": "bullmq",
-      "SPDXID": "SPDXRef-Package-bullmq-6.6.0",
-      "versionInfo": "6.6.0",
+      "SPDXID": "SPDXRef-Package-bullmq-6.7.0",
+      "versionInfo": "6.7.0",
       "packageFileName": "node_modules/bullmq",
       "description": "Queue for messages and jobs based on Redis",
-      "downloadLocation": "https://registry.npmjs.org/bullmq/-/bullmq-6.6.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/bullmq/-/bullmq-6.7.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://bullmq.io/",
       "licenseDeclared": "MIT",
@@ -2590,13 +2302,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/bullmq@6.6.0"
+          "referenceLocator": "pkg:npm/bullmq@6.7.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "0d1692a4f4d90cac8d4132e3be6bfd03c2ecd87d582efe0557d4b3146a01eff61938ede13630dfa422b2d4863b82e39dd6605da4af6668eb28f2eccf35dbb25a"
+          "checksumValue": "f8b9cab2a67e3d157f22e97b4fce2a11960e7b0b20b679e64dcdff4e35d993a75268e78aebc02e47fa7cbb343a58843c26f7ff1a38ad8ec52b99369157671fb1"
         }
       ]
     },
@@ -2722,11 +2434,11 @@
     },
     {
       "name": "cron-parser",
-      "SPDXID": "SPDXRef-Package-cron-parser-5.10.2",
-      "versionInfo": "5.10.2",
+      "SPDXID": "SPDXRef-Package-cron-parser-5.10.3",
+      "versionInfo": "5.10.3",
       "packageFileName": "node_modules/cron-parser",
       "description": "Node.js library for parsing crontab instructions",
-      "downloadLocation": "https://registry.npmjs.org/cron-parser/-/cron-parser-5.10.2.tgz",
+      "downloadLocation": "https://registry.npmjs.org/cron-parser/-/cron-parser-5.10.3.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "MIT",
@@ -2734,13 +2446,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/cron-parser@5.10.2"
+          "referenceLocator": "pkg:npm/cron-parser@5.10.3"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "25f018318d0b65a5904ee89cb7c3e1b45fe4b129eaf3179f4839905279e8aaf90f62453fcb750fd034d6cc9285073d0fd485ec0c6f2ad2f637cc79281593a1bf"
+          "checksumValue": "1709669608b2a23e5eed70c2cb94f7b9e15dde29a0b7bd7893bc6303386438152b5204315adb234bb91648437779f0d7df86de6f10490263e80928ac1ef8e5a7"
         }
       ]
     },
@@ -2789,102 +2501,6 @@
         {
           "algorithm": "SHA512",
           "checksumValue": "bbf3b7bf06e9b7384cb372f57d013cd9948b1d041fb68e60c99cf0b5e54813279a63915ced1e1d6a917f06f46849815ea9f064e26d15d5569fab93e3bf6e70bc"
-        }
-      ]
-    },
-    {
-      "name": "cssstyle",
-      "SPDXID": "SPDXRef-Package-cssstyle-5.3.7",
-      "versionInfo": "5.3.7",
-      "packageFileName": "node_modules/cssstyle",
-      "description": "An implementation of the CSSStyleDeclaration class from the CSS Object Model specification",
-      "downloadLocation": "https://registry.npmjs.org/cssstyle/-/cssstyle-5.3.7.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/cssstyle@5.3.7"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "ec3d843d596d46bb13921a509a4b08bbe2f1796008124eb0443309d6a96396ff8228724cf9c24b95f856233340e38780b075d235edfebcee835b5c82631f12b9"
-        }
-      ]
-    },
-    {
-      "name": "data-urls",
-      "SPDXID": "SPDXRef-Package-data-urls-6.0.1",
-      "versionInfo": "6.0.1",
-      "packageFileName": "node_modules/data-urls",
-      "description": "Parses data: URLs",
-      "downloadLocation": "https://registry.npmjs.org/data-urls/-/data-urls-6.0.1.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/data-urls@6.0.1"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "7ae21010d660eb1f268f77ceea8f7e7ce5bc3229942383e90ff7d906125f7a2a19572f53529338518eca8d035564596ac09d14773443ce4c9c07df7b1c4ab505"
-        }
-      ]
-    },
-    {
-      "name": "whatwg-mimetype",
-      "SPDXID": "SPDXRef-Package-whatwg-mimetype-5.0.0",
-      "versionInfo": "5.0.0",
-      "packageFileName": "node_modules/data-urls/node_modules/whatwg-mimetype",
-      "description": "Parses, serializes, and manipulates MIME types, according to the WHATWG MIME Sniffing Standard",
-      "downloadLocation": "https://registry.npmjs.org/whatwg-mimetype/-/whatwg-mimetype-5.0.0.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/whatwg-mimetype@5.0.0"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "b1770d707382e75b8f185d0ffc3e0d56dae48d25367cdb26f62a20e19bd926c2f7ae3a030335d98649b6316b75cbe3d476080a01856830021872cefcc09e750b"
-        }
-      ]
-    },
-    {
-      "name": "decimal.js",
-      "SPDXID": "SPDXRef-Package-decimal.js-10.6.0",
-      "versionInfo": "10.6.0",
-      "packageFileName": "node_modules/decimal.js",
-      "description": "An arbitrary-precision Decimal type for JavaScript.",
-      "downloadLocation": "https://registry.npmjs.org/decimal.js/-/decimal.js-10.6.0.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/decimal.js@10.6.0"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "6298108884d6dc95c69edcdd526c9447557cd761e7f13d58557842bbec0edcea52e1e53d97861d0f7aa3ca229d57a9af576f736a990c783dfdd145447f696452"
         }
       ]
     },
@@ -3201,30 +2817,6 @@
       ]
     },
     {
-      "name": "html-encoding-sniffer",
-      "SPDXID": "SPDXRef-Package-html-encoding-sniffer-4.0.0",
-      "versionInfo": "4.0.0",
-      "packageFileName": "node_modules/html-encoding-sniffer",
-      "description": "Sniff the encoding from a HTML byte stream",
-      "downloadLocation": "https://registry.npmjs.org/html-encoding-sniffer/-/html-encoding-sniffer-4.0.0.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/html-encoding-sniffer@4.0.0"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "636da84ea214e2eb8f8047a67f3ecd0c9cfa39e29fd762ecbbe402facdc156975aeb895388c602c86c20e648b8bc5c6433041d7990e5d9a759a2a520745b9381"
-        }
-      ]
-    },
-    {
       "name": "html-to-text",
       "SPDXID": "SPDXRef-Package-html-to-text-10.0.1",
       "versionInfo": "10.0.1",
@@ -3293,54 +2885,6 @@
         {
           "algorithm": "SHA512",
           "checksumValue": "4d6ae02ce1544131fdf78614ca5d724f8bb26af6399cd0799ae7dff91b566aa3550802b8d3c6f96679db34050458b4c2a6e9bdc3a6ab4fbd22d57750e1478e3c"
-        }
-      ]
-    },
-    {
-      "name": "http-proxy-agent",
-      "SPDXID": "SPDXRef-Package-http-proxy-agent-7.0.2",
-      "versionInfo": "7.0.2",
-      "packageFileName": "node_modules/http-proxy-agent",
-      "description": "An HTTP(s) proxy `http.Agent` implementation for HTTP",
-      "downloadLocation": "https://registry.npmjs.org/http-proxy-agent/-/http-proxy-agent-7.0.2.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/http-proxy-agent@7.0.2"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "4f58240226180d6631dd5e419b2bbb1dc7dcbcbee652b4d688ceb239f6b73c8a6156227f8053dbbe2750faf7aa48e1dc8bf3f105c0da6de50d0b3a4e3832598a"
-        }
-      ]
-    },
-    {
-      "name": "https-proxy-agent",
-      "SPDXID": "SPDXRef-Package-https-proxy-agent-7.0.6",
-      "versionInfo": "7.0.6",
-      "packageFileName": "node_modules/https-proxy-agent",
-      "description": "An HTTP(s) proxy `http.Agent` implementation for HTTPS",
-      "downloadLocation": "https://registry.npmjs.org/https-proxy-agent/-/https-proxy-agent-7.0.6.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/https-proxy-agent@7.0.6"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "bcaf4fe7f8947dd97de4023e255c94b88715b5de287efb6b3abdc736d336cb10bd6e731b11da77c74d4e8503678dbf082588b7f159531379815f071fbf2c2e4b"
         }
       ]
     },
@@ -3537,30 +3081,6 @@
       ]
     },
     {
-      "name": "is-potential-custom-element-name",
-      "SPDXID": "SPDXRef-Package-is-potential-custom-element-name-1.0.1",
-      "versionInfo": "1.0.1",
-      "packageFileName": "node_modules/is-potential-custom-element-name",
-      "description": "Check whether a given string matches the `PotentialCustomElementName` production as defined in the HTML Standard.",
-      "downloadLocation": "https://registry.npmjs.org/is-potential-custom-element-name/-/is-potential-custom-element-name-1.0.1.tgz",
-      "filesAnalyzed": false,
-      "homepage": "https://github.com/mathiasbynens/is-potential-custom-element-name",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/is-potential-custom-element-name@1.0.1"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "6c261e440dab5626ca65dfacdbadb98069c617fb7b0d2a83b3874fec2acb0359bb8ca5b3ea9a6cd0ba582c937c43ae07b663ca27586b3779f33cd28510a39489"
-        }
-      ]
-    },
-    {
       "name": "is-unsafe",
       "SPDXID": "SPDXRef-Package-is-unsafe-2.0.3",
       "versionInfo": "2.0.3",
@@ -3586,11 +3106,11 @@
     },
     {
       "name": "joi",
-      "SPDXID": "SPDXRef-Package-joi-18.3.1",
-      "versionInfo": "18.3.1",
+      "SPDXID": "SPDXRef-Package-joi-18.3.2",
+      "versionInfo": "18.3.2",
       "packageFileName": "node_modules/joi",
       "description": "Object schema validation",
-      "downloadLocation": "https://registry.npmjs.org/joi/-/joi-18.3.1.tgz",
+      "downloadLocation": "https://registry.npmjs.org/joi/-/joi-18.3.2.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "BSD-3-Clause",
@@ -3598,37 +3118,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/joi@18.3.1"
+          "referenceLocator": "pkg:npm/joi@18.3.2"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "995f4ce0b961e2f6b7353f74a7b281b5086866a8ecf312d7ec4598138cbf186df22c5e9111b2011074946f4517d495d186ddb0e6d88b4acbe6a587396a48aa23"
-        }
-      ]
-    },
-    {
-      "name": "jsdom",
-      "SPDXID": "SPDXRef-Package-jsdom-27.0.0",
-      "versionInfo": "27.0.0",
-      "packageFileName": "node_modules/jsdom",
-      "description": "A JavaScript implementation of many web standards",
-      "downloadLocation": "https://registry.npmjs.org/jsdom/-/jsdom-27.0.0.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/jsdom@27.0.0"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "9481de475aa5211ac837954c71c77cb48d92830ea27985d2564b5c48768d7b76799c4fed70f4184163aad34c3132f60eb33fbbdde02435e9d5be63c2e9b6daf4"
+          "checksumValue": "8948af029298c391a9666ab64b2e8497df63ee7a28f1049415997242daf71c2928b02fdbe70285ebf637b5e88722568cf16237f2c013dcffb9d6b07496102124"
         }
       ]
     },
@@ -4593,54 +4089,6 @@
       ]
     },
     {
-      "name": "require-from-string",
-      "SPDXID": "SPDXRef-Package-require-from-string-2.0.2",
-      "versionInfo": "2.0.2",
-      "packageFileName": "node_modules/require-from-string",
-      "description": "Require module from string",
-      "downloadLocation": "https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/require-from-string@2.0.2"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "5dfd2759ee91b1ece214cbbe029f5b8a251b9a996ae92f7fa7eef0ed85cffc904786b5030d48706bebc0372b9bbaa7d9593bde53ffc36151ac0c6ed128bfef13"
-        }
-      ]
-    },
-    {
-      "name": "rrweb-cssom",
-      "SPDXID": "SPDXRef-Package-rrweb-cssom-0.8.0",
-      "versionInfo": "0.8.0",
-      "packageFileName": "node_modules/rrweb-cssom",
-      "description": "CSS Object Model implementation and CSS parser",
-      "downloadLocation": "https://registry.npmjs.org/rrweb-cssom/-/rrweb-cssom-0.8.0.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/rrweb-cssom@0.8.0"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "82ea25b50131fbd68c7f6803674b3ad84715f25b1747ed30f3dd794c2dc84dd9f662e7ae363740621fe57afa54f6715aa02861f51512e5975032b29f54437db7"
-        }
-      ]
-    },
-    {
       "name": "safe-stable-stringify",
       "SPDXID": "SPDXRef-Package-safe-stable-stringify-2.5.0",
       "versionInfo": "2.5.0",
@@ -4661,30 +4109,6 @@
         {
           "algorithm": "SHA512",
           "checksumValue": "6f7ae9a532a6f53f8fb1508110e511e3a19623b7dd3acd3454a675fbd7351160da0ccbe341cead530b85c88a6b806813716a151d22ab53c1f7d591c0d9ed111c"
-        }
-      ]
-    },
-    {
-      "name": "saxes",
-      "SPDXID": "SPDXRef-Package-saxes-6.0.0",
-      "versionInfo": "6.0.0",
-      "packageFileName": "node_modules/saxes",
-      "description": "An evented streaming XML parser in JavaScript",
-      "downloadLocation": "https://registry.npmjs.org/saxes/-/saxes-6.0.0.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "ISC",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/saxes@6.0.0"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "c4083b48e9c486b9b9cc8de9b8e38acb2d4e31c32520965834963bc4b0704b37b452384f2e759f8f6185d84a53d239b368928858a1cbb1a4926a37f7e5b7189c"
         }
       ]
     },
@@ -4905,30 +4329,6 @@
       ]
     },
     {
-      "name": "symbol-tree",
-      "SPDXID": "SPDXRef-Package-symbol-tree-3.2.4",
-      "versionInfo": "3.2.4",
-      "packageFileName": "node_modules/symbol-tree",
-      "description": "Turn any collection of objects into its own efficient tree or linked list using Symbol",
-      "downloadLocation": "https://registry.npmjs.org/symbol-tree/-/symbol-tree-3.2.4.tgz",
-      "filesAnalyzed": false,
-      "homepage": "https://github.com/jsdom/js-symbol-tree#symbol-tree",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/symbol-tree@3.2.4"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "f50364e4ac0317e06fcfe3f239b9264988c8e64b15518b635bb014db6af634a71f2c9717a7dea1903594dfe5e774eb146fe010f5085fcdf093d8ef823564f94f"
-        }
-      ]
-    },
-    {
       "name": "tdigest",
       "SPDXID": "SPDXRef-Package-tdigest-0.1.3",
       "versionInfo": "0.1.3",
@@ -5097,54 +4497,6 @@
       ]
     },
     {
-      "name": "tough-cookie",
-      "SPDXID": "SPDXRef-Package-tough-cookie-6.0.2",
-      "versionInfo": "6.0.2",
-      "packageFileName": "node_modules/tough-cookie",
-      "description": "RFC6265 Cookies and Cookie Jar for node.js",
-      "downloadLocation": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-6.0.2.tgz",
-      "filesAnalyzed": false,
-      "homepage": "https://github.com/salesforce/tough-cookie",
-      "licenseDeclared": "BSD-3-Clause",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/tough-cookie@6.0.2"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "7b18189a798bfec269477ba965f5c6e4fa1ab574228b9e710225c65f363eb1138b67f63e48b729f4f809348f55cf7ec7a50ef85af0dc2d3f1eaa6fa4577173ac"
-        }
-      ]
-    },
-    {
-      "name": "tr46",
-      "SPDXID": "SPDXRef-Package-tr46-6.0.0",
-      "versionInfo": "6.0.0",
-      "packageFileName": "node_modules/tr46",
-      "description": "An implementation of the Unicode UTS #46: Unicode IDNA Compatibility Processing",
-      "downloadLocation": "https://registry.npmjs.org/tr46/-/tr46-6.0.0.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/tr46@6.0.0"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "6cb54c2cfb6cb6567888c407a451d347b1801a3da3c62f03834b3687631a7c0138b92585f7c142ff7328994e7589000c7fcfea0d46ca59fe46c6ebef55c5c487"
-        }
-      ]
-    },
-    {
       "name": "tslib",
       "SPDXID": "SPDXRef-Package-tslib-2.9.1",
       "versionInfo": "2.9.1",
@@ -5289,30 +4641,6 @@
       ]
     },
     {
-      "name": "w3c-xmlserializer",
-      "SPDXID": "SPDXRef-Package-w3c-xmlserializer-5.0.0",
-      "versionInfo": "5.0.0",
-      "packageFileName": "node_modules/w3c-xmlserializer",
-      "description": "A per-spec XML serializer implementation",
-      "downloadLocation": "https://registry.npmjs.org/w3c-xmlserializer/-/w3c-xmlserializer-5.0.0.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/w3c-xmlserializer@5.0.0"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "a3caa086523c3591d4d652cfae98b6f94abb69b8781863e96003656a5cd6c725ad789382b2bfcffa83c1038f5338bbb915364ee1ddc5f4c9d625f88ca3806498"
-        }
-      ]
-    },
-    {
       "name": "web-resource-inliner",
       "SPDXID": "SPDXRef-Package-web-resource-inliner-8.0.0",
       "versionInfo": "8.0.0",
@@ -5357,30 +4685,6 @@
         {
           "algorithm": "SHA512",
           "checksumValue": "e737e0ea61d4a1a7abffded3c671a9c666d1ef326d3f021814c67f1f9b9c4e53d984abedba6d39ca23cadcc81a8b76b40f2571bfba98aa8c1e6847769eb610cd"
-        }
-      ]
-    },
-    {
-      "name": "webidl-conversions",
-      "SPDXID": "SPDXRef-Package-webidl-conversions-8.0.1",
-      "versionInfo": "8.0.1",
-      "packageFileName": "node_modules/webidl-conversions",
-      "description": "Implements the WebIDL algorithms for converting to and from JavaScript values",
-      "downloadLocation": "https://registry.npmjs.org/webidl-conversions/-/webidl-conversions-8.0.1.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "BSD-2-Clause",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/webidl-conversions@8.0.1"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "04c84b0ff4b0f866c90b6d42fd48326995f8d673edf1b51383e8d6c837a0edeed8378c4e334e583d221771e0029d756dab2130fcb30295440cb4c67e3c61a9a9"
         }
       ]
     },
@@ -5433,78 +4737,6 @@
       ]
     },
     {
-      "name": "whatwg-url",
-      "SPDXID": "SPDXRef-Package-whatwg-url-15.1.0",
-      "versionInfo": "15.1.0",
-      "packageFileName": "node_modules/whatwg-url",
-      "description": "An implementation of the WHATWG URL Standard's URL API and parsing machinery",
-      "downloadLocation": "https://registry.npmjs.org/whatwg-url/-/whatwg-url-15.1.0.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/whatwg-url@15.1.0"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "db2b43934922123ff2bbdd09380a78e0f54f5243bdfa3561c9ff92c9b2a544748396f38e66174f22bafbc531fae25e168b13b670ffb0408720ba390604f3f3ea"
-        }
-      ]
-    },
-    {
-      "name": "ws",
-      "SPDXID": "SPDXRef-Package-ws-8.22.1",
-      "versionInfo": "8.22.1",
-      "packageFileName": "node_modules/ws",
-      "description": "Simple to use, blazing fast and thoroughly tested websocket client and server for Node.js",
-      "downloadLocation": "https://registry.npmjs.org/ws/-/ws-8.22.1.tgz",
-      "filesAnalyzed": false,
-      "homepage": "https://github.com/websockets/ws",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/ws@8.22.1"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "a322fa38f6267bf0a6885bcdb86cdea31089e273ab644d8ed45c0cf4c58cd40b06ae2ea72d7076a60fa5340f1a2de5cc49abf427a788552d63eaf50fcd4b4af6"
-        }
-      ]
-    },
-    {
-      "name": "xml-name-validator",
-      "SPDXID": "SPDXRef-Package-xml-name-validator-5.0.0",
-      "versionInfo": "5.0.0",
-      "packageFileName": "node_modules/xml-name-validator",
-      "description": "Validates whether a string matches the production for an XML name or qualified name",
-      "downloadLocation": "https://registry.npmjs.org/xml-name-validator/-/xml-name-validator-5.0.0.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "Apache-2.0",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/xml-name-validator@5.0.0"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "12f18af042770e16877db465113396012e693bd31921379ab87289c9bf30c9a8d47d051e9e4220d8cbcb0d36784ff4e021c9b71d4d1314181659ba00677d141e"
-        }
-      ]
-    },
-    {
       "name": "xml-naming",
       "SPDXID": "SPDXRef-Package-xml-naming-0.3.0",
       "versionInfo": "0.3.0",
@@ -5525,30 +4757,6 @@
         {
           "algorithm": "SHA512",
           "checksumValue": "8218a0d93044fc7d7568e56099a840dcc8629af901afa2486249c7fc385d935d275f075b22a049b1b7ccc69bc53c6f1b030efb80ddbd6905af2a9995a0f96f3d"
-        }
-      ]
-    },
-    {
-      "name": "xmlchars",
-      "SPDXID": "SPDXRef-Package-xmlchars-2.2.0",
-      "versionInfo": "2.2.0",
-      "packageFileName": "node_modules/xmlchars",
-      "description": "Utilities for determining if characters belong to character classes defined by the XML specs.",
-      "downloadLocation": "https://registry.npmjs.org/xmlchars/-/xmlchars-2.2.0.tgz",
-      "filesAnalyzed": false,
-      "homepage": "NOASSERTION",
-      "licenseDeclared": "MIT",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:npm/xmlchars@2.2.0"
-        }
-      ],
-      "checksums": [
-        {
-          "algorithm": "SHA512",
-          "checksumValue": "2599c328af01d11083c3ce0535d0c022964af89b89c3eb3b2f3f2792c23b488b94dd45c926c954b61b22fae5815183b03c5c16ed6ecf44b45f50aa718ed8c50b"
         }
       ]
     }
@@ -5585,7 +4793,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "spdxElementId": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5610,12 +4818,12 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-postalsys.certs-2.0.3",
+      "spdxElementId": "SPDXRef-Package-postalsys.certs-2.0.4",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-postalsys.email-ai-tools-2.4.1",
+      "spdxElementId": "SPDXRef-Package-postalsys.email-ai-tools-2.4.2",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5625,7 +4833,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-postalsys.email-text-tools-2.6.2",
+      "spdxElementId": "SPDXRef-Package-postalsys.email-text-tools-2.6.3",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5665,7 +4873,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-bullmq-6.6.0",
+      "spdxElementId": "SPDXRef-Package-bullmq-6.7.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5715,7 +4923,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-joi-18.3.1",
+      "spdxElementId": "SPDXRef-Package-joi-18.3.2",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5788,86 +4996,6 @@
       "spdxElementId": "SPDXRef-Package-undici-7.30.1",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.0",
       "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-csstools.css-calc-2.1.4",
-      "relatedSpdxElement": "SPDXRef-Package-asamuzakjp.css-color-4.1.1",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-csstools.css-color-parser-3.1.0",
-      "relatedSpdxElement": "SPDXRef-Package-asamuzakjp.css-color-4.1.1",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-csstools.css-parser-algorithms-3.0.5",
-      "relatedSpdxElement": "SPDXRef-Package-asamuzakjp.css-color-4.1.1",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-csstools.css-tokenizer-3.0.4",
-      "relatedSpdxElement": "SPDXRef-Package-asamuzakjp.css-color-4.1.1",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-lru-cache-11.5.3",
-      "relatedSpdxElement": "SPDXRef-Package-asamuzakjp.css-color-4.1.1",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-asamuzakjp.nwsapi-2.3.9",
-      "relatedSpdxElement": "SPDXRef-Package-asamuzakjp.dom-selector-6.8.1",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-bidi-js-1.1.0",
-      "relatedSpdxElement": "SPDXRef-Package-asamuzakjp.dom-selector-6.8.1",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-is-potential-custom-element-name-1.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-asamuzakjp.dom-selector-6.8.1",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-lru-cache-11.5.3",
-      "relatedSpdxElement": "SPDXRef-Package-asamuzakjp.dom-selector-6.8.1",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-csstools.css-parser-algorithms-3.0.5",
-      "relatedSpdxElement": "SPDXRef-Package-csstools.css-calc-2.1.4",
-      "relationshipType": "PREREQUISITE_FOR"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-csstools.css-tokenizer-3.0.4",
-      "relatedSpdxElement": "SPDXRef-Package-csstools.css-calc-2.1.4",
-      "relationshipType": "PREREQUISITE_FOR"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-csstools.css-parser-algorithms-3.0.5",
-      "relatedSpdxElement": "SPDXRef-Package-csstools.css-color-parser-3.1.0",
-      "relationshipType": "PREREQUISITE_FOR"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-csstools.css-tokenizer-3.0.4",
-      "relatedSpdxElement": "SPDXRef-Package-csstools.css-color-parser-3.1.0",
-      "relationshipType": "PREREQUISITE_FOR"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-csstools.color-helpers-5.1.0",
-      "relatedSpdxElement": "SPDXRef-Package-csstools.css-color-parser-3.1.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-csstools.css-calc-2.1.4",
-      "relatedSpdxElement": "SPDXRef-Package-csstools.css-color-parser-3.1.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-csstools.css-tokenizer-3.0.4",
-      "relatedSpdxElement": "SPDXRef-Package-csstools.css-parser-algorithms-3.0.5",
-      "relationshipType": "PREREQUISITE_FOR"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.boom-10.0.1",
@@ -6061,92 +5189,92 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.accept-6.0.3",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.ammo-6.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.boom-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.bounce-3.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.call-9.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.catbox-12.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.catbox-memory-6.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.heavy-8.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.hoek-11.0.7",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.mimos-7.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.podium-5.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.shot-6.0.3",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.somever-4.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.statehood-8.2.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.subtext-8.1.5",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.teamwork-6.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.topo-6.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.validate-2.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.12",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.hapi-21.4.13",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -6241,27 +5369,27 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.b64-6.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.boom-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.content-6.0.3",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.hoek-11.0.7",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.nigel-5.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-hapi.pez-6.1.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -6360,7 +5488,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-hapi.pez-6.1.2",
+      "spdxElementId": "SPDXRef-Package-hapi.pez-6.1.3",
       "relatedSpdxElement": "SPDXRef-Package-hapi.subtext-8.1.5",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6851,57 +5979,57 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-msgpack.msgpack-3.1.3",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-ioredfour-2.2.0",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-joi-18.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.3",
+      "spdxElementId": "SPDXRef-Package-joi-18.3.2",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-pino-10.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-punycode.js-2.3.1",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-undici-7.30.1",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.certs-2.0.4",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-postalsys.email-text-tools-2.6.2",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-ai-tools-2.4.1",
+      "spdxElementId": "SPDXRef-Package-postalsys.email-text-tools-2.6.3",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-ai-tools-2.4.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-htmlparser2-10.1.0",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-ai-tools-2.4.1",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-ai-tools-2.4.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-libmime-5.6.4",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-ai-tools-2.4.1",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-ai-tools-2.4.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-tldts-7.4.19",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-ai-tools-2.4.1",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-ai-tools-2.4.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-undici-7.30.1",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-ai-tools-2.4.1",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-ai-tools-2.4.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -6921,47 +6049,42 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-postalsys.email-content-0.1.20",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.2",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-dompurify-3.4.17",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.2",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-he-1.2.0",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.2",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-html-to-text-10.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.2",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-jsdom-27.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.2",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-juice-11.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.2",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-linkify-it-5.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.2",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-node-html-parser-9.0.6",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.2",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-tlds-1.261.0",
-      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.2",
+      "relatedSpdxElement": "SPDXRef-Package-postalsys.email-text-tools-2.6.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7135,38 +6258,33 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-require-from-string-2.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-bidi-js-1.1.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
       "spdxElementId": "SPDXRef-Package-ioredis-6.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.6.0",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-cron-parser-5.10.2",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.6.0",
+      "spdxElementId": "SPDXRef-Package-cron-parser-5.10.3",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-msgpackr-2.1.3",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.6.0",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-node-abort-controller-3.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.6.0",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-semver-7.8.5",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.6.0",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.6.0",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7221,37 +6339,12 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-luxon-3.7.2",
-      "relatedSpdxElement": "SPDXRef-Package-cron-parser-5.10.2",
+      "relatedSpdxElement": "SPDXRef-Package-cron-parser-5.10.3",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-css-what-6.2.2",
       "relatedSpdxElement": "SPDXRef-Package-css-select-5.2.2",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-asamuzakjp.css-color-4.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-cssstyle-5.3.7",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-csstools.css-syntax-patches-for-csstree-1.1.16",
-      "relatedSpdxElement": "SPDXRef-Package-cssstyle-5.3.7",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-lru-cache-11.5.3",
-      "relatedSpdxElement": "SPDXRef-Package-cssstyle-5.3.7",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-whatwg-mimetype-5.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-data-urls-6.0.1",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-whatwg-url-15.1.0",
-      "relatedSpdxElement": "SPDXRef-Package-data-urls-6.0.1",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7310,11 +6403,6 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-whatwg-encoding-3.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-html-encoding-sniffer-4.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
       "spdxElementId": "SPDXRef-Package-selderee.plugin-htmlparser2-0.12.0",
       "relatedSpdxElement": "SPDXRef-Package-html-to-text-10.0.1",
       "relationshipType": "DEPENDENCY_OF"
@@ -7337,16 +6425,6 @@
     {
       "spdxElementId": "SPDXRef-Package-entities-7.0.1",
       "relatedSpdxElement": "SPDXRef-Package-htmlparser2-10.1.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-agent-base-7.1.4",
-      "relatedSpdxElement": "SPDXRef-Package-http-proxy-agent-7.0.2",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-agent-base-7.1.4",
-      "relatedSpdxElement": "SPDXRef-Package-https-proxy-agent-7.0.6",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7431,137 +6509,37 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.address-5.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.1",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.formula-3.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.1",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.hoek-11.0.7",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.1",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.pinpoint-2.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.1",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.tlds-1.1.7",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.1",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-hapi.topo-6.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.1",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-standard-schema.spec-1.1.0",
-      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.1",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-asamuzakjp.dom-selector-6.8.1",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-cssstyle-5.3.7",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-data-urls-6.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-decimal.js-10.6.0",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-html-encoding-sniffer-4.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-http-proxy-agent-7.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-https-proxy-agent-7.0.6",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-is-potential-custom-element-name-1.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-parse5-7.3.0",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-rrweb-cssom-0.8.0",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-saxes-6.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-symbol-tree-3.2.4",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-tough-cookie-6.0.2",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-w3c-xmlserializer-5.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-webidl-conversions-8.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-whatwg-encoding-3.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-whatwg-mimetype-4.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-whatwg-url-15.1.0",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-ws-8.22.1",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-xml-name-validator-5.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-jsdom-27.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-joi-18.3.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7765,11 +6743,6 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-xmlchars-2.2.0",
-      "relatedSpdxElement": "SPDXRef-Package-saxes-6.0.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
       "spdxElementId": "SPDXRef-Package-parseley-0.13.1",
       "relatedSpdxElement": "SPDXRef-Package-selderee-0.12.0",
       "relationshipType": "DEPENDENCY_OF"
@@ -7820,18 +6793,8 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-tldts-7.4.19",
-      "relatedSpdxElement": "SPDXRef-Package-tough-cookie-6.0.2",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
       "spdxElementId": "SPDXRef-Package-tslib-1.14.1",
       "relatedSpdxElement": "SPDXRef-Package-tsyringe-4.10.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-xml-name-validator-5.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-w3c-xmlserializer-5.0.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -7857,16 +6820,6 @@
     {
       "spdxElementId": "SPDXRef-Package-iconv-lite-0.6.3",
       "relatedSpdxElement": "SPDXRef-Package-whatwg-encoding-3.1.1",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-tr46-6.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-whatwg-url-15.1.0",
-      "relationshipType": "DEPENDENCY_OF"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-webidl-conversions-8.0.1",
-      "relatedSpdxElement": "SPDXRef-Package-whatwg-url-15.1.0",
       "relationshipType": "DEPENDENCY_OF"
     }
   ]

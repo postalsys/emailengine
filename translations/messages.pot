@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-11-03 13:20+0000\n"
+"POT-Creation-Date: 2026-11-04 20:42+0000\n"
 
 #: lib/autodetect-imap-settings.js:160
 msgid ""
@@ -11,19 +11,19 @@ msgid ""
 "connect your account."
 msgstr ""
 
-#: lib/tools.js:1751
+#: lib/tools.js:1729
 #: lib/ui-routes/unsubscribe-routes.js:34
 #: lib/ui-routes/unsubscribe-routes.js:102
 msgid "Invalid input"
 msgstr ""
 
-#: lib/tools.js:2715
+#: lib/tools.js:2693
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:2738
-#: lib/tools.js:2744
-#: lib/tools.js:2749
+#: lib/tools.js:2716
+#: lib/tools.js:2722
+#: lib/tools.js:2727
 #: lib/ui-routes/account-setup.js:80
 msgid "Invalid or expired account setup URL"
 msgstr ""
@@ -37,7 +37,7 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:1360
 #: lib/ui-routes/route-helpers.js:350
 #: lib/ui-routes/route-helpers.js:373
-#: workers/api.js:2484
+#: workers/api.js:2055
 msgid "Email Account Setup"
 msgstr ""
 
@@ -413,7 +413,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: views/error.hbs:6
-#: workers/api.js:3343
+#: workers/api.js:2916
 msgid "Something went wrong"
 msgstr ""
 
@@ -529,37 +529,37 @@ msgid ""
 "received."
 msgstr ""
 
-#: workers/api.js:2396
+#: workers/api.js:1967
 msgid ""
 "The sign-in was cancelled or the requested access was not granted. Open the "
 "account setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2405
+#: workers/api.js:1976
 msgid "Sign-in with the email provider failed: %s"
 msgstr ""
 
-#: workers/api.js:2409
+#: workers/api.js:1980
 msgid "Sign-in with the email provider failed: no authorization code was received"
 msgstr ""
 
-#: workers/api.js:2413
+#: workers/api.js:1984
 msgid "Sign-in with the email provider failed: the request state is not valid"
 msgstr ""
 
-#: workers/api.js:2422
+#: workers/api.js:1993
 msgid ""
 "The account setup session has expired or was already used. Open the account "
 "setup link again to retry."
 msgstr ""
 
-#: workers/api.js:2428
+#: workers/api.js:1999
 msgid ""
 "Sign-in with the email provider failed: the stored setup session is not "
 "valid"
 msgstr ""
 
-#: workers/api.js:3342
-#: workers/api.js:3465
+#: workers/api.js:2915
+#: workers/api.js:3038
 msgid "Requested page not found"
 msgstr ""
