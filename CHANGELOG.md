@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.87.2](https://github.com/postalsys/emailengine/compare/v2.87.1...v2.87.2) (2026-11-05)
+
+
+### Bug Fixes
+
+* bind admin sessions to the signing-in device (beta, off by default) ([a62a421](https://github.com/postalsys/emailengine/commit/a62a421eb26ada313c5f556d49477082c5f639b4))
+* bind admin sessions to the signing-in device (beta, off by default) ([da02403](https://github.com/postalsys/emailengine/commit/da02403b4f386af47324cfdcf9d505fe5a91ccf7))
+
 ## [2.87.1](https://github.com/postalsys/emailengine/compare/v2.87.0...v2.87.1) (2026-11-05)
 
 
