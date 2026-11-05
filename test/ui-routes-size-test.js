@@ -27,8 +27,9 @@ const walk = require('acorn-walk');
 // exists to block.
 //
 // Lowered to 74 when lib/ui-routes/tls-config-routes.js took the ACME challenge route with
-// it - the last handler body the monolith still carried.
-const BUDGET = 74;
+// it - the last handler body the monolith still carried. Raised to 76 for
+// lib/ui-routes/dbsc-routes.js (its require and its call, the comment shared with authRoutes).
+const BUDGET = 76;
 
 test('routes-ui.js stays within the size budget', () => {
     const filePath = pathlib.join(__dirname, '..', 'lib', 'routes-ui.js');
@@ -59,9 +60,11 @@ const MODULE_BUDGETS = {
     'admin-config-routes.js': 396,
     'admin-entities-routes.js': 574,
     'ai-options.js': 22,
-    'auth-routes.js': 520,
+    // 522: logout ends the device-bound session binding (require + call)
+    'auth-routes.js': 522,
     'connection-security-form.js': 11,
     'dashboard-routes.js': 37,
+    'dbsc-routes.js': 6,
     'export-routes.js': 49,
     'form-lists.js': 8,
     'gmail-service-auth.js': 12,

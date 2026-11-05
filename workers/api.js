@@ -87,6 +87,7 @@ const tokenAuditLog = require('../lib/token-audit-log');
 const { redis } = require('../lib/db');
 const { createHealthChecks } = require('../lib/health');
 const { requireSessionOnceSecured, TOTP_EXEMPT_PATHS } = require('../lib/session-default');
+const { setupDbsc, registerDbscExtensions } = require('../lib/dbsc');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
 
@@ -690,7 +691,16 @@ function registerRequestContextExtension(server) {
 
         // Both settings are needed on every request and neither depends on the other, so they are
         // read in a single HMGET rather than two serialized round trips
-        let { enableApiProxy, disableTokens, serviceUrl } = await settings.getMulti('enableApiProxy', 'disableTokens', 'serviceUrl');
+        let { enableApiProxy, disableTokens, serviceUrl, dbscEnabled } = await settings.getMulti(
+            'enableApiProxy',
+            'disableTokens',
+            'serviceUrl',
+            'dbscEnabled'
+        );
+
+        // Device-bound admin sessions only work on an https origin, which is what serviceUrl says
+        // the admin UI is reached on (the same signal that marks the cookies Secure)
+        request.app.dbscEnabled = !!dbscEnabled && isSecureOrigin(serviceUrl);
 
         // Before anything can render a view (the allowlist refusal below does), so the nonce
         // the template stamps on its scripts is the one the response header carries
@@ -832,11 +842,13 @@ async function registerSessionAuth(server) {
         isSecure: secureCookie
     });
 
+    const cookiePassword = await settings.get('cookiePassword');
+
     // Authentication for admin pages
     server.auth.strategy('session', 'cookie', {
         cookie: {
             name: 'ee',
-            password: await settings.get('cookiePassword'),
+            password: cookiePassword,
             isSecure: secureCookie,
             path: '/',
             isSameSite: 'Lax'
@@ -922,6 +934,9 @@ async function registerSessionAuth(server) {
             };
         }
     });
+
+    // Device-bound sessions ride on the same cookie settings (lib/dbsc)
+    setupDbsc(server, { redis, logger, secure: secureCookie, password: cookiePassword });
 
     return secureCookie;
 }
@@ -3217,6 +3232,9 @@ const init = async () => {
     registerResponseExtensions(server);
 
     registerTotpExtension(server);
+
+    // After the TOTP step and the error pages, see registerDbscExtensions()
+    registerDbscExtensions(server);
 
     registerChangesRoute(server);
 
