@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.87.1](https://github.com/postalsys/emailengine/compare/v2.87.0...v2.87.1) (2026-11-05)
+
+
+### Bug Fixes
+
+* bind export encryption chunks to their position in the file ([c138b61](https://github.com/postalsys/emailengine/commit/c138b6145ad0dab33b92d8d5f1571ffd32fc96c3))
+* export recovery ownership and sent-marker durability (2.87.1 review) ([5c24113](https://github.com/postalsys/emailengine/commit/5c2411311ee1652ed4580fd53d40f0fdc81bd7f4))
+* keep the sent marker until the submit job is recorded as completed ([aecf19f](https://github.com/postalsys/emailengine/commit/aecf19f6ac7a431f87441102e3302228ab1728ad))
+* make the Docker health check follow the API's TLS setting, port and bind address ([957dec0](https://github.com/postalsys/emailengine/commit/957dec0923ab359355761bd531d6d08003a3dd05))
+* never fail an export another export worker is still running ([74d1755](https://github.com/postalsys/emailengine/commit/74d1755aa2fec63565bae64fcad55153e5294c5d))
+* read the TLS mode from &lt;Encryption&gt; in Exchange autodiscover answers ([5a1b7e9](https://github.com/postalsys/emailengine/commit/5a1b7e9e3df33a38b65b80447e6628a8e908223e))
+* report a template id with an out-of-range timestamp as not found ([ac043db](https://github.com/postalsys/emailengine/commit/ac043db8d1540a025d8143d1d261cf3d2f1400cb))
+* set text.hasMore when an IMAP text part is cut at maxBytes ([f070b5e](https://github.com/postalsys/emailengine/commit/f070b5ea91ad3763936c975a302a23d20d768e69))
+* share the worker RPC, token check and new-message steps instead of copies ([ac4cf28](https://github.com/postalsys/emailengine/commit/ac4cf28ae3925bcf4a01373f3c05d51a5c4da8f3))
+* standalone fixes for new-folder ids, Redis-refused work, duplicate sends, CLI password and queued exports ([#685](https://github.com/postalsys/emailengine/issues/685)) ([8e934c0](https://github.com/postalsys/emailengine/commit/8e934c0cf9cda2e33cfbdb7a42cfe2a77172523d))
+* update dependencies ([56df020](https://github.com/postalsys/emailengine/commit/56df02073fb6a76e984531710fd97fee0163e58b))
+* update dependencies ([25ee28f](https://github.com/postalsys/emailengine/commit/25ee28fc5bd5623c4b73b55e0890c027832825cf))
+* update dependencies (bullmq 6.5.4, fast-xml-parser 5.12.0) ([5624ee1](https://github.com/postalsys/emailengine/commit/5624ee1844c6ed2f377bbbe7161f21f035d7c943))
+
 ## [2.87.0](https://github.com/postalsys/emailengine/compare/v2.86.0...v2.87.0) (2026-10-29)
 
 
