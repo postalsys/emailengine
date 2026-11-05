@@ -115,6 +115,8 @@ The submit worker (`workers/submit.js`) processes queued outbound emails via Bul
 - Sets `$Forwarded` flag on forwarded messages
 - Updates gateway delivery stats (if using gateway)
 
+**The sent marker is cleared on completion, never in the processor.** The job processor lives in `lib/submit-processor.js` (`createSubmitProcessor()`, dependencies injected so `test/submit-processor-test.js` runs the real thing against real BullMQ jobs). The marker `sendQueuedOnce()` writes (`lib/submit-lock.js`) is the only thing that stops a re-run of a job from sending its message again, so it has to outlive the window between the send and BullMQ storing the completion: a worker that dies there (with the `submitted` progress write refused by a Redis at its memory limit, which still accepts a DEL) leaves a job that runs again. `completeSubmission()` clears it, together with the stored content, from the worker's `completed` event, which BullMQ 6 emits only after `moveToCompleted` resolved. A marker that is never cleared expires after `SENT_MARKER_TTL`. Found by the 2.87.1 release review.
+
 ## Export Worker
 
 The export worker (`workers/export.js`) processes bulk email export jobs via BullMQ. It extracts messages from accounts and writes them to compressed NDJSON files with optional encryption.
@@ -123,6 +125,8 @@ The export worker (`workers/export.js`) processes bulk email export jobs via Bul
 - **Transient errors** (network timeouts, 5xx responses): Retry with exponential backoff
 - **Skippable errors** (message not found, 404): Skip message, increment counter
 - **Account validation**: Checks every 60s if account still exists
+
+**Startup recovery never takes an export from a live worker.** Every export worker runs `Export.markInterruptedAsFailed()` as it starts, so the exports it finds may be running in a sibling worker. An export whose job is still live (waiting, delayed or active) is left to BullMQ: a waiting job gets picked up, an active one is either running elsewhere or held by the lock of a worker that died, which lapses after `EXPORT_LOCK_DURATION` (2 minutes, `lib/consts.js`) so the stalled check (`EXPORT_STALLED_INTERVAL`) runs it again and `Export.startProcessing()` rebuilds it from the start. So a crash ends the same way however long the restart took. Only an export whose job is gone or finished is failed, and a `cancelled` one, because running its job would reset it to processing. Before anything is deleted, `removeAbandonedJob()` (`lib/export.js`) makes BullMQ's own removal the last check: the removal script refuses a job whose lock is held in the same step that would remove it, and a refused or failed removal keeps the export. Pinned by `test/export-recovery-ownership-test.js`.
 **Retry configuration:**
 - IMAP messages: 3 retries with 2s base delay (exponential backoff)
 - API batch requests: 5 retries for rate limits (429) with 5s base delay

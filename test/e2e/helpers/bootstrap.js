@@ -128,6 +128,20 @@ async function createApiToken(page, description = 'e2e token') {
 }
 
 /**
+ * Waits until a FlyonUI modal (views/partials/ui/modal.hbs) is open and has finished fading in.
+ *
+ * HSOverlay marks the overlay `opened` before the opening transition runs, and a click or key press
+ * that lands during that transition is swallowed: the dialog never closes, and whatever waits for it
+ * to close waits forever. The transition ends with the dialog at full opacity.
+ *
+ * @param {Object} modal - Playwright locator of the modal's root element
+ */
+async function expectModalOpen(modal) {
+    await expect(modal).toHaveClass(/(^|\s)opened(\s|$)/);
+    await expect(modal.locator('.modal-dialog')).toHaveCSS('opacity', '1');
+}
+
+/**
  * Dismisses the one-time token reveal modal createApiToken leaves open.
  *
  * Two waits, and both are load-bearing. The opening transition has to settle first, because a click
@@ -144,7 +158,7 @@ async function createApiToken(page, description = 'e2e token') {
  * re-derived it got both waits wrong - one failing only on a slower machine, the other only in CI.
  */
 async function dismissTokenReveal(page) {
-    await expect(page.locator('#showToken')).toHaveCSS('opacity', '1');
+    await expectModalOpen(page.locator('#showToken'));
     await page.locator('#showToken button', { hasText: 'Done' }).click();
     await page.waitForURL(/\/admin\/tokens(\?|$)/);
 }
@@ -272,6 +286,7 @@ module.exports = {
     ensureTrial,
     createApiToken,
     dismissTokenReveal,
+    expectModalOpen,
     trackConsoleErrors,
     openRowMenu,
     setPickedAccount,

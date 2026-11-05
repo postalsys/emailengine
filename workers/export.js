@@ -6,7 +6,7 @@ const packageData = require('../package.json');
 const config = require('@zone-eu/wild-config');
 const logger = require('../lib/logger');
 
-const { REDIS_PREFIX, EXPORT_COMPLETED_NOTIFY, EXPORT_FAILED_NOTIFY } = require('../lib/consts');
+const { REDIS_PREFIX, EXPORT_COMPLETED_NOTIFY, EXPORT_FAILED_NOTIFY, EXPORT_LOCK_DURATION, EXPORT_STALLED_INTERVAL } = require('../lib/consts');
 const { getDuration, readEnvValue, threadStats } = require('../lib/tools');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const settings = require('../lib/settings');
@@ -167,8 +167,12 @@ const exportWorker = new Worker(
     },
     {
         concurrency: EXPORT_QC,
-        lockDuration: 10 * 60 * 1000,
-        stalledInterval: 2 * 60 * 1000,
+        // BullMQ renews the lock every lockDuration / 2 while the job runs. The lock is also what
+        // keeps a sibling worker's startup recovery off a running export (removeAbandonedJob() in
+        // lib/export.js), and how long an export of a worker that died waits before the stalled
+        // check runs it again, so it is kept short: about three minutes from a crash to a restart
+        lockDuration: EXPORT_LOCK_DURATION,
+        stalledInterval: EXPORT_STALLED_INTERVAL,
         maxStalledCount: 5,
         // Do not start consuming jobs at construction. Startup recovery (markInterruptedAsFailed +
         // cleanup) must finish first, otherwise the worker can pick up a queued export and start

@@ -27,7 +27,8 @@ const {
     removePasskeys,
     ADMIN_PASSWORD,
     BASE_URL,
-    openRowMenu
+    openRowMenu,
+    expectModalOpen: expectModalSettled
 } = require('./helpers/bootstrap');
 
 // Resolves --color-primary for the active theme into the rgb() form that
@@ -94,12 +95,8 @@ async function expectTooltipOnHover(page, trigger) {
     await page.mouse.move(0, 0);
 }
 
-// Waits for a FlyonUI overlay to be open and fully faded in - a click or key
-// press during the opening transition is swallowed by the overlay plugin.
-async function expectModalOpen(page, id) {
-    await expect(page.locator(`#${id}.open`)).toHaveCount(1);
-    await expect(page.locator(`#${id}`)).toHaveCSS('opacity', '1');
-}
+// The modals here are addressed by id
+const expectModalOpen = (page, id) => expectModalSettled(page.locator(`#${id}`));
 
 // Drives the standard delete-confirmation flow on a detail page: open the modal
 // with #delete-btn, submit it, and wait for the redirect back to the list page.

@@ -217,10 +217,14 @@ test('Export.markInterruptedAsFailed() leaves a queued export whose job is still
             assert.strictEqual(await redis.hget(getExportKey(ACCOUNT, exports[name]), 'status'), 'queued', `${name}: left for the export worker`);
             assert.ok(!removed.has(exports[name]), `${name}: its job stays in the queue`);
         }
-        for (const name of ['jobFailed', 'jobless', 'processing']) {
+        for (const name of ['jobFailed', 'jobless']) {
             assert.strictEqual(await redis.hget(getExportKey(ACCOUNT, exports[name]), 'status'), 'failed', `${name}: failed as before`);
         }
-        assert.ok(removed.has(exports.processing), 'an interrupted export has its job removed');
+        assert.ok(removed.has(exports.jobFailed), 'a finished job is removed with its export');
+        // A processing export whose job is back in the queue (a stalled-job check) runs again
+        // rather than failing (test/export-recovery-ownership-test.js has the live cases)
+        assert.strictEqual(await redis.hget(getExportKey(ACCOUNT, exports.processing), 'status'), 'processing');
+        assert.ok(!removed.has(exports.processing));
     } finally {
         exportQueue.getJob = getJob;
         // The exports left queued would otherwise count against the account in the tests below
