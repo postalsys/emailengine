@@ -6,7 +6,6 @@ const packageData = require('../package.json');
 const config = require('@zone-eu/wild-config');
 const logger = require('../lib/logger');
 
-const { REDIS_PREFIX } = require('../lib/consts');
 const { getDuration, readEnvValue, threadStats } = require('../lib/tools');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const settings = require('../lib/settings');
@@ -16,10 +15,10 @@ initSentry('submit');
 
 const util = require('util');
 const { redis, queueConf, submitQueue, logBullErrors } = require('../lib/db');
-const { Worker, UnrecoverableError } = require('bullmq');
+const { Worker } = require('bullmq');
 const { Account } = require('../lib/account');
 const getSecret = require('../lib/get-secret');
-const { decodeQueueEntry, retainFailedContent } = require('../lib/outbox');
+const { retainFailedContent } = require('../lib/outbox');
 
 const { EMAIL_FAILED_NOTIFY } = require('../lib/consts');
 
@@ -42,15 +41,8 @@ const SUBMIT_QC = (readEnvValue('EENGINE_SUBMIT_QC') && Number(readEnvValue('EEN
 
 const SUBMIT_DELAY = getDuration(readEnvValue('EENGINE_SUBMIT_DELAY') || config.submitDelay) || null;
 
-const { shouldDiscardJob, willBeFinalAttempt, isFinalFailedAttempt, nextAttemptWhileProcessing } = require('../lib/delivery-error');
-const { isAlreadySent } = require('../lib/submit-progress');
-const { clearSent } = require('../lib/submit-lock');
-
-// The send lock's marker is only needed while the job may run again (lib/submit-lock.js)
-const forgetSent = job =>
-    clearSent(redis, job.data.account, job.data.queueId).catch(err =>
-        logger.warn({ msg: 'Failed to clear the sent marker of a completed message', job: job.id, account: job.data.account, err })
-    );
+const { isFinalFailedAttempt } = require('../lib/delivery-error');
+const { createSubmitProcessor, completeSubmission, normalizeQueueId } = require('../lib/submit-processor');
 
 const { createRpcClient, respond, isCall } = require('../lib/worker-rpc');
 const rpc = createRpcClient({ port: parentPort, defaultTimeout: EENGINE_TIMEOUT, timeoutTag: 'T5' });
@@ -111,220 +103,12 @@ for (let level of ['trace', 'debug', 'info', 'warn', 'error', 'fatal']) {
 
 const submitWorker = new Worker(
     'submit',
-    async job => {
-        if (!job.data.queueId && job.data.qId) {
-            // this value was used to be called qId
-            job.data.queueId = job.data.qId;
-        }
-
-        // A job re-run after a stall (heartbeat kill, crash, a shutdown drain that could not cover
-        // a long SMTP transaction plus the Sent-folder upload) comes back with the progress its
-        // previous run stored. Once that says the MTA accepted the message, sending again would
-        // deliver a duplicate under the same queueId: the message is done, only the bookkeeping
-        // after the 250 was cut short. The catch below covers the same state for a run that got
-        // as far as throwing; this covers the run that never got to throw anything.
-        if (isAlreadySent(job.progress)) {
-            logger.info({
-                msg: 'Skipping re-run of an already sent message',
-                action: 'submit',
-                queue: job.queue.name,
-                code: 'result_success',
-                job: job.id,
-                event: job.name,
-                account: job.data.account,
-                queueId: job.data.queueId,
-                messageId: job.data.messageId,
-                progress: job.progress.status,
-                attemptsMade: job.attemptsMade
-            });
-            return;
-        }
-
-        let queueEntryBuf = await redis.hgetBuffer(`${REDIS_PREFIX}iaq:${job.data.account}`, job.data.queueId);
-        if (!queueEntryBuf) {
-            // nothing to do here
-            try {
-                await redis.hdel(`${REDIS_PREFIX}iaq:${job.data.account}`, job.data.queueId);
-            } catch (err) {
-                // ignore
-            }
-            return;
-        }
-
-        let queueEntry;
-        try {
-            // Rejects a value that decodes to something other than a map as well, otherwise the
-            // job metadata assignment below throws a TypeError against it and the entry is retried
-            // as a failed delivery instead of being dropped as the corrupt entry it is
-            queueEntry = decodeQueueEntry(queueEntryBuf);
-        } catch (err) {
-            logger.error({ msg: 'Failed to parse queued email entry', job: job.id, account: job.data.account, queueId: job.data.queueId, err });
-            try {
-                await redis.hdel(`${REDIS_PREFIX}iaq:${job.data.account}`, job.data.queueId);
-            } catch (err) {
-                // ignore
-            }
-            return;
-        }
-
-        let accountObject = new Account({ account: job.data.account, redis, call, secret: await getSecret() });
-
-        logger.trace({
-            msg: 'Processing message',
-            action: 'submit',
-            queue: job.queue.name,
-            code: 'processing',
-            job: job.id,
-            event: job.name,
-            data: job.data,
-            account: job.data.account
-        });
-
-        try {
-            try {
-                // try to update
-                await job.updateProgress({
-                    status: 'processing'
-                });
-            } catch (err) {
-                // ignore
-            }
-
-            let nextAttempt = nextAttemptWhileProcessing(job);
-
-            queueEntry.job = {
-                id: job.id,
-                attemptsMade: job.attemptsMade,
-                attempts: job.opts.attempts,
-                nextAttempt: nextAttempt ? new Date(nextAttempt).toISOString() : false
-            };
-
-            let res = await accountObject.submitMessage(queueEntry);
-
-            logger.trace({
-                msg: 'Submitted queued message for delivery',
-                action: 'submit',
-                queue: job.queue.name,
-                code: 'result_success',
-                job: job.id,
-                event: job.name,
-                data: job.data,
-                account: job.data.account
-            });
-
-            try {
-                // try to update
-                await job.updateProgress({
-                    status: 'submitted',
-                    response: res.response
-                });
-            } catch (err) {
-                // ignore
-            }
-            await forgetSent(job);
-        } catch (err) {
-            // The message went out even though this run failed: an earlier attempt sent it and its
-            // call failed after the fact (AlreadySent, lib/submit-lock.js), or this run failed after
-            // the accept
-            let alreadySent = err.code === 'AlreadySent';
-            if (!alreadySent) {
-                try {
-                    const submitJobEntry = await submitQueue.getJob(job.id);
-                    alreadySent = !!submitJobEntry && isAlreadySent(submitJobEntry.progress);
-                } catch (err) {
-                    logger.error({
-                        msg: 'Failed to fetch job status',
-                        job: job.id,
-                        account: job.data.account,
-                        err
-                    });
-                }
-            }
-            if (alreadySent) {
-                logger.info({
-                    msg: 'Message was already sent, counting the job as sent',
-                    action: 'submit',
-                    queue: job.queue.name,
-                    code: 'result_success',
-                    job: job.id,
-                    event: job.name,
-                    account: job.data.account,
-                    queueId: job.data.queueId,
-                    err
-                });
-                try {
-                    // The retry wrote 'processing' over the sent state
-                    await job.updateProgress({ status: 'submitted' });
-                } catch (err) {
-                    // ignore
-                }
-                await forgetSent(job);
-                return;
-            }
-
-            const discardJob = shouldDiscardJob(err, job);
-            const isFinalAttempt = discardJob || willBeFinalAttempt(job);
-
-            logger[isFinalAttempt ? 'error' : 'warn']({
-                msg: 'Message submission failed',
-                action: 'submit',
-                queue: job.queue.name,
-                code: 'result_fail',
-                job: job.id,
-                event: job.name,
-                data: job.data,
-                account: job.data.account,
-                err
-            });
-
-            try {
-                // try to update
-                await job.updateProgress({
-                    status: 'error',
-                    error: {
-                        message: err.message,
-                        code: err.code,
-                        statusCode: err.statusCode,
-                        // the SMTP reply code, when there was a reply: what decides whether the
-                        // failure is permanent (lib/delivery-error.js), kept so the queue browser
-                        // can say so without a rule of its own
-                        responseCode: err.responseCode
-                    },
-                    networkRouting: err.info?.networkRouting
-                });
-            } catch (err) {
-                // ignore
-            }
-
-            if (discardJob) {
-                // Do not retry after a permanent rejection (5xx except 503, which is transient).
-                // BullMQ 6 removed Job#discard(), so the way to end a job before its attempts are
-                // spent is to throw UnrecoverableError. The stack is carried over because the
-                // 'failed' handler reports job.stacktrace[0] as the error in the failure webhook -
-                // constructing a bare UnrecoverableError would replace the SMTP reason with
-                // "UnrecoverableError" there.
-                let unrecoverableErr = new UnrecoverableError(err.message);
-                unrecoverableErr.stack = err.stack;
-                unrecoverableErr.code = err.code;
-                unrecoverableErr.responseCode = err.responseCode;
-                unrecoverableErr.statusCode = err.statusCode;
-
-                logger.info({
-                    msg: 'Job discarded',
-                    job: job.id,
-                    account: queueEntry.account,
-                    queueId: job.data.queueId,
-                    messageId: job.data.messageId,
-                    errorCode: err.code,
-                    responseCode: err.responseCode
-                });
-
-                throw unrecoverableErr;
-            }
-
-            throw err;
-        }
-    },
+    createSubmitProcessor({
+        redis,
+        logger,
+        submitQueue,
+        getAccount: async account => new Account({ account, redis, call, secret: await getSecret() })
+    }),
     Object.assign(
         {
             concurrency: SUBMIT_QC,
@@ -359,18 +143,8 @@ submitWorker.on('completed', async job => {
         status: 'completed'
     });
 
-    if (!job.data.queueId && job.data.qId) {
-        // this value was used to be called qId
-        job.data.queueId = job.data.qId;
-    }
-
-    if (job.data && job.data.account && job.data.queueId) {
-        try {
-            await redis.hdel(`${REDIS_PREFIX}iaq:${job.data.account}`, job.data.queueId);
-        } catch (err) {
-            logger.error({ msg: 'Failed to remove queue entry', account: job.data.account, queueId: job.data.queueId, messageId: job.data.messageId, err });
-        }
-    }
+    // BullMQ emits this only once the completion is stored, which is what lets the sent marker go
+    await completeSubmission(job, { redis, logger });
 
     logger.info({
         msg: 'Submission queue entry completed',
@@ -392,10 +166,7 @@ submitWorker.on('failed', async job => {
     // attempts and being ended early by the UnrecoverableError thrown for a permanent rejection.
     if (job.finishedOn) {
         // this was the final attempt
-        if (!job.data.queueId && job.data.qId) {
-            // this value was used to be called qId
-            job.data.queueId = job.data.qId;
-        }
+        normalizeQueueId(job);
         if (job.data && job.data.account && job.data.queueId) {
             // The content stays stored, within the failed-content bounds, so the message can be
             // retried from the queue browser or the outbox API. It used to be deleted here, which

@@ -115,6 +115,8 @@ The submit worker (`workers/submit.js`) processes queued outbound emails via Bul
 - Sets `$Forwarded` flag on forwarded messages
 - Updates gateway delivery stats (if using gateway)
 
+**The sent marker is cleared on completion, never in the processor.** The job processor lives in `lib/submit-processor.js` (`createSubmitProcessor()`, dependencies injected so `test/submit-processor-test.js` runs the real thing against real BullMQ jobs). The marker `sendQueuedOnce()` writes (`lib/submit-lock.js`) is the only thing that stops a re-run of a job from sending its message again, so it has to outlive the window between the send and BullMQ storing the completion: a worker that dies there (with the `submitted` progress write refused by a Redis at its memory limit, which still accepts a DEL) leaves a job that runs again. `completeSubmission()` clears it, together with the stored content, from the worker's `completed` event, which BullMQ 6 emits only after `moveToCompleted` resolved. A marker that is never cleared expires after `SENT_MARKER_TTL`. Found by the 2.87.1 release review.
+
 ## Export Worker
 
 The export worker (`workers/export.js`) processes bulk email export jobs via BullMQ. It extracts messages from accounts and writes them to compressed NDJSON files with optional encryption.
