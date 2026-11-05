@@ -20,7 +20,7 @@
 // Run suite: npm run test:e2e
 
 const { test, expect } = require('@playwright/test');
-const { useAdminSession, createApiToken, trackConsoleErrors } = require('./helpers/bootstrap');
+const { useAdminSession, createApiToken, trackConsoleErrors, expectModalOpen } = require('./helpers/bootstrap');
 
 // A GET with no required parameters, so the try-it test can send a real request without
 // inventing an account id.
@@ -1004,13 +1004,15 @@ test.describe('API reference', () => {
         // worth reading before agreeing
         await expect(modal.locator('.ee-ref-confirm-request')).toHaveText('DELETE /v1/account/user123');
 
+        // A click during the opening transition is swallowed (expectModalOpen() says why)
+        await expectModalOpen(modal);
         await modal.getByRole('button', { name: 'Cancel' }).click();
         await expect(modal).toBeHidden();
         expect(sent).toHaveLength(0);
 
         // Confirming runs it, once
         await page.locator('#try-deleteV1AccountAccount button[type="submit"]').click();
-        await expect(modal).toHaveClass(/opened/);
+        await expectModalOpen(modal);
         await modal.getByRole('button', { name: 'Run it' }).click();
         await expect(modal).toBeHidden();
         await expect(page.locator('#try-deleteV1AccountAccount .ee-ref-try-result')).toBeVisible();
@@ -1030,6 +1032,7 @@ test.describe('API reference', () => {
         // Send is disabled while the dialog is up, so a second click cannot queue a second
         // confirmation that one "Run it" would then answer twice
         await expect(page.locator('#try-putV1AccountAccountMessagesDelete button[type="submit"]')).toBeDisabled();
+        await expectModalOpen(bulk);
         await bulk.getByRole('button', { name: 'Cancel' }).click();
         await expect(bulk).toBeHidden();
         await expect(page.locator('#try-putV1AccountAccountMessagesDelete button[type="submit"]')).toBeEnabled();
@@ -1044,6 +1047,7 @@ test.describe('API reference', () => {
         const draft = page.locator('#ee-ref-confirm-postV1AccountAccountMessageMessageSubmit');
         await expect(draft).toHaveClass(/opened/);
         await expect(draft.locator('.ee-ref-confirm-request')).toContainText('/message/');
+        await expectModalOpen(draft);
         await draft.getByRole('button', { name: 'Cancel' }).click();
         await expect(draft).toBeHidden();
 
