@@ -132,13 +132,15 @@ async function createApiToken(page, description = 'e2e token') {
  *
  * HSOverlay marks the overlay `opened` before the opening transition runs, and a click or key press
  * that lands during that transition is swallowed: the dialog never closes, and whatever waits for it
- * to close waits forever. The transition ends with the dialog at full opacity.
+ * to close waits forever. The transition ends with the modal ROOT at full opacity: `.modal` starts
+ * at opacity 0 and fades, while `.modal-dialog` carries no opacity rule of its own and reads 1 from
+ * the first frame, so a wait on the dialog passes at once and protects nothing.
  *
  * @param {Object} modal - Playwright locator of the modal's root element
  */
 async function expectModalOpen(modal) {
     await expect(modal).toHaveClass(/(^|\s)opened(\s|$)/);
-    await expect(modal.locator('.modal-dialog')).toHaveCSS('opacity', '1');
+    await expect(modal).toHaveCSS('opacity', '1');
 }
 
 /**
