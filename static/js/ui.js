@@ -125,17 +125,24 @@ window.uiConfirmModal = (target, okSelector) => {
 
     return new Promise(resolve => {
         let confirmed = false;
-        const onConfirm = () => {
-            confirmed = true;
+        // Recorded in the capture phase on the dialog, which runs before any listener on the
+        // button itself. HSOverlay's own handler on the OK button closes the dialog, and when
+        // nothing transitions (no fade, or a reader whose browser skips it) the close completes
+        // and close.overlay fires inside that handler - a listener on the button added after it
+        // would only see the click once the answer had already gone out as "declined"
+        const onConfirm = e => {
+            if (ok.contains(e.target)) {
+                confirmed = true;
+            }
         };
 
         // Removed by hand rather than with {once:true}: a dismissal leaves it attached, and
         // one per call would accumulate on DOM that outlives the promise
-        ok.addEventListener('click', onConfirm);
+        modal.addEventListener('click', onConfirm, true);
         modal.addEventListener(
             'close.overlay',
             () => {
-                ok.removeEventListener('click', onConfirm);
+                modal.removeEventListener('click', onConfirm, true);
                 resolve(confirmed);
             },
             { once: true }

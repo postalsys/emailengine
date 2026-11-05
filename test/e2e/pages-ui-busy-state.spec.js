@@ -21,7 +21,7 @@
 // Run once:  npm run test:e2e:install
 // Run suite: npm run test:e2e
 
-const { test, expect, request } = require('@playwright/test');
+const { test, expect, request } = require('./helpers/test');
 const { ensureAdminSession, ensureTrial, createApiToken, trackConsoleErrors, hostedAuthFormUrl, BASE_URL } = require('./helpers/bootstrap');
 
 // Submits `selector`'s form the way pressing Enter in one of its fields does. The latch has to

@@ -19,7 +19,7 @@
 // Run once:  npm run test:e2e:install
 // Run suite: npm run test:e2e
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('./helpers/test');
 const { useAdminSession, createApiToken, trackConsoleErrors, expectModalOpen } = require('./helpers/bootstrap');
 
 // A GET with no required parameters, so the try-it test can send a real request without

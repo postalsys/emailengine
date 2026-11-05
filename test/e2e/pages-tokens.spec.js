@@ -15,7 +15,7 @@
 // Run once:  npm run test:e2e:install
 // Run suite: npm run test:e2e
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('./helpers/test');
 const { useAdminSession, createApiToken, dismissTokenReveal, trackConsoleErrors, setPickedAccount, BASE_URL } = require('./helpers/bootstrap');
 
 // Unique per run so a re-run against the same Redis does not match a previous token's row

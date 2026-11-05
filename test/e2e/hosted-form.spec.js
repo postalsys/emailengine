@@ -16,7 +16,7 @@
 // Run once:  npm run test:e2e:install
 // Run suite: npm run test:e2e
 
-const { test, expect, request } = require('@playwright/test');
+const { test, expect, request } = require('./helpers/test');
 const { createUsableTestAccount } = require('./helpers/ethereal');
 const { ensureAdminSession, ensureTrial, createApiToken, trackConsoleErrors, hostedAuthFormUrl, BASE_URL } = require('./helpers/bootstrap');
 

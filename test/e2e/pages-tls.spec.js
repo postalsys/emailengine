@@ -11,7 +11,7 @@
 // Sorted after happy-path.spec.js by the pages- prefix, because the specs share one instance and
 // run alphabetically.
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('./helpers/test');
 const crypto = require('crypto');
 const { ensureAdminSession, useAdminSession, trackConsoleErrors, openRowMenu: openMenu } = require('./helpers/bootstrap');
 

@@ -15,7 +15,7 @@
 // Run once:  npm run test:e2e:install
 // Run suite: npm run test:e2e
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('./helpers/test');
 const { useAdminSession, createApiToken, dismissTokenReveal, trackConsoleErrors, openRowMenu, BASE_URL } = require('./helpers/bootstrap');
 
 const ACCOUNT_ID = 'e2e-queue-browser';
