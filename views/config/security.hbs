@@ -33,6 +33,43 @@
             </div>
 
             <div>
+                {{> ui/setting-ref name="dbscEnabled"}}
+
+                {{#> ui/checkbox id="dbscEnabled" name="dbscEnabled" label="Device-Bound Admin Sessions"
+                checked=values.dbscEnabled error=errors.dbscEnabled}}
+                {{> ui/badge label="Beta" variant="info" soft=true}}
+                {{#if values.dbscEnabled}}
+                {{#if dbsc.active}}
+                {{> ui/badge label="enabled" variant="success"}}
+                {{else}}
+                {{> ui/badge label="inactive" variant="warning"}}
+                {{/if}}
+                {{else}}
+                {{> ui/badge label="disabled" variant="neutral"}}
+                {{/if}}
+                {{/ui/checkbox}}
+                <span class="helper-text">Ties each admin sign-in to a key in the device's security hardware, so a
+                    copied session cookie stops working within minutes. Chrome on Windows and macOS binds
+                    automatically; other browsers sign in as before.</span>
+                {{#if values.dbscEnabled}}
+                <p id="dbscCurrentSession" class="mt-2 flex items-start gap-1.5 text-sm">
+                    {{#unless dbsc.active}}
+                    <span class="icon-[tabler--alert-triangle] size-4 shrink-0 mt-0.5 text-warning"></span>
+                    <span class="text-base-content/80">Not active: browsers only bind sessions on https. Set an https
+                        <a href="/admin/config/service" class="link link-animated">Service URL</a> to turn it on.</span>
+                    {{else if dbsc.currentBound}}
+                    <span class="icon-[tabler--shield-check] size-4 shrink-0 mt-0.5 text-success"></span>
+                    <span>This browser is bound to this device.</span>
+                    {{else}}
+                    <span class="icon-[tabler--shield] size-4 shrink-0 mt-0.5 text-base-content/60"></span>
+                    <span class="text-base-content/80">This browser is not bound yet. A supported browser binds on its next
+                        page load.</span>
+                    {{/unless}}
+                </p>
+                {{/if}}
+            </div>
+
+            <div>
                 {{> ui/setting-ref name="EENGINE_ENABLE_OAUTH_TOKENS_API" plain=true}}
                 {{> ui/checkbox id="enableOAuthTokensApi" name="enableOAuthTokensApi"
                 label="Allow OAuth2 Token Access via API" checked=values.enableOAuthTokensApi

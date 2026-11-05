@@ -35,7 +35,7 @@ const { OAUTH_REDIRECT_FORM_DIRECTIVES } = require('../lib/security-headers');
 const exitWhenStandalone = require('./helpers/exit-standalone');
 
 // The complete, sorted set of routes registered by lib/routes-ui.js (including the
-// already-extracted admin-entities-routes.js it wires in). 165 routes.
+// already-extracted admin-entities-routes.js it wires in). 167 routes.
 const GOLDEN_ROUTES = [
     'DELETE /admin/accounts/{account}/export/{exportId}',
     'GET /.well-known/acme-challenge/{token}',
@@ -168,6 +168,8 @@ const GOLDEN_ROUTES = [
     'POST /admin/config/tls/upload',
     'POST /admin/config/webhooks',
     'POST /admin/config/webhooks/test',
+    'POST /admin/dbsc/refresh',
+    'POST /admin/dbsc/start',
     'POST /admin/gateways/delete/{gateway}',
     'POST /admin/gateways/edit',
     'POST /admin/gateways/new',

@@ -10705,6 +10705,12 @@
               }
             }
           },
+          "dbscEnabled": {
+            "type": "boolean",
+            "description": "Bind admin sessions to a key kept in the signed-in device's security hardware (Device Bound Session Credentials), in browsers that support it, so a copied session cookie stops working within minutes. Requires an https serviceUrl. Disabled by default",
+            "example": false,
+            "nullable": true
+          },
           "tokenAuditLog": {
             "type": "boolean",
             "description": "Record which requests each access token makes, readable at GET /v1/tokens/{token}/log. Disabled by default, and entries only exist from the point it is enabled",
@@ -11552,6 +11558,11 @@
                 "allowRelative": false
               }
             }
+          },
+          "dbscEnabled": {
+            "type": "boolean",
+            "description": "Bind admin sessions to a key kept in the signed-in device's security hardware (Device Bound Session Credentials), in browsers that support it, so a copied session cookie stops working within minutes. Requires an https serviceUrl. Disabled by default",
+            "example": false
           },
           "tokenAuditLog": {
             "type": "boolean",
@@ -12899,7 +12910,7 @@
             "events": "Subscribe to the instance-wide change stream, which covers every account",
             "diagnostics": "Read statistics and service status",
             "logs": "Read the per-account connection log. Entries include the protocol or API trace, so they include folder names and message subjects",
-            "settings": "Read and change instance settings and pause or resume the queues. A write reaches the global webhook target. The keys that would widen a token beyond settings (operator scripts, the link signing secret, the authentication server, proxy trust and local addresses, proxies, the built-in listeners, TLS certificates and provisioning, the service URL, mail certificate checking, the AI key and endpoint, the webhook target and its custom headers, hosted page markup, the MCP and audit switches, and error reporting) are refused to a restricted token, on reads and writes alike",
+            "settings": "Read and change instance settings and pause or resume the queues. A write reaches the global webhook target. The keys that would widen a token beyond settings (operator scripts, the link signing secret, the authentication server, proxy trust and local addresses, proxies, the built-in listeners, TLS certificates and provisioning, the service URL, mail certificate checking, the AI key and endpoint, the webhook target and its custom headers, hosted page markup, the MCP and audit switches, admin session binding, and error reporting) are refused to a restricted token, on reads and writes alike",
             "oauth2": "Manage OAuth2 applications. Client secrets are write-only, and a change can move where the provider sends authorization codes",
             "license": "Read, apply and remove the license key",
             "token": "List, inspect and revoke access tokens and read their audit logs, which record who read which account. Cannot create tokens",
@@ -24044,6 +24055,16 @@
               "default": false
             },
             "description": "Include the `authServer` setting in the response"
+          },
+          {
+            "name": "dbscEnabled",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "description": "Include the `dbscEnabled` setting in the response",
+              "default": false
+            },
+            "description": "Include the `dbscEnabled` setting in the response"
           },
           {
             "name": "tokenAuditLog",

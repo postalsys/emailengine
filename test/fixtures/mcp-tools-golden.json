@@ -2984,7 +2984,7 @@
     {
         "name": "get_settings",
         "title": "Get settings",
-        "description": "Read instance settings. Set each setting you want returned to true. Secrets come back as a boolean saying whether a value is stored, credentials inside URLs are masked, and eventTypes lists the webhook event names the instance supports. Settings that would widen this credential (operator scripts, the link signing secret, the authentication server, proxy trust and local addresses, proxies, the built-in listeners, TLS certificates and provisioning, the service URL, mail certificate checking, the AI key and endpoint, the webhook target and its custom headers, hosted page markup, the MCP and audit switches, and error reporting) are not offered.",
+        "description": "Read instance settings. Set each setting you want returned to true. Secrets come back as a boolean saying whether a value is stored, credentials inside URLs are masked, and eventTypes lists the webhook event names the instance supports. Settings that would widen this credential (operator scripts, the link signing secret, the authentication server, proxy trust and local addresses, proxies, the built-in listeners, TLS certificates and provisioning, the service URL, mail certificate checking, the AI key and endpoint, the webhook target and its custom headers, hosted page markup, the MCP and audit switches, admin session binding, and error reporting) are not offered.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -6923,7 +6923,7 @@
     {
         "name": "update_settings",
         "title": "Update settings",
-        "description": "Change instance settings. Send only the keys to change; they take effect immediately on every worker. Covers where webhooks are delivered and which events are sent, notification shaping, branding, sync strategy, queue retention and AI processing. Confirm with the user before changing the webhook target. The settings that would widen this credential (operator scripts, the link signing secret, the authentication server, proxy trust and local addresses, proxies, the built-in listeners, TLS certificates and provisioning, the service URL, mail certificate checking, the AI key and endpoint, the webhook target and its custom headers, hosted page markup, the MCP and audit switches, and error reporting) are not offered.",
+        "description": "Change instance settings. Send only the keys to change; they take effect immediately on every worker. Covers where webhooks are delivered and which events are sent, notification shaping, branding, sync strategy, queue retention and AI processing. Confirm with the user before changing the webhook target. The settings that would widen this credential (operator scripts, the link signing secret, the authentication server, proxy trust and local addresses, proxies, the built-in listeners, TLS certificates and provisioning, the service URL, mail certificate checking, the AI key and endpoint, the webhook target and its custom headers, hosted page markup, the MCP and audit switches, admin session binding, and error reporting) are not offered.",
         "inputSchema": {
             "type": "object",
             "properties": {

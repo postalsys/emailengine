@@ -29,7 +29,11 @@ const ADMIN_SESSION_OPTIONAL = new Set([
     'POST /admin/login',
     'POST /admin/totp',
     'POST /admin/passkey/auth/options',
-    'POST /admin/passkey/auth/verify'
+    'POST /admin/passkey/auth/verify',
+    // Device-bound session refresh (lib/dbsc): the browser acts on this answer's status and ignores
+    // the login redirect a required session would produce, so an ended session is told so in a
+    // body it understands instead
+    'POST /admin/dbsc/refresh'
 ]);
 
 // The catch-all 404 is registered by workers/api.js, outside both route tables
