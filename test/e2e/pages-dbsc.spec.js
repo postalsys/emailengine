@@ -20,7 +20,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { test, expect, chromium } = require('@playwright/test');
+const { test, expect, chromium } = require('./helpers/test');
 const { ensureAdminSession, trackConsoleErrors } = require('./helpers/bootstrap');
 
 const CHROME = process.env.EE_E2E_DBSC_CHROME;

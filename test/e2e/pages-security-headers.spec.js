@@ -13,7 +13,7 @@
 // fresh-instance behaviour (it sets the FIRST admin password). Anything that bootstraps the
 // instance ahead of it breaks that test.
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('./helpers/test');
 const { useAdminSession, trackConsoleErrors } = require('./helpers/bootstrap');
 
 const NONCE_RE = /'nonce-([A-Za-z0-9_-]+)'/;

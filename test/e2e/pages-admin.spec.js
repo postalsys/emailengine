@@ -16,7 +16,7 @@
 // Run once:  npm run test:e2e:install
 // Run suite: npm run test:e2e
 
-const { test, expect, request } = require('@playwright/test');
+const { test, expect, request } = require('./helpers/test');
 const {
     ensureAdminSession,
     useAdminSession,
@@ -1401,6 +1401,9 @@ test.describe('admin shell', () => {
     });
 
     test('internals: thread table with restart and snapshot modals', async ({ page }) => {
+        // Counts the worker threads, and without a license every worker but the API server is
+        // suspended. happy-path.spec.js activates the trial in a full run.
+        test.skip(!!process.env.EE_E2E_STANDALONE, 'needs the trial license happy-path.spec.js activates (EE_E2E_STANDALONE run)');
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
 
@@ -1712,6 +1715,10 @@ test.describe('admin shell', () => {
     });
 
     test('state badge: connection error shows in the FlyonUI tooltip', async ({ page, request }) => {
+        // The account has to reach the IMAP worker, and without a license every worker but the API
+        // server is suspended, so its badge would sit on Initializing. happy-path.spec.js activates
+        // the trial in a full run.
+        test.skip(!!process.env.EE_E2E_STANDALONE, 'needs the trial license happy-path.spec.js activates (EE_E2E_STANDALONE run)');
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
 
