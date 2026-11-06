@@ -6,6 +6,7 @@ const config = require('@zone-eu/wild-config');
 const logger = require('../lib/logger');
 
 const { REDIS_PREFIX } = require('../lib/consts');
+const { assignRelayStatus } = require('../lib/email-client/imap/connection-errors');
 
 const { getDuration, getBoolean, emitChangeEvent, readEnvValue, hasEnvValue, threadStats } = require('../lib/tools');
 
@@ -22,7 +23,6 @@ const { redis, notifyQueue, submitQueue, watchRedisReconnect } = require('../lib
 const { sendToMessagePort, MessagePortWritable } = require('../lib/message-port-stream');
 const { describeRpcCommand } = require('../lib/worker-rpc-error');
 const { createRpcClient, respond, isCall } = require('../lib/worker-rpc');
-const { ImapFlowErrorCode } = require('imapflow');
 const settings = require('../lib/settings');
 const msgpack = require('../lib/msgpack');
 
@@ -1139,11 +1139,9 @@ parentPort.on('message', message => {
                 // 503 is excluded from the error branch on purpose: both "no active handler" and
                 // IMAPConnectionClosing carry it, and a worker taking over accounts answers every
                 // in-flight command with one until the reassignment settles.
-                if (err && err.code === ImapFlowErrorCode.ETHROTTLE && !err.statusCode) {
-                    // ImapFlow gave up after the server throttled every retry: the caller should
-                    // back off, the same answer a throttled Gmail or Graph request gets
-                    err.statusCode = 429;
-                }
+                // ImapFlow's codes for "throttled" and "the connection went away" carry no HTTP
+                // status of their own (429 and 503, see assignRelayStatus())
+                assignRelayStatus(err);
                 let isServerFault = !err || !err.statusCode || (err.statusCode >= 500 && err.statusCode !== 503);
                 logger[isServerFault ? 'error' : 'debug'](Object.assign(describeRpcCommand(message), { msg: 'Command failed', err }));
             }

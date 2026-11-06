@@ -387,6 +387,69 @@ test('token renewal writes only the token fields, and only over the grant it use
     });
 });
 
+test('token renewal keeps a stored token only while it has the asked lifetime left', async t => {
+    // A login on a provider whose IMAP sessions end with their token asks for more than the usual
+    // 30 seconds (lib/email-client/imap/session-expiry.js), and the renewal has to honor that both
+    // before and under the lock, or a token with minutes left is handed out as fresh
+    const tenMinutes = () => ({
+        account: 'acc',
+        oauth2: {
+            provider: 'app',
+            auth: { user: 'u@example.com' },
+            accessToken: 'TEN-MINUTES-LEFT',
+            refreshToken: 'RT-1',
+            expires: new Date(Date.now() + 10 * 60 * 1000)
+        }
+    });
+
+    const origGetClient = oauth2Apps.getClient;
+    t.after(() => {
+        oauth2Apps.getClient = origGetClient;
+    });
+    let refreshes = 0;
+    oauth2Apps.getClient = async () => ({
+        refreshToken: async () => {
+            refreshes++;
+            return { access_token: 'NEW-AT', expires_in: 3600 };
+        }
+    });
+
+    const accountFor = () =>
+        createAccount({
+            getLock: () => createLock([]),
+            loadAccountData: async () => tenMinutes(),
+            getHttpRoute: async () => null,
+            update: async () => ({ account: 'acc' })
+        });
+
+    await t.test('the default margin keeps it', async () => {
+        refreshes = 0;
+        const result = await accountFor().renewAccessToken();
+        assert.strictEqual(refreshes, 0);
+        assert.strictEqual(result.oauth2.accessToken, 'TEN-MINUTES-LEFT');
+    });
+
+    await t.test('a longer minimum renews it', async () => {
+        refreshes = 0;
+        const result = await accountFor().renewAccessToken({}, { minValidity: 20 * 60 * 1000 });
+        assert.strictEqual(refreshes, 1);
+        assert.strictEqual(result.oauth2.accessToken, 'NEW-AT');
+    });
+
+    await t.test('the check under the lock uses the same minimum', async () => {
+        refreshes = 0;
+        // what another holder of the lock renewed meanwhile, with ten minutes left
+        const result = await accountFor().renewAccessTokenLocked({}, 20 * 60 * 1000);
+        assert.strictEqual(refreshes, 1, 'a token renewed meanwhile but short of the minimum is renewed again');
+        assert.strictEqual(result.oauth2.accessToken, 'NEW-AT');
+
+        refreshes = 0;
+        const kept = await accountFor().renewAccessTokenLocked({}, 5 * 60 * 1000);
+        assert.strictEqual(refreshes, 0);
+        assert.strictEqual(kept.oauth2.accessToken, 'TEN-MINUTES-LEFT');
+    });
+});
+
 test('create() runs the uniqueness check and the write under the update lock', async () => {
     const events = [];
     const multi = () => {

@@ -35,7 +35,8 @@ const TESTS_BY_FILE = {
     'lib/email-client/imap/adaptive-idle-store.js': ['test/adaptive-idle-store-test.js', 'test/adaptive-idle-simulation-test.js'],
     'lib/email-client/imap/idle-settings.js': ['test/imap-idle-settings-test.js', 'test/adaptive-idle-test.js', 'test/adaptive-idle-simulation-test.js'],
     'lib/utils/tracking-settings.js': ['test/tracking-settings-test.js', 'test/queue-message-entry-test.js'],
-    'lib/lock-run.js': ['test/lock-run-test.js']
+    'lib/lock-run.js': ['test/lock-run-test.js'],
+    'lib/email-client/imap/session-expiry.js': ['test/imap-session-reauth-test.js']
 };
 const FILES = opt('file', '') ? [opt('file')] : Object.keys(TESTS_BY_FILE);
 const WORKERS = Number(opt('workers', Math.max(2, Math.min(6, os.cpus().length - 2))));
