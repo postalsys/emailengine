@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.87.3](https://github.com/postalsys/emailengine/compare/v2.87.2...v2.87.3) (2026-11-06)
+
+
+### Bug Fixes
+
+* e2e overlay flakes, and a confirmation OK that could read as declined ([b3559b3](https://github.com/postalsys/emailengine/commit/b3559b3187e484c781b37c1ce484d7a19095685c))
+* record a confirmation's OK click before the dialog reports closing ([c754c9f](https://github.com/postalsys/emailengine/commit/c754c9fa0207941c601991d3d3ca26098f0b45d1))
+* replace Microsoft 365 IMAP sessions before their access token expires ([500e4d2](https://github.com/postalsys/emailengine/commit/500e4d2b7714337c9bf35b6c3447035c0280dba0))
+
 ## [2.87.2](https://github.com/postalsys/emailengine/compare/v2.87.1...v2.87.2) (2026-11-05)
 
 
