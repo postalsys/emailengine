@@ -251,3 +251,104 @@ test('ResponseStream tests', async t => {
         stream.finalize();
     });
 });
+
+// The change feed was authorized once, when it opened, so a revoked token or an ended session kept
+// receiving every account's change events for as long as the client held the connection.
+test('an open change stream is closed once its credential is refused', async () => {
+    const Hapi = require('@hapi/hapi');
+    const http = require('http');
+    const Boom = require('@hapi/boom');
+    const { openChangeStream, recheckChangeStreams } = require('../lib/response-stream');
+    const hasRecheckable = () => [...registeredPublishers].some(stream => stream.recheckAuth);
+
+    let admitted = true;
+    const rechecks = [];
+    const server = Hapi.server({ port: 0, host: '127.0.0.1' });
+    server.auth.scheme('flag', () => ({
+        authenticate(request, h) {
+            if (request.app.authRecheck) {
+                rechecks.push(true);
+            }
+            if (admitted === 'fault') {
+                throw Boom.internal('redis down');
+            }
+            if (!admitted) {
+                return h.unauthenticated(Boom.unauthorized('Unauthorized'));
+            }
+            return h.authenticated({ credentials: { token: 'x' } });
+        }
+    }));
+    server.auth.strategy('flag', 'flag');
+    server.route({ method: 'GET', path: '/changes', handler: openChangeStream, options: { auth: 'flag' } });
+    await server.start();
+
+    try {
+        const ended = new Promise((resolve, reject) => {
+            http.get(`http://127.0.0.1:${server.info.port}/changes`, res => {
+                res.on('data', () => false);
+                res.on('end', resolve);
+                res.on('error', resolve);
+            }).on('error', reject);
+        });
+        const waitUntil = require('./helpers/wait-until');
+        assert.ok(await waitUntil(hasRecheckable));
+
+        // a fault says nothing about the credential
+        admitted = 'fault';
+        await recheckChangeStreams();
+        assert.ok(
+            [...registeredPublishers].some(stream => stream.recheckAuth),
+            'a fault keeps the stream'
+        );
+
+        admitted = false;
+        await recheckChangeStreams();
+        await ended;
+        assert.ok(rechecks.length >= 2, 'the re-check is marked so it records no use of the credential');
+        assert.ok(!hasRecheckable(), 'the refused stream is unregistered');
+    } finally {
+        await server.stop({ timeout: 100 });
+    }
+});
+
+// The admin session strategy answers a refused session with a redirect to the login page, which
+// auth.test() throws as a response object rather than as a Boom error, so an ended session's
+// /admin/changes stream was kept as if the re-check had hit a fault
+test('an admin change stream closes when its session strategy answers with a login redirect', async () => {
+    const Hapi = require('@hapi/hapi');
+    const http = require('http');
+    const { openChangeStream, recheckChangeStreams } = require('../lib/response-stream');
+    const waitUntil = require('./helpers/wait-until');
+    const hasRecheckable = () => [...registeredPublishers].some(stream => stream.recheckAuth);
+
+    let admitted = true;
+    const server = Hapi.server({ port: 0, host: '127.0.0.1' });
+    server.auth.scheme('redirecting', () => ({
+        authenticate(request, h) {
+            if (!admitted) {
+                return h.response('').takeover().redirect('/admin/login');
+            }
+            return h.authenticated({ credentials: { user: 'admin' } });
+        }
+    }));
+    server.auth.strategy('session', 'redirecting');
+    server.route({ method: 'GET', path: '/admin/changes', handler: openChangeStream, options: { auth: 'session' } });
+    await server.start();
+
+    try {
+        const ended = new Promise((resolve, reject) => {
+            http.get(`http://127.0.0.1:${server.info.port}/admin/changes`, res => {
+                res.on('data', () => false);
+                res.on('end', resolve);
+                res.on('error', resolve);
+            }).on('error', reject);
+        });
+        assert.ok(await waitUntil(hasRecheckable));
+        admitted = false;
+        await recheckChangeStreams();
+        await ended;
+        assert.ok(!hasRecheckable());
+    } finally {
+        await server.stop({ timeout: 100 });
+    }
+});

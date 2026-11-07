@@ -47,6 +47,21 @@ async function queueMessage(account, queueId, { delay = DEFAULT_DELAY } = {}) {
 registerRedisTeardown(redis, () => submitQueue.obliterate({ force: true }).catch(() => false));
 
 test('Outbox', async t => {
+    // DELETE /v1/outbox/meta reached the queue's own metadata hash: BullMQ answered getJob('meta')
+    // with a job made of it, and removing that deleted the pause flag, releasing every held message
+    await t.test("the queue's metadata is not a message, so deleting it leaves a pause in place", async () => {
+        await queueMessage('outbox-meta-account', 'outbox-meta-probe');
+        await submitQueue.pause();
+        try {
+            assert.deepEqual(await outbox.del({ queueId: 'meta', logger }), { deleted: false });
+            assert.equal(await outbox.get({ queueId: 'meta', logger }), false);
+            assert.equal(await submitQueue.isPaused(), true);
+        } finally {
+            await submitQueue.resume();
+            await submitQueue.remove('outbox-meta-probe').catch(() => false);
+        }
+    });
+
     await t.test('removeJobs() removes a scheduled message and leaves other accounts alone', async () => {
         const account = 'outbox-delete-account';
         const otherAccount = 'outbox-other-account';
