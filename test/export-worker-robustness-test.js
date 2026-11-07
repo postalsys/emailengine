@@ -18,6 +18,11 @@ const os = require('os');
 const pathlib = require('path');
 const zlib = require('zlib');
 
+// Set before anything opens a connection: Export.markInterruptedAsFailed() walks the one global
+// set of active exports, and another export suite running at the same time against the same
+// database handled this suite's records with its own (real) queue lookup
+process.env.EENGINE_REDIS_PREFIX = 'test_export_robustness';
+
 const { redis } = require('../lib/db');
 const { REDIS_PREFIX } = require('../lib/consts');
 const { Export, openExportOutput, generateExportId, getExportKey, getExportQueueKey, buildActiveEntry, ACTIVE_EXPORTS_KEY } = require('../lib/export');

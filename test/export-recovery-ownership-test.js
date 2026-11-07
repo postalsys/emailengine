@@ -16,6 +16,11 @@ const os = require('os');
 const pathlib = require('path');
 const { Worker } = require('bullmq');
 
+// Set before anything opens a connection: Export.markInterruptedAsFailed() walks the one global
+// set of active exports, and another export suite running at the same time against the same
+// database handled this suite's records with its own (real) queue lookup
+process.env.EENGINE_REDIS_PREFIX = 'test_export_recovery';
+
 const { redis, queueConf, exportQueue } = require('../lib/db');
 const { EXPORT_LOCK_DURATION, EXPORT_STALLED_INTERVAL } = require('../lib/consts');
 const logger = require('../lib/logger');
