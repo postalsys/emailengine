@@ -118,6 +118,30 @@ test('BaseClient.submitMessage() after the server accepted the message', async t
 
         assert.deepEqual(notifications, [EMAIL_DELIVERY_ERROR_NOTIFY]);
     });
+
+    // The job's nextAttempt is set before the send, so a failure the worker will not retry used to
+    // report a retry time in messageDeliveryError and never mark the feedback key failed
+    await t.test('a permanent failure reports no next attempt and fails the feedback key', async () => {
+        for (const [error, permanent] of [
+            [Object.assign(new Error('Mailbox unavailable'), { responseCode: 550 }), true],
+            [Object.assign(new Error('SMTP delivery did not complete'), { code: 'ETIMEDOUT', permanent: true }), true],
+            [Object.assign(new Error('Try again later'), { responseCode: 451 }), false]
+        ]) {
+            sendError = error;
+            const feedback = [];
+            const payloads = [];
+            const { ctx } = createSubmitClient();
+            ctx.updateFeedbackKey = async (key, success) => feedback.push(success);
+            ctx.notify = async (mailbox, event, data) => payloads.push(data);
+            const job = { id: 'job-1', nextAttempt: '2026-11-07T12:00:00.000Z' };
+
+            await assert.rejects(() => ctx.submitMessage(Object.assign(submission(), { job })));
+
+            assert.deepEqual(feedback, permanent ? [false] : [], error.message);
+            assert.equal(Boolean(payloads[0].job.nextAttempt), !permanent, error.message);
+            assert.equal(job.nextAttempt, '2026-11-07T12:00:00.000Z', "the caller's job data is not changed");
+        }
+    });
 });
 
 test('BaseClient.getDelegatedAccount()', async t => {

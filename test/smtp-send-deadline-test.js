@@ -8,6 +8,7 @@ const assert = require('node:assert').strict;
 const net = require('node:net');
 
 const { sendWithDeadline } = require('../lib/email-client/smtp-pool-manager');
+const { shouldDiscardJob } = require('../lib/delivery-error');
 
 test('a delivery to a server that trickles its greeting fails at the deadline and closes the pool', async () => {
     const sockets = new Set();
@@ -25,11 +26,17 @@ test('a delivery to a server that trickles its greeting fails at the deadline an
     const settings = { host: '127.0.0.1', port: server.address().port, secure: false, ignoreTLS: true, logger: false };
     try {
         const started = Date.now();
+        let failure;
         await assert.rejects(
             sendWithDeadline(settings, { envelope: { from: 'a@example.com', to: ['b@example.com'] }, raw: 'Subject: x\r\n\r\nx' }, 300),
-            err => err.code === 'ETIMEDOUT' && err.deadlineExceeded === true
+            err => {
+                failure = err;
+                return err.code === 'ETIMEDOUT' && err.deadlineExceeded === true;
+            }
         );
         assert.ok(Date.now() - started < 3000, 'it fails at the deadline, not at socketTimeout');
+        // final, not retried: a retry could deliver a message the server already has
+        assert.equal(shouldDiscardJob(failure, { attemptsMade: 0, opts: { attempts: 10 } }), true);
         const waitUntil = require('./helpers/wait-until');
         assert.ok(await waitUntil(() => sockets.size === 0), 'and its connection is closed');
     } finally {
