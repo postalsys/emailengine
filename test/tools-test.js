@@ -772,6 +772,19 @@ test('Tools utility tests', async t => {
         assert.ok(!html.includes('cid:'));
     });
 
+    // Each reference used to become a full copy, so a few hundred bytes of HTML naming one inline
+    // image many times grew into a payload of many megabytes
+    await t.test('embedCidImages() embeds every image once and repeats only within a budget', async () => {
+        const content = 'A'.repeat(1024 * 1024);
+        const lookup = cid => (cid === 'big@x' ? { contentType: 'image/png', content } : { contentType: 'image/png', content: 'QQ==' });
+        const html = tools.embedCidImages('<img src="cid:big@x">'.repeat(40) + '<img src="cid:small@x">'.repeat(3), lookup);
+        const big = (html.match(/data:image\/png;base64,A+/g) || []).length;
+        assert.ok(big >= 1 && big <= 3, `the large image is repeated within the budget only (${big})`);
+        assert.ok(html.length < 4 * 1024 * 1024);
+        assert.ok(html.includes('cid:big@x'), 'repeats past the budget keep their reference');
+        assert.strictEqual((html.match(/data:image\/png;base64,QQ==/g) || []).length, 3, 'small repeats still embed');
+    });
+
     await t.test('embedCidImages() rewrites every candidate of a srcset', async () => {
         const lookup = cid => ({ contentType: 'image/png', content: cid === 'a@x' ? 'QQ==' : 'Qg==' });
         const html = tools.embedCidImages('<img srcset="cid:a@x 1x, cid:b@x 2x" src="cid:a@x">', lookup);

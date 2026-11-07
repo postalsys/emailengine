@@ -42,7 +42,6 @@ const {
     getBoolean,
     loadTlsConfig,
     resolveOAuthErrorStatus,
-    constantTimeEqual,
     verifyServiceSignature,
     SIGNING_PURPOSE,
     setAdminSession,
@@ -180,11 +179,7 @@ function formatScopeDescription(scope) {
     return shortName.replace(/\./g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-// The two MS Graph subscription routes are unauthenticated and deliberately carry no payload
-// schema: they must answer 202 to anything, because a 400 would make Graph tear the subscription
-// down, and the validation handshake posts an empty body. So the payload is arbitrary JSON and
-// every read of it has to be defensive.
-const graphNotificationEntries = payload => (Array.isArray(payload && payload.value) ? payload.value.filter(entry => entry && typeof entry === 'object') : []);
+const { graphNotificationEntries, partitionGraphEntries, logRejectedGraphEntries, logUnknownGraphSubscription } = require('../lib/graph-notifications');
 
 const SMTP_TEST_HOST = 'https://api.nodemailer.com';
 
@@ -1748,41 +1743,26 @@ function registerOutlookNotificationRoute(server) {
             const notificationEntries = graphNotificationEntries(request.payload);
 
             if (!accountData.outlookSubscription) {
-                request.logger.warn({
-                    msg: 'Subscription not found for account',
-                    account: request.query.account,
-                    subscriptionIds: notificationEntries.map(entry => entry.subscriptionId)
-                });
+                logUnknownGraphSubscription(request, notificationEntries);
                 return h.response(Buffer.alloc(0)).code(202);
             }
 
             const outlookSubscription = accountData.outlookSubscription;
 
-            const events = [];
-            for (let entry of notificationEntries) {
-                // enumerate and queue all entries
-                const subscriptionIdMatch = entry.subscriptionId === outlookSubscription.id;
-                const clientStateMatch = constantTimeEqual(entry.clientState, outlookSubscription.clientState);
-                if (!subscriptionIdMatch || !clientStateMatch) {
-                    // Security: Log webhook validation failures - could indicate spoofed notifications
-                    request.logger.warn({
-                        msg: 'Webhook validation failed - potential security issue',
-                        securityEvent: 'webhook_validation_failure',
-                        account: request.query.account,
-                        subscriptionIdMatch,
-                        clientStateMatch,
-                        receivedSubscriptionId: entry.subscriptionId,
-                        changeType: entry.changeType,
-                        resource: entry.resource
-                    });
-                    continue;
-                }
+            const { valid, rejected } = partitionGraphEntries(notificationEntries, outlookSubscription, entry => ({
+                changeType: entry.changeType,
+                resource: entry.resource
+            }));
+            const events = valid.map(entry => ({
+                type: entry.changeType,
+                message: entry.resourceData && entry.resourceData.id
+            }));
 
-                events.push({
-                    type: entry.changeType,
-                    message: entry.resourceData && entry.resourceData.id
-                });
-            }
+            // Security: log webhook validation failures - could indicate spoofed notifications
+            logRejectedGraphEntries(request, rejected, {
+                msg: 'Webhook validation failed - potential security issue',
+                securityEvent: 'webhook_validation_failure'
+            });
 
             if (events.length) {
                 await accountObject.pushQueueEvents(events);
@@ -1853,11 +1833,7 @@ function registerOutlookLifecycleRoute(server) {
             const lifecycleEntries = graphNotificationEntries(request.payload);
 
             if (!accountData.outlookSubscription) {
-                request.logger.warn({
-                    msg: 'Subscription not found for account',
-                    account: request.query.account,
-                    subscriptionIds: lifecycleEntries.map(entry => entry.subscriptionId)
-                });
+                logUnknownGraphSubscription(request, lifecycleEntries);
                 return h.response(Buffer.alloc(0)).code(202);
             }
 
@@ -1867,7 +1843,8 @@ function registerOutlookLifecycleRoute(server) {
             // concurrent handlers racing (e.g., two subscriptionRemoved entries)
             const seenLifecycleEvents = new Set();
 
-            for (let entry of lifecycleEntries) {
+            const { valid, rejected } = partitionGraphEntries(lifecycleEntries, outlookSubscription, entry => ({ lifecycleEvent: entry.lifecycleEvent }));
+            for (let entry of valid) {
                 request.logger.debug({
                     msg: 'MS Graph subscription event',
                     type: 'lifecycle',
@@ -1875,23 +1852,6 @@ function registerOutlookLifecycleRoute(server) {
                     lifecycleEvent: entry.lifecycleEvent,
                     subscriptionId: entry.subscriptionId
                 });
-
-                // enumerate and queue all entries
-                const subscriptionIdMatch = entry.subscriptionId === outlookSubscription.id;
-                const clientStateMatch = constantTimeEqual(entry.clientState, outlookSubscription.clientState);
-                if (!subscriptionIdMatch || !clientStateMatch) {
-                    // Security: Log lifecycle webhook validation failures - could indicate spoofed notifications
-                    request.logger.warn({
-                        msg: 'Lifecycle webhook validation failed - potential security issue',
-                        securityEvent: 'lifecycle_webhook_validation_failure',
-                        account: request.query.account,
-                        subscriptionIdMatch,
-                        clientStateMatch,
-                        receivedSubscriptionId: entry.subscriptionId,
-                        lifecycleEvent: entry.lifecycleEvent
-                    });
-                    continue;
-                }
 
                 // Route recognized lifecycle events to the IMAP worker
                 // so the live client with its OAuth state handles them
@@ -1939,6 +1899,12 @@ function registerOutlookLifecycleRoute(server) {
                     });
                 }
             }
+
+            // Security: log lifecycle webhook validation failures - could indicate spoofed notifications
+            logRejectedGraphEntries(request, rejected, {
+                msg: 'Lifecycle webhook validation failed - potential security issue',
+                securityEvent: 'lifecycle_webhook_validation_failure'
+            });
 
             return h.response(Buffer.alloc(0)).code(202);
         },

@@ -179,3 +179,24 @@ test('completeSubmission()', async t => {
 });
 
 exitWhenStandalone();
+
+// An account whose SMTP server trickled each delivery until the deadline held the queue every other
+// account shares; its next messages now wait in the delayed set instead
+test('a message of a penalised account is delayed without being sent', async () => {
+    const { submitPenaltyKey } = require('../lib/submit-penalty');
+    const { DelayedError } = require('bullmq');
+    const queueId = `penalised-${process.pid}`;
+    sends = 0;
+    await queueMessage(queueId);
+    await redis.set(submitPenaltyKey(ACCOUNT), '1', 'PX', 60 * 1000);
+    try {
+        const job = await worker.getNextJob('penalised-run', { block: false });
+        await assert.rejects(processor(job, 'penalised-run'), err => err instanceof DelayedError);
+        assert.equal(sends, 0, 'nothing is sent while the account is penalised');
+        assert.equal(await job.getState(), 'delayed');
+        assert.equal((await queue.getJob(queueId)).attemptsMade, 0, 'the wait spends no attempt');
+    } finally {
+        await redis.del(submitPenaltyKey(ACCOUNT));
+        await queue.remove(queueId).catch(() => false);
+    }
+});

@@ -167,6 +167,28 @@ test('collectCalendarEvents()', async t => {
         assert.strictEqual(events[0].method, 'REQUEST');
     });
 
+    // Any sender can attach a calendar file, and one of several megabytes was loaded, parsed and
+    // copied into the payload whole
+    await t.test('a calendar file over the size cap is neither loaded nor parsed', async () => {
+        const { MAX_CALENDAR_SIZE } = require('../lib/calendar-event');
+        const loaded = [];
+        const load = async attachment => {
+            loaded.push(attachment.id);
+            attachment.content = b64(INVITE);
+        };
+        const events = await collectCalendarEvents([{ id: 'big', contentType: 'text/calendar', encodedSize: MAX_CALENDAR_SIZE + 1 }], load, createMockLogger());
+        assert.strictEqual(events, undefined);
+        assert.deepStrictEqual(loaded, []);
+
+        // a part without a reported size is measured once loaded
+        const unsized = await collectCalendarEvents(
+            [{ id: 'unsized', contentType: 'text/calendar', content: 'A'.repeat(Math.ceil(((MAX_CALENDAR_SIZE + 3) / 3) * 4)) }],
+            load,
+            createMockLogger()
+        );
+        assert.strictEqual(unsized, undefined);
+    });
+
     await t.test('a default file name by method, and nothing for a message without events', async () => {
         const events = await collectCalendarEvents([{ id: 'cal', contentType: 'text/calendar', content: b64(INVITE) }], async () => {}, createMockLogger());
         assert.strictEqual(events[0].filename, 'invite.ics');

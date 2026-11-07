@@ -380,6 +380,33 @@ test('webhook delivery: recording the outcome', async t => {
         assert.deepStrictEqual(state.sets[0], [penaltyKey('https://global.example.com/hook'), '1', 'PX', 60000]);
     });
 
+    // The receiver chooses its answer, so a target that held every attempt just short of the
+    // timeout and then answered was never penalised and kept the shared worker busy
+    for (const status of [500, 200]) {
+        await t.test(`an attempt held for most of the timeout and answered ${status} penalises the target`, async () => {
+            const { deps, state } = makeDeps({ status });
+            deps.timeout = 100;
+            const fetch = deps.fetch;
+            deps.fetch = async (...args) => {
+                await new Promise(r => setTimeout(r, 70));
+                return fetch(...args);
+            };
+            const run = createWebhookProcessor(deps)(makeJob());
+            if (status === 200) {
+                await run;
+            } else {
+                await assert.rejects(run);
+            }
+            assert.deepStrictEqual(state.sets[0], [penaltyKey('https://global.example.com/hook'), '1', 'PX', 1000]);
+        });
+    }
+
+    await t.test('a quick answer is not penalised', async () => {
+        const { deps, state } = makeDeps({ status: 500 });
+        await assert.rejects(createWebhookProcessor(deps)(makeJob()));
+        assert.strictEqual(state.sets.length, 0);
+    });
+
     await t.test('an unfollowed redirect fails the job for good and keeps the code', async () => {
         const { deps, state } = makeDeps({ status: 302, validateTarget: async () => true });
         let thrown;

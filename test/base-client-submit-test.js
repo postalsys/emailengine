@@ -15,7 +15,7 @@ const assert = require('node:assert').strict;
 
 require('./helpers/mock-db').installDbMock();
 
-// base-client destructures getMailTransport at load, so the stub has to be in place first
+// sendWithDeadline() reaches the transport through the module export, so the stub is in place for it
 const sent = [];
 let sendError = null;
 const smtpPool = require('../lib/email-client/smtp-pool-manager');

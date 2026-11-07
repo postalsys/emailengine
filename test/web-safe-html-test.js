@@ -6,7 +6,14 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { messageWebSafeHtml, webSafeTextResponse, applyWebSafeHtmlOptions, collapseThreadHistory } = require('../lib/web-safe-html');
+const {
+    messageWebSafeHtml,
+    webSafeTextResponse,
+    applyWebSafeHtmlOptions,
+    collapseThreadHistory,
+    fitsWebSafeHtml,
+    WEB_SAFE_HTML_MAX_INPUT
+} = require('../lib/web-safe-html');
 const { COLLAPSE_CLASS, COLLAPSE_TOGGLE_CLASS } = require('../lib/consts');
 const exitWhenStandalone = require('./helpers/exit-standalone');
 
@@ -435,4 +442,25 @@ test('webSafeHtml option expansion', async t => {
         const once = applyWebSafeHtmlOptions({ webSafeHtml: true, embedAttachedImages: false });
         assert.deepEqual(applyWebSafeHtmlOptions(Object.assign({}, once)), once);
     });
+});
+
+// The conversion was bounded only by notifyTextSize, which an operator can clear, and a large body
+// stalled or killed the shared worker, again after every restart
+test('fitsWebSafeHtml() bounds the body a notification converts', () => {
+    assert.equal(fitsWebSafeHtml({ html: '<p>hi</p>', plain: 'hi' }), true);
+    assert.equal(fitsWebSafeHtml({ html: 'x'.repeat(WEB_SAFE_HTML_MAX_INPUT) }), true);
+    assert.equal(fitsWebSafeHtml({ html: 'x'.repeat(WEB_SAFE_HTML_MAX_INPUT), plain: 'y' }), false);
+    assert.equal(fitsWebSafeHtml({}), true);
+});
+
+// The cap sits in messageWebSafeHtml() itself, so an API fetch with webSafeHtml and the MCP tools
+// are bounded too, not only the webhook
+test('a body over the limit renders as escaped plain text without being parsed', async () => {
+    const html = `<p><script>alert(1)</script>${'x'.repeat(WEB_SAFE_HTML_MAX_INPUT)}</p>`;
+    const rendered = await messageWebSafeHtml({ text: { html, plain: '<b>plain</b> body' } });
+    assert.equal(rendered, '<div style="white-space: pre-wrap">&lt;b&gt;plain&lt;/b&gt; body</div>');
+
+    const noPlain = await messageWebSafeHtml({ text: { html } });
+    assert.ok(!noPlain.includes('<script'));
+    assert.match(noPlain, /too large to display/);
 });

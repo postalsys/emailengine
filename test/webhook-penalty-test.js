@@ -52,3 +52,14 @@ test('penaltyFor() penalises the failures that hold the queue', () => {
     assert.equal(penaltyFor(new Error('plain'), timeout), 0);
     assert.equal(penaltyFor(null, timeout), 0);
 });
+
+// The receiver chooses its answer, so a penalty keyed on the answer let a target hold every
+// attempt just short of the timeout and answer 500 (or 200) without ever being penalised
+test('penaltyFor() penalises an attempt that held the worker for half the timeout, whatever it answered', () => {
+    const timeout = 30 * 1000;
+    assert.equal(penaltyFor(Object.assign(new Error('HTTP 500'), { statusCode: 500 }), timeout, 27 * 1000), 60 * 1000);
+    assert.equal(penaltyFor(null, timeout, 15 * 1000), 60 * 1000, 'a slow success too');
+    assert.equal(penaltyFor(Object.assign(new Error('HTTP 500'), { statusCode: 500 }), timeout, 14 * 1000), 0);
+    assert.equal(penaltyFor(null, timeout, 200), 0, 'a quick success is not penalised');
+    assert.equal(penaltyFor(null, 0, 60 * 1000), 0, 'without a timeout there is nothing to measure against');
+});
