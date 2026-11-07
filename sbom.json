@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "emailengine-app@2.87.2",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.87.2-02343def-0d3b-4f6f-afc4-b4c2c16ef6a7",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.87.2-54db053a-7981-40d9-8990-e478a95c0c63",
   "creationInfo": {
-    "created": "2026-11-06T12:10:48.022Z",
+    "created": "2026-11-07T20:35:21.902Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
@@ -1283,11 +1283,11 @@
     },
     {
       "name": "@opentelemetry/semantic-conventions",
-      "SPDXID": "SPDXRef-Package-opentelemetry.semantic-conventions-1.44.0",
-      "versionInfo": "1.44.0",
+      "SPDXID": "SPDXRef-Package-opentelemetry.semantic-conventions-1.45.0",
+      "versionInfo": "1.45.0",
       "packageFileName": "node_modules/@opentelemetry/semantic-conventions",
       "description": "OpenTelemetry semantic conventions",
-      "downloadLocation": "https://registry.npmjs.org/@opentelemetry/semantic-conventions/-/semantic-conventions-1.44.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@opentelemetry/semantic-conventions/-/semantic-conventions-1.45.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/open-telemetry/opentelemetry-js/tree/main/semantic-conventions",
       "licenseDeclared": "Apache-2.0",
@@ -1295,13 +1295,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40opentelemetry/semantic-conventions@1.44.0"
+          "referenceLocator": "pkg:npm/%40opentelemetry/semantic-conventions@1.45.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "1372643a53018b737c3861a46e5eed172aa4d8c012ebf9724916412b732eec0ce31757d3f28202847f42844e3c4945b30e7f4a770b5af86fe9e4b278c56e022d"
+          "checksumValue": "68e3f8e666dc38a6d056f1567d09a0a0e3d3f11da2c1b6db825f379380ae8c657d06b26116bdea1b9e4c169c05b3860b69ba6e5b71e1cd463d790c4f943a9a67"
         }
       ]
     },
@@ -2098,11 +2098,11 @@
     },
     {
       "name": "@simplewebauthn/server",
-      "SPDXID": "SPDXRef-Package-simplewebauthn.server-14.0.3",
-      "versionInfo": "14.0.3",
+      "SPDXID": "SPDXRef-Package-simplewebauthn.server-14.1.0",
+      "versionInfo": "14.1.0",
       "packageFileName": "node_modules/@simplewebauthn/server",
       "description": "SimpleWebAuthn for Servers",
-      "downloadLocation": "https://registry.npmjs.org/@simplewebauthn/server/-/server-14.0.3.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@simplewebauthn/server/-/server-14.1.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/MasterKale/SimpleWebAuthn/tree/master/packages/server#readme",
       "licenseDeclared": "MIT",
@@ -2110,13 +2110,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40simplewebauthn/server@14.0.3"
+          "referenceLocator": "pkg:npm/%40simplewebauthn/server@14.1.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "0f7f7fd1f88389898657e9eb698f6ceb70f51e8d805ffc1a30bcb6dbff6051a75352ebdb027b2d7dbe1ba5b1d86f066e57964b0d83754a6cc32ae887cca000e1"
+          "checksumValue": "1cf451051e15cebe39f9156f6e67fa26e09f19d618712b383e79e7a7d61263620005ae092a71bec31c9b733a01eeb99d2c238c4bf99b05ad992ff05ccf9f1494"
         }
       ]
     },
@@ -2314,11 +2314,11 @@
     },
     {
       "name": "bullmq",
-      "SPDXID": "SPDXRef-Package-bullmq-6.7.1",
-      "versionInfo": "6.7.1",
+      "SPDXID": "SPDXRef-Package-bullmq-6.7.2",
+      "versionInfo": "6.7.2",
       "packageFileName": "node_modules/bullmq",
       "description": "Queue for messages and jobs based on Redis",
-      "downloadLocation": "https://registry.npmjs.org/bullmq/-/bullmq-6.7.1.tgz",
+      "downloadLocation": "https://registry.npmjs.org/bullmq/-/bullmq-6.7.2.tgz",
       "filesAnalyzed": false,
       "homepage": "https://bullmq.io/",
       "licenseDeclared": "MIT",
@@ -2326,13 +2326,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/bullmq@6.7.1"
+          "referenceLocator": "pkg:npm/bullmq@6.7.2"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "5889bdf8ed942ece2d70478a070947daca3b573b3afcad91bbe1456f457fbf71409418e3e72364ee40b628e9b4ff2329744f774af80f47e142d23ce75fa71ed6"
+          "checksumValue": "242a0cbe44c3f45017f13637a905c8901fb26d9603a53a95d3d12c871c188f39f6a1376a6a0294205fc65a3b5897d6da84f3b60c79b7b168e28c51877887fa5d"
         }
       ]
     },
@@ -2962,11 +2962,11 @@
     },
     {
       "name": "import-in-the-middle",
-      "SPDXID": "SPDXRef-Package-import-in-the-middle-3.5.3",
-      "versionInfo": "3.5.3",
+      "SPDXID": "SPDXRef-Package-import-in-the-middle-3.6.0",
+      "versionInfo": "3.6.0",
       "packageFileName": "node_modules/import-in-the-middle",
       "description": "Intercept imports in Node.js",
-      "downloadLocation": "https://registry.npmjs.org/import-in-the-middle/-/import-in-the-middle-3.5.3.tgz",
+      "downloadLocation": "https://registry.npmjs.org/import-in-the-middle/-/import-in-the-middle-3.6.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/nodejs/import-in-the-middle#readme",
       "licenseDeclared": "Apache-2.0",
@@ -2974,13 +2974,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/import-in-the-middle@3.5.3"
+          "referenceLocator": "pkg:npm/import-in-the-middle@3.6.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "bac9bf22263add5b4ecb1fdd9bbb84a1957e12c6a70839b0454ae841922414b1aed4d55767c999a883a168de10209ec4b1b313b906c95f00b2482c7ea33300f2"
+          "checksumValue": "c5153b848db84b6161b9c5edb995e7f04a5c3a37d53fa8a2110c91d1449ac8f79a3aba04992b0d96a9e5f79f3aea245d46d907adde90fd9e03d7847ad1abb4f8"
         }
       ]
     },
@@ -3369,6 +3369,30 @@
       ]
     },
     {
+      "name": "nodemailer",
+      "SPDXID": "SPDXRef-Package-nodemailer-10.3.1",
+      "versionInfo": "10.3.1",
+      "packageFileName": "node_modules/mailparser/node_modules/nodemailer",
+      "description": "Easy as cake e-mail sending from your Node.js applications",
+      "downloadLocation": "https://registry.npmjs.org/nodemailer/-/nodemailer-10.3.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://nodemailer.com/",
+      "licenseDeclared": "MIT-0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/nodemailer@10.3.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "b85d0016c242d3b635bdd5bba79f340ca02787bac03bee143d2481de60c23cd0ee7e889a39e6d5e899abce9c41d783a310412206c35d62833663e7cdf0cec104"
+        }
+      ]
+    },
+    {
       "name": "marked",
       "SPDXID": "SPDXRef-Package-marked-15.0.12",
       "versionInfo": "15.0.12",
@@ -3610,11 +3634,11 @@
     },
     {
       "name": "nodemailer",
-      "SPDXID": "SPDXRef-Package-nodemailer-10.3.1",
-      "versionInfo": "10.3.1",
+      "SPDXID": "SPDXRef-Package-nodemailer-10.4.0",
+      "versionInfo": "10.4.0",
       "packageFileName": "node_modules/nodemailer",
       "description": "Easy as cake e-mail sending from your Node.js applications",
-      "downloadLocation": "https://registry.npmjs.org/nodemailer/-/nodemailer-10.3.1.tgz",
+      "downloadLocation": "https://registry.npmjs.org/nodemailer/-/nodemailer-10.4.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://nodemailer.com/",
       "licenseDeclared": "MIT-0",
@@ -3622,13 +3646,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/nodemailer@10.3.1"
+          "referenceLocator": "pkg:npm/nodemailer@10.4.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "b85d0016c242d3b635bdd5bba79f340ca02787bac03bee143d2481de60c23cd0ee7e889a39e6d5e899abce9c41d783a310412206c35d62833663e7cdf0cec104"
+          "checksumValue": "7f2cbaaf84397ae449f50af70adb3d2bb499adf7bdce6cfda0b398880474d8c10944345c8bef7dcb43a86016018292df7ceaa49235eb07f776e957e23237bf90"
         }
       ]
     },
@@ -4882,7 +4906,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-simplewebauthn.server-14.0.3",
+      "spdxElementId": "SPDXRef-Package-simplewebauthn.server-14.1.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.2",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -4897,7 +4921,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-bullmq-6.7.1",
+      "spdxElementId": "SPDXRef-Package-bullmq-6.7.2",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.2",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -4977,7 +5001,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-nodemailer-10.3.1",
+      "spdxElementId": "SPDXRef-Package-nodemailer-10.4.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.87.2",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5582,7 +5606,7 @@
       "relationshipType": "PREREQUISITE_FOR"
     },
     {
-      "spdxElementId": "SPDXRef-Package-opentelemetry.semantic-conventions-1.44.0",
+      "spdxElementId": "SPDXRef-Package-opentelemetry.semantic-conventions-1.45.0",
       "relatedSpdxElement": "SPDXRef-Package-opentelemetry.core-2.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5597,7 +5621,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-opentelemetry.semantic-conventions-1.44.0",
+      "spdxElementId": "SPDXRef-Package-opentelemetry.semantic-conventions-1.45.0",
       "relatedSpdxElement": "SPDXRef-Package-opentelemetry.resources-2.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5617,7 +5641,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-opentelemetry.semantic-conventions-1.44.0",
+      "spdxElementId": "SPDXRef-Package-opentelemetry.semantic-conventions-1.45.0",
       "relatedSpdxElement": "SPDXRef-Package-opentelemetry.sdk-trace-2.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5642,7 +5666,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-opentelemetry.semantic-conventions-1.44.0",
+      "spdxElementId": "SPDXRef-Package-opentelemetry.semantic-conventions-1.45.0",
       "relatedSpdxElement": "SPDXRef-Package-opentelemetry.sdk-trace-base-2.12.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6157,7 +6181,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-import-in-the-middle-3.5.3",
+      "spdxElementId": "SPDXRef-Package-import-in-the-middle-3.6.0",
       "relatedSpdxElement": "SPDXRef-Package-sentry.node-core-10.78.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -6193,52 +6217,52 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-hexagon.base64-1.1.28",
-      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.1.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-levischuck.tiny-cbor-0.2.11",
-      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.1.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-peculiar.asn1-android-2.11.1",
-      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.1.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-peculiar.asn1-ecc-2.11.1",
-      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.1.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-peculiar.asn1-rsa-2.11.1",
-      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.1.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-peculiar.asn1-schema-2.11.1",
-      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.1.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-peculiar.asn1-x509-2.11.1",
-      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.1.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-peculiar.asn1-x509-post-quantum-2.11.1",
-      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.1.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-peculiar.x509-2.2.0",
-      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.1.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-reflect-metadata-0.2.2",
-      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-simplewebauthn.server-14.1.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -6283,32 +6307,32 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-ioredis-6.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.1",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-cron-parser-5.10.3",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.1",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-msgpackr-2.1.4",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.1",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-node-abort-controller-3.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.1",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-semver-7.8.6",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.1",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.1",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.2",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -6488,17 +6512,17 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-cjs-module-lexer-2.3.0",
-      "relatedSpdxElement": "SPDXRef-Package-import-in-the-middle-3.5.3",
+      "relatedSpdxElement": "SPDXRef-Package-import-in-the-middle-3.6.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-es-module-lexer-3.0.4",
-      "relatedSpdxElement": "SPDXRef-Package-import-in-the-middle-3.5.3",
+      "relatedSpdxElement": "SPDXRef-Package-import-in-the-middle-3.6.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-module-details-from-path-1.0.4",
-      "relatedSpdxElement": "SPDXRef-Package-import-in-the-middle-3.5.3",
+      "relatedSpdxElement": "SPDXRef-Package-import-in-the-middle-3.6.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
