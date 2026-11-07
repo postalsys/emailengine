@@ -69,7 +69,7 @@ const crypto = require('crypto');
 const { registeredPublishers, openChangeStream } = require('../lib/response-stream');
 const { oauth2Apps } = require('../lib/oauth2-apps');
 const { decodeJwtPayload } = require('../lib/oauth/decode-jwt-payload');
-const { resolveOutlookUserInfo } = require('../lib/oauth/outlook-identity');
+const { resolveOutlookUserInfo, readTenantVerifiedDomains } = require('../lib/oauth/outlook-identity');
 const { resolveOutlookMailbox } = require('../lib/oauth/outlook-mailbox');
 const { isValidOAuthState } = require('../lib/oauth/state');
 const { completeAccountSetup } = require('../lib/ui-routes/account-setup');
@@ -153,7 +153,7 @@ const SUPPORTED_LOCALES = locales.map(locale => locale.locale);
 
 const FLAG_SORT_ORDER = ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', '\\Archive', '\\Junk', '\\Trash'];
 
-const { GMAIL_SCOPES, OPENID_SCOPES, workspaceDomainOf } = require('../lib/oauth/gmail');
+const { GMAIL_SCOPES, OPENID_SCOPES, workspaceDomainOf, verifiedEmailOf } = require('../lib/oauth/gmail');
 const { MAIL_RU_SCOPES } = require('../lib/oauth/mail-ru');
 
 const GMAIL_SCOPE_DESCRIPTIONS = {
@@ -2092,8 +2092,9 @@ async function resolveGmailUserEmail(flow, r, grantedScopes) {
     if (r.id_token && !idTokenPayload) {
         request.logger.warn({ msg: 'Failed to decode Gmail ID token' });
     }
-    if (idTokenPayload && typeof idTokenPayload.email === 'string' && isEmail(idTokenPayload.email)) {
-        userEmail = idTokenPayload.email;
+    const idTokenEmail = verifiedEmailOf(idTokenPayload);
+    if (idTokenEmail) {
+        userEmail = idTokenEmail;
         userName = idTokenPayload.name || null;
         request.logger.info({ msg: 'Extracted user info from ID token', userEmail, userName });
     }
@@ -2244,6 +2245,11 @@ async function resolveOutlookCallbackUser(flow, r) {
         }
 
         userInfo = resolveOutlookUserInfo({ profile: profileRes });
+        if (profileRes && profileRes.mail && !userInfo.verifiedIdentities.includes(profileRes.mail)) {
+            // A mailbox address outside the login's domain counts only in a domain the tenant verified
+            const verifiedDomains = await readTenantVerifiedDomains(oAuth2Client, r.access_token, request.logger);
+            userInfo = resolveOutlookUserInfo({ profile: profileRes, verifiedDomains });
+        }
 
         request.logger.info({
             msg: 'User profile returned by MS Graph API',
@@ -2266,8 +2272,10 @@ async function completeOutlookCallback(flow) {
 
     const userInfo = await resolveOutlookCallbackUser(flow, r);
 
+    // The login is the user principal name and nothing else: it used to fall back to the account
+    // address, which could only come from client_info, a value the browser chooses
     const authData = {
-        user: userInfo.username || userInfo.email
+        user: userInfo.username
     };
 
     if (!authData.user) {

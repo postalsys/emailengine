@@ -72,3 +72,13 @@ test('the Workspace restriction is enforceable on the way back', async t => {
         }
     });
 });
+
+test('verifiedEmailOf() takes only an address Google confirmed', () => {
+    const { verifiedEmailOf } = require('../lib/oauth/gmail');
+    assert.equal(verifiedEmailOf({ email: 'user@example.com', email_verified: true }), 'user@example.com');
+    // older tokens and some account types omit the claim; only an explicit false is a refusal
+    assert.equal(verifiedEmailOf({ email: 'user@example.com' }), 'user@example.com');
+    assert.equal(verifiedEmailOf({ email: 'victim@victim-corp.com', email_verified: false }), null);
+    assert.equal(verifiedEmailOf({ email: 'not-an-address', email_verified: true }), null);
+    assert.equal(verifiedEmailOf(null), null);
+});

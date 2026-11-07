@@ -33,22 +33,22 @@ test('resolveOutlookUserInfo()', async t => {
     await t.test('a back-channel address wins over client_info for the account email', () => {
         const userInfo = resolveOutlookUserInfo({
             clientInfo: { preferred_username: 'spoofed@example.com' },
-            idTokenPayload: { email: 'real@example.com', preferred_username: 'real@example.onmicrosoft.com' }
+            idTokenPayload: { email: 'real@example.com', xms_edov: true, preferred_username: 'real@example.onmicrosoft.com' }
         });
 
         assert.equal(userInfo.email, 'real@example.com');
         assert.deepEqual(userInfo.verifiedIdentities, ['real@example.com', 'real@example.onmicrosoft.com']);
     });
 
-    await t.test('falls back to client_info only when no back-channel source produced an address', () => {
-        // Legacy apps predating the User.Read scope: nothing but client_info is available. The fallback is
-        // kept so those setups still work, but the value stays out of verifiedIdentities, so a pinned
-        // account cannot be taken over through it - it just fails the check.
+    await t.test('never takes the account address from client_info, even when nothing else has one', () => {
+        // client_info used to fill the address in when no back-channel source had one, and the login
+        // fell back to that address, so the browser chose both. The name is still taken as a display
+        // hint.
         const userInfo = resolveOutlookUserInfo({
             clientInfo: { name: 'Legacy User', preferred_username: 'legacy@example.com' }
         });
 
-        assert.equal(userInfo.email, 'legacy@example.com');
+        assert.equal(userInfo.email, null);
         assert.equal(userInfo.name, 'Legacy User');
         assert.deepEqual(userInfo.verifiedIdentities, []);
         assert.equal(userInfo.username, null);
@@ -57,7 +57,8 @@ test('resolveOutlookUserInfo()', async t => {
     await t.test('offers both the mailbox address and the user principal name from the Graph profile', () => {
         // Either can be the stable identity for a tenant, and they routinely differ.
         const userInfo = resolveOutlookUserInfo({
-            profile: { displayName: 'Nyan Cat', mail: 'nyan@contoso.com', userPrincipalName: 'nyan@contoso.onmicrosoft.com' }
+            profile: { displayName: 'Nyan Cat', mail: 'nyan@contoso.com', userPrincipalName: 'nyan@contoso.onmicrosoft.com' },
+            verifiedDomains: ['contoso.com', 'contoso.onmicrosoft.com']
         });
 
         assert.equal(userInfo.name, 'Nyan Cat');
@@ -70,7 +71,8 @@ test('resolveOutlookUserInfo()', async t => {
         // username is what XOAUTH2 authenticates with, so it is passed through as-is. It is not offered as
         // identity evidence, because the comparison is against an email address.
         const userInfo = resolveOutlookUserInfo({
-            profile: { mail: 'nyan@contoso.com', userPrincipalName: 'CONTOSO\\nyan' }
+            profile: { mail: 'nyan@contoso.com', userPrincipalName: 'CONTOSO\\nyan' },
+            verifiedDomains: ['contoso.com']
         });
 
         assert.equal(userInfo.username, 'CONTOSO\\nyan');
@@ -96,6 +98,49 @@ test('resolveOutlookUserInfo()', async t => {
         assert.deepEqual(userInfo.verifiedIdentities, []);
     });
 
+    // Entra ID lets a tenant administrator set `mail` to any address, in a domain the tenant never
+    // verified, and Graph returns it unchanged (confirmed against a real tenant on 2026-11-07). Such an
+    // address used to sort first in verifiedIdentities, so it satisfied an expectedEmail pin for an
+    // address its holder does not own and became the account's address.
+    await t.test('a mailbox address in a domain the tenant has not verified is not evidence', () => {
+        const userInfo = resolveOutlookUserInfo({
+            profile: { mail: 'victim@victim-corp.com', userPrincipalName: 'attacker@attacker.onmicrosoft.com' },
+            verifiedDomains: ['attacker.onmicrosoft.com']
+        });
+
+        assert.deepEqual(userInfo.verifiedIdentities, ['attacker@attacker.onmicrosoft.com']);
+        assert.equal(userInfo.email, 'attacker@attacker.onmicrosoft.com');
+        assert.equal(userInfo.username, 'attacker@attacker.onmicrosoft.com');
+    });
+
+    await t.test('without the tenant domain list only the user principal name domain vouches', () => {
+        assert.deepEqual(resolveOutlookUserInfo({ profile: { mail: 'Nyan@Contoso.com', userPrincipalName: 'nyan@contoso.com' } }).verifiedIdentities, [
+            'Nyan@Contoso.com',
+            'nyan@contoso.com'
+        ]);
+        assert.deepEqual(
+            resolveOutlookUserInfo({ profile: { mail: 'nyan@contoso.com', userPrincipalName: 'nyan@contoso.onmicrosoft.com' } }).verifiedIdentities,
+            ['nyan@contoso.onmicrosoft.com']
+        );
+    });
+
+    await t.test('an id_token email counts in the user principal name domain or with xms_edov', () => {
+        const spoofed = resolveOutlookUserInfo({
+            idTokenPayload: { email: 'victim@victim-corp.com', preferred_username: 'attacker@attacker.onmicrosoft.com' }
+        });
+        assert.deepEqual(spoofed.verifiedIdentities, ['attacker@attacker.onmicrosoft.com']);
+
+        const unverified = resolveOutlookUserInfo({
+            idTokenPayload: { email: 'victim@victim-corp.com', xms_edov: false, preferred_username: 'attacker@attacker.onmicrosoft.com' }
+        });
+        assert.deepEqual(unverified.verifiedIdentities, ['attacker@attacker.onmicrosoft.com']);
+
+        const marked = resolveOutlookUserInfo({
+            idTokenPayload: { email: 'nyan@contoso.com', xms_edov: true, preferred_username: 'nyan@contoso.onmicrosoft.com' }
+        });
+        assert.deepEqual(marked.verifiedIdentities, ['nyan@contoso.com', 'nyan@contoso.onmicrosoft.com']);
+    });
+
     await t.test('tolerates missing and malformed input', () => {
         for (const sources of [undefined, {}, { clientInfo: null, idTokenPayload: null, profile: null }, { profile: 'nope' }]) {
             const userInfo = resolveOutlookUserInfo(sources);
@@ -103,5 +148,36 @@ test('resolveOutlookUserInfo()', async t => {
             assert.equal(userInfo.username, null);
             assert.deepEqual(userInfo.verifiedIdentities, []);
         }
+    });
+});
+
+test('readTenantVerifiedDomains()', async t => {
+    const { readTenantVerifiedDomains } = require('../lib/oauth/outlook-identity');
+    const logger = { warn() {} };
+    const client = response => ({
+        apiBase: 'https://graph.microsoft.com',
+        async request(token, url) {
+            assert.equal(token, 'access-token');
+            assert.equal(url, 'https://graph.microsoft.com/v1.0/organization?$select=verifiedDomains');
+            if (response instanceof Error) {
+                throw response;
+            }
+            return response;
+        }
+    });
+
+    await t.test('lists the domain names of every organization returned', async () => {
+        const domains = await readTenantVerifiedDomains(
+            client({ value: [{ verifiedDomains: [{ name: 'contoso.com' }, { name: 'contoso.onmicrosoft.com' }, {}] }] }),
+            'access-token',
+            logger
+        );
+        assert.deepEqual(domains, ['contoso.com', 'contoso.onmicrosoft.com']);
+    });
+
+    await t.test('a failed or empty answer yields no domains, so only the login domain vouches', async () => {
+        assert.deepEqual(await readTenantVerifiedDomains(client(new Error('Forbidden')), 'access-token', logger), []);
+        assert.deepEqual(await readTenantVerifiedDomains(client({ value: [] }), 'access-token', logger), []);
+        assert.deepEqual(await readTenantVerifiedDomains(client(null), 'access-token', logger), []);
     });
 });
