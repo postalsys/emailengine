@@ -6,14 +6,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const {
-    messageWebSafeHtml,
-    webSafeTextResponse,
-    applyWebSafeHtmlOptions,
-    collapseThreadHistory,
-    fitsWebSafeHtml,
-    WEB_SAFE_HTML_MAX_INPUT
-} = require('../lib/web-safe-html');
+const { messageWebSafeHtml, webSafeTextResponse, applyWebSafeHtmlOptions, collapseThreadHistory, WEB_SAFE_HTML_MAX_INPUT } = require('../lib/web-safe-html');
 const { COLLAPSE_CLASS, COLLAPSE_TOGGLE_CLASS } = require('../lib/consts');
 const exitWhenStandalone = require('./helpers/exit-standalone');
 
@@ -444,21 +437,16 @@ test('webSafeHtml option expansion', async t => {
     });
 });
 
-// The conversion was bounded only by notifyTextSize, which an operator can clear, and a large body
-// stalled or killed the shared worker, again after every restart
-test('fitsWebSafeHtml() bounds the body a notification converts', () => {
-    assert.equal(fitsWebSafeHtml({ html: '<p>hi</p>', plain: 'hi' }), true);
-    assert.equal(fitsWebSafeHtml({ html: 'x'.repeat(WEB_SAFE_HTML_MAX_INPUT) }), true);
-    assert.equal(fitsWebSafeHtml({ html: 'x'.repeat(WEB_SAFE_HTML_MAX_INPUT), plain: 'y' }), false);
-    assert.equal(fitsWebSafeHtml({}), true);
-});
-
 // The cap sits in messageWebSafeHtml() itself, so an API fetch with webSafeHtml and the MCP tools
 // are bounded too, not only the webhook
 test('a body over the limit renders as escaped plain text without being parsed', async () => {
     const html = `<p><script>alert(1)</script>${'x'.repeat(WEB_SAFE_HTML_MAX_INPUT)}</p>`;
     const rendered = await messageWebSafeHtml({ text: { html, plain: '<b>plain</b> body' } });
     assert.equal(rendered, '<div style="white-space: pre-wrap">&lt;b&gt;plain&lt;/b&gt; body</div>');
+
+    // the limit counts both parts together
+    const atLimit = await messageWebSafeHtml({ text: { html: '<p>x</p>', plain: 'y'.repeat(WEB_SAFE_HTML_MAX_INPUT - 8) } });
+    assert.ok(!atLimit.startsWith('<div style="white-space: pre-wrap">'), 'a body at the limit is still converted');
 
     const noPlain = await messageWebSafeHtml({ text: { html } });
     assert.ok(!noPlain.includes('<script'));
