@@ -66,7 +66,8 @@ const Accept = require('@hapi/accept');
 const pathlib = require('path');
 
 const crypto = require('crypto');
-const { registeredPublishers, openChangeStream } = require('../lib/response-stream');
+const { registeredPublishers, openChangeStream, recheckChangeStreams } = require('../lib/response-stream');
+const { onRevocation } = require('../lib/revocation-events');
 const { oauth2Apps } = require('../lib/oauth2-apps');
 const { decodeJwtPayload } = require('../lib/oauth/decode-jwt-payload');
 const { resolveOutlookUserInfo, readTenantVerifiedDomains } = require('../lib/oauth/outlook-identity');
@@ -209,6 +210,9 @@ const USE_OKTA_AUTH = !!(OKTA_OAUTH2_ISSUER && OKTA_OAUTH2_CLIENT_ID && OKTA_OAU
 const USE_OIDC_AUTH = sso.USE_OIDC_AUTH;
 const oidcAllowList = sso.parseAllowList(sso.OIDC_ALLOWED_USERS);
 const oidcAllowGroups = sso.parseGroupList(sso.OIDC_ALLOWED_GROUPS);
+
+// Bound to this instance's allow-lists; see sso.ssoSessionAdmitted()
+const ssoSessionAdmitted = session => sso.ssoSessionAdmitted(session, oidcAllowList, oidcAllowGroups);
 
 const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const MAX_ATTACHMENT_SIZE = getByteSize(readEnvValue('EENGINE_MAX_SIZE') || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
@@ -801,6 +805,7 @@ function registerApiTokenAuth(server) {
             redis,
             checkRateLimit,
             sessionPasswordVersion,
+            sessionAdmitted: ssoSessionAdmitted,
             adminAccessAddresses: ADMIN_ACCESS_ADDRESSES,
             logger
         })
@@ -877,34 +882,24 @@ async function registerSessionAuth(server) {
             switch (session.provider) {
                 case 'okta':
                 case 'oidc': {
-                    if (session.profile && session.profile.id) {
-                        let profile = session.profile;
-
-                        // Re-check OIDC authorization (email + group allow-lists) on every request
-                        // so changes to OIDC_ALLOWED_USERS/OIDC_ALLOWED_GROUPS (after a restart)
-                        // take effect without waiting out the existing session cookie. Okta has no
-                        // allow-list.
-                        if (session.provider === 'oidc' && !sso.isAuthorized(profile, oidcAllowList, oidcAllowGroups)) {
-                            return { isValid: false };
-                        }
-
-                        return {
-                            isValid: true,
-                            credentials: {
-                                enabled: true,
-                                user: profile.username
-                            },
-                            // Expose the SSO provider on artifacts so the "SSO users can't manage
-                            // local password/TOTP/passkeys" guards in the UI routes fire. idToken is
-                            // carried for OIDC RP-initiated logout (undefined for Okta).
-                            artifacts: {
-                                provider: session.provider,
-                                profile,
-                                idToken: session.idToken
-                            }
-                        };
+                    if (!ssoSessionAdmitted(session)) {
+                        return { isValid: false };
                     }
-                    return { isValid: false };
+                    return {
+                        isValid: true,
+                        credentials: {
+                            enabled: true,
+                            user: session.profile.username
+                        },
+                        // Expose the SSO provider on artifacts so the "SSO users can't manage
+                        // local password/TOTP/passkeys" guards in the UI routes fire. idToken is
+                        // carried for OIDC RP-initiated logout (undefined for Okta).
+                        artifacts: {
+                            provider: session.provider,
+                            profile: session.profile,
+                            idToken: session.idToken
+                        }
+                    };
                 }
             }
 
@@ -3201,6 +3196,13 @@ const init = async () => {
     registerOpenApiRoute(server, openApiOptions);
 
     registerRequestEvents(server);
+
+    // A revoked token, a deleted account or a changed session ends the change streams and MCP
+    // listen streams it opened now rather than at their next periodic re-check
+    onRevocation(() => {
+        recheckChangeStreams().catch(err => logger.error({ msg: 'Change stream re-check failed', err }));
+        mcpListen.recheckListenStreams().catch(err => logger.error({ msg: 'MCP listen stream re-check failed', err }));
+    });
 
     registerStaticPageRoutes(server);
     registerStaticFilesRoute(server);

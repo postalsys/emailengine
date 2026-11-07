@@ -373,3 +373,24 @@ test('retryDiscovery', async t => {
         assert.ok(Date.now() - started >= 50, 'expected the first probe to be delayed');
     });
 });
+
+test('ssoSessionAdmitted', async t => {
+    const allowList = sso.parseAllowList('allowed@example.com');
+    const allowGroups = sso.parseGroupList('');
+
+    await t.test('a local session is admitted', () => {
+        assert.equal(sso.ssoSessionAdmitted({ user: 'admin' }, allowList, allowGroups), true);
+        assert.equal(sso.ssoSessionAdmitted(undefined, allowList, allowGroups), true);
+    });
+
+    await t.test('an OIDC session is admitted only while the allow-list admits its user', () => {
+        assert.equal(sso.ssoSessionAdmitted({ provider: 'oidc', profile: { id: 'u1', email: 'allowed@example.com' } }, allowList, allowGroups), true);
+        assert.equal(sso.ssoSessionAdmitted({ provider: 'oidc', profile: { id: 'u2', email: 'removed@example.com' } }, allowList, allowGroups), false);
+    });
+
+    await t.test('an SSO session without a profile id is not admitted', () => {
+        assert.equal(sso.ssoSessionAdmitted({ provider: 'oidc', profile: { email: 'allowed@example.com' } }, allowList, allowGroups), false);
+        assert.equal(sso.ssoSessionAdmitted({ provider: 'okta', profile: {} }, allowList, allowGroups), false);
+        assert.equal(sso.ssoSessionAdmitted({ provider: 'okta', profile: { id: 'o1' } }, allowList, allowGroups), true);
+    });
+});

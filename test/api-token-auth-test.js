@@ -44,6 +44,7 @@ function makeDeps(overrides = {}) {
             return overrides.rateLimit || { success: true, allowed, count: 1, ttl: 30 };
         },
         sessionPasswordVersion: async () => overrides.passwordVersion || 0,
+        sessionAdmitted: overrides.sessionAdmitted || (() => true),
         adminAccessAddresses: overrides.adminAccessAddresses || null,
         logger: createMockLogger()
     };
@@ -115,6 +116,16 @@ test('api-token strategy decision', async t => {
         assert.equal(audit.allowed.length, 1);
         assert.equal(audit.allowed[0].account, 'acc1');
         assert.equal(audit.denied.length, 0);
+    });
+
+    // An open change stream re-checks its token every minute; that is not a use of the token
+    await t.test('a re-check of an open stream records no audit row and spends no rate limit', async () => {
+        const tokenData = { id: 't1', scopes: ['api'], restrictions: { rateLimit: { maxRequests: 10, timeWindow: 60 } } };
+        const { validate, audit, state } = makeDeps({ tokens: { tok: tokenData } });
+        const result = await validate(messagesRequest({ app: { authRecheck: true } }), 'tok');
+        assert.equal(result.isValid, true);
+        assert.equal(audit.allowed.length, 0);
+        assert.equal(state.rateLimitCalls.length, 0);
     });
 
     await t.test('a token without the route scope is refused', async () => {
@@ -267,6 +278,22 @@ test('api-token strategy decision', async t => {
     await t.test('a session token of an ended session is refused', async () => {
         const { validate } = makeDeps({ sessionTokenValid: true, passwordVersion: 5 });
         await rejects(validate(messagesRequest({ state: { ee: { sid: 'sid1', passwordVersion: 4 } } }), 'sess_abc'), 401, 'Session has ended');
+    });
+
+    // The cookie strategy re-checks the OIDC allow-list on every request; the sess_ token riding the
+    // same cookie skipped it and kept reading, changing and sending mail for a removed user
+    await t.test('a session token of an SSO user the allow-list no longer admits is refused', async () => {
+        const seen = [];
+        const { validate } = makeDeps({
+            sessionTokenValid: true,
+            sessionAdmitted: session => {
+                seen.push(session);
+                return false;
+            }
+        });
+        const session = { sid: 'sid1', provider: 'oidc', profile: { id: 'u1', email: 'removed@example.com' } };
+        await rejects(validate(messagesRequest({ state: { ee: session } }), 'sess_abc'), 401, 'Session has ended');
+        assert.deepEqual(seen, [session]);
     });
 
     await t.test('an invalid session token falls through to the token store', async () => {

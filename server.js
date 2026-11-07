@@ -65,6 +65,7 @@ if (Number(process.versions.node.split('.')[0]) < 20) {
 // their own but not the Node they run on, and an instance that works today must not stop at its next
 // self-upgrade over a minor version it may never exercise.
 const { accountDataKey } = require('./lib/redis-keys');
+const { importPreparedPassword } = require('./lib/prepared-password');
 const { MIN_SUPPORTED_NODE, isBelowSupportedNode } = require('./lib/node-version');
 if (isBelowSupportedNode(process.versions.node)) {
     console.error(
@@ -3737,22 +3738,7 @@ const importPreparedCredentials = async () => {
     // Import prepared password
     if (preparedPassword) {
         try {
-            let authData = await settings.get('authData');
-
-            // Written only when the stored hash differs: passwordVersion is what every admin
-            // session and message-browser token is checked against, so rewriting the same hash
-            // on each boot would log every operator out at every restart
-            if (!authData || authData.password !== preparedPassword) {
-                authData = authData || {};
-                authData.user = authData.user || 'admin';
-                authData.password = preparedPassword;
-                authData.passwordVersion = Date.now();
-
-                await settings.set('authData', authData);
-                logger.debug({ msg: 'Password imported' });
-            } else {
-                logger.debug({ msg: 'Password already imported' });
-            }
+            await importPreparedPassword(preparedPassword, { settings, passkeys: require('./lib/passkeys'), logger });
         } catch (err) {
             logger.error({ msg: 'Password import failed', err });
         }

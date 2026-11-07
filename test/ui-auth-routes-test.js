@@ -418,4 +418,31 @@ test('admin sign-in routes', async t => {
             passkeys.consumeChallenge = originalConsume;
         }
     });
+
+    // The options step checked the password under the per-address limit alone, so a hijacked
+    // session could guess it from as many addresses as it had. It now charges the same per-account
+    // budget as the verify step, the password change and switching the second factor off.
+    await t.test('passkey registration options charge the per-account password budget', async () => {
+        const originalRp = passkeys.getRpConfig;
+        const originalList = passkeys.listCredentials;
+        passkeys.getRpConfig = async () => ({ rpId: 'localhost', origin: 'http://localhost:3000' });
+        passkeys.listCredentials = async () => [];
+        try {
+            stored.authData = { user: 'admin', password: await pbkdf2.hash('the-password', { iterations: 1000 }), passwordVersion: 1 };
+            const options = route('POST', '/admin/account/passkeys/register/options');
+
+            const charged = [];
+            const h = makeToolkit();
+            h.checkRateLimit = async key => {
+                charged.push(key);
+                return { success: !key.startsWith('password:verify:') };
+            };
+            const res = await options.handler(makeRequest({ user: 'admin', payload: { password: 'wrong-password' }, artifacts: { requireTotp: false } }), h);
+            assert.ok(charged.includes('password:verify:admin'), 'the per-account budget is charged');
+            assert.equal(res.statusCode, 429, 'a spent per-account budget refuses the guess');
+        } finally {
+            passkeys.getRpConfig = originalRp;
+            passkeys.listCredentials = originalList;
+        }
+    });
 });
