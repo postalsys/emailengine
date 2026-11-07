@@ -22,6 +22,7 @@ const pathlib = require('path');
 const settings = require('../lib/settings');
 const { checkLicense } = require('../lib/tools');
 const pbkdf2 = require('../lib/pbkdf2-phc');
+const { setAdminPassword } = require('../lib/admin-password');
 const { generateWebhookTable } = require('../lib/consts');
 const { Account } = require('../lib/account');
 const getSecret = require('../lib/get-secret');
@@ -390,19 +391,14 @@ function runPassword() {
     let updatePassword = async () => {
         let passwordHash = await pbkdf2.hash(password);
 
-        let authData = await settings.get('authData');
-
-        authData = authData || {};
-        authData.user = authData.user || 'admin';
-        authData.password = passwordHash;
-        authData.passwordVersion = Date.now();
-
-        await settings.set('authData', authData);
+        // Stores the hash, ends every session and removes the passkeys
+        await setAdminPassword(passwordHash, {
+            settings,
+            passkeys: require('../lib/passkeys'),
+            logger: { info() {}, error: entry => console.error(entry.msg, entry.err ? entry.err.message : '') }
+        });
         await settings.set('totpEnabled', false);
         await settings.set('totpSeed', false);
-
-        let passkeys = require('../lib/passkeys');
-        await passkeys.deleteAllCredentials(authData.user);
 
         return { password, passwordHash };
     };
