@@ -124,6 +124,8 @@ function resolveConst(name, env) {
     const stdout = execFileSync(process.execPath, ['-e', CONSTS_SCRIPT], {
         cwd: ROOT,
         encoding: 'utf-8',
+        // both streams captured, so a probe that fails to load reports why on the thrown error
+        stdio: ['ignore', 'pipe', 'pipe'],
         env: Object.assign(
             {
                 PATH: process.env.PATH,
@@ -174,10 +176,22 @@ test('lib/consts.js variables honor the file form', async t => {
         assert.equal(value, '');
     });
 
-    await t.test('an unreadable file is reported and leaves the default', () => {
-        const { value, records } = resolveConst('URL_FETCH_TIMEOUT', { EENGINE_FETCH_TIMEOUT_FILE: pathlib.join(dir, 'missing.txt') });
-        assert.equal(value, 90 * 1000);
-        assert.ok(records.some(entry => entry.level >= 50 && entry.key === 'EENGINE_FETCH_TIMEOUT'));
+    await t.test('an unreadable file stops the process instead of leaving the default', () => {
+        // It used to resolve to '' and so to the default: a missing admin password hash file
+        // booted with /admin open. A file the operator named and that can not be read now fails
+        // the load, naming the variable and the file.
+        const missing = pathlib.join(dir, 'missing.txt');
+        assert.throws(
+            () => resolveConst('URL_FETCH_TIMEOUT', { EENGINE_FETCH_TIMEOUT_FILE: missing }),
+            err => {
+                // the logger's uncaughtException handler writes the report to stdout
+                const output = `${err.stdout}${err.stderr}`;
+                assert.notEqual(err.status, 0);
+                assert.match(output, /Can not read EENGINE_FETCH_TIMEOUT_FILE/);
+                assert.ok(output.includes(missing));
+                return true;
+            }
+        );
     });
 });
 
@@ -190,4 +204,55 @@ test('the logger does not load lib/consts.js, so reading an environment value ca
         { cwd: ROOT, encoding: 'utf-8', env: Object.assign({}, process.env, { EE_ENV_LOADED: 'true' }) }
     );
     assert.deepEqual(JSON.parse(loaded), []);
+});
+
+// An unreadable file used to resolve to '', which every reader takes for "not configured": a
+// missing EENGINE_PREPARED_PASSWORD_FILE booted the instance with /admin open. It now throws, and
+// server.js resolves every file variable before anything else so the boot stops by name.
+test('an unreadable file fails closed', async t => {
+    const { readEnvValue, resolveEnvFiles } = require('../lib/read-env-value');
+    const dir = fs.mkdtempSync(pathlib.join(os.tmpdir(), 'ee-env-'));
+    const missing = pathlib.join(dir, 'admin-password-hash');
+    const keys = ['EENGINE_PREPARED_PASSWORD', 'EENGINE_ADMIN_ACCESS_ADDRESSES'];
+    const saved = {};
+    for (const key of keys) {
+        for (const name of [key, `${key}_FILE`]) {
+            saved[name] = process.env[name];
+            delete process.env[name];
+        }
+    }
+    t.after(() => {
+        for (const [name, value] of Object.entries(saved)) {
+            if (value === undefined) {
+                delete process.env[name];
+            } else {
+                process.env[name] = value;
+            }
+        }
+        fs.rmSync(dir, { recursive: true, force: true });
+    });
+
+    await t.test('readEnvValue throws instead of resolving to an empty value', () => {
+        process.env.EENGINE_PREPARED_PASSWORD_FILE = missing;
+        assert.throws(
+            () => readEnvValue('EENGINE_PREPARED_PASSWORD'),
+            err => err.code === 'EnvFileUnreadable' && err.key === 'EENGINE_PREPARED_PASSWORD' && err.message.includes(missing)
+        );
+        // nothing is cached, so every later read refuses too
+        assert.equal('EENGINE_PREPARED_PASSWORD' in process.env, false);
+        assert.throws(() => readEnvValue('EENGINE_PREPARED_PASSWORD'), { code: 'EnvFileUnreadable' });
+        delete process.env.EENGINE_PREPARED_PASSWORD_FILE;
+    });
+
+    await t.test('resolveEnvFiles reads every file variable up front', () => {
+        const file = pathlib.join(dir, 'perimeter');
+        fs.writeFileSync(file, '10.0.0.0/8\n');
+        process.env.EENGINE_ADMIN_ACCESS_ADDRESSES_FILE = file;
+        resolveEnvFiles();
+        assert.equal(process.env.EENGINE_ADMIN_ACCESS_ADDRESSES, '10.0.0.0/8');
+
+        process.env.EENGINE_PREPARED_PASSWORD_FILE = missing;
+        assert.throws(() => resolveEnvFiles(), { code: 'EnvFileUnreadable' });
+        delete process.env.EENGINE_PREPARED_PASSWORD_FILE;
+    });
 });

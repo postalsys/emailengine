@@ -5,7 +5,9 @@ configuration file key (see `config/default.toml`); the environment variable win
 
 Any variable can also be read from a file: set `<NAME>_FILE` to the path of a file holding the
 value (the Docker and Kubernetes secrets convention). Surrounding whitespace in the file is
-trimmed, and a variable set directly wins over its `_FILE` form.
+trimmed, and a variable set directly wins over its `_FILE` form. A `_FILE` path that can not be
+read stops EmailEngine at startup with the variable and the path named, rather than running as if
+the value were not set.
 
 Durations take a number with a unit (`30s`, `10m`, `1h`, `7d`) or plain milliseconds unless the
 entry says otherwise. Sizes take a number with a unit (`5MB`, `1GB`) or plain bytes.
@@ -14,28 +16,29 @@ entry says otherwise. Sizes take a number with a unit (`5MB`, `1GB`) or plain by
 
 ## Core
 
-| Variable                          | Default                    | Description                                                                                                                        |
-| --------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `EENGINE_REDIS`                   | `redis://127.0.0.1:6379/8` | Redis connection URI. `REDIS_URL` is read when this is unset.                                                                      |
-| `EENGINE_REDIS_PREFIX`            | none                       | Prefix for every Redis key, so several instances can share one database.                                                           |
-| `EENGINE_SECRET`                  | none                       | Encryption secret for stored credentials. Changing it makes stored credentials unreadable; use `emailengine encrypt` to rotate.    |
-| `EENGINE_PORT`                    | `3000`                     | API and admin UI port. `PORT` is read when this is unset.                                                                          |
-| `EENGINE_HOST`                    | `127.0.0.1`                | API and admin UI bind address.                                                                                                     |
-| `EENGINE_TIMEOUT`                 | `10s`                      | How long an API request waits for a worker to answer (duration).                                                                   |
-| `EENGINE_LOG_LEVEL`               | `trace`                    | Logging level.                                                                                                                     |
-| `EENGINE_LOG_RAW`                 | `false`                    | Log raw IMAP and SMTP protocol traffic. Credentials are masked either way.                                                         |
-| `EENGINE_SETTINGS`                | none                       | JSON object of settings, re-applied on every start. A value saved in the admin UI for one of its keys reverts at the next restart. |
-| `EENGINE_PREPARED_TOKEN`          | none                       | A base64url msgpack-encoded API token to provision at start.                                                                       |
-| `EENGINE_PREPARED_PASSWORD`       | none                       | A base64url PBKDF2 admin password hash to apply at start. Writing a different hash ends every admin session.                       |
-| `EENGINE_PREPARED_LICENSE`        | none                       | A license key to apply at start.                                                                                                   |
-| `EENGINE_REQUIRE_API_AUTH`        | none                       | Initial value for whether API requests need an access token (`true`/`false`), used when the setting has never been saved.          |
-| `EENGINE_ENABLE_OAUTH_TOKENS_API` | none                       | Initial value for the setting that allows the OAuth2 access token API, used when it has never been saved.                          |
-| `EENGINE_CONNECTION_SETUP_DELAY`  | `0`                        | Pause between two account assignments while accounts are handed to workers, to spread the connection load at start (duration).     |
-| `EENGINE_UPDATE_CHECK_DISABLED`   | `false`                    | Stop checking for new EmailEngine releases.                                                                                        |
-| `EENGINE_BEACON_DISABLED`         | `false`                    | Opt out of the anonymized feature-usage diagnostics sent with license validation. License validation itself is unaffected.         |
-| `EENGINE_DISABLE_SETUP_WARNINGS`  | `false`                    | Hide the setup warning banners in the admin UI.                                                                                    |
-| `EENGINE_DOCEAN`                  | none                       | Set by the DigitalOcean one-click image; adjusts the dashboard and diagnostics. Not for manual use.                                |
-| `EENGINE_INSTALL_SCRIPT`          | none                       | Set by the install script; adjusts the dashboard and diagnostics. Not for manual use.                                              |
+| Variable                                | Default                    | Description                                                                                                                                                                                                 |
+| --------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `EENGINE_REDIS`                         | `redis://127.0.0.1:6379/8` | Redis connection URI. `REDIS_URL` is read when this is unset.                                                                                                                                               |
+| `EENGINE_REDIS_TLS_REJECT_UNAUTHORIZED` | `true`                     | Set to `false` to accept a Redis server certificate no CA signed, for managed services such as the Heroku Redis add-on. Applies to a `rediss://` connection only; every other connection is still verified. |
+| `EENGINE_REDIS_PREFIX`                  | none                       | Prefix for every Redis key, so several instances can share one database.                                                                                                                                    |
+| `EENGINE_SECRET`                        | none                       | Encryption secret for stored credentials. Changing it makes stored credentials unreadable; use `emailengine encrypt` to rotate.                                                                             |
+| `EENGINE_PORT`                          | `3000`                     | API and admin UI port. `PORT` is read when this is unset.                                                                                                                                                   |
+| `EENGINE_HOST`                          | `127.0.0.1`                | API and admin UI bind address.                                                                                                                                                                              |
+| `EENGINE_TIMEOUT`                       | `10s`                      | How long an API request waits for a worker to answer (duration).                                                                                                                                            |
+| `EENGINE_LOG_LEVEL`                     | `trace`                    | Logging level.                                                                                                                                                                                              |
+| `EENGINE_LOG_RAW`                       | `false`                    | Log raw IMAP and SMTP protocol traffic. Credentials are masked either way.                                                                                                                                  |
+| `EENGINE_SETTINGS`                      | none                       | JSON object of settings, re-applied on every start. A value saved in the admin UI for one of its keys reverts at the next restart.                                                                          |
+| `EENGINE_PREPARED_TOKEN`                | none                       | A base64url msgpack-encoded API token to provision at start.                                                                                                                                                |
+| `EENGINE_PREPARED_PASSWORD`             | none                       | A base64url PBKDF2 admin password hash to apply at start. Writing a different hash ends every admin session.                                                                                                |
+| `EENGINE_PREPARED_LICENSE`              | none                       | A license key to apply at start.                                                                                                                                                                            |
+| `EENGINE_REQUIRE_API_AUTH`              | none                       | Initial value for whether API requests need an access token (`true`/`false`), used when the setting has never been saved.                                                                                   |
+| `EENGINE_ENABLE_OAUTH_TOKENS_API`       | none                       | Initial value for the setting that allows the OAuth2 access token API, used when it has never been saved.                                                                                                   |
+| `EENGINE_CONNECTION_SETUP_DELAY`        | `0`                        | Pause between two account assignments while accounts are handed to workers, to spread the connection load at start (duration).                                                                              |
+| `EENGINE_UPDATE_CHECK_DISABLED`         | `false`                    | Stop checking for new EmailEngine releases.                                                                                                                                                                 |
+| `EENGINE_BEACON_DISABLED`               | `false`                    | Opt out of the anonymized feature-usage diagnostics sent with license validation. License validation itself is unaffected.                                                                                  |
+| `EENGINE_DISABLE_SETUP_WARNINGS`        | `false`                    | Hide the setup warning banners in the admin UI.                                                                                                                                                             |
+| `EENGINE_DOCEAN`                        | none                       | Set by the DigitalOcean one-click image; adjusts the dashboard and diagnostics. Not for manual use.                                                                                                         |
+| `EENGINE_INSTALL_SCRIPT`                | none                       | Set by the install script; adjusts the dashboard and diagnostics. Not for manual use.                                                                                                                       |
 
 ## Workers and queues
 

@@ -23,6 +23,8 @@ const REDIS_CONF = Object.assign(
     typeof redisConf === 'string' ? redisUrl(redisConf) : redisConf || {}
 );
 
+redisUrl.applyRedisTlsSwitch(REDIS_CONF);
+
 const redis = new Redis(REDIS_CONF);
 
 const MAX_PAGE = 1000;

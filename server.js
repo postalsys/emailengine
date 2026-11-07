@@ -40,6 +40,16 @@ if (!process.env.EE_ENV_LOADED) {
 // Set process title for easier identification in process lists
 process.title = 'emailengine';
 
+// Every EENGINE_*_FILE is read now: a file the operator named and the process can not read stops
+// the boot here, once and by name, rather than resolving to an empty value (which every reader
+// takes for "not configured") or crashing each worker thread that reads it later.
+try {
+    require('./lib/read-env-value').resolveEnvFiles();
+} catch (err) {
+    console.error(err.message);
+    process.exit(1);
+}
+
 // EmailEngine and its dependencies need Node 20 or newer. Checked before anything is required, so an
 // older runtime gets this line instead of a syntax error from a dependency. The check used to be a
 // structuredClone probe, which only caught Node 16 and older.
