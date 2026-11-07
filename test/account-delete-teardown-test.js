@@ -209,31 +209,53 @@ test('Account.getStoredField() decodes one field the way the full load does', as
 
 // The exports of a deleted account used to stay for their whole retention window, still
 // downloadable by an instance-wide credential, and an account registered again under the same id
-// inherited them.
-test('account delete removes the account exports and their files', async () => {
-    const { Export, generateExportId, getExportKey, exportFilePath } = require('../lib/export');
+// inherited them. Exports are found through a per-account index, which a startup backfill fills for
+// the exports created before it existed.
+test('account delete removes the account exports and their files, including exports made before the index', async () => {
+    const { Export, generateExportId, getExportKey, getExportIndexKey, exportFilePath, backfillExportIndex } = require('../lib/export');
     const account = await storeAccount();
     const other = await storeAccount();
     const accountObject = new Account({ account, redis, logger: createMockLogger(), timeout: 1000, call: async () => true });
 
-    const exportId = generateExportId();
-    const otherExportId = generateExportId();
+    const indexedId = generateExportId();
+    const legacyId = generateExportId();
+    const otherId = generateExportId();
     const dir = await fs.promises.mkdtemp(pathlib.join(os.tmpdir(), 'ee-export-'));
-    const filePath = exportFilePath(exportId, { filePath: pathlib.join(dir, 'placeholder') });
+    const filePath = exportFilePath(indexedId, { filePath: pathlib.join(dir, 'placeholder') });
     await fs.promises.writeFile(filePath, 'archive of the deleted account');
-    await redis.hmset(getExportKey(account, exportId), { exportId, account, status: 'completed', created: Date.now(), filePath });
-    await redis.hmset(getExportKey(other, otherExportId), { exportId: otherExportId, account: other, status: 'completed', created: Date.now() });
+    const record = (exportId, owner, extra) => Object.assign({ exportId, account: owner, status: 'completed', created: Date.now() }, extra);
 
+    await redis.hmset(getExportKey(account, indexedId), record(indexedId, account, { filePath }));
+    await redis.sadd(getExportIndexKey(account), indexedId);
+    // made before the index existed: only the backfill knows about it
+    await redis.hmset(getExportKey(account, legacyId), record(legacyId, account));
+    await redis.expire(getExportKey(account, legacyId), 3600);
+    await redis.hmset(getExportKey(other, otherId), record(otherId, other));
+    await redis.sadd(getExportIndexKey(other), otherId);
+
+    const { REDIS_PREFIX: prefix } = require('../lib/consts');
     try {
+        await redis.del(`${prefix}migration:exportIndex`);
+        assert.ok((await backfillExportIndex()) >= 1);
+        assert.equal(await redis.sismember(getExportIndexKey(account), legacyId), 1, 'the backfill indexes an export made before the index');
+        assert.equal(await backfillExportIndex(), 0, 'and runs once');
+
         assert.deepStrictEqual(await accountObject.delete(), { account, deleted: true });
 
-        assert.strictEqual(await redis.exists(getExportKey(account, exportId)), 0, 'the export record is gone');
+        for (const exportId of [indexedId, legacyId]) {
+            assert.strictEqual(await redis.exists(getExportKey(account, exportId)), 0, 'the export record is gone');
+        }
         assert.strictEqual(fs.existsSync(filePath), false, 'and so is its file');
+        assert.strictEqual(await redis.exists(getExportIndexKey(account)), 0, 'and the index');
         assert.deepStrictEqual((await Export.list(account)).exports, [], 'an account registered again under the id inherits nothing');
-        assert.strictEqual(await redis.exists(getExportKey(other, otherExportId)), 1, 'another account keeps its exports');
+        assert.strictEqual(await redis.exists(getExportKey(other, otherId)), 1, 'another account keeps its exports');
+        assert.deepStrictEqual(
+            (await Export.list(other)).exports.map(entry => entry.exportId),
+            [otherId]
+        );
     } finally {
         await fs.promises.rm(dir, { recursive: true, force: true });
-        await redis.del(getExportKey(other, otherExportId), `${REDIS_PREFIX}iad:${other}`);
+        await redis.del(getExportKey(other, otherId), getExportIndexKey(other), `${REDIS_PREFIX}iad:${other}`);
         await redis.srem(`${REDIS_PREFIX}ia:accounts`, other);
     }
 });

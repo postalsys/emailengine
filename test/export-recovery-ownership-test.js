@@ -196,9 +196,10 @@ test('Export.markInterruptedAsFailed() and live exports', async t => {
     await t.test('a cancelled export is cleaned up, unless a worker holds it', async () => {
         // Running a cancelled export's job would reset it to processing, so its waiting job is
         // removed; a worker already holding one sees the cancellation itself
+        // removed outright rather than kept as failed: a cancelled export was asked to go
         const waiting = await seedExport({ status: 'cancelled' });
         await Export.markInterruptedAsFailed();
-        assert.deepEqual(await snapshot(waiting), { status: 'failed', pending: 0, fileExists: false, jobState: null });
+        assert.deepEqual(await snapshot(waiting), { status: null, pending: 0, fileExists: false, jobState: null });
 
         const held = await seedExport({ status: 'cancelled' });
         const job = await takeJob('cancel-holder');

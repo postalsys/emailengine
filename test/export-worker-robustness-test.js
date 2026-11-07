@@ -271,3 +271,82 @@ test('Export.create() gives the concurrency slot back when a step after taking i
         await fs.promises.rm(dir, { recursive: true, force: true });
     }
 });
+
+// Account deletion and the export listing find an account's exports through a per-account index
+// instead of a scan of the whole keyspace, so creating and deleting an export has to keep it current
+test('Export.create() adds the export to the account index and Export.delete() removes it', async () => {
+    const { getExportIndexKey } = require('../lib/export');
+    const accountKey = `${REDIS_PREFIX}iad:${ACCOUNT}`;
+    createdKeys.add(accountKey);
+    createdKeys.add(getExportIndexKey(ACCOUNT));
+    await redis.hset(accountKey, 'account', ACCOUNT);
+
+    const dir = await fs.promises.mkdtemp(pathlib.join(os.tmpdir(), 'ee-export-index-'));
+    const previous = process.env.EENGINE_EXPORT_PATH;
+    process.env.EENGINE_EXPORT_PATH = dir;
+    let created;
+    try {
+        created = await Export.create(ACCOUNT, { folders: ['INBOX'], startDate: Date.now() - 1000, endDate: Date.now() });
+        createdKeys.add(getExportKey(ACCOUNT, created.exportId));
+        createdKeys.add(getExportQueueKey(ACCOUNT, created.exportId));
+        assert.deepStrictEqual(await redis.smembers(getExportIndexKey(ACCOUNT)), [created.exportId]);
+        // no expiry of its own: an export's retention restarts when it completes, and an index that
+        // expired with it first dropped an export that outlived it from account deletion
+        assert.strictEqual(await redis.ttl(getExportIndexKey(ACCOUNT)), -1);
+
+        // ids of records that expired are pruned when the index is read
+        await redis.sadd(getExportIndexKey(ACCOUNT), 'exp_expired000000000000000');
+        await Export.list(ACCOUNT);
+        assert.strictEqual(await redis.sismember(getExportIndexKey(ACCOUNT), 'exp_expired000000000000000'), 0);
+
+        assert.strictEqual(await Export.delete(ACCOUNT, created.exportId), true);
+        assert.deepStrictEqual(await redis.smembers(getExportIndexKey(ACCOUNT)), []);
+    } finally {
+        if (previous === undefined) {
+            delete process.env.EENGINE_EXPORT_PATH;
+        } else {
+            process.env.EENGINE_EXPORT_PATH = previous;
+        }
+        if (created) {
+            await redis.srem(ACTIVE_EXPORTS_KEY, buildActiveEntry(ACCOUNT, created.exportId));
+        }
+        await fs.promises.rm(dir, { recursive: true, force: true });
+    }
+});
+
+// Deleting a running export only marks it cancelled. A worker past its last cancellation check used
+// to finish it through complete() or fail(), and a restart turned it into a failed export, so the
+// record and the file of an export that was asked to go stayed for the whole retention window.
+for (const finish of ['complete', 'fail']) {
+    test(`a cancelled export that reaches ${finish}() is removed with its file and index entry`, async () => {
+        const { getExportIndexKey, exportFilePath } = require('../lib/export');
+        const exportId = generateExportId();
+        const dir = await fs.promises.mkdtemp(pathlib.join(os.tmpdir(), 'ee-export-cancelled-'));
+        const filePath = exportFilePath(exportId, { filePath: pathlib.join(dir, 'placeholder') });
+        await fs.promises.writeFile(filePath, 'partial archive');
+        createdKeys.add(getExportKey(ACCOUNT, exportId));
+        createdKeys.add(getExportIndexKey(ACCOUNT));
+        await redis.hmset(getExportKey(ACCOUNT, exportId), { exportId, account: ACCOUNT, status: 'cancelled', filePath });
+        await redis.sadd(getExportIndexKey(ACCOUNT), exportId);
+        try {
+            if (finish === 'complete') {
+                await Export.complete(ACCOUNT, exportId);
+            } else {
+                await Export.fail(ACCOUNT, exportId, 'boom');
+            }
+            assert.strictEqual(await redis.exists(getExportKey(ACCOUNT, exportId)), 0);
+            assert.strictEqual(fs.existsSync(filePath), false);
+            assert.strictEqual(await redis.sismember(getExportIndexKey(ACCOUNT), exportId), 0);
+        } finally {
+            await fs.promises.rm(dir, { recursive: true, force: true });
+        }
+    });
+}
+
+test('an export that was not cancelled still completes', async () => {
+    const exportId = generateExportId();
+    createdKeys.add(getExportKey(ACCOUNT, exportId));
+    await redis.hmset(getExportKey(ACCOUNT, exportId), { exportId, account: ACCOUNT, status: 'processing' });
+    await Export.complete(ACCOUNT, exportId);
+    assert.strictEqual(await redis.hget(getExportKey(ACCOUNT, exportId), 'status'), 'completed');
+});

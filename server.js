@@ -160,6 +160,7 @@ const { settingsSchema } = require('./lib/schemas');
 const settings = require('./lib/settings');
 const { oauth2Apps } = require('./lib/oauth2-apps');
 const { backfillAuthFailureDisabled } = require('./lib/account/auth-failure-backfill');
+const { backfillExportIndex } = require('./lib/export');
 const { sweepBounceStore } = require('./lib/account/bounce-store-sweep');
 const { attachBeacon, persistBeaconMarkers } = require('./lib/license-beacon');
 const tokens = require('./lib/tokens');
@@ -3546,6 +3547,14 @@ const runStartupMigrations = async () => {
         await backfillAuthFailureDisabled();
     } catch (err) {
         logger.error({ msg: 'Failed to backfill the auth-failure disable marker', err });
+    }
+
+    // Index the exports created before the per-account export index, so deleting an account removes
+    // them too. Not fatal: the completion key is written last, so the next startup re-enters
+    try {
+        await backfillExportIndex();
+    } catch (err) {
+        logger.error({ msg: 'Failed to backfill the export index', err });
     }
 
     // One-time delete of the store behind the retired `bounces` field; not fatal, the completion key is written last
