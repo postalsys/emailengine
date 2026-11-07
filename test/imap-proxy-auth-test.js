@@ -427,3 +427,64 @@ test('IMAP proxy refusal text does not reveal the shared password', async t => {
         assert.strictEqual(wrongPassword.responseStatus, unknownUser.responseStatus);
     });
 });
+
+// A proxied session used to be checked only at LOGIN, so it outlived every way of revoking what
+// opened it. recheck() is what the proxy now asks of each open session.
+test('IMAP proxy session recheck', async t => {
+    await t.test('a token session ends when the token is deleted', async () => {
+        await settings.set('imapProxyServerPassword', '');
+        const token = await tokens.provision({ account: ACCOUNT, scopes: ['imap-proxy'], description: 'recheck token', nolog: true });
+        const auth = { username: ACCOUNT, password: token };
+        await authenticate(auth, session());
+        assert.strictEqual(await authenticate.recheck(auth, session()), true);
+        await tokens.delete(token);
+        assert.strictEqual(await authenticate.recheck(auth, session()), false);
+    });
+
+    await t.test('a shared-password session ends when the password is rotated', async () => {
+        await settings.set('imapProxyServerPassword', 'first-proxy-pass');
+        try {
+            const auth = { username: ACCOUNT, password: 'first-proxy-pass' };
+            assert.strictEqual(await authenticate.recheck(auth, session()), true);
+            await settings.set('imapProxyServerPassword', 'second-proxy-pass');
+            assert.strictEqual(await authenticate.recheck(auth, session()), false);
+        } finally {
+            await settings.set('imapProxyServerPassword', '');
+        }
+    });
+
+    await t.test('a session ends when the account has IMAP switched off or is deleted', async () => {
+        const account = 'imap-proxy-recheck-acct';
+        await seedAccount(account, { imap: JSON.stringify({ host: 'imap.test', port: 993, secure: true }) });
+        const token = await tokens.provision({ account, scopes: ['imap-proxy'], description: 'recheck account', nolog: true });
+        const auth = { username: account, password: token };
+        try {
+            assert.strictEqual(await authenticate.recheck(auth, session()), true);
+
+            await redis.hset(`${REDIS_PREFIX}iad:${account}`, 'imap', JSON.stringify({ host: 'imap.test', port: 993, secure: true, disabled: true }));
+            assert.strictEqual(await authenticate.recheck(auth, session()), false);
+
+            await redis.hset(`${REDIS_PREFIX}iad:${account}`, 'imap', JSON.stringify({ host: 'imap.test', port: 993, secure: true }));
+            assert.strictEqual(await authenticate.recheck(auth, session()), true);
+
+            await redis.del(`${REDIS_PREFIX}iad:${account}`);
+            assert.strictEqual(await authenticate.recheck(auth, session()), false);
+        } finally {
+            await tokens.delete(token).catch(() => false);
+        }
+    });
+
+    await t.test('a recheck records no token use', async () => {
+        await settings.set('imapProxyServerPassword', '');
+        const token = await tokens.provision({ account: ACCOUNT, scopes: ['imap-proxy'], description: 'recheck no use', nolog: true });
+        try {
+            const tokenData = await tokens.get(token, false, { allowExpired: true });
+            const before = await tokens.getAccess(tokenData.id);
+            await authenticate.recheck({ username: ACCOUNT, password: token }, session({ remoteAddress: '198.51.100.77' }));
+            const after = await tokens.getAccess(tokenData.id);
+            assert.deepStrictEqual(after, before);
+        } finally {
+            await tokens.delete(token).catch(() => false);
+        }
+    });
+});

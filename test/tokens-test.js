@@ -13,20 +13,7 @@ const { redis } = require('../lib/db');
 const { REDIS_PREFIX } = require('../lib/consts');
 const exitWhenStandalone = require('./helpers/exit-standalone');
 
-// Polls until check() resolves truthy or the deadline passes, for cleanup that production code fires
-// without awaiting. A fixed sleep either wastes time or, on a loaded runner, is not long enough.
-async function waitUntil(check, timeoutMs = 2000) {
-    const deadline = Date.now() + timeoutMs;
-    for (;;) {
-        if (await check()) {
-            return true;
-        }
-        if (Date.now() > deadline) {
-            return false;
-        }
-        await new Promise(resolve => setTimeout(resolve, 20));
-    }
-}
+const waitUntil = require('./helpers/wait-until');
 
 test('Token management tests', async t => {
     // Track created tokens for cleanup

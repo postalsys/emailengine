@@ -21,6 +21,7 @@ const { IMAPServer, imapHandler } = require('../lib/imapproxy/imap-core/index.js
 const { IMAPCommand } = require('../lib/imapproxy/imap-core/lib/imap-command');
 const { MAX_NESTING_DEPTH } = require('../lib/imapproxy/imap-core/lib/handler/imap-parser');
 const { createProxyAuthHandler } = require('../lib/imapproxy/proxy-handoff');
+const waitUntil = require('./helpers/wait-until');
 
 function startServer(options, onAuth) {
     return new Promise((resolve, reject) => {
@@ -256,7 +257,7 @@ function fakeLogger(records, bindings = {}) {
     return log;
 }
 
-function makeHandoff({ authDelay = 0 } = {}) {
+function makeHandoff({ authDelay = 0, recheck, recheckInterval } = {}) {
     const records = [];
     const state = { records, closed: 0, upstreamLogBindings: null };
     const readSocket = new PassThrough();
@@ -284,7 +285,9 @@ function makeHandoff({ authDelay = 0 } = {}) {
         logger: fakeLogger(records),
         serverLogger: fakeLogger(records),
         metrics: () => false,
-        logRaw: false
+        logRaw: false,
+        recheck,
+        recheckInterval
     });
     return { handler, state };
 }
@@ -610,6 +613,129 @@ test('a login pipelined behind an AUTHENTICATE still in flight is refused', asyn
         client.send('A4 LOGIN user pass\r\n');
         await client.waitFor(/^A4 NO \[AUTHENTICATIONFAILED\]/m);
         client.socket.destroy();
+    } finally {
+        await closeServer(server);
+    }
+});
+
+// A NIL where LOGIN declares a string, or inside an ID list, used to dereference null in the
+// handler. On a stream continuation (a command after another in the same chunk, or after a
+// literal) nothing caught the throw and the worker exited, taking every proxied session with it.
+// This test process would die the same way if the exception escaped.
+for (const [name, chunks, expected] of [
+    ['LOGIN NIL NIL after another command', ['A0 NOOP\r\nA1 LOGIN NIL NIL\r\n'], /^A1 BAD Invalid arguments/m],
+    ['LOGIN with a literal then NIL', ['A1 LOGIN {1}\r\n', 'x NIL\r\n'], /^A1 BAD Invalid arguments/m],
+    ['LOGIN with a list for the user', ['A0 NOOP\r\nA1 LOGIN (a) b\r\n'], /^A1 BAD Invalid arguments/m],
+    ['ID with NIL entries', ['A0 NOOP\r\nA1 ID (NIL NIL "name" NIL)\r\n'], /^A1 OK/m]
+]) {
+    test(`a NIL argument (${name}) is answered and a handed-off session survives`, async () => {
+        const { handler, state } = makeHandoff();
+        const { server, port } = await startServer({}, handler);
+        try {
+            const victim = connectClient(port);
+            await victim.waitFor(/\* OK /);
+            victim.send('V1 LOGIN user pass\r\n');
+            await victim.waitFor(/^V1 OK/m);
+
+            const attacker = connectClient(port);
+            await attacker.waitFor(/\* OK /);
+            for (const [i, chunk] of chunks.entries()) {
+                if (i) {
+                    // a literal's data is sent once the server asks for it
+                    await attacker.waitFor(/^\+ /m);
+                }
+                attacker.send(chunk);
+            }
+            await attacker.waitFor(expected);
+
+            // the connection keeps working, and so does the listener and the proxied session
+            attacker.send('A2 NOOP\r\n');
+            await attacker.waitFor(/^A2 OK/m);
+            const fresh = connectClient(port);
+            await fresh.waitFor(/\* OK /);
+            victim.send('V2 NOOP\r\n');
+            assert.ok(await waitUntil(() => state.upstreamReceived.includes('V2 NOOP\r\n')));
+            assert.equal(victim.closed, false);
+
+            for (const c of [victim, attacker, fresh]) {
+                c.socket.destroy();
+            }
+        } finally {
+            await closeServer(server);
+        }
+    });
+}
+
+test('a handler that throws is answered with BAD instead of stopping the worker', async () => {
+    const { server, port } = await startServer({});
+    const noop = require('../lib/imapproxy/imap-core/lib/commands/noop');
+    const original = noop.handler;
+    noop.handler = () => {
+        throw new Error('handler fault');
+    };
+    try {
+        const client = connectClient(port);
+        await client.waitFor(/\* OK /);
+        client.send('A0 CAPABILITY\r\nA1 NOOP\r\n');
+        await client.waitFor(/^A1 BAD Invalid arguments/m);
+        assert.doesNotMatch(client.buffer, /handler fault/);
+        client.send('A2 CAPABILITY\r\n');
+        await client.waitFor(/^A2 OK/m);
+        client.socket.destroy();
+    } finally {
+        noop.handler = original;
+        await closeServer(server);
+    }
+});
+
+test('handoff: a session whose credential is revoked is closed with a BYE, a failed recheck keeps it', async () => {
+    let answer = true;
+    const asked = [];
+    const { handler } = makeHandoff({
+        recheck: async auth => {
+            asked.push(auth);
+            if (answer instanceof Error) {
+                throw answer;
+            }
+            return answer;
+        },
+        recheckInterval: 60 * 60 * 1000
+    });
+    const { server, port } = await startServer({}, handler);
+    try {
+        const first = connectClient(port);
+        const second = connectClient(port);
+        await first.waitFor(/\* OK /);
+        await second.waitFor(/\* OK /);
+        first.send('A1 LOGIN user pass\r\n');
+        second.send('B1 LOGIN user pass\r\n');
+        await first.waitFor(/^A1 OK/m);
+        await second.waitFor(/^B1 OK/m);
+        assert.ok(await waitUntil(() => handler.activeSessions.size === 2));
+
+        // a fault while re-checking says nothing about the credential
+        answer = new Error('redis down');
+        await handler.recheckSessions();
+        assert.equal(handler.activeSessions.size, 2);
+        assert.equal(first.closed, false);
+
+        // sessions of one credential share one answer
+        asked.length = 0;
+        answer = true;
+        await handler.recheckSessions();
+        assert.equal(asked.length, 1);
+        assert.deepEqual(asked[0], { username: 'user', password: 'pass' });
+
+        // a change naming another account leaves these sessions alone
+        answer = false;
+        await handler.recheckSessions({ account: 'someone-else' });
+        assert.equal(handler.activeSessions.size, 2);
+
+        await handler.recheckSessions({ account: 'user' });
+        await first.waitFor(/\* BYE Credentials are no longer valid/);
+        await first.waitClosed();
+        await second.waitClosed();
+        assert.equal(handler.activeSessions.size, 0);
     } finally {
         await closeServer(server);
     }
