@@ -191,7 +191,7 @@ test('the state as the license page and the API report it', () => {
 
 const settingsKey = () => `${REDIS_PREFIX}settings`;
 const subscriptionLicense = key => ({ application: '@postalsys/emailengine-app', key, licensedTo: 'Test' });
-const cleanup = () => redis.hdel(settingsKey(), 'license', 'tract', 'subexp', 'subsusp', 'sentryEnabled', 'sentryAutoEnabled');
+const cleanup = () => redis.hdel(settingsKey(), 'license', 'tract', 'subexp', 'subsusp', 'subcheck', 'sentryEnabled', 'sentryAutoEnabled');
 
 test('registering the same key again keeps a deadline and a suspension; a different key starts clean', async t => {
     t.beforeEach(cleanup);
@@ -208,11 +208,12 @@ test('registering the same key again keeps a deadline and a suspension; a differ
 
     await t.test('a different key', async () => {
         await settings.setLicense(subscriptionLicense('old-key'), 'LICENSE-A');
-        await redis.hset(settingsKey(), 'subexp', String(NOW), 'subsusp', '{"code":"PaymentOverdue"}');
+        await redis.hset(settingsKey(), 'subexp', String(NOW), 'subsusp', '{"code":"PaymentOverdue"}', 'subcheck', String(NOW));
         await settings.setLicense(subscriptionLicense('new-key'), 'LICENSE-B');
-        const [subexp, subsusp] = await redis.hmget(settingsKey(), 'subexp', 'subsusp');
+        const [subexp, subsusp, subcheck] = await redis.hmget(settingsKey(), 'subexp', 'subsusp', 'subcheck');
         assert.equal(subexp, null);
         assert.equal(subsusp, null);
+        assert.equal(subcheck, null, 'the new key is checked online soon, not when the replaced key was due');
     });
 
     await t.test('removing the license keeps both, so adding the same key back finds them', async () => {
