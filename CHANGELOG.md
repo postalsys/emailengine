@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.88.1](https://github.com/postalsys/emailengine/compare/v2.88.0...v2.88.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* check a newly registered subscription key soon instead of on the replaced key's schedule ([07e0512](https://github.com/postalsys/emailengine/commit/07e05120483178684c98a604f6549ebdcfa0d895))
+
 ## [2.88.0](https://github.com/postalsys/emailengine/compare/v2.87.2...v2.88.0) (2026-11-10)
 
 
