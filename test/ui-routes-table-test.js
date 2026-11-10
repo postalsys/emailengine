@@ -140,6 +140,7 @@ const GOLDEN_ROUTES = [
     'POST /admin/config/imap-proxy',
     'POST /admin/config/license',
     'POST /admin/config/license/delete',
+    'POST /admin/config/license/recheck',
     'POST /admin/config/license/trial',
     'POST /admin/config/logging',
     'POST /admin/config/logging/reconnect',

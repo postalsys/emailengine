@@ -57,7 +57,8 @@ test('routes-ui.js stays within the size budget', () => {
 const MODULE_BUDGETS = {
     'account-routes.js': 630,
     'account-setup.js': 32,
-    'admin-config-routes.js': 396,
+    // 306: the license page moved to license-routes.js
+    'admin-config-routes.js': 306,
     'admin-entities-routes.js': 574,
     'ai-options.js': 22,
     // 522: logout ends the device-bound session binding (require + call)
@@ -69,6 +70,8 @@ const MODULE_BUDGETS = {
     'form-lists.js': 8,
     'gmail-service-auth.js': 12,
     'imap-idle-field.js': 11,
+    // the license page, moved out of admin-config-routes.js with the subscription check
+    'license-routes.js': 107,
     'internals-routes.js': 146,
     'mcp-consent-routes.js': 87,
     'network-config-routes.js': 121,

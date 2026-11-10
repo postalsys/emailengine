@@ -1,6 +1,7 @@
 'use strict';
 
 const { parentPort, workerData } = require('worker_threads');
+const { isSuspended } = require('../lib/license-subscription');
 
 const packageData = require('../package.json');
 const config = require('@zone-eu/wild-config');
@@ -453,6 +454,11 @@ parentPort.on('message', message => {
         mcpListen.publishAccountChange(message, logger);
     }
 
+    if (message && message.cmd === 'licenseState') {
+        // the main thread suspended or resumed the license: answer API requests accordingly now
+        refreshPreconditions().catch(err => logger.error({ msg: 'Failed to refresh the license prechecks', err }));
+    }
+
     if (message && message.cmd === 'settings') {
         // the API reference memoizes serviceUrl, which its code samples embed
         clearServiceUrlCache();
@@ -473,6 +479,19 @@ parentPort.on('message', message => {
 // Set by the certificate timer from the startup prechecks (scheduleCertificateReconciler) and read
 // by the onPreResponse extension (registerResponseExtensions)
 let assertPreconditionResult;
+
+/**
+ * Runs the license prechecks and records the result the onPreResponse extension acts on
+ * @returns {Promise<void>}
+ */
+async function refreshPreconditions() {
+    try {
+        await runPrechecks(redis);
+        assertPreconditionResult = false;
+    } catch (err) {
+        assertPreconditionResult = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+    }
+}
 
 /**
  * Builds the hapi server, with the API TLS context when the API is served over HTTPS
@@ -2639,7 +2658,6 @@ function registerViews(server) {
                 flash(redis, request),
                 settings.getMulti(
                     'upgrade',
-                    'subexp',
                     'webhookErrorFlag',
                     'webhooksEnabled',
                     'disableTokens',
@@ -2662,7 +2680,6 @@ function registerViews(server) {
 
             const {
                 upgrade: upgradeInfo,
-                subexp,
                 webhookErrorFlag,
                 webhooksEnabled,
                 disableTokens,
@@ -2738,15 +2755,23 @@ function registerViews(server) {
                 });
             }
 
-            if (subexp && !(request.app.licenseInfo && request.app.licenseInfo.details && request.app.licenseInfo.details.lt)) {
-                let delayMs = new Date(subexp) - Date.now();
-                let expiresDays = Math.max(Math.ceil(delayMs / (24 * 3600 * 1000)), 0);
-
+            // The subscription behind the license (lib/license-subscription.js): paused, or a date it pauses on
+            let licenseSubscription = request.app.licenseInfo && request.app.licenseInfo.subscription;
+            if (isSuspended(request.app.licenseInfo)) {
+                systemAlerts.push({
+                    url: '/admin/config/license',
+                    level: 'danger',
+                    icon: 'icon-[tabler--player-pause]',
+                    message: 'EmailEngine is paused: the subscription behind the license key is not in good standing'
+                });
+            } else if (licenseSubscription) {
                 systemAlerts.push({
                     url: '/admin/config/license',
                     level: 'danger',
                     icon: 'icon-[tabler--alert-triangle]',
-                    message: `The license key needs to be renewed or replaced in ${expiresDays} day${expiresDays !== 1 ? 's' : ''}`
+                    message: `Subscription payment overdue: EmailEngine pauses in ${licenseSubscription.days} day${
+                        licenseSubscription.days !== 1 ? 's' : ''
+                    } unless it is paid`
                 });
             }
 
@@ -2771,7 +2796,8 @@ function registerViews(server) {
                 });
             }
 
-            if (!request.app.licenseInfo || !request.app.licenseInfo.active) {
+            // a paused license is still registered, and the alert above says why it is not active
+            if (!request.app.licenseInfo || (!request.app.licenseInfo.active && !request.app.licenseInfo.details)) {
                 systemAlerts.push({
                     url: '/admin/config/license',
                     level: 'warning',
@@ -2873,7 +2899,11 @@ function registerResponseExtensions(server) {
     const preResponse = async (request, h) => {
         let response = request.response;
 
-        if (assertPreconditionResult && request.route && request.route.settings && request.route.settings.tags && request.route.settings.tags.includes('api')) {
+        // A route marked licensePrecheck: false (the license routes) stays open, so an instance without
+        // a working license can still report its state and register a key through the API
+        let routeSettings = (request.route && request.route.settings) || {};
+        let preconditionApplies = (routeSettings.tags || []).includes('api') && !(routeSettings.plugins && routeSettings.plugins.licensePrecheck === false);
+        if (assertPreconditionResult && preconditionApplies) {
             response = assertPreconditionResult;
         }
 
@@ -3114,12 +3144,7 @@ function scheduleCertificateReconciler(certHandler) {
     // switched on, which is what the checkbox used to be; see listenersServeTls() there.
     setInterval(() => {
         async function handler() {
-            try {
-                await runPrechecks(redis);
-                assertPreconditionResult = false;
-            } catch (err) {
-                assertPreconditionResult = Boom.boomify(err);
-            }
+            await refreshPreconditions();
 
             if (!IS_PRIMARY_API_WORKER) {
                 return;

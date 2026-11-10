@@ -8828,6 +8828,14 @@
           }
         }
       },
+      "LicenseBilling": {
+        "type": "string",
+        "description": "Set for the license of a monthly plan",
+        "example": "monthly",
+        "enum": [
+          "monthly"
+        ]
+      },
       "LicenseDetails": {
         "type": "object",
         "description": "Details of the registered license. False when no license is registered.",
@@ -8879,6 +8887,53 @@
             "format": "date-time",
             "description": "License expiration time, if the license is time-limited",
             "example": "2026-01-01T00:00:00.000Z"
+          },
+          "billing": {
+            "$ref": "#/components/schemas/LicenseBilling"
+          }
+        }
+      },
+      "LicenseSubscriptionStatus": {
+        "type": "string",
+        "description": "overdue: a payment is due and EmailEngine keeps working until `until`; suspended: email processing has stopped until the subscription is in good standing",
+        "example": "overdue",
+        "enum": [
+          "overdue",
+          "suspended"
+        ]
+      },
+      "LicenseSubscription": {
+        "type": "object",
+        "description": "Present only while the subscription behind a subscription license is not in good standing",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/LicenseSubscriptionStatus"
+          },
+          "code": {
+            "type": "string",
+            "description": "Reason reported by the license server",
+            "example": "PaymentOverdue",
+            "nullable": true
+          },
+          "error": {
+            "type": "string",
+            "description": "Human-readable reason",
+            "example": "Subscription payment overdue",
+            "nullable": true
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the payment became overdue or the subscription ended",
+            "example": "2026-12-01T10:00:00.000Z",
+            "nullable": true
+          },
+          "until": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When EmailEngine pauses, or paused",
+            "example": "2026-12-08T10:00:00.000Z",
+            "nullable": true
           }
         }
       },
@@ -8912,6 +8967,9 @@
             "type": "boolean",
             "description": "Whether email operations are suspended due to license issues",
             "example": false
+          },
+          "subscription": {
+            "$ref": "#/components/schemas/LicenseSubscription"
           }
         }
       },

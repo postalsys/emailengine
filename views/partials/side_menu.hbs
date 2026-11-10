@@ -37,6 +37,6 @@
     {{/ui/menu-section}}
 
     {{> ui/menu-item href="/admin/config/license" label="License" icon="icon-[tabler--license] size-4.5"
-    active=menuLicense warnText=(when licenseInfo.active "" "License not activated")}}
+    active=menuLicense warnText=(when licenseInfo.active "" (when licenseInfo.subscription "EmailEngine paused" "License not activated"))}}
 
 </ul>

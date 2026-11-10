@@ -1,6 +1,6 @@
 {{> ui/page-header title="License" icon="icon-[tabler--settings]"
-badgeLabel=(when licenseInfo.details.trial "trial" (when licenseInfo.active "active" "not activated"))
-badgeVariant=(when licenseInfo.details.trial "warning" (when licenseInfo.active "success" "error"))
+badgeLabel=(when licenseInfo.details.trial "trial" (when licenseInfo.active "active" (when licenseInfo.subscription "paused" "not activated")))
+badgeVariant=(when licenseInfo.details.trial "warning" (when licenseInfo.active "success" (when licenseInfo.subscription "warning" "error")))
 class="mb-1"}}
 
 <p class="mb-6">
@@ -8,28 +8,41 @@ class="mb-1"}}
         target="_blank" rel="noopener noreferrer" class="link link-animated">EmailEngine License</a>.
 </p>
 
-{{#if subexp}}
-{{#> ui/stat-card variant="error" title="License Issue" icon="icon-[tabler--alert-triangle]" class="mb-6"}}
+{{#if licenseInfo.subscription}}
+{{#> ui/stat-card variant="error" title=(when isPaused "EmailEngine is paused" "Subscription payment overdue") icon=(when isPaused "icon-[tabler--player-pause]" "icon-[tabler--alert-triangle]") class="mb-6"}}
 
+{{#if isPaused}}
 <p class="mb-2">
-    Your license key is registered but the associated subscription appears to be inactive or the key has
-    been invalidated.
+    The subscription behind this license key is not in good standing{{#if subscriptionSince}} since
+    {{subscriptionSince}}{{/if}}.
+    Email processing has stopped: accounts do not sync, and no messages or webhooks are sent. Your license key, accounts
+    and data are kept.
 </p>
-
 <p class="mb-2">
-    You can continue using EmailEngine for <strong>{{ngettext '%d day' '%d days' expiresDays}}</strong>.
-    After that, you'll need a new license key.
+    EmailEngine resumes on its own within an hour of the invoice being paid, or straight away when you check below.
 </p>
+{{else}}
+<p class="mb-2">
+    The subscription behind this license key has an unpaid invoice. EmailEngine keeps working until
+    <strong>{{subscriptionUntil}}</strong>
+    ({{ngettext '%d day' '%d days' expiresDays}}) and then pauses until the invoice is paid.
+</p>
+{{/if}}
 
-<div>
-    {{> ui/btn href="https://postalsys.com/plans" external=true label="Renew subscription"
-    icon="icon-[tabler--arrow-right]"}}
+<div class="flex flex-wrap gap-2">
+    {{> ui/btn href="https://postalsys.com/billing/invoices" external=true label="Pay the invoice"
+    icon="icon-[tabler--credit-card]"}}
+    <form method="post" action="/admin/config/license/recheck" class="inline">
+        <input type="hidden" name="crumb" value="{{crumb}}" />
+        {{> ui/btn type="submit" label="Check subscription now" variant="primary" style="soft"
+        icon="icon-[tabler--refresh]"}}
+    </form>
 </div>
 
 {{/ui/stat-card}}
 {{/if}}
 
-{{#unless licenseInfo.active}}
+{{#unless licenseInfo.details}}
 
 {{#> ui/card}}
         <div class="float-right ms-4">
@@ -47,12 +60,21 @@ class="mb-1"}}
 
 {{/unless}}
 
-{{#if licenseInfo.active}}
+{{#if licenseInfo.details}}
 <div class="card bg-base-100 shadow-md mb-6">
     <div class="card-header flex flex-wrap items-center justify-between gap-3">
         <h6 class="card-title text-primary">Current License</h6>
-        {{> ui/btn label="Remove license" variant="error" style="soft" size="sm" icon="icon-[tabler--trash]"
-        id="unregister-license-link" overlay="#deleteLicense"}}
+        <div class="flex flex-wrap gap-2">
+            {{#if isSubscriptionLicense}}{{#unless licenseInfo.subscription}}
+            <form method="post" action="/admin/config/license/recheck" class="inline">
+                <input type="hidden" name="crumb" value="{{crumb}}" />
+                {{> ui/btn type="submit" label="Check subscription now" variant="primary" style="soft" size="sm"
+                icon="icon-[tabler--refresh]"}}
+            </form>
+            {{/unless}}{{/if}}
+            {{> ui/btn label="Remove license" variant="error" style="soft" size="sm" icon="icon-[tabler--trash]"
+            id="unregister-license-link" overlay="#deleteLicense"}}
+        </div>
     </div>
     <div class="card-body">
 
@@ -75,6 +97,11 @@ class="mb-1"}}
             {{#if licenseDetails.lt}}
             <dt>Expiration</dt>
             <dd>Never expires</dd>
+            {{/if}}
+
+            {{#if licenseInfo.details.billing}}
+            <dt>Billing</dt>
+            <dd>Monthly plan</dd>
             {{/if}}
 
         </dl>

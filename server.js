@@ -163,6 +163,15 @@ const { backfillAuthFailureDisabled } = require('./lib/account/auth-failure-back
 const { backfillExportIndex } = require('./lib/export');
 const { sweepBounceStore } = require('./lib/account/bounce-store-sweep');
 const { attachBeacon, persistBeaconMarkers } = require('./lib/license-beacon');
+const {
+    decide,
+    startupPlan,
+    expiredSuspension,
+    checkInterval,
+    subscriptionView,
+    parseSuspension,
+    isSubscriptionLicense
+} = require('./lib/license-subscription');
 const tokens = require('./lib/tokens');
 
 const { checkRateLimit } = require('./lib/rate-limit');
@@ -242,11 +251,6 @@ const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.se
 
 // Size limits
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024; // 5MB
-
-// License check intervals
-const SUBSCRIPTION_CHECK_TIMEOUT = 1 * 24 * 60 * 60 * 1000; // 24 hours
-const SUBSCRIPTION_RECHECK_TIMEOUT = 1 * 60 * 60 * 1000; // 1 hour
-const SUBSCRIPTION_ALLOW_DELAY = 28 * 24 * 60 * 60 * 1000; // 28 days grace period
 
 // Delay between account connection setups (to avoid overwhelming the system)
 const CONNECTION_SETUP_DELAY = getDuration(readEnvValue('EENGINE_CONNECTION_SETUP_DELAY') || config.service.setupDelay) || 0;
@@ -345,7 +349,6 @@ WORKER_DIED_RESP_ERR.code = 'WorkerNotAvailable';
 // Update check intervals
 const UPGRADE_CHECK_TIMEOUT = 1 * 24 * 3600 * 1000; // 24 hours
 const LICENSE_CHECK_TIMEOUT = 20 * 60 * 1000; // 20 minutes
-const MAX_LICENSE_CHECK_DELAY = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 /**
  * License information object
@@ -2159,28 +2162,128 @@ async function assignAccounts() {
 // License checking state
 let licenseCheckTimer = false;
 let checkingLicense = false;
+// set by startApplication: the stored subscription state asks for an online check at startup
+let startupLicenseCheck = false;
+
+// The worker types that run only under a valid license; everything but the API server
+const LICENSED_WORKER_TYPES = ['imap', 'submit', 'smtp', 'webhooks', 'imapProxy'];
+
+// The stored subscription deadline (`subexp`, ms) as last written by this thread, so the license
+// command answering every request does not read Redis for it
+let subscriptionDeadline = null;
+
+/**
+ * Records a subscription license as suspended, or no longer suspended. The workers follow at the
+ * end of the next license check (licenseCheckHandler)
+ * @param {Object|null} suspension - the subsusp record, or null to lift a suspension
+ * @returns {void}
+ */
+const setSuspension = suspension => {
+    if (suspension) {
+        licenseInfo.active = false;
+        licenseInfo.suspension = suspension;
+    } else {
+        licenseInfo.active = true;
+        delete licenseInfo.suspension;
+    }
+};
+
+/**
+ * Applies one decision of lib/license-subscription.js to the stored state and to licenseInfo
+ * @param {Object} decision - decide() output
+ * @param {Object} data - the license server's answer
+ * @returns {Promise<void>}
+ */
+const applySubscriptionDecision = async (decision, data) => {
+    const settingsKey = `${REDIS_PREFIX}settings`;
+
+    if (decision.removeLicense) {
+        // what a license server that names no deadline and does not ask to keep the key gets
+        logger.warn({ msg: 'License validation failed', license: redactLicense(licenseInfo.details), data });
+        await settings.removeLicense();
+        subscriptionDeadline = null;
+        licenseInfo.active = false;
+        licenseInfo.details = false;
+        delete licenseInfo.suspension;
+        licenseInfo.type = packageData.license;
+        return;
+    }
+
+    let multi = redis.multi();
+    if (decision.clear) {
+        multi = multi.hdel(settingsKey, 'subexp', 'subsusp');
+        subscriptionDeadline = null;
+    } else if (decision.resume) {
+        multi = multi.hdel(settingsKey, 'subsusp');
+    }
+    if (decision.subexp) {
+        multi = multi.hset(settingsKey, 'subexp', decision.subexp.toString());
+        subscriptionDeadline = decision.subexp;
+    }
+    if (decision.suspend) {
+        multi = multi.hset(settingsKey, 'subsusp', JSON.stringify(decision.suspend));
+    }
+    if (decision.nextCheck) {
+        multi = multi.hset(settingsKey, 'ks', new Date(decision.nextCheck).getTime().toString(16));
+    }
+    await multi.exec();
+
+    if (decision.resume && licenseInfo.suspension) {
+        logger.info({
+            msg: decision.clear ? 'Subscription in good standing again, resuming' : 'Subscription inside its payment window again, resuming',
+            license: redactLicense(licenseInfo.details)
+        });
+        setSuspension(null);
+    }
+
+    if (decision.suspend) {
+        if (!licenseInfo.suspension) {
+            logger.warn({ msg: 'Subscription not in good standing, suspending until it is', license: redactLicense(licenseInfo.details), data });
+        }
+        setSuspension(decision.suspend);
+    }
+};
+
+/**
+ * Tells the API workers to run their prechecks again, so the REST API follows a suspension or a
+ * resume at once instead of at the next ten-minute tick
+ * @returns {void}
+ */
+const notifyApiLicenseState = () => {
+    for (let worker of workers.get('api') || []) {
+        try {
+            postMessage(worker, { cmd: 'licenseState' }, true);
+        } catch (err) {
+            logger.error({ msg: 'Unable to notify worker about the license state', worker: worker.threadId, err });
+        }
+    }
+};
 
 /**
  * Check and validate license status
  * @param {Object} opts - Options
- * @param {number} opts.subscriptionCheckTimeout - Timeout for subscription check
- * @returns {Promise<void>}
+ * @param {number} opts.subscriptionCheckTimeout - Minimum time since the last online check
+ * @param {boolean} opts.force - Check online now, whatever the schedule says
+ * @returns {Promise<Object>} { outcome }: ok, refused, error, unreachable, skipped or busy
  */
 let licenseCheckHandler = async opts => {
     if (checkingLicense) {
-        return;
+        return { outcome: 'busy' };
     }
     checkingLicense = true;
     clearTimeout(licenseCheckTimer);
 
+    let outcome = 'skipped';
+    let wasActive = licenseInfo.active;
+
     try {
         opts = opts || {};
-        let { subscriptionCheckTimeout } = opts;
         let now = Date.now();
-        subscriptionCheckTimeout = subscriptionCheckTimeout || SUBSCRIPTION_CHECK_TIMEOUT;
+        let [subexp, subsusp, kv, ks] = await redis.hmget(`${REDIS_PREFIX}settings`, 'subexp', 'subsusp', 'kv', 'ks');
+        // daily, and hourly while the subscription is not in good standing
+        let subscriptionCheckTimeout = opts.subscriptionCheckTimeout || checkInterval({ subexp, subsusp });
 
         // Check if we need to validate the license
-        let kv = await redis.hget(`${REDIS_PREFIX}settings`, 'kv');
         let checkKv = true;
         // an unreadable record means checking again, which also rewrites it
         let validatedVersion = kv && typeof kv === 'string' ? Buffer.from(kv, 'hex').toString() : null;
@@ -2188,7 +2291,6 @@ let licenseCheckHandler = async opts => {
             checkKv = false;
         }
 
-        let ks = await redis.hget(`${REDIS_PREFIX}settings`, 'ks');
         if (ks && typeof ks === 'string') {
             let ksDate = new Date(parseInt(ks, 16));
             if (ksDate < now) {
@@ -2199,18 +2301,36 @@ let licenseCheckHandler = async opts => {
         }
 
         // Clean up for lifetime licenses
-        if (licenseInfo.details.lt) {
-            await redis.hdel(`${REDIS_PREFIX}settings`, 'subexp');
+        if (licenseInfo.details && licenseInfo.details.lt) {
+            await redis.hdel(`${REDIS_PREFIX}settings`, 'subexp', 'subsusp');
+            subscriptionDeadline = null;
+        }
+
+        // A suspended license is still registered and still checked, which is how it resumes
+        let subscriptionLicense = (licenseInfo.active || !!licenseInfo.suspension) && isSubscriptionLicense(licenseInfo.details);
+
+        // A stored deadline that has passed suspends on its own, whether or not the license server
+        // can be reached to say so; its next answer decides what happens after that
+        let localSuspension = subscriptionLicense && !licenseInfo.suspension ? expiredSuspension(subexp, subsusp, now) : null;
+        if (localSuspension) {
+            await redis.hset(`${REDIS_PREFIX}settings`, 'subsusp', JSON.stringify(localSuspension));
+            subsusp = JSON.stringify(localSuspension);
+            logger.warn({
+                msg: 'Subscription deadline passed, suspending until the license server says otherwise',
+                license: redactLicense(licenseInfo.details)
+            });
+            setSuspension(localSuspension);
+        }
+        let due = false;
+        if (subscriptionLicense && opts.force) {
+            await redis.hset(`${REDIS_PREFIX}settings`, 'subcheck', now.toString());
+            due = true;
+        } else if (subscriptionLicense && checkKv) {
+            due = !!(await redis.hUpdateBigger(`${REDIS_PREFIX}settings`, 'subcheck', now - subscriptionCheckTimeout, now));
         }
 
         // Validate subscription license
-        if (
-            checkKv &&
-            licenseInfo.active &&
-            !(licenseInfo.details && licenseInfo.details.expires) &&
-            !licenseInfo.details.lt &&
-            (await redis.hUpdateBigger(`${REDIS_PREFIX}settings`, 'subcheck', now - subscriptionCheckTimeout, now))
-        ) {
+        if (due) {
             try {
                 let body = {
                     key: licenseInfo.details.key,
@@ -2240,32 +2360,11 @@ let licenseCheckHandler = async opts => {
 
                 let data = await res.json();
 
-                if (!res.ok) {
-                    if (data.invalidate) {
-                        // License validation failed - start grace period
-                        let res = await redis.hUpdateBigger(`${REDIS_PREFIX}settings`, 'subexp', now, now + SUBSCRIPTION_ALLOW_DELAY);
-                        if (res === 2) {
-                            // Grace period expired
-                            logger.warn({ msg: 'License validation failed', license: redactLicense(licenseInfo.details), data });
-                            await settings.removeLicense();
-                            licenseInfo.active = false;
-                            licenseInfo.details = false;
-                            licenseInfo.type = packageData.license;
-                        } else {
-                            // Still in grace period - check again soon
-                            let nextCheck = now + SUBSCRIPTION_RECHECK_TIMEOUT;
-                            await redis.hset(`${REDIS_PREFIX}settings`, 'ks', new Date(nextCheck).getTime().toString(16));
-                        }
-                    }
-                } else {
-                    // License validated successfully
-                    await redis.hdel(`${REDIS_PREFIX}settings`, 'subexp');
+                await applySubscriptionDecision(decide({ ok: res.ok, data, now, subexp }), data);
+                outcome = res.ok ? 'ok' : data && data.invalidate ? 'refused' : 'error';
+
+                if (res.ok) {
                     await redis.hset(`${REDIS_PREFIX}settings`, 'kv', Buffer.from(packageData.version).toString('hex'));
-                    if (data.validatedUntil) {
-                        let validatedUntil = new Date(data.validatedUntil);
-                        let nextCheck = Math.min(now + MAX_LICENSE_CHECK_DELAY, validatedUntil.getTime());
-                        await redis.hset(`${REDIS_PREFIX}settings`, 'ks', new Date(nextCheck).getTime().toString(16));
-                    }
 
                     // Persist beacon markers so the full snapshot is only resent when it changes.
                     if (!BEACON_DISABLED) {
@@ -2273,6 +2372,8 @@ let licenseCheckHandler = async opts => {
                     }
                 }
             } catch (err) {
+                // never a reason to stop: an unreachable license server leaves the stored state as it was
+                outcome = 'unreachable';
                 logger.warn({ msg: 'License validation error', err });
             }
         }
@@ -2293,7 +2394,7 @@ let licenseCheckHandler = async opts => {
             logger.info({ msg: 'No active license. Suspending every worker except the API server.' });
 
             // Suspend all worker types except API
-            for (let type of ['imap', 'submit', 'smtp', 'webhooks', 'imapProxy']) {
+            for (let type of LICENSED_WORKER_TYPES) {
                 suspendedWorkerTypes.add(type);
                 if (workers.has(type)) {
                     for (let worker of workers.get(type).values()) {
@@ -2329,11 +2430,16 @@ let licenseCheckHandler = async opts => {
             // worker ready handler only reassigns after crashes (reassignmentPending)
             assignAccounts().catch(err => logger.error({ msg: 'Unable to assign accounts after license activation', err }));
         }
+        if (wasActive !== licenseInfo.active) {
+            notifyApiLicenseState();
+        }
     } finally {
         checkingLicense = false;
         licenseCheckTimer = setTimeout(checkActiveLicense, LICENSE_CHECK_TIMEOUT);
         licenseCheckTimer.unref();
     }
+
+    return { outcome };
 };
 
 /**
@@ -2780,24 +2886,38 @@ async function commandImapWorkerCount() {
     return { workers: availableIMAPWorkers.size };
 }
 
-async function commandCheckLicense() {
-    // Force license check
+async function commandCheckLicense(worker, message) {
+    // The license page asks on every view (60 s gate); the "Check subscription now" button forces a
+    // check, at most once a minute per instance, so the button cannot be used to hammer the server
+    let result = { outcome: 'skipped' };
     try {
-        await licenseCheckHandler({
-            subscriptionCheckTimeout: 60 * 1000
-        });
+        if (message && message.force) {
+            let acquired = await redis.set(`${REDIS_PREFIX}license:recheck`, '1', 'PX', 60 * 1000, 'NX');
+            result = acquired ? await licenseCheckHandler({ force: true }) : { outcome: 'throttled' };
+        } else {
+            result = await licenseCheckHandler({ subscriptionCheckTimeout: 60 * 1000 });
+        }
     } catch (err) {
         // ignore
     }
-    return licenseInfo;
+    return Object.assign(await commandLicense(), { checkOutcome: result.outcome });
 }
 
 async function commandLicense() {
-    // Return license info with suspension status
+    // Return license info with suspension status and, for a subscription license that is not in
+    // good standing, the deadline or the suspension (lib/license-subscription.js)
+    let info = Object.assign({}, licenseInfo);
+    delete info.suspension;
     if (!licenseInfo.active && suspendedWorkerTypes.size) {
-        return Object.assign({}, licenseInfo, { suspended: true });
+        info.suspended = true;
     }
-    return licenseInfo;
+    if (isSubscriptionLicense(licenseInfo.details)) {
+        let subscription = subscriptionView({ subexp: subscriptionDeadline, suspension: licenseInfo.suspension, now: Date.now() });
+        if (subscription) {
+            info.subscription = subscription;
+        }
+    }
+    return info;
 }
 
 async function commandUpdateLicense(worker, message) {
@@ -2814,14 +2934,24 @@ async function commandUpdateLicense(worker, message) {
 
         await setLicense(licenseData, licenseFile);
 
-        licenseInfo.active = true;
         licenseInfo.details = licenseData;
         licenseInfo.type = 'EmailEngine License';
 
-        // Re-enable workers
-        checkActiveLicense();
+        // The same key registered again keeps a suspension (setLicense keeps the stored state), so
+        // posting the file again does not lift one; a subscription license is checked online before
+        // the workers start, and the answer decides
+        let subscriptionLicense = isSubscriptionLicense(licenseData);
+        let [subexp, subsusp] = await redis.hmget(`${REDIS_PREFIX}settings`, 'subexp', 'subsusp');
+        subscriptionDeadline = subscriptionLicense && subexp ? Number(subexp) : null;
+        setSuspension(subscriptionLicense ? parseSuspension(subsusp) : null);
 
-        return licenseInfo;
+        if (!subscriptionLicense || (await licenseCheckHandler({ force: true })).outcome === 'busy') {
+            // Re-enable workers
+            checkActiveLicense();
+        }
+        notifyApiLicenseState();
+
+        return await commandLicense();
     } catch (err) {
         logger.warn({ msg: 'License update failed', source: 'API', err });
         return false;
@@ -2835,7 +2965,10 @@ async function commandRemoveLicense() {
 
         licenseInfo.active = false;
         licenseInfo.details = false;
+        delete licenseInfo.suspension;
+        subscriptionDeadline = null;
         licenseInfo.type = packageData.license;
+        notifyApiLicenseState();
 
         return licenseInfo;
     } catch (err) {
@@ -3527,6 +3660,28 @@ const loadStoredLicense = async () => {
 };
 
 /**
+ * Applies the stored subscription state before any worker starts (lib/license-subscription.js): a
+ * license suspended when EmailEngine stopped, or whose deadline ran out while it was not running,
+ * starts suspended rather than running until the first check
+ * @returns {Promise<boolean>} whether to check the subscription online right away
+ */
+const applyStartupSubscriptionState = async () => {
+    let [subexp, subsusp, subcheck] = await redis.hmget(`${REDIS_PREFIX}settings`, 'subexp', 'subsusp', 'subcheck');
+    subscriptionDeadline = subexp ? Number(subexp) : null;
+    let plan = startupPlan({ details: licenseInfo.active && licenseInfo.details, subexp, subsusp, subcheck, now: Date.now() });
+
+    if (plan.suspension) {
+        logger.warn({ msg: 'Subscription not in good standing, starting suspended', license: redactLicense(licenseInfo.details), suspension: plan.suspension });
+        setSuspension(plan.suspension);
+        for (let type of LICENSED_WORKER_TYPES) {
+            suspendedWorkerTypes.add(type);
+        }
+    }
+
+    return plan.checkNow;
+};
+
+/**
  * One-time data migrations that run before the workers spawn. None of them is fatal
  * @returns {Promise<void>}
  */
@@ -3966,6 +4121,8 @@ const startApplication = async () => {
 
     await loadStoredLicense();
 
+    startupLicenseCheck = await applyStartupSubscriptionState();
+
     // Check for updates
     processCheckUpgrade().catch(err => {
         logger.warn({ msg: 'Update check failed', err });
@@ -3992,6 +4149,11 @@ const startApplication = async () => {
 
     await startApiWorkers();
 
+    if (licenseInfo.suspension) {
+        // the API answers like an unlicensed instance from the start, not from the next precheck tick
+        notifyApiLicenseState();
+    }
+
     // Small delay to allow API to start
     await new Promise(r => setTimeout(r, 100));
 
@@ -4011,9 +4173,15 @@ startApplication()
             collectMetrics().catch(err => logger.error({ msg: 'Metrics collection failed', err }));
         }, 1000).unref();
 
-        // Schedule periodic checks
-        licenseCheckTimer = setTimeout(checkActiveLicense, LICENSE_CHECK_TIMEOUT);
-        licenseCheckTimer.unref();
+        // Schedule periodic checks. A monthly-plan license, or one that is not in good standing, is
+        // checked right away (unless an hour has not passed since the last check, so a restart
+        // loop costs one call an hour); everything else after the usual first delay
+        if (startupLicenseCheck) {
+            licenseCheckHandler({ force: true }).catch(err => logger.error({ msg: 'License check error', err }));
+        } else {
+            licenseCheckTimer = setTimeout(checkActiveLicense, LICENSE_CHECK_TIMEOUT);
+            licenseCheckTimer.unref();
+        }
 
         upgradeCheckTimer = setTimeout(checkUpgrade, UPGRADE_CHECK_TIMEOUT);
         upgradeCheckTimer.unref();

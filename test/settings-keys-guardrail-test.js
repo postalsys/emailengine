@@ -32,7 +32,6 @@ const INTERNAL_KEYS = new Map([
     ['preparedSettingsKeys', 'the keys EENGINE_SETTINGS owns, so the forms can flag them (server.js)'],
     ['sentryAutoEnabled', 'marker recording that error reporting was switched on by default (lib/settings.js)'],
     ['serviceId', 'the instance identifier, generated at first boot (server.js)'],
-    ['subexp', 'the subscription expiry carried by the license check (server.js)'],
     ['totpEnabled', 'whether TOTP is set up (lib/ui-routes/auth-routes.js)'],
     ['totpSeed', 'the TOTP secret (lib/ui-routes/auth-routes.js)'],
     ['webhookErrorFlag', 'the last webhook delivery failure, for the dashboard notice (workers/webhooks.js)']
