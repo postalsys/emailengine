@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.88.0](https://github.com/postalsys/emailengine/compare/v2.87.2...v2.88.0) (2026-11-10)
+
+
+### Features
+
+* monthly-plan licenses, and pause instead of removing a lapsed subscription license ([9250815](https://github.com/postalsys/emailengine/commit/92508150ec250fd4d307665ac3cd4dabdbf2aed2))
+
+
+### Bug Fixes
+
+* accept only provider-verified identities when pinning an OAuth2 account setup ([1e9b6c1](https://github.com/postalsys/emailengine/commit/1e9b6c1ef2360446227b7bee9cd5c328cd573b56))
+* close admin sign-in gaps around passkeys, SSO and the password check ([a4c4409](https://github.com/postalsys/emailengine/commit/a4c44090532e423d7cef3e5ee9492e466a67c102))
+* do not retry an SMTP delivery that ran into the deadline, and report final failures as final ([48d0983](https://github.com/postalsys/emailengine/commit/48d098362043e5aa080a42addcbec450eee64075))
+* e2e overlay flakes, and a confirmation OK that could read as declined ([b3559b3](https://github.com/postalsys/emailengine/commit/b3559b3187e484c781b37c1ce484d7a19095685c))
+* end change streams on revocation, remove exports with their account, refuse queue metadata as a job ([53e7948](https://github.com/postalsys/emailengine/commit/53e7948da6b5cbee161a611ebe444696e020a7a3))
+* end IMAP proxy sessions on revocation and stop NIL arguments from crashing the proxy ([6e2756e](https://github.com/postalsys/emailengine/commit/6e2756e963780fe285affed519c48f3e79a0d787))
+* find an account's exports through an index instead of a keyspace scan ([2ab5ba1](https://github.com/postalsys/emailengine/commit/2ab5ba17bf347deff0467b8d7fc597906bf4a31b))
+* keep one account's mail, webhooks and senders from monopolising the shared workers ([381c4fd](https://github.com/postalsys/emailengine/commit/381c4fd03e700b6bfb9be6222b3e5421e90e8720))
+* record a confirmation's OK click before the dialog reports closing ([c754c9f](https://github.com/postalsys/emailengine/commit/c754c9fa0207941c601991d3d3ca26098f0b45d1))
+* refuse to start when a _FILE secret can not be read and stop disabling TLS checks on Heroku ([71d4191](https://github.com/postalsys/emailengine/commit/71d419116758e40e98d0f94c7c9f398ea2ce536f))
+* replace Microsoft 365 IMAP sessions before their access token expires ([500e4d2](https://github.com/postalsys/emailengine/commit/500e4d2b7714337c9bf35b6c3447035c0280dba0))
+* update dependencies ([5997ced](https://github.com/postalsys/emailengine/commit/5997cedd1fefd00d4951d0a3d76879d0341e02af))
+
 ## [2.87.2](https://github.com/postalsys/emailengine/compare/v2.87.1...v2.87.2) (2026-11-05)
 
 
