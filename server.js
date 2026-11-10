@@ -170,7 +170,8 @@ const {
     checkInterval,
     subscriptionView,
     parseSuspension,
-    isSubscriptionLicense
+    isSubscriptionLicense,
+    toTime
 } = require('./lib/license-subscription');
 const tokens = require('./lib/tokens');
 
@@ -2189,6 +2190,18 @@ const setSuspension = suspension => {
 };
 
 /**
+ * Forgets the registered license in this thread, after settings.removeLicense()
+ * @returns {void}
+ */
+const clearLicenseInfo = () => {
+    licenseInfo.active = false;
+    licenseInfo.details = false;
+    delete licenseInfo.suspension;
+    subscriptionDeadline = null;
+    licenseInfo.type = packageData.license;
+};
+
+/**
  * Applies one decision of lib/license-subscription.js to the stored state and to licenseInfo
  * @param {Object} decision - decide() output
  * @param {Object} data - the license server's answer
@@ -2201,11 +2214,7 @@ const applySubscriptionDecision = async (decision, data) => {
         // what a license server that names no deadline and does not ask to keep the key gets
         logger.warn({ msg: 'License validation failed', license: redactLicense(licenseInfo.details), data });
         await settings.removeLicense();
-        subscriptionDeadline = null;
-        licenseInfo.active = false;
-        licenseInfo.details = false;
-        delete licenseInfo.suspension;
-        licenseInfo.type = packageData.license;
+        clearLicenseInfo();
         return;
     }
 
@@ -2314,7 +2323,6 @@ let licenseCheckHandler = async opts => {
         let localSuspension = subscriptionLicense && !licenseInfo.suspension ? expiredSuspension(subexp, subsusp, now) : null;
         if (localSuspension) {
             await redis.hset(`${REDIS_PREFIX}settings`, 'subsusp', JSON.stringify(localSuspension));
-            subsusp = JSON.stringify(localSuspension);
             logger.warn({
                 msg: 'Subscription deadline passed, suspending until the license server says otherwise',
                 license: redactLicense(licenseInfo.details)
@@ -2942,7 +2950,7 @@ async function commandUpdateLicense(worker, message) {
         // the workers start, and the answer decides
         let subscriptionLicense = isSubscriptionLicense(licenseData);
         let [subexp, subsusp] = await redis.hmget(`${REDIS_PREFIX}settings`, 'subexp', 'subsusp');
-        subscriptionDeadline = subscriptionLicense && subexp ? Number(subexp) : null;
+        subscriptionDeadline = subscriptionLicense ? toTime(subexp) : null;
         setSuspension(subscriptionLicense ? parseSuspension(subsusp) : null);
 
         if (!subscriptionLicense || (await licenseCheckHandler({ force: true })).outcome === 'busy') {
@@ -2963,11 +2971,7 @@ async function commandRemoveLicense() {
     try {
         await settings.removeLicense();
 
-        licenseInfo.active = false;
-        licenseInfo.details = false;
-        delete licenseInfo.suspension;
-        subscriptionDeadline = null;
-        licenseInfo.type = packageData.license;
+        clearLicenseInfo();
         notifyApiLicenseState();
 
         return licenseInfo;
@@ -3667,7 +3671,7 @@ const loadStoredLicense = async () => {
  */
 const applyStartupSubscriptionState = async () => {
     let [subexp, subsusp, subcheck] = await redis.hmget(`${REDIS_PREFIX}settings`, 'subexp', 'subsusp', 'subcheck');
-    subscriptionDeadline = subexp ? Number(subexp) : null;
+    subscriptionDeadline = toTime(subexp);
     let plan = startupPlan({ details: licenseInfo.active && licenseInfo.details, subexp, subsusp, subcheck, now: Date.now() });
 
     if (plan.suspension) {
