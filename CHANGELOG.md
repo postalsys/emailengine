@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.89.0](https://github.com/postalsys/emailengine/compare/v2.88.0...v2.89.0) (2026-11-15)
+
+
+### Bug Fixes
+
+* check a newly registered subscription key soon instead of on the replaced key's schedule ([07e0512](https://github.com/postalsys/emailengine/commit/07e05120483178684c98a604f6549ebdcfa0d895))
+* stop the IMAP workers retaining every web-safe HTML message, require Node.js 22.19 ([8b0bc06](https://github.com/postalsys/emailengine/commit/8b0bc064e2485b7b30a6ec1d2f4e1a9b42767125))
+* update dependencies ([1e08d01](https://github.com/postalsys/emailengine/commit/1e08d01cca2d381ef7ce9f4702c0d3c0cdcf59c5))
+
+
+### Miscellaneous Chores
+
+* release 2.89.0 ([ac15c96](https://github.com/postalsys/emailengine/commit/ac15c9699c3a1e59de2389bad8b8daa4a77873d6))
+
 ## [2.88.0](https://github.com/postalsys/emailengine/compare/v2.87.2...v2.88.0) (2026-11-10)
 
 
