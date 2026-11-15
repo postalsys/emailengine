@@ -41,3 +41,28 @@
     </div>
 </div>
 {{/if}}
+
+{{#unless nodeRuntime.packaged}}
+{{#> ui/card title="Node.js" id="node" class="mt-6"}}
+{{#if nodeRuntime.outsideRange}}
+{{#> ui/alert-banner variant="warning" class="mb-4"}}
+<p>This instance runs on Node.js {{nodeRuntime.version}}, which is outside the range EmailEngine supports
+    ({{nodeRuntime.supported}}). Upgrade Node.js before upgrading EmailEngine.</p>
+{{/ui/alert-banner}}
+{{else}}
+<p class="mb-4">This instance runs on Node.js {{nodeRuntime.version}}. EmailEngine supports {{nodeRuntime.supported}}.</p>
+{{/if}}
+
+{{#if isRender}}
+<p class="mb-2">Render picks the Node.js release from the <code>engines</code> field of EmailEngine's
+    <code>package.json</code>, so a manual deploy of the latest version also moves Node.js.</p>
+{{else}}
+<p class="mb-2">On a Debian or Ubuntu server that installed Node.js from NodeSource, which includes the
+    DigitalOcean one-click image, log in and run:</p>
+<pre class="ee-code-block"><code>{{#each nodeRuntime.upgradeCommands}}$ {{this}}
+{{/each}}</code></pre>
+<p class="mt-2">Anywhere else, install a supported release with the tool Node.js came from. The
+    EmailEngine binaries and the Docker image carry their own Node.js.</p>
+{{/if}}
+{{/ui/card}}
+{{/unless}}

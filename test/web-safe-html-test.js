@@ -452,3 +452,63 @@ test('a body over the limit renders as escaped plain text without being parsed',
     assert.ok(!noPlain.includes('<script'));
     assert.match(noPlain, /too large to display/);
 });
+
+test('the sanitizer is loaded once, and a failure to load it is remembered', async t => {
+    const { createMimeHtmlLoader } = require('../lib/web-safe-html');
+
+    await t.test('a loader that throws is called once and hands out null from then on', () => {
+        let calls = 0;
+        const getMimeHtml = createMimeHtmlLoader(() => {
+            calls++;
+            throw new TypeError("Cannot read properties of undefined (reading 'bind')");
+        });
+        for (let i = 0; i < 5; i++) {
+            assert.equal(getMimeHtml(), null);
+        }
+        assert.equal(calls, 1);
+    });
+
+    await t.test('a loader that works hands out the function every time', () => {
+        const fn = () => 'html';
+        const getMimeHtml = createMimeHtmlLoader(() => fn);
+        assert.equal(getMimeHtml(), fn);
+        assert.equal(getMimeHtml(), fn);
+    });
+});
+
+test('messageWebSafeHtml renders escaped plain text when the sanitizer can not be loaded', () => {
+    // A fresh process whose @postalsys/email-text-tools throws on the first touch of mimeHtml, the
+    // way the jsdom bundle does on a Node.js release too old for it
+    const { execFileSync } = require('node:child_process');
+    const script = [
+        "const path = require.resolve('@postalsys/email-text-tools');",
+        'const real = require(path);',
+        'let loads = 0;',
+        'const fake = Object.create(real);',
+        "Object.defineProperty(fake, 'mimeHtml', { get() { loads++; throw new TypeError('bundle failed to load'); } });",
+        'require.cache[path].exports = fake;',
+        "const { messageWebSafeHtml } = require('./lib/web-safe-html');",
+        '(async () => {',
+        '    const outputs = [];',
+        '    for (let i = 0; i < 3; i++) {',
+        "        outputs.push(await messageWebSafeHtml({ text: { html: '<p onclick=\"x()\">hi</p><script>alert(1)</script>', plain: 'hi <there> & ' + i } }));",
+        '    }',
+        "    outputs.push(await messageWebSafeHtml({ text: { html: '<p>html only</p>' } }));",
+        '    console.log(JSON.stringify({ loads, outputs }));',
+        '    process.exit(0);',
+        '})();'
+    ].join('\n');
+    const output = execFileSync(process.execPath, ['-e', script], {
+        cwd: require('path').join(__dirname, '..'),
+        encoding: 'utf-8',
+        env: Object.assign({}, process.env, { EENGINE_LOG_LEVEL: 'fatal' })
+    });
+    const { loads, outputs } = JSON.parse(output.trim().split('\n').pop());
+    assert.equal(loads, 1);
+    assert.equal(outputs[0], '<div style="white-space: pre-wrap">hi &lt;there&gt; &amp; 0</div>');
+    assert.equal(outputs[2], '<div style="white-space: pre-wrap">hi &lt;there&gt; &amp; 2</div>');
+    assert.match(outputs[3], /the HTML sanitizer failed to load/);
+    for (const html of outputs) {
+        assert.ok(!/<script|onclick|<p/.test(html), html);
+    }
+});

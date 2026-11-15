@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-11-07 20:35+0000\n"
+"POT-Creation-Date: 2026-11-15 17:03+0000\n"
 
 #: lib/autodetect-imap-settings.js:160
 msgid ""
@@ -11,19 +11,19 @@ msgid ""
 "connect your account."
 msgstr ""
 
-#: lib/tools.js:1746
+#: lib/tools.js:1778
 #: lib/ui-routes/unsubscribe-routes.js:34
 #: lib/ui-routes/unsubscribe-routes.js:102
 msgid "Invalid input"
 msgstr ""
 
-#: lib/tools.js:2710
+#: lib/tools.js:2762
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:2733
-#: lib/tools.js:2739
-#: lib/tools.js:2744
+#: lib/tools.js:2785
+#: lib/tools.js:2791
+#: lib/tools.js:2796
 #: lib/ui-routes/account-setup.js:80
 msgid "Invalid or expired account setup URL"
 msgstr ""
@@ -37,7 +37,7 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:1360
 #: lib/ui-routes/route-helpers.js:350
 #: lib/ui-routes/route-helpers.js:373
-#: workers/api.js:2031
+#: workers/api.js:2050
 msgid "Email Account Setup"
 msgstr ""
 
@@ -108,7 +108,7 @@ msgstr ""
 msgid "Temporary error, please try again"
 msgstr ""
 
-#: lib/ui-routes/admin-config-routes.js:200
+#: lib/ui-routes/admin-config-routes.js:196
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
@@ -117,7 +117,7 @@ msgid "Unknown"
 msgstr ""
 
 #: lib/ui-routes/oauth-config-routes.js:273
-#: views/config/license.hbs:20
+#: views/config/license.hbs:28
 #: views/partials/queue_retention_note.hbs:10
 #: views/queues/index.hbs:54
 #: views/queues/index.hbs:78
@@ -413,7 +413,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: views/error.hbs:6
-#: workers/api.js:2900
+#: workers/api.js:2930
 msgid "Something went wrong"
 msgstr ""
 
@@ -529,37 +529,37 @@ msgid ""
 "received."
 msgstr ""
 
-#: workers/api.js:1943
+#: workers/api.js:1962
 msgid ""
 "The sign-in was cancelled or the requested access was not granted. Open the "
 "account setup link again to retry."
 msgstr ""
 
-#: workers/api.js:1952
+#: workers/api.js:1971
 msgid "Sign-in with the email provider failed: %s"
 msgstr ""
 
-#: workers/api.js:1956
+#: workers/api.js:1975
 msgid "Sign-in with the email provider failed: no authorization code was received"
 msgstr ""
 
-#: workers/api.js:1960
+#: workers/api.js:1979
 msgid "Sign-in with the email provider failed: the request state is not valid"
 msgstr ""
 
-#: workers/api.js:1969
+#: workers/api.js:1988
 msgid ""
 "The account setup session has expired or was already used. Open the account "
 "setup link again to retry."
 msgstr ""
 
-#: workers/api.js:1975
+#: workers/api.js:1994
 msgid ""
 "Sign-in with the email provider failed: the stored setup session is not "
 "valid"
 msgstr ""
 
-#: workers/api.js:2899
-#: workers/api.js:3022
+#: workers/api.js:2929
+#: workers/api.js:3052
 msgid "Requested page not found"
 msgstr ""

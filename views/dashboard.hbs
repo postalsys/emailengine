@@ -46,6 +46,15 @@
     {{> ui/btn label="Add account" icon="icon-[tabler--user-plus]" overlay="#addAccount"}}
     {{/ui/page-header}}
 
+    {{!-- Not dismissable: the next Node.js floor raise stops an instance on such a release from starting --}}
+    {{#if nodeRuntime.outsideRange}}
+    {{#> ui/alert-banner variant="warning" title="Upgrade Node.js" class="mt-6"}}
+    <p>This instance runs on Node.js {{nodeRuntime.version}}, which is outside the range EmailEngine supports
+        ({{nodeRuntime.supported}}). It works for now, but a future EmailEngine release may not start on it.
+        <a href="/admin/upgrade#node" class="link link-animated">How to upgrade Node.js</a></p>
+    {{/ui/alert-banner}}
+    {{/if}}
+
     {{#each redisWarnings}}
     {{#> ui/stat-card variant=(eeColor color) title=title icon="icon-[tabler--alert-circle]" class="mt-6"}}
     {{#each details}}

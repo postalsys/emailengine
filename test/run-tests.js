@@ -98,9 +98,8 @@ const TIERS = {
 };
 
 // Non-recursive and sorted, matching the shell globs these tiers have always used
-// (`test/*-test.js`, `test/integration/*-test.js`). Resolved here rather than handed to
-// `node --test` as a glob because glob expansion only landed in Node 22 and package.json declares
-// engines >=20.x. The *-test.js suffix is what keeps test/helpers/* and
+// (`test/*-test.js`, `test/integration/*-test.js`), resolved here so the order and the file rule
+// live in one place. The *-test.js suffix is what keeps test/helpers/* and
 // test/integration/test-config.js from being executed as tests.
 function findTestFiles(dir) {
     let files = fs

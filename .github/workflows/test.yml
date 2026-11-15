@@ -64,12 +64,11 @@ jobs:
         if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
         timeout-minutes: 10
         runs-on: ubuntu-24.04
-        # package.json declares Node >=20.19.0, the oldest release the dependency tree itself accepts
-        # (undici 7 >=20.18.1, html-to-text 10 >=20.19.0), while every other job runs 24. The 20.x
-        # leg runs exactly that release. Anything older is not a meaningful target: below 20.14
-        # node --test has no --test-force-exit, which test/run-tests.js relies on, and on 20.14
-        # dozens of unit tests fail on test runner differences (root-level hooks, mock timers)
-        # before the code under test is reached.
+        # server.js starts on Node 22.19.0 and later (lib/node-version.js MIN_NODE, what undici 8 needs)
+        # while every other job runs 24, so the 22.x leg runs exactly that release. It is below the
+        # range engines.node declares (from 22.22.2, what the jsdom bundled in email-text-tools asks
+        # for), which is the point: an instance there starts with a warning, and this leg shows
+        # that everything the tier covers still works on it.
         #
         # The Redis 7 and Valkey legs cover what operators actually run next to the current Redis:
         # ioredis 6 speaks RESP3 by default, and a server answering a command differently would
@@ -86,8 +85,8 @@ jobs:
                       redis: redis:8.2.10-alpine
                       cli: redis-cli
                       script: test:unit
-                    - label: Node 20.19.0
-                      node: '20.19.0'
+                    - label: Node 22.19.0
+                      node: '22.19.0'
                       redis: redis:8.2.10-alpine
                       cli: redis-cli
                       script: test:unit
@@ -131,6 +130,35 @@ jobs:
                   npm run ${{ matrix.script }}
               env:
                   NODE_ENV: test
+
+    # A Node.js release EmailEngine can not start on has to stop with the message that says how to
+    # upgrade, before anything that would fail on it is loaded: a one-click DigitalOcean droplet
+    # upgrades EmailEngine on its own but not the Node.js under it, and that log line is all its
+    # operator sees. Node 20 is what those droplets run.
+    node_floor:
+        name: Refuses to start on Node 20
+        if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
+        timeout-minutes: 10
+        runs-on: ubuntu-24.04
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - name: Use Node.js 20
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+              with:
+                  node-version: 20
+                  cache: npm
+            - run: npm ci
+            - name: server.js exits with the upgrade instructions
+              run: |
+                  set +e
+                  node server.js > out.txt 2>&1
+                  status=$?
+                  set -e
+                  cat out.txt
+                  test "$status" -eq 1
+                  grep -q "EmailEngine requires Node.js 22.19.0 or newer" out.txt
+                  grep -q "deb.nodesource.com/setup_24.x" out.txt
+                  if grep -q "TypeError" out.txt; then exit 1; fi
 
     # The binaries ship for macOS as well as Linux, but every other job runs on Ubuntu, so a path
     # separator, a case-insensitive file system or a platform-specific Node behaviour would first

@@ -65,10 +65,10 @@
         "@hapi/vision": "7.0.3",
         "@msgpack/msgpack": "3.1.3",
         "@postalsys/bounce-classifier": "3.1.0",
-        "@postalsys/certs": "2.0.5",
-        "@postalsys/email-ai-tools": "2.4.3",
+        "@postalsys/certs": "3.0.0",
+        "@postalsys/email-ai-tools": "3.0.0",
         "@postalsys/email-content": "0.1.21",
-        "@postalsys/email-text-tools": "2.6.4",
+        "@postalsys/email-text-tools": "3.0.0",
         "@postalsys/gettext": "4.3.0",
         "@postalsys/joi-messages": "1.4.1",
         "@postalsys/templates": "2.1.1",
@@ -76,9 +76,9 @@
         "@simplewebauthn/server": "14.1.0",
         "@zone-eu/mailsplit": "5.4.30",
         "@zone-eu/wild-config": "1.7.10",
-        "bullmq": "6.7.3",
+        "bullmq": "6.7.6",
         "dotenv": "18.0.10",
-        "fast-xml-parser": "5.12.0",
+        "fast-xml-parser": "5.12.1",
         "handlebars": "4.7.10",
         "he": "1.2.0",
         "html-to-text": "10.0.1",
@@ -103,11 +103,11 @@
         "qrcode-generator": "2.0.4",
         "smtp-server": "3.21.4",
         "socks": "2.8.10",
-        "undici": "7.30.2"
+        "undici": "8.12.4"
     },
     "devDependencies": {
         "@eslint/js": "10.0.1",
-        "@iconify-json/tabler": "1.2.44",
+        "@iconify-json/tabler": "1.2.46",
         "@iconify/tailwind4": "1.2.3",
         "@playwright/test": "1.63.0",
         "@postalsys/ee-client": "1.10.0",
@@ -117,24 +117,21 @@
         "acorn": "8.19.0",
         "acorn-walk": "8.3.5",
         "eerawlog": "1.5.5",
-        "eslint": "10.14.0",
+        "eslint": "10.15.0",
         "eslint-config-prettier": "10.1.8",
         "flyonui": "2.4.1",
         "gettext-parser": "7.0.1",
         "globals": "17.14.0",
         "pino-pretty": "13.2.0",
-        "prettier": "3.9.10",
-        "resedit": "3.1.0",
+        "prettier": "3.10.1",
+        "resedit": "3.1.1",
         "spdx-satisfies": "6.0.1",
         "supertest": "7.3.2",
         "tailwindcss": "4.3.5",
-        "xgettext-template": "5.0.0"
-    },
-    "overrides": {
-        "cheerio": "1.2.0"
+        "xgettext-template": "7.0.0"
     },
     "engines": {
-        "node": ">=20.19.0"
+        "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
     },
     "pkg": {
         "scripts": [

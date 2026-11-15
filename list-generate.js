@@ -53,10 +53,7 @@ const ASSET_PACKAGES = [
 const LICENSE_OVERRIDES = {
     // our own package; the LICENSE file is MIT but package.json lacks the
     // license field (fix upstream in postalsys/gettext, then drop this)
-    '@postalsys/gettext': 'MIT',
-    // declares the free-text "MIT (http://mootools.net/license.txt)"
-    // instead of an SPDX id
-    slick: 'MIT'
+    '@postalsys/gettext': 'MIT'
 };
 
 // Hand-vendored assets that are not npm dependencies. gateExempt entries skip
@@ -162,26 +159,66 @@ function collect(dirs, section) {
         if (pkg.private || !pkg.name || pkg.name === packageData.name) {
             continue;
         }
-        let key = `${pkg.name}@${pkg.version}`;
-        let entry = packages.get(key);
-        if (!entry) {
-            entry = {
-                name: pkg.name,
-                version: pkg.version || '',
-                license: LICENSE_OVERRIDES[pkg.name] || (typeof pkg.license === 'string' ? pkg.license : (pkg.license && pkg.license.type) || ''),
-                homepage: homepageOf(pkg),
-                sections: [],
-                licenseText: findLicenseText(dir)
-            };
-            packages.set(key, entry);
+        addPackage(pkg, section, { homepage: homepageOf(pkg), licenseText: () => findLicenseText(dir) });
+    }
+}
+
+// Lists a package under a section, once per name and version. `licenseText` is read only for a
+// package not seen before
+function addPackage(pkg, section, { homepage, licenseText }) {
+    let key = `${pkg.name}@${pkg.version}`;
+    let entry = packages.get(key);
+    if (!entry) {
+        entry = {
+            name: pkg.name,
+            version: pkg.version || '',
+            license: LICENSE_OVERRIDES[pkg.name] || (typeof pkg.license === 'string' ? pkg.license : (pkg.license && pkg.license.type) || ''),
+            homepage,
+            sections: [],
+            licenseText: licenseText()
+        };
+        packages.set(key, entry);
+    }
+    if (!entry.sections.includes(section)) {
+        entry.sections.push(section);
+    }
+}
+
+// Packages bundled into a dependency's own files, which npm ls never sees: @postalsys/email-text-tools
+// ships jsdom and juice, with everything they load, as dist/vendor/<name>.cjs. Such a package lists
+// the bundled packages in dist/vendor/<name>.packages.json and their license texts, in the same
+// order, in dist/vendor/<name>.LICENSES.txt (a header, then one "name@version (license)" block per
+// package, separated by a line of dashes). They are runtime code like any other dependency, so the
+// license gate below applies to them too.
+const VENDOR_SEPARATOR = '\n\n' + '-'.repeat(72) + '\n\n';
+
+function collectVendored(dirs) {
+    for (let dir of dirs) {
+        let vendorDir = path.join(dir, 'dist', 'vendor');
+        if (!fs.existsSync(vendorDir)) {
+            continue;
         }
-        if (!entry.sections.includes(section)) {
-            entry.sections.push(section);
+        for (let file of fs.readdirSync(vendorDir).filter(name => name.endsWith('.packages.json'))) {
+            let bundled = JSON.parse(fs.readFileSync(path.join(vendorDir, file), 'utf8'));
+            let licensesFile = path.join(vendorDir, file.replace(/\.packages\.json$/, '.LICENSES.txt'));
+            let texts = new Map();
+            if (fs.existsSync(licensesFile)) {
+                for (let block of fs.readFileSync(licensesFile, 'utf8').split(VENDOR_SEPARATOR).slice(1)) {
+                    let [title, ...rest] = block.split('\n\n');
+                    let text = rest.join('\n\n').trim();
+                    texts.set(title.replace(/ \(.*\)$/, ''), /^Licensed under [^\n]*\.$/.test(text) ? null : text);
+                }
+            }
+            for (let pkg of bundled) {
+                addPackage(pkg, 'runtime', { homepage: null, licenseText: () => texts.get(`${pkg.name}@${pkg.version}`) || null });
+            }
         }
     }
 }
 
-collect(prodDependencyPaths(), 'runtime');
+const runtimeDirs = prodDependencyPaths();
+collect(runtimeDirs, 'runtime');
+collectVendored(runtimeDirs);
 collect(
     ASSET_PACKAGES.map(name => path.join(__dirname, 'node_modules', name)),
     'assets'

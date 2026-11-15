@@ -50,28 +50,24 @@ try {
     process.exit(1);
 }
 
-// EmailEngine and its dependencies need Node 20 or newer. Checked before anything is required, so an
-// older runtime gets this line instead of a syntax error from a dependency. The check used to be a
-// structuredClone probe, which only caught Node 16 and older.
-if (Number(process.versions.node.split('.')[0]) < 20) {
-    console.error(`Node.js version ${process.version} is not supported. Please upgrade to Node.js 20 or later.`);
+// Checked before anything else is required. Below MIN_NODE undici, which every thread loads at
+// startup, throws when it is loaded, so an older runtime gets this message and the commands to fix it
+// instead of a TypeError from inside a dependency. A one-click DigitalOcean droplet upgrades
+// EmailEngine on its own but not the Node.js it runs on, and that log line is all its operator sees.
+// A release that starts but is outside the supported range is only warned about here and on the
+// dashboard (see lib/node-version.js for the two thresholds).
+const { MIN_NODE, SUPPORTED_RANGE_LABEL, nodeSupport, nodeUpgradeHint } = require('./lib/node-version');
+const nodeSupportLevel = nodeSupport(process.versions.node);
+if (nodeSupportLevel === 'unsupported') {
+    console.error(`EmailEngine requires Node.js ${MIN_NODE} or newer, this is Node.js ${process.version}.\n\n${nodeUpgradeHint()}`);
     process.exit(1);
 }
+if (nodeSupportLevel === 'outside-range') {
+    console.error(`Node.js ${process.version} is outside the range EmailEngine supports (${SUPPORTED_RANGE_LABEL}). It runs, but please upgrade Node.js.`);
+}
 
-// Within Node 20 the dependency tree itself asks for 20.19.0 (html-to-text 10, the entities release
-// node-html-parser pulls in) or 20.18.1 (undici 7), which is what the engines field declares. npm
-// treats that field as advice, and an older 20.x starts and then fails somewhere in a dependency at
-// runtime, so it is named here. Only a warning: one-click DigitalOcean images upgrade EmailEngine on
-// their own but not the Node they run on, and an instance that works today must not stop at its next
-// self-upgrade over a minor version it may never exercise.
 const { accountDataKey } = require('./lib/redis-keys');
 const { importPreparedPassword } = require('./lib/prepared-password');
-const { MIN_SUPPORTED_NODE, isBelowSupportedNode } = require('./lib/node-version');
-if (isBelowSupportedNode(process.versions.node)) {
-    console.error(
-        `Node.js version ${process.version} is older than ${MIN_SUPPORTED_NODE}, the oldest release EmailEngine's dependencies support. Some features may fail at runtime. Please upgrade Node.js.`
-    );
-}
 
 const os = require('os');
 

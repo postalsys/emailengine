@@ -64,7 +64,8 @@ const MODULE_BUDGETS = {
     // 522: logout ends the device-bound session binding (require + call)
     'auth-routes.js': 522,
     'connection-security-form.js': 11,
-    'dashboard-routes.js': 37,
+    // 38: the Node.js runtime notice on the dashboard and the upgrade page (its require)
+    'dashboard-routes.js': 38,
     'dbsc-routes.js': 6,
     'export-routes.js': 49,
     'form-lists.js': 8,
