@@ -1490,3 +1490,103 @@ test('autodiscovery reaches the endpoints the sequence names', async t => {
         }
     });
 });
+
+test('MX provider chain (stand-in DNS and fetch)', async t => {
+    const mxDns = exchange => ({
+        resolveMx: async () => [{ priority: 10, exchange }],
+        resolveSrv: async name => {
+            switch (name) {
+                case '_imaps._tcp.gmail.com':
+                    return [{ name: 'imap.gmail.com', port: 993, priority: 5, weight: 1 }];
+                case '_submissions._tcp.gmail.com':
+                    return [{ name: 'smtp.gmail.com', port: 465, priority: 5, weight: 1 }];
+                default:
+                    throw Object.assign(new Error('ENOTFOUND'), { code: 'ENOTFOUND' });
+            }
+        }
+    });
+
+    // Records every request, and answers an autoconfig document for the hosts listed
+    const recordingFetch = (seen, answers) => async url => {
+        const host = new URL(url).hostname;
+        seen.push(host);
+        if (answers[host]) {
+            return textResponse(200, autoconfigDoc(answers[host]));
+        }
+        return textResponse(404);
+    };
+
+    const resolveFor = async (exchange, answers) => {
+        const seen = [];
+        const res = await resolver('user@customdomain.com', gt, null, {
+            dns: mxDns(exchange),
+            timeout: 2000,
+            fetchResource: recordingFetch(seen, answers || {})
+        });
+        return { res, seen };
+    };
+
+    // Each row: the exchange, the IMAP host the chain resolves it to, and the hosts it asks over HTTP
+    const cases = [
+        { exchange: 'gmail-smtp-in.l.google.com', imap: 'imap.gmail.com', fetched: [] },
+        { exchange: 'mx.yandex.net', imap: 'imap.yandex.example', fetched: ['autoconfig.yandex.ru'] },
+        { exchange: 'mx3.zone.eu', imap: 'mail.zone.ee', fetched: [] },
+        { exchange: 'emx.mail.larksuite.com', imap: 'imap.larksuite.com', fetched: [] },
+        { exchange: 'mx1.zonemx.eu', imap: 'imap.zonemx.example', fetched: ['autoconfig.zone.ee'] },
+        { exchange: 'inbound-smtp.us-east-1.amazonaws.com', imap: 'imap.mail.us-east-1.awsapps.com', fetched: [] },
+        { exchange: 'mx.zoho.eu', imap: 'imappro.zoho.eu', fetched: [] },
+        { exchange: 'mx.zoho.com', imap: 'imappro.zoho.com', fetched: [] },
+        { exchange: 'example-com.mail.protection.outlook.com', imap: 'outlook.office365.com', fetched: [] },
+        { exchange: 'mx.dka.mailcore.net', imap: 'imap.dka.mailcore.net', fetched: [] },
+        { exchange: 'ekiri.ee', imap: 'turvaline.ekiri.ee', fetched: [] },
+        { exchange: 'mx2.sg.aliyun.com', imap: 'imap.sg.aliyun.com', fetched: [] },
+        { exchange: 'al-ip4-mx-vip2.prodigy.net', imap: 'imap.mail.att.net', fetched: [] },
+        { exchange: 'mx3.naver.com', imap: 'imap.naver.com', fetched: [] },
+        { exchange: 'mxbiz2.qq.com', imap: 'imap.exmail.qq.com', fetched: [] }
+    ];
+
+    const answers = { 'autoconfig.yandex.ru': 'imap.yandex.example', 'autoconfig.zone.ee': 'imap.zonemx.example' };
+
+    for (const row of cases) {
+        await t.test(`${row.exchange} resolves from the MX table`, async () => {
+            const { res, seen } = await resolveFor(row.exchange, answers);
+            assert.strictEqual(res.imap.host, row.imap);
+            assert.strictEqual(res._source, 'mx');
+            // A match never falls through to the racing resolvers
+            assert.deepStrictEqual(seen, row.fetched);
+        });
+    }
+
+    await t.test('the first matching entry wins', async () => {
+        // The AWS pattern is checked before Microsoft 365 and is not anchored, so an exchange
+        // both patterns accept resolves to WorkMail
+        const { res } = await resolveFor('inbound-smtp.eu-west-1.amazonaws.com.mail.protection.outlook.com');
+        assert.strictEqual(res.imap.host, 'imap.mail.eu-west-1.awsapps.com');
+    });
+
+    await t.test('the two exact entries match only the exact exchange', async () => {
+        for (const exchange of ['mx2.dka.mailcore.net', 'mx.ekiri.ee']) {
+            const { res, seen } = await resolveFor(exchange, { 'autoconfig.customdomain.com': 'imap.fallback.example' });
+            assert.strictEqual(res.imap.host, 'imap.fallback.example', exchange);
+            assert.strictEqual(res._source, 'autoconfig');
+            assert.ok(seen.includes('autoconfig.customdomain.com'));
+        }
+    });
+
+    await t.test('an unknown exchange falls through to the racing resolvers', async () => {
+        const { res } = await resolveFor('mx.unknown-provider.example', { 'autoconfig.customdomain.com': 'imap.fallback.example' });
+        assert.strictEqual(res.imap.host, 'imap.fallback.example');
+        assert.strictEqual(res._source, 'autoconfig');
+    });
+
+    await t.test('a delegated lookup that names no server falls through too', async () => {
+        const { res, seen } = await resolveFor('mx.yandex.net', { 'autoconfig.customdomain.com': 'imap.fallback.example' });
+        assert.strictEqual(res.imap.host, 'imap.fallback.example');
+        assert.ok(seen.includes('autoconfig.yandex.ru'));
+    });
+
+    await t.test('an upper-case exchange is lowered before matching', async () => {
+        const { res } = await resolveFor('MX1.NAVER.COM');
+        assert.strictEqual(res.imap.host, 'imap.naver.com');
+    });
+});
