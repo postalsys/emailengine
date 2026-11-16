@@ -112,9 +112,9 @@ test('Okta strategy', async t => {
         await registerOktaAuth(server, ctx, { baseUrl: 'https://dev-1.okta.com', clientId: 'okta-client', clientSecret: 'okta-secret' });
         addProbe(server);
 
-        assert.equal(JSON.parse((await server.inject('/probe')).payload).oktaValid, true);
+        assert.equal((await server.inject('/probe')).result.oktaValid, true);
         serviceUrl = 'https://moved.example.com';
-        assert.equal(JSON.parse((await server.inject('/probe')).payload).oktaValid, false);
+        assert.equal((await server.inject('/probe')).result.oktaValid, false);
     });
 });
 
@@ -136,7 +136,7 @@ test('OIDC strategy', async t => {
         assert.ok(location.searchParams.get('code_challenge'));
         assert.equal(location.searchParams.get('redirect_uri'), 'https://ee.example.com/admin/login/oidc');
 
-        const probe = JSON.parse((await server.inject('/probe')).payload);
+        const probe = (await server.inject('/probe')).result;
         assert.equal(probe.oidcValid, true);
     });
 
@@ -166,8 +166,8 @@ test('OIDC strategy', async t => {
         assert.ok(retry, 'a background retry is running');
         addProbe(server);
 
-        assert.equal(JSON.parse((await server.inject('/probe')).payload).oidcValid, false);
-        assert.equal(JSON.parse((await server.inject('/probe')).payload).logoutUrl, null);
+        assert.equal((await server.inject('/probe')).result.oidcValid, false);
+        assert.equal((await server.inject('/probe')).result.logoutUrl, null);
 
         // the callback route exists from the start, so nothing is added to the table after the server starts
         assert.ok(server.table().some(route => route.path === '/admin/login/oidc'));
@@ -179,10 +179,11 @@ test('OIDC strategy', async t => {
         resolveRetry(DISCOVERY);
         await retry;
 
-        assert.equal(JSON.parse((await server.inject('/probe')).payload).oidcValid, true);
+        assert.equal((await server.inject('/probe')).result.oidcValid, true);
         const res = await server.inject({ method: 'GET', url: '/admin/login/oidc' });
         assert.equal(res.statusCode, 302);
-        assert.equal(new URL(res.headers.location).origin + new URL(res.headers.location).pathname, DISCOVERY.authorization_endpoint);
+        const location = new URL(res.headers.location);
+        assert.equal(location.origin + location.pathname, DISCOVERY.authorization_endpoint);
     });
 
     await t.test('a retry that gives up leaves SSO off and the server serving', async () => {
@@ -198,6 +199,6 @@ test('OIDC strategy', async t => {
         });
         await retry;
         addProbe(server);
-        assert.equal(JSON.parse((await server.inject('/probe')).payload).oidcValid, false);
+        assert.equal((await server.inject('/probe')).result.oidcValid, false);
     });
 });
