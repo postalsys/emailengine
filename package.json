@@ -102,6 +102,7 @@
         "qrcode-generator": "2.0.4",
         "smtp-server": "3.21.5",
         "socks": "2.8.10",
+        "tldts": "7.5.4",
         "undici": "8.12.4"
     },
     "overrides": {
@@ -151,8 +152,7 @@
             "node_modules/@postalsys/email-content/dist/detect/patterns/*.json",
             "LICENSE_EMAILENGINE.txt",
             "version-info.json",
-            "sbom.json",
-            "data/public_suffix_list.dat"
+            "sbom.json"
         ],
         "targets": [
             "node24-linux-x64",
