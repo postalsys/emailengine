@@ -513,12 +513,14 @@ test('arfDetect report precedence', async t => {
         ]);
     });
 
-    await t.test('report last: its fields overwrite what the original headers filled in', async () => {
+    await t.test('report last: its fields overwrite what the original headers filled in, recipients accumulate', async () => {
         const report = await arfDetect({
             attachments: [att('text/rfc822-header', ORIGINAL_B), att('message/rfc822-headers', ORIGINAL_A), att('Message/Feedback-Report', REPORT)]
         });
         assert.deepStrictEqual(report, {
-            arf: Object.assign({}, REPORT_ARF, { 'original-rcpt-to': ['<a@rcpt.example>', 'b@rcpt.example'] }),
+            arf: Object.assign({}, REPORT_ARF, {
+                'original-rcpt-to': ['<a@rcpt.example>', 'b@rcpt.example', 'c@rcpt.example', 'd@rcpt.example', 'a@rcpt.example']
+            }),
             headers: {
                 'message-id': '<second@msg.example>',
                 from: 'other@sender.example',
