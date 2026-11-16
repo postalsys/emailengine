@@ -33,7 +33,11 @@ WORKDIR /emailengine
 # the lockfile actually changes.
 COPY package.json package.json
 COPY package-lock.json package-lock.json
-RUN npm ci --omit=dev
+# --omit=optional, as the binary build does: the only optional runtime packages are msgpackr-extract
+# (a native addon with an install script that MSGPACKR_NATIVE_ACCELERATION_DISABLED below keeps
+# unused anyway, plus its six platform prebuilds), handlebars' precompiler (uglify-js) and a
+# types package. None of them is loaded at runtime.
+RUN npm ci --omit=dev --omit=optional
 
 # Copy app folders
 COPY bin bin
