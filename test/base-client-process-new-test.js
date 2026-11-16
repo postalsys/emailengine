@@ -184,6 +184,16 @@ test('BaseClient.processNew() checks', async t => {
         assert.deepEqual(events(notifications), ['messageNew', 'messageBounce']);
     });
 
+    await t.test('a message the provider returns no source for is neither parsed nor downloaded again', async () => {
+        const { ctx, notifications, steps, logged } = createClient({ raw: null });
+
+        await ctx.processNew(dsnMessage('msg-5'), {});
+
+        assert.deepEqual(steps, ['raw:msg-5']);
+        assert.deepEqual(logged('error'), []);
+        assert.deepEqual(events(notifications), ['messageNew']);
+    });
+
     await t.test('a failed download is logged in each check and the message announced', async () => {
         const { ctx, notifications, logged } = createClient({ raw: new Error('Gone') });
 
