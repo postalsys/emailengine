@@ -128,8 +128,8 @@ test('serializeAccountData() without a secret', async t => {
         assert.deepStrictEqual(encode(['*', 'INBOX']), { path: '["*","INBOX"]' });
         assert.deepStrictEqual(encode('INBOX'), { path: '"INBOX"' });
         assert.deepStrictEqual(encode(['INBOX']), { path: '["INBOX"]' });
-        // JSON.stringify(undefined) is undefined: the key is present and holds undefined
-        assert.deepStrictEqual(encode(undefined), { path: undefined });
+        // Undefined was not given, and must not be stored as '', which reads back as every folder
+        assert.deepStrictEqual(encode(undefined), {});
     });
 
     await t.test('boolean and clearable fields', () => {
@@ -145,8 +145,9 @@ test('serializeAccountData() without a secret', async t => {
     await t.test('JSON, encrypted and generic fields', () => {
         const encode = data => accountObject.serializeAccountData(data);
         assert.deepStrictEqual(encode({ webhooksCustomHeaders: null }), { webhooksCustomHeaders: 'null' });
-        assert.deepStrictEqual(encode({ webhooksCustomHeaders: undefined }), { webhooksCustomHeaders: undefined });
-        assert.deepStrictEqual(encode({ watchFailure: undefined, watchResponse: null }), { watchFailure: undefined, watchResponse: 'null' });
+        assert.deepStrictEqual(encode({ webhooksCustomHeaders: undefined }), {});
+        assert.deepStrictEqual(encode({ watchFailure: undefined, watchResponse: null }), { watchResponse: 'null' });
+        assert.deepStrictEqual(encode({ outlookSubscription: undefined }), {});
         assert.deepStrictEqual(encode({ proxy: null, webhooks: undefined }), {});
         assert.deepStrictEqual(encode({ proxy: false }), { proxy: 'false' });
         assert.deepStrictEqual(encode({ name: 5, lastErrorState: { a: 1 }, note: null }), { name: '5', lastErrorState: '[object Object]' });
@@ -169,15 +170,13 @@ test('serializeAccountData() without a secret', async t => {
         assert.deepStrictEqual(encode({ imap: { host: 'h', created: new Date('invalid') } }), { imap: '{"host":"h","created":null}' });
         // A string subkey is not an object, so the copy keeps it unchanged
         assert.deepStrictEqual(encode({ smtp: { expires: '2026-01-01' } }), { smtp: '{"expires":"2026-01-01"}' });
-        // Not serializable: logged, field left out
+        // Undefined was not given: left out, nothing logged
         assert.deepStrictEqual(encode({ oauth2: undefined }), {});
+        // Not serializable: logged, field left out
         assert.deepStrictEqual(encode({ imap: null }), {});
         assert.deepStrictEqual(
             logger.entries.map(entry => [entry.msg, entry.key]),
-            [
-                ['Failed to stringify input for Redis', 'oauth2'],
-                ['Failed to stringify input for Redis', 'imap']
-            ]
+            [['Failed to stringify input for Redis', 'imap']]
         );
     });
 
