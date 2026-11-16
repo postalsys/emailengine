@@ -12,7 +12,9 @@ const assert = require('node:assert').strict;
 let unsubscribed = {};
 require('./helpers/mock-db').installDbMock({
     redis: {
-        hget: async (key, field) => (unsubscribed[`${key}:${field}`] ? JSON.stringify(unsubscribed[`${key}:${field}`]) : null)
+        hget: async (key, field) => (unsubscribed[`${key}:${field}`] ? JSON.stringify(unsubscribed[`${key}:${field}`]) : null),
+        // no gateway is stored
+        hgetallBuffer: async () => ({})
     }
 });
 
@@ -25,6 +27,7 @@ const { BaseClient } = require('../lib/email-client/base-client');
 const { REDIS_PREFIX } = require('../lib/consts');
 const { noopLogger } = require('./helpers/auth-failure');
 const { simpleParser } = require('mailparser');
+const os = require('os');
 
 require('./helpers/redis-teardown')();
 
@@ -134,6 +137,29 @@ test('queueMessageEntry', async t => {
         assert.match(Buffer.from(result.preview, 'base64').toString(), /^Subject: Dry$/m);
     });
 
+    await t.test('a gateway that does not exist fails the submission instead of using the account server', async () => {
+        const { queued, run } = createClient();
+        await assert.rejects(
+            run({ to: [{ address: 'rcpt@example.com' }], subject: 'x', text: 'x', gateway: 'missing-gw' }),
+            err => err.code === 'GatewayNotFound' && err.statusCode === 404
+        );
+        assert.strictEqual(queued.length, 0);
+    });
+
+    await t.test('renders the preview text into the html like the other template fields', async () => {
+        const { queued, run } = createClient();
+        await run({
+            to: [{ address: 'rcpt@example.com' }],
+            subject: 'x',
+            html: '<html><body><p>Body</p></body></html>',
+            previewText: 'Hello {{params.name}}',
+            render: { params: { name: 'Juta' } }
+        });
+        const raw = rawOf(queued).replace(/[=]\r\n/g, '');
+        assert.match(raw, /Hello Juta/);
+        assert.doesNotMatch(raw, /\{\{params\.name\}\}/);
+    });
+
     await t.test('list messages', async t => {
         await t.test('skip a recipient who unsubscribed from the list', async () => {
             const { queued, run } = createClient();
@@ -152,6 +178,19 @@ test('queueMessageEntry', async t => {
             assert.match(raw, /^List-Unsubscribe-Post: List-Unsubscribe=One-Click$/m);
             assert.match(queued[0].messageId, /@example\.com>$/);
             assert.match(raw, /Unsubscribe: https:\/\/ee\.example\.com\/unsubscribe\?/);
+        });
+
+        await t.test('take the List-ID domain from the host name when the base URL names no host', async () => {
+            const { queued, run } = createClient();
+            await run({ to: [{ address: 'rcpt@example.com' }], listId: 'news', subject: 'x', text: 'x', baseUrl: 'file:///srv/ee' });
+            const hostDomain = (os.hostname() || '').toLowerCase().trim() || 'localhost';
+            assert.ok(rawOf(queued).includes(`List-ID: <news.${hostDomain}>`));
+        });
+
+        await t.test('generate the Message-ID on the punycode form of an IDN sender domain', async () => {
+            const { queued, run } = createClient();
+            await run({ from: { address: 'news@\u00f5nne.ee' }, to: [{ address: 'rcpt@example.com' }], listId: 'news', subject: 'x', text: 'x' });
+            assert.match(queued[0].messageId, /^<[0-9a-f-]+@xn--nne-nna\.ee>$/);
         });
 
         await t.test('are not list messages for more than one recipient', async () => {
