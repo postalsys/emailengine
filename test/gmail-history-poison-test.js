@@ -34,6 +34,8 @@ const usedAccounts = [];
 async function makeClient(account, historyPage) {
     const client = new GmailClient(account, { redis });
     usedAccounts.push(client);
+    // whatever an interrupted earlier run left behind
+    await redis.del(client.getAccountKey());
     await redis.hset(client.getAccountKey(), 'account', account);
     const logs = { error: [], warn: [], info: [] };
     client.logger = {
@@ -210,6 +212,118 @@ test('Gmail history with an expired cursor', async t => {
         await client.processHistory(1000, 1000);
 
         assert.strictEqual(await redis.hget(client.getAccountKey(), 'googleHistoryId'), '5000');
+        await redis.del(client.getAccountKey());
+    });
+});
+
+test('Gmail history across pages', async t => {
+    await t.test('follows nextPageToken from the same start and ends on the newest history id', async () => {
+        const { client, processed } = await makeClient('history-pages', null);
+        const pages = {
+            '': { history: [historyEntry(1001)], historyId: '1004', nextPageToken: 'p2' },
+            p2: { history: [historyEntry(1002)], historyId: '1002', nextPageToken: 'p3' },
+            p3: { history: [historyEntry(1003)], historyId: '1003' }
+        };
+        const queries = [];
+        let contextCalls = 0;
+        client.getHistoryContext = async () => {
+            contextCalls++;
+            return { labels: [], newMessageOptions: {} };
+        };
+        client.request = async (url, method, queryArgs) => {
+            queries.push(Object.assign({}, queryArgs));
+            return pages[queryArgs.pageToken || ''];
+        };
+
+        await client.processHistory(1000, 1004);
+
+        assert.deepStrictEqual(queries, [
+            { startHistoryId: 1000, maxResults: 500 },
+            { startHistoryId: 1000, maxResults: 500, pageToken: 'p2' },
+            { startHistoryId: 1000, maxResults: 500, pageToken: 'p3' }
+        ]);
+        assert.deepStrictEqual(processed, ['1001', '1002', '1003']);
+        assert.strictEqual(contextCalls, 1, 'the context is resolved once per run, not per page');
+        assert.strictEqual(await redis.hget(client.getAccountKey(), 'googleHistoryId'), '1004');
+        assert.strictEqual(await redis.hget(client.getAccountKey(), 'googleHistoryProcessing'), null);
+        await redis.del(client.getAccountKey());
+    });
+
+    await t.test('an entry that throws on a later page keeps the cursor on the last good entry', async () => {
+        const { client } = await makeClient('history-pages-throw', null);
+        const pages = {
+            '': { history: [historyEntry(1001)], historyId: '1002', nextPageToken: 'p2' },
+            p2: { history: [historyEntry(1002)], historyId: '1002' }
+        };
+        client.request = async (url, method, queryArgs) => pages[queryArgs.pageToken || ''];
+        client.processHistoryEntry = async entry => {
+            if (entry.id === '1002') {
+                throw new Error('processing failed');
+            }
+        };
+
+        await assert.rejects(client.processHistory(1000, 1002), /processing failed/);
+
+        assert.strictEqual(await redis.hget(client.getAccountKey(), 'googleHistoryId'), '1001');
+        assert.deepStrictEqual(JSON.parse(await redis.hget(client.getAccountKey(), 'googleHistoryProcessing')), { id: '1002', count: 1 });
+        await redis.del(client.getAccountKey());
+    });
+
+    await t.test('a 404 on a later page moves the cursor to the target without asking for the profile', async () => {
+        const { client, logs } = await makeClient('history-pages-expired', null);
+        const urls = [];
+        client.request = async (url, method, queryArgs) => {
+            urls.push(url);
+            if (url.includes('/history') && !queryArgs.pageToken) {
+                return { history: [historyEntry(1001)], historyId: '1001', nextPageToken: 'p2' };
+            }
+            if (url.includes('/history')) {
+                const err = new Error('Requested entity was not found');
+                err.oauthRequest = { status: 404, response: { error: { code: 404 } } };
+                throw err;
+            }
+            throw new Error(`unexpected request ${url}`);
+        };
+
+        await client.processHistory(1000, 3000);
+
+        assert.ok(!urls.some(url => url.includes('/profile')), 'a target past the cursor needs no profile lookup');
+        assert.ok(logs.warn.find(entry => entry.msg === 'History ID too old, some email changes may have been missed'));
+        assert.strictEqual(await redis.hget(client.getAccountKey(), 'googleHistoryId'), '3000');
+        assert.strictEqual(await redis.hget(client.getAccountKey(), 'googleHistoryProcessing'), null);
+        await redis.del(client.getAccountKey());
+    });
+
+    await t.test('a 404 whose profile lookup fails leaves the cursor where it was', async () => {
+        const { client, logs } = await makeClient('history-expired-noprofile', null);
+        await redis.hset(client.getAccountKey(), 'googleHistoryId', '1000');
+        client.request = async url => {
+            const err = new Error(url.includes('/profile') ? 'profile failed' : 'Requested entity was not found');
+            if (url.includes('/history')) {
+                err.oauthRequest = { status: 404, response: { error: { code: 404 } } };
+            }
+            throw err;
+        };
+
+        await client.processHistory(1000, 1000);
+
+        assert.ok(logs.warn.find(entry => entry.msg === 'Failed to fetch the current history ID'));
+        assert.strictEqual(await redis.hget(client.getAccountKey(), 'googleHistoryId'), '1000');
+        await redis.del(client.getAccountKey());
+    });
+
+    await t.test('any other error from the history request ends the run and keeps the marker', async () => {
+        const { client } = await makeClient('history-request-fails', null);
+        await redis.hset(client.getAccountKey(), 'googleHistoryProcessing', JSON.stringify({ id: '1001', count: 1 }));
+        client.request = async () => {
+            const err = new Error('Backend Error');
+            err.oauthRequest = { status: 500, response: { error: { code: 500 } } };
+            throw err;
+        };
+
+        await assert.rejects(client.processHistory(1000, 1001), /Backend Error/);
+
+        assert.deepStrictEqual(JSON.parse(await redis.hget(client.getAccountKey(), 'googleHistoryProcessing')), { id: '1001', count: 1 });
         await redis.del(client.getAccountKey());
     });
 });
