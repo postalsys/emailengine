@@ -97,6 +97,19 @@ test('the IMAP section writes only what the form showed and changed', async t =>
         assert.ok(!('disableIMAP4rev2' in imap));
     });
 
+    await t.test('a missing disabled key and false are the same state', () => {
+        const stored = storedImap();
+        delete stored.disabled;
+        assert.deepEqual(buildImapUpdates(untouchedImap, stored), stored, 'an untouched save adds no disabled key');
+
+        assert.equal(buildImapUpdates(Object.assign({}, untouchedImap, { imap_disabled: true }), stored).disabled, true);
+        assert.equal(
+            buildImapUpdates(untouchedImap, Object.assign(storedImap(), { disabled: true })).disabled,
+            false,
+            'unchecking a disabled account writes false'
+        );
+    });
+
     await t.test('an account with no IMAP yet gets no empty tls object', () => {
         const imap = buildImapUpdates(
             {

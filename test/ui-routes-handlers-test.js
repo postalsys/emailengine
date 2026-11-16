@@ -709,9 +709,9 @@ test('account edit form saves the connection sections without touching what was 
         account,
         name: 'Connections',
         email: 'conn@example.com',
-        // `disabled` is stored explicitly: the form always submits that checkbox, so the first save
-        // of an account that never had the key writes `disabled: false`
-        imap: { host: 'imap.example.com', port: 993, secure: true, auth: { user: 'iu', pass: 'ip' }, tls: { rejectUnauthorized: false }, disabled: false },
+        // No `disabled` key: the form always submits that checkbox, and an untouched save must not
+        // add the key, since any imap diff forces a reconnect
+        imap: { host: 'imap.example.com', port: 993, secure: true, auth: { user: 'iu', pass: 'ip' }, tls: { rejectUnauthorized: false } },
         smtp: { host: 'smtp.example.com', port: 465, secure: true, auth: { user: 'su', pass: 'sp' } }
     });
     t.after(() => accountObject.delete().catch(() => false));
