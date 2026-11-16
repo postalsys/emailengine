@@ -162,6 +162,213 @@ test('accounts listing', async t => {
     });
 });
 
+test('account page', async t => {
+    const route = capture('../lib/ui-routes/account-routes', async ({ cmd }) => (cmd === 'runIndex' ? 1 : cmd === 'subconnections' ? [] : {}));
+    stub(t, tools, { getServiceSecret: async () => SECRET });
+    stub(t, webhooks, {
+        async list() {
+            return { webhooks: [] };
+        },
+        async getFilterInfo() {
+            return new Map();
+        }
+    });
+
+    // Several renders share one subtest, so the loader stand-in is put back after each
+    const render = async accountData => {
+        const original = Account.prototype.loadAccountData;
+        Account.prototype.loadAccountData = async () => accountData;
+        try {
+            const h = makeToolkit();
+            await route('GET', '/admin/accounts/{account}').handler(makeRequest({ params: { account: `page-${RUN}` } }), h);
+            return h.answers.views[0].context;
+        } finally {
+            Account.prototype.loadAccountData = original;
+        }
+    };
+
+    const base = extra => Object.assign({ account: `page-${RUN}`, name: 'Page', email: 'page@example.com', state: 'connected' }, extra);
+
+    await t.test('EHLO AUTH lines become described mechanisms and leave the extension list', async t => {
+        const context = await render(
+            base({
+                smtp: { host: 'smtp.example.com' },
+                smtpServerEhlo: ['PIPELINING', 'AUTH LOGIN PLAIN', 'SIZE 1000', 'auth xoauth2 OAuthBearer login', 'AUTH', 'AUTH CRAM-MD5 PLAIN']
+            })
+        );
+
+        assert.deepEqual(context.account.smtpServerEhlo, ['PIPELINING', 'SIZE 1000']);
+        // Lines are read last to first and a repeated mechanism keeps its first place
+        assert.deepEqual(context.account.smtpAuthMechanisms, [
+            'CRAM-MD5',
+            { auth: 'PLAIN', rfc: 'RFC4616', url: 'https://www.rfc-editor.org/rfc/rfc4616.html' },
+            { auth: 'xoauth2', rfc: 'xoauth2-protocol', url: 'https://developers.google.com/gmail/imap/xoauth2-protocol#smtp_protocol_exchange' },
+            { auth: 'OAuthBearer', rfc: 'RFC7628', url: 'https://www.rfc-editor.org/rfc/rfc7628.html' },
+            { auth: 'login', rfc: 'draft-murchison-sasl-login', url: 'https://datatracker.ietf.org/doc/html/draft-murchison-sasl-login' },
+            { auth: 'LOGIN', rfc: 'draft-murchison-sasl-login', url: 'https://datatracker.ietf.org/doc/html/draft-murchison-sasl-login' }
+        ]);
+    });
+
+    await t.test('an account without EHLO lines gets no mechanism list', async t => {
+        assert.equal((await render(base({ smtpServerEhlo: [] }))).account.smtpAuthMechanisms, undefined);
+        assert.equal((await render(base({}))).account.smtpAuthMechanisms, undefined);
+    });
+
+    await t.test('a support URL that is not http(s) is dropped from the server info', async t => {
+        const unsafe = await render(base({ imapServerInfo: { name: 'Server', 'support-url': 'javascript:alert(1)' } }));
+        assert.deepEqual(unsafe.account.imapServerInfo, { name: 'Server' });
+
+        const safe = await render(base({ imapServerInfo: { name: 'Server', 'support-url': 'HTTPS://help.example.com' } }));
+        assert.equal(safe.account.imapServerInfo['support-url'], 'HTTPS://help.example.com');
+    });
+
+    await t.test('the Gmail watch card', async t => {
+        assert.equal((await render(base({}))).gmailWatch, false);
+
+        const future = Date.now() + 3600 * 1000;
+        const active = await render(base({ watchResponse: { expiration: String(future) }, lastWatch: new Date('2026-01-01T00:00:00Z') }));
+        assert.deepEqual(active.gmailWatch, {
+            lastCheckStr: '2026-01-01T00:00:00.000Z',
+            expiresStr: new Date(future).toISOString(),
+            active: true,
+            stateLabel: 'Active',
+            error: false
+        });
+
+        const expired = await render(base({ watchResponse: { expiration: '1000' } }));
+        assert.equal(expired.gmailWatch.stateLabel, 'Expired');
+        assert.equal(expired.gmailWatch.active, false);
+        assert.equal(expired.gmailWatch.lastCheckStr, null);
+
+        const failed = await render(
+            base({
+                watchFailure: {
+                    time: Date.parse('2026-02-01T00:00:00Z'),
+                    err: 'Topic not found',
+                    req: { url: 'https://gmail.googleapis.com/watch', status: 404, contentType: 'application/json', response: '{}', extra: 'dropped' }
+                }
+            })
+        );
+        assert.deepEqual(failed.gmailWatch, {
+            lastCheckStr: '2026-02-01T00:00:00.000Z',
+            expiresStr: false,
+            active: false,
+            stateLabel: 'Failed',
+            error: 'Topic not found',
+            request: { url: 'https://gmail.googleapis.com/watch', status: 404, contentType: 'application/json', response: '{}' }
+        });
+
+        const unnamed = await render(base({ watchFailure: {} }));
+        assert.equal(unnamed.gmailWatch.error, 'Failed to set up Gmail pubsub watch');
+        assert.equal('request' in unnamed.gmailWatch, false);
+
+        // An application without a Pub/Sub app has no watch, whatever an earlier one left behind
+        assert.equal((await render(base({ watchFailure: { err: 'old' }, _app: {} }))).gmailWatch, false);
+    });
+
+    await t.test('the top-of-page alert', async t => {
+        const healthy = await render(base({}));
+        assert.equal(healthy.accountAlert, null);
+        assert.equal(healthy.accountParked, false);
+
+        const parked = await render(
+            base({ state: 'authenticationError', imap: { disabled: true }, _authFailureDisabledAt: '2026-03-01T00:00:00.000Z', syncError: { path: 'INBOX' } })
+        );
+        assert.deepEqual(parked.accountAlert, {
+            title: 'Syncing was switched off',
+            message:
+                'EmailEngine stopped connecting this account after repeated authentication failures. Re-authenticating it turns syncing back on; "Resume syncing" retries with the stored credentials.',
+            timeLabel: 'Switched off',
+            time: '2026-03-01T00:00:00.000Z'
+        });
+        assert.equal(parked.accountParked, true);
+
+        const failing = await render(base({ state: 'authenticationError', syncError: { path: 'INBOX' } }));
+        assert.equal(failing.accountAlert.title, failing.account.stateLabel.name);
+        assert.equal(failing.accountAlert.message, failing.account.stateLabel.error);
+        assert.deepEqual(Object.keys(failing.accountAlert), ['title', 'message']);
+        assert.equal(failing.account.stateLabel.type, 'error');
+
+        const stalled = await render(base({ syncError: { path: 'Archive', error: { responseText: 'NO [LIMIT]', error: 'other' } } }));
+        assert.deepEqual(stalled.accountAlert, { title: 'Sync stalled', path: 'Archive', message: 'NO [LIMIT]' });
+
+        const stalledPlain = await render(base({ syncError: { path: 'Archive', error: { error: 'Timeout' } } }));
+        assert.equal(stalledPlain.accountAlert.message, 'Timeout');
+
+        const stalledBare = await render(base({ syncError: { path: 'Archive' } }));
+        assert.equal(stalledBare.accountAlert.message, null);
+    });
+
+    await t.test('webhook routing reads the account, the global settings and the deliverable routes', async t => {
+        const filterLookups = [];
+        stub(t, settings, {
+            async getMulti(...keys) {
+                assert.deepEqual(keys, ['webhooksEnabled', 'webhooks', 'webhookEvents', 'inboxNewOnly', 'webhooksCustomHeaders']);
+                return {
+                    webhooksEnabled: true,
+                    webhooks: 'https://hooks.example.com/global',
+                    webhookEvents: ['messageNew'],
+                    inboxNewOnly: true,
+                    webhooksCustomHeaders: [{ key: 'X-A', value: '1' }]
+                };
+            }
+        });
+        stub(t, webhooks, {
+            async list(page, pageSize) {
+                assert.deepEqual([page, pageSize], [0, 1000]);
+                return {
+                    webhooks: [
+                        { id: 'r1', name: 'One', enabled: true, targetUrl: 'https://one.example.com' },
+                        { id: 'r2', name: 'Two', enabled: false, targetUrl: 'https://two.example.com' },
+                        { id: 'r3', name: 'Three', enabled: true, targetUrl: 'https://three.example.com' }
+                    ]
+                };
+            },
+            async getFilterInfo(ids) {
+                filterLookups.push(ids);
+                return new Map([
+                    ['r1', true],
+                    ['r3', false]
+                ]);
+            }
+        });
+
+        const context = await render(
+            base({
+                webhooks: 'https://hooks.example.com/account',
+                webhooksCustomHeaders: [
+                    { key: 'X-B', value: '2' },
+                    { key: 'X-C', value: '3' }
+                ]
+            })
+        );
+        assert.deepEqual(filterLookups, [['r1', 'r3']], 'only deliverable routes are probed for a filter');
+        assert.deepEqual(context.webhookRouting, {
+            enabled: true,
+            defaultRoute: {
+                url: 'https://hooks.example.com/account',
+                source: 'account',
+                events: ['messageNew'],
+                allEvents: false,
+                inboxNewOnly: true,
+                customHeadersLabel: '2 account-specific'
+            },
+            customRoutes: [
+                { id: 'r1', name: 'One', targetUrl: 'https://one.example.com', missingFilter: false },
+                { id: 'r3', name: 'Three', targetUrl: 'https://three.example.com', missingFilter: true }
+            ]
+        });
+    });
+
+    await t.test('the path list and the advanced section', async t => {
+        assert.equal((await render(base({ path: '*' }))).account.path, null);
+        assert.equal((await render(base({}))).account.path, null);
+        const scoped = await render(base({ path: ['INBOX', 'Sent'] }));
+        assert.deepEqual(scoped.account.path, ['INBOX', 'Sent']);
+        assert.deepEqual(scoped.showAdvanced, ['INBOX', 'Sent']);
+    });
+});
+
 test('hosted form success page', async t => {
     const route = capture('../lib/ui-routes/account-routes');
     stub(t, tools, { getServiceSecret: async () => SECRET });
