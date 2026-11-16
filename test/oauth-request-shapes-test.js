@@ -303,10 +303,12 @@ test('Outlook request()', async t => {
         });
     });
 
-    await t.test('an uppercase GET is not a GET for the payload, which goes in the body', async () => {
+    await t.test('an uppercase GET puts its payload in the query string too', async () => {
         const { outlook } = createClients();
-        await outlook.request('tok', `${baseUrl}/api`, 'GET', { q: 1 }).catch(() => {});
-        assert.strictEqual(received.length, 0, 'undici refuses a GET with a body');
+        await outlook.request('tok', `${baseUrl}/api`, 'GET', { q: 1 });
+        assert.strictEqual(received[0].method, 'GET');
+        assert.strictEqual(received[0].url, '/api?q=1');
+        assert.strictEqual(received[0].body, '');
     });
 
     await t.test('puts a lowercase get payload in the query string', async () => {
