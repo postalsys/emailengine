@@ -690,6 +690,132 @@ test('account edit form stores the IDLE restart interval in milliseconds', async
     assert.ok(validate(Object.assign({}, formFields, { imap_maxIdleTime: '3600' })).error, 'above the ceiling is refused');
 });
 
+// The rest of the account edit form: the SMTP section, the stored passwords, a save that changes
+// nothing, and the form coming back when the save fails
+test('account edit form saves the connection sections without touching what was not changed', async t => {
+    const account = `edit-conn-${RUN}`;
+    const call = async ({ cmd }) => (cmd === 'runIndex' ? 1 : {});
+    const route = capture('../lib/ui-routes/account-routes', call);
+    const editRoute = route('POST', '/admin/accounts/{account}/edit');
+
+    const validated = payload => {
+        const { value, error } = editRoute.options.validate.payload.validate(payload, editRoute.options.validate.options);
+        assert.ifError(error);
+        return value;
+    };
+
+    const accountObject = new Account({ redis, account, secret: await getSecret(), call, logger });
+    await accountObject.create({
+        account,
+        name: 'Connections',
+        email: 'conn@example.com',
+        // `disabled` is stored explicitly: the form always submits that checkbox, so the first save
+        // of an account that never had the key writes `disabled: false`
+        imap: { host: 'imap.example.com', port: 993, secure: true, auth: { user: 'iu', pass: 'ip' }, tls: { rejectUnauthorized: false }, disabled: false },
+        smtp: { host: 'smtp.example.com', port: 465, secure: true, auth: { user: 'su', pass: 'sp' } }
+    });
+    t.after(() => accountObject.delete().catch(() => false));
+
+    // What the edit page posts for this account when nothing is changed: every input shown, both
+    // password inputs empty, the checkboxes as the page renders them from the stored account
+    const untouchedForm = {
+        name: 'Connections',
+        email: 'conn@example.com',
+        customHeaders: '',
+        imap: 'on',
+        imap_auth_user: 'iu',
+        imap_host: 'imap.example.com',
+        imap_port: 993,
+        imap_secure: 'on',
+        imap_tls_ignoreCertErrors: 'on',
+        imap_requireTLS: 'on',
+        imap_disabled: '',
+        smtp: 'on',
+        smtp_auth_user: 'su',
+        smtp_host: 'smtp.example.com',
+        smtp_port: 465,
+        smtp_secure: 'on',
+        smtp_requireTLS: 'on'
+    };
+
+    const save = async payload => {
+        const h = makeToolkit();
+        const request = makeRequest({ params: { account }, payload: validated(payload) });
+        await editRoute.handler(request, h);
+        return { h, request };
+    };
+
+    await t.test('an untouched save leaves both connection objects as they were', async () => {
+        const before = await accountObject.loadAccountData();
+
+        const { h } = await save(untouchedForm);
+
+        assert.deepEqual(h.answers.redirects, [`/admin/accounts/${account}`]);
+        const after = await accountObject.loadAccountData();
+        assert.deepEqual(after.imap, before.imap, 'no key added to or changed in imap');
+        assert.deepEqual(after.smtp, before.smtp, 'no key added to or changed in smtp');
+    });
+
+    await t.test('the SMTP section is saved and an empty password input keeps the stored passwords', async () => {
+        await save(Object.assign({}, untouchedForm, { smtp_host: 'mail.example.org', smtp_port: 587, smtp_secure: '', smtp_auth_user: 'su2' }));
+
+        const stored = await accountObject.loadAccountData();
+        assert.equal(stored.smtp.host, 'mail.example.org');
+        assert.equal(stored.smtp.port, 587);
+        assert.equal(stored.smtp.secure, false);
+        assert.deepEqual(stored.smtp.auth, { user: 'su2', pass: 'sp' }, 'the stored SMTP password is kept');
+        assert.deepEqual(stored.imap.auth, { user: 'iu', pass: 'ip' }, 'the stored IMAP password is kept');
+    });
+
+    await t.test('a submitted password replaces the stored one and the checkboxes write their keys', async () => {
+        await save(
+            Object.assign({}, untouchedForm, {
+                imap_auth_pass: 'ip2',
+                smtp_auth_pass: 'sp2',
+                imap_tls_ignoreCertErrors: '',
+                imap_requireTLS: '',
+                smtp_tls_ignoreCertErrors: 'on',
+                imap_disableIMAP4rev2: 'on',
+                imap_resyncDelay: '600'
+            })
+        );
+
+        const stored = await accountObject.loadAccountData();
+        assert.equal(stored.imap.auth.pass, 'ip2');
+        assert.equal(stored.smtp.auth.pass, 'sp2');
+        assert.deepEqual(stored.imap.tls, { rejectUnauthorized: true });
+        assert.equal(stored.imap.requireTLS, false);
+        assert.equal(stored.imap.disableIMAP4rev2, true);
+        assert.equal(stored.imap.resyncDelay, 600);
+        assert.deepEqual(stored.smtp.tls, { rejectUnauthorized: false });
+        assert.ok(!('requireTLS' in stored.smtp), 'an unchanged checkbox writes no key');
+    });
+
+    await t.test('a failed save renders the form again from the submitted values', async t => {
+        stub(t, Account.prototype, {
+            async update() {
+                throw new Error('storage refused');
+            }
+        });
+
+        const { h, request } = await save(Object.assign({}, untouchedForm, { name: 'Not saved', imap_auth_pass: 'secret', smtp_auth_pass: 'secret' }));
+
+        assert.deepEqual(h.answers.redirects, []);
+        assert.deepEqual(request.flashes, [{ type: 'danger', message: `Couldn't save account settings. Try again.` }]);
+        const view = h.answers.views[0];
+        assert.equal(view.template, 'accounts/edit');
+        assert.equal(view.options.layout, 'app');
+        assert.equal(view.context.account, account);
+        assert.equal(view.context.values.name, 'Not saved', 'the submitted values come back');
+        assert.equal(view.context.values.imap_auth_pass, '', 'a submitted password is never rendered back');
+        assert.equal(view.context.values.smtp_auth_pass, '');
+        assert.equal(view.context.values.oauth2, false);
+        assert.equal(view.context.hasIMAPPass, true);
+        assert.equal(view.context.hasSMTPPass, true);
+        assert.equal(view.context.pageTitle, 'Accounts - conn@example.com');
+    });
+});
+
 test('unsubscribe form', async t => {
     const route = capture('../lib/ui-routes/unsubscribe-routes');
     stub(t, tools, { getServiceSecret: async () => SECRET });
