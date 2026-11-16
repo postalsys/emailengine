@@ -1,7 +1,7 @@
 'use strict';
 
 const { parentPort, workerData } = require('worker_threads');
-const { isSuspended } = require('../lib/license-subscription');
+const { buildViewContext } = require('../lib/ui-view-context');
 
 const packageData = require('../package.json');
 const config = require('@zone-eu/wild-config');
@@ -40,7 +40,6 @@ const {
     readEnvList,
     threadStats,
     hasEnvValue,
-    getBoolean,
     loadTlsConfig,
     resolveOAuthErrorStatus,
     verifyServiceSignature,
@@ -120,8 +119,7 @@ const {
     DEFAULT_EENGINE_TIMEOUT,
     DEFAULT_MAX_ATTACHMENT_SIZE,
     MAX_FORM_TTL,
-    NONCE_BYTES,
-    LAST_DOCUMENT_STORE_VERSION
+    NONCE_BYTES
 } = consts;
 
 const registerApiRoutes = require('../lib/api-routes');
@@ -2463,248 +2461,7 @@ function registerViews(server) {
         // template edits.
         isCached: process.env.NODE_ENV !== 'development',
 
-        async context(request) {
-            // The three reads are independent, and this runs on every admin page render. The
-            // OAuth2 auth flags are best-effort - a failure to read them must not take the page
-            // down with it.
-            const [pendingMessages, settingsValues, oauthAuthFlags] = await Promise.all([
-                flash(redis, request),
-                settings.getMulti(
-                    'upgrade',
-                    'webhookErrorFlag',
-                    'webhooksEnabled',
-                    'disableTokens',
-                    'tract',
-                    'templateHeader',
-                    'templateHtmlHead',
-                    'documentStoreEnabled',
-                    'serviceUrl',
-                    'language',
-                    'locale',
-                    'timezone',
-                    'pageBrandName',
-                    'notificationBaseUrl'
-                ),
-                oauth2Apps.listAuthFlags().catch(err => {
-                    logger.error({ msg: 'Failed to list OAuth2 app auth flags', err });
-                    return [];
-                })
-            ]);
-
-            const {
-                upgrade: upgradeInfo,
-                webhookErrorFlag,
-                webhooksEnabled,
-                disableTokens,
-                tract,
-                templateHeader: embeddedTemplateHeader,
-                templateHtmlHead: embeddedTemplateHtmlHead,
-                // The Document Store was removed in 2.82.0. The setting that switched it on is
-                // read raw off the settings hash (it is no longer in the settings schema), so an
-                // instance upgraded with the feature still on is told where it went instead of
-                // losing it quietly
-                documentStoreEnabled: documentStoreRemoved,
-                serviceUrl,
-                language,
-                locale,
-                timezone,
-                pageBrandName,
-                notificationBaseUrl
-            } = settingsValues;
-
-            let systemAlerts = [];
-            let authData;
-
-            switch (request.auth.artifacts && request.auth.artifacts.provider) {
-                case 'okta': {
-                    let profile = request.auth.artifacts.profile || {};
-                    authData = {
-                        user: profile.username,
-                        name:
-                            []
-                                .concat(profile.firstName || [])
-                                .concat(profile.lastName || [])
-                                .join(' ') || profile.username,
-                        enabled: !!profile.username,
-                        isAdmin: false
-                    };
-                    break;
-                }
-
-                case 'oidc': {
-                    let profile = request.auth.artifacts.profile || {};
-                    authData = {
-                        user: profile.username,
-                        name: profile.displayName || profile.username,
-                        enabled: !!profile.username,
-                        isAdmin: false
-                    };
-                    break;
-                }
-
-                default:
-                    authData = await settings.get('authData');
-                    if (authData) {
-                        authData.name = authData.user;
-                        authData.enabled = true;
-                        authData.isAdmin = true;
-                    } else {
-                        authData = {
-                            name: 'admin',
-                            user: 'admin',
-                            enabled: false,
-                            isAdmin: true
-                        };
-                    }
-                    break;
-            }
-
-            if (upgradeInfo && upgradeInfo.canUpgrade) {
-                systemAlerts.push({
-                    url: '/admin/upgrade',
-                    level: 'info',
-                    icon: 'icon-[tabler--alert-triangle]',
-                    message: `An update is available: Emailengine v${upgradeInfo.available}`
-                });
-            }
-
-            // The subscription behind the license (lib/license-subscription.js): paused, or a date it pauses on
-            let licenseSubscription = request.app.licenseInfo && request.app.licenseInfo.subscription;
-            if (isSuspended(request.app.licenseInfo)) {
-                systemAlerts.push({
-                    url: '/admin/config/license',
-                    level: 'danger',
-                    icon: 'icon-[tabler--player-pause]',
-                    message: 'EmailEngine is paused: the subscription behind the license key is not in good standing'
-                });
-            } else if (licenseSubscription) {
-                systemAlerts.push({
-                    url: '/admin/config/license',
-                    level: 'danger',
-                    icon: 'icon-[tabler--alert-triangle]',
-                    message: `Subscription payment overdue: EmailEngine pauses in ${licenseSubscription.days} day${
-                        licenseSubscription.days !== 1 ? 's' : ''
-                    } unless it is paid`
-                });
-            }
-
-            // OAuth2 apps whose token requests are being refused (setFlag() writes the failure
-            // into app meta). Shown on every admin page: the accounts on such an app sit
-            // disconnected until the operator acts, so the OAuth config page alone is not enough.
-            for (let { app, authFlag } of oauthAuthFlags) {
-                systemAlerts.push({
-                    url: authFlag.url || `/admin/config/oauth/app/${encodeURIComponent(app)}`,
-                    level: 'danger',
-                    icon: 'icon-[tabler--lock-open]',
-                    message: authFlag.message
-                });
-            }
-
-            if (webhooksEnabled && webhookErrorFlag && webhookErrorFlag.message) {
-                systemAlerts.push({
-                    url: '/admin/config/webhooks',
-                    level: 'danger',
-                    icon: 'icon-[tabler--link]',
-                    message: 'Webhook delivery is failing'
-                });
-            }
-
-            // a paused license is still registered, and the alert above says why it is not active
-            if (!request.app.licenseInfo || (!request.app.licenseInfo.active && !request.app.licenseInfo.details)) {
-                systemAlerts.push({
-                    url: '/admin/config/license',
-                    level: 'warning',
-                    icon: 'icon-[tabler--key]',
-                    message: 'No license key registered'
-                });
-            }
-
-            let licenseDetails = Object.assign({}, (request.app.licenseInfo && request.app.licenseInfo.details) || {});
-
-            if (licenseDetails.expires) {
-                let delayMs = new Date(licenseDetails.expires) - Date.now();
-                licenseDetails.expiresDays = Math.max(Math.ceil(delayMs / (24 * 3600 * 1000)), 0);
-            }
-
-            if (licenseDetails.expires && licenseDetails.expiresDays < 31) {
-                systemAlerts.push({
-                    url: '/admin/config/license',
-                    level: 'warning',
-                    icon: 'icon-[tabler--key]',
-                    message: `Your ${licenseDetails.trial ? `trial ` : ''}license key will expire in ${licenseDetails.expiresDays} day${
-                        licenseDetails.expiresDays !== 1 ? 's' : ''
-                    }`
-                });
-            }
-
-            if (disableTokens) {
-                systemAlerts.push({
-                    url: '/admin/config/security',
-                    level: 'warning',
-                    icon: 'icon-[tabler--key]',
-                    message: `Access tokens are disabled for API requests`
-                });
-            }
-
-            if (documentStoreRemoved) {
-                systemAlerts.push({
-                    url: '/admin',
-                    level: 'danger',
-                    icon: 'icon-[tabler--database]',
-                    message: `The Document Store has been removed from EmailEngine. Downgrade to v${LAST_DOCUMENT_STORE_VERSION} if you still need it.`
-                });
-            }
-
-            // Check if setup warnings should be disabled (for documentation screenshots, CI, etc.)
-            const disableSetupWarnings = hasEnvValue('EENGINE_DISABLE_SETUP_WARNINGS') ? getBoolean(readEnvValue('EENGINE_DISABLE_SETUP_WARNINGS')) : false;
-
-            if (disableSetupWarnings) {
-                // Keep only critical (danger) alerts, suppress info/warning level
-                systemAlerts = systemAlerts.filter(alert => alert.level === 'danger');
-            }
-
-            // Whether the requester holds a session at all, so a public page (the hosted form's
-            // error page, for one) can tell a mailbox owner from an admin without reading
-            // authData, which describes the instance rather than the requester
-            const isAuthenticated = !!(request.auth && request.auth.isAuthenticated);
-
-            return {
-                // the per-request CSP nonce every inline <script> carries (lib/security-headers.js)
-                cspNonce: request.app.cspNonce,
-                pageBrandName: pageBrandName || 'EmailEngine',
-                values: request.payload || {},
-                errors: (request.error && request.error.details) || {},
-                pendingMessages,
-                licenseInfo: request.app.licenseInfo,
-                licenseDetails,
-                trialPossible: !tract,
-                authData,
-                isAuthenticated,
-                // The dashboard is an admin destination: a link to it belongs on a page only for
-                // a requester who holds an admin session, or on an instance with no admin login
-                showDashboardLink: isAuthenticated || !(authData && authData.enabled),
-                packageData,
-                systemAlerts,
-                embeddedTemplateHeader,
-                embeddedTemplateHtmlHead,
-                currentYear: new Date().getFullYear(),
-                documentStoreRemoved,
-                lastDocumentStoreVersion: LAST_DOCUMENT_STORE_VERSION,
-                updateBrowserInfo: !serviceUrl || !language || !timezone,
-
-                // Suppress large banner warnings when EENGINE_DISABLE_SETUP_WARNINGS is set
-                hideLicenseWarning: disableSetupWarnings,
-                disableAuthWarning: disableSetupWarnings,
-
-                mainServiceUrl: serviceUrl,
-                notificationBaseUrl,
-
-                userLocale: locale,
-                userTimezone: timezone,
-
-                templateLocale: request.app.locale
-            };
-        }
+        context: buildViewContext
     });
 }
 
