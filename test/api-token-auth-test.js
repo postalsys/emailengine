@@ -455,10 +455,11 @@ test('api-token strategy decision', async t => {
         assert.deepEqual(disabled.state.tokenLookups, []);
         assert.deepEqual(disabled.audit, { allowed: [], denied: [] });
 
-        // Otherwise the bearer scheme never calls the strategy without one; if it did, nothing is
-        // looked up or audited and the request is not admitted
+        // Otherwise the bearer scheme never calls the strategy without one; if it did, it is
+        // refused with the 401 an unknown token gets, and nothing is looked up or audited
         const enabled = makeDeps();
-        await assert.rejects(enabled.validate(messagesRequest(), undefined), TypeError);
+        await rejects(enabled.validate(messagesRequest(), undefined), 401, 'Bad token');
+        await rejects(enabled.validate(messagesRequest(), ''), 401, 'Bad token');
         assert.deepEqual(enabled.state.tokenLookups, []);
         assert.deepEqual(enabled.audit, { allowed: [], denied: [] });
     });
