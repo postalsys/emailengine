@@ -23,7 +23,7 @@ module.exports = {
     target: name =>
         ['pino', '@playwright/test'].includes(name)
             ? 'patch'
-            : ['gettext-parser', 'marked', '@sentry/node-core', 'he', 'iconv-lite', '@hapi/boom'].includes(name)
+            : ['gettext-parser', 'marked', 'he', 'iconv-lite', '@hapi/boom'].includes(name)
               ? 'minor'
               : 'latest'
     //   pino              - held on 10.3.x. 10.4.0 took PR #2294, which makes lib/caller.js prefer
@@ -64,12 +64,13 @@ module.exports = {
     //   he                - 2.x is ESM-only (exports only src/he.mjs). 1.2.0 is the last CommonJS release. mailparser,
     //                       which reaches EmailEngine through the same require, rejects 2.x for the same reason.
     //                       Permanent for the same pkg reason as marked.
-    //   @sentry/node-core - held on the 10.x line for the reason @sentry/node (which it replaced, through its
-    //                       `light` entry) was held there: @sentry/node 11.x depends on @sentry/bundler-plugins,
-    //                       which pulls the 16 MB Sentry CLI (package `sentry`, licensed FSL-1.1-Apache-2.0, not an
-    //                       OSI license) into the runtime tree and the pkg bundle. The node-core line is versioned in
-    //                       step with @sentry/node, so lift this only once an 11.x of node-core exists and has been
-    //                       checked against that.
+    //
+    // Sentry: EmailEngine builds its client from @sentry/core (lib/sentry.js, with its own context-lines, context and
+    // modules integrations in lib/sentry-integrations.js) and must not depend on @sentry/node or @sentry/node-core.
+    // @sentry/node 11.x depends on @sentry/bundler-plugins, which pulls the 16 MB Sentry CLI (package `sentry`,
+    // licensed FSL-1.1-Apache-2.0, not an OSI license) and the native oxc-parser into the runtime tree and the pkg
+    // bundle, and @sentry/node-core, the light SDK used until 2026-11, ended at 10.x. @sentry/core depends only on
+    // @sentry/conventions; check that it still does on every major.
     //
     // ical.js was capped at 1.x here as "2.x is ESM-only", which was never true: every 2.x ships a CommonJS
     // build behind exports.require. Moved to 2.x on 2026-09-28; it is also what resolves a DTSTART against

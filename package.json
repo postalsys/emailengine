@@ -73,7 +73,7 @@
         "@postalsys/joi-messages": "1.4.1",
         "@postalsys/templates": "2.1.1",
         "@prometheus-io/client": "0.16.1",
-        "@sentry/node-core": "10.78.0",
+        "@sentry/core": "11.12.0",
         "@simplewebauthn/server": "14.1.0",
         "@zone-eu/mailsplit": "5.4.31",
         "@zone-eu/wild-config": "1.7.10",
