@@ -187,6 +187,7 @@ const { mapConcurrent } = require('./lib/utils/map-concurrent');
 const { RespawnTracker, retryWithBackoff } = require('./lib/respawn-backoff');
 const { legacySmtpOptionsInUse, REMOVAL_DATE } = require('./lib/deprecations');
 const { heartbeatDiagnostics, eventLoopDelaySeries, threadHeapSeries } = require('./lib/thread-diagnostics');
+const { licenseDaysRemaining, countThreads } = require('./lib/metric-values');
 
 const msgpack = require('./lib/msgpack');
 
@@ -2330,39 +2331,29 @@ function checkRedisPing() {
  * @returns {Promise<void>}
  */
 async function updateQueueCounters() {
-    // Update EmailEngine configuration metrics
+    setConfigMetrics();
+    await setThreadMetrics();
+    await setQueueMetrics();
+    await setRedisMetrics();
+}
+
+// EmailEngine configuration and license metrics
+function setConfigMetrics() {
     metrics.emailengineConfig.set({ version: 'v' + packageData.version }, 1);
     metrics.emailengineConfig.set({ config: 'uvThreadpoolSize' }, Number(process.env.UV_THREADPOOL_SIZE));
     metrics.emailengineConfig.set({ config: 'workersImap' }, config.workers.imap);
     metrics.emailengineConfig.set({ config: 'workersWebhooks' }, config.workers.webhooks);
     metrics.emailengineConfig.set({ config: 'workersSubmission' }, config.workers.submit);
 
-    // Update license days remaining metric
-    if (licenseInfo.active && licenseInfo.details) {
-        if (licenseInfo.details.lt) {
-            // Lifetime license
-            metrics.licenseDaysRemaining.set(-1);
-        } else if (licenseInfo.details.expires) {
-            // Time-limited license
-            let expiresAt = new Date(licenseInfo.details.expires).getTime();
-            let daysRemaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / (24 * 60 * 60 * 1000)));
-            metrics.licenseDaysRemaining.set(daysRemaining);
-        } else {
-            // Subscription license (no fixed expiry)
-            metrics.licenseDaysRemaining.set(-1);
-        }
-    } else {
-        // No active license
-        metrics.licenseDaysRemaining.set(0);
-    }
+    metrics.licenseDaysRemaining.set(licenseDaysRemaining(licenseInfo, Date.now()));
+}
 
-    // Update thread metrics
+// Worker thread metrics
+async function setThreadMetrics() {
     let threadsInfo = await getThreadsInfo();
 
     let now = Date.now();
 
-    let threadCounts = new Map();
-    let unresponsiveCount = 0;
     // a replaced thread leaves with its thread id, so the series are rebuilt on every update
     metrics.threadEventLoopDelayMax.reset();
     metrics.threadEventLoopDelayP99.reset();
@@ -2376,27 +2367,8 @@ async function updateQueueCounters() {
         metrics.threadHeapUsed.set(labels, used);
         metrics.threadHeapTotal.set(labels, total);
     }
-    for (let workerThreadInfo of threadsInfo || []) {
-        let key = workerThreadInfo.type;
-        let metricKey = `${key}_total`;
 
-        // Check if thread is recent (started within METRIC_RECENT)
-        let recent = now - workerThreadInfo.online < METRIC_RECENT;
-        if (recent) {
-            metricKey = `${key}_recent`;
-        }
-
-        if (!threadCounts.has(metricKey)) {
-            threadCounts.set(metricKey, 1);
-        } else {
-            threadCounts.set(metricKey, threadCounts.get(metricKey) + 1);
-        }
-
-        // Count unresponsive workers
-        if (workerThreadInfo.resourceUsageError && workerThreadInfo.resourceUsageError.unresponsive) {
-            unresponsiveCount++;
-        }
-    }
+    let { threadCounts, unresponsiveCount } = countThreads(threadsInfo, now, METRIC_RECENT);
 
     // Set thread count metrics
     for (let [key, value] of threadCounts.entries()) {
@@ -2406,15 +2378,17 @@ async function updateQueueCounters() {
 
     // Set unresponsive workers metric
     metrics.unresponsiveWorkers.set(unresponsiveCount);
+}
 
-    // Update queue metrics through BullMQ's own API (lib/queue-stats.js). Counting raw
-    // llen/zcard against BullMQ's private key layout broke silently in the 5.x -> 6.x bump: the
-    // `:paused` list no longer exists (a paused queue holds its jobs in `wait`), and a leftover
-    // `0:` wait-list marker from a 5.x install counts as a phantom waiting job. The `paused`
-    // gauge is kept at the 0 the getter reports so existing dashboards keep their series.
-    //
-    // A queue whose count fails is skipped rather than ending the update: returning here used to
-    // leave every Redis gauge below it stale for as long as that one count kept failing.
+// Queue metrics, through BullMQ's own API (lib/queue-stats.js). Counting raw llen/zcard against
+// BullMQ's private key layout broke silently in the 5.x -> 6.x bump: the `:paused` list no longer
+// exists (a paused queue holds its jobs in `wait`), and a leftover `0:` wait-list marker from a
+// 5.x install counts as a phantom waiting job. The `paused` gauge is kept at the 0 the getter
+// reports so existing dashboards keep their series.
+//
+// A queue whose count fails is skipped rather than ending the update: returning here used to
+// leave every Redis gauge below it stale for as long as that one count kept failing.
+async function setQueueMetrics() {
     const counted = [
         ['notify', notifyQueue],
         ['submit', submitQueue],
@@ -2434,8 +2408,10 @@ async function updateQueueCounters() {
         metrics.queues.set({ queue: `${queue}`, state: `waiting` }, stats.waiting);
         metrics.queueFailed.set({ queue: `${queue}` }, stats.failed);
     });
+}
 
-    // Update Redis metrics
+// Redis metrics
+async function setRedisMetrics() {
     try {
         let redisInfo = await getRedisStats(redis);
 
