@@ -22,7 +22,7 @@ test('apiCallDuration()', async t => {
         assert.equal(apiCallDuration({}), null);
         assert.equal(apiCallDuration({ received: 1000 }), null);
         assert.equal(apiCallDuration({ received: 0, completed: 1000 }), null);
-        // a clock step backwards must not become a negative observation, which prom-client refuses
+        // a clock step backwards must not become a negative observation, which the Prometheus client refuses
         assert.equal(apiCallDuration({ received: 2000, completed: 1000 }), null);
     });
 

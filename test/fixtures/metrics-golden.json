@@ -1,0 +1,429 @@
+{
+    "custom": {
+        "threadStarts": {
+            "name": "thread_starts",
+            "type": "counter",
+            "help": "Number of started threads",
+            "labelNames": []
+        },
+        "threadStops": {
+            "name": "thread_stops",
+            "type": "counter",
+            "help": "Number of stopped threads",
+            "labelNames": []
+        },
+        "apiCall": {
+            "name": "api_call",
+            "type": "counter",
+            "help": "Number of API calls",
+            "labelNames": [
+                "method",
+                "statusCode",
+                "route"
+            ]
+        },
+        "apiCallDuration": {
+            "name": "api_call_duration_seconds",
+            "type": "histogram",
+            "help": "Duration of API calls, from receiving the request to sending the response",
+            "labelNames": [
+                "method",
+                "route"
+            ],
+            "buckets": [
+                0.005,
+                0.01,
+                0.025,
+                0.05,
+                0.1,
+                0.25,
+                0.5,
+                1,
+                2.5,
+                5,
+                10,
+                30,
+                60
+            ]
+        },
+        "imapConnections": {
+            "name": "imap_connections",
+            "type": "gauge",
+            "help": "Current IMAP connection state",
+            "labelNames": [
+                "status"
+            ]
+        },
+        "imapResponses": {
+            "name": "imap_responses",
+            "type": "counter",
+            "help": "IMAP responses",
+            "labelNames": [
+                "response",
+                "code"
+            ]
+        },
+        "imapBytesSent": {
+            "name": "imap_bytes_sent",
+            "type": "counter",
+            "help": "IMAP bytes sent",
+            "labelNames": []
+        },
+        "imapBytesReceived": {
+            "name": "imap_bytes_received",
+            "type": "counter",
+            "help": "IMAP bytes received",
+            "labelNames": []
+        },
+        "oauth2TokenRefresh": {
+            "name": "oauth2_token_refresh",
+            "type": "counter",
+            "help": "OAuth2 access token refresh attempts",
+            "labelNames": [
+                "status",
+                "provider",
+                "statusCode"
+            ]
+        },
+        "oauth2ApiRequest": {
+            "name": "oauth2_api_request",
+            "type": "counter",
+            "help": "OAuth2 API requests (MS Graph, Gmail API)",
+            "labelNames": [
+                "status",
+                "provider",
+                "statusCode"
+            ]
+        },
+        "outlookMissedRecovery": {
+            "name": "outlook_missed_recovery",
+            "type": "counter",
+            "help": "MS Graph missed-notification recovery passes, by what asked for them and whether they found unannounced messages",
+            "labelNames": [
+                "reason",
+                "outcome"
+            ]
+        },
+        "outlookMissedRecoveredMessages": {
+            "name": "outlook_missed_recovered_messages",
+            "type": "counter",
+            "help": "New messages announced by MS Graph missed-notification recovery instead of by a change notification",
+            "labelNames": [
+                "reason"
+            ]
+        },
+        "outlookSubscriptions": {
+            "name": "outlook_subscriptions",
+            "type": "gauge",
+            "help": "MS Graph webhook subscription states",
+            "labelNames": [
+                "status"
+            ]
+        },
+        "webhooks": {
+            "name": "webhooks",
+            "type": "counter",
+            "help": "Webhooks sent",
+            "labelNames": [
+                "status",
+                "event"
+            ]
+        },
+        "events": {
+            "name": "events",
+            "type": "counter",
+            "help": "Events fired",
+            "labelNames": [
+                "event"
+            ]
+        },
+        "aiRequests": {
+            "name": "ai_requests",
+            "type": "counter",
+            "help": "AI summary requests",
+            "labelNames": [
+                "model",
+                "status"
+            ]
+        },
+        "aiTokens": {
+            "name": "ai_tokens",
+            "type": "counter",
+            "help": "Tokens billed for AI summary requests",
+            "labelNames": [
+                "model",
+                "type"
+            ]
+        },
+        "webhookReq": {
+            "name": "webhook_req",
+            "type": "histogram",
+            "help": "Duration of webhook requests",
+            "labelNames": [],
+            "buckets": [
+                100,
+                250,
+                500,
+                750,
+                1000,
+                2500,
+                5000,
+                7500,
+                10000,
+                60000
+            ]
+        },
+        "queues": {
+            "name": "queue_size",
+            "type": "gauge",
+            "help": "Queue size",
+            "labelNames": [
+                "queue",
+                "state"
+            ]
+        },
+        "queueFailed": {
+            "name": "queue_failed_jobs",
+            "type": "gauge",
+            "help": "Failed jobs a queue still retains (deliveries that were given up on)",
+            "labelNames": [
+                "queue"
+            ]
+        },
+        "queuesProcessed": {
+            "name": "queues_processed",
+            "type": "counter",
+            "help": "Processed job count",
+            "labelNames": [
+                "queue",
+                "status"
+            ]
+        },
+        "threads": {
+            "name": "threads",
+            "type": "gauge",
+            "help": "Worker Threads",
+            "labelNames": [
+                "type",
+                "recent"
+            ]
+        },
+        "unresponsiveWorkers": {
+            "name": "unresponsive_workers",
+            "type": "gauge",
+            "help": "Number of unresponsive worker threads",
+            "labelNames": []
+        },
+        "threadEventLoopDelayMax": {
+            "name": "thread_event_loop_delay_max_seconds",
+            "type": "gauge",
+            "help": "Longest event loop delay of a thread over the last collection window (15s)",
+            "labelNames": [
+                "type",
+                "thread"
+            ]
+        },
+        "threadEventLoopDelayP99": {
+            "name": "thread_event_loop_delay_p99_seconds",
+            "type": "gauge",
+            "help": "99th percentile event loop delay of a thread over the last collection window (15s)",
+            "labelNames": [
+                "type",
+                "thread"
+            ]
+        },
+        "threadHeapUsed": {
+            "name": "thread_heap_used_bytes",
+            "type": "gauge",
+            "help": "V8 heap in use by a thread, as of the last collection (15s)",
+            "labelNames": [
+                "type",
+                "thread"
+            ]
+        },
+        "threadHeapTotal": {
+            "name": "thread_heap_total_bytes",
+            "type": "gauge",
+            "help": "V8 heap allocated by a thread, as of the last collection (15s)",
+            "labelNames": [
+                "type",
+                "thread"
+            ]
+        },
+        "licenseDaysRemaining": {
+            "name": "license_days_remaining",
+            "type": "gauge",
+            "help": "Days until license expires (-1 for lifetime, 0 for no license)",
+            "labelNames": []
+        },
+        "emailengineConfig": {
+            "name": "emailengine_config",
+            "type": "gauge",
+            "help": "Configuration values",
+            "labelNames": [
+                "version",
+                "config"
+            ]
+        },
+        "redisVersion": {
+            "name": "redis_version",
+            "type": "gauge",
+            "help": "Redis version",
+            "labelNames": [
+                "version"
+            ]
+        },
+        "redisUptimeInSeconds": {
+            "name": "redis_uptime_in_seconds",
+            "type": "gauge",
+            "help": "Redis uptime in seconds",
+            "labelNames": []
+        },
+        "redisPing": {
+            "name": "redis_latency",
+            "type": "gauge",
+            "help": "Redis latency in nanoseconds",
+            "labelNames": []
+        },
+        "redisRejectedConnectionsTotal": {
+            "name": "redis_rejected_connections_total",
+            "type": "gauge",
+            "help": "Number of connections rejected by Redis",
+            "labelNames": []
+        },
+        "redisConfigMaxclients": {
+            "name": "redis_config_maxclients",
+            "type": "gauge",
+            "help": "Maximum client number for Redis",
+            "labelNames": []
+        },
+        "redisConnectedClients": {
+            "name": "redis_connected_clients",
+            "type": "gauge",
+            "help": "Number of client connections for Redis",
+            "labelNames": []
+        },
+        "redisSlowlogLength": {
+            "name": "redis_slowlog_length",
+            "type": "gauge",
+            "help": "Number of of entries in the Redis slow log",
+            "labelNames": []
+        },
+        "redisCommandsDurationSecondsTotal": {
+            "name": "redis_commands_duration_seconds_total",
+            "type": "gauge",
+            "help": "How many seconds spend on processing Redis commands",
+            "labelNames": []
+        },
+        "redisCommandsProcessedTotal": {
+            "name": "redis_commands_processed_total",
+            "type": "gauge",
+            "help": "How many commands processed by Redis",
+            "labelNames": []
+        },
+        "redisKeyspaceHitsTotal": {
+            "name": "redis_keyspace_hits_total",
+            "type": "gauge",
+            "help": "Number of successful lookup of keys in Redis",
+            "labelNames": []
+        },
+        "redisKeyspaceMissesTotal": {
+            "name": "redis_keyspace_misses_total",
+            "type": "gauge",
+            "help": "Number of failed lookup of keys in Redis",
+            "labelNames": []
+        },
+        "redisEvictedKeysTotal": {
+            "name": "redis_evicted_keys_total",
+            "type": "gauge",
+            "help": "Number of evicted keys due to maxmemory limit in Redis",
+            "labelNames": []
+        },
+        "redisMemoryUsedBytes": {
+            "name": "redis_memory_used_bytes",
+            "type": "gauge",
+            "help": "Total number of bytes allocated by Redis using its allocator",
+            "labelNames": []
+        },
+        "redisMemoryMaxBytes": {
+            "name": "redis_memory_max_bytes",
+            "type": "gauge",
+            "help": "The value of the Redis maxmemory configuration directive",
+            "labelNames": []
+        },
+        "redisMemFragmentationRatio": {
+            "name": "redis_mem_fragmentation_ratio",
+            "type": "gauge",
+            "help": "Ratio between used_memory_rss and used_memory in Redis",
+            "labelNames": []
+        },
+        "redisKeyCount": {
+            "name": "redis_key_count",
+            "type": "gauge",
+            "help": "Redis key counts",
+            "labelNames": [
+                "db"
+            ]
+        },
+        "redisLastSaveTime": {
+            "name": "redis_last_save_time",
+            "type": "gauge",
+            "help": "Unix timestamp of the last RDB save time",
+            "labelNames": []
+        },
+        "redisOpsPerSec": {
+            "name": "redis_instantaneous_ops_per_sec",
+            "type": "gauge",
+            "help": "Throughput operations per second",
+            "labelNames": []
+        },
+        "redisCommandRuns": {
+            "name": "redis_command_runs",
+            "type": "gauge",
+            "help": "Redis command counts",
+            "labelNames": [
+                "command"
+            ]
+        },
+        "redisCommandRunsFailed": {
+            "name": "redis_command_runs_fail",
+            "type": "gauge",
+            "help": "Redis command counts",
+            "labelNames": [
+                "command",
+                "status"
+            ]
+        }
+    },
+    "defaults": [
+        "nodejs_active_handles gauge",
+        "nodejs_active_handles_total gauge",
+        "nodejs_active_requests gauge",
+        "nodejs_active_requests_total gauge",
+        "nodejs_active_resources gauge",
+        "nodejs_active_resources_total gauge",
+        "nodejs_eventloop_lag_max_seconds gauge",
+        "nodejs_eventloop_lag_mean_seconds gauge",
+        "nodejs_eventloop_lag_min_seconds gauge",
+        "nodejs_eventloop_lag_p50_seconds gauge",
+        "nodejs_eventloop_lag_p90_seconds gauge",
+        "nodejs_eventloop_lag_p99_seconds gauge",
+        "nodejs_eventloop_lag_seconds gauge",
+        "nodejs_eventloop_lag_stddev_seconds gauge",
+        "nodejs_eventloop_utilization_histogram histogram",
+        "nodejs_eventloop_utilization_summary summary",
+        "nodejs_external_memory_bytes gauge",
+        "nodejs_gc_duration_seconds histogram",
+        "nodejs_heap_size_total_bytes gauge",
+        "nodejs_heap_size_used_bytes gauge",
+        "nodejs_heap_space_size_available_bytes gauge",
+        "nodejs_heap_space_size_total_bytes gauge",
+        "nodejs_heap_space_size_used_bytes gauge",
+        "nodejs_version_info gauge",
+        "process_cpu_seconds_total counter",
+        "process_cpu_system_seconds_total counter",
+        "process_cpu_user_seconds_total counter",
+        "process_resident_memory_bytes gauge",
+        "process_start_time_seconds gauge"
+    ]
+}
