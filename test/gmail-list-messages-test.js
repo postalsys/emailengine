@@ -10,6 +10,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { GmailClient } = require('../lib/email-client/gmail-client');
+const { LIST_BATCH_SIZE } = require('../lib/email-client/gmail/gmail-api');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 const { noopLogger } = require('./helpers/auth-failure');
@@ -213,6 +214,34 @@ test('GmailClient.listMessages() regular listing', async t => {
             ids('m', 25).map(m => m.id)
         );
         assert.deepEqual(result.messages[0].opts, { path: 'INBOX', minimalFields: undefined });
+    });
+
+    await t.test('fetches the messages LIST_BATCH_SIZE requests at a time', async () => {
+        // Used to flush only once the batch held LIST_BATCH_SIZE + 1 requests
+        const { gmail } = makeListClient({});
+        const batches = [];
+        let inFlight = 0;
+        let started = 0;
+        gmail.request = async url => {
+            if (url.endsWith('/messages')) {
+                return { resultSizeEstimate: 25, messages: ids('m', 25) };
+            }
+            inFlight++;
+            started++;
+            await new Promise(resolve => setImmediate(resolve));
+            inFlight--;
+            if (!inFlight) {
+                batches.push(started);
+                started = 0;
+            }
+            return { id: url.split('/').pop() };
+        };
+
+        const result = await gmail.listMessages({ path: 'INBOX', pageSize: 25 });
+
+        assert.equal(LIST_BATCH_SIZE, 10);
+        assert.deepEqual(batches, [10, 10, 5]);
+        assert.equal(result.messages.length, 25);
     });
 
     await t.test('minimalFields asks for the minimal format', async () => {
