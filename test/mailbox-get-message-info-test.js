@@ -242,6 +242,14 @@ test('Mailbox.getMessageInfo()', async t => {
         assert.equal('date' in none, false);
     });
 
+    await t.test('without a body structure the attachment list keeps its shape', () => {
+        assert.deepStrictEqual(Mailbox.prototype.getAttachmentList.call(createContext(), PACKED_UID, undefined), {
+            attachments: [],
+            textId: undefined,
+            encodedTextSize: {}
+        });
+    });
+
     await t.test('no message data', async () => {
         assert.equal(await messageInfo(null, true), false);
     });
