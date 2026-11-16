@@ -307,6 +307,20 @@ test('unserializeAccountData()', async t => {
         assert.deepStrictEqual(logger.entries, []);
     });
 
+    await t.test('counter names that are Object.prototype members stay in the counters', () => {
+        const data = accountObject.unserializeAccountData({
+            account: 'acc',
+            'stats:count:__proto__:polluted': '1',
+            'stats:count:constructor:polluted': '2',
+            'stats:count:toString:polluted': '3',
+            'stats:count:messages:__proto__': '4'
+        });
+        assert.equal({}.polluted, undefined);
+        assert.equal(Object.polluted, undefined);
+        assert.equal(Object.prototype.toString.polluted, undefined);
+        assert.deepStrictEqual(data.counters, { toString: { polluted: 3 } });
+    });
+
     await t.test('defaults for an empty hash', () => {
         assert.deepStrictEqual(accountObject.unserializeAccountData({}), { path: '*', account: null, counters: {} });
     });
