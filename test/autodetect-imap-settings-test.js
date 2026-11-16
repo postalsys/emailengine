@@ -1557,11 +1557,28 @@ test('MX provider chain (stand-in DNS and fetch)', async t => {
         });
     }
 
-    await t.test('the first matching entry wins', async () => {
-        // The AWS pattern is checked before Microsoft 365 and is not anchored, so an exchange
-        // both patterns accept resolves to WorkMail
+    await t.test('the WorkMail pattern matches only a real inbound-smtp exchange', async () => {
+        for (const region of ['us-east-1', 'eu-west-1', 'ap-southeast-2']) {
+            const { res } = await resolveFor(`inbound-smtp.${region}.amazonaws.com`);
+            assert.strictEqual(res.imap.host, `imap.mail.${region}.awsapps.com`);
+            assert.strictEqual(res.smtp.host, `smtp.mail.${region}.awsapps.com`);
+        }
+
+        // A name that only contains a WorkMail exchange belongs to whoever owns its suffix, and an
+        // unescaped dot let a different domain stand in for amazonaws.com
+        const fallback = { 'autoconfig.customdomain.com': 'imap.fallback.example' };
+        for (const exchange of [
+            'inbound-smtp.eu-west-1.amazonaws.com.attacker.example',
+            'mx.inbound-smtp.eu-west-1.amazonaws.com',
+            'inbound-smtp.eu-west-1.amazonawsxcom'
+        ]) {
+            const { res } = await resolveFor(exchange, fallback);
+            assert.strictEqual(res.imap.host, 'imap.fallback.example', exchange);
+        }
+
+        // So an exchange under protection.outlook.com is Microsoft 365, whatever it starts with
         const { res } = await resolveFor('inbound-smtp.eu-west-1.amazonaws.com.mail.protection.outlook.com');
-        assert.strictEqual(res.imap.host, 'imap.mail.eu-west-1.awsapps.com');
+        assert.strictEqual(res.imap.host, 'outlook.office365.com');
     });
 
     await t.test('the two exact entries match only the exact exchange', async () => {
