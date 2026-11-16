@@ -16,18 +16,22 @@ const { createApiTokenValidator } = require('../lib/api-token-auth');
 
 function makeDeps(overrides = {}) {
     const audit = { allowed: [], denied: [] };
-    const state = { rateLimitCalls: [], templateLookups: [] };
+    const state = { rateLimitCalls: [], templateLookups: [], tokenLookups: [], sessionChecks: [] };
     const deps = {
         settings: { get: async key => (overrides.settings || {})[key] },
         tokens: {
             get: async token => {
+                state.tokenLookups.push(token);
                 const tokenData = (overrides.tokens || {})[token];
                 if (!tokenData) {
                     throw Object.assign(new Error('Unknown token'), { code: 'UnknownToken' });
                 }
                 return tokenData;
             },
-            validateSessionToken: async (sid, token, account) => !!overrides.sessionTokenValid && sid === 'sid1' && account === 'acc1'
+            validateSessionToken: async (sid, token, account) => {
+                state.sessionChecks.push(token);
+                return !!overrides.sessionTokenValid && sid === 'sid1' && account === 'acc1';
+            }
         },
         tokenAuditLog: {
             allowed: entry => audit.allowed.push(entry),
@@ -299,6 +303,164 @@ test('api-token strategy decision', async t => {
     await t.test('an invalid session token falls through to the token store', async () => {
         const { validate } = makeDeps({ sessionTokenValid: false });
         await rejects(validate(messagesRequest({ state: { ee: { sid: 'sid1' } } }), 'sess_abc'), 401, 'Bad token');
+    });
+
+    // The order of the checks below is the contract the strategy documents: token resolved, scope,
+    // permissions, account, restrictions (address, referrer, rate limit). Each case fails two checks
+    // at once and asserts which refusal wins, and which audit rows were and were not written.
+
+    await t.test('order: a permission refusal comes before an account refusal', async () => {
+        const tokenData = { id: 't1', account: 'acc1', scopes: ['api'], permissions: { grants: [{ action: 'read', group: 'mailbox' }] } };
+        const { validate, audit, state } = makeDeps({ tokens: { tok: tokenData } });
+        await rejects(validate(messagesRequest({ params: { account: 'acc2' } }), 'tok'), 403, 'Unauthorized permission');
+        assert.deepEqual(
+            audit.denied.map(entry => entry.reason),
+            ['grant']
+        );
+        assert.equal(audit.denied[0].entry.account, 'acc2');
+        assert.equal(audit.allowed.length, 0);
+        assert.equal(state.templateLookups.length, 0);
+    });
+
+    await t.test('order: the permission check runs before the template ownership lookup', async () => {
+        const tokenData = { id: 't1', account: 'acc1', scopes: ['api'], permissions: { grants: [] } };
+        const { validate, state } = makeDeps({ tokens: { tok: tokenData }, ownTemplates: ['mine'] });
+        await rejects(validate(makeRequest('get /v1/templates/template/{template}', { params: { template: 'mine' } }), 'tok'), 403, 'Unauthorized permission');
+        assert.equal(state.templateLookups.length, 0);
+    });
+
+    await t.test('order: an account refusal comes before every restriction', async () => {
+        const restrictions = { addresses: ['198.51.100.0/24'], referrers: ['https://app.example.com/*'], rateLimit: { maxRequests: 10, timeWindow: 60 } };
+        const { validate, audit, state } = makeDeps({ tokens: { tok: { id: 't1', account: 'acc1', restrictions } } });
+        await rejects(validate(messagesRequest({ params: { account: 'acc2' } }), 'tok'), 403, 'Unauthorized account');
+        assert.deepEqual(
+            audit.denied.map(entry => entry.reason),
+            ['account']
+        );
+        assert.equal(audit.allowed.length, 0);
+        assert.equal(state.rateLimitCalls.length, 0);
+    });
+
+    await t.test('order: address before referrer before rate limit', async () => {
+        const restrictions = { addresses: ['198.51.100.0/24'], referrers: ['https://app.example.com/*'], rateLimit: { maxRequests: 10, timeWindow: 60 } };
+        const spent = { success: false, allowed: 10, count: 11, ttl: 5 };
+        const badReferer = { referer: 'https://evil.example.net/' };
+
+        // All three fail: the address wins and nothing is spent
+        const first = makeDeps({ tokens: { tok: { id: 't1', restrictions } }, rateLimit: spent });
+        await rejects(first.validate(messagesRequest({ headers: badReferer }), 'tok'), 403, 'Unauthorized address');
+        assert.deepEqual(
+            first.audit.denied.map(entry => entry.reason),
+            ['address']
+        );
+        assert.equal(first.state.rateLimitCalls.length, 0);
+
+        // The address passes: the referrer wins and nothing is spent
+        const second = makeDeps({ tokens: { tok: { id: 't1', restrictions } }, rateLimit: spent });
+        await rejects(second.validate(messagesRequest({ headers: badReferer, app: { ip: '198.51.100.7' } }), 'tok'), 403, 'Unauthorized referrer');
+        assert.deepEqual(
+            second.audit.denied.map(entry => entry.reason),
+            ['referrer']
+        );
+        assert.equal(second.state.rateLimitCalls.length, 0);
+
+        // Both pass: the rate limit is consulted last
+        const third = makeDeps({ tokens: { tok: { id: 't1', restrictions } }, rateLimit: spent });
+        await rejects(
+            third.validate(messagesRequest({ headers: { referer: 'https://app.example.com/page' }, app: { ip: '198.51.100.7' } }), 'tok'),
+            429,
+            'Rate limit exceeded'
+        );
+        assert.deepEqual(
+            third.audit.denied.map(entry => entry.reason),
+            ['rateLimit']
+        );
+        assert.equal(third.state.rateLimitCalls.length, 1);
+        assert.equal(third.audit.allowed.length, 0);
+    });
+
+    await t.test('order: a token is resolved before any scope check, and an unknown one writes no audit row', async () => {
+        const { validate, audit } = makeDeps();
+        await rejects(validate(messagesRequest(), 'nope'), 401, 'Bad token');
+        assert.equal(audit.denied.length, 0);
+        assert.equal(audit.allowed.length, 0);
+    });
+
+    await t.test('order: an accepted request writes exactly one allow row after every check', async () => {
+        const restrictions = { addresses: ['198.51.100.0/24'], rateLimit: { maxRequests: 10, timeWindow: 60 } };
+        const { validate, audit, state } = makeDeps({ tokens: { tok: { id: 't1', account: 'acc1', scopes: ['api'], restrictions } } });
+        await validate(messagesRequest({ app: { ip: '198.51.100.7' } }), 'tok');
+        assert.equal(state.rateLimitCalls.length, 1);
+        assert.equal(audit.allowed.length, 1);
+        assert.equal(audit.denied.length, 0);
+        assert.deepEqual(audit.allowed[0], {
+            tokenId: 't1',
+            ip: '198.51.100.7',
+            method: 'get',
+            path: '/v1/account/{account}/messages',
+            action: audit.allowed[0].action,
+            group: audit.allowed[0].group,
+            account: 'acc1'
+        });
+        assert.ok(audit.allowed[0].action && audit.allowed[0].group);
+    });
+
+    await t.test('a session token writes no audit row, accepted or refused', async () => {
+        const accepted = makeDeps({ sessionTokenValid: true });
+        await accepted.validate(messagesRequest({ state: { ee: { sid: 'sid1' } } }), 'sess_abc');
+        assert.deepEqual(accepted.audit, { allowed: [], denied: [] });
+        assert.deepEqual(accepted.state.tokenLookups, []);
+
+        const refused = makeDeps({ sessionTokenValid: true });
+        const request = makeRequest('put /v1/account/{account}', { params: { account: 'acc1' }, state: { ee: { sid: 'sid1' } } });
+        await rejects(refused.validate(request, 'sess_abc'), 403, 'Unauthorized permission');
+        assert.deepEqual(refused.audit, { allowed: [], denied: [] });
+        assert.deepEqual(refused.state.tokenLookups, []);
+    });
+
+    await t.test('an ended session is refused before its token is validated', async () => {
+        const { validate, state } = makeDeps({ sessionTokenValid: true, passwordVersion: 5 });
+        await rejects(validate(messagesRequest({ state: { ee: { sid: 'sid1', passwordVersion: 4 } } }), 'sess_abc'), 401, 'Session has ended');
+        assert.deepEqual(state.sessionChecks, []);
+        assert.deepEqual(state.tokenLookups, []);
+    });
+
+    await t.test('a session token on a route without the api scope goes to the token store', async () => {
+        const { validate, state } = makeDeps({ sessionTokenValid: true });
+        const request = {
+            method: 'get',
+            route: { method: 'get', path: '/metrics', settings: { tags: ['scope:metrics'] } },
+            params: { account: 'acc1' },
+            query: {},
+            headers: {},
+            state: { ee: { sid: 'sid1' } },
+            app: { ip: '192.0.2.10' }
+        };
+        await rejects(validate(request, 'sess_abc'), 401, 'Bad token');
+        assert.deepEqual(state.sessionChecks, []);
+        assert.deepEqual(state.tokenLookups, ['sess_abc']);
+    });
+
+    await t.test('a session token at the MCP endpoint goes to the token store', async () => {
+        const { validate, state } = makeDeps({ sessionTokenValid: true });
+        await rejects(validate(makeRequest('post /mcp', { state: { ee: { sid: 'sid1' } } }), 'sess_abc'), 401, 'Bad token');
+        assert.deepEqual(state.sessionChecks, []);
+        assert.deepEqual(state.tokenLookups, ['sess_abc']);
+    });
+
+    await t.test('a missing token', async () => {
+        // With tokens disabled a request without a credential passes as preauth, before any lookup
+        const disabled = makeDeps({ settings: { disableTokens: true } });
+        assert.deepEqual((await disabled.validate(messagesRequest(), undefined)).credentials, { preauth: true });
+        assert.deepEqual(disabled.state.tokenLookups, []);
+        assert.deepEqual(disabled.audit, { allowed: [], denied: [] });
+
+        // Otherwise the bearer scheme never calls the strategy without one; if it did, nothing is
+        // looked up or audited and the request is not admitted
+        const enabled = makeDeps();
+        await assert.rejects(enabled.validate(messagesRequest(), undefined), TypeError);
+        assert.deepEqual(enabled.state.tokenLookups, []);
+        assert.deepEqual(enabled.audit, { allowed: [], denied: [] });
     });
 });
 
