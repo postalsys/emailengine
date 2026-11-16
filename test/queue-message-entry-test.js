@@ -215,6 +215,126 @@ test('queueMessageEntry', async t => {
             assert.deepStrictEqual(result.reference, { message: 'MSG1', success: false, error: 'Referenced message was not found' });
         });
 
+        await t.test('check the connection before fetching the referenced message', async () => {
+            const order = [];
+            const { client } = createClient({
+                getMessage: () => {
+                    order.push('getMessage');
+                    return JSON.parse(JSON.stringify(REFERENCED));
+                }
+            });
+            client.checkIMAPConnection = connectionOptions => {
+                order.push(['checkIMAPConnection', connectionOptions]);
+                return true;
+            };
+            const connectionOptions = { marker: 1 };
+            await client.queueMessageEntry({ text: 'x', reference: { message: 'MSG1', action: 'reply' } }, {}, {}, connectionOptions);
+            assert.deepStrictEqual(order, [['checkIMAPConnection', connectionOptions], 'getMessage']);
+        });
+
+        await t.test('mark the referenced message for a flag update only when it lacks the flags', async t => {
+            const update = async (flags, action) => {
+                const { queued, run } = createClient({ getMessage: () => Object.assign({}, REFERENCED, { flags }) });
+                await run({ text: 'x', to: [{ address: 'r@example.com' }], reference: { message: 'MSG1', action } });
+                return queued[0].data.reference.update;
+            };
+            assert.strictEqual(await update(undefined, 'reply'), true);
+            assert.strictEqual(await update(['\\Seen'], 'reply'), true);
+            assert.strictEqual(await update(['\\Answered'], 'reply'), undefined);
+            // a forward is satisfied by either flag
+            assert.strictEqual(await update(['$Forwarded'], 'forward'), undefined);
+            assert.strictEqual(await update(['\\Answered'], 'forward'), undefined);
+            assert.strictEqual(await update(['$Forwarded'], 'reply'), true);
+        });
+
+        await t.test('do not carry a thread id the referenced message does not have', async () => {
+            const { queued, run } = createClient({ getMessage: () => Object.assign({}, REFERENCED, { threadId: undefined }) });
+            await run({ text: 'x', reference: { message: 'MSG1', action: 'reply' } });
+            assert.strictEqual('threadId' in queued[0].data.reference, false);
+        });
+
+        await t.test('retry a transient failure to fetch the referenced message', async t => {
+            // the retry waits 1s and then 2s between attempts; run those waits on mocked timers
+            const withMockedTimers = async promiseFn => {
+                t.mock.timers.enable({ apis: ['setTimeout'] });
+                try {
+                    const promise = promiseFn();
+                    let settled = false;
+                    promise.then(
+                        () => (settled = true),
+                        () => (settled = true)
+                    );
+                    while (!settled) {
+                        await new Promise(resolve => setImmediate(resolve));
+                        t.mock.timers.tick(5000);
+                    }
+                    return await promise;
+                } finally {
+                    t.mock.timers.reset();
+                }
+            };
+            const failing = failures => {
+                let attempts = 0;
+                return {
+                    attempts: () => attempts,
+                    getMessage: () => {
+                        attempts++;
+                        if (attempts <= failures) {
+                            throw Object.assign(new Error('Service Unavailable'), { statusCode: 503 });
+                        }
+                        return JSON.parse(JSON.stringify(REFERENCED));
+                    }
+                };
+            };
+
+            await t.test('and thread to it once it answers', async () => {
+                const source = failing(2);
+                const { queued, run } = createClient({ getMessage: source.getMessage });
+                const result = await withMockedTimers(() => run({ text: 'x', reference: { message: 'MSG1', action: 'reply' } }));
+                assert.strictEqual(source.attempts(), 3);
+                assert.match(rawOf(queued), /^In-Reply-To: <original@example\.com>$/m);
+                assert.strictEqual(result.reference.success, true);
+            });
+
+            await t.test('and throw the last failure when it never answers', async () => {
+                const source = failing(5);
+                const { queued, run } = createClient({ getMessage: source.getMessage });
+                await assert.rejects(
+                    withMockedTimers(() => run({ text: 'x', to: [{ address: 'r@example.com' }], reference: { message: 'MSG1', action: 'reply' } })),
+                    err => err.message === 'Service Unavailable' && err.statusCode === 503 && !err.code
+                );
+                assert.strictEqual(source.attempts(), 3);
+                assert.strictEqual(queued.length, 0);
+            });
+
+            await t.test('and send unthreaded with ignoreMissing when it never answers', async () => {
+                const source = failing(5);
+                const { queued, run } = createClient({ getMessage: source.getMessage });
+                const result = await withMockedTimers(() =>
+                    run({ text: 'x', subject: 'Own', to: [{ address: 'r@example.com' }], reference: { message: 'MSG1', action: 'reply', ignoreMissing: true } })
+                );
+                assert.strictEqual(source.attempts(), 3);
+                assert.doesNotMatch(rawOf(queued), /In-Reply-To/);
+                assert.deepStrictEqual(result.reference, { message: 'MSG1', success: false, error: 'Referenced message was not found' });
+            });
+
+            await t.test('but not a permanent one', async () => {
+                const source = {
+                    attempts: 0,
+                    getMessage: () => {
+                        source.attempts++;
+                        throw Object.assign(new Error('Forbidden'), { statusCode: 403 });
+                    }
+                };
+                const { run } = createClient({ getMessage: source.getMessage });
+                await assert.rejects(
+                    run({ text: 'x', to: [{ address: 'r@example.com' }], reference: { message: 'MSG1', action: 'reply', ignoreMissing: true } }),
+                    err => err.message === 'Forbidden' && err.statusCode === 403
+                );
+                assert.strictEqual(source.attempts, 1);
+            });
+        });
+
         await t.test('fail when the referenced message has another Message-ID than expected', async () => {
             const { run } = createClient();
             await assert.rejects(
