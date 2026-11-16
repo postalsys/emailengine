@@ -806,6 +806,129 @@ test('Account.getMailboxListing', async t => {
             }
         );
     });
+
+    await t.test('a LIST failure without a status or code is a plain 500', async () => {
+        seedAccount('connected');
+        seedStoredListing([{ path: 'INBOX', delimiter: '/', noInferiors: false }]);
+
+        const accountObject = createAccountObject(async () => ({ error: 'Failed to list mailboxes' }));
+
+        await assert.rejects(
+            () => accountObject.getMailboxListing({}),
+            err => {
+                assert.strictEqual(err.output.statusCode, 500);
+                assert.strictEqual(err.message, 'Failed to list mailboxes');
+                assert.ok(!('code' in err.output.payload));
+                return true;
+            }
+        );
+    });
+
+    await t.test('an API account passes the worker listing through untouched', async () => {
+        seedAccount('connected');
+        seedStoredListing([{ path: 'INBOX', delimiter: '/', noInferiors: false }]);
+
+        const listing = [{ path: 'INBOX', status: { path: 'INBOX', messages: 1 } }];
+        const accountObject = createAccountObject(async () => listing);
+        accountObject.isApiClient = async () => true;
+
+        const mailboxes = await accountObject.getMailboxListing({});
+        assert.strictEqual(mailboxes, listing);
+        assert.deepStrictEqual(listing[0].status, { path: 'INBOX', messages: 1 }, 'nothing is stripped');
+        assert.deepStrictEqual(pipelineCalls, [], 'the stored listing is not read');
+    });
+
+    await t.test('an API account reports a worker error, whatever its state', async () => {
+        seedAccount('init');
+        const accountObject = createAccountObject(async () => ({ error: 'Graph said no', statusCode: 429, code: 'Throttled' }));
+        accountObject.isApiClient = async () => true;
+
+        await assert.rejects(
+            () => accountObject.getMailboxListing({}),
+            err => {
+                assert.strictEqual(err.output.statusCode, 429);
+                assert.strictEqual(err.output.payload.code, 'Throttled');
+                return true;
+            }
+        );
+    });
+
+    await t.test('a disconnected account is served from the stored listing without a LIST', async () => {
+        seedAccount('disconnected');
+        seedStoredListing([{ path: 'INBOX', delimiter: '/', noInferiors: false }]);
+
+        let listCalls = 0;
+        const accountObject = createAccountObject(async () => {
+            listCalls++;
+            return [];
+        });
+
+        const mailboxes = await accountObject.getMailboxListing({});
+        assert.deepStrictEqual(
+            mailboxes.map(mailbox => mailbox.path),
+            ['INBOX']
+        );
+        assert.strictEqual(mailboxes[0].status, undefined);
+        assert.strictEqual(listCalls, 0);
+    });
+
+    await t.test('a disconnected account with no stored listing is NotYetConnected, carrying its state', async () => {
+        seedAccount('disconnected');
+
+        await assert.rejects(
+            () => createAccountObject().getMailboxListing({}),
+            err => {
+                assert.strictEqual(err.output.statusCode, 503);
+                assert.strictEqual(err.output.payload.code, 'NotYetConnected');
+                assert.strictEqual(err.output.payload.state, 'disconnected');
+                return true;
+            }
+        );
+    });
+
+    await t.test('a live LIST entry without a stored counterpart adds nothing', async () => {
+        seedAccount('connected');
+        seedStoredListing([{ path: 'INBOX', delimiter: '/', noInferiors: false }]);
+
+        const accountObject = createAccountObject(async () => [{ path: 'INBOX' }, { path: 'NotStored', status: { path: 'NotStored', messages: 3 } }]);
+
+        const mailboxes = await accountObject.getMailboxListing({});
+        assert.deepStrictEqual(
+            mailboxes.map(mailbox => mailbox.path),
+            ['INBOX']
+        );
+        assert.ok(!('status' in mailboxes[0]), 'an entry without status adds no status key');
+    });
+
+    await t.test('a failure while merging an entry is a 503 naming the listing', async () => {
+        seedAccount('syncing');
+        seedStoredListing([{ path: 'INBOX', delimiter: '/', noInferiors: false }]);
+
+        const brokenRedis = Object.assign({}, mockRedis, {
+            pipeline: () => ({
+                hgetall() {
+                    return this;
+                },
+                // A reply that cannot be destructured
+                exec: async () => [5]
+            })
+        });
+        const accountObject = new Account({ redis: brokenRedis, account: ACCOUNT, call: async () => ({}), secret: 'test-secret' });
+        const logged = [];
+        accountObject.logger = { warn() {}, error: entry => logged.push(entry), info() {}, debug() {}, trace() {} };
+
+        await assert.rejects(
+            () => accountObject.getMailboxListing({}),
+            err => {
+                assert.strictEqual(err.output.statusCode, 503);
+                assert.strictEqual(err.message, 'Failed to process stored mailbox listing');
+                return true;
+            }
+        );
+        assert.strictEqual(logged.length, 1);
+        assert.strictEqual(logged[0].path, 'INBOX');
+        assert.strictEqual(logged[0].mailboxListing, 'undefined');
+    });
 });
 
 // Drives the REAL IMAPClient.getCurrentListing() with stubbed collaborators (the LIST round
