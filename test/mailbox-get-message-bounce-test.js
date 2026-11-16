@@ -38,6 +38,7 @@ function createContext() {
             }
         },
         lockForMessage: Mailbox.prototype.lockForMessage,
+        fetchUnderLock: Mailbox.prototype.fetchUnderLock,
         getMailboxLock: async () => ({
             release() {
                 events.push('release');

@@ -66,6 +66,7 @@ function createMockContext({ fetchResult, flagsAddResult = true, flagsAddError }
         // Use the real implementations so the returned payload is built the same
         // way as in production
         lockForMessage: Mailbox.prototype.lockForMessage,
+        fetchUnderLock: Mailbox.prototype.fetchUnderLock,
         getMessageInfo: Mailbox.prototype.getMessageInfo,
         getAttachmentList: Mailbox.prototype.getAttachmentList,
         setMessageSpecialUse: Mailbox.prototype.setMessageSpecialUse
