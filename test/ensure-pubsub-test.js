@@ -269,14 +269,18 @@ function makeClient(cfg) {
 
     return {
         calls,
-        request: async (accessToken, url, method) => {
-            calls.push({ url, method });
+        request: async (accessToken, url, method, payload) => {
+            calls.push({ url, method, payload });
 
             if (url.endsWith(':getIamPolicy')) {
                 return handlers.getIamPolicy();
             }
             if (url.endsWith(':setIamPolicy')) {
+                if (handlers.setIamPolicy) return handlers.setIamPolicy();
                 return {};
+            }
+            if (method === 'PATCH' && handlers.subPatch) {
+                return handlers.subPatch();
             }
 
             let isSub = url.includes('/subscriptions/');
@@ -523,5 +527,247 @@ test('ensurePubsub marker persistence and ownership-aware deletion', async t => 
         assert.equal(dels.length, 1);
         assert.ok(dels[0].url.includes('/subscriptions/'));
         assert.ok(!dels.some(c => c.url.includes('/topics/')), 'adopted topic must not be deleted');
+    });
+});
+
+// ---- Error classification of each phase ----
+
+const PUBSUB_PERM_MANAGE = 'Service client does not have permission to manage Pub/Sub topics. Grant the service user the "Pub/Sub Admin" role.';
+const PUBSUB_PERM_VIEW = 'Service client does not have permission to view Pub/Sub topics. Grant the service user the "Pub/Sub Admin" role.';
+
+function googleError(code, message) {
+    let err = new Error(message);
+    err.oauthRequest = { response: { error: { code, message } } };
+    return err;
+}
+
+function networkError(code) {
+    let err = new Error(`network ${code}`);
+    err.code = code;
+    return err;
+}
+
+function thrower(err) {
+    return () => {
+        throw err;
+    };
+}
+
+function readMeta(id) {
+    let buf = (mockRedisData[oauth2Apps.getDataKey()] || {})[`${id}:meta`];
+    return buf ? msgpack.decode(buf) : {};
+}
+
+// setMetaFireAndForget is not awaited, so its write lands a few turns after the throw
+const settle = () => new Promise(resolve => setTimeout(resolve, 10));
+
+// Capture warn-level log lines of the module logger for the duration of `fn`
+async function captureWarnings(fn) {
+    let logger = require('../lib/logger');
+    let saved = logger.warn;
+    let lines = [];
+    logger.warn = entry => lines.push(entry);
+    try {
+        await fn();
+    } finally {
+        logger.warn = saved;
+    }
+    return lines;
+}
+
+// Handlers that take every phase before the named one through its create path, so the failure
+// under test is the only error raised
+const PHASES = {
+    topicGet: {},
+    topicPut: { topicGet: thrower(notFoundError()) },
+    subGet: {},
+    subPut: { subGet: thrower(notFoundError()) },
+    getIamPolicy: {},
+    setIamPolicy: { getIamPolicy: () => ({ bindings: [], etag: 'etag-x' }) }
+};
+
+test('ensurePubsub error classification', async t => {
+    t.beforeEach(() => {
+        mockRedisData = {};
+        mockSets = {};
+        currentClient = null;
+    });
+
+    await t.test('a 403 on the topic lookup naming a disabled API asks to enable it', async () => {
+        let id = 'app-api-disabled';
+        seedApp(id);
+        let apiMessage = 'Cloud Pub/Sub API has not been used in project 123 before or it is disabled.';
+        let err = googleError(403, apiMessage);
+        currentClient = makeClient({ topicGet: thrower(err) });
+
+        await assert.rejects(oauth2Apps.ensurePubsub(await oauth2Apps.get(id)), e => e === err);
+        await settle();
+
+        assert.deepEqual(readMeta(id), {
+            authFlag: {
+                message: 'Enable the Cloud Pub/Sub API for your project before using the service client. Check the server response below for details.',
+                description: apiMessage
+            },
+            ttlWarning: null
+        });
+    });
+
+    const permissionCases = [
+        ['topicGet', PUBSUB_PERM_MANAGE],
+        ['topicPut', PUBSUB_PERM_MANAGE],
+        ['subGet', PUBSUB_PERM_VIEW],
+        ['subPut', PUBSUB_PERM_MANAGE],
+        ['getIamPolicy', PUBSUB_PERM_VIEW],
+        ['setIamPolicy', PUBSUB_PERM_MANAGE]
+    ];
+
+    for (let [phase, message] of permissionCases) {
+        await t.test(`a 403 from ${phase} sets the auth flag and rethrows`, async () => {
+            let id = `app-403-${phase}`;
+            seedApp(id);
+            let err = googleError(403, 'The caller does not have permission');
+            currentClient = makeClient(Object.assign({}, PHASES[phase], { [phase]: thrower(err) }));
+
+            await assert.rejects(oauth2Apps.ensurePubsub(await oauth2Apps.get(id)), e => e === err);
+            await settle();
+
+            let { authFlag, ttlWarning } = readMeta(id);
+            assert.deepEqual({ authFlag, ttlWarning }, { authFlag: { message }, ttlWarning: null });
+        });
+    }
+
+    const networkCases = [
+        ['topicGet', 'Network error checking Pub/Sub topic'],
+        ['topicPut', 'Network error creating Pub/Sub topic'],
+        ['subGet', 'Network error checking Pub/Sub subscription'],
+        ['subPut', 'Network error creating Pub/Sub subscription'],
+        ['getIamPolicy', 'Network error checking Pub/Sub IAM policy'],
+        ['setIamPolicy', 'Network error setting Pub/Sub IAM policy']
+    ];
+
+    for (let [phase, msg] of networkCases) {
+        await t.test(`a transient network error from ${phase} is rethrown with its own warning and no flag`, async () => {
+            let id = `app-net-${phase}`;
+            seedApp(id);
+            let err = networkError('ECONNRESET');
+            currentClient = makeClient(Object.assign({}, PHASES[phase], { [phase]: thrower(err) }));
+
+            let warnings = await captureWarnings(async () => {
+                await assert.rejects(oauth2Apps.ensurePubsub(await oauth2Apps.get(id)), e => e === err);
+            });
+            await settle();
+
+            assert.deepEqual(
+                warnings.filter(entry => /^Network error/.test(entry.msg)),
+                [{ msg, app: id, code: 'ECONNRESET' }]
+            );
+            assert.ok(!('authFlag' in readMeta(id)), 'a transient failure must not set an auth flag');
+        });
+    }
+
+    await t.test('any other Google error is rethrown without touching the metadata', async () => {
+        for (let phase of Object.keys(PHASES)) {
+            let id = `app-500-${phase}`;
+            seedApp(id);
+            let err = googleError(500, 'Backend error');
+            currentClient = makeClient(Object.assign({}, PHASES[phase], { [phase]: thrower(err) }));
+
+            await assert.rejects(oauth2Apps.ensurePubsub(await oauth2Apps.get(id)), e => e === err, phase);
+            await settle();
+            assert.ok(!('authFlag' in readMeta(id)), phase);
+        }
+    });
+
+    await t.test('a failed TTL PATCH is reported as a ttlWarning and the run still succeeds', async () => {
+        let id = 'app-ttl-fail';
+        seedApp(id, {
+            pubSubTopic: topicNameFor(id),
+            pubSubTopicManaged: true,
+            pubSubSubscription: subNameFor(id),
+            pubSubSubscriptionManaged: true,
+            pubSubIamPolicy: { members: [GMAIL_PUBLISHER], role: PUBLISHER_ROLE }
+        });
+        let patchErr = new Error('Patch refused');
+        patchErr.code = 'EPATCH';
+
+        let results;
+        await withGmailTtl(31, async () => {
+            currentClient = makeClient({
+                subGet: () => ({ name: 'sub', expirationPolicy: { ttl: '604800s' } }),
+                subPatch: thrower(patchErr)
+            });
+            results = await oauth2Apps.ensurePubsub(await oauth2Apps.get(id));
+        });
+
+        assert.deepEqual(results, {});
+        assert.deepEqual(readMeta(id), {
+            // the TTL the subscription still has, since the PATCH did not apply
+            subscriptionExpiration: '604800s',
+            authFlag: null,
+            ttlWarning: { message: 'Failed to update expiration policy on subscription', description: 'Patch refused; EPATCH' }
+        });
+    });
+
+    await t.test('a successful TTL PATCH clears the warning and stores the new expiration', async () => {
+        let id = 'app-ttl-ok';
+        seedApp(id, {
+            pubSubTopic: topicNameFor(id),
+            pubSubTopicManaged: true,
+            pubSubSubscription: subNameFor(id),
+            pubSubSubscriptionManaged: true,
+            pubSubIamPolicy: { members: [GMAIL_PUBLISHER], role: PUBLISHER_ROLE }
+        });
+        await oauth2Apps.setMeta(id, { ttlWarning: { message: 'old' }, authFlag: { message: 'old' } });
+
+        await withGmailTtl(31, async () => {
+            currentClient = makeClient({ subGet: () => ({ name: 'sub', expirationPolicy: { ttl: '604800s' } }) });
+            await oauth2Apps.ensurePubsub(await oauth2Apps.get(id));
+        });
+
+        let patch = currentClient.calls.find(c => c.method === 'PATCH');
+        assert.deepEqual(patch.payload, { subscription: { expirationPolicy: { ttl: `${31 * 86400}s` } }, updateMask: 'expirationPolicy' });
+        assert.deepEqual(readMeta(id), { subscriptionExpiration: `${31 * 86400}s`, authFlag: null, ttlWarning: null });
+    });
+
+    await t.test('setIamPolicy keeps the existing bindings and passes the etag through', async () => {
+        let id = 'app-iam-etag';
+        seedApp(id);
+        let otherBinding = { role: 'roles/pubsub.viewer', members: ['user:someone@example.com'] };
+        currentClient = makeClient({ getIamPolicy: () => ({ version: 1, etag: 'etag-42', bindings: [otherBinding] }) });
+
+        let results = await oauth2Apps.ensurePubsub(await oauth2Apps.get(id));
+
+        let set = currentClient.calls.find(c => c.url.endsWith(':setIamPolicy'));
+        assert.equal(set.method, 'POST');
+        assert.deepEqual(set.payload, {
+            policy: { bindings: [otherBinding, { members: [GMAIL_PUBLISHER], role: PUBLISHER_ROLE }], etag: 'etag-42' }
+        });
+        assert.deepEqual(results.iamPolicy, { members: [GMAIL_PUBLISHER], role: PUBLISHER_ROLE });
+        assert.deepEqual((await oauth2Apps.get(id)).pubSubIamPolicy, { members: [GMAIL_PUBLISHER], role: PUBLISHER_ROLE });
+    });
+
+    await t.test('setIamPolicy without an etag or bindings sends only the publisher binding', async () => {
+        let id = 'app-iam-noetag';
+        seedApp(id);
+        currentClient = makeClient({ getIamPolicy: () => ({}) });
+
+        await oauth2Apps.ensurePubsub(await oauth2Apps.get(id));
+
+        let set = currentClient.calls.find(c => c.url.endsWith(':setIamPolicy'));
+        assert.deepEqual(set.payload, { policy: { bindings: [{ members: [GMAIL_PUBLISHER], role: PUBLISHER_ROLE }] } });
+    });
+
+    await t.test('a failed setIamPolicy writes no IAM marker and leaves the auth flag untouched', async () => {
+        let id = 'app-iam-fail';
+        seedApp(id);
+        let err = googleError(400, 'Bad policy');
+        currentClient = makeClient({ getIamPolicy: () => ({ bindings: [] }), setIamPolicy: thrower(err) });
+
+        await assert.rejects(oauth2Apps.ensurePubsub(await oauth2Apps.get(id)), e => e === err);
+        await settle();
+
+        let saved = await oauth2Apps.get(id);
+        assert.equal(saved.pubSubIamPolicy, undefined);
+        assert.ok(!('authFlag' in readMeta(id)), 'the final authFlag clear must not run');
     });
 });
