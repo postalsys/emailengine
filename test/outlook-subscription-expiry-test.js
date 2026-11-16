@@ -19,6 +19,8 @@ after(() => {
 });
 
 const { OutlookClient } = require('../lib/email-client/outlook-client');
+const { classifyExistingSubscription } = require('../lib/email-client/outlook/subscription-expiry');
+const { OUTLOOK_CLOCK_SKEW_BUFFER, OUTLOOK_EXPIRATION_RENEW_TIME } = require('../lib/consts');
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -129,5 +131,27 @@ test('ensureSubscriptionLocked() by the time a stored subscription has left', as
         assert.equal(calls.renew.length, 0);
         assert.equal(calls.requests.length, 0);
         assert.equal(outlook.subscriptionState, 'valid');
+    });
+});
+
+test('classifyExistingSubscription()', async t => {
+    const now = Date.parse('2026-11-16T12:00:00Z');
+    const at = offset => new Date(now + offset);
+
+    await t.test('expired once inside the clock-skew buffer', () => {
+        assert.equal(classifyExistingSubscription(at(-HOUR), now), 'expired');
+        assert.equal(classifyExistingSubscription(at(0), now), 'expired');
+        assert.equal(classifyExistingSubscription(at(OUTLOOK_CLOCK_SKEW_BUFFER - 1), now), 'expired');
+    });
+
+    await t.test('renewed from the buffer up to the renewal window', () => {
+        assert.equal(classifyExistingSubscription(at(OUTLOOK_CLOCK_SKEW_BUFFER), now), 'renew');
+        assert.equal(classifyExistingSubscription(at(OUTLOOK_EXPIRATION_RENEW_TIME - 1), now), 'renew');
+    });
+
+    await t.test('valid from the renewal window on, and when there is no expiry to read', () => {
+        assert.equal(classifyExistingSubscription(at(OUTLOOK_EXPIRATION_RENEW_TIME), now), 'valid');
+        assert.equal(classifyExistingSubscription(at(3 * 24 * HOUR), now), 'valid');
+        assert.equal(classifyExistingSubscription(null, now), 'valid');
     });
 });
