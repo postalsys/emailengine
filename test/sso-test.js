@@ -297,10 +297,30 @@ test('buildOidcBellProvider', async t => {
         assert.equal(provider.protocol, 'oauth2');
         assert.equal(provider.useParamsAuth, true);
         assert.equal(provider.pkce, 'S256');
-        assert.equal(provider.auth, doc.authorization_endpoint);
-        assert.equal(provider.token, doc.token_endpoint);
+        assert.equal(provider.auth(), doc.authorization_endpoint);
+        assert.equal(provider.token(), doc.token_endpoint);
         assert.deepEqual(provider.scope, ['openid', 'profile', 'email']);
         assert.equal(typeof provider.profile, 'function');
+    });
+
+    await t.test('reads the endpoints from the current document on every sign-in', async () => {
+        let current = null;
+        const provider = sso.buildOidcBellProvider(() => current);
+
+        // before discovery has succeeded a sign-in fails instead of reaching any endpoint
+        assert.throws(() => provider.auth(), { code: 'OidcDiscoveryUnavailable' });
+        assert.throws(() => provider.token(), { code: 'OidcDiscoveryUnavailable' });
+        await assert.rejects(
+            provider.profile({}, {}, async () => ({})),
+            { code: 'OidcDiscoveryUnavailable' }
+        );
+
+        current = doc;
+        assert.equal(provider.auth(), doc.authorization_endpoint);
+        assert.equal(provider.token(), doc.token_endpoint);
+
+        current = { ...doc, authorization_endpoint: 'https://idp.example.com/auth2' };
+        assert.equal(provider.auth(), 'https://idp.example.com/auth2');
     });
 
     await t.test('honors a scope override and still forces openid', () => {

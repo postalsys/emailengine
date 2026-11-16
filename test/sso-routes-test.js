@@ -169,6 +169,13 @@ test('OIDC strategy', async t => {
         assert.equal(JSON.parse((await server.inject('/probe')).payload).oidcValid, false);
         assert.equal(JSON.parse((await server.inject('/probe')).payload).logoutUrl, null);
 
+        // the callback route exists from the start, so nothing is added to the table after the server starts
+        assert.ok(server.table().some(route => route.path === '/admin/login/oidc'));
+        // and a sign-in started before discovery succeeded fails back to the login form
+        const early = await server.inject({ method: 'GET', url: '/admin/login/oidc' });
+        assert.equal(early.statusCode, 302);
+        assert.equal(early.headers.location, '/admin/login?sso_denied=1');
+
         resolveRetry(DISCOVERY);
         await retry;
 
