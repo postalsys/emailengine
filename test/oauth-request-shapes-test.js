@@ -423,16 +423,16 @@ test('Outlook request()', async t => {
         assert.deepStrictEqual(logs, [['warn', Object.assign({ msg: 'API request failed' }, err.oauthRequest)]]);
     });
 
-    await t.test('a secret error without a client secret stops before the flag', async () => {
-        // formatPartialSecretKey() throws on a missing secret and the error handling swallows it
+    await t.test('a secret error without a client secret still raises the flag', async () => {
         const { outlook, flags } = createClients({ clientSecret: undefined });
         const body = { error: 'invalid_client', error_description: 'AADSTS7000215: Invalid client secret is provided.' };
         respond(401, JSON.stringify(body), { 'Content-Type': 'application/json' });
         const err = await rejection(outlook.request('tok', `${baseUrl}/api`, 'get'));
         assert.deepStrictEqual(err.oauthRequest.response, body);
         assert.strictEqual('clientSecret' in err.oauthRequest, false);
-        assert.strictEqual(err.code, undefined);
-        assert.deepStrictEqual(flags, []);
+        assert.strictEqual(err.code, 'OUTLOOK_CLIENT_SECRET_INVALID');
+        assert.strictEqual(flags.length, 1);
+        assert.strictEqual(flags[0].code, 'OUTLOOK_CLIENT_SECRET_INVALID');
     });
 });
 
