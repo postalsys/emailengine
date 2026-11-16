@@ -105,6 +105,11 @@
         "socks": "2.8.10",
         "undici": "8.12.4"
     },
+    "overrides": {
+        "@hapi/bell": {
+            "joi": "$joi"
+        }
+    },
     "devDependencies": {
         "@eslint/js": "10.0.1",
         "@iconify-json/tabler": "1.2.46",
