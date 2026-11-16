@@ -626,8 +626,8 @@ test('queueMessageEntry helpers', async t => {
     });
 
     await t.test('senderDomain() is the ASCII sender domain, else the fallback', () => {
-        assert.strictEqual(senderDomain({ from: { address: 'a@Õnne.EE' } }, 'fallback.test'), 'xn--nne-nna.ee');
-        assert.strictEqual(senderDomain({ from: { address: '' } }, 'fallback.test'), 'fallback.test');
-        assert.strictEqual(senderDomain({}, 'fallback.test'), 'fallback.test');
+        assert.strictEqual(senderDomain('a@Õnne.EE', 'fallback.test'), 'xn--nne-nna.ee');
+        assert.strictEqual(senderDomain('', 'fallback.test'), 'fallback.test');
+        assert.strictEqual(senderDomain(undefined, 'fallback.test'), 'fallback.test');
     });
 });
