@@ -157,6 +157,33 @@ test('getRawEmail - raw path (processMessage)', async t => {
         assert.match(out, new RegExp(`^Date: ${future.toUTCString().replace('GMT', '\\+0000')}`, 'm'));
     });
 
+    await t.test('an invalid X-EE-Send-At is removed and ignored', async () => {
+        const raw = rawMessage(['From: a@example.com', 'To: b@example.com', 'Date: Mon, 02 Nov 2026 10:00:00 +0000', 'X-EE-Send-At: not a date'], 'hi');
+        const res = await getRawEmail({ raw }, null);
+        assert.doesNotMatch(res.raw.toString(), /^X-EE-Send-At:/im);
+        assert.strictEqual(res.sendAt, undefined);
+        assert.match(res.raw.toString(), /^Date: Mon, 02 Nov 2026 10:00:00 \+0000$/m);
+
+        // and does not replace a send time the request gave
+        const sendAt = new Date(Date.now() + 3600 * 1000);
+        const withSendAt = await getRawEmail({ raw, sendAt }, null);
+        assert.strictEqual(withSendAt.sendAt, sendAt);
+    });
+
+    await t.test('the Date header follows a future send time of the request, and only a future one', async () => {
+        const raw = rawMessage(['From: a@example.com', 'To: b@example.com', 'Date: Mon, 02 Nov 2026 10:00:00 +0000'], 'hi');
+
+        const future = new Date(Date.now() + 3600 * 1000);
+        const scheduled = await getRawEmail({ raw, sendAt: future }, null);
+        assert.ok(scheduled.raw.toString().includes(`Date: ${future.toUTCString().replace('GMT', '+0000')}\r\n`));
+        assert.strictEqual((scheduled.raw.toString().match(/^Date:/gm) || []).length, 1);
+
+        const past = new Date(Date.now() - 3600 * 1000);
+        const overdue = await getRawEmail({ raw, sendAt: past }, null);
+        assert.match(overdue.raw.toString(), /^Date: Mon, 02 Nov 2026 10:00:00 \+0000$/m);
+        assert.strictEqual(overdue.sendAt, past);
+    });
+
     await t.test('adds the X-Ee-Sid header from licenseInfo', async () => {
         const raw = rawMessage(['From: a@example.com', 'To: b@example.com', 'Subject: x'], 'hi');
         const licensed = await getRawEmail({ raw }, { details: { key: 'abcdef0123456789' } });
