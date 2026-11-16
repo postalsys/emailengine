@@ -1181,6 +1181,27 @@ let spawnWorker = async (type, opts, slot) => {
             });
         });
 
+        // The worker is up and accepts work: an IMAP worker becomes available for accounts, and
+        // the spawn resolves
+        const onWorkerReady = () => {
+            if (type === 'imap') {
+                // IMAP worker is ready to accept accounts
+                availableIMAPWorkers.add(worker);
+            }
+
+            isOnline = true;
+
+            // Initialize heartbeat tracking
+            workerHeartbeats.set(worker, Date.now());
+            workerHealthStatus.set(worker, 'healthy');
+
+            resolve(worker.threadId);
+
+            if (type === 'imap') {
+                onImapWorkerReady(worker);
+            }
+        };
+
         // Handle messages from worker
         worker.on('message', message => {
             // Update message count
@@ -1192,275 +1213,290 @@ let spawnWorker = async (type, opts, slot) => {
                 return;
             }
 
-            // Handle heartbeat from worker
-            if (message.cmd === 'heartbeat') {
-                handleWorkerHeartbeat(worker);
-                return;
-            }
-
-            // Handle response to a call
-            if (message.cmd === 'resp' && message.mid && callQueue.has(message.mid)) {
-                let { resolve, reject, timer } = callQueue.get(message.mid);
-                clearTimeout(timer);
-                callQueue.delete(message.mid);
-                if (message.error) {
-                    return reject(unpackRpcError(message));
-                } else {
-                    return resolve(message.response);
-                }
-            }
-
-            // Handle call from worker
-            if (message.cmd === 'call' && message.mid) {
-                return onCommand(worker, message.message)
-                    .then(response => {
-                        let transferList;
-                        // Handle transferable objects
-                        if (response && typeof response === 'object' && response._transfer === true) {
-                            if (typeof response._response === 'object' && response._response && response._response.buffer) {
-                                transferList = [response._response.buffer];
-                            }
-                            response = response._response;
-                        }
-
-                        let callPayload = {
-                            cmd: 'resp',
-                            mid: message.mid,
-                            response
-                        };
-
-                        try {
-                            postMessage(worker, callPayload, null, transferList);
-                        } catch (err) {
-                            // Log buffer info instead of full buffer
-                            if (Buffer.isBuffer(callPayload.response)) {
-                                callPayload.response = `Buffer <${callPayload.response.length}B>`;
-                            }
-
-                            logger.error({ msg: 'Unable to send response to worker', worker: worker.threadId, callPayload, err });
-                        }
-                    })
-                    .catch(err => {
-                        let callPayload = Object.assign({ cmd: 'resp', mid: message.mid }, packRpcError(err));
-
-                        try {
-                            postMessage(worker, callPayload);
-                        } catch (err) {
-                            logger.error({ msg: 'Unable to send error response to worker', worker: worker.threadId, callPayload, err });
-                        }
-                    });
-            }
-
-            // Handle metrics messages
             switch (message.cmd) {
-                case 'metrics': {
-                    let { account, statUpdateKey, accountUpdateKey } = resolveMetricKeys(message);
-
-                    if (message.key === 'apiCall' && typeof message.duration === 'number' && Number.isFinite(message.duration)) {
-                        let { method, route } = message.args[0] || {};
-                        try {
-                            metrics.apiCallDuration.observe({ method, route }, message.duration);
-                        } catch (err) {
-                            logger.error({ msg: 'Unable to apply worker metric', type, key: 'apiCallDuration', err });
-                        }
-                    }
-
-                    // Update Redis counters for dashboard stats
-                    if (statUpdateKey) {
-                        let { dateStr, timeStr } = statBuckets(new Date());
-
-                        let hkey = `${REDIS_PREFIX}stats:${statUpdateKey}:${dateStr}`;
-
-                        let update = redis
-                            .multi()
-                            .hincrby(hkey, timeStr, 1)
-                            .sadd(`${REDIS_PREFIX}stats:keys`, statUpdateKey)
-                            .expire(hkey, (MAX_DAYS_STATS + 1) * 24 * 3600); // Keep for configured days + 1
-
-                        if (account && accountUpdateKey) {
-                            // Update account-specific counter
-                            let accountKey = accountDataKey(account);
-                            update = update.hIncrbyExists(accountKey, `stats:count:${accountUpdateKey}`, 1);
-                        }
-
-                        update.exec().catch(() => false);
-                    } else if (account && accountUpdateKey) {
-                        // Update only account-specific counter
-                        let accountKey = accountDataKey(account);
-                        redis.hIncrbyExists(accountKey, `stats:count:${accountUpdateKey}`, 1).catch(() => false);
-                    }
-
-                    // Update Prometheus metrics. The Prometheus client throws synchronously on an unknown
-                    // label, a negative counter increment or a non-finite value, and this runs in
-                    // an event handler on the main thread, where a throw would take every worker
-                    // down with it.
-                    if (message.key && metrics[message.key] && typeof metrics[message.key][message.method] === 'function') {
-                        try {
-                            metrics[message.key][message.method](...message.args);
-                        } catch (err) {
-                            logger.error({ msg: 'Unable to apply worker metric', type, key: message.key, method: message.method, err });
-                        }
-                    }
-
+                // Handle heartbeat from worker
+                case 'heartbeat':
+                    handleWorkerHeartbeat(worker);
                     return;
-                }
+
+                // Handle response to a call; one nobody waits for anymore (timed out) is dropped
+                case 'resp':
+                    if (message.mid && callQueue.has(message.mid)) {
+                        handleRpcResponse(message);
+                    }
+                    return;
+
+                // Handle call from worker
+                case 'call':
+                    if (message.mid) {
+                        handleRpcCall(worker, message);
+                    }
+                    return;
+
+                case 'metrics':
+                    recordWorkerMetrics(type, message);
+                    return;
 
                 case 'settings':
-                    // Reload the HTTP proxy agent in the main thread when proxy settings change
-                    maybeReloadHttpProxyAgent(message.data);
-
-                    // Forward settings changes to all IMAP workers
-                    availableIMAPWorkers.forEach(worker => {
-                        try {
-                            postMessage(worker, message);
-                        } catch (err) {
-                            logger.error({
-                                msg: 'Unable to forward settings to worker',
-                                worker: worker.threadId,
-                                settingsKeys: Object.keys(message.data || {}),
-                                err
-                            });
-                        }
-                    });
-
-                    // Forward settings changes to every other worker type (the IMAP workers were
-                    // handled above); each reloads its HTTP proxy agent from the 'settings' message
-                    for (let [type, typeWorkers] of workers) {
-                        if (type === 'imap') {
-                            continue;
-                        }
-                        typeWorkers.forEach(worker => {
-                            try {
-                                postMessage(worker, message);
-                            } catch (err) {
-                                logger.error({ msg: 'Unable to forward settings to worker', type, worker: worker.threadId, err });
-                            }
-                        });
-                    }
+                    forwardSettings(message);
                     return;
 
                 case 'change':
-                    // Handle state changes
-                    switch (message.type) {
-                        case 'smtpServerState':
-                        case 'imapProxyServerState': {
-                            let type = message.type.replace(/ServerState$/, '');
-                            reportServerState(type, message.key, message.payload);
-                            break;
-                        }
-                        default:
-                            // Forward all other state changes to API workers
-                            for (let worker of workers.get('api') || []) {
-                                try {
-                                    postMessage(worker, message, true);
-                                } catch (err) {
-                                    logger.error({ msg: 'Unable to forward state change to worker', worker: worker.threadId, callPayload: message, err });
-                                }
-                            }
-                    }
-                    break;
-            }
+                    forwardStateChange(message);
+                    return;
 
-            // Handle worker type specific messages
-            switch (type) {
-                case 'imap':
-                    if (message.cmd === 'ready') {
-                        // IMAP worker is ready to accept accounts
-                        availableIMAPWorkers.add(worker);
-                        isOnline = true;
-
-                        // Initialize heartbeat tracking
-                        workerHeartbeats.set(worker, Date.now());
-                        workerHealthStatus.set(worker, 'healthy');
-
-                        resolve(worker.threadId);
-
-                        logger.info({
-                            msg: 'IMAP worker ready',
-                            threadId: worker.threadId,
-                            currentWorkers: availableIMAPWorkers.size,
-                            expectedWorkers: config.workers.imap,
-                            unassignedCount: unassigned ? unassigned.size : 0,
-                            assignedCount: assigned.size,
-                            imapInitialWorkersLoaded,
-                            reassignmentPending
-                        });
-
-                        if (imapInitialWorkersLoaded && reassignmentPending) {
-                            // Check if we now have the expected number of workers
-                            // This handles the case where a worker crashed and restarted
-                            if (availableIMAPWorkers.size === config.workers.imap) {
-                                // All workers are back - clear timer and reassign
-                                if (reassignmentTimer) {
-                                    clearTimeout(reassignmentTimer);
-                                    reassignmentTimer = null;
-                                }
-                                reassignmentPending = false;
-
-                                if (unassigned && unassigned.size > 0) {
-                                    logger.info({
-                                        msg: 'All expected workers ready, reassigning unassigned accounts',
-                                        workers: availableIMAPWorkers.size,
-                                        unassigned: unassigned.size
-                                    });
-                                    assignAccounts().catch(err => logger.error({ msg: 'Unable to assign accounts', err }));
-                                } else {
-                                    logger.warn({
-                                        msg: 'All workers ready but no unassigned accounts found',
-                                        workers: availableIMAPWorkers.size
-                                    });
-                                }
-                            } else if (unassigned && unassigned.size > 0) {
-                                // Still waiting for more workers to restart
-                                logger.info({
-                                    msg: 'Worker ready, waiting for all workers before reassignment',
-                                    currentWorkers: availableIMAPWorkers.size,
-                                    expectedWorkers: config.workers.imap,
-                                    unassignedAccounts: unassigned.size
-                                });
-                                // The failsafe found no worker at all and stopped; give the rest
-                                // of the fleet the same time to come back from here
-                                if (!reassignmentTimer) {
-                                    armReassignmentFailsafe();
-                                }
-                            }
-                        } else if (imapInitialWorkersLoaded) {
-                            // The failsafe timer already gave this worker's accounts to the
-                            // survivors (or it is an extra worker), so nothing is pending for it
-                            rebalanceOnto(worker).catch(err => logger.error({ msg: 'Unable to rebalance accounts', err }));
-                        }
-                    }
-                    break;
-
-                case 'api':
-                    if (message.cmd === 'ready') {
-                        // API worker is ready
-                        isOnline = true;
-
-                        // Initialize heartbeat tracking
-                        workerHeartbeats.set(worker, Date.now());
-                        workerHealthStatus.set(worker, 'healthy');
-
-                        resolve(worker.threadId);
-                    }
-                    break;
-
-                default:
-                    // For all other worker types
-                    if (message.cmd === 'ready') {
-                        isOnline = true;
-
-                        // Initialize heartbeat tracking
-                        workerHeartbeats.set(worker, Date.now());
-                        workerHealthStatus.set(worker, 'healthy');
-
-                        resolve(worker.threadId);
-                    }
-                    break;
+                case 'ready':
+                    onWorkerReady();
+                    return;
             }
         });
     });
 };
+
+/**
+ * Settles the pending call() a worker answered
+ * @param {Object} message - `resp` message carrying the call's `mid`
+ */
+function handleRpcResponse(message) {
+    let { resolve, reject, timer } = callQueue.get(message.mid);
+    clearTimeout(timer);
+    callQueue.delete(message.mid);
+    if (message.error) {
+        reject(unpackRpcError(message));
+    } else {
+        resolve(message.response);
+    }
+}
+
+/**
+ * Runs a command a worker asked the main thread for and posts the answer back
+ * @param {Worker} worker - The calling worker
+ * @param {Object} message - `call` message carrying the command and its `mid`
+ */
+function handleRpcCall(worker, message) {
+    onCommand(worker, message.message)
+        .then(response => {
+            let transferList;
+            // Handle transferable objects
+            if (response && typeof response === 'object' && response._transfer === true) {
+                if (typeof response._response === 'object' && response._response && response._response.buffer) {
+                    transferList = [response._response.buffer];
+                }
+                response = response._response;
+            }
+
+            let callPayload = {
+                cmd: 'resp',
+                mid: message.mid,
+                response
+            };
+
+            try {
+                postMessage(worker, callPayload, null, transferList);
+            } catch (err) {
+                // Log buffer info instead of full buffer
+                if (Buffer.isBuffer(callPayload.response)) {
+                    callPayload.response = `Buffer <${callPayload.response.length}B>`;
+                }
+
+                logger.error({ msg: 'Unable to send response to worker', worker: worker.threadId, callPayload, err });
+            }
+        })
+        .catch(err => {
+            let callPayload = Object.assign({ cmd: 'resp', mid: message.mid }, packRpcError(err));
+
+            try {
+                postMessage(worker, callPayload);
+            } catch (err) {
+                logger.error({ msg: 'Unable to send error response to worker', worker: worker.threadId, callPayload, err });
+            }
+        });
+}
+
+/**
+ * Applies a worker's `metrics` message: the dashboard counters in Redis and the Prometheus metric
+ * @param {String} type - Type of the reporting worker
+ * @param {Object} message - `metrics` message
+ */
+function recordWorkerMetrics(type, message) {
+    let { account, statUpdateKey, accountUpdateKey } = resolveMetricKeys(message);
+
+    if (message.key === 'apiCall' && typeof message.duration === 'number' && Number.isFinite(message.duration)) {
+        let { method, route } = message.args[0] || {};
+        try {
+            metrics.apiCallDuration.observe({ method, route }, message.duration);
+        } catch (err) {
+            logger.error({ msg: 'Unable to apply worker metric', type, key: 'apiCallDuration', err });
+        }
+    }
+
+    // Update Redis counters for dashboard stats
+    if (statUpdateKey) {
+        let { dateStr, timeStr } = statBuckets(new Date());
+
+        let hkey = `${REDIS_PREFIX}stats:${statUpdateKey}:${dateStr}`;
+
+        let update = redis
+            .multi()
+            .hincrby(hkey, timeStr, 1)
+            .sadd(`${REDIS_PREFIX}stats:keys`, statUpdateKey)
+            .expire(hkey, (MAX_DAYS_STATS + 1) * 24 * 3600); // Keep for configured days + 1
+
+        if (account && accountUpdateKey) {
+            // Update account-specific counter
+            let accountKey = accountDataKey(account);
+            update = update.hIncrbyExists(accountKey, `stats:count:${accountUpdateKey}`, 1);
+        }
+
+        update.exec().catch(() => false);
+    } else if (account && accountUpdateKey) {
+        // Update only account-specific counter
+        let accountKey = accountDataKey(account);
+        redis.hIncrbyExists(accountKey, `stats:count:${accountUpdateKey}`, 1).catch(() => false);
+    }
+
+    // Update Prometheus metrics. The Prometheus client throws synchronously on an unknown
+    // label, a negative counter increment or a non-finite value, and this runs in
+    // an event handler on the main thread, where a throw would take every worker
+    // down with it.
+    if (message.key && metrics[message.key] && typeof metrics[message.key][message.method] === 'function') {
+        try {
+            metrics[message.key][message.method](...message.args);
+        } catch (err) {
+            logger.error({ msg: 'Unable to apply worker metric', type, key: message.key, method: message.method, err });
+        }
+    }
+}
+
+/**
+ * Applies a settings change in the main thread and forwards it to every worker
+ * @param {Object} message - `settings` message
+ */
+function forwardSettings(message) {
+    // Reload the HTTP proxy agent in the main thread when proxy settings change
+    maybeReloadHttpProxyAgent(message.data);
+
+    // Forward settings changes to all IMAP workers
+    availableIMAPWorkers.forEach(worker => {
+        try {
+            postMessage(worker, message);
+        } catch (err) {
+            logger.error({
+                msg: 'Unable to forward settings to worker',
+                worker: worker.threadId,
+                settingsKeys: Object.keys(message.data || {}),
+                err
+            });
+        }
+    });
+
+    // Forward settings changes to every other worker type (the IMAP workers were
+    // handled above); each reloads its HTTP proxy agent from the 'settings' message
+    for (let [type, typeWorkers] of workers) {
+        if (type === 'imap') {
+            continue;
+        }
+        typeWorkers.forEach(worker => {
+            try {
+                postMessage(worker, message);
+            } catch (err) {
+                logger.error({ msg: 'Unable to forward settings to worker', type, worker: worker.threadId, err });
+            }
+        });
+    }
+}
+
+/**
+ * Handles a state change: a listener's own state is recorded here, everything else goes to the
+ * API workers
+ * @param {Object} message - `change` message
+ */
+function forwardStateChange(message) {
+    switch (message.type) {
+        case 'smtpServerState':
+        case 'imapProxyServerState': {
+            let serverType = message.type.replace(/ServerState$/, '');
+            reportServerState(serverType, message.key, message.payload);
+            break;
+        }
+        default:
+            // Forward all other state changes to API workers
+            for (let worker of workers.get('api') || []) {
+                try {
+                    postMessage(worker, message, true);
+                } catch (err) {
+                    logger.error({ msg: 'Unable to forward state change to worker', worker: worker.threadId, callPayload: message, err });
+                }
+            }
+    }
+}
+
+/**
+ * An IMAP worker came up: once the initial set has loaded, hand it the accounts waiting for a
+ * worker, or rebalance onto it
+ * @param {Worker} worker - The IMAP worker that is now available
+ */
+function onImapWorkerReady(worker) {
+    logger.info({
+        msg: 'IMAP worker ready',
+        threadId: worker.threadId,
+        currentWorkers: availableIMAPWorkers.size,
+        expectedWorkers: config.workers.imap,
+        unassignedCount: unassigned ? unassigned.size : 0,
+        assignedCount: assigned.size,
+        imapInitialWorkersLoaded,
+        reassignmentPending
+    });
+
+    if (!imapInitialWorkersLoaded) {
+        return;
+    }
+
+    if (!reassignmentPending) {
+        // The failsafe timer already gave this worker's accounts to the
+        // survivors (or it is an extra worker), so nothing is pending for it
+        rebalanceOnto(worker).catch(err => logger.error({ msg: 'Unable to rebalance accounts', err }));
+        return;
+    }
+
+    // Check if we now have the expected number of workers
+    // This handles the case where a worker crashed and restarted
+    if (availableIMAPWorkers.size === config.workers.imap) {
+        // All workers are back - clear timer and reassign
+        if (reassignmentTimer) {
+            clearTimeout(reassignmentTimer);
+            reassignmentTimer = null;
+        }
+        reassignmentPending = false;
+
+        if (unassigned && unassigned.size > 0) {
+            logger.info({
+                msg: 'All expected workers ready, reassigning unassigned accounts',
+                workers: availableIMAPWorkers.size,
+                unassigned: unassigned.size
+            });
+            assignAccounts().catch(err => logger.error({ msg: 'Unable to assign accounts', err }));
+        } else {
+            logger.warn({
+                msg: 'All workers ready but no unassigned accounts found',
+                workers: availableIMAPWorkers.size
+            });
+        }
+    } else if (unassigned && unassigned.size > 0) {
+        // Still waiting for more workers to restart
+        logger.info({
+            msg: 'Worker ready, waiting for all workers before reassignment',
+            currentWorkers: availableIMAPWorkers.size,
+            expectedWorkers: config.workers.imap,
+            unassignedAccounts: unassigned.size
+        });
+        // The failsafe found no worker at all and stopped; give the rest
+        // of the fleet the same time to come back from here
+        if (!reassignmentTimer) {
+            armReassignmentFailsafe();
+        }
+    }
+}
 
 /**
  * Call a command on a worker thread and wait for response
