@@ -150,7 +150,18 @@ test('serializeAccountData() without a secret', async t => {
         assert.deepStrictEqual(encode({ outlookSubscription: undefined }), {});
         assert.deepStrictEqual(encode({ proxy: null, webhooks: undefined }), {});
         assert.deepStrictEqual(encode({ proxy: false }), { proxy: 'false' });
-        assert.deepStrictEqual(encode({ name: 5, lastErrorState: { a: 1 }, note: null }), { name: '5', lastErrorState: '[object Object]' });
+        assert.deepStrictEqual(encode({ name: 5, lastErrorState: { a: 1 }, note: null }), { name: '5', lastErrorState: '{"a":1}' });
+        assert.deepStrictEqual(encode({ smtpStatus: { status: 'ok' }, webhookErrorFlag: {} }), { smtpStatus: '{"status":"ok"}', webhookErrorFlag: '{}' });
+    });
+
+    await t.test('an object with no encoder is not stored as [object Object]', () => {
+        const logger = createMockLogger();
+        const stored = createAccount({ logger }).serializeAccountData({ name: 'n', counters: { messages: { new: 1 } }, created: new Date(0) });
+        assert.deepStrictEqual(stored, { name: 'n', created: new Date(0).toString() });
+        assert.deepStrictEqual(
+            logger.entries.map(entry => [entry.msg, entry.key]),
+            [['Failed to stringify input for Redis', 'counters']]
+        );
     });
 
     await t.test('outlookSubscription expiry', () => {
