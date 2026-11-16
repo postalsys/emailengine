@@ -218,6 +218,21 @@ test('GmailClient.init() on a full access account', async t => {
         assert.ok(calls.info.some(entry => entry.msg === 'Re-set missing Google History ID' && entry.historyId === 300));
     });
 
+    await t.test('a profile without a history ID leaves the missing checkpoint unset and still connects', async () => {
+        // Used to call toString() on null and fail every connection attempt of the account
+        const { gmail, log, calls } = makeInitClient({
+            accountData: makeAccountData({ googleHistoryId: null }),
+            profile: { emailAddress: 'user@example.com' }
+        });
+
+        await gmail.init();
+
+        assert.deepEqual(calls.hSetExists, [], 'nothing is written as the checkpoint');
+        assert.deepEqual(calls.triggerSync, []);
+        assert.ok(calls.warn.some(entry => entry.msg === 'Profile has no history ID, left the history checkpoint unset'));
+        assert.deepEqual(log.slice(-3), ['notifyAuthenticationSuccess:user@example.com', 'state:connected', 'emit:state:connected']);
+    });
+
     await t.test('stores a changed address and reloads the account before using it', async () => {
         const updated = makeAccountData({ oauth2: { provider: 'gmail-app', scope: FULL_SCOPES, auth: { user: 'renamed@example.com' } } });
         const { gmail, log, calls } = makeInitClient({
