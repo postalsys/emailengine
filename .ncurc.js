@@ -23,7 +23,7 @@ module.exports = {
     target: name =>
         ['pino', '@playwright/test'].includes(name)
             ? 'patch'
-            : ['gettext-parser', 'marked', '@sentry/node-core', 'he', 'iconv-lite'].includes(name)
+            : ['gettext-parser', 'marked', '@sentry/node-core', 'he', 'iconv-lite', '@hapi/boom'].includes(name)
               ? 'minor'
               : 'latest'
     //   pino              - held on 10.3.x. 10.4.0 took PR #2294, which makes lib/caller.js prefer
@@ -44,13 +44,23 @@ module.exports = {
     //                       times out with "Received: undefined" while the page snapshot shows the button).
     //                       Same spec passes in 3.8 s on 1.63.0; nothing in the 1.64 release notes covers
     //                       it. Lift once a 1.64.x or later passes that spec unchanged.
-    //   gettext-parser    - 8.x is ESM-only
+    //   gettext-parser    - 8.x and later are ESM-only (10.0.0 is type:module with no require condition). It is a
+    //                       devDependency only (gettext-extract.js and test/gettext-pot-order-test.js), so pkg is not
+    //                       the constraint: the unit tier runs under `npm run test:cjs` (require(esm) disabled), where
+    //                       an ESM-only gettext-parser fails to load.
     //   marked            - 16.x dropped the CommonJS build (ESM-only, needs require(esm)); 15.x is the last
     //                       require()-compatible line, verified in a yao/pkg node24 build.
     //                       Permanent: an ESM-only release cannot be bundled by pkg, whatever the Node floor.
     //   iconv-lite        - 1.0 (alpha since 2026-10) moves to ES modules, relying on require(esm). Held on 0.x;
     //                       libmime, imapflow and mailparser carry the same cap. The ES module move keeps it out of
     //                       the pkg bundle.
+    //   @hapi/boom        - 11.0.0-rc.0 (dist-tag next, 2026-08) is type:module with only an ESM export (boom PR #309,
+    //                       "convert module to ESM") and engines node>=22. Without this cap `npm run update` would move
+    //                       to it the day 11.0.0 reaches latest, and the pkg binary would fail while dev and tests pass on
+    //                       require(esm). The hapi org did the same to bourne, formula, pinpoint and tlds in 2026 and has
+    //                       ESM-only rcs of hoek 12 and topo 7, so a hapi 22 will likely follow: add every direct
+    //                       @hapi/* dependency here the day it publishes an ESM-only major. hapi 21 itself still depends
+    //                       on boom ^10, hoek ^11 and topo ^6.
     //   he                - 2.x is ESM-only (exports only src/he.mjs). 1.2.0 is the last CommonJS release. mailparser,
     //                       which reaches EmailEngine through the same require, rejects 2.x for the same reason.
     //                       Permanent for the same pkg reason as marked.
