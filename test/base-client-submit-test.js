@@ -34,17 +34,21 @@ const { BaseClient, buildReferences } = require('../lib/email-client/base-client
 const { isFailedDelivery } = require('../lib/email-client/new-message-steps');
 const { Account } = require('../lib/account');
 const { EMAIL_SENT_NOTIFY, EMAIL_DELIVERY_ERROR_NOTIFY } = require('../lib/consts');
+const { submitPenaltyKey, SUBMIT_PENALTY_MS } = require('../lib/submit-penalty');
 const { noopLogger } = require('./helpers/auth-failure');
 
 require('./helpers/redis-teardown')();
 
-test.mock.method(SmtpConfigBuilder.prototype, 'loadGateway', async () => ({ gatewayData: null, gatewayObject: null }));
+// a test that sends through a gateway sets this
+let gatewayStub = null;
+test.mock.method(SmtpConfigBuilder.prototype, 'loadGateway', async () => gatewayStub || { gatewayData: null, gatewayObject: null });
 test.mock.method(SmtpConfigBuilder.prototype, 'buildConnectionConfig', async () => ({}));
 test.mock.method(SmtpConfigBuilder.prototype, 'resolveAuthServer', async () => null);
 test.mock.method(SmtpConfigBuilder.prototype, 'buildSmtpSettings', async () => ({ host: 'smtp.example.com', port: 587 }));
 
 function createSubmitClient({ failingNotify = false, failingRedis = false } = {}) {
     const notifications = [];
+    const penalties = [];
     const ctx = Object.assign(Object.create(BaseClient.prototype), {
         account: 'test-account',
         logger: noopLogger,
@@ -56,7 +60,11 @@ function createSubmitClient({ failingNotify = false, failingRedis = false } = {}
                     throw new Error('READONLY You can not write against a read only replica');
                 }
             },
-            hset: async () => 1
+            hset: async () => 1,
+            set: async (...args) => {
+                penalties.push(args);
+                return 'OK';
+            }
         },
         getAccountKey: () => 'iad:test-account',
         uploadToSentFolder: async () => false,
@@ -72,7 +80,7 @@ function createSubmitClient({ failingNotify = false, failingRedis = false } = {}
             }
         }
     });
-    return { ctx, notifications };
+    return { ctx, notifications, penalties };
 }
 
 const submission = () => ({
@@ -141,6 +149,115 @@ test('BaseClient.submitMessage() after the server accepted the message', async t
             assert.equal(Boolean(payloads[0].job.nextAttempt), !permanent, error.message);
             assert.equal(job.nextAttempt, '2026-11-07T12:00:00.000Z', "the caller's job data is not changed");
         }
+    });
+});
+
+test('BaseClient.submitMessage() around the send', async t => {
+    t.beforeEach(() => {
+        sent.length = 0;
+        sendError = null;
+        gatewayStub = null;
+    });
+
+    await t.test('a missing job resolves false without sending', async () => {
+        const { ctx, notifications } = createSubmitClient();
+        ctx.submitQueue = { getJob: async () => null };
+
+        assert.equal(await ctx.submitMessage(submission()), false);
+        assert.equal(sent.length, 0);
+        assert.deepEqual(notifications, []);
+    });
+
+    await t.test('a send that ran into the deadline penalises the account', async () => {
+        sendError = Object.assign(new Error('SMTP delivery did not complete within 300 seconds'), {
+            code: 'ETIMEDOUT',
+            deadlineExceeded: true,
+            permanent: true
+        });
+        const { ctx, penalties } = createSubmitClient();
+
+        await assert.rejects(() => ctx.submitMessage(submission()), /did not complete/);
+        assert.deepEqual(penalties, [[submitPenaltyKey('test-account'), '1', 'PX', SUBMIT_PENALTY_MS]]);
+    });
+
+    await t.test('any other send failure does not', async () => {
+        sendError = Object.assign(new Error('Connection refused'), { code: 'ECONNECTION' });
+        const { ctx, penalties } = createSubmitClient();
+
+        await assert.rejects(() => ctx.submitMessage(submission()), /Connection refused/);
+        assert.deepEqual(penalties, []);
+    });
+
+    // A throw from any step after the server accepted the message would make the submit worker
+    // retry, and so deliver the message a second time
+    await t.test('every step after the send keeps its own failure', async t => {
+        const boom = () => {
+            throw new Error('step failed');
+        };
+        const rejecting = async () => boom();
+        const steps = {
+            'the EHLO copy and the SMTP status': ctx => {
+                ctx.redis.hSetExists = rejecting;
+            },
+            'the job progress': ctx => {
+                ctx.submitQueue = { getJob: async () => ({ updateProgress: rejecting }) };
+            },
+            'the messageSent notification': ctx => {
+                ctx.notify = rejecting;
+            },
+            'the sent copy': ctx => {
+                // only an account with IMAP gets a copy in its Sent Mail folder
+                ctx.accountObject = {
+                    loadAccountData: async () => ({ account: 'test-account', smtp: { host: 'smtp.example.com' }, imap: { host: 'imap.example.com' } })
+                };
+                delete ctx.uploadToSentFolder;
+                ctx.checkIMAPConnection = boom;
+            },
+            'the draft cleanup': ctx => {
+                ctx.deleteMessage = rejecting;
+            },
+            'the reference flags': ctx => {
+                ctx.checkIMAPConnection = () => true;
+                ctx.updateMessage = rejecting;
+            },
+            'the feedback key': ctx => {
+                ctx.updateFeedbackKey = rejecting;
+            },
+            'the gateway stats': () => {
+                gatewayStub = { gatewayData: { gateway: 'gw1' }, gatewayObject: { gateway: 'gw1', update: rejecting } };
+            }
+        };
+        const message = () => Object.assign(submission(), { draft: { message: 'DRAFT1' }, reference: { message: 'REF1', update: true, action: 'reply' } });
+
+        for (const [name, breakStep] of Object.entries(steps)) {
+            await t.test(name, async () => {
+                sent.length = 0;
+                gatewayStub = null;
+                const { ctx } = createSubmitClient();
+                ctx.deleteMessage = async () => true;
+                ctx.updateMessage = async () => true;
+                breakStep(ctx);
+
+                const result = await ctx.submitMessage(message());
+
+                assert.deepEqual(result, { response: '250 Accepted', messageId: '<test@example.com>' });
+                assert.equal(sent.length, 1);
+            });
+        }
+
+        await t.test('all of them at once', async () => {
+            sent.length = 0;
+            gatewayStub = null;
+            const { ctx } = createSubmitClient();
+            for (const breakStep of Object.values(steps)) {
+                breakStep(ctx);
+            }
+
+            const result = await ctx.submitMessage(message());
+
+            assert.deepEqual(result, { response: '250 Accepted', messageId: '<test@example.com>' });
+            assert.equal(sent.length, 1);
+        });
     });
 });
 
