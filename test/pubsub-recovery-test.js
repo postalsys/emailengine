@@ -1294,6 +1294,77 @@ test('Pub/Sub subscription recovery tests', async t => {
         });
     });
 
+    // A pull is a long poll of up to five minutes and the service token it started with can expire
+    // under it, so a pull that took longer than four minutes asks for a token again before the ACK.
+    // The clock is Date.now(), stubbed here to jump forward while the pull is in flight.
+    await t.test('access token refresh before the batch ACK', async t2 => {
+        function makeTimedInstance(t3, { pullMs, tokens }) {
+            let now = 1_000_000;
+            t3.mock.method(Date, 'now', () => now);
+
+            const ackTokens = [];
+            const tokenCalls = [];
+            const instance = createTestInstance({
+                client: {
+                    request: async (token, url, method, payload) => {
+                        if (url.includes(':pull')) {
+                            now += pullMs;
+                            return { receivedMessages: [{ message: { messageId: 'msg-1', data: '' }, ackId: 'ack-1' }] };
+                        }
+                        ackTokens.push([token, payload.ackIds]);
+                        return '';
+                    }
+                }
+            });
+            instance.getApp = async () => instance.appData;
+            instance.getAccessToken = async () => {
+                const next = tokens.shift();
+                tokenCalls.push(next);
+                if (next instanceof Error) {
+                    throw next;
+                }
+                return next;
+            };
+            return { instance, ackTokens, tokenCalls };
+        }
+
+        await t2.test('a pull longer than four minutes acknowledges with a fresh token', async t3 => {
+            await withMockedOauth2Apps({}, async () => {
+                const { instance, ackTokens, tokenCalls } = makeTimedInstance(t3, { pullMs: 4 * 60 * 1000 + 1, tokens: ['pull-token', 'ack-token'] });
+
+                assert.equal(await instance.run(), 1);
+
+                assert.deepEqual(tokenCalls, ['pull-token', 'ack-token']);
+                assert.deepEqual(ackTokens, [['ack-token', ['ack-1']]]);
+            })();
+        });
+
+        await t2.test('a pull of exactly four minutes keeps the token it started with', async t3 => {
+            await withMockedOauth2Apps({}, async () => {
+                const { instance, ackTokens, tokenCalls } = makeTimedInstance(t3, { pullMs: 4 * 60 * 1000, tokens: ['pull-token', 'ack-token'] });
+
+                await instance.run();
+
+                assert.deepEqual(tokenCalls, ['pull-token']);
+                assert.deepEqual(ackTokens, [['pull-token', ['ack-1']]]);
+            })();
+        });
+
+        await t2.test('a failed refresh acknowledges with the original token', async t3 => {
+            await withMockedOauth2Apps({}, async () => {
+                const { instance, ackTokens, tokenCalls } = makeTimedInstance(t3, {
+                    pullMs: 5 * 60 * 1000,
+                    tokens: ['pull-token', new Error('token endpoint down')]
+                });
+
+                assert.equal(await instance.run(), 1);
+
+                assert.equal(tokenCalls.length, 2);
+                assert.deepEqual(ackTokens, [['pull-token', ['ack-1']]]);
+            })();
+        });
+    });
+
     // --- _deletePubSubResource transient error retry tests ---
 
     await t.test('_deletePubSubResource transient error retry tests', async t2 => {
