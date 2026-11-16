@@ -23,7 +23,7 @@ const settings = require('../lib/settings');
 settings.get = async key => settingsValues[key];
 settings.getMulti = async (...keys) => Object.fromEntries(await Promise.all(keys.map(async key => [key, await settings.get(key)])));
 
-const { BaseClient } = require('../lib/email-client/base-client');
+const { BaseClient, buildReferenceResponse, listBaseDomain, senderDomain } = require('../lib/email-client/base-client');
 const { REDIS_PREFIX } = require('../lib/consts');
 const { noopLogger } = require('./helpers/auth-failure');
 const { simpleParser } = require('mailparser');
@@ -601,5 +601,33 @@ test('pushMessageToQueue', async t => {
         });
         await assert.rejects(client.pushMessageToQueue(params), /OOM/);
         assert.strictEqual(redis.has(outboxKey, queueId), false);
+    });
+});
+
+test('queueMessageEntry helpers', async t => {
+    await t.test('buildReferenceResponse() reports a referenced message and a thread id', () => {
+        assert.strictEqual(buildReferenceResponse(undefined, null), undefined);
+        assert.strictEqual(buildReferenceResponse({ action: 'reply' }, null), undefined);
+        assert.deepStrictEqual(buildReferenceResponse({ message: 'M1' }, { id: 'M1' }), { message: 'M1', success: true });
+        assert.deepStrictEqual(buildReferenceResponse({ message: 'M1', threadId: 'T1' }, undefined), {
+            message: 'M1',
+            success: false,
+            error: 'Referenced message was not found',
+            threadId: 'T1'
+        });
+        assert.deepStrictEqual(buildReferenceResponse({ threadId: 'T1' }, undefined), { threadId: 'T1' });
+    });
+
+    await t.test('listBaseDomain() takes the URL host, else the host name of the machine', () => {
+        assert.strictEqual(listBaseDomain('https://EE.Example.com:3000/path'), 'ee.example.com');
+        const hostDomain = (os.hostname() || '').toLowerCase().trim() || 'localhost';
+        assert.strictEqual(listBaseDomain('file:///srv'), hostDomain);
+        assert.strictEqual(listBaseDomain('not a url'), hostDomain);
+    });
+
+    await t.test('senderDomain() is the ASCII sender domain, else the fallback', () => {
+        assert.strictEqual(senderDomain({ from: { address: 'a@Õnne.EE' } }, 'fallback.test'), 'xn--nne-nna.ee');
+        assert.strictEqual(senderDomain({ from: { address: '' } }, 'fallback.test'), 'fallback.test');
+        assert.strictEqual(senderDomain({}, 'fallback.test'), 'fallback.test');
     });
 });
