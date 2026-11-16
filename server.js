@@ -1183,7 +1183,8 @@ let spawnWorker = async (type, opts, slot) => {
         });
 
         // The worker is up and accepts work: an IMAP worker becomes available for accounts, and
-        // the spawn resolves
+        // the spawn resolves. The two IMAP checks are apart on purpose: the worker joins the set
+        // before the spawn resolves, and the reassignment runs after it
         const onWorkerReady = () => {
             if (type === 'imap') {
                 // IMAP worker is ready to accept accounts
