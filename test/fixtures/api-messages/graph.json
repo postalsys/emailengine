@@ -1,0 +1,153 @@
+{
+    "full": {
+        "@odata.etag": "W/\"CQAAABYAAAA\"",
+        "id": "AAMkAGI2TG93AAA=",
+        "createdDateTime": "2026-08-21T17:14:40Z",
+        "lastModifiedDateTime": "2026-08-21T17:15:00Z",
+        "changeKey": "CQAAABYAAAA",
+        "categories": [
+            "Blue category",
+            "Project"
+        ],
+        "receivedDateTime": "2026-08-21T17:14:42Z",
+        "sentDateTime": "2026-08-21T17:14:41Z",
+        "hasAttachments": true,
+        "internetMessageId": "<CAF=report.1@mail.example.net>",
+        "subject": "Q3 report",
+        "bodyPreview": "Hi, The report is attached.",
+        "importance": "normal",
+        "parentFolderId": "AQMkAGI2AAAEMAAAAA==",
+        "conversationId": "AAQkAGI2conv=",
+        "isDeliveryReceiptRequested": false,
+        "isReadReceiptRequested": false,
+        "isRead": true,
+        "isDraft": true,
+        "inferenceClassification": "focused",
+        "body": {
+            "contentType": "html",
+            "content": "<div>Hi,<br><img src=\"cid:logo@example.com\"> The report is attached.</div>"
+        },
+        "sender": {
+            "emailAddress": {
+                "name": "Mailer",
+                "address": "mailer@example.net"
+            }
+        },
+        "from": {
+            "emailAddress": {
+                "name": "Report Sender",
+                "address": "sender@example.net"
+            }
+        },
+        "toRecipients": [
+            {
+                "emailAddress": {
+                    "name": "User One",
+                    "address": "user@example.com"
+                }
+            },
+            {
+                "emailAddress": {
+                    "name": "",
+                    "address": "second@example.com"
+                }
+            },
+            {}
+        ],
+        "ccRecipients": [
+            {
+                "emailAddress": {
+                    "name": "Copy",
+                    "address": "copy@example.com"
+                }
+            }
+        ],
+        "bccRecipients": [
+            {
+                "emailAddress": {
+                    "name": "",
+                    "address": "hidden@example.com"
+                }
+            }
+        ],
+        "replyTo": [
+            {
+                "emailAddress": {
+                    "name": "",
+                    "address": "replies@example.net"
+                }
+            }
+        ],
+        "flag": {
+            "flagStatus": "flagged"
+        },
+        "headers": {
+            "auto-submitted": [
+                "no"
+            ],
+            "x-mailer": [
+                "Example"
+            ],
+            "message-id": [
+                "<CAF=report.1@mail.example.net>"
+            ]
+        },
+        "attachments": [
+            {
+                "@odata.type": "#microsoft.graph.fileAttachment",
+                "id": "AAMkAGI2att1=",
+                "lastModifiedDateTime": "2026-08-21T17:14:40Z",
+                "name": "logo.png",
+                "contentType": "image/png",
+                "size": 2048,
+                "isInline": true,
+                "contentId": "logo@example.com"
+            },
+            {
+                "@odata.type": "#microsoft.graph.fileAttachment",
+                "id": "AAMkAGI2att2=",
+                "name": "report.pdf",
+                "contentType": "application/pdf",
+                "size": 40960,
+                "isInline": false,
+                "contentId": "<<f_report>>"
+            },
+            {
+                "@odata.type": "#microsoft.graph.itemAttachment",
+                "id": "AAMkAGI2att3=",
+                "contentType": null,
+                "size": 900,
+                "isInline": false
+            }
+        ]
+    },
+    "plain": {
+        "id": "AAMkAGI2TG94AAA=",
+        "receivedDateTime": "garbage",
+        "subject": "Automatic reply: Q3 report",
+        "bodyPreview": "I am away",
+        "isRead": false,
+        "isDraft": false,
+        "flag": {
+            "flagStatus": "notFlagged"
+        },
+        "conversationId": "",
+        "categories": [],
+        "body": {
+            "contentType": "text",
+            "content": "I am away until Monday."
+        },
+        "from": {
+            "emailAddress": {
+                "address": "away@example.org"
+            }
+        },
+        "toRecipients": [],
+        "ccRecipients": [],
+        "replyTo": [],
+        "internetMessageId": "<away.1@example.org>"
+    },
+    "bare": {
+        "id": "AAMkAGI2TG95AAA="
+    }
+}

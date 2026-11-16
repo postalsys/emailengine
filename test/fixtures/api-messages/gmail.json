@@ -1,0 +1,270 @@
+{
+    "full": {
+        "id": "18f2a9c4b7d10e55",
+        "threadId": "18f2a9c4b7d10e55",
+        "labelIds": [
+            "IMPORTANT",
+            "CATEGORY_UPDATES",
+            "STARRED",
+            "Label_3141592",
+            "INBOX"
+        ],
+        "snippet": "Hi, The report is attached. &quot;Q3&quot; &amp; more",
+        "sizeEstimate": 48213,
+        "historyId": "9182736",
+        "internalDate": "1787332482000",
+        "payload": {
+            "partId": "",
+            "mimeType": "multipart/mixed",
+            "filename": "",
+            "headers": [
+                {
+                    "name": "Delivered-To",
+                    "value": "user@example.com"
+                },
+                {
+                    "name": "Return-Path",
+                    "value": "<sender@example.net>"
+                },
+                {
+                    "name": "MIME-Version",
+                    "value": "1.0"
+                },
+                {
+                    "name": "Date",
+                    "value": "Fri, 21 Aug 2026 10:14:42 -0700"
+                },
+                {
+                    "name": "Message-ID",
+                    "value": " <CAF=report.1@mail.example.net> "
+                },
+                {
+                    "name": "In-Reply-To",
+                    "value": "<CAF=request.0@mail.example.com>"
+                },
+                {
+                    "name": "Subject",
+                    "value": "Q3 report"
+                },
+                {
+                    "name": "From",
+                    "value": "Report Sender <sender@example.net>"
+                },
+                {
+                    "name": "Sender",
+                    "value": "Mailer <mailer@example.net>"
+                },
+                {
+                    "name": "Reply-To",
+                    "value": "replies@example.net"
+                },
+                {
+                    "name": "To",
+                    "value": "User One <user@example.com>, second@example.com"
+                },
+                {
+                    "name": "Cc",
+                    "value": "Copy <copy@example.com>"
+                },
+                {
+                    "name": "Bcc",
+                    "value": "hidden@example.com"
+                },
+                {
+                    "name": "Content-Type",
+                    "value": "multipart/mixed; boundary=\"000000000000b1\""
+                }
+            ],
+            "body": {
+                "size": 0
+            },
+            "parts": [
+                {
+                    "partId": "0",
+                    "mimeType": "multipart/related",
+                    "filename": "",
+                    "headers": [
+                        {
+                            "name": "Content-Type",
+                            "value": "multipart/related; boundary=\"000000000000b2\""
+                        }
+                    ],
+                    "body": {
+                        "size": 0
+                    },
+                    "parts": [
+                        {
+                            "partId": "0.0",
+                            "mimeType": "multipart/alternative",
+                            "filename": "",
+                            "headers": [
+                                {
+                                    "name": "Content-Type",
+                                    "value": "multipart/alternative; boundary=\"000000000000b3\""
+                                }
+                            ],
+                            "body": {
+                                "size": 0
+                            },
+                            "parts": [
+                                {
+                                    "partId": "0.0.0",
+                                    "mimeType": "text/plain",
+                                    "filename": "",
+                                    "headers": [
+                                        {
+                                            "name": "Content-Type",
+                                            "value": "text/plain; charset=\"UTF-8\""
+                                        }
+                                    ],
+                                    "body": {
+                                        "size": 32,
+                                        "data": "SGksDQoNClRoZSByZXBvcnQgaXMgYXR0YWNoZWQuDQo"
+                                    }
+                                },
+                                {
+                                    "partId": "0.0.1",
+                                    "mimeType": "text/html",
+                                    "filename": "",
+                                    "headers": [
+                                        {
+                                            "name": "Content-Type",
+                                            "value": "text/html; charset=\"UTF-8\""
+                                        }
+                                    ],
+                                    "body": {
+                                        "size": 74,
+                                        "data": "PGRpdj5IaSw8YnI-PGltZyBzcmM9ImNpZDpsb2dvQGV4YW1wbGUuY29tIj4gVGhlIHJlcG9ydCBpcyBhdHRhY2hlZC48L2Rpdj4"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "partId": "0.1",
+                            "mimeType": "image/png",
+                            "filename": "logo.png",
+                            "headers": [
+                                {
+                                    "name": "Content-Type",
+                                    "value": "image/png; name=\"logo.png\""
+                                },
+                                {
+                                    "name": "Content-Disposition",
+                                    "value": "inline; filename=\"logo.png\""
+                                },
+                                {
+                                    "name": "Content-ID",
+                                    "value": "logo@example.com"
+                                }
+                            ],
+                            "body": {
+                                "attachmentId": "ANGjdJ8logo",
+                                "size": 2048
+                            }
+                        }
+                    ]
+                },
+                {
+                    "partId": "1",
+                    "mimeType": "application/pdf",
+                    "filename": "report.pdf",
+                    "headers": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/pdf; name=\"report.pdf\""
+                        },
+                        {
+                            "name": "Content-Disposition",
+                            "value": "attachment; filename=\"report.pdf\""
+                        },
+                        {
+                            "name": "Content-ID",
+                            "value": "<<f_report>>"
+                        }
+                    ],
+                    "body": {
+                        "attachmentId": "ANGjdJ8report",
+                        "size": 40960
+                    }
+                },
+                {
+                    "partId": "2",
+                    "mimeType": "text/calendar",
+                    "filename": "invite.ics",
+                    "headers": [
+                        {
+                            "name": "Content-Type",
+                            "value": "text/calendar; charset=\"UTF-8\"; method=REQUEST"
+                        },
+                        {
+                            "name": "Content-Disposition",
+                            "value": "attachment; filename=\"invite.ics\""
+                        }
+                    ],
+                    "body": {
+                        "attachmentId": "ANGjdJ8invite",
+                        "size": 900
+                    }
+                }
+            ]
+        }
+    },
+    "autoReply": {
+        "id": "18f2a9c4b7d10e77",
+        "threadId": "18f2a9c4b7d10e70",
+        "labelIds": [
+            "UNREAD",
+            "SPAM",
+            "INBOX",
+            "CATEGORY_PERSONAL",
+            "DRAFT"
+        ],
+        "snippet": "I am away",
+        "sizeEstimate": 1200,
+        "internalDate": "not-a-number",
+        "payload": {
+            "partId": "",
+            "mimeType": "text/plain",
+            "filename": "",
+            "headers": [
+                {
+                    "name": "Subject",
+                    "value": "Re: Q3 report"
+                },
+                {
+                    "name": "From",
+                    "value": "away@example.org"
+                },
+                {
+                    "name": "Auto-Submitted",
+                    "value": "auto-replied"
+                },
+                {
+                    "name": "Message-ID",
+                    "value": "<away.1@example.org>"
+                }
+            ],
+            "body": {
+                "size": 0
+            }
+        }
+    },
+    "minimal": {
+        "id": "18f2a9c4b7d10e99",
+        "threadId": "18f2a9c4b7d10e90",
+        "labelIds": [
+            "SENT",
+            "TRASH",
+            "CATEGORY_SOCIAL"
+        ],
+        "sizeEstimate": 3021,
+        "historyId": "9182799",
+        "internalDate": "1787332482000"
+    },
+    "minimalEmpty": {
+        "id": "18f2a9c4b7d10e9a",
+        "labelIds": [],
+        "sizeEstimate": 10,
+        "internalDate": "99999999999999999999"
+    }
+}
