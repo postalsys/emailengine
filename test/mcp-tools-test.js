@@ -749,6 +749,42 @@ test('MCP tool executor', async t => {
         assert.doesNotThrow(() => buildToolRegistry([route({ omit: ['account'], force: { account: 'pinned' } })]));
     });
 
+    await t.test('every other guardrail of the builder refuses its declaration', () => {
+        const route = (mcp, path = '/v1/demo/guarded') => ({
+            method: 'post',
+            path,
+            settings: {
+                validate: {
+                    params: Joi.object({ account: Joi.string().required(), folder: Joi.string().required() }),
+                    payload: Joi.object({ subject: Joi.string(), raw: Joi.string() })
+                },
+                plugins: { mcp: Object.assign({ name: 'demo_guarded', title: 'Demo', description: 'demo' }, mcp) }
+            }
+        });
+
+        // Two routes claiming one tool name
+        assert.throws(() => buildToolRegistry([route({}), route({}, '/v1/demo/other')]), /^Error: MCP tool demo_guarded is declared by two routes$/);
+
+        // Several misspelled keys are all named, in the plural
+        assert.throws(() => buildToolRegistry([route({ bound: {}, omitt: [] })]), /unknown plugins\.mcp options: bound, omitt$/);
+
+        // A forced value has to name a route argument, and one the tool hides
+        assert.throws(() => buildToolRegistry([route({ force: { nosuch: 1 } })]), /forced argument nosuch is not an argument of post \/v1\/demo\/guarded$/);
+        assert.throws(() => buildToolRegistry([route({ force: { raw: 'x' } })]), /forced argument raw must also be hidden/);
+        assert.doesNotThrow(() => buildToolRegistry([route({ omit: ['raw'], force: { raw: 'x' } })]));
+
+        // Several hidden required arguments are all named, in the plural
+        assert.throws(
+            () => buildToolRegistry([route({ keep: ['subject'] })]),
+            /required arguments account, folder are hidden but not forced, so every call would fail validation$/
+        );
+        // Forcing one of them leaves the other
+        assert.throws(
+            () => buildToolRegistry([route({ keep: ['subject'], force: { folder: 'INBOX' } })]),
+            /required argument account is hidden but not forced/
+        );
+    });
+
     await t.test('a renamed argument is offered under its new name and sent under its own', async () => {
         const tool = byName.get('demo_collide');
         assert.deepEqual(Object.keys(tool.definition.inputSchema.properties).sort(), ['note', 'path', 'source']);
