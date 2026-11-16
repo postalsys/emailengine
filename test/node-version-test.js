@@ -83,7 +83,7 @@ test('server.js checks the version before it requires anything that could fail o
     assert.ok(check > 0);
     // Everything server.js requires before the check has to load on any Node.js release
     const before = [...source.slice(0, check).matchAll(/require\('([^']+)'\)/g)].map(match => match[1]);
-    assert.deepEqual(before, ['dotenv', './lib/read-env-value']);
+    assert.deepEqual(before, ['./lib/load-env', './lib/read-env-value']);
     assert.ok(source.indexOf("require('undici')") > check);
 });
 

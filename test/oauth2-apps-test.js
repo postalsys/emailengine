@@ -1,6 +1,6 @@
 'use strict';
 
-require('dotenv').config({ quiet: true });
+require('../lib/load-env').loadEnvFile();
 
 const test = require('node:test');
 const assert = require('node:assert').strict;

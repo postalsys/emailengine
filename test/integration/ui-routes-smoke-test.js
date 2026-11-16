@@ -24,7 +24,7 @@
 // Runs against the shared test server started by test/run-tests.js (config/test.toml,
 // port 7077), same harness as test/api-routes-smoke-test.js.
 
-require('dotenv').config({ quiet: true });
+require('../../lib/load-env').loadEnvFile();
 
 const config = require('@zone-eu/wild-config');
 const supertest = require('supertest');

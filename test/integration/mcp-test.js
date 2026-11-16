@@ -9,7 +9,7 @@
 // first thing asserted; the suite then enables it over the API and leaves it on - nothing else
 // in the tier touches /mcp.
 
-require('dotenv').config({ quiet: true });
+require('../../lib/load-env').loadEnvFile();
 
 const config = require('@zone-eu/wild-config');
 const supertest = require('supertest');

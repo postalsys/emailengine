@@ -1,6 +1,6 @@
 'use strict';
 
-require('dotenv').config({ quiet: true });
+require('../../lib/load-env').loadEnvFile();
 
 const config = require('@zone-eu/wild-config');
 const testConfig = require('./test-config');

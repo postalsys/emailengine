@@ -14,7 +14,7 @@
 //
 // Runs against the shared test server (config/test.toml).
 
-require('dotenv').config({ quiet: true });
+require('../../lib/load-env').loadEnvFile();
 
 const config = require('@zone-eu/wild-config');
 const supertest = require('supertest');

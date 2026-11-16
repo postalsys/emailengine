@@ -8,7 +8,7 @@
 // interval is shortened for the test run via EENGINE_OUTLOOK_FALLBACK_POLL_INTERVAL (set on the
 // live server in test/run-tests.js).
 
-require('dotenv').config({ quiet: true });
+require('../../lib/load-env').loadEnvFile();
 
 const config = require('@zone-eu/wild-config');
 const testConfig = require('./test-config');

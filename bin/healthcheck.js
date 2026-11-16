@@ -6,7 +6,7 @@
 
 // Resolve `.env` and `config/` against the application root, in the same order as server.js
 process.chdir(require('path').join(__dirname, '..'));
-require('dotenv').config({ quiet: true });
+require('../lib/load-env').loadEnvFile();
 
 const config = require('@zone-eu/wild-config');
 const { probeTarget, probe } = require('../lib/health-probe');

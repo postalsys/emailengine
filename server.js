@@ -8,7 +8,6 @@
  * proxy servers (SMTP, IMAP).
  *
  * @module server
- * @requires dotenv
  * @requires worker_threads
  * @requires @zone-eu/wild-config
  * @see {@link https://emailengine.app}
@@ -31,11 +30,8 @@ try {
     // ignore - may fail in some containerized environments
 }
 
-// Load environment variables if not already loaded
-if (!process.env.EE_ENV_LOADED) {
-    require('dotenv').config({ quiet: true });
-    process.env.EE_ENV_LOADED = 'true';
-}
+// Load .env into process.env, if not already loaded
+require('./lib/load-env').loadEnvOnce();
 
 // Set process title for easier identification in process lists
 process.title = 'emailengine';

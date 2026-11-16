@@ -34,7 +34,7 @@ function resolve(key, env) {
                 PATH: process.env.PATH,
                 HOME: process.env.HOME,
                 NODE_ENV: 'test',
-                // dotenv would otherwise load the developer's own .env over the case being set up
+                // lib/load-env.js would otherwise load the developer's own .env over the case being set up
                 EE_ENV_LOADED: 'true',
                 PROBE_KEY: key
             },

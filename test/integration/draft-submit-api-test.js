@@ -22,7 +22,7 @@
 // provider live, so no Gmail push/Graph push is needed. Subtests are skipped when the
 // credentials are not present in the environment.
 
-require('dotenv').config({ quiet: true });
+require('../../lib/load-env').loadEnvFile();
 
 const config = require('@zone-eu/wild-config');
 const testConfig = require('./test-config');

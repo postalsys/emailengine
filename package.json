@@ -77,7 +77,6 @@
         "@zone-eu/mailsplit": "5.4.31",
         "@zone-eu/wild-config": "1.7.10",
         "bullmq": "6.7.6",
-        "dotenv": "18.0.10",
         "fast-xml-parser": "5.12.1",
         "handlebars": "4.7.10",
         "he": "1.2.0",

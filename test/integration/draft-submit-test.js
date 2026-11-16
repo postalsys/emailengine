@@ -9,7 +9,7 @@
 // Runs against the shared live test server (config/test.toml); global webhooks deliver to the
 // shared webhooks-server on 7078.
 
-require('dotenv').config({ quiet: true });
+require('../../lib/load-env').loadEnvFile();
 
 const config = require('@zone-eu/wild-config');
 const testConfig = require('./test-config');

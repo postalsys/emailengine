@@ -9,7 +9,7 @@
 //
 // Runs against the shared test server (config/test.toml, port 7077).
 
-require('dotenv').config({ quiet: true });
+require('../../lib/load-env').loadEnvFile();
 
 const config = require('@zone-eu/wild-config');
 const supertest = require('supertest');

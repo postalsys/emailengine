@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
 
-require('dotenv').config();
+require('../lib/load-env').loadEnvFile();
 
 const SCOPE_PROFILES = {
     full: ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/gmail.modify'],

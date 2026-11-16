@@ -23,7 +23,7 @@
 // it does not, the blocklist assertion above already proves the event fired. See the memory note
 // project_unsub_events_test_flake for the full root-cause analysis.
 
-require('dotenv').config({ quiet: true });
+require('../../lib/load-env').loadEnvFile();
 
 const config = require('@zone-eu/wild-config');
 const testConfig = require('./test-config');

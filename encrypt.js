@@ -1,9 +1,6 @@
 'use strict';
 
-if (!process.env.EE_ENV_LOADED) {
-    require('dotenv').config({ quiet: true });
-    process.env.EE_ENV_LOADED = 'true';
-}
+require('./lib/load-env').loadEnvOnce();
 
 try {
     process.chdir(__dirname);
