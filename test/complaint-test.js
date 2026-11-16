@@ -420,3 +420,168 @@ test('ARF Source-IP precedence', async t => {
         assert.strictEqual(report.arf['source-ip'], '198.51.100.2', 'the fallback header is used');
     });
 });
+
+// The whole report for a message carrying a feedback report and two copies of the original
+// headers, in both orders: which value wins depends on the order the attachments arrive in, and
+// these pin that precedence exactly
+test('arfDetect report precedence', async t => {
+    const att = (contentType, text) => ({ contentType, content: Buffer.from(text.replace(/\n/g, '\r\n')) });
+
+    const REPORT = [
+        'Feedback-Type: abuse',
+        'User-Agent: Probe/1.0',
+        'Version: 1',
+        'Original-Mail-From: <bounce@sender.example>',
+        'Original-Rcpt-To: <a@rcpt.example>',
+        'Original-Rcpt-To: b@rcpt.example',
+        'Arrival-Date: Thu, 8 Mar 2005 17:00:00 +0000',
+        'Source-IP: 192.0.2.1',
+        'Reported-Domain: sender.example',
+        'Reported-Domain: other.example',
+        'Authentication-Results: mail.example; spf=fail',
+        'X-Empty:',
+        ''
+    ].join('\n');
+
+    const ORIGINAL_A = [
+        'Return-Path: <first@return.example>',
+        'Message-ID: <first@msg.example>',
+        'X-HmXmrOriginalRecipient: <a@rcpt.example>, c@rcpt.example',
+        'X-Sender-IP: 198.51.100.1',
+        'X-MS-Exchange-CrossTenant-OriginalArrivalTime: Mon, 01 Jan 2024 09:00:00 +0000',
+        'From: First <from1@sender.example>, Second <from2@sender.example>',
+        'To: to1@rcpt.example, to2@rcpt.example',
+        'Subject: =?UTF-8?Q?Hello_w=C3=B6rld?=',
+        'Date: Mon, 1 Jan 2024 10:00:00 +0000',
+        '',
+        'Cc: body@rcpt.example',
+        ''
+    ].join('\n');
+
+    const ORIGINAL_B = [
+        'Return-Path: <second@return.example>',
+        'Message-ID: <second@msg.example>',
+        'X-HmXmrOriginalRecipient: b@rcpt.example, c@rcpt.example, d@rcpt.example',
+        'X-Sender-IP: 198.51.100.2',
+        'From: other@sender.example',
+        'Cc: cc@rcpt.example',
+        'Subject: Second subject',
+        'Date: not a date',
+        ''
+    ].join('\n');
+
+    const REPORT_ARF = {
+        'feedback-type': 'abuse',
+        'user-agent': 'Probe/1.0',
+        version: '1',
+        'original-mail-from': 'bounce@sender.example',
+        'arrival-date': '2005-03-08T17:00:00.000Z',
+        'source-ip': '192.0.2.1',
+        'reported-domain': ['sender.example', 'other.example'],
+        'authentication-results': ['mail.example; spf=fail'],
+        'x-empty': ['']
+    };
+
+    await t.test('report first: original headers only add what is missing, recipients accumulate', async () => {
+        const report = await arfDetect({
+            attachments: [att('message/feedback-report', REPORT), att('message/rfc822', ORIGINAL_A), att('text/rfc822-headers', ORIGINAL_B)]
+        });
+        assert.deepStrictEqual(report, {
+            arf: Object.assign({}, REPORT_ARF, {
+                'original-rcpt-to': ['<a@rcpt.example>', 'b@rcpt.example', 'a@rcpt.example', 'c@rcpt.example', 'd@rcpt.example']
+            }),
+            headers: {
+                'message-id': '<first@msg.example>',
+                from: 'from2@sender.example',
+                to: ['to1@rcpt.example', 'to2@rcpt.example'],
+                subject: 'Hello wörld',
+                date: '2024-01-01T10:00:00.000Z',
+                cc: ['cc@rcpt.example']
+            }
+        });
+        assert.deepStrictEqual(Object.keys(report.arf), [
+            'feedback-type',
+            'user-agent',
+            'version',
+            'original-mail-from',
+            'original-rcpt-to',
+            'arrival-date',
+            'source-ip',
+            'reported-domain',
+            'authentication-results',
+            'x-empty'
+        ]);
+    });
+
+    await t.test('report last: its fields overwrite what the original headers filled in', async () => {
+        const report = await arfDetect({
+            attachments: [att('text/rfc822-header', ORIGINAL_B), att('message/rfc822-headers', ORIGINAL_A), att('Message/Feedback-Report', REPORT)]
+        });
+        assert.deepStrictEqual(report, {
+            arf: Object.assign({}, REPORT_ARF, { 'original-rcpt-to': ['<a@rcpt.example>', 'b@rcpt.example'] }),
+            headers: {
+                'message-id': '<second@msg.example>',
+                from: 'other@sender.example',
+                cc: ['cc@rcpt.example'],
+                subject: 'Second subject',
+                to: ['to1@rcpt.example', 'to2@rcpt.example'],
+                date: '2024-01-01T10:00:00.000Z'
+            }
+        });
+        assert.deepStrictEqual(Object.keys(report.arf), [
+            'original-rcpt-to',
+            'source-ip',
+            'arrival-date',
+            'feedback-type',
+            'user-agent',
+            'version',
+            'original-mail-from',
+            'reported-domain',
+            'authentication-results',
+            'x-empty'
+        ]);
+    });
+
+    await t.test('Hotmail: defaults under the report, the last Return-Path as the sender', async () => {
+        const withoutReport = await arfDetect({
+            from: { address: 'staff@hotmail.com' },
+            attachments: [att('message/rfc822', ORIGINAL_A), att('text/plain', 'Feedback-Type: ignored\n'), att('text/rfc822-headers', ORIGINAL_B)]
+        });
+        assert.deepStrictEqual(withoutReport.arf, {
+            source: 'Hotmail',
+            'feedback-type': 'abuse',
+            'abuse-type': 'complaint',
+            'original-mail-from': 'second@return.example',
+            'original-rcpt-to': ['a@rcpt.example', 'c@rcpt.example', 'b@rcpt.example', 'd@rcpt.example'],
+            'source-ip': '198.51.100.1',
+            'arrival-date': '2024-01-01T09:00:00.000Z'
+        });
+
+        const withReport = await arfDetect({
+            from: { address: 'staff@hotmail.com' },
+            attachments: [att('message/rfc822', ORIGINAL_A), att('message/feedback-report', 'Feedback-Type: fraud\nOriginal-Mail-From: <r@sender.example>\n')]
+        });
+        assert.deepStrictEqual(withReport.arf, {
+            source: 'Hotmail',
+            'feedback-type': 'fraud',
+            'abuse-type': 'complaint',
+            'original-mail-from': 'r@sender.example',
+            'original-rcpt-to': ['a@rcpt.example', 'c@rcpt.example'],
+            'source-ip': '198.51.100.1',
+            'arrival-date': '2024-01-01T09:00:00.000Z'
+        });
+    });
+
+    await t.test('an invalid date in the report is dropped, a Received-Date is stored as arrival-date', async () => {
+        const invalid = await arfDetect({ attachments: [att('message/feedback-report', 'Feedback-Type: abuse\nArrival-Date: never\n')] });
+        assert.deepStrictEqual(invalid.arf, { 'feedback-type': 'abuse' });
+
+        const received = await arfDetect({ attachments: [att('message/feedback-report', 'Received-Date: Thu, 8 Mar 2005 17:00:00 +0000\n')] });
+        assert.deepStrictEqual(received.arf, { 'arrival-date': '2005-03-08T17:00:00.000Z' });
+    });
+
+    await t.test('a message with no complaint attachments has an empty report', async () => {
+        assert.deepStrictEqual(await arfDetect({}), { arf: {}, headers: {} });
+        assert.deepStrictEqual(await arfDetect({ attachments: [att('text/plain', 'Feedback-Type: abuse\n')] }), { arf: {}, headers: {} });
+    });
+});
