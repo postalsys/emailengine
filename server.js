@@ -144,7 +144,6 @@ const { packRpcError, unpackRpcError } = require('./lib/worker-rpc-error');
 const { promClient, setupMetrics, connectionCounts } = require('./lib/metrics');
 const fs = require('fs').promises;
 const crypto = require('crypto');
-const { compareVersions, parseVersion } = require('./lib/utils/version');
 const Joi = require('joi');
 const { settingsSchema } = require('./lib/schemas');
 const settings = require('./lib/settings');
@@ -156,7 +155,9 @@ const { attachBeacon, persistBeaconMarkers } = require('./lib/license-beacon');
 const {
     decide,
     startupPlan,
-    expiredSuspension,
+    needsVersionRecheck,
+    subscriptionCheckState,
+    workerSuspensionChange,
     checkInterval,
     subscriptionView,
     parseSuspension,
@@ -1980,21 +1981,7 @@ let licenseCheckHandler = async opts => {
         let subscriptionCheckTimeout = opts.subscriptionCheckTimeout || checkInterval({ subexp, subsusp });
 
         // Check if we need to validate the license
-        let checkKv = true;
-        // an unreadable record means checking again, which also rewrites it
-        let validatedVersion = kv && typeof kv === 'string' ? Buffer.from(kv, 'hex').toString() : null;
-        if (parseVersion(validatedVersion) && compareVersions(packageData.version, validatedVersion) <= 0) {
-            checkKv = false;
-        }
-
-        if (ks && typeof ks === 'string') {
-            let ksDate = new Date(parseInt(ks, 16));
-            if (ksDate < now) {
-                checkKv = true;
-            }
-        } else {
-            checkKv = true;
-        }
+        let checkKv = needsVersionRecheck({ kv, ks, version: packageData.version, now });
 
         // Clean up for lifetime licenses
         if (licenseInfo.details && licenseInfo.details.lt) {
@@ -2002,12 +1989,10 @@ let licenseCheckHandler = async opts => {
             subscriptionDeadline = null;
         }
 
-        // A suspended license is still registered and still checked, which is how it resumes
-        let subscriptionLicense = (licenseInfo.active || !!licenseInfo.suspension) && isSubscriptionLicense(licenseInfo.details);
-
-        // A stored deadline that has passed suspends on its own, whether or not the license server
+        // A suspended license is still registered and still checked, which is how it resumes. A
+        // stored deadline that has passed suspends on its own, whether or not the license server
         // can be reached to say so; its next answer decides what happens after that
-        let localSuspension = subscriptionLicense && !licenseInfo.suspension ? expiredSuspension(subexp, subsusp, now) : null;
+        let { subscriptionLicense, localSuspension } = subscriptionCheckState(licenseInfo, { subexp, subsusp, now });
         if (localSuspension) {
             await redis.hset(`${REDIS_PREFIX}settings`, 'subsusp', JSON.stringify(localSuspension));
             logger.warn({
@@ -2082,7 +2067,8 @@ let licenseCheckHandler = async opts => {
         }
 
         // Handle no active license - suspend workers
-        if (!licenseInfo.active && !suspendedWorkerTypes.size) {
+        let workerChange = workerSuspensionChange(licenseInfo.active, suspendedWorkerTypes.size);
+        if (workerChange === 'suspend') {
             // Said in the present tense, because that is what the loop below does. The line used to
             // promise a 15 minute grace period that nothing anywhere implements, so an operator
             // reading it waited for a window that had already closed.
@@ -2097,7 +2083,7 @@ let licenseCheckHandler = async opts => {
                     }
                 }
             }
-        } else if (licenseInfo.active && suspendedWorkerTypes.size) {
+        } else if (workerChange === 'resume') {
             // Re-enable workers after license activated
             for (let type of suspendedWorkerTypes) {
                 suspendedWorkerTypes.delete(type);

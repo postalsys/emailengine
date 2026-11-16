@@ -25,6 +25,9 @@ const {
     decide,
     startupPlan,
     expiredSuspension,
+    needsVersionRecheck,
+    subscriptionCheckState,
+    workerSuspensionChange,
     checkInterval,
     subscriptionView,
     isSuspended,
@@ -157,6 +160,60 @@ test('a passed deadline implies a suspension when none is recorded', () => {
     const implied = expiredSuspension(String(NOW - HOUR), null, NOW);
     assert.equal(implied.code, 'SubscriptionInactive');
     assert.equal(implied.since, iso(NOW - HOUR));
+});
+
+test('the online check is due again only when the validation record no longer covers this release', () => {
+    const hex = value => Buffer.from(value).toString('hex');
+    const ks = time => time.toString(16);
+    const check = (kv, ksValue, version = '2.88.0') => needsVersionRecheck({ kv, ks: ksValue, version, now: NOW });
+
+    assert.equal(check(hex('2.88.0'), ks(NOW + DAY)), false, 'validated for this release, record still fresh');
+    assert.equal(check(hex('2.89.0'), ks(NOW + DAY)), false, 'a later release validated it');
+    assert.equal(check(hex('2.87.9'), ks(NOW + DAY)), true, 'validated for an older release');
+    assert.equal(check(hex('2.88.0'), ks(NOW - 1)), true, 'the record has expired');
+    assert.equal(check(hex('2.88.0'), ks(NOW)), false, 'expiring now is not yet expired');
+    assert.equal(check(hex('2.88.0'), null), true, 'no record expiry');
+    assert.equal(check(hex('not a version'), ks(NOW + DAY)), true, 'an unreadable version');
+    assert.equal(check(null, ks(NOW + DAY)), true, 'no validated version');
+    assert.equal(check(hex('2.88.0'), 12345), true, 'a record expiry that is not a string');
+});
+
+test('which license the check concerns, and the suspension a passed deadline implies', () => {
+    const subscription = { key: 'k' };
+    const yearly = { key: 'k', expires: iso(NOW + DAY) };
+    const passed = String(NOW - HOUR);
+
+    assert.deepEqual(subscriptionCheckState({ active: true, details: subscription }, { subexp: null, subsusp: null, now: NOW }), {
+        subscriptionLicense: true,
+        localSuspension: null
+    });
+
+    const state = subscriptionCheckState({ active: true, details: subscription }, { subexp: passed, subsusp: null, now: NOW });
+    assert.equal(state.subscriptionLicense, true);
+    assert.equal(state.localSuspension.code, 'SubscriptionInactive');
+
+    // a suspended license is still checked, and is not suspended a second time
+    assert.deepEqual(subscriptionCheckState({ active: false, suspension: { code: 'x' }, details: subscription }, { subexp: passed, subsusp: null, now: NOW }), {
+        subscriptionLicense: true,
+        localSuspension: null
+    });
+
+    // neither active nor suspended, or not a subscription license: nothing to check
+    assert.deepEqual(subscriptionCheckState({ active: false, details: subscription }, { subexp: passed, subsusp: null, now: NOW }), {
+        subscriptionLicense: false,
+        localSuspension: null
+    });
+    assert.deepEqual(subscriptionCheckState({ active: true, details: yearly }, { subexp: passed, subsusp: null, now: NOW }), {
+        subscriptionLicense: false,
+        localSuspension: null
+    });
+});
+
+test('workers are suspended once without a license and resumed once with one', () => {
+    assert.equal(workerSuspensionChange(false, 0), 'suspend');
+    assert.equal(workerSuspensionChange(false, 3), null, 'already suspended');
+    assert.equal(workerSuspensionChange(true, 3), 'resume');
+    assert.equal(workerSuspensionChange(true, 0), null, 'already running');
 });
 
 test('only the same key keeps the stored state when registered', () => {
