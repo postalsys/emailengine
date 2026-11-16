@@ -24,6 +24,7 @@ settings.getMulti = async (...keys) => Object.fromEntries(await Promise.all(keys
 const { BaseClient } = require('../lib/email-client/base-client');
 const { REDIS_PREFIX } = require('../lib/consts');
 const { noopLogger } = require('./helpers/auth-failure');
+const { simpleParser } = require('mailparser');
 
 require('./helpers/redis-teardown')();
 
@@ -231,6 +232,80 @@ test('queueMessageEntry', async t => {
             const raw = rawOf(queued);
             assert.match(raw, /Original html/);
             assert.match(raw, /Original text/);
+        });
+
+        await t.test('write the line above the quote in the language of the locale', async t => {
+            const quoted = { getMessage: () => Object.assign({}, REFERENCED, { text: { plain: 'Original text', html: '<p>Original html</p>' } }) };
+            const send = async (data, opts) => {
+                const { queued, run } = createClient(Object.assign({}, quoted, opts));
+                await run(
+                    Object.assign(
+                        { text: 'My answer', html: '<p>My answer</p>', tz: 'UTC', reference: { message: 'MSG1', action: 'reply', inline: true } },
+                        data
+                    )
+                );
+                const parsed = await simpleParser(queued[0].raw);
+                return { text: parsed.text, html: parsed.html };
+            };
+
+            await t.test('English when nothing names one', async () => {
+                const { text, html } = await send({});
+                assert.match(text, /^> On Thu, Oct 1, 2026, 10:00 AM, Original Author <author@example\.com> wrote:$/m);
+                assert.match(
+                    html,
+                    /On Thu, Oct 1, 2026, 10:00 AM, Original Author &lt;<a href="mailto:author@example\.com">author@example\.com<\/a>&gt; wrote:/
+                );
+            });
+
+            await t.test('the locale of the request', async () => {
+                const { text, html } = await send({ locale: 'sv' });
+                assert.match(text, /^> Den tors 1 okt\. 2026 kl\. 10:00 skrev Original Author <author@example\.com>:$/m);
+                assert.match(html, /Den tors 1 okt\. 2026 kl\. 10:00 skrev Original Author/);
+                assert.doesNotMatch(text, /wrote:/);
+            });
+
+            await t.test('a regional tag, and the time zone of the request', async () => {
+                const { text } = await send({ locale: 'fi-FI', tz: 'Europe/Helsinki' });
+                assert.match(text, /^> Original Author <author@example\.com> kirjoitti to 1\.10\.2026 klo 13\.00:$/m);
+            });
+
+            await t.test('reply-all like reply', async () => {
+                const { text } = await send({ locale: 'de', reference: { message: 'MSG1', action: 'reply-all', inline: true } });
+                assert.match(text, /^> Am Do\., 1\. Okt\. 2026 um 10:00 schrieb Original Author <author@example\.com>:$/m);
+            });
+
+            await t.test('the headers of a forward', async () => {
+                const { text } = await send({
+                    locale: 'nl',
+                    to: [{ address: 'fwd@example.com' }],
+                    reference: { message: 'MSG1', action: 'forward', inline: true }
+                });
+                assert.match(text, /^> Doorgestuurd bericht:$/m);
+                assert.match(text, /^> Van: Original Author <author@example\.com>$/m);
+                assert.match(text, /^> Onderwerp: Quarterly numbers$/m);
+                assert.match(text, /^> Datum: do 1 okt 2026, 10:00$/m);
+            });
+
+            await t.test('the locale of the account when the request has none', async () => {
+                const { text } = await send({}, { accountData: { locale: 'da' } });
+                assert.match(text, /^> Den tors\. 1\. okt\. 2026 kl\. 10\.00 skrev Original Author <author@example\.com>:$/m);
+            });
+
+            await t.test('the locale setting of the instance after that', async () => {
+                settingsValues.locale = 'et';
+                const { text } = await send({});
+                assert.match(text, /^> N, 1\. oktoober 2026 kell 10:00 kirjutas Original Author <author@example\.com>:$/m);
+                // the request still wins over the account, and the account over the setting
+                const request = await send({ locale: 'sv' }, { accountData: { locale: 'da' } });
+                assert.match(request.text, / skrev Original Author /);
+                assert.match(request.text, /^> Den tors 1 okt\. /m);
+                delete settingsValues.locale;
+            });
+
+            await t.test('English for a language without a translation', async () => {
+                const { text } = await send({ locale: 'mt' });
+                assert.match(text, /^> On Thu, Oct 1, 2026, 10:00 AM, Original Author <author@example\.com> wrote:$/m);
+            });
         });
     });
 

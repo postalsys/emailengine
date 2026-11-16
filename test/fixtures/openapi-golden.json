@@ -948,13 +948,13 @@
           },
           "locale": {
             "type": "string",
-            "description": "Optional locale",
+            "description": "Language of the text EmailEngine adds to messages sent from this account, such as the \"On ... wrote:\" line of an inline reply. A language tag like \"sv\"; a submit request can override it with its own `locale`",
             "example": "fr",
             "maxLength": 100
           },
           "tz": {
             "type": "string",
-            "description": "Optional timezone",
+            "description": "Time zone of the dates EmailEngine writes into messages sent from this account. A submit request can override it with its own `tz`",
             "example": "Europe/Tallinn",
             "maxLength": 100
           }
@@ -2103,13 +2103,13 @@
           },
           "locale": {
             "type": "string",
-            "description": "Optional locale",
+            "description": "Language of the text EmailEngine adds to messages sent from this account, such as the \"On ... wrote:\" line of an inline reply. A language tag like \"sv\"; a submit request can override it with its own `locale`",
             "example": "fr",
             "maxLength": 100
           },
           "tz": {
             "type": "string",
-            "description": "Optional timezone",
+            "description": "Time zone of the dates EmailEngine writes into messages sent from this account. A submit request can override it with its own `tz`",
             "example": "Europe/Tallinn",
             "maxLength": 100
           },
@@ -2823,13 +2823,13 @@
           },
           "locale": {
             "type": "string",
-            "description": "Optional locale",
+            "description": "Language of the text EmailEngine adds to messages sent from this account, such as the \"On ... wrote:\" line of an inline reply. A language tag like \"sv\"; a submit request can override it with its own `locale`",
             "example": "fr",
             "maxLength": 100
           },
           "tz": {
             "type": "string",
-            "description": "Optional timezone",
+            "description": "Time zone of the dates EmailEngine writes into messages sent from this account. A submit request can override it with its own `tz`",
             "example": "Europe/Tallinn",
             "maxLength": 100
           }
@@ -7054,13 +7054,13 @@
           },
           "locale": {
             "type": "string",
-            "description": "Optional locale",
+            "description": "Language of the text EmailEngine adds to the message, such as the \"On ... wrote:\" line and the forwarded message headers of `reference.inline`. A language tag like \"sv\" or \"pt-BR\"; only the language part is used, and a language without a translation is written in English. Defaults to the locale of the account, then to the locale setting of the instance",
             "example": "fr",
             "maxLength": 100
           },
           "tz": {
             "type": "string",
-            "description": "Optional timezone",
+            "description": "Time zone of the dates EmailEngine writes into the message, such as the date of the quoted message with `reference.inline`. Defaults to the time zone of the account, then to the timezone setting of the instance",
             "example": "Europe/Tallinn",
             "maxLength": 100
           },
