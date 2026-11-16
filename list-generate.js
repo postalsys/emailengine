@@ -50,11 +50,8 @@ const ASSET_PACKAGES = [
 // Packages whose package.json declares no (or an unparseable) license even
 // though their shipped LICENSE file is clear. Keep each entry justified; fix
 // upstream where we control the package.
-const LICENSE_OVERRIDES = {
-    // our own package; the LICENSE file is MIT but package.json lacks the
-    // license field (fix upstream in postalsys/gettext, then drop this)
-    '@postalsys/gettext': 'MIT'
-};
+// None at the moment: @postalsys/gettext, the last entry, declares its license since 4.3.2.
+const LICENSE_OVERRIDES = {};
 
 // Hand-vendored assets that are not npm dependencies. gateExempt entries skip
 // the SPDX allow-list (fonts are static assets, not linked code).
