@@ -63,6 +63,7 @@ if (nodeSupportLevel === 'outside-range') {
 }
 
 const { accountDataKey } = require('./lib/redis-keys');
+const { resolveMetricKeys, statBuckets } = require('./lib/worker-metrics');
 const { importPreparedPassword } = require('./lib/prepared-password');
 
 const os = require('os');
@@ -109,9 +110,6 @@ const MetricsCollector = require('./lib/metrics-collector');
 // Import constants
 const {
     MAX_DAYS_STATS,
-    MESSAGE_NEW_NOTIFY,
-    MESSAGE_DELETED_NOTIFY,
-    CONNECT_ERROR_NOTIFY,
     REDIS_PREFIX,
     ACCOUNT_ADDED_NOTIFY,
     ACCOUNT_DELETED_NOTIFY,
@@ -1256,78 +1254,20 @@ let spawnWorker = async (type, opts, slot) => {
             // Handle metrics messages
             switch (message.cmd) {
                 case 'metrics': {
-                    let statUpdateKey = false;
-                    let accountUpdateKey = false;
+                    let { account, statUpdateKey, accountUpdateKey } = resolveMetricKeys(message);
 
-                    let { account } = message.meta || {};
-
-                    // Determine which metrics to update
-                    switch (message.key) {
-                        case 'webhooks': {
-                            let { status } = message.args[0] || {};
-                            statUpdateKey = `${message.key}:${status}`;
-                            break;
-                        }
-
-                        case 'webhookReq': {
-                            break;
-                        }
-
-                        case 'events': {
-                            let { event } = message.args[0] || {};
-                            if (account) {
-                                accountUpdateKey = `${message.key}:${event}`;
-                            }
-
-                            // Track specific events
-                            switch (event) {
-                                case MESSAGE_NEW_NOTIFY:
-                                case MESSAGE_DELETED_NOTIFY:
-                                case CONNECT_ERROR_NOTIFY:
-                                    statUpdateKey = `${message.key}:${event}`;
-                                    break;
-                            }
-                            break;
-                        }
-
-                        case 'apiCall': {
-                            let { statusCode, method, route } = message.args[0] || {};
-                            let success = statusCode >= 200 && statusCode < 300;
-                            statUpdateKey = `${message.key}:${success ? 'success' : 'fail'}`;
-                            if (typeof message.duration === 'number' && Number.isFinite(message.duration)) {
-                                try {
-                                    metrics.apiCallDuration.observe({ method, route }, message.duration);
-                                } catch (err) {
-                                    logger.error({ msg: 'Unable to apply worker metric', type, key: 'apiCallDuration', err });
-                                }
-                            }
-                            break;
-                        }
-
-                        case 'queuesProcessed': {
-                            let { queue, status } = message.args[0] || {};
-                            if (['submit'].includes(queue)) {
-                                statUpdateKey = `${queue}:${status === 'completed' ? 'success' : 'fail'}`;
-                            }
-                            break;
+                    if (message.key === 'apiCall' && typeof message.duration === 'number' && Number.isFinite(message.duration)) {
+                        let { method, route } = message.args[0] || {};
+                        try {
+                            metrics.apiCallDuration.observe({ method, route }, message.duration);
+                        } catch (err) {
+                            logger.error({ msg: 'Unable to apply worker metric', type, key: 'apiCallDuration', err });
                         }
                     }
 
                     // Update Redis counters for dashboard stats
                     if (statUpdateKey) {
-                        let now = new Date();
-
-                        // Create daily bucket
-                        let dateStr = `${now
-                            .toISOString()
-                            .substr(0, 10)
-                            .replace(/[^0-9]+/g, '')}`;
-
-                        // Create minute bucket
-                        let timeStr = `${now
-                            .toISOString()
-                            .substr(0, 16)
-                            .replace(/[^0-9]+/g, '')}`;
+                        let { dateStr, timeStr } = statBuckets(new Date());
 
                         let hkey = `${REDIS_PREFIX}stats:${statUpdateKey}:${dateStr}`;
 
