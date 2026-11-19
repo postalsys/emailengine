@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "emailengine-app@2.89.0",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.89.0-85333ba4-2a99-48ec-ad40-e539da8f4ade",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.89.0-12809ce2-e2f0-4722-8790-4fe8cd9844e4",
   "creationInfo": {
-    "created": "2026-11-16T11:38:13.001Z",
+    "created": "2026-11-19T15:47:54.715Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
@@ -1763,10 +1763,10 @@
     },
     {
       "name": "@sentry/conventions",
-      "SPDXID": "SPDXRef-Package-sentry.conventions-0.32.0",
-      "versionInfo": "0.32.0",
+      "SPDXID": "SPDXRef-Package-sentry.conventions-0.33.0",
+      "versionInfo": "0.33.0",
       "packageFileName": "node_modules/@sentry/conventions",
-      "downloadLocation": "https://registry.npmjs.org/@sentry/conventions/-/conventions-0.32.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@sentry/conventions/-/conventions-0.33.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/getsentry/sentry-conventions#readme",
       "licenseDeclared": "MIT",
@@ -1774,23 +1774,23 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40sentry/conventions@0.32.0"
+          "referenceLocator": "pkg:npm/%40sentry/conventions@0.33.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "5a449070385452ccf54b0c51db72e99b23ca6daf9d831c621f40d657855233dc9a02f86197cee9a56d93b37838a6220a0957e5737d5a25e5b2f9b8946d87ec31"
+          "checksumValue": "e5a6b783f54e9cca0bf321db7e4608581602dc12e032e76044d05328d32b70c123d6613d68a22dfc26021bbb1ab228e18925389d3712133c8cdafa085732c29e"
         }
       ]
     },
     {
       "name": "@sentry/core",
-      "SPDXID": "SPDXRef-Package-sentry.core-11.12.0",
-      "versionInfo": "11.12.0",
+      "SPDXID": "SPDXRef-Package-sentry.core-11.14.0",
+      "versionInfo": "11.14.0",
       "packageFileName": "node_modules/@sentry/core",
       "description": "Base implementation for all Sentry JavaScript SDKs",
-      "downloadLocation": "https://registry.npmjs.org/@sentry/core/-/core-11.12.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@sentry/core/-/core-11.14.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/getsentry/sentry-javascript/tree/master/packages/core",
       "licenseDeclared": "MIT",
@@ -1798,13 +1798,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40sentry/core@11.12.0"
+          "referenceLocator": "pkg:npm/%40sentry/core@11.14.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "1ca111ec4711a4f3e00bc98b45ee41ccfea78df458159e770452d9c55a75c2159b63a969fdbda6bd3064e2aebeacab141612e1443b1dea32fccbff1d7445afe8"
+          "checksumValue": "b6845175a6679b46a7cffe20124cf2642d324c2bd1e11ed4fb4db85907e30b082494815a628f668c806812553c309d52b247b4fd1caf034ce5b477eb6ba3efb1"
         }
       ]
     },
@@ -2002,11 +2002,11 @@
     },
     {
       "name": "bullmq",
-      "SPDXID": "SPDXRef-Package-bullmq-6.7.6",
-      "versionInfo": "6.7.6",
+      "SPDXID": "SPDXRef-Package-bullmq-6.7.8",
+      "versionInfo": "6.7.8",
       "packageFileName": "node_modules/bullmq",
       "description": "Queue for messages and jobs based on Redis",
-      "downloadLocation": "https://registry.npmjs.org/bullmq/-/bullmq-6.7.6.tgz",
+      "downloadLocation": "https://registry.npmjs.org/bullmq/-/bullmq-6.7.8.tgz",
       "filesAnalyzed": false,
       "homepage": "https://bullmq.io/",
       "licenseDeclared": "MIT",
@@ -2014,13 +2014,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/bullmq@6.7.6"
+          "referenceLocator": "pkg:npm/bullmq@6.7.8"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "ca4a761c63243b3f01b6e13f14115131eb6923a4470f216f02451ac2a289bfbb035886993f3d5c3eda7321a77cefd8b05b6a0c258e0214c3ef7c12a759d07747"
+          "checksumValue": "32dd3e9ca18d15602bbaec30cc451513ee721202b95e0ce3a11d818d22a9fc97aa7e07983b4a4587aa32efc2ecf2ef6ea554ec68b841cd2684640858be33e526"
         }
       ]
     },
@@ -2050,11 +2050,11 @@
     },
     {
       "name": "cron-parser",
-      "SPDXID": "SPDXRef-Package-cron-parser-5.10.4",
-      "versionInfo": "5.10.4",
+      "SPDXID": "SPDXRef-Package-cron-parser-5.10.6",
+      "versionInfo": "5.10.6",
       "packageFileName": "node_modules/cron-parser",
       "description": "Node.js library for parsing crontab instructions",
-      "downloadLocation": "https://registry.npmjs.org/cron-parser/-/cron-parser-5.10.4.tgz",
+      "downloadLocation": "https://registry.npmjs.org/cron-parser/-/cron-parser-5.10.6.tgz",
       "filesAnalyzed": false,
       "homepage": "NOASSERTION",
       "licenseDeclared": "MIT",
@@ -2062,13 +2062,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/cron-parser@5.10.4"
+          "referenceLocator": "pkg:npm/cron-parser@5.10.6"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "4da80da98ce857f0bb4f2ed50108eb420fb9ed6b043ae404521d2d593e4373e97f18eba801d595233154d02a98750b30a9d8d46a5add98ebda32d42112b6194c"
+          "checksumValue": "929a31810caf78ed65dbd9f0f8559dbe6a2dc95ede392cc61d0a718973846480ce8ea3b5891ea47e02743d51d3b95dbab817a62aade9a7399aedd1c5006eef8b"
         }
       ]
     },
@@ -3970,7 +3970,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-sentry.core-11.12.0",
+      "spdxElementId": "SPDXRef-Package-sentry.core-11.14.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.89.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -3990,7 +3990,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-bullmq-6.7.6",
+      "spdxElementId": "SPDXRef-Package-bullmq-6.7.8",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.89.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5150,8 +5150,8 @@
       "relationshipType": "PREREQUISITE_FOR"
     },
     {
-      "spdxElementId": "SPDXRef-Package-sentry.conventions-0.32.0",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.core-11.12.0",
+      "spdxElementId": "SPDXRef-Package-sentry.conventions-0.33.0",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.core-11.14.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -5246,37 +5246,37 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-ioredis-6.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.6",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.8",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-cron-parser-5.10.4",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.6",
+      "spdxElementId": "SPDXRef-Package-cron-parser-5.10.6",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.8",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-msgpackr-2.1.4",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.6",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.8",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-node-abort-controller-3.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.6",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.8",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-semver-7.8.6",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.6",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.8",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.6",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.8",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-luxon-3.7.2",
-      "relatedSpdxElement": "SPDXRef-Package-cron-parser-5.10.4",
+      "relatedSpdxElement": "SPDXRef-Package-cron-parser-5.10.6",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
