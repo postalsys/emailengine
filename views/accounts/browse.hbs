@@ -2,6 +2,7 @@
 
 {{> ui/breadcrumb parentHref="/admin/accounts" parentLabel="Accounts" midHref=(concat "/admin/accounts/" (urlpart account)) midLabel=account current="Browse" class="mt-6 mb-6"}}
 
+{{!-- The widget's accent colours are set for #email-client in static/css/src/app.tailwind.css --}}
 <div id="email-client"></div>
 
 {{#> ui/modal id="confirmModal" title="Confirm" titleId="confirmModalLabel"}}
@@ -41,6 +42,21 @@ escaping, and an account ID is free text (a quote, a backslash or an entity brok
         apiUrl: window.location.origin,
         account: document.getElementById('browse-account').value,
         accessToken: document.getElementById('browse-session-token').value,
+        // ?message= deep link (/admin/accounts/{account}/browse?message={message ID}, e.g. from
+        // an operator's own back office): open that message and its folder instead of the inbox
+        message: new URL(window.location.href).searchParams.get('message') || '',
+        // ...and the address bar follows whatever is open, so it can be copied or reloaded
+        onNavigate: ({ messageId }) => {
+            const url = new URL(window.location.href);
+            if (messageId) {
+                url.searchParams.set('message', messageId);
+            } else {
+                url.searchParams.delete('message');
+            }
+            if (url.href !== window.location.href) {
+                window.history.replaceState(window.history.state, '', url);
+            }
+        },
         // the widget appends its own stylesheet element; the admin policy accepts it with this
         // nonce, read off a nonced script (the nonce property survives the attribute being hidden)
         styleNonce: document.querySelector('script[nonce]').nonce,

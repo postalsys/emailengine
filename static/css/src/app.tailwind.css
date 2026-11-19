@@ -195,6 +195,16 @@
     --link-color: var(--color-primary);
 }
 
+/* The message browser widget (@postalsys/ee-client on the account Browse page) takes its accent
+ * from these. It puts white text on --ee-accent in both themes, so that stays the light theme's
+ * primary above; --ee-accent-light is what it uses for text and outlines in dark mode, the dark
+ * theme's lighter primary. */
+#email-client {
+    --ee-accent: #4c5cc5;
+    --ee-accent-hover: color-mix(in oklab, #4c5cc5 85%, black);
+    --ee-accent-light: #7b86dc;
+}
+
 /* FlyonUI lays a tab strip out as a nowrap flex row with no overflow handling, so one
  * wider than its column pushes the whole page sideways instead of adapting: an API reference
  * operation documents up to eight status codes. Wrapping rather than scrolling because these

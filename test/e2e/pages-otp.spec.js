@@ -95,6 +95,12 @@ test.describe('one-time passcodes', () => {
                 await expect(page.locator('.ee-otp-status')).toHaveText('Code copied to the clipboard');
             });
 
+            await test.step('a ?message= link opens that message next to its folder', async () => {
+                await page.goto(`/admin/accounts/${ACCOUNT_ID}/browse?message=${encodeURIComponent(messageId)}`, { waitUntil: 'load' });
+                await expect(page.locator('.ee-message-viewer')).toContainText(subject);
+                await expect(page.locator('.ee-message-item.active')).toContainText(subject);
+            });
+
             await test.step('an authenticated code names the site', async () => {
                 await page.route(`**/v1/account/${ACCOUNT_ID}/message/*?*`, async route => {
                     const response = await route.fetch();
@@ -108,6 +114,14 @@ test.describe('one-time passcodes', () => {
             });
 
             expect(errors, 'no console errors').toEqual([]);
+
+            // Last, since the refused request logs to the console by design
+            await test.step('a ?message= link naming no message says so and still lists the inbox', async () => {
+                await page.unrouteAll();
+                await page.goto(`/admin/accounts/${ACCOUNT_ID}/browse?message=not*an*id`, { waitUntil: 'load' });
+                await expect(page.locator('.ee-message-viewer')).toContainText('Message not found');
+                await expect(page.locator('.ee-message-item').filter({ hasText: subject })).toBeVisible();
+            });
         } finally {
             await api.delete(`/v1/account/${ACCOUNT_ID}`);
             await api.dispose();
