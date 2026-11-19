@@ -271,7 +271,7 @@ test('queueMessageEntry', async t => {
             assert.deepStrictEqual(order, [['checkIMAPConnection', connectionOptions], 'getMessage']);
         });
 
-        await t.test('mark the referenced message for a flag update only when it lacks the flags', async t => {
+        await t.test('mark the referenced message for a flag update only when it lacks the flag', async t => {
             const update = async (flags, action) => {
                 const { queued, run } = createClient({ getMessage: () => Object.assign({}, REFERENCED, { flags }) });
                 await run({ text: 'x', to: [{ address: 'r@example.com' }], reference: { message: 'MSG1', action } });
@@ -280,9 +280,9 @@ test('queueMessageEntry', async t => {
             assert.strictEqual(await update(undefined, 'reply'), true);
             assert.strictEqual(await update(['\\Seen'], 'reply'), true);
             assert.strictEqual(await update(['\\Answered'], 'reply'), undefined);
-            // a forward is satisfied by either flag
+            // a forward only looks at $Forwarded, so an answered message still gets marked forwarded
             assert.strictEqual(await update(['$Forwarded'], 'forward'), undefined);
-            assert.strictEqual(await update(['\\Answered'], 'forward'), undefined);
+            assert.strictEqual(await update(['\\Answered'], 'forward'), true);
             assert.strictEqual(await update(['$Forwarded'], 'reply'), true);
         });
 

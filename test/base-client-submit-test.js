@@ -30,7 +30,7 @@ smtpPool.getMailTransport = () => ({
 });
 
 const { SmtpConfigBuilder } = require('../lib/email-client/message-builder');
-const { BaseClient, buildReferences } = require('../lib/email-client/base-client');
+const { BaseClient, buildReferences, needsReferenceFlagUpdate } = require('../lib/email-client/base-client');
 const { isFailedDelivery } = require('../lib/email-client/new-message-steps');
 const { Account } = require('../lib/account');
 const { EMAIL_SENT_NOTIFY, EMAIL_DELIVERY_ERROR_NOTIFY } = require('../lib/consts');
@@ -444,4 +444,34 @@ test.describe('applyInlineReference', () => {
         assert.ok(data.text.startsWith('Note'));
         assert.match(data.html, /Html only original/);
     });
+});
+
+test('reference flags', async t => {
+    await t.test('a reply sets \\Answered and a forward only $Forwarded, each once', () => {
+        assert.equal(needsReferenceFlagUpdate('reply', []), true);
+        assert.equal(needsReferenceFlagUpdate('reply-all', undefined), true);
+        assert.equal(needsReferenceFlagUpdate('reply', ['\\Seen', '\\Answered']), false);
+        assert.equal(needsReferenceFlagUpdate('forward', ['\\Seen']), true);
+        assert.equal(needsReferenceFlagUpdate('forward', ['$Forwarded']), false);
+        // an answered message forwarded later is still marked forwarded, a forwarded one replied to is still answered
+        assert.equal(needsReferenceFlagUpdate('forward', ['\\Answered']), true);
+        assert.equal(needsReferenceFlagUpdate('reply', ['$Forwarded']), true);
+    });
+
+    for (const [action, flag] of [
+        ['reply', '\\Answered'],
+        ['reply-all', '\\Answered'],
+        ['forward', '$Forwarded']
+    ]) {
+        await t.test(`delivering a ${action} adds ${flag} alone`, async () => {
+            const { ctx } = createSubmitClient();
+            const updates = [];
+            ctx.checkIMAPConnection = () => true;
+            ctx.updateMessage = async (id, changes) => updates.push({ id, changes });
+
+            await ctx.updateReferenceFlags({ message: 'REF1', action }, 'q1', '<m@example.com>', {});
+
+            assert.deepEqual(updates, [{ id: 'REF1', changes: { flags: { add: [flag] } } }]);
+        });
+    }
 });
