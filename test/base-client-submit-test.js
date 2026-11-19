@@ -393,3 +393,55 @@ test('isFailedDelivery()', () => {
     assert.equal(isFailedDelivery({ action: 'failed', recipient: 'user@example.com' }), false, 'needs the original message id');
     assert.equal(isFailedDelivery(null), false);
 });
+
+// applyInlineReference() quoted the original into the text part only when the new text was
+// non-empty, so a forward sent with no note of its own went out with an html part alone
+test.describe('applyInlineReference', () => {
+    const referencedMessage = {
+        from: { name: 'Sender', address: 'sender@example.com' },
+        to: [{ address: 'rcpt@example.com' }],
+        subject: 'Original',
+        date: '2026-11-19T10:00:00.000Z',
+        text: { plain: 'The original body.', html: '<p>The original body.</p>' },
+        attachments: []
+    };
+    const apply = data => BaseClient.prototype.applyInlineReference.call({ logger: noopLogger }, data, referencedMessage, { locale: 'en', tz: 'UTC' });
+
+    test('an empty text still gets the quoted original', () => {
+        const data = { text: '', reference: { action: 'forward', inline: true } };
+        apply(data);
+        assert.match(data.text, /Begin forwarded message/);
+        assert.match(data.text, /The original body\./);
+        assert.match(data.html, /The original body\./);
+    });
+
+    test('the new text comes before the quote', () => {
+        const data = { text: 'My answer', reference: { action: 'reply', inline: true } };
+        apply(data);
+        assert.ok(data.text.startsWith('My answer'));
+        assert.match(data.text, /> The original body\./);
+    });
+
+    test('a message given only html gets its text part from that html', () => {
+        // the draft upload path has no html-to-text step of its own before this
+        for (const text of [undefined, '']) {
+            const data = { html: '<p>Only html</p>', text, reference: { action: 'reply', inline: true } };
+            apply(data);
+            assert.ok(data.text.startsWith('Only html'), data.text);
+            assert.match(data.text, /> The original body\./);
+            assert.match(data.html, /Only html/);
+        }
+    });
+
+    test('an original without a plain text part is still quoted', () => {
+        const data = { text: 'Note', reference: { action: 'forward', inline: true } };
+        BaseClient.prototype.applyInlineReference.call(
+            { logger: noopLogger },
+            data,
+            { ...referencedMessage, text: { html: '<p>Html only original</p>' } },
+            { locale: 'en', tz: 'UTC' }
+        );
+        assert.ok(data.text.startsWith('Note'));
+        assert.match(data.html, /Html only original/);
+    });
+});
