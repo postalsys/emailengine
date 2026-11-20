@@ -227,7 +227,7 @@ test.describe('message browser', () => {
                 expect(composed.attachments.map(att => att.filename)).toEqual(['notes.txt']);
             });
 
-            await test.step('closing an unsaved message asks in a dialog the compose panel does not cover', async () => {
+            await test.step('closing an unsaved message asks in a dialog the compose panel does not cover, and a dismissed question keeps it', async () => {
                 // at this width the docked panel overlaps the centre of the page, where the
                 // dialog opens; a click on a covered button fails the actionability check
                 // (the one-pane layout, so the form is opened from the message rather than the
@@ -240,6 +240,16 @@ test.describe('message browser', () => {
                 const modal = page.locator('#confirmModal');
                 await expectModalOpen(modal);
                 await expect(page.locator('#confirmModalLabel')).toHaveText('Unsaved message');
+
+                // closing the question with its corner button answers neither way: the message stays
+                await modal.locator('[aria-label="Close"]').click({ timeout: 10000 });
+                await expect(modal).toBeHidden();
+                await expect(compose).toBeVisible();
+                await expect(editor).toHaveText('Not finished.');
+
+                // its Discard button does discard
+                await compose.locator('[data-action="close"]').click({ timeout: 10000 });
+                await expectModalOpen(modal);
                 await page.locator('#confirm-cancel').click({ timeout: 10000 });
                 await expect(compose).toBeHidden();
                 await page.setViewportSize({ width: 1280, height: 720 });

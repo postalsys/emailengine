@@ -70,7 +70,9 @@ escaping, and an account ID is free text (a quote, a backslash or an entity brok
             document.getElementById('confirm-cancel').textContent = cancelText;
             document.getElementById('confirm-ok').textContent = okText;
 
-            return uiConfirmModal('#confirmModal', '#confirm-ok');
+            // the Cancel button answers false and a dialog closed any other way null, which the
+            // widget reads as no answer (an unsaved message then stays open rather than going)
+            return uiConfirmModal('#confirmModal', '#confirm-ok', '#confirm-cancel');
         },
 
         // An alert has nothing to answer, so callers just await it being dismissed. The

@@ -4100,13 +4100,19 @@ export class EmailEngineClient {
     }
 
     // Before the form is closed or reused: a changed message is saved as a draft or discarded, as
-    // the user chooses. Resolves false when saving failed, so the message stays on screen.
+    // the user chooses. Resolves false when the question was dismissed or saving failed, so the
+    // message stays on screen.
     async _settleOpenCompose() {
         if (!this._isComposeDirty()) {
             return true;
         }
         this._setComposeMinimized(false);
         const save = await this.confirmMethod('Save the message you are writing as a draft?', 'Unsaved message', 'Discard', 'Save draft');
+        // A host dialog closed without either button (its close button, Escape, the backdrop)
+        // answers null, and that is no decision to throw the message away: it stays on screen
+        if (save === null) {
+            return false;
+        }
         if (!save) {
             return true;
         }
@@ -4790,7 +4796,11 @@ export class EmailEngineClient {
         this.initialMessage = null;
         const message = messageId ? this.loadMessage(messageId).catch(() => null) : Promise.resolve(null);
 
-        return this.loadFolders()
+        // The folders come first without their unread counts: those cost a STATUS command per
+        // folder on the IMAP connection the message and the listing are read over too, so asking
+        // for them up front made the first view wait behind them - seconds on a distant server.
+        // They follow once the view is up.
+        return this.loadFolders({ counters: false })
             .catch(error => {
                 // loadFolders reports into the sidebar, but the message list is the
                 // larger pane and would still read "Select a folder" - a folder the
@@ -4800,6 +4810,7 @@ export class EmailEngineClient {
             })
             .then(async () => {
                 await this._listFolderOf(await message);
+                this._fireAndForget(this._loadFolderCounters());
                 return true;
             })
             .catch(error => {
@@ -4807,6 +4818,20 @@ export class EmailEngineClient {
                 console.error('Failed to load the initial view:', error);
                 return false;
             });
+    }
+
+    // Fetches the folder list again with unread counts and redraws the folder pane. Without them
+    // the folders still work, so a failure only leaves the counts out.
+    async _loadFolderCounters() {
+        try {
+            await this._fetchFolders(true);
+        } catch (error) {
+            console.warn('Failed to load folder counts:', error);
+            return;
+        }
+        if (this.container && !this._destroyed) {
+            this.renderFolderList();
+        }
     }
 
     _inboxFolder() {

@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "emailengine-app@2.89.0",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.89.0-f19830d9-5a37-46a5-b5c6-3aeed42208b9",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.89.0-f7eaccdb-9c1e-40ec-a524-765229d249f2",
   "creationInfo": {
-    "created": "2026-11-20T09:49:03.317Z",
+    "created": "2026-11-20T15:18:54.088Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
@@ -1739,10 +1739,10 @@
     },
     {
       "name": "@sentry/conventions",
-      "SPDXID": "SPDXRef-Package-sentry.conventions-0.33.0",
-      "versionInfo": "0.33.0",
+      "SPDXID": "SPDXRef-Package-sentry.conventions-0.34.0",
+      "versionInfo": "0.34.0",
       "packageFileName": "node_modules/@sentry/conventions",
-      "downloadLocation": "https://registry.npmjs.org/@sentry/conventions/-/conventions-0.33.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@sentry/conventions/-/conventions-0.34.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/getsentry/sentry-conventions#readme",
       "licenseDeclared": "MIT",
@@ -1750,23 +1750,23 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40sentry/conventions@0.33.0"
+          "referenceLocator": "pkg:npm/%40sentry/conventions@0.34.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "e5a6b783f54e9cca0bf321db7e4608581602dc12e032e76044d05328d32b70c123d6613d68a22dfc26021bbb1ab228e18925389d3712133c8cdafa085732c29e"
+          "checksumValue": "b0660b6aaff3c914ce0a869d5b767aeaae961e9d7ab2d9f07b318ae39079d2618ee9051397fb6dcec3e9cbea316658f6a4a011c8ea21675a57f60adda4cc68d9"
         }
       ]
     },
     {
       "name": "@sentry/core",
-      "SPDXID": "SPDXRef-Package-sentry.core-11.15.0",
-      "versionInfo": "11.15.0",
+      "SPDXID": "SPDXRef-Package-sentry.core-11.16.0",
+      "versionInfo": "11.16.0",
       "packageFileName": "node_modules/@sentry/core",
       "description": "Base implementation for all Sentry JavaScript SDKs",
-      "downloadLocation": "https://registry.npmjs.org/@sentry/core/-/core-11.15.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@sentry/core/-/core-11.16.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/getsentry/sentry-javascript/tree/master/packages/core",
       "licenseDeclared": "MIT",
@@ -1774,13 +1774,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40sentry/core@11.15.0"
+          "referenceLocator": "pkg:npm/%40sentry/core@11.16.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "ceca6b10ebbfbe88aca232459c32213ddf86872700962fdaaa357be767901e234eac0c00be280269db12876343e5ed4013272f4a6653c4e3a108d8d6cd267836"
+          "checksumValue": "86eee0c3ffffac32f05582a6900833b57531d2c164a711b5cc3c27b87058097a8745a130cc427f9ed0597c098b6e339222c83975c334ec0234f4a4a270579707"
         }
       ]
     },
@@ -3946,7 +3946,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-sentry.core-11.15.0",
+      "spdxElementId": "SPDXRef-Package-sentry.core-11.16.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.89.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5091,8 +5091,8 @@
       "relationshipType": "PREREQUISITE_FOR"
     },
     {
-      "spdxElementId": "SPDXRef-Package-sentry.conventions-0.33.0",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.core-11.15.0",
+      "spdxElementId": "SPDXRef-Package-sentry.conventions-0.34.0",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.core-11.16.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {

@@ -116,15 +116,23 @@ document.addEventListener(
 // way out, which on a confirmation is the worst failure available.
 //
 // Callers fill in their own text first; only the answer is shared.
-window.uiConfirmModal = (target, okSelector) => {
+//
+// With `cancelSelector`, a dialog closed without either button (the corner close, Escape, a
+// backdrop click) resolves null instead of false, for a question whose cancel button is itself
+// an action - the message browser's "Save the message you are writing as a draft?", where
+// Cancel means discard and a stray click must not.
+window.uiConfirmModal = (target, okSelector, cancelSelector) => {
     const modal = typeof target === 'string' ? document.querySelector(target) : target;
     const ok = modal && modal.querySelector(okSelector);
     if (!ok) {
         return Promise.resolve(false);
     }
+    const cancel = cancelSelector ? modal.querySelector(cancelSelector) : null;
 
     return new Promise(resolve => {
-        let confirmed = false;
+        // null until a button answers; without a cancel button to tell apart, every way out but
+        // OK is a plain false
+        let confirmed = cancel ? null : false;
         // Recorded in the capture phase on the dialog, which runs before any listener on the
         // button itself. HSOverlay's own handler on the OK button closes the dialog, and when
         // nothing transitions (no fade, or a reader whose browser skips it) the close completes
@@ -133,6 +141,8 @@ window.uiConfirmModal = (target, okSelector) => {
         const onConfirm = e => {
             if (ok.contains(e.target)) {
                 confirmed = true;
+            } else if (cancel && cancel.contains(e.target)) {
+                confirmed = false;
             }
         };
 
