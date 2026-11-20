@@ -134,15 +134,18 @@ function splitAddressField(value) {
 }
 
 function parseAddressEntry(entry) {
-    const match = entry.match(/^(.*)<([^>]*)>$/);
-    if (!match) {
+    // "Name <address>": the address is between the last "<" and a closing ">" at the end.
+    // Found by index rather than a /^(.*)<([^>]*)>$/ match, which backtracks in quadratic
+    // time on a long run of "<" without the closing ">"
+    const open = entry.lastIndexOf('<');
+    if (open < 0 || !entry.endsWith('>') || entry.indexOf('>', open) !== entry.length - 1 || /[\n\r\u2028\u2029]/.test(entry.slice(0, open))) {
         return { address: entry };
     }
-    let name = match[1].trim();
+    let name = entry.slice(0, open).trim();
     if (name.length > 1 && name.startsWith('"') && name.endsWith('"')) {
         name = name.slice(1, -1).replace(/\\(.)/g, '$1');
     }
-    const address = match[2].trim();
+    const address = entry.slice(open + 1, -1).trim();
     return name ? { name, address } : { address };
 }
 
