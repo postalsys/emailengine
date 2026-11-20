@@ -6,7 +6,15 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { messageWebSafeHtml, webSafeTextResponse, applyWebSafeHtmlOptions, collapseThreadHistory, WEB_SAFE_HTML_MAX_INPUT } = require('../lib/web-safe-html');
+const {
+    messageWebSafeHtml,
+    webSafeTextResponse,
+    applyWebSafeHtmlOptions,
+    collapseThreadHistory,
+    WEB_SAFE_HTML_MAX_INPUT,
+    PLAINTEXT_STYLE_BLOCK
+} = require('../lib/web-safe-html');
+const textTools = require('@postalsys/email-text-tools');
 const { COLLAPSE_CLASS, COLLAPSE_TOGGLE_CLASS } = require('../lib/consts');
 const exitWhenStandalone = require('./helpers/exit-standalone');
 
@@ -121,10 +129,10 @@ test('collapseThreadHistory', async t => {
         assert.match(visible, /cutover on Saturday morning/);
         assert.doesNotMatch(visible, /maintenance window/);
         assert.match(hidden, /When do you want to do the server migration/);
-        // Quoted lines still become blockquotes, and the styling mimeHtml applies to plain text
-        // bodies travels with them.
+        // Quoted lines still become blockquotes and keep their colouring, without a fixed font
         assert.match(hidden, /<blockquote/);
-        assert.match(collapsed.html, /font-family: sans-serif/);
+        assert.match(collapsed.html, /color: darkblue/);
+        assert.doesNotMatch(collapsed.html, /font-size: 12px/);
     });
 
     await t.test('normalizes CRLF text so the cut lands where the extractor reported it', async () => {
@@ -359,6 +367,22 @@ test('messageWebSafeHtml: a body the sanitizer can not handle is rendered as esc
 });
 
 test('webSafeTextResponse', async t => {
+    await t.test('the plain text style block drops the package font rule and keeps the quote colours', () => {
+        // derived from @postalsys/email-text-tools by a regex: a change to the rule's text there
+        // must fail here rather than bring a fixed font back unnoticed
+        assert.notEqual(PLAINTEXT_STYLE_BLOCK, textTools.INLINE_STYLE_BLOCK);
+        assert.doesNotMatch(PLAINTEXT_STYLE_BLOCK, /font-family|font-size/);
+        assert.match(PLAINTEXT_STYLE_BLOCK, /blockquote\s*\{/);
+    });
+
+    await t.test('renders a plain text message in the host font, with its quotes coloured', async () => {
+        const html = await messageWebSafeHtml({ subject: 'Hello', text: { plain: 'Hi there\n\n> quoted line' } });
+        assert.match(html, /Hi there/);
+        assert.match(html, /<blockquote[^>]*color: darkblue/);
+        assert.doesNotMatch(html, /font-size: 12px/);
+        assert.doesNotMatch(html, /font-family: sans-serif/);
+    });
+
     await t.test('returns one rendering and drops the plaintext twin', async () => {
         const response = await webSafeTextResponse({
             html: '<html><body><div>Hello there</div></body></html>',
