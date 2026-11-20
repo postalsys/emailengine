@@ -28,6 +28,7 @@ const GMAIL_ATTACHMENTS = [
         id: 'lbAxOGYyYTljNGI3ZDEwZTU1qWltYWdlL3BuZ6ZpbmxpbmWobG9nby5wbmerQU5HamRKOGxvZ28',
         contentType: 'image/png',
         encodedSize: 2048,
+        size: 2048,
         embedded: true,
         inline: true,
         encodedInMessage: false,
@@ -38,6 +39,7 @@ const GMAIL_ATTACHMENTS = [
         id: 'lbAxOGYyYTljNGI3ZDEwZTU1r2FwcGxpY2F0aW9uL3BkZqphdHRhY2htZW50qnJlcG9ydC5wZGatQU5HamRKOHJlcG9ydA',
         contentType: 'application/pdf',
         encodedSize: 40960,
+        size: 40960,
         embedded: false,
         inline: false,
         encodedInMessage: false,
@@ -48,6 +50,7 @@ const GMAIL_ATTACHMENTS = [
         id: 'lbAxOGYyYTljNGI3ZDEwZTU1rXRleHQvY2FsZW5kYXKqYXR0YWNobWVudKppbnZpdGUuaWNzrUFOR2pkSjhpbnZpdGU',
         contentType: 'text/calendar',
         encodedSize: 900,
+        size: 900,
         embedded: false,
         inline: false,
         encodedInMessage: false,
@@ -236,6 +239,7 @@ const GRAPH_ATTACHMENTS = [
         id: 'krBBQU1rQUdJMlRHOTNBQUE9rUFBTWtBR0kyYXR0MT0',
         contentType: 'image/png',
         encodedSize: 2048,
+        size: 2048,
         inline: true,
         filename: 'logo.png',
         contentId: '<logo@example.com>',
@@ -245,11 +249,12 @@ const GRAPH_ATTACHMENTS = [
         id: 'krBBQU1rQUdJMlRHOTNBQUE9rUFBTWtBR0kyYXR0Mj0',
         contentType: 'application/pdf',
         encodedSize: 40960,
+        size: 40960,
         inline: false,
         filename: 'report.pdf',
         contentId: '<f_report>'
     },
-    { id: 'krBBQU1rQUdJMlRHOTNBQUE9rUFBTWtBR0kyYXR0Mz0', contentType: null, encodedSize: 900, inline: false }
+    { id: 'krBBQU1rQUdJMlRHOTNBQUE9rUFBTWtBR0kyYXR0Mz0', contentType: null, encodedSize: 900, size: 900, inline: false }
 ];
 
 // Without the html text the inline image cannot be seen as embedded
@@ -258,6 +263,7 @@ const GRAPH_ATTACHMENTS_NOT_EMBEDDED = [
         id: 'krBBQU1rQUdJMlRHOTNBQUE9rUFBTWtBR0kyYXR0MT0',
         contentType: 'image/png',
         encodedSize: 2048,
+        size: 2048,
         inline: true,
         filename: 'logo.png',
         contentId: '<logo@example.com>'

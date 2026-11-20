@@ -433,6 +433,31 @@ test.describe('applyInlineReference', () => {
         }
     });
 
+    test('an original with a text part alone is quoted into the html the caller writes', () => {
+        const plainOriginal = { ...referencedMessage, text: { plain: 'Plain <original> body.' } };
+        for (const action of ['reply', 'forward']) {
+            const data = { text: 'My answer', html: '<p>My <b>answer</b></p>', reference: { action, inline: true } };
+            BaseClient.prototype.applyInlineReference.call({ logger: noopLogger }, data, plainOriginal, { locale: 'en', tz: 'UTC' });
+            assert.match(data.html, /My <b>answer<\/b>/, action);
+            assert.match(data.html, /<blockquote/, action);
+            // the text is escaped on its way into the html
+            assert.match(data.html, /Plain &lt;original&gt; body\./, action);
+            assert.match(data.text, /Plain <original> body\./, action);
+        }
+    });
+
+    test('a text-only answer to a text-only original gets no html part', () => {
+        const data = { text: 'Plain answer', reference: { action: 'reply', inline: true } };
+        BaseClient.prototype.applyInlineReference.call(
+            { logger: noopLogger },
+            data,
+            { ...referencedMessage, text: { plain: 'Plain original.' } },
+            { locale: 'en', tz: 'UTC' }
+        );
+        assert.equal(data.html, undefined);
+        assert.match(data.text, /> Plain original\./);
+    });
+
     test('an original without a plain text part is still quoted', () => {
         const data = { text: 'Note', reference: { action: 'forward', inline: true } };
         BaseClient.prototype.applyInlineReference.call(

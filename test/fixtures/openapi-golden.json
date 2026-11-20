@@ -4096,8 +4096,13 @@
           },
           "encodedSize": {
             "type": "integer",
-            "description": "Size of the attachment as stored in the email (base64 encoded). The actual decoded file size is approximately 75% of this value.",
+            "description": "Size of the attachment as the mail server reports it. For IMAP accounts this is the encoded size of the MIME part (for base64 about 4/3 of the file); the Gmail API and MS Graph report the file size. Use `size` for the file size.",
             "example": 48
+          },
+          "size": {
+            "type": "integer",
+            "description": "Size of the attachment file in bytes, as an estimate. For IMAP accounts it is computed from the encoded size, assuming base64 in 76 character lines, and is an upper bound for quoted-printable. MS Graph reports the size of the attachment item, which can be a little larger than the file",
+            "example": 36
           },
           "embedded": {
             "type": "boolean",
