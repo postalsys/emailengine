@@ -1,5 +1,49 @@
 # Changelog
 
+## [2.90.0](https://github.com/postalsys/emailengine/compare/v2.89.0...v2.90.0) (2026-11-20)
+
+
+### Features
+
+* write inline reply and forward headers in the language of the locale ([454a6dd](https://github.com/postalsys/emailengine/commit/454a6ddc23f9de95f326e8ba55e3e8e0cb67b9a0))
+
+
+### Bug Fixes
+
+* anchor the AWS WorkMail MX pattern ([1cc357e](https://github.com/postalsys/emailengine/commit/1cc357e58f8678a60a4aeff5a9b5c773126646df))
+* connect a Gmail account whose profile carries no history ID ([c7cb645](https://github.com/postalsys/emailengine/commit/c7cb64595c8f868a9c2ea4c6196a501a13f5803b))
+* fetch listed Gmail messages ten at a time, not eleven ([ac2e0d3](https://github.com/postalsys/emailengine/commit/ac2e0d31447bf73b1c7a7ed0425bb7b9706b1f9c))
+* give a reply or forward a text part when it has no text of its own ([86522b7](https://github.com/postalsys/emailengine/commit/86522b7a3c4547ad72fc8accc5f6266f6353e9d3))
+* keep account counter names off Object.prototype ([35d62b0](https://github.com/postalsys/emailengine/commit/35d62b0ee10a3206ee128d941cb0b719f68cf8d0))
+* keep an unsaved message in the message browser when its save question is dismissed ([aace267](https://github.com/postalsys/emailengine/commit/aace267ddd763b7647ce92b72b48b4a8bd7e285a))
+* keep complaint recipients collected before the feedback report ([09b5e84](https://github.com/postalsys/emailengine/commit/09b5e848b51a8ebb24f2ca584f0466ddcfa0110c))
+* leave an account field holding undefined out of the stored hash ([9e96857](https://github.com/postalsys/emailengine/commit/9e968579b165c7462f0c3fb547ed1fd0e011f03f))
+* leave optional packages out of the Docker image ([6d00ea1](https://github.com/postalsys/emailengine/commit/6d00ea121364872da597bf07bda2f064ca83c1e1))
+* link straight to a message in the admin message browser ([9d881a6](https://github.com/postalsys/emailengine/commit/9d881a6706aae3bc002eeb6295bfa932cd20f7ea))
+* load .env with Node's own parser instead of dotenv ([23fd4ad](https://github.com/postalsys/emailengine/commit/23fd4adf0396690557de837b8a2e609f0285de1e))
+* load the passkey library on the first passkey request ([2f4280b](https://github.com/postalsys/emailengine/commit/2f4280b4f09eb084ca1d81f6e6519b55a1a543a3))
+* look up registrable domains through tldts ([942bd43](https://github.com/postalsys/emailengine/commit/942bd4368dc5c59ea99d8a880f518403df014e05))
+* mark a forwarded message $Forwarded only, and even when it was answered ([c52084a](https://github.com/postalsys/emailengine/commit/c52084a86966661bca74f48a5c9cf447d8b7ca99))
+* move the Prometheus metrics to @prometheus-io/client ([a2c6f63](https://github.com/postalsys/emailengine/commit/a2c6f63c75c2c3a12bcca62e29fbe932990b74d1))
+* plain-text quotes, web-safe font and attachment file size ([779082e](https://github.com/postalsys/emailengine/commit/779082ee6735b475f26fdfcacc52af7a5028ef2a))
+* quote a plain-text original in the HTML part of a reply or forward ([2f6a02a](https://github.com/postalsys/emailengine/commit/2f6a02a9f8074ac2070025f03cd2715da48bcd7f))
+* raise the Outlook client secret flag when no secret is configured ([6667e8d](https://github.com/postalsys/emailengine/commit/6667e8dea9b42a836b32929606f1e5da29f4479a))
+* refuse a missing API token with a 401 instead of a TypeError ([140d88d](https://github.com/postalsys/emailengine/commit/140d88de63c5e7243a46c535c9035072f4561088))
+* register the OIDC sign-in route at boot, before discovery succeeds ([a81ee0b](https://github.com/postalsys/emailengine/commit/a81ee0bed1419941ae824718fd316104f5dcc637))
+* report the file size of attachments ([79386b3](https://github.com/postalsys/emailengine/commit/79386b39355f3cb023dc5f591460fabb97e68f89))
+* resolve @hapi/bell to the root joi 18 ([0b77d15](https://github.com/postalsys/emailengine/commit/0b77d154ee8471f8d665f917b9eec65634a861db))
+* return the usual shape from the IMAP attachment list without a body structure ([caaaba9](https://github.com/postalsys/emailengine/commit/caaaba9f7d8c4f588239bc76a5e84f71b6175611))
+* send error reports through @sentry/core 11 ([b6531e5](https://github.com/postalsys/emailengine/commit/b6531e52445a059a6f70b44b83887b28015f960d))
+* stop an untouched account edit save from reconnecting IMAP ([65ee163](https://github.com/postalsys/emailengine/commit/65ee1639a91ed4ad7a4e57059b0227ddba4f70fa))
+* stop re-downloading an API message that came back without content ([ba5e272](https://github.com/postalsys/emailengine/commit/ba5e2721db068abe5345ce3a49b7d67d3f3b99e7))
+* stop storing account objects as '[object Object]' ([324c803](https://github.com/postalsys/emailengine/commit/324c8035c1343c0cf904b8feb40efd7dbd451643))
+* treat an uppercase GET as a GET when placing an Outlook request payload ([7a55420](https://github.com/postalsys/emailengine/commit/7a55420c93c075048b061b8a98550fce8a32a4ac))
+* update dependencies ([d116dbc](https://github.com/postalsys/emailengine/commit/d116dbc09112f170133c22608fd8b880eb78247d))
+* update dependencies ([aa47701](https://github.com/postalsys/emailengine/commit/aa47701d5cd9dbe3a0b78effaf4499cab93d0548))
+* update dependencies ([2bf0f1b](https://github.com/postalsys/emailengine/commit/2bf0f1b6542dac24e291db973de6f663159de52d))
+* update dependencies ([a61a043](https://github.com/postalsys/emailengine/commit/a61a043b8d6b36c21abeebe3cc304b188fba6cd4))
+* web-safe HTML of plain-text mail no longer fixes the font ([484c601](https://github.com/postalsys/emailengine/commit/484c6016c6ac10094dde44af3989fef4a4a8ef22))
+
 ## [2.89.0](https://github.com/postalsys/emailengine/compare/v2.88.0...v2.89.0) (2026-11-15)
 
 
