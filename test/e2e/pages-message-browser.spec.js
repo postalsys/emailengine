@@ -3,7 +3,8 @@
 // The message browser (the @postalsys/ee-client widget on /admin/accounts/{account}/browse) as a
 // mail client: a ?message= deep link, the address bar following the open message, reply, reply-all
 // with a recipient removed, forward with the original attachments, a new message with Cc and an
-// uploaded file, a reply saved as a draft, and the replied marker on the original.
+// uploaded file, a reply saved as a draft, and the replied marker on the original. The compose form
+// is the widget's docked panel (ee-client 2), whose message body is a rich text editor.
 //
 // Ethereal loops everything an account sends back into that account's own inbox, whatever the
 // recipient, so every message sent here can be read back over the API and nobody receives anything.
@@ -52,8 +53,9 @@ test.describe('message browser', () => {
             await expect(page.locator('.ee-toast.show')).toHaveText(text);
         };
 
-        const compose = page.locator('.ee-compose-modal');
+        const compose = page.locator('.ee-compose-dialog');
         const field = name => compose.locator(`[name="${name}"]`);
+        const editor = compose.locator('.ee-compose-editor');
 
         try {
             const acct = await createUsableTestAccount();
@@ -99,18 +101,19 @@ test.describe('message browser', () => {
             const replyText = `A reply ${stamp}`;
             await test.step('reply quotes the original and threads under it', async () => {
                 await page.locator('.ee-message-viewer [data-action="reply"]').click();
-                await expect(compose).toHaveClass(/show/);
+                await expect(compose).toBeVisible();
                 await expect(compose.locator('.ee-compose-title')).toHaveText('Reply');
                 await expect(field('subject')).toHaveValue(`Re: ${subject}`);
                 // answering a message the account sent itself goes to the people it went to
                 await expect(field('to')).toHaveValue(other);
-                await expect(compose.locator('.ee-compose-quote')).toBeVisible();
-                await expect(compose.locator('.ee-compose-forward-attachments')).toBeHidden();
+                // the quote is folded until asked for, and a reply carries no files
+                await expect(compose.locator('.ee-compose-quote-toggle')).toHaveAttribute('aria-expanded', 'false');
+                await expect(compose.locator('.ee-compose-chip')).toHaveCount(0);
 
-                await field('message').fill(replyText);
+                await editor.fill(replyText);
                 await compose.locator('.ee-compose-send').click();
                 await notice('Message queued for delivery.');
-                await expect(compose).not.toHaveClass(/show/);
+                await expect(compose).toBeHidden();
 
                 const reply = await findMessage(`Re: ${subject}`);
                 expect(reply.inReplyTo).toBe(seed.messageId);
@@ -133,14 +136,14 @@ test.describe('message browser', () => {
 
             await test.step('reply-all sends to the recipients left in the form, not the original list', async () => {
                 await page.locator('.ee-message-viewer [data-action="reply-all"]').click();
-                await expect(compose.locator('.ee-compose-title')).toHaveText('Reply All');
+                await expect(compose.locator('.ee-compose-title')).toHaveText('Reply all');
                 await expect(field('to')).toHaveValue(other);
                 await expect(field('cc')).toBeVisible();
                 await expect(field('cc')).toHaveValue(copied);
 
                 await field('cc').fill('');
                 await field('subject').fill(`Re: ${subject} (all)`);
-                await field('message').fill('To everyone left.');
+                await editor.fill('To everyone left.');
                 await compose.locator('.ee-compose-send').click();
                 await notice('Message queued for delivery.');
 
@@ -153,23 +156,23 @@ test.describe('message browser', () => {
             await test.step('a reply saved as a draft keeps its thread', async () => {
                 await page.locator('.ee-message-viewer [data-action="reply"]').click();
                 await field('subject').fill(`Re: ${subject} (draft)`);
-                await field('message').fill('Not sent yet.');
+                await editor.fill('Not sent yet.');
                 await compose.locator('.ee-compose-save-draft').click();
-                await notice('Draft saved to the Drafts folder.');
+                await notice('Draft saved.');
 
                 const draft = await findMessage(`Re: ${subject} (draft)`, 'Drafts');
                 expect(draft.inReplyTo).toBe(seed.messageId);
                 expect(draft.text.plain).toContain('Not sent yet.');
             });
 
-            await test.step('forward carries the original attachments when asked to', async () => {
+            await test.step('forward carries the original attachments', async () => {
                 await page.locator('.ee-message-viewer [data-action="forward"]').click();
                 await expect(compose.locator('.ee-compose-title')).toHaveText('Forward');
                 await expect(field('subject')).toHaveValue(`Fwd: ${subject}`);
                 await expect(field('to')).toHaveValue('');
-                const keepAttachments = compose.locator('.ee-compose-forward-attachments');
-                await expect(keepAttachments).toContainText('Include the original attachments (1)');
-                await expect(field('forwardAttachments')).toBeChecked();
+                // the forwarded message shows with its header, and its files are listed as attachments
+                await expect(compose.locator('.ee-compose-quote-header .ee-forward-title')).toHaveText('Forwarded message');
+                await expect(compose.locator('.ee-compose-chip-name')).toHaveText(['seed.txt']);
 
                 await field('to').fill(`forward-${stamp}@example.com`);
                 // a forward needs no note of its own
@@ -186,13 +189,13 @@ test.describe('message browser', () => {
                 const newSubject = `Composed ${stamp}`;
                 // wide layouts have the Compose button at the top of the folder pane
                 await page.locator('.ee-sidebar-compose-button').click();
-                await expect(compose.locator('.ee-compose-title')).toHaveText('New Message');
+                await expect(compose.locator('.ee-compose-title')).toHaveText('New message');
                 await expect(field('cc')).toBeHidden();
                 await expect(compose.locator('.ee-compose-quote')).toBeHidden();
 
                 // a name without an address is refused before anything is sent
                 await field('to').fill('just a name');
-                await field('message').fill('Hello there.');
+                await editor.fill('Hello there.');
                 await compose.locator('.ee-compose-send').click();
                 await expect(compose.locator('.ee-compose-error')).toHaveText('Not a valid email address: just a name');
                 await expect(field('to')).toHaveAttribute('aria-invalid', 'true');
@@ -222,6 +225,24 @@ test.describe('message browser', () => {
                 ]);
                 expect(composed.cc.map(entry => entry.address)).toEqual([`cc-${stamp}@example.com`]);
                 expect(composed.attachments.map(att => att.filename)).toEqual(['notes.txt']);
+            });
+
+            await test.step('closing an unsaved message asks in a dialog the compose panel does not cover', async () => {
+                // at this width the docked panel overlaps the centre of the page, where the
+                // dialog opens; a click on a covered button fails the actionability check
+                // (the one-pane layout, so the form is opened from the message rather than the
+                // folder pane's Compose button)
+                await page.setViewportSize({ width: 1024, height: 768 });
+                await page.goto(`/admin/accounts/${ACCOUNT_ID}/browse?message=${encodeURIComponent(seed.id)}`, { waitUntil: 'load' });
+                await page.locator('.ee-message-viewer [data-action="reply"]').click({ timeout: 10000 });
+                await editor.fill('Not finished.');
+                await compose.locator('[data-action="close"]').click({ timeout: 10000 });
+                const modal = page.locator('#confirmModal');
+                await expectModalOpen(modal);
+                await expect(page.locator('#confirmModalLabel')).toHaveText('Unsaved message');
+                await page.locator('#confirm-cancel').click({ timeout: 10000 });
+                await expect(compose).toBeHidden();
+                await page.setViewportSize({ width: 1280, height: 720 });
             });
 
             await test.step('delete says where the message goes, and confirms it went', async () => {

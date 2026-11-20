@@ -158,6 +158,14 @@
     z-index: 60;
     max-width: 20rem;
 }
+/* the message browser (ee-client 2) docks its compose panel at z-index 2000,
+ * above the page. The dialogs it asks through confirmMethod/alertMethod
+ * ("Unsaved message", "Delete message") are the page's own modals, so they
+ * stack above that panel, or the panel covers their buttons. */
+#confirmModal,
+#alertModal {
+    z-index: 2100;
+}
 .tooltip .tooltip-body {
     /* block, not inline: an inline body fragments its background into one
      * box per wrapped line */
