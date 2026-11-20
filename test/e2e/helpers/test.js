@@ -39,4 +39,13 @@ const test = base.test.extend({
     }
 });
 
-module.exports = Object.assign({}, base, { test });
+// For specs whose page waits on a live mailbox (the message browser opening an Ethereal message).
+// Opening a message is several IMAP round trips in sequence, and the widget's folder counters (one
+// STATUS per folder) share the connection. From a CI runner a round trip to Ethereal takes 120 to
+// 280ms, so an open there regularly runs past the default 5 seconds while taking well under one
+// locally. A spec that fails on that then deletes its account in cleanup, under the request still
+// in flight, which turns up in the server log as a 503 "Connection not available" or a 404 for the
+// message rather than as the slow open it was.
+const liveMailboxExpect = base.expect.configure({ timeout: 30000 });
+
+module.exports = Object.assign({}, base, { test, liveMailboxExpect });

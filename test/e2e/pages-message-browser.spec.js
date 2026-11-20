@@ -15,7 +15,7 @@
 // Run once:  npm run test:e2e:install
 // Run suite: npm run test:e2e
 
-const { test, expect, request } = require('./helpers/test');
+const { test, liveMailboxExpect: expect, request } = require('./helpers/test');
 const { useAdminSession, createApiToken, dismissTokenReveal, expectModalOpen, trackConsoleErrors, BASE_URL } = require('./helpers/bootstrap');
 const { createUsableTestAccount, etherealAccountPayload } = require('./helpers/ethereal');
 
