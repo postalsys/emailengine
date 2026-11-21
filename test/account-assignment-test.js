@@ -15,6 +15,7 @@ const {
     requeueFailedAccounts,
     forgetAccount,
     shouldRequeueFailedAssignment,
+    findUntrackedAccounts,
     planRebalance
 } = require('../lib/account-assignment');
 const { mapConcurrent } = require('../lib/utils/map-concurrent');
@@ -157,19 +158,36 @@ test('forgetAccount() handles an unassigned account and the state before the fir
 });
 
 test('shouldRequeueFailedAssignment() drops an account that no longer exists (WORK-15)', async () => {
-    const notFound = Object.assign(new Error('Account record was not found'), { statusCode: 404 });
-    assert.equal(await shouldRequeueFailedAssignment(notFound, 'a', async () => true), false, 'the worker said it is gone');
-
-    const timeout = Object.assign(new Error('Request timed out'), { code: 'Timeout', statusCode: 504 });
-    assert.equal(await shouldRequeueFailedAssignment(timeout, 'a', async () => false), false, 'deleted while the pass ran');
-    assert.equal(await shouldRequeueFailedAssignment(timeout, 'a', async () => true), true, 'a transient failure is retried');
+    assert.equal(await shouldRequeueFailedAssignment('a', async () => false), false, 'deleted, or deleted while the pass ran');
+    assert.equal(await shouldRequeueFailedAssignment('a', async () => true), true, 'a failure of a registered account is retried');
     assert.equal(
-        await shouldRequeueFailedAssignment(timeout, 'a', async () => {
+        await shouldRequeueFailedAssignment('a', async () => {
             throw new Error('Redis down');
         }),
         true,
         'an unknown membership keeps the account'
     );
+});
+
+test('shouldRequeueFailedAssignment() keeps a registered account the worker answered 404 for', async () => {
+    // A delegated account whose delegate is missing fails its assign with the same 404 a deleted
+    // account does. Deciding on the status dropped it until a restart
+    let asked = [];
+    const isRegistered = async account => {
+        asked.push(account);
+        return true;
+    };
+    assert.equal(await shouldRequeueFailedAssignment('delegated', isRegistered), true);
+    assert.deepEqual(asked, ['delegated'], 'membership decides, not the status code');
+});
+
+test('findUntrackedAccounts() returns registered accounts neither assigned nor waiting', () => {
+    const [w1] = [{ threadId: 1 }];
+    const state = makeState([w1]);
+    assign(state, w1, ['a1']);
+    state.unassigned.add('a2');
+    assert.deepEqual(findUntrackedAccounts(['a1', 'a2', 'a3', 'a3', 'a4'], state), ['a3', 'a4'], 'duplicates from SSCAN are folded');
+    assert.deepEqual(findUntrackedAccounts(new Set(['a1', 'a2']), state), []);
 });
 
 test('planRebalance() gives a late worker its share from the most loaded workers (WORK-7)', () => {

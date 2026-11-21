@@ -180,6 +180,7 @@ const {
     requeueFailedAccounts,
     forgetAccount,
     shouldRequeueFailedAssignment,
+    findUntrackedAccounts,
     planRebalance
 } = require('./lib/account-assignment');
 const { mapConcurrent } = require('./lib/utils/map-concurrent');
@@ -587,6 +588,10 @@ let reassignmentPending = false; // Flag to track if reassignment is pending
 const REASSIGNMENT_FAILSAFE_DELAY = 10 * 1000; // How long an exited IMAP worker gets to restart before its accounts move
 let assignRetryCount = 0; // Counter for safety-net retries in assignAccounts
 let assignRetryTimer = null; // The pending safety-net retry, so passes do not stack them
+// Accounts the orphan sweep adopted, announced with accountAdded once a pass actually assigns them
+// (which may be a later retry pass, not the one the sweep started)
+let announceOnAssign = new Set();
+const ORPHAN_SWEEP_INTERVAL = 60 * 60 * 1000;
 
 // Worker management
 let imapInitialWorkersLoaded = false; // Have all initial IMAP workers started?
@@ -1793,12 +1798,17 @@ async function assignAccounts() {
 
                 logger.error({ msg: 'Failed to assign account to worker', account, threadId: worker.threadId, err });
 
-                if (await shouldRequeueFailedAssignment(err, account, isRegisteredAccount)) {
+                if (await shouldRequeueFailedAssignment(account, isRegisteredAccount)) {
                     failedAccounts.push(account);
                 } else {
+                    announceOnAssign.delete(account);
                     logger.info({ msg: 'Dropped assignment of an account that no longer exists', account });
                 }
                 continue;
+            }
+
+            if (announceOnAssign.delete(account)) {
+                sendWebhook(account, ACCOUNT_ADDED_NOTIFY, { account }).catch(err => logger.error({ msg: 'Account added webhook failed', account, err }));
             }
 
             // Add delay between assignments to avoid overwhelming the system
@@ -1847,6 +1857,47 @@ async function assignAccounts() {
             assignRetryCount = 0;
         }
     }
+}
+
+/**
+ * Safety net for registered accounts the assignment state lost track of. assignAccounts() reads the
+ * registered set only on its first run, so an account whose `new` dispatch never reached the main
+ * thread (Account.notifyWorker() logs that failure rather than failing the saved create) stayed
+ * unsynced until a restart. Queues such accounts and announces each with accountAdded once a pass
+ * assigns it, since the lost dispatch was what would have announced it
+ * @returns {Promise<void>}
+ */
+async function sweepOrphanedAccounts() {
+    if (isClosing || assigning || !unassigned || !availableIMAPWorkers.size) {
+        return;
+    }
+
+    // SSCAN in batches rather than SMEMBERS, so a large account set does not stall the main thread
+    let candidates = new Set();
+    let cursor = '0';
+    do {
+        let [nextCursor, batch] = await redis.sscan(`${REDIS_PREFIX}ia:accounts`, cursor, 'COUNT', 1000);
+        cursor = nextCursor;
+        for (let account of findUntrackedAccounts(batch, { assigned, unassigned })) {
+            candidates.add(account);
+        }
+    } while (cursor !== '0' && !isClosing);
+
+    // Settled after the scan: a create has queued the account and an assignment pass may have
+    // picked some up. An account deleted during the scan is dropped by the pass's membership check
+    // after its assign fails, before anything is announced
+    let orphaned = findUntrackedAccounts(candidates, { assigned, unassigned });
+    if (!orphaned.length || isClosing) {
+        return;
+    }
+
+    logger.warn({ msg: 'Queueing registered accounts that were never assigned', count: orphaned.length, accounts: orphaned.slice(0, 20) });
+    for (let account of orphaned) {
+        unassigned.add(account);
+        announceOnAssign.add(account);
+    }
+    // When a pass is already running this returns at once; that pass's retry picks the accounts up
+    await assignAccounts();
 }
 
 // License checking state
@@ -2805,6 +2856,20 @@ async function commandNewAccount(worker, message) {
     // before that used to throw here and fail the request with a 500. Skipping the add is
     // safe rather than merely quiet: the account is already in `ia:accounts` by the time
     // this message is sent, so the first load picks it up.
+    //
+    // This dispatch announces the account itself, so the orphan sweep must not announce it again
+    announceOnAssign.delete(message.account);
+    if (assigned.has(message.account)) {
+        // Still assigned: a `delete` for an earlier account with the same id never arrived, or the
+        // orphan sweep adopted this one first. Queueing it again would let the next pass assign it to
+        // a second worker, two connections for one account. The worker holding it reconnects instead,
+        // which reloads the stored record
+        commandForwardToAccountWorker(worker, { cmd: 'reconnect', account: message.account });
+        sendWebhook(message.account, ACCOUNT_ADDED_NOTIFY, { account: message.account }).catch(err =>
+            logger.error({ msg: 'Account added webhook failed', account: message.account, err })
+        );
+        return;
+    }
     if (unassigned) {
         unassigned.add(message.account);
     }
@@ -2820,6 +2885,7 @@ async function commandDeleteAccount(worker, message) {
     // answered with a 500 for a deletion that had in fact succeeded: the account was
     // already gone from Redis by the time this message was sent.
     let assignedWorker = forgetAccount({ workerAssigned, assigned, unassigned }, message.account);
+    announceOnAssign.delete(message.account);
     if (assignedWorker) {
         // Notify worker to clean up
         call(assignedWorker, message)
@@ -3816,6 +3882,10 @@ startApplication()
         setInterval(() => {
             collectMetrics().catch(err => logger.error({ msg: 'Metrics collection failed', err }));
         }, 1000).unref();
+
+        setInterval(() => {
+            sweepOrphanedAccounts().catch(err => logger.error({ msg: 'Orphaned account sweep failed', err }));
+        }, ORPHAN_SWEEP_INTERVAL).unref();
 
         // Schedule periodic checks. A monthly-plan license, or one that is not in good standing, is
         // checked right away (unless an hour has not passed since the last check, so a restart
