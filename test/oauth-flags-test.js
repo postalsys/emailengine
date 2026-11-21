@@ -1,7 +1,7 @@
 'use strict';
 
 // Unit tests for the OAuth error-to-flag mapping in the Gmail and Outlook
-// providers (lib/oauth/gmail.js, lib/oauth/outlook.js). checkForFlags classifies
+// providers (lib/oauth/gmail.js, lib/oauth/outlook.js, lib/oauth/mail-ru.js). checkForFlags classifies
 // app-configuration errors (bad client id/secret, API not enabled, ...) and
 // checkForUserFlags classifies per-user errors (revoked/expired grant); both
 // drive admin remediation guidance and re-auth prompts. They were previously
@@ -12,6 +12,7 @@ const assert = require('node:assert').strict;
 
 const gmail = require('../lib/oauth/gmail');
 const outlook = require('../lib/oauth/outlook');
+const mailRu = require('../lib/oauth/mail-ru');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
@@ -142,5 +143,23 @@ test('Outlook checkForUserFlags', async t => {
     await t.test('returns false for non-grant errors and bad input', () => {
         assert.strictEqual(outlook.checkForUserFlags({ error: 'invalid_client', error_description: 'x' }), false);
         assert.strictEqual(outlook.checkForUserFlags(null), false);
+    });
+});
+
+test('Mail.ru checkForFlags', async t => {
+    await t.test('flags a rejected client', () => {
+        // the body Mail.ru actually returns for an unknown client id or a wrong secret
+        const flag = mailRu.checkForFlags({
+            error: 'invalid_client',
+            error_description: 'Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method)',
+            error_code: 1
+        });
+        assert.strictEqual(flag.code, 'MAILRU_INVALID_CLIENT');
+    });
+
+    await t.test('returns false for user-level errors and bad input', () => {
+        assert.strictEqual(mailRu.checkForFlags({ error: 'invalid_grant', error_description: 'x' }), false);
+        assert.strictEqual(mailRu.checkForFlags(null), false);
+        assert.strictEqual(mailRu.checkForFlags('nope'), false);
     });
 });
