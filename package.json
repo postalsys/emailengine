@@ -103,7 +103,7 @@
         "smtp-server": "3.21.7",
         "socks": "2.8.11",
         "tldts": "7.5.5",
-        "undici": "8.13.0"
+        "undici": "8.13.1"
     },
     "overrides": {
         "@hapi/bell": {
