@@ -117,6 +117,11 @@ test('getAppPassword', async t => {
         assert.strictEqual(getAppPassword('user@customdomain.com', 'gmail-smtp-in.l.google.com', gt).provider, 'Gmail');
     });
 
+    await t.test('matches Gmail by the single smtp.google.com exchange Google Workspace uses', () => {
+        assert.strictEqual(getAppPassword('user@customdomain.com', 'smtp.google.com', gt).provider, 'Gmail');
+        assert.strictEqual(getAppPassword('user@customdomain.com', 'smtp.google.com.example.net', gt), false);
+    });
+
     await t.test('returns the Microsoft warning for outlook.com exchanges', () => {
         const result = getAppPassword('user@customdomain.com', 'customdomain.mail.protection.outlook.com', gt);
         assert.strictEqual(result.provider, 'Microsoft');
@@ -1529,6 +1534,7 @@ test('MX provider chain (stand-in DNS and fetch)', async t => {
     // Each row: the exchange, the IMAP host the chain resolves it to, and the hosts it asks over HTTP
     const cases = [
         { exchange: 'gmail-smtp-in.l.google.com', imap: 'imap.gmail.com', fetched: [] },
+        { exchange: 'smtp.google.com', imap: 'imap.gmail.com', fetched: [] },
         { exchange: 'mx.yandex.net', imap: 'imap.yandex.example', fetched: ['autoconfig.yandex.ru'] },
         { exchange: 'mx3.zone.eu', imap: 'mail.zone.ee', fetched: [] },
         { exchange: 'emx.mail.larksuite.com', imap: 'imap.larksuite.com', fetched: [] },
