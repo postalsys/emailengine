@@ -271,7 +271,7 @@ test('UI route table is unchanged', async t => {
         walk(viewsDir);
 
         // The hosted setup form itself is rendered with the public layout, which already allows it
-        const PUBLIC_VIEWS = new Set(['accounts/register/index.hbs']);
+        const PUBLIC_VIEWS = new Set(['accounts/register/index.hbs', 'partials/provider_signin_button.hbs']);
         // Admin views carrying the form, and the route that renders each one
         const ADMIN_VIEWS = new Map([['accounts/account.hbs', 'GET /admin/accounts/{account}']]);
 

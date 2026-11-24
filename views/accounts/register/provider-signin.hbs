@@ -1,0 +1,58 @@
+{{!-- Hosted authentication form, IMAP path: autodiscovery recognized a Microsoft or Google mailbox
+and at least one OAuth2 application can sign it in. Each application button starts its OAuth2 flow
+exactly as the provider picker's button would, with the typed address as the sign-in hint; the
+password is not carried. "Continue with IMAP" re-submits the account details step with skipSignIn
+set, which skips this page and goes on to the server settings as before. --}}
+
+<div class="ee-center">
+    <h1>
+        {{#if isMicrosoft}}
+        {{_ "Use your Microsoft account" templateLocale }}
+        {{else}}
+        {{_ "Use your Google account" templateLocale }}
+        {{/if}}
+    </h1>
+</div>
+
+<div class="ee-provider-lead">
+    <p class="ee-provider-email"><strong>{{values.email}}</strong></p>
+    <p>
+        {{#if isMicrosoft}}
+        {{_ "This is a Microsoft mailbox. Microsoft does not accept passwords for IMAP, so sign in with your Microsoft account instead." templateLocale }}
+        {{else}}
+        {{_ "This is a Google account. Signing in with Google is the quickest way to connect it." templateLocale }}
+        {{/if}}
+    </p>
+</div>
+
+<div class="ee-providers">
+    {{#each apps}}
+    {{> provider_signin_button app=this title=displayTitle crumb=../crumb data=../values.data sig=../values.sig loginHint=../values.email}}
+    {{/each}}
+</div>
+
+<form method="post" action="/accounts/new/imap" class="ee-provider-alt">
+    <input type="hidden" name="crumb" value="{{crumb}}">
+    <input type="hidden" name="data" value="{{values.data}}">
+    <input type="hidden" name="sig" value="{{values.sig}}">
+    <input type="hidden" name="name" value="{{values.name}}">
+    <input type="hidden" name="email" value="{{values.email}}">
+    <input type="hidden" name="password" value="{{values.password}}">
+    <input type="hidden" name="skipSignIn" value="1">
+
+    <button type="submit" class="ee-btn ee-btn-soft ee-btn-primary ee-btn-sm">
+        <span class="ee-icon ee-icon-mail"></span>
+        {{#if isMicrosoft}}
+        {{_ "Continue with IMAP and a password" templateLocale }}
+        {{else}}
+        {{_ "Continue with IMAP and an app password" templateLocale }}
+        {{/if}}
+    </button>
+    <span class="ee-hint">
+        {{#if isMicrosoft}}
+        {{_ "Use this only if your mailbox is not hosted by Microsoft." templateLocale }}
+        {{else}}
+        {{_ "Google accepts IMAP only with an app password, not your regular password." templateLocale }}
+        {{/if}}
+    </span>
+</form>

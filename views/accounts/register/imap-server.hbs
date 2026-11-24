@@ -25,6 +25,21 @@ dropdown allows skipping the test. --}}
     </div>
     {{/if}}
 
+    {{!-- A Microsoft mailbox: Microsoft refuses the password over IMAP, so say so before the visitor
+    fills in the form and watches the check fail. signInNotice.noApp means no OAuth2 application
+    could have been offered instead, which only the operator can change. --}}
+    {{#if signInNotice}}
+    <div class="ee-alert ee-alert-warning">
+        <span class="ee-icon ee-icon-alert-triangle"></span>
+        <span>
+            {{_ "This looks like a Microsoft mailbox. Microsoft no longer accepts passwords for IMAP, so the connection check below is likely to fail." templateLocale }}
+            {{#if signInNotice.noApp}}
+            {{_ "Ask the service that sent you this link to enable Sign in with Microsoft." templateLocale }}
+            {{/if}}
+        </span>
+    </div>
+    {{/if}}
+
     {{!-- Set when the checking page sent the visitor here because its connection check did not pass,
     so the form says what it is for instead of appearing out of nowhere. The per-protocol detail stays
     on the page they read it on. --}}

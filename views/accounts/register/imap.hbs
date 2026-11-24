@@ -6,6 +6,9 @@ step (/accounts/new/imap/server). --}}
     <input type="hidden" name="crumb" value="{{crumb}}">
     <input type="hidden" name="data" value="{{values.data}}">
     <input type="hidden" name="sig" value="{{values.sig}}">
+    {{#if values.skipSignIn}}
+    <input type="hidden" name="skipSignIn" value="1">
+    {{/if}}
 
     <div class="ee-form-col">
 
