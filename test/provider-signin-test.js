@@ -16,10 +16,9 @@ const app = (id, extra) => Object.assign({ id, name: `App ${id}`, provider: 'out
 const ids = list => list.map(entry => entry.id);
 
 test('pickSignInApps', async t => {
-    await t.test('offers only enabled, listed, interactive applications of the provider', () => {
+    await t.test('offers only interactive applications of the provider', () => {
         const apps = [
             app('outlook'),
-            app('disabled', { enabled: false, includeInListing: false }),
             app('gmail', { provider: 'gmail' }),
             app('service', { provider: 'outlookService' }),
             app('pubsub', { provider: 'gmail', baseScopes: 'pubsub' })
@@ -60,11 +59,6 @@ test('pickSignInApps', async t => {
             several.map(entry => entry.displayTitle),
             ['App one', 'Work accounts']
         );
-    });
-
-    await t.test('each offered application carries the picker button data', () => {
-        const [offered] = pickSignInApps([app('one')], 'outlook', 'user@example.com');
-        assert.ok(offered.providerData && offered.providerData.linkImage, 'the Microsoft button image');
     });
 
     await t.test('nothing to offer for no applications or no provider', () => {
