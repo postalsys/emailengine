@@ -47,6 +47,7 @@ const {
 } = require('../lib/autodetect-imap-settings');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
+const { textResponse, autoconfigDoc } = require('./helpers/autodetect-stand-ins');
 
 registerRedisTeardown(redis);
 
@@ -1003,15 +1004,6 @@ test('runAutodiscovery', async t => {
     });
 });
 
-// A minimal Mozilla autoconfig document naming an IMAP server, optionally padded past the size cap
-const autoconfigDoc = (host, padding) => `<?xml version="1.0" encoding="UTF-8"?>
-<clientConfig version="1.1">
-  <!--${padding || ''}-->
-  <emailProvider id="example.com">
-    <incomingServer type="imap"><hostname>${host}</hostname><port>993</port><socketType>SSL</socketType></incomingServer>
-  </emailProvider>
-</clientConfig>`;
-
 const noDns = {
     resolveMx: async () => {
         throw Object.assign(new Error('ENOTFOUND'), { code: 'ENOTFOUND' });
@@ -1020,9 +1012,6 @@ const noDns = {
         throw Object.assign(new Error('ENOTFOUND'), { code: 'ENOTFOUND' });
     }
 };
-
-// A stand-in response carrying a text body, like the one runAutodiscovery's stubs return
-const textResponse = (status, body) => ({ ok: status >= 200 && status < 300, status, url: '', headers: { get: () => null }, text: async () => body || '' });
 
 test('processAutoconfigFile tolerates a server without port or socketType', async t => {
     await t.test('a missing <port> and <socketType> do not discard the document', async () => {
