@@ -47,6 +47,7 @@ const {
 } = require('../lib/autodetect-imap-settings');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
+const { textResponse, autoconfigDoc } = require('./helpers/autodetect-stand-ins');
 
 registerRedisTeardown(redis);
 
@@ -115,6 +116,11 @@ test('getAppPassword', async t => {
 
     await t.test('matches Gmail by its l.google.com exchange', () => {
         assert.strictEqual(getAppPassword('user@customdomain.com', 'gmail-smtp-in.l.google.com', gt).provider, 'Gmail');
+    });
+
+    await t.test('matches Gmail by the single smtp.google.com exchange Google Workspace uses', () => {
+        assert.strictEqual(getAppPassword('user@customdomain.com', 'smtp.google.com', gt).provider, 'Gmail');
+        assert.strictEqual(getAppPassword('user@customdomain.com', 'smtp.google.com.example.net', gt), false);
     });
 
     await t.test('returns the Microsoft warning for outlook.com exchanges', () => {
@@ -998,15 +1004,6 @@ test('runAutodiscovery', async t => {
     });
 });
 
-// A minimal Mozilla autoconfig document naming an IMAP server, optionally padded past the size cap
-const autoconfigDoc = (host, padding) => `<?xml version="1.0" encoding="UTF-8"?>
-<clientConfig version="1.1">
-  <!--${padding || ''}-->
-  <emailProvider id="example.com">
-    <incomingServer type="imap"><hostname>${host}</hostname><port>993</port><socketType>SSL</socketType></incomingServer>
-  </emailProvider>
-</clientConfig>`;
-
 const noDns = {
     resolveMx: async () => {
         throw Object.assign(new Error('ENOTFOUND'), { code: 'ENOTFOUND' });
@@ -1015,9 +1012,6 @@ const noDns = {
         throw Object.assign(new Error('ENOTFOUND'), { code: 'ENOTFOUND' });
     }
 };
-
-// A stand-in response carrying a text body, like the one runAutodiscovery's stubs return
-const textResponse = (status, body) => ({ ok: status >= 200 && status < 300, status, url: '', headers: { get: () => null }, text: async () => body || '' });
 
 test('processAutoconfigFile tolerates a server without port or socketType', async t => {
     await t.test('a missing <port> and <socketType> do not discard the document', async () => {
@@ -1529,6 +1523,7 @@ test('MX provider chain (stand-in DNS and fetch)', async t => {
     // Each row: the exchange, the IMAP host the chain resolves it to, and the hosts it asks over HTTP
     const cases = [
         { exchange: 'gmail-smtp-in.l.google.com', imap: 'imap.gmail.com', fetched: [] },
+        { exchange: 'smtp.google.com', imap: 'imap.gmail.com', fetched: [] },
         { exchange: 'mx.yandex.net', imap: 'imap.yandex.example', fetched: ['autoconfig.yandex.ru'] },
         { exchange: 'mx3.zone.eu', imap: 'mail.zone.ee', fetched: [] },
         { exchange: 'emx.mail.larksuite.com', imap: 'imap.larksuite.com', fetched: [] },

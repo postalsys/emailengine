@@ -1,7 +1,8 @@
 ---
-description: IMAP/SMTP autodiscovery: the resolver race, the Exchange POX/SOAP requirements, when credentials may be sent, and the hosted form skipping the server settings step.
+description: IMAP/SMTP autodiscovery: the resolver race, the fallback stage and its TLS probe, the Exchange POX/SOAP requirements, when credentials may be sent, and the hosted form skipping the server settings step.
 paths:
   - "lib/autodetect-imap-settings.js"
+  - "lib/mail-probe.js"
   - "lib/egress-fetch.js"
   - "lib/egress-filter.js"
   - "lib/webhook-egress.js"
@@ -35,3 +36,22 @@ The password reaches a host named by DNS records under the address domain's own 
 **An empty answer is not an answer.** `resolver()` resolves on the first branch to come back, so a resolver that parsed a response describing no server at all used to beat a slower one that had the real settings. A result naming neither an IMAP nor an SMTP host now counts as a loss for every branch, which is also what makes the hosted form say autodiscovery failed instead of rendering a form with empty server fields.
 
 Do not reach for a provider-specific rule here. Keying off the `_autodiscover._tcp` SRV target (for OVH it is the mail server itself, `:993` implicit TLS and `:587` STARTTLS) works, but SOAP autodiscovery covers the same accounts through a documented protocol and covers every other Exchange with it.
+
+## The fallback stage
+
+Most domains on small hosting providers publish nothing: no SRV records, no autoconfig document, no autodiscovery. When the MX table and the race both come back empty, `resolveUsingFallbacks()` gets a budget of its own and works from what the domain's DNS does say. In order:
+
+1. `autodiscover.<domain>` is a CNAME to `autodiscover.outlook.com`: Microsoft 365 behind a mail filter (Mailinblack, Hornetsecurity, Proofpoint), whose MX names the filter so the MX table never sees Microsoft. `_source: 'microsoft365'`.
+2. An autodiscovery host answered with a Basic challenge (hosted Exchange): stop and guess nothing. OVH runs Exchange and MX Plan mailboxes behind the same MX, so a guess would name the MX Plan server for an Exchange mailbox; the caller has to supply the password instead. `runAutodiscovery()` records the challenge through `ctx.onAuthRequired` as it happens, because a sibling lookup that outlives the budget turns the race's rejection into a timeout that would hide it.
+3. The Thunderbird directory lists one of the MX host's parent domains (`mx1.mail.ovh.net` gives `mail.ovh.net`, `ovh.net`, via `tldts`). Thunderbird takes this step itself and the racing directory lookup does not. `_source: 'mozilla-mx'`.
+4. A probe of the likely hosts finds a mail server. `_source: 'probe'`, IMAP on 993 and SMTP on 465, both implicit TLS.
+5. The SPF record includes `spf.protection.outlook.com`, and nothing above found a server of the domain's own. Sending through Microsoft says little about where the mailboxes are (hybrid setups), so it comes last.
+
+Steps 1, 3 and 5 only read DNS and one directory document, so `gatherFallbackFacts()` runs alongside the race and is thrown away when the race wins; only the probe waits for the race to fail. The race's own error is what callers get when the stage finds nothing too (`_is_last` included).
+
+The two Microsoft rules are provider-specific on purpose, against the advice above: Microsoft 365's autodiscovery does not answer for IMAP at all, which is also why the MX table carries a fixed entry for it.
+
+**The probe** (`lib/mail-probe.js`) sends a TLS ClientHello and reads the first line the server volunteers; it never logs in or writes. A host counts only with a certificate valid for the probed name, which is why an alias is probed under its CNAME target (`smtp.example.com` carrying the provider's certificate fails, the target's own name passes). IMAP needs a `* OK`/`* PREAUTH` greeting; on 465 a completed handshake is enough when the greeting is late, since SMTP servers commonly hold it back to catch clients that talk first. Candidates are capped at `MAX_PROBE_CANDIDATES` per protocol, most likely first (the MX host, `imap.`/`mail.` of the domain, CNAME targets, `imap.` under the MX host's domains; SMTP starts from `smtp.` names). IMAP is probed in one round with every candidate at once, and SMTP in a second round only when an IMAP server answered, so one lookup opens at most that many sockets at a time on every caller including `GET /v1/autoconfig`, and the two rounds of `PROBE_TIMEOUT` (2 s) fit the stage's five second budget.
+
+The probe's destinations are names from the address domain's DNS, so it applies the autodiscovery egress policy: the name is resolved, refused when any address is blocked, and the connection made to the address that was checked. It takes the route the account's IMAP connection would take: through the global mail proxy (`getMailProxyUrl()` in `lib/tools.js`, the same answer IMAP and SMTP connections get, via ImapFlow's `proxyConnection()`) when one is set. Directly, the policy-bound `createEgressLookup()` is the socket's own lookup, so the addresses vetted are the ones connected to; behind a proxy the proxy resolves the name again and only the up-front `assertAllowedUrl()` check applies, the same limitation the HTTP lookups have behind a proxy.
+
