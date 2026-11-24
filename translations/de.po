@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-11-24 10:39+0000\n"
-"PO-Revision-Date: \n"
+"POT-Creation-Date: 2026-11-24 12:12+0000\n"
+"PO-Revision-Date: 2026-11-24 12:14+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: de\n"
@@ -12,9 +12,15 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.9\n"
 
-#: lib/autodetect-imap-settings.js:169
-msgid "Microsoft has disabled password-based sign-ins (including app passwords) for Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To continue, please use the \"Sign in with Microsoft\" button to securely connect your account."
-msgstr "Microsoft erlaubt für E-Mail-Konten bei Outlook.com, Hotmail.com und Microsoft 365 keine Anmeldung mit einem Passwort mehr. Das gilt auch für App-Passwörter. Klicken Sie auf \"Sign in with Microsoft\", um Ihr Konto sicher zu verbinden und fortzufahren."
+#: lib/autodetect-imap-settings.js:172
+msgid ""
+"Microsoft no longer accepts passwords, including app passwords, for IMAP "
+"connections to Outlook.com, Hotmail.com, or Microsoft 365. Connect your "
+"account using Microsoft sign-in."
+msgstr ""
+"Microsoft akzeptiert für IMAP-Verbindungen zu Outlook.com, Hotmail.com und "
+"Microsoft 365 keine Passwörter mehr, auch keine App-Passwörter. Verbinden "
+"Sie Ihr Konto über die Anmeldung mit Microsoft."
 
 #: lib/tools.js:1789 lib/ui-routes/unsubscribe-routes.js:34
 #: lib/ui-routes/unsubscribe-routes.js:102
@@ -34,7 +40,7 @@ msgstr "Der Link zur Kontoeinrichtung ist ungültig oder abgelaufen"
 #: lib/ui-routes/account-page.js:193
 #: lib/ui-routes/admin-entities-routes.js:1984
 msgid "Server hostname was not found"
-msgstr "Server-Hostname wurde nicht gefunden"
+msgstr "Der Servername wurde nicht gefunden"
 
 #: lib/ui-routes/account-page.js:172 lib/ui-routes/account-page.js:194
 #: lib/ui-routes/admin-entities-routes.js:1987
@@ -79,31 +85,31 @@ msgstr "OAuth2-Authentifizierung fehlgeschlagen"
 msgid "Unexpected server response"
 msgstr "Unerwartete Serverantwort"
 
-#: lib/ui-routes/account-routes.js:229 lib/ui-routes/account-routes.js:795
-#: lib/ui-routes/account-routes.js:902 lib/ui-routes/account-routes.js:994
-#: lib/ui-routes/account-routes.js:1007 lib/ui-routes/account-routes.js:1055
-#: lib/ui-routes/account-routes.js:1185 lib/ui-routes/account-routes.js:1338
+#: lib/ui-routes/account-routes.js:227 lib/ui-routes/account-routes.js:789
+#: lib/ui-routes/account-routes.js:936 lib/ui-routes/account-routes.js:949
+#: lib/ui-routes/account-routes.js:997 lib/ui-routes/account-routes.js:1127
+#: lib/ui-routes/account-routes.js:1280 lib/ui-routes/provider-signin.js:160
 #: lib/ui-routes/route-helpers.js:350 lib/ui-routes/route-helpers.js:373
 #: workers/api.js:1861
 msgid "Email Account Setup"
 msgstr "E-Mail-Konto einrichten"
 
-#: lib/ui-routes/account-routes.js:377
+#: lib/ui-routes/account-routes.js:374
 msgid "Too many attempts for this setup link. Request a new setup link to continue."
 msgstr "Zu viele Versuche mit diesem Einrichtungslink. Fordern Sie einen neuen Link an, um fortzufahren."
 
-#: lib/ui-routes/account-routes.js:820 lib/ui-routes/account-routes.js:854
+#: lib/ui-routes/account-routes.js:814 lib/ui-routes/account-routes.js:848
 #: lib/ui-routes/unsubscribe-routes.js:74
 msgid "Invalid request. Check your input and try again."
 msgstr "Ungültige Anfrage. Prüfen Sie Ihre Eingaben und versuchen Sie es erneut."
 
-#: lib/ui-routes/account-routes.js:1042 lib/ui-routes/account-routes.js:1321
-msgid "Couldn't set up account. Try again."
+#: lib/ui-routes/account-routes.js:984 lib/ui-routes/account-routes.js:1263
+msgid "Couldn't set up your account. Try again."
 msgstr "Konto konnte nicht eingerichtet werden. Versuchen Sie es erneut."
 
 #: lib/ui-routes/account-setup.js:68
-msgid "Temporary error, please try again"
-msgstr "Vorübergehender Fehler, bitte versuchen Sie es erneut"
+msgid "A temporary error occurred. Try again."
+msgstr "Ein vorübergehender Fehler ist aufgetreten. Versuchen Sie es erneut."
 
 #: lib/ui-routes/admin-config-routes.js:196
 msgid "Invalid API key for OpenAI"
@@ -134,8 +140,12 @@ msgid "The server unexpectedly closed the connection. This usually happens when 
 msgstr "Der Server hat die Verbindung unerwartet geschlossen. Das passiert meist, wenn Sie sich mit einem TLS-Port verbinden, ohne TLS zu aktivieren."
 
 #: lib/ui-routes/route-helpers.js:126
-msgid "Connection timed out. This usually occurs if you are behind a firewall or connecting to the wrong port."
-msgstr "Zeitüberschreitung beim Verbindungsaufbau. Das passiert meist, wenn eine Firewall die Verbindung blockiert oder Sie den falschen Port verwenden."
+msgid ""
+"Connection timed out. A firewall may be blocking the connection, or the port "
+"may be incorrect."
+msgstr ""
+"Zeitüberschreitung beim Verbindungsaufbau. Möglicherweise blockiert eine "
+"Firewall die Verbindung oder der Port ist falsch."
 
 #: lib/ui-routes/route-helpers.js:133
 msgid "The server refused the connection. This typically occurs if the server is not running, is overloaded, or you are connecting to the wrong host or port."
@@ -158,7 +168,7 @@ msgstr "Abonnement verwalten"
 
 #: lib/ui-routes/unsubscribe-routes.js:189
 #: lib/ui-routes/unsubscribe-routes.js:238
-msgid "Couldn't process request. Try again."
+msgid "Couldn't process your request. Try again."
 msgstr "Die Anfrage konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut."
 
 #: views/account-identity-error.hbs:7
@@ -166,7 +176,9 @@ msgid "Wrong Email Account"
 msgstr "Falsches E-Mail-Konto"
 
 #: views/account-identity-error.hbs:12
-msgid "This setup link can only be used with one specific email account, and a different one was used."
+msgid ""
+"This setup link is for a specific email account. You signed in with a "
+"different account."
 msgstr "Dieser Einrichtungslink ist für ein bestimmtes E-Mail-Konto vorgesehen. Sie haben sich jedoch mit einem anderen Konto angemeldet."
 
 #: views/account-identity-error.hbs:18
@@ -187,30 +199,42 @@ msgid "Try Again"
 msgstr "Noch einmal versuchen"
 
 #: views/account-workspace-error.hbs:7
-msgid "Work Account Required"
-msgstr ""
+msgid "Work or school account required"
+msgstr "Geschäfts- oder Schulkonto erforderlich"
 
 #: views/account-workspace-error.hbs:12
-msgid "This setup accepts only a Google Workspace account, and a personal Google account was used."
+msgid ""
+"This setup requires a Google Workspace account. You signed in with a "
+"personal Google account."
 msgstr ""
+"Für diese Einrichtung ist ein Google Workspace-Konto erforderlich. Sie haben "
+"sich mit einem privaten Google-Konto angemeldet."
 
 #: views/account-workspace-error.hbs:23
 msgid "Try again and sign in with your work or school account. If you believe this is a mistake, contact the service that sent you this link."
 msgstr ""
+"Versuchen Sie es erneut und melden Sie sich mit Ihrem Geschäfts- oder "
+"Schulkonto an. Wenn Sie einen Fehler vermuten, wenden Sie sich an den "
+"Anbieter, der Ihnen diesen Link geschickt hat."
 
 #: views/accounts/register/imap-server.hbs:23
 msgid "Server settings could not be detected automatically for %s. Enter them below."
 msgstr "Die Servereinstellungen für %s konnten nicht automatisch ermittelt werden. Geben Sie sie unten ein."
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
 #: views/accounts/register/imap-server.hbs:35
-msgid "This looks like a Microsoft mailbox. Microsoft no longer accepts passwords for IMAP, so the connection check below is likely to fail."
-msgstr "Dies scheint ein Microsoft-Postfach zu sein. Microsoft akzeptiert keine Passwörter mehr für IMAP, daher wird die Verbindungsprüfung unten wahrscheinlich fehlschlagen."
+msgid ""
+"This appears to be a Microsoft mailbox. Microsoft no longer accepts "
+"passwords for IMAP, so the connection test is likely to fail."
+msgstr ""
+"Dies scheint ein Microsoft-Postfach zu sein. Microsoft unterstützt keine "
+"Anmeldung mit Passwort über IMAP mehr. Der Verbindungstest wird daher "
+"wahrscheinlich fehlschlagen."
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
 #: views/accounts/register/imap-server.hbs:37
-msgid "Ask the service that sent you this link to enable Sign in with Microsoft."
-msgstr "Bitten Sie den Dienst, der Ihnen diesen Link gesendet hat, die Anmeldung mit Microsoft zu aktivieren."
+msgid "Ask the service that sent you this link to enable Microsoft sign-in."
+msgstr ""
+"Bitten Sie den Anbieter, der Ihnen diesen Link geschickt hat, die Anmeldung "
+"mit Microsoft zu aktivieren."
 
 #: views/accounts/register/imap-server.hbs:49
 msgid "We couldn't sign in to your mail server with those settings. Check them and try again."
@@ -243,12 +267,12 @@ msgstr "Anleitung"
 
 #: views/accounts/register/imap-server.hbs:98
 #: views/accounts/register/imap-server.hbs:205
-msgid "%s accounts require an application password for %s."
+msgid "%s accounts require an app password for %s."
 msgstr "%s-Konten benötigen für %s ein App-Passwort."
 
 #: views/accounts/register/imap-server.hbs:107
 #: views/accounts/register/imap-server.hbs:214
-msgid "Application Password"
+msgid "App password"
 msgstr "App-Passwort"
 
 #: views/accounts/register/imap-server.hbs:121
@@ -266,8 +290,13 @@ msgid "TLS for IMAP"
 msgstr "TLS für IMAP"
 
 #: views/accounts/register/imap-server.hbs:147
-msgid "TLS (also known as SSL) is usually only needed when using port 993. For other ports EmailEngine falls back to using STARTTLS based encryption."
-msgstr "TLS (auch als SSL bekannt) wird normalerweise nur für Port 993 benötigt. Bei anderen Ports verwendet EmailEngine eine Verschlüsselung per STARTTLS."
+msgid ""
+"Enable this option for a direct TLS connection, usually on port 993. "
+"Otherwise, EmailEngine uses STARTTLS if the server supports it."
+msgstr ""
+"Aktivieren Sie diese Option für eine direkte TLS-Verbindung, normalerweise "
+"über Port 993. Andernfalls verwendet EmailEngine STARTTLS, sofern der Server "
+"es unterstützt."
 
 #: views/accounts/register/imap-server.hbs:154
 #: views/accounts/register/imap-server.hbs:261
@@ -283,8 +312,13 @@ msgid "TLS for SMTP"
 msgstr "TLS für SMTP"
 
 #: views/accounts/register/imap-server.hbs:254
-msgid "TLS (also known as SSL) is usually only needed when using port 465. For other ports EmailEngine falls back to using STARTTLS based encryption."
-msgstr "TLS (auch als SSL bekannt) wird normalerweise nur für Port 465 benötigt. Bei anderen Ports verwendet EmailEngine eine Verschlüsselung per STARTTLS."
+msgid ""
+"Enable this option for a direct TLS connection, usually on port 465. "
+"Otherwise, EmailEngine uses STARTTLS if the server supports it."
+msgstr ""
+"Aktivieren Sie diese Option für eine direkte TLS-Verbindung, normalerweise "
+"über Port 465. Andernfalls verwendet EmailEngine STARTTLS, sofern der Server "
+"es unterstützt."
 
 #: views/accounts/register/imap-server.hbs:274
 msgid "Verify connection"
@@ -295,8 +329,8 @@ msgid "Save and continue"
 msgstr "Speichern und weiter"
 
 #: views/accounts/register/imap-server.hbs:285
-msgid "Toggle Dropdown"
-msgstr "Menü öffnen oder schließen"
+msgid "Show or hide options"
+msgstr "Optionen ein- oder ausblenden"
 
 #: views/accounts/register/imap-server.hbs:289
 msgid "Skip verification"
@@ -308,7 +342,8 @@ msgstr "Verbindungstest fehlgeschlagen"
 
 #: views/accounts/register/imap-server.hbs:303
 #: views/accounts/register/imap-server.hbs:312
-#: views/partials/public_alerts.hbs:11 views/unsubscribe.hbs:33
+#: views/partials/public_alerts.hbs:11 views/unsubscribe.hbs:19
+#: views/unsubscribe.hbs:33
 msgid "Close"
 msgstr "Schließen"
 
@@ -353,45 +388,50 @@ msgstr "Wählen Sie Ihren E-Mail-Anbieter"
 msgid "Standard IMAP"
 msgstr "Standard-IMAP"
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
 #: views/accounts/register/provider-signin.hbs:10
-msgid "Use your Microsoft account"
-msgstr "Ihr Microsoft-Konto verwenden"
+msgid "Sign in with your Microsoft account"
+msgstr "Mit Ihrem Microsoft-Konto anmelden"
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
 #: views/accounts/register/provider-signin.hbs:12
-msgid "Use your Google account"
-msgstr "Ihr Google-Konto verwenden"
+msgid "Sign in with your Google account"
+msgstr "Mit Ihrem Google-Konto anmelden"
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
 #: views/accounts/register/provider-signin.hbs:21
-msgid "This is a Microsoft mailbox. Microsoft does not accept passwords for IMAP, so sign in with your Microsoft account instead."
-msgstr "Dies ist ein Microsoft-Postfach. Microsoft akzeptiert keine Passwörter für IMAP. Melden Sie sich stattdessen mit Ihrem Microsoft-Konto an."
+msgid ""
+"This appears to be a Microsoft mailbox. Sign in with Microsoft to connect "
+"it. Password sign-in over IMAP is no longer supported."
+msgstr ""
+"Dies scheint ein Microsoft-Postfach zu sein. Melden Sie sich mit Microsoft "
+"an, um es zu verbinden. Die Anmeldung mit Passwort über IMAP wird nicht mehr "
+"unterstützt."
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
 #: views/accounts/register/provider-signin.hbs:23
-msgid "This is a Google account. Signing in with Google is the quickest way to connect it."
-msgstr "Dies ist ein Google-Konto. Die Anmeldung mit Google ist der schnellste Weg, es zu verbinden."
+msgid "This appears to be a Google account. Sign in with Google to connect it."
+msgstr ""
+"Dies scheint ein Google-Konto zu sein. Melden Sie sich mit Google an, um es "
+"zu verbinden."
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
-#: views/accounts/register/provider-signin.hbs:67
-msgid "Continue with IMAP and a password"
-msgstr "Mit IMAP und Passwort fortfahren"
+#: views/accounts/register/provider-signin.hbs:46
+msgid "Use IMAP with a password"
+msgstr "IMAP mit Passwort verwenden"
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
-#: views/accounts/register/provider-signin.hbs:69
-msgid "Continue with IMAP and an app password"
-msgstr "Mit IMAP und App-Passwort fortfahren"
+#: views/accounts/register/provider-signin.hbs:48
+msgid "Use IMAP with an app password"
+msgstr "IMAP mit App-Passwort verwenden"
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
-#: views/accounts/register/provider-signin.hbs:74
-msgid "Use this only if your mailbox is not hosted by Microsoft."
-msgstr "Verwenden Sie dies nur, wenn Ihr Postfach nicht bei Microsoft gehostet wird."
+#: views/accounts/register/provider-signin.hbs:53
+msgid "Choose this option only if your mailbox is hosted by another provider."
+msgstr ""
+"Wählen Sie diese Option nur, wenn Ihr Postfach bei einem anderen Anbieter "
+"liegt."
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
-#: views/accounts/register/provider-signin.hbs:76
-msgid "Google accepts IMAP only with an app password, not your regular password."
-msgstr "Google akzeptiert IMAP nur mit einem App-Passwort, nicht mit Ihrem normalen Passwort."
+#: views/accounts/register/provider-signin.hbs:55
+msgid ""
+"This option requires a Google app password. Your regular password will not "
+"work."
+msgstr ""
+"Für diese Option benötigen Sie ein Google-App-Passwort. Ihr normales "
+"Passwort funktioniert hier nicht."
 
 #: views/accounts/register/validating.hbs:35
 msgid "Checking your mail server"
@@ -452,8 +492,12 @@ msgid "Insufficient Permissions"
 msgstr "Fehlende Berechtigungen"
 
 #: views/oauth-scope-error.hbs:10
-msgid "All requested permissions are required for this service to function properly. Some required permissions were not granted during sign-in."
-msgstr "Damit dieser Dienst richtig funktioniert, benötigt er alle angeforderten Berechtigungen. Einige davon wurden bei der Anmeldung nicht erteilt."
+msgid ""
+"Some permissions were not granted during sign-in. This service needs all the "
+"requested permissions to work."
+msgstr ""
+"Bei der Anmeldung wurden einige Berechtigungen nicht erteilt. Dieser Dienst "
+"benötigt alle angeforderten Berechtigungen, um zu funktionieren."
 
 #: views/oauth-scope-error.hbs:14
 msgid "The following permissions were not granted:"
@@ -461,7 +505,9 @@ msgstr "Die folgenden Berechtigungen wurden nicht erteilt:"
 
 #: views/oauth-scope-error.hbs:23
 msgid "Please try again and make sure all permission checkboxes are selected on the Google consent screen."
-msgstr "Versuchen Sie es erneut und achten Sie darauf, dass auf der Google-Seite zur Einwilligung alle Kästchen für die angeforderten Berechtigungen angekreuzt sind."
+msgstr ""
+"Versuchen Sie es erneut und wählen Sie auf der Google-Seite zur Freigabe "
+"alle angeforderten Berechtigungen aus."
 
 #: views/partials/public_test_labels.hbs:9
 msgid "Error"
@@ -488,39 +534,39 @@ msgid "Request failed."
 msgstr "Anfrage fehlgeschlagen."
 
 #: views/queues/index.hbs:49
-msgid "%d job at a time each"
-msgid_plural "%d jobs at a time each"
-msgstr[0] ""
-msgstr[1] ""
+msgid "%d job at a time per worker"
+msgid_plural "%d jobs at a time per worker"
+msgstr[0] "%d Auftrag gleichzeitig pro Thread"
+msgstr[1] "%d Aufträge gleichzeitig pro Thread"
 
 #: views/queues/index.hbs:49
 msgid "%d worker thread"
 msgid_plural "%d worker threads"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%d Worker-Thread"
+msgstr[1] "%d Worker-Threads"
 
 #: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr "Klicken Sie <a href=\"%s\">hier</a>, um fortzufahren&mldr;"
+msgid "<a href=\"%s\">Continue</a>"
+msgstr "<a href=\"%s\">Weiter</a>"
 
 #: views/unsubscribe.hbs:7 views/unsubscribe.hbs:60 views/unsubscribe.hbs:76
 msgid "Unsubscribe"
 msgstr "Abbestellen"
 
 #: views/unsubscribe.hbs:9
-msgid "Your email address was unsubscribed."
+msgid "You have been unsubscribed."
 msgstr "Ihre E-Mail-Adresse wurde aus dem Verteiler ausgetragen."
 
 #: views/unsubscribe.hbs:11
-msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
-msgstr "War das ein Versehen? Klicken Sie <a%s>hier</a>, um Ihr Abonnement wieder zu aktivieren."
+msgid "Unsubscribed by mistake? <a%s>Subscribe again</a>."
+msgstr "Versehentlich abgemeldet? <a%s>Erneut abonnieren</a>."
 
 #: views/unsubscribe.hbs:18
-msgid "Re-subscribe"
+msgid "Subscribe again"
 msgstr "Erneut abonnieren"
 
 #: views/unsubscribe.hbs:24
-msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
+msgid "Subscribe again with <em>%s</em>?"
 msgstr "Möchten Sie Ihre E-Mail-Adresse <em>%s</em> wirklich wieder in den Verteiler aufnehmen lassen?"
 
 #: views/unsubscribe.hbs:35
@@ -532,7 +578,7 @@ msgid "Subscription resumed"
 msgstr "Abonnement wieder aktiviert"
 
 #: views/unsubscribe.hbs:56
-msgid "Your email address <em>%s</em> was re-subscribed."
+msgid "You have subscribed again with <em>%s</em>."
 msgstr "Ihre E-Mail-Adresse <em>%s</em> wurde erneut in den Verteiler aufgenommen."
 
 #: views/unsubscribe.hbs:83

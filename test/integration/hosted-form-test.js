@@ -582,7 +582,7 @@ test('Hosted form offers OAuth2 sign-in for a recognized mailbox', async t => {
 
         assert.equal(res.status, 200, `expected 200, got ${res.status}`);
         assert.ok(res.text.includes('id="settings-form"'), 'expected the server settings form');
-        assert.ok(res.text.includes('This looks like a Microsoft mailbox'), 'expected the Microsoft notice');
+        assert.ok(res.text.includes('This appears to be a Microsoft mailbox'), 'expected the Microsoft notice');
     });
 
     await t.test('a link minted for IMAP carries the skip from its first page', async () => {

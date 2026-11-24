@@ -4,12 +4,12 @@ account-identity-error.hbs and oauth-scope-error.hbs - the user made a correctab
 stops here with a way back rather than bouncing them to the calling application. --}}
 
 <div class="ee-center">
-    <h1>{{_ "Work Account Required" templateLocale}}</h1>
+    <h1>{{_ "Work or school account required" templateLocale}}</h1>
 </div>
 
 <div class="ee-alert ee-alert-error">
     <span class="ee-icon ee-icon-alert-triangle ee-icon-lg"></span>
-    <span>{{_ "This setup accepts only a Google Workspace account, and a personal Google account was used." templateLocale}}</span>
+    <span>{{_ "This setup requires a Google Workspace account. You signed in with a personal Google account." templateLocale}}</span>
 </div>
 
 {{#if actualEmail}}

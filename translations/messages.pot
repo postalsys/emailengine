@@ -1,14 +1,13 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-11-24 10:39+0000\n"
+"POT-Creation-Date: 2026-11-24 12:12+0000\n"
 
-#: lib/autodetect-imap-settings.js:169
+#: lib/autodetect-imap-settings.js:172
 msgid ""
-"Microsoft has disabled password-based sign-ins (including app passwords) "
-"for Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To "
-"continue, please use the \"Sign in with Microsoft\" button to securely "
-"connect your account."
+"Microsoft no longer accepts passwords, including app passwords, for IMAP "
+"connections to Outlook.com, Hotmail.com, or Microsoft 365. Connect your "
+"account using Microsoft sign-in."
 msgstr ""
 
 #: lib/tools.js:1789
@@ -87,37 +86,37 @@ msgstr ""
 msgid "Unexpected server response"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:229
-#: lib/ui-routes/account-routes.js:795
-#: lib/ui-routes/account-routes.js:902
-#: lib/ui-routes/account-routes.js:994
-#: lib/ui-routes/account-routes.js:1007
-#: lib/ui-routes/account-routes.js:1055
-#: lib/ui-routes/account-routes.js:1185
-#: lib/ui-routes/account-routes.js:1338
+#: lib/ui-routes/account-routes.js:227
+#: lib/ui-routes/account-routes.js:789
+#: lib/ui-routes/account-routes.js:936
+#: lib/ui-routes/account-routes.js:949
+#: lib/ui-routes/account-routes.js:997
+#: lib/ui-routes/account-routes.js:1127
+#: lib/ui-routes/account-routes.js:1280
+#: lib/ui-routes/provider-signin.js:160
 #: lib/ui-routes/route-helpers.js:350
 #: lib/ui-routes/route-helpers.js:373
 #: workers/api.js:1861
 msgid "Email Account Setup"
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:377
+#: lib/ui-routes/account-routes.js:374
 msgid "Too many attempts for this setup link. Request a new setup link to continue."
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:820
-#: lib/ui-routes/account-routes.js:854
+#: lib/ui-routes/account-routes.js:814
+#: lib/ui-routes/account-routes.js:848
 #: lib/ui-routes/unsubscribe-routes.js:74
 msgid "Invalid request. Check your input and try again."
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:1042
-#: lib/ui-routes/account-routes.js:1321
-msgid "Couldn't set up account. Try again."
+#: lib/ui-routes/account-routes.js:984
+#: lib/ui-routes/account-routes.js:1263
+msgid "Couldn't set up your account. Try again."
 msgstr ""
 
 #: lib/ui-routes/account-setup.js:68
-msgid "Temporary error, please try again"
+msgid "A temporary error occurred. Try again."
 msgstr ""
 
 #: lib/ui-routes/admin-config-routes.js:196
@@ -154,8 +153,8 @@ msgstr ""
 
 #: lib/ui-routes/route-helpers.js:126
 msgid ""
-"Connection timed out. This usually occurs if you are behind a firewall or "
-"connecting to the wrong port."
+"Connection timed out. A firewall may be blocking the connection, or the "
+"port may be incorrect."
 msgstr ""
 
 #: lib/ui-routes/route-helpers.js:133
@@ -181,7 +180,7 @@ msgstr ""
 
 #: lib/ui-routes/unsubscribe-routes.js:189
 #: lib/ui-routes/unsubscribe-routes.js:238
-msgid "Couldn't process request. Try again."
+msgid "Couldn't process your request. Try again."
 msgstr ""
 
 #: views/account-identity-error.hbs:7
@@ -190,8 +189,8 @@ msgstr ""
 
 #: views/account-identity-error.hbs:12
 msgid ""
-"This setup link can only be used with one specific email account, and a "
-"different one was used."
+"This setup link is for a specific email account. You signed in with a "
+"different account."
 msgstr ""
 
 #: views/account-identity-error.hbs:18
@@ -216,13 +215,13 @@ msgid "Try Again"
 msgstr ""
 
 #: views/account-workspace-error.hbs:7
-msgid "Work Account Required"
+msgid "Work or school account required"
 msgstr ""
 
 #: views/account-workspace-error.hbs:12
 msgid ""
-"This setup accepts only a Google Workspace account, and a personal Google "
-"account was used."
+"This setup requires a Google Workspace account. You signed in with a "
+"personal Google account."
 msgstr ""
 
 #: views/account-workspace-error.hbs:23
@@ -239,12 +238,12 @@ msgstr ""
 
 #: views/accounts/register/imap-server.hbs:35
 msgid ""
-"This looks like a Microsoft mailbox. Microsoft no longer accepts passwords "
-"for IMAP, so the connection check below is likely to fail."
+"This appears to be a Microsoft mailbox. Microsoft no longer accepts "
+"passwords for IMAP, so the connection test is likely to fail."
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:37
-msgid "Ask the service that sent you this link to enable Sign in with Microsoft."
+msgid "Ask the service that sent you this link to enable Microsoft sign-in."
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:49
@@ -280,12 +279,12 @@ msgstr ""
 
 #: views/accounts/register/imap-server.hbs:98
 #: views/accounts/register/imap-server.hbs:205
-msgid "%s accounts require an application password for %s."
+msgid "%s accounts require an app password for %s."
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:107
 #: views/accounts/register/imap-server.hbs:214
-msgid "Application Password"
+msgid "App password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:121
@@ -304,8 +303,8 @@ msgstr ""
 
 #: views/accounts/register/imap-server.hbs:147
 msgid ""
-"TLS (also known as SSL) is usually only needed when using port 993. For "
-"other ports EmailEngine falls back to using STARTTLS based encryption."
+"Enable this option for a direct TLS connection, usually on port 993. "
+"Otherwise, EmailEngine uses STARTTLS if the server supports it."
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:154
@@ -323,8 +322,8 @@ msgstr ""
 
 #: views/accounts/register/imap-server.hbs:254
 msgid ""
-"TLS (also known as SSL) is usually only needed when using port 465. For "
-"other ports EmailEngine falls back to using STARTTLS based encryption."
+"Enable this option for a direct TLS connection, usually on port 465. "
+"Otherwise, EmailEngine uses STARTTLS if the server supports it."
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:274
@@ -336,7 +335,7 @@ msgid "Save and continue"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:285
-msgid "Toggle Dropdown"
+msgid "Show or hide options"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:289
@@ -350,6 +349,7 @@ msgstr ""
 #: views/accounts/register/imap-server.hbs:303
 #: views/accounts/register/imap-server.hbs:312
 #: views/partials/public_alerts.hbs:11
+#: views/unsubscribe.hbs:19
 #: views/unsubscribe.hbs:33
 msgid "Close"
 msgstr ""
@@ -397,39 +397,39 @@ msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/provider-signin.hbs:10
-msgid "Use your Microsoft account"
+msgid "Sign in with your Microsoft account"
 msgstr ""
 
 #: views/accounts/register/provider-signin.hbs:12
-msgid "Use your Google account"
+msgid "Sign in with your Google account"
 msgstr ""
 
 #: views/accounts/register/provider-signin.hbs:21
 msgid ""
-"This is a Microsoft mailbox. Microsoft does not accept passwords for IMAP, "
-"so sign in with your Microsoft account instead."
+"This appears to be a Microsoft mailbox. Sign in with Microsoft to connect "
+"it. Password sign-in over IMAP is no longer supported."
 msgstr ""
 
 #: views/accounts/register/provider-signin.hbs:23
+msgid "This appears to be a Google account. Sign in with Google to connect it."
+msgstr ""
+
+#: views/accounts/register/provider-signin.hbs:46
+msgid "Use IMAP with a password"
+msgstr ""
+
+#: views/accounts/register/provider-signin.hbs:48
+msgid "Use IMAP with an app password"
+msgstr ""
+
+#: views/accounts/register/provider-signin.hbs:53
+msgid "Choose this option only if your mailbox is hosted by another provider."
+msgstr ""
+
+#: views/accounts/register/provider-signin.hbs:55
 msgid ""
-"This is a Google account. Signing in with Google is the quickest way to "
-"connect it."
-msgstr ""
-
-#: views/accounts/register/provider-signin.hbs:67
-msgid "Continue with IMAP and a password"
-msgstr ""
-
-#: views/accounts/register/provider-signin.hbs:69
-msgid "Continue with IMAP and an app password"
-msgstr ""
-
-#: views/accounts/register/provider-signin.hbs:74
-msgid "Use this only if your mailbox is not hosted by Microsoft."
-msgstr ""
-
-#: views/accounts/register/provider-signin.hbs:76
-msgid "Google accepts IMAP only with an app password, not your regular password."
+"This option requires a Google app password. Your regular password will not "
+"work."
 msgstr ""
 
 #: views/accounts/register/validating.hbs:35
@@ -493,8 +493,8 @@ msgstr ""
 
 #: views/oauth-scope-error.hbs:10
 msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
+"Some permissions were not granted during sign-in. This service needs all "
+"the requested permissions to work."
 msgstr ""
 
 #: views/oauth-scope-error.hbs:14
@@ -532,8 +532,8 @@ msgid "Request failed."
 msgstr ""
 
 #: views/queues/index.hbs:49
-msgid "%d job at a time each"
-msgid_plural "%d jobs at a time each"
+msgid "%d job at a time per worker"
+msgid_plural "%d jobs at a time per worker"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -544,7 +544,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgid "<a href=\"%s\">Continue</a>"
 msgstr ""
 
 #: views/unsubscribe.hbs:7
@@ -554,19 +554,19 @@ msgid "Unsubscribe"
 msgstr ""
 
 #: views/unsubscribe.hbs:9
-msgid "Your email address was unsubscribed."
+msgid "You have been unsubscribed."
 msgstr ""
 
 #: views/unsubscribe.hbs:11
-msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
+msgid "Unsubscribed by mistake? <a%s>Subscribe again</a>."
 msgstr ""
 
 #: views/unsubscribe.hbs:18
-msgid "Re-subscribe"
+msgid "Subscribe again"
 msgstr ""
 
 #: views/unsubscribe.hbs:24
-msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
+msgid "Subscribe again with <em>%s</em>?"
 msgstr ""
 
 #: views/unsubscribe.hbs:35
@@ -578,7 +578,7 @@ msgid "Subscription resumed"
 msgstr ""
 
 #: views/unsubscribe.hbs:56
-msgid "Your email address <em>%s</em> was re-subscribed."
+msgid "You have subscribed again with <em>%s</em>."
 msgstr ""
 
 #: views/unsubscribe.hbs:83

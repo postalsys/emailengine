@@ -955,6 +955,15 @@ dialog.ee-modal.ee-modal-wide {
     text-align: center;
 }
 
+/* Translated labels can wrap without extending beyond the text column. */
+.ee-provider-alt > .ee-btn {
+    max-width: 100%;
+    height: auto;
+    min-height: 1.875rem;
+    padding-block: 0.25rem;
+    white-space: normal;
+}
+
 /* provider sign-in images (e.g. the Google / Microsoft branded buttons) */
 .ee-provider-image {
     display: block;

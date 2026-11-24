@@ -7,9 +7,9 @@ set, which skips this page and goes on to the server settings as before. --}}
 <div class="ee-center">
     <h1>
         {{#if isMicrosoft}}
-        {{_ "Use your Microsoft account" templateLocale }}
+        {{_ "Sign in with your Microsoft account" templateLocale }}
         {{else}}
-        {{_ "Use your Google account" templateLocale }}
+        {{_ "Sign in with your Google account" templateLocale }}
         {{/if}}
     </h1>
 </div>
@@ -18,9 +18,9 @@ set, which skips this page and goes on to the server settings as before. --}}
     <p class="ee-provider-email"><strong>{{values.email}}</strong></p>
     <p>
         {{#if isMicrosoft}}
-        {{_ "This is a Microsoft mailbox. Microsoft does not accept passwords for IMAP, so sign in with your Microsoft account instead." templateLocale }}
+        {{_ "This appears to be a Microsoft mailbox. Sign in with Microsoft to connect it. Password sign-in over IMAP is no longer supported." templateLocale }}
         {{else}}
-        {{_ "This is a Google account. Signing in with Google is the quickest way to connect it." templateLocale }}
+        {{_ "This appears to be a Google account. Sign in with Google to connect it." templateLocale }}
         {{/if}}
     </p>
 </div>
@@ -43,16 +43,16 @@ set, which skips this page and goes on to the server settings as before. --}}
     <button type="submit" class="ee-btn ee-btn-soft ee-btn-primary ee-btn-sm">
         <span class="ee-icon ee-icon-mail"></span>
         {{#if isMicrosoft}}
-        {{_ "Continue with IMAP and a password" templateLocale }}
+        {{_ "Use IMAP with a password" templateLocale }}
         {{else}}
-        {{_ "Continue with IMAP and an app password" templateLocale }}
+        {{_ "Use IMAP with an app password" templateLocale }}
         {{/if}}
     </button>
     <span class="ee-hint">
         {{#if isMicrosoft}}
-        {{_ "Use this only if your mailbox is not hosted by Microsoft." templateLocale }}
+        {{_ "Choose this option only if your mailbox is hosted by another provider." templateLocale }}
         {{else}}
-        {{_ "Google accepts IMAP only with an app password, not your regular password." templateLocale }}
+        {{_ "This option requires a Google app password. Your regular password will not work." templateLocale }}
         {{/if}}
     </span>
 </form>

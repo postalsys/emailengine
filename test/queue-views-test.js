@@ -318,7 +318,7 @@ test('queue overview', async t => {
             assert.match(html, new RegExp(`queue-clean-btn" data-queue="${name}"[^>]*data-state="failed"`));
         }
         // the facts tooltips put one fact per line (the newline survives into the attribute-free body)
-        assert.match(html, /<span class="tooltip-body whitespace-pre-line text-start">1 worker thread \(W\)\n2 jobs at a time each \(C\)<\/span>/);
+        assert.match(html, /<span class="tooltip-body whitespace-pre-line text-start">1 worker thread \(W\)\n2 jobs at a time per worker \(C\)<\/span>/);
         assert.match(
             html,
             /up to 100 messages \(EENGINE_QUEUE_KEEP_FAILED_CONTENT\)\nup to 100 MB in total \(EENGINE_QUEUE_KEEP_FAILED_CONTENT_SIZE\)\nfor 7 days \(EENGINE_QUEUE_KEEP_FAILED_AGE\)/

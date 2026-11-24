@@ -104,7 +104,7 @@ test('completeAccountSetup', async t => {
         const accountObject = createAccountObject();
         await assert.rejects(completeAccountSetup(createRequest(), { accountObject, accountData: {}, nonce }), err => {
             assert.equal(err.output.statusCode, 500);
-            assert.equal(err.message, '[xx] Temporary error, please try again');
+            assert.equal(err.message, '[xx] A temporary error occurred. Try again.');
             return true;
         });
         assert.equal(accountObject.created.length, 0);

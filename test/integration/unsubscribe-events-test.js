@@ -150,7 +150,7 @@ test('Unsubscribe / resubscribe webhook events', async t => {
         const crumb = crumbFromPage(pageRes.text);
 
         const res = await server.post('/unsubscribe/address').type('form').send({ action: 'unsubscribe', data, sig, crumb }).expect(200);
-        assert.match(res.text, /was unsubscribed/, 'the page should confirm the unsubscribe');
+        assert.match(res.text, /You have been unsubscribed\./, 'the page should confirm the unsubscribe');
 
         // Authoritative, deterministic check.
         const entry = await blocklistEntry(listIdForm, rcpt);
@@ -172,7 +172,8 @@ test('Unsubscribe / resubscribe webhook events', async t => {
         const crumb = crumbFromPage(pageRes.text);
 
         const res = await server.post('/unsubscribe/address').type('form').send({ action: 'subscribe', data, sig, crumb }).expect(200);
-        assert.match(res.text, /re-subscribed|Subscription resumed/, 'the page should confirm the resubscribe');
+        assert.match(res.text, /Subscription resumed/, 'the page should confirm the resubscribe');
+        assert.match(res.text, /You have subscribed again with/, 'the page should name the address subscribed again');
 
         // Authoritative, deterministic check: resubscribe cleared the suppression entry.
         const entry = await blocklistEntry(listIdForm, rcpt);

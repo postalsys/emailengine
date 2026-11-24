@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-11-24 10:39+0000\n"
-"PO-Revision-Date: \n"
+"POT-Creation-Date: 2026-11-24 12:12+0000\n"
+"PO-Revision-Date: 2026-11-24 12:14+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: sv\n"
@@ -11,9 +11,15 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: lib/autodetect-imap-settings.js:169
-msgid "Microsoft has disabled password-based sign-ins (including app passwords) for Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To continue, please use the \"Sign in with Microsoft\" button to securely connect your account."
-msgstr "Microsoft tillåter inte längre inloggning med lösenord för e-postkonton hos Outlook.com, Hotmail.com och Microsoft 365. Det gäller även applösenord. Klicka på \"Sign in with Microsoft\" för att ansluta ditt konto säkert och fortsätta."
+#: lib/autodetect-imap-settings.js:172
+msgid ""
+"Microsoft no longer accepts passwords, including app passwords, for IMAP "
+"connections to Outlook.com, Hotmail.com, or Microsoft 365. Connect your "
+"account using Microsoft sign-in."
+msgstr ""
+"Microsoft tillåter inte längre inloggning med lösenord via IMAP för "
+"Outlook.com, Hotmail.com eller Microsoft 365. Det gäller även applösenord. "
+"Logga in med Microsoft för att ansluta ditt konto."
 
 #: lib/tools.js:1789 lib/ui-routes/unsubscribe-routes.js:34
 #: lib/ui-routes/unsubscribe-routes.js:102
@@ -78,31 +84,31 @@ msgstr "Inloggningen med OAuth2 misslyckades"
 msgid "Unexpected server response"
 msgstr "Oväntat svar från servern"
 
-#: lib/ui-routes/account-routes.js:229 lib/ui-routes/account-routes.js:795
-#: lib/ui-routes/account-routes.js:902 lib/ui-routes/account-routes.js:994
-#: lib/ui-routes/account-routes.js:1007 lib/ui-routes/account-routes.js:1055
-#: lib/ui-routes/account-routes.js:1185 lib/ui-routes/account-routes.js:1338
+#: lib/ui-routes/account-routes.js:227 lib/ui-routes/account-routes.js:789
+#: lib/ui-routes/account-routes.js:936 lib/ui-routes/account-routes.js:949
+#: lib/ui-routes/account-routes.js:997 lib/ui-routes/account-routes.js:1127
+#: lib/ui-routes/account-routes.js:1280 lib/ui-routes/provider-signin.js:160
 #: lib/ui-routes/route-helpers.js:350 lib/ui-routes/route-helpers.js:373
 #: workers/api.js:1861
 msgid "Email Account Setup"
 msgstr "Anslut e-postkonto"
 
-#: lib/ui-routes/account-routes.js:377
+#: lib/ui-routes/account-routes.js:374
 msgid "Too many attempts for this setup link. Request a new setup link to continue."
 msgstr "För många försök har gjorts med den här länken. Be om en ny länk för att ansluta kontot och fortsätta."
 
-#: lib/ui-routes/account-routes.js:820 lib/ui-routes/account-routes.js:854
+#: lib/ui-routes/account-routes.js:814 lib/ui-routes/account-routes.js:848
 #: lib/ui-routes/unsubscribe-routes.js:74
 msgid "Invalid request. Check your input and try again."
 msgstr "Ogiltig begäran. Kontrollera uppgifterna och försök igen."
 
-#: lib/ui-routes/account-routes.js:1042 lib/ui-routes/account-routes.js:1321
-msgid "Couldn't set up account. Try again."
+#: lib/ui-routes/account-routes.js:984 lib/ui-routes/account-routes.js:1263
+msgid "Couldn't set up your account. Try again."
 msgstr "Det gick inte att ansluta kontot. Försök igen."
 
 #: lib/ui-routes/account-setup.js:68
-msgid "Temporary error, please try again"
-msgstr "Tillfälligt fel, försök igen"
+msgid "A temporary error occurred. Try again."
+msgstr "Ett tillfälligt fel uppstod. Försök igen."
 
 #: lib/ui-routes/admin-config-routes.js:196
 msgid "Invalid API key for OpenAI"
@@ -133,8 +139,12 @@ msgid "The server unexpectedly closed the connection. This usually happens when 
 msgstr "Servern stängde anslutningen oväntat. Det händer oftast om du försöker ansluta till en TLS-port utan att ha aktiverat TLS."
 
 #: lib/ui-routes/route-helpers.js:126
-msgid "Connection timed out. This usually occurs if you are behind a firewall or connecting to the wrong port."
-msgstr "Det tog för lång tid att ansluta. Det beror oftast på att en brandvägg blockerar anslutningen eller att du använder fel port."
+msgid ""
+"Connection timed out. A firewall may be blocking the connection, or the port "
+"may be incorrect."
+msgstr ""
+"Det tog för lång tid att ansluta. En brandvägg kan blockera anslutningen, "
+"eller så är porten fel."
 
 #: lib/ui-routes/route-helpers.js:133
 msgid "The server refused the connection. This typically occurs if the server is not running, is overloaded, or you are connecting to the wrong host or port."
@@ -157,7 +167,7 @@ msgstr "Hantera prenumeration"
 
 #: lib/ui-routes/unsubscribe-routes.js:189
 #: lib/ui-routes/unsubscribe-routes.js:238
-msgid "Couldn't process request. Try again."
+msgid "Couldn't process your request. Try again."
 msgstr "Begäran kunde inte behandlas. Försök igen."
 
 #: views/account-identity-error.hbs:7
@@ -165,7 +175,9 @@ msgid "Wrong Email Account"
 msgstr "Fel e-postkonto"
 
 #: views/account-identity-error.hbs:12
-msgid "This setup link can only be used with one specific email account, and a different one was used."
+msgid ""
+"This setup link is for a specific email account. You signed in with a "
+"different account."
 msgstr "Den här länken kan bara användas för ett visst e-postkonto. Du loggade in med ett annat konto."
 
 #: views/account-identity-error.hbs:18
@@ -186,30 +198,42 @@ msgid "Try Again"
 msgstr "Försök igen"
 
 #: views/account-workspace-error.hbs:7
-msgid "Work Account Required"
-msgstr ""
+msgid "Work or school account required"
+msgstr "Ett arbets- eller skolkonto krävs"
 
 #: views/account-workspace-error.hbs:12
-msgid "This setup accepts only a Google Workspace account, and a personal Google account was used."
+msgid ""
+"This setup requires a Google Workspace account. You signed in with a "
+"personal Google account."
 msgstr ""
+"Du behöver ett Google Workspace-konto för att fortsätta. Du loggade in med "
+"ett privat Google-konto."
 
 #: views/account-workspace-error.hbs:23
 msgid "Try again and sign in with your work or school account. If you believe this is a mistake, contact the service that sent you this link."
 msgstr ""
+"Försök igen och logga in med ditt arbets- eller skolkonto. Om du tror att "
+"något har blivit fel, kontakta tjänsteleverantören som skickade länken till "
+"dig."
 
 #: views/accounts/register/imap-server.hbs:23
 msgid "Server settings could not be detected automatically for %s. Enter them below."
 msgstr "Serverinställningarna för %s kunde inte hittas automatiskt. Ange dem nedan."
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
 #: views/accounts/register/imap-server.hbs:35
-msgid "This looks like a Microsoft mailbox. Microsoft no longer accepts passwords for IMAP, so the connection check below is likely to fail."
-msgstr "Det här ser ut att vara en Microsoft-brevlåda. Microsoft godtar inte längre lösenord för IMAP, så anslutningskontrollen nedan kommer troligen att misslyckas."
+msgid ""
+"This appears to be a Microsoft mailbox. Microsoft no longer accepts "
+"passwords for IMAP, so the connection test is likely to fail."
+msgstr ""
+"Den här brevlådan verkar finnas hos Microsoft. Microsoft tillåter inte "
+"längre inloggning med lösenord via IMAP, så anslutningstestet kommer "
+"troligen att misslyckas."
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
 #: views/accounts/register/imap-server.hbs:37
-msgid "Ask the service that sent you this link to enable Sign in with Microsoft."
-msgstr "Be tjänsten som skickade länken till dig att aktivera inloggning med Microsoft."
+msgid "Ask the service that sent you this link to enable Microsoft sign-in."
+msgstr ""
+"Be tjänsteleverantören som skickade länken till dig att aktivera inloggning "
+"med Microsoft."
 
 #: views/accounts/register/imap-server.hbs:49
 msgid "We couldn't sign in to your mail server with those settings. Check them and try again."
@@ -242,12 +266,12 @@ msgstr "Instruktioner"
 
 #: views/accounts/register/imap-server.hbs:98
 #: views/accounts/register/imap-server.hbs:205
-msgid "%s accounts require an application password for %s."
+msgid "%s accounts require an app password for %s."
 msgstr "Har du ett konto hos %s behöver du ett applösenord för att använda %s."
 
 #: views/accounts/register/imap-server.hbs:107
 #: views/accounts/register/imap-server.hbs:214
-msgid "Application Password"
+msgid "App password"
 msgstr "Applösenord"
 
 #: views/accounts/register/imap-server.hbs:121
@@ -265,8 +289,12 @@ msgid "TLS for IMAP"
 msgstr "TLS för IMAP"
 
 #: views/accounts/register/imap-server.hbs:147
-msgid "TLS (also known as SSL) is usually only needed when using port 993. For other ports EmailEngine falls back to using STARTTLS based encryption."
-msgstr "TLS (även kallat SSL) behövs oftast bara för port 993. För andra portar använder EmailEngine kryptering med STARTTLS i stället."
+msgid ""
+"Enable this option for a direct TLS connection, usually on port 993. "
+"Otherwise, EmailEngine uses STARTTLS if the server supports it."
+msgstr ""
+"Aktivera det här alternativet för en direkt TLS-anslutning, vanligtvis på "
+"port 993. Annars använder EmailEngine STARTTLS om servern stöder det."
 
 #: views/accounts/register/imap-server.hbs:154
 #: views/accounts/register/imap-server.hbs:261
@@ -282,8 +310,12 @@ msgid "TLS for SMTP"
 msgstr "TLS för SMTP"
 
 #: views/accounts/register/imap-server.hbs:254
-msgid "TLS (also known as SSL) is usually only needed when using port 465. For other ports EmailEngine falls back to using STARTTLS based encryption."
-msgstr "TLS (även kallat SSL) behövs oftast bara för port 465. För andra portar använder EmailEngine kryptering med STARTTLS i stället."
+msgid ""
+"Enable this option for a direct TLS connection, usually on port 465. "
+"Otherwise, EmailEngine uses STARTTLS if the server supports it."
+msgstr ""
+"Aktivera det här alternativet för en direkt TLS-anslutning, vanligtvis på "
+"port 465. Annars använder EmailEngine STARTTLS om servern stöder det."
 
 #: views/accounts/register/imap-server.hbs:274
 msgid "Verify connection"
@@ -294,8 +326,8 @@ msgid "Save and continue"
 msgstr "Spara och fortsätt"
 
 #: views/accounts/register/imap-server.hbs:285
-msgid "Toggle Dropdown"
-msgstr "Visa eller dölj menyn"
+msgid "Show or hide options"
+msgstr "Visa eller dölj alternativ"
 
 #: views/accounts/register/imap-server.hbs:289
 msgid "Skip verification"
@@ -307,7 +339,8 @@ msgstr "Anslutningstestet misslyckades"
 
 #: views/accounts/register/imap-server.hbs:303
 #: views/accounts/register/imap-server.hbs:312
-#: views/partials/public_alerts.hbs:11 views/unsubscribe.hbs:33
+#: views/partials/public_alerts.hbs:11 views/unsubscribe.hbs:19
+#: views/unsubscribe.hbs:33
 msgid "Close"
 msgstr "Stäng"
 
@@ -352,45 +385,48 @@ msgstr "Välj din e-postleverantör"
 msgid "Standard IMAP"
 msgstr "Vanlig IMAP"
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
 #: views/accounts/register/provider-signin.hbs:10
-msgid "Use your Microsoft account"
-msgstr "Använd ditt Microsoft-konto"
+msgid "Sign in with your Microsoft account"
+msgstr "Logga in med ditt Microsoft-konto"
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
 #: views/accounts/register/provider-signin.hbs:12
-msgid "Use your Google account"
-msgstr "Använd ditt Google-konto"
+msgid "Sign in with your Google account"
+msgstr "Logga in med ditt Google-konto"
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
 #: views/accounts/register/provider-signin.hbs:21
-msgid "This is a Microsoft mailbox. Microsoft does not accept passwords for IMAP, so sign in with your Microsoft account instead."
-msgstr "Det här är en Microsoft-brevlåda. Microsoft godtar inte lösenord för IMAP, så logga in med ditt Microsoft-konto i stället."
+msgid ""
+"This appears to be a Microsoft mailbox. Sign in with Microsoft to connect "
+"it. Password sign-in over IMAP is no longer supported."
+msgstr ""
+"Den här brevlådan verkar finnas hos Microsoft. Logga in med Microsoft för "
+"att ansluta den. Inloggning med lösenord via IMAP stöds inte längre."
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
 #: views/accounts/register/provider-signin.hbs:23
-msgid "This is a Google account. Signing in with Google is the quickest way to connect it."
-msgstr "Det här är ett Google-konto. Att logga in med Google är det snabbaste sättet att ansluta det."
+msgid "This appears to be a Google account. Sign in with Google to connect it."
+msgstr ""
+"Det här verkar vara ett Google-konto. Logga in med Google för att ansluta "
+"det."
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
-#: views/accounts/register/provider-signin.hbs:67
-msgid "Continue with IMAP and a password"
-msgstr "Fortsätt med IMAP och ett lösenord"
+#: views/accounts/register/provider-signin.hbs:46
+msgid "Use IMAP with a password"
+msgstr "Använd IMAP med lösenord"
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
-#: views/accounts/register/provider-signin.hbs:69
-msgid "Continue with IMAP and an app password"
-msgstr "Fortsätt med IMAP och ett applösenord"
+#: views/accounts/register/provider-signin.hbs:48
+msgid "Use IMAP with an app password"
+msgstr "Använd IMAP med applösenord"
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
-#: views/accounts/register/provider-signin.hbs:74
-msgid "Use this only if your mailbox is not hosted by Microsoft."
-msgstr "Använd detta bara om din brevlåda inte ligger hos Microsoft."
+#: views/accounts/register/provider-signin.hbs:53
+msgid "Choose this option only if your mailbox is hosted by another provider."
+msgstr ""
+"Välj bara det här alternativet om din brevlåda finns hos en annan leverantör."
 
-# needs review: machine translation added 2026-11-24 (provider sign-in page)
-#: views/accounts/register/provider-signin.hbs:76
-msgid "Google accepts IMAP only with an app password, not your regular password."
-msgstr "Google godtar IMAP bara med ett applösenord, inte med ditt vanliga lösenord."
+#: views/accounts/register/provider-signin.hbs:55
+msgid ""
+"This option requires a Google app password. Your regular password will not "
+"work."
+msgstr ""
+"Det här alternativet kräver ett applösenord från Google. Ditt vanliga "
+"lösenord fungerar inte."
 
 #: views/accounts/register/validating.hbs:35
 msgid "Checking your mail server"
@@ -451,8 +487,12 @@ msgid "Insufficient Permissions"
 msgstr "Behörigheter saknas"
 
 #: views/oauth-scope-error.hbs:10
-msgid "All requested permissions are required for this service to function properly. Some required permissions were not granted during sign-in."
-msgstr "Tjänsten behöver alla begärda behörigheter för att fungera som den ska. Några av dem beviljades inte vid inloggningen."
+msgid ""
+"Some permissions were not granted during sign-in. This service needs all the "
+"requested permissions to work."
+msgstr ""
+"Några behörigheter beviljades inte vid inloggningen. Tjänsten behöver alla "
+"begärda behörigheter för att fungera."
 
 #: views/oauth-scope-error.hbs:14
 msgid "The following permissions were not granted:"
@@ -487,39 +527,39 @@ msgid "Request failed."
 msgstr "Begäran misslyckades."
 
 #: views/queues/index.hbs:49
-msgid "%d job at a time each"
-msgid_plural "%d jobs at a time each"
-msgstr[0] ""
-msgstr[1] ""
+msgid "%d job at a time per worker"
+msgid_plural "%d jobs at a time per worker"
+msgstr[0] "%d jobb åt gången per tråd"
+msgstr[1] "%d jobb åt gången per tråd"
 
 #: views/queues/index.hbs:49
 msgid "%d worker thread"
 msgid_plural "%d worker threads"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%d arbetstråd"
+msgstr[1] "%d arbetstrådar"
 
 #: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr "Klicka <a href=\"%s\">här</a> för att fortsätta&mldr;"
+msgid "<a href=\"%s\">Continue</a>"
+msgstr "<a href=\"%s\">Fortsätt</a>"
 
 #: views/unsubscribe.hbs:7 views/unsubscribe.hbs:60 views/unsubscribe.hbs:76
 msgid "Unsubscribe"
 msgstr "Avsluta prenumeration"
 
 #: views/unsubscribe.hbs:9
-msgid "Your email address was unsubscribed."
+msgid "You have been unsubscribed."
 msgstr "Din e-postadress har avregistrerats."
 
 #: views/unsubscribe.hbs:11
-msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
-msgstr "Var det ett misstag? Klicka <a%s>här</a> för att prenumerera igen."
+msgid "Unsubscribed by mistake? <a%s>Subscribe again</a>."
+msgstr "Avslutade du prenumerationen av misstag? <a%s>Prenumerera igen</a>."
 
 #: views/unsubscribe.hbs:18
-msgid "Re-subscribe"
+msgid "Subscribe again"
 msgstr "Prenumerera igen"
 
 #: views/unsubscribe.hbs:24
-msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
+msgid "Subscribe again with <em>%s</em>?"
 msgstr "Vill du börja prenumerera igen med e-postadressen <em>%s</em>?"
 
 #: views/unsubscribe.hbs:35
@@ -531,7 +571,7 @@ msgid "Subscription resumed"
 msgstr "Prenumerationen återupptagen"
 
 #: views/unsubscribe.hbs:56
-msgid "Your email address <em>%s</em> was re-subscribed."
+msgid "You have subscribed again with <em>%s</em>."
 msgstr "Du prenumererar igen med e-postadressen <em>%s</em>."
 
 #: views/unsubscribe.hbs:83

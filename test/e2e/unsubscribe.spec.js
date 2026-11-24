@@ -126,7 +126,7 @@ test('List-Unsubscribe: unsubscribe then resubscribe through the browser', async
 
         await test.step('click Unsubscribe', async () => {
             await page.click('form[action="/unsubscribe/address"] button[type="submit"]');
-            await expect(page.getByText('Your email address was unsubscribed.')).toBeVisible({ timeout: 15000 });
+            await expect(page.getByText('You have been unsubscribed.')).toBeVisible({ timeout: 15000 });
             await expect(page.locator('#resubscribe-link')).toBeVisible();
         });
 

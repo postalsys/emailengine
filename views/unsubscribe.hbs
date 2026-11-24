@@ -6,22 +6,22 @@ the "subscription resumed" state. --}}
 
 <h1>{{_ "Unsubscribe" templateLocale }}</h1>
 
-<p>{{_ "Your email address was unsubscribed." templateLocale }}</p>
+<p>{{_ "You have been unsubscribed." templateLocale }}</p>
 
-<p>{{_ "Was this a mistake? Click <a%s>here</a> to re-subscribe." templateLocale
+<p>{{_ "Unsubscribed by mistake? <a%s>Subscribe again</a>." templateLocale
 (markup " id='resubscribe-link' href='#' class='ee-link'")}}</p>
 
 {{!-- autofocus on the dialog keeps showModal() from focusing (and drawing a
 focus ring on) the corner close button --}}
 <dialog id="resubscribeModal" class="ee-modal" aria-labelledby="resubscribeModalLabel" autofocus>
     <div class="ee-modal-header">
-        <h3 class="ee-modal-title" id="resubscribeModalLabel">{{_ "Re-subscribe" templateLocale }}</h3>
-        <button type="button" class="ee-modal-close" aria-label="Close" data-modal-close>
+        <h3 class="ee-modal-title" id="resubscribeModalLabel">{{_ "Subscribe again" templateLocale }}</h3>
+        <button type="button" class="ee-modal-close" aria-label="{{_ "Close" templateLocale }}" data-modal-close>
             <span class="ee-icon ee-icon-x"></span>
         </button>
     </div>
     <div class="ee-modal-body">
-        {{_ "Are you sure you want to re-subscribe your email address <em>%s</em>?" templateLocale
+        {{_ "Subscribe again with <em>%s</em>?" templateLocale
         (escapeHtml values.email) }}
     </div>
     <div class="ee-modal-footer">
@@ -53,7 +53,7 @@ focus ring on) the corner close button --}}
 
 <h1>{{_ "Subscription resumed" templateLocale }}</h1>
 
-<p>{{_ "Your email address <em>%s</em> was re-subscribed." templateLocale (escapeHtml values.email)}}</p>
+<p>{{_ "You have subscribed again with <em>%s</em>." templateLocale (escapeHtml values.email)}}</p>
 
 {{else}}
 

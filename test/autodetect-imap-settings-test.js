@@ -126,7 +126,7 @@ test('getAppPassword', async t => {
     await t.test('returns the Microsoft warning for outlook.com exchanges', () => {
         const result = getAppPassword('user@customdomain.com', 'customdomain.mail.protection.outlook.com', gt);
         assert.strictEqual(result.provider, 'Microsoft');
-        assert.match(result.warning, /password-based sign-ins/i);
+        assert.match(result.warning, /no longer accepts passwords.*IMAP connections/i);
     });
 
     await t.test('matches T-Online by exchange', () => {

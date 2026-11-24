@@ -46,7 +46,7 @@
         </div>
 
         <div class="mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 text-sm text-base-content/60">
-            {{#> ui/tooltip multiline=true text=(concat (ngettext "%d worker thread" "%d worker threads" concurrency.workers) " (" concurrency.workersEnv ")" (newline) (ngettext "%d job at a time each" "%d jobs at a time each" concurrency.perWorker) " (" concurrency.concurrencyEnv ")")}}
+            {{#> ui/tooltip multiline=true text=(concat (ngettext "%d worker thread" "%d worker threads" concurrency.workers) " (" concurrency.workersEnv ")" (newline) (ngettext "%d job at a time per worker" "%d jobs at a time per worker" concurrency.perWorker) " (" concurrency.concurrencyEnv ")")}}
             <span><span class="icon-[tabler--cpu] size-4 align-text-bottom"></span> Runs up to <strong class="text-base-content">{{concurrency.total}}</strong> at once</span>
             {{/ui/tooltip}}
 
