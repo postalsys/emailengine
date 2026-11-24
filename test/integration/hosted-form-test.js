@@ -442,9 +442,12 @@ test('Hosted form can skip the server settings step', async t => {
         return signFormBlob({ n, t: Date.now(), redirectUrl: 'https://example.com/done', skipServerSettings: true });
     };
 
+    // skipSignIn: the visitor already chose IMAP over an OAuth2 sign-in. gmail.com is a Google
+    // address, so with a Gmail application left behind by another suite the page would otherwise
+    // offer that sign-in first; this suite is about what comes after the choice.
     const page1 = async (blob, email) => {
         const { agent, crumb } = await crumbAgent();
-        return agent.post('/accounts/new/imap').type('form').send({ crumb, data: blob.data, sig: blob.sig, email, password: 'secret' });
+        return agent.post('/accounts/new/imap').type('form').send({ crumb, data: blob.data, sig: blob.sig, email, password: 'secret', skipSignIn: '1' });
     };
 
     await t.test('a resolved address reaches the checking page instead of the settings form', async () => {
@@ -523,5 +526,92 @@ test('Hosted form can skip the server settings step', async t => {
         // The check that sent the visitor here just failed; repeating it on load would only spin and
         // give the same answer
         assert.ok(!/id="autoTest" value="true"/.test(res.text), 'the auto-verify must not be re-armed');
+    });
+});
+
+test('Hosted form offers OAuth2 sign-in for a recognized mailbox', async t => {
+    // microsoft.com's MX is Microsoft's own, so autodiscovery answers from the MX table with
+    // provider: outlook, and an application limited to work accounts can sign the mailbox in
+    const EMAIL = 'someone@microsoft.com';
+    let appId;
+
+    t.before(async () => {
+        const res = await authed.post('/v1/oauth2').send({
+            provider: 'outlook',
+            name: 'Hosted form sign-in test',
+            enabled: true,
+            clientId: '0d6b6f3c-1f6c-4f5e-9a51-4a1f2d6c7e8f',
+            clientSecret: 'secret',
+            authority: 'organizations',
+            redirectUrl: `${baseUrl}/oauth`,
+            baseScopes: 'imap'
+        });
+        assert.equal(res.status, 200, `could not create the application: ${res.text}`);
+        appId = res.body.id;
+    });
+
+    t.after(async () => {
+        if (appId) {
+            await authed.delete(`/v1/oauth2/${appId}`);
+        }
+    });
+
+    const freshBlob = () => signFormBlob({ n: crypto.randomBytes(16).toString('base64url'), t: Date.now(), redirectUrl: 'https://example.com/done' });
+
+    const page1 = async extra => {
+        const blob = freshBlob();
+        const { agent, crumb } = await crumbAgent();
+        return agent
+            .post('/accounts/new/imap')
+            .type('form')
+            .send(Object.assign({ crumb, data: blob.data, sig: blob.sig, email: EMAIL, password: 'secret' }, extra));
+    };
+
+    await t.test('offers the application instead of the server settings', async () => {
+        const res = await page1();
+
+        assert.equal(res.status, 200, `expected 200, got ${res.status}`);
+        assert.ok(!res.text.includes('id="settings-form"'), 'the server settings form must not be rendered');
+        assert.ok(res.text.includes(`name="type" value="${appId}"`), 'the application is offered');
+        assert.ok(res.text.includes(`name="loginHint" value="${EMAIL}"`), 'the address goes along as the sign-in hint');
+        assert.ok(res.text.includes('name="skipSignIn" value="1"'), 'the IMAP way out is offered');
+    });
+
+    await t.test('choosing IMAP goes on to the settings form, which says why it will likely fail', async () => {
+        const res = await page1({ skipSignIn: '1' });
+
+        assert.equal(res.status, 200, `expected 200, got ${res.status}`);
+        assert.ok(res.text.includes('id="settings-form"'), 'expected the server settings form');
+        assert.ok(res.text.includes('This looks like a Microsoft mailbox'), 'expected the Microsoft notice');
+    });
+
+    await t.test('a link minted for IMAP carries the skip from its first page', async () => {
+        // type=imap on the GET is how an integrator pins the IMAP path; the account details page it
+        // renders then never leads to the sign-in page
+        const blob = freshBlob();
+        const res = await supertest(baseUrl).get('/accounts/new').query({ data: blob.data, sig: blob.sig, type: 'imap' });
+
+        assert.equal(res.status, 200, `expected 200, got ${res.status}`);
+        assert.ok(res.text.includes('name="skipSignIn" value="1"'), 'the details page must carry the skip');
+    });
+
+    await t.test('the provider picker does not carry the skip', async () => {
+        const blob = freshBlob();
+        const { agent, crumb } = await crumbAgent();
+        const res = await agent.post('/accounts/new').type('form').send({ crumb, type: 'imap', data: blob.data, sig: blob.sig });
+
+        assert.equal(res.status, 200, `expected 200, got ${res.status}`);
+        assert.ok(!res.text.includes('name="skipSignIn"'), 'a visitor who picked IMAP has not been offered the sign-in yet');
+    });
+
+    await t.test('the application button sends the address to the provider as the sign-in hint', async () => {
+        const blob = freshBlob();
+        const { agent, crumb } = await crumbAgent();
+        const res = await agent.post('/accounts/new').type('form').send({ crumb, type: appId, data: blob.data, sig: blob.sig, loginHint: EMAIL });
+
+        assert.equal(res.status, 302, `expected a redirect, got ${res.status}`);
+        const location = new URL(res.headers.location);
+        assert.equal(location.hostname, 'login.microsoftonline.com');
+        assert.equal(location.searchParams.get('login_hint'), EMAIL);
     });
 });

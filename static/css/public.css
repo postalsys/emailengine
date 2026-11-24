@@ -627,8 +627,16 @@ a.ee-link:hover::before {
     padding: 1rem;
     border-radius: var(--ee-radius-box);
     background-color: color-mix(in oklab, var(--ee-alert-color) 10%, var(--ee-surface));
-    color: var(--ee-alert-color);
+    /* the text is pulled toward the body color: the status colors themselves (amber and cyan
+     * especially) are too light to read as text on their own tinted background */
+    color: color-mix(in oklab, var(--ee-alert-color) 45%, var(--ee-text));
     text-align: start;
+}
+
+/* the icon keeps the full status color, which is what tells the alerts apart at a glance */
+.ee-alert > .ee-icon {
+    flex: none;
+    color: var(--ee-alert-color);
 }
 
 .ee-alert-info {
@@ -916,6 +924,35 @@ dialog.ee-modal.ee-modal-wide {
     margin: 0 0 0.25rem;
     font-weight: 600;
     cursor: default;
+}
+
+/* OAuth2 sign-in offered on the IMAP path (accounts/register/provider-signin):
+ * the address and the reason above the provider buttons, and the IMAP way out
+ * below them, set apart so it reads as the exception */
+.ee-provider-lead {
+    max-width: 30rem;
+    margin: 0 auto 1.5rem;
+    text-align: center;
+}
+
+.ee-provider-lead p {
+    margin: 0 0 0.5rem;
+}
+
+.ee-provider-email {
+    overflow-wrap: anywhere;
+}
+
+.ee-provider-alt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    max-width: 30rem;
+    margin: 1.5rem auto 0;
+    padding-top: 1.25rem;
+    border-top: 1px solid color-mix(in oklab, var(--ee-text) 15%, transparent);
+    text-align: center;
 }
 
 /* provider sign-in images (e.g. the Google / Microsoft branded buttons) */

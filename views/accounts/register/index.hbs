@@ -24,33 +24,7 @@ provider type. --}}
     {{#if oauth2apps}}
 
     {{#each oauth2apps}}
-
-    {{!-- an app's optional display title (set in the OAuth2 app settings) renders
-    above its button so several apps of the same provider can be told apart; the
-    ee-provider-titled hover highlight ties the title and button visually together --}}
-    <div class="ee-provider{{#if title}} ee-provider-titled{{/if}}">
-
-        {{#if title}}
-        <h5 class="ee-provider-title">{{title}}</h5>
-        {{/if}}
-
-        <form method="post" action="/accounts/new">
-            <input type="hidden" name="crumb" value="{{../crumb}}">
-            <input type="hidden" name="type" value="{{id}}">
-            <input type="hidden" name="data" value="{{../values.data}}">
-            <input type="hidden" name="sig" value="{{../values.sig}}">
-
-            {{#if providerData.linkImage}}
-            <input type="image" src="{{providerData.linkImage}}" class="ee-provider-image" alt="{{providerData.comment}}" />
-            {{else}}
-
-            <button type="submit" class="ee-btn ee-btn-primary ee-btn-block ee-btn-xl">
-                <span class="ee-icon {{providerData.publicIcon}}"></span> {{providerData.comment}}
-            </button>
-            {{/if}}
-
-        </form>
-    </div>
+    {{> provider_signin_button app=this title=title crumb=../crumb data=../values.data sig=../values.sig}}
     {{/each}}
 
     {{/if}}

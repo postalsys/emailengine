@@ -12,7 +12,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 const tls = require('tls');
 
-const { resolver, exchangeParents, probeCandidates, MAX_PROBE_CANDIDATES } = require('../lib/autodetect-imap-settings');
+const { resolver, exchangeParents, probeCandidates, getProviderHint, isConsumerMailbox, MAX_PROBE_CANDIDATES } = require('../lib/autodetect-imap-settings');
 const { probeMailServer } = require('../lib/mail-probe');
 const { createSelfSignedCertificate } = require('../lib/tls/self-signed');
 const { redis } = require('../lib/db');
@@ -484,5 +484,39 @@ test('mail server probe', async t => {
             await proxy.close();
             await server.close();
         }
+    });
+});
+
+test('provider hint', async t => {
+    await t.test('names the OAuth2 provider from the domain or the MX exchange', () => {
+        assert.equal(getProviderHint('user@gmail.com'), 'gmail');
+        assert.equal(getProviderHint('user@GoogleMail.com'), 'gmail');
+        assert.equal(getProviderHint('user@hotmail.com'), 'outlook');
+        assert.equal(getProviderHint('user@msn.com'), 'outlook');
+        assert.equal(getProviderHint('user@example.com', 'aspmx.l.google.com'), 'gmail');
+        assert.equal(getProviderHint('user@example.com', 'smtp.google.com'), 'gmail');
+        assert.equal(getProviderHint('user@example.com', 'example-com.mail.protection.outlook.com'), 'outlook');
+        assert.equal(getProviderHint('user@example.com', 'mx.example.com'), false);
+        assert.equal(getProviderHint('user@example.com'), false);
+    });
+
+    await t.test('tells consumer mailboxes from organization ones', () => {
+        assert.equal(isConsumerMailbox('user@outlook.com'), true);
+        assert.equal(isConsumerMailbox('user@gmail.com'), true);
+        assert.equal(isConsumerMailbox('user@example.com'), false);
+    });
+
+    await t.test('carried by every path that knows the provider', async () => {
+        const viaMx = await detect({ mx: 'example-com.mail.protection.outlook.com' });
+        assert.equal(viaMx.settings.provider, 'outlook');
+
+        const viaFilter = await detect({ mx: 'mx-mibc-fr-02.mailinblack.com', cnames: { 'autodiscover.example.com': 'autodiscover.outlook.com' } });
+        assert.equal(viaFilter.settings.provider, 'outlook');
+
+        const viaSpf = await detect({ mx: 'vade-mx-fr01.hornetsecurity.com', txt: ['v=spf1 include:spf.protection.outlook.com -all'] });
+        assert.equal(viaSpf.settings.provider, 'outlook');
+
+        const viaProbe = await detect({ mx: 'mx.provider.net', imapServers: ['imap.example.com'] });
+        assert.equal(viaProbe.settings.provider, undefined);
     });
 });

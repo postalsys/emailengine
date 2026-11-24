@@ -7992,6 +7992,15 @@
           }
         }
       },
+      "DiscoveredOAuth2Provider": {
+        "type": "string",
+        "description": "OAuth2 provider the mailbox signs in with, when the address or its domain identifies one: `gmail` for Gmail and Google Workspace, `outlook` for Outlook.com and Microsoft 365. Matches the `provider` of an OAuth2 application (see `GET /v1/oauth2`), so a setup flow can offer that sign-in instead of asking for a password. Absent when unknown.",
+        "example": "outlook",
+        "enum": [
+          "gmail",
+          "outlook"
+        ]
+      },
       "DiscoveredEmailSettings": {
         "type": "object",
         "properties": {
@@ -8023,6 +8032,9 @@
           },
           "appPassword": {
             "$ref": "#/components/schemas/DiscoveredAppPasswordInfo"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/DiscoveredOAuth2Provider"
           },
           "_source": {
             "type": "string",
