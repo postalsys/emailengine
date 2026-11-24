@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "emailengine-app@2.90.0",
-  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.90.0-cb6244ce-5501-4de7-98e5-c2dcb8ca06e7",
+  "documentNamespace": "http://spdx.org/spdxdocs/emailengine-app-2.90.0-4e052111-953d-4499-bfb1-05f1aff3b921",
   "creationInfo": {
-    "created": "2026-11-21T20:58:26.368Z",
+    "created": "2026-11-24T13:21:56.748Z",
     "creators": [
       "Tool: npm/cli-11.19.0"
     ]
@@ -971,11 +971,11 @@
     },
     {
       "name": "@ioredis/commands",
-      "SPDXID": "SPDXRef-Package-ioredis.commands-2.0.0",
-      "versionInfo": "2.0.0",
+      "SPDXID": "SPDXRef-Package-ioredis.commands-2.4.0",
+      "versionInfo": "2.4.0",
       "packageFileName": "node_modules/@ioredis/commands",
       "description": "Redis commands",
-      "downloadLocation": "https://registry.npmjs.org/@ioredis/commands/-/commands-2.0.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@ioredis/commands/-/commands-2.4.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/ioredis/commands",
       "licenseDeclared": "MIT",
@@ -983,13 +983,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40ioredis/commands@2.0.0"
+          "referenceLocator": "pkg:npm/%40ioredis/commands@2.4.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "bebc74004fd3d21edc459c1fa35337f42afe66166b91fd15f2640def9c2e70a0b108b0fd97f557ea7a37805beb2ea0f52251bfd4bb735a8bea130dedd15afdce"
+          "checksumValue": "7f2bbb64ce51bedb18677a73e031653ea4860776a8543f62af4bcbebf4cbb51a3c10cb82edfd19faa181b240e450bfe026ce5fcde9718adc9901f34d502ad5ad"
         }
       ]
     },
@@ -1763,10 +1763,10 @@
     },
     {
       "name": "@sentry/conventions",
-      "SPDXID": "SPDXRef-Package-sentry.conventions-0.34.0",
-      "versionInfo": "0.34.0",
+      "SPDXID": "SPDXRef-Package-sentry.conventions-0.35.0",
+      "versionInfo": "0.35.0",
       "packageFileName": "node_modules/@sentry/conventions",
-      "downloadLocation": "https://registry.npmjs.org/@sentry/conventions/-/conventions-0.34.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@sentry/conventions/-/conventions-0.35.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/getsentry/sentry-conventions#readme",
       "licenseDeclared": "MIT",
@@ -1774,23 +1774,23 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40sentry/conventions@0.34.0"
+          "referenceLocator": "pkg:npm/%40sentry/conventions@0.35.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "b0660b6aaff3c914ce0a869d5b767aeaae961e9d7ab2d9f07b318ae39079d2618ee9051397fb6dcec3e9cbea316658f6a4a011c8ea21675a57f60adda4cc68d9"
+          "checksumValue": "6ead9e72eeb36819e2d201b96c737d718edf994b0e5b8f67b63199e9503af4f5406b5524d4dbe017549d4c6a150b4ce4a902b38939f1cceb3d2aeb959696f6eb"
         }
       ]
     },
     {
       "name": "@sentry/core",
-      "SPDXID": "SPDXRef-Package-sentry.core-11.16.0",
-      "versionInfo": "11.16.0",
+      "SPDXID": "SPDXRef-Package-sentry.core-11.17.0",
+      "versionInfo": "11.17.0",
       "packageFileName": "node_modules/@sentry/core",
       "description": "Base implementation for all Sentry JavaScript SDKs",
-      "downloadLocation": "https://registry.npmjs.org/@sentry/core/-/core-11.16.0.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@sentry/core/-/core-11.17.0.tgz",
       "filesAnalyzed": false,
       "homepage": "https://github.com/getsentry/sentry-javascript/tree/master/packages/core",
       "licenseDeclared": "MIT",
@@ -1798,13 +1798,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40sentry/core@11.16.0"
+          "referenceLocator": "pkg:npm/%40sentry/core@11.17.0"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "86eee0c3ffffac32f05582a6900833b57531d2c164a711b5cc3c27b87058097a8745a130cc427f9ed0597c098b6e339222c83975c334ec0234f4a4a270579707"
+          "checksumValue": "4dff5738110c78675964d68207315393594dfeaf60cd29d6b67351656f4862da2433df5555fc78c135957a0eaa67ef9cea63726e68546e5b6737b6fced1a8ec1"
         }
       ]
     },
@@ -2002,11 +2002,11 @@
     },
     {
       "name": "bullmq",
-      "SPDXID": "SPDXRef-Package-bullmq-6.7.8",
-      "versionInfo": "6.7.8",
+      "SPDXID": "SPDXRef-Package-bullmq-6.7.10",
+      "versionInfo": "6.7.10",
       "packageFileName": "node_modules/bullmq",
       "description": "Queue for messages and jobs based on Redis",
-      "downloadLocation": "https://registry.npmjs.org/bullmq/-/bullmq-6.7.8.tgz",
+      "downloadLocation": "https://registry.npmjs.org/bullmq/-/bullmq-6.7.10.tgz",
       "filesAnalyzed": false,
       "homepage": "https://bullmq.io/",
       "licenseDeclared": "MIT",
@@ -2014,13 +2014,13 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/bullmq@6.7.8"
+          "referenceLocator": "pkg:npm/bullmq@6.7.10"
         }
       ],
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "32dd3e9ca18d15602bbaec30cc451513ee721202b95e0ce3a11d818d22a9fc97aa7e07983b4a4587aa32efc2ecf2ef6ea554ec68b841cd2684640858be33e526"
+          "checksumValue": "19dfb3edbaa93b659e4eda25f2ad353a921fda458bad525ca6f24662c07c73f19e2d981e5ba7b3c9e8380c8b3bbbcf8b4c9b75cbc5cc23604f9885e58057bbc6"
         }
       ]
     },
@@ -2457,10 +2457,34 @@
       ]
     },
     {
+      "name": "@ioredis/commands",
+      "SPDXID": "SPDXRef-Package-ioredis.commands-2.0.0",
+      "versionInfo": "2.0.0",
+      "packageFileName": "node_modules/ioredfour/node_modules/@ioredis/commands",
+      "description": "Redis commands",
+      "downloadLocation": "https://registry.npmjs.org/@ioredis/commands/-/commands-2.0.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/ioredis/commands",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40ioredis/commands@2.0.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "bebc74004fd3d21edc459c1fa35337f42afe66166b91fd15f2640def9c2e70a0b108b0fd97f557ea7a37805beb2ea0f52251bfd4bb735a8bea130dedd15afdce"
+        }
+      ]
+    },
+    {
       "name": "ioredis",
       "SPDXID": "SPDXRef-Package-ioredis-6.0.0",
       "versionInfo": "6.0.0",
-      "packageFileName": "node_modules/ioredis",
+      "packageFileName": "node_modules/ioredfour/node_modules/ioredis",
       "description": "A robust, performance-focused and full-featured Redis client for Node.js.",
       "downloadLocation": "https://registry.npmjs.org/ioredis/-/ioredis-6.0.0.tgz",
       "filesAnalyzed": false,
@@ -2477,6 +2501,30 @@
         {
           "algorithm": "SHA512",
           "checksumValue": "7fe0edb9bc5fa5fe8a605abb5955c9a0e2e7d1b9384c9accacdf52cde13e8eb5ab0968fb5d7ddf03abe4af269f8400d7f86332991c600c90ce237dc23a425cd3"
+        }
+      ]
+    },
+    {
+      "name": "ioredis",
+      "SPDXID": "SPDXRef-Package-ioredis-6.1.0",
+      "versionInfo": "6.1.0",
+      "packageFileName": "node_modules/ioredis",
+      "description": "A robust, performance-focused and full-featured Redis client for Node.js.",
+      "downloadLocation": "https://registry.npmjs.org/ioredis/-/ioredis-6.1.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/ioredis@6.1.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "d28a16528c4489611c080d05141b260a76079e38858163d0c00d78e0dc694332c85645b6d095230282ad320fbbb29167fba38023af17c2970b706296e717b850"
         }
       ]
     },
@@ -3970,7 +4018,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-sentry.core-11.16.0",
+      "spdxElementId": "SPDXRef-Package-sentry.core-11.17.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.90.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -3990,7 +4038,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-bullmq-6.7.8",
+      "spdxElementId": "SPDXRef-Package-bullmq-6.7.10",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.90.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -4025,7 +4073,7 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-ioredis-6.0.0",
+      "spdxElementId": "SPDXRef-Package-ioredis-6.1.0",
       "relatedSpdxElement": "SPDXRef-Package-emailengine-app-2.90.0",
       "relationshipType": "DEPENDENCY_OF"
     },
@@ -5115,8 +5163,8 @@
       "relationshipType": "PREREQUISITE_FOR"
     },
     {
-      "spdxElementId": "SPDXRef-Package-sentry.conventions-0.34.0",
-      "relatedSpdxElement": "SPDXRef-Package-sentry.core-11.16.0",
+      "spdxElementId": "SPDXRef-Package-sentry.conventions-0.35.0",
+      "relatedSpdxElement": "SPDXRef-Package-sentry.core-11.17.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -5210,33 +5258,33 @@
       "relationshipType": "DEPENDENCY_OF"
     },
     {
-      "spdxElementId": "SPDXRef-Package-ioredis-6.0.0",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.8",
+      "spdxElementId": "SPDXRef-Package-ioredis-6.1.0",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.10",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-cron-parser-5.10.6",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.8",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.10",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-msgpackr-2.1.4",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.8",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.10",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-node-abort-controller-3.1.1",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.8",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.10",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-semver-7.8.6",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.8",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.10",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
       "spdxElementId": "SPDXRef-Package-tslib-2.9.1",
-      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.8",
+      "relatedSpdxElement": "SPDXRef-Package-bullmq-6.7.10",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
@@ -5382,6 +5430,26 @@
     {
       "spdxElementId": "SPDXRef-Package-standard-as-callback-2.1.0",
       "relatedSpdxElement": "SPDXRef-Package-ioredis-6.0.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-ioredis.commands-2.4.0",
+      "relatedSpdxElement": "SPDXRef-Package-ioredis-6.1.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-denque-2.1.0",
+      "relatedSpdxElement": "SPDXRef-Package-ioredis-6.1.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-redis-errors-1.2.0",
+      "relatedSpdxElement": "SPDXRef-Package-ioredis-6.1.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-standard-as-callback-2.1.0",
+      "relatedSpdxElement": "SPDXRef-Package-ioredis-6.1.0",
       "relationshipType": "DEPENDENCY_OF"
     },
     {
