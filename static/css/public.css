@@ -191,6 +191,7 @@ body.ee-page {
     font-size: 1.25rem;
     font-weight: 600;
     margin: 0 0 1.5rem;
+    text-wrap: balance;
 }
 
 :where(.ee-card-body h2) {
@@ -937,6 +938,13 @@ dialog.ee-modal.ee-modal-wide {
 
 .ee-provider-lead p {
     margin: 0 0 0.5rem;
+}
+
+/* short centered copy: even out the lines instead of leaving a word, or in Japanese a few
+ * characters, on a line of its own */
+.ee-provider-lead p,
+.ee-provider-alt .ee-hint {
+    text-wrap: balance;
 }
 
 .ee-provider-email {
