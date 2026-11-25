@@ -46,7 +46,7 @@ A headless email client application that provides access to IMAP, SMTP, Gmail AP
 > [!IMPORTANT]
 > EmailEngine uses Redis as its primary database, not as a cache. Set `maxmemory-policy` to `noeviction` and give Redis enough memory for your workload - with any other policy Redis can drop sync state, which makes already-synced messages look new and generates duplicate webhooks.
 >
-> Redis Cluster and Amazon ElastiCache are **not** supported. Use a standard Redis primary instance. EmailEngine warns about all of the above on the dashboard when it detects them.
+> Redis Cluster is **not** supported, and neither is anything that always runs as one: Amazon MemoryDB, and Amazon ElastiCache with cluster mode or the durability option enabled. Use a standard Redis primary instance. Amazon ElastiCache with cluster mode disabled works only with at least one replica and Multi-AZ automatic failover: a single ElastiCache node starts empty when AWS replaces it, and does not reload its snapshot. EmailEngine warns about all of the above on the dashboard when it detects them.
 
 > [!NOTE]
 > While Redis does not officially support Windows, alternatives like [Memurai](https://www.memurai.com/) are available.
