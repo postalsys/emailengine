@@ -256,3 +256,54 @@ test('an unreadable file fails closed', async t => {
         delete process.env.EENGINE_PREPARED_PASSWORD_FILE;
     });
 });
+
+// The logger reads its level once, when it loads, and the first file resolveEnvFiles() reads logs.
+// A file listed before EENGINE_LOG_LEVEL_FILE used to load the logger at the default level.
+test('resolveEnvFiles applies a file-backed log level whatever order the files come in', () => {
+    const dir = fs.mkdtempSync(pathlib.join(os.tmpdir(), 'ee-env-'));
+    try {
+        fs.writeFileSync(pathlib.join(dir, 'secret'), 's3cret\n');
+        fs.writeFileSync(pathlib.join(dir, 'level'), 'debug\n');
+        fs.writeFileSync(pathlib.join(dir, 'headers'), 'X-Waf-Secret\n');
+
+        const stdout = execFileSync(
+            process.execPath,
+            [
+                '-e',
+                `require('./lib/read-env-value').resolveEnvFiles();
+                 const logger = require('./lib/logger');
+                 logger.info({ msg: 'probe', req: { headers: { 'x-waf-secret': 'waf-value' } } });
+                 process.stdout.write('\\n${MARKER}' + JSON.stringify({ level: logger.level }) + '\\n');`
+            ],
+            {
+                cwd: ROOT,
+                encoding: 'utf-8',
+                // insertion order is the order resolveEnvFiles() walks them in
+                env: {
+                    PATH: process.env.PATH,
+                    HOME: process.env.HOME,
+                    NODE_ENV: 'test',
+                    EE_ENV_LOADED: 'true',
+                    EENGINE_SECRET_FILE: pathlib.join(dir, 'secret'),
+                    EENGINE_LOG_LEVEL_FILE: pathlib.join(dir, 'level'),
+                    EENGINE_LOG_REDACT_HEADERS_FILE: pathlib.join(dir, 'headers')
+                }
+            }
+        );
+
+        const marked = stdout.split('\n').find(line => line.startsWith(MARKER));
+        assert.ok(marked, `the probe printed no answer:\n${stdout}`);
+        assert.equal(JSON.parse(marked.slice(MARKER.length)).level, 'debug');
+
+        const records = stdout
+            .split('\n')
+            .filter(line => line.startsWith('{'))
+            .map(line => JSON.parse(line));
+        // the held "Loaded environment value from file" records are trace, below the level read from the file
+        assert.ok(!records.some(entry => entry.level < 20), 'nothing below debug is written');
+        const probe = records.find(entry => entry.msg === 'probe');
+        assert.equal(probe.req.headers['x-waf-secret'], '[Redacted]');
+    } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+    }
+});

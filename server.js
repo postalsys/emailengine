@@ -62,6 +62,15 @@ if (nodeSupportLevel === 'outside-range') {
     console.error(`Node.js ${process.version} is outside the range EmailEngine supports (${SUPPORTED_RANGE_LABEL}). It runs, but please upgrade Node.js.`);
 }
 
+// Validates EENGINE_LOG_REDACT_HEADERS before the logger loads, so a bad entry stops the boot with a
+// one-line message instead of a stack trace
+try {
+    require('./lib/logger-consts');
+} catch (err) {
+    console.error(err.message);
+    process.exit(1);
+}
+
 const { accountDataKey } = require('./lib/redis-keys');
 const { resolveMetricKeys, statBuckets } = require('./lib/worker-metrics');
 const { importPreparedPassword } = require('./lib/prepared-password');
