@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.91.0](https://github.com/postalsys/emailengine/compare/v2.90.0...v2.91.0) (2026-11-26)
+
+
+### Features
+
+* name the OAuth2 provider in autodiscovery results ([a3c2151](https://github.com/postalsys/emailengine/commit/a3c21513217218a10dad8b7194e19d6cb49145bb))
+* offer OAuth2 sign-in when autodiscovery recognizes Gmail or Microsoft 365 ([ff3189c](https://github.com/postalsys/emailengine/commit/ff3189c5de184cbf420085c9e6de6dfac7d6710f))
+* offer OAuth2 sign-in when the hosted form detects Gmail or Microsoft 365 ([bba7313](https://github.com/postalsys/emailengine/commit/bba731370e9f083f62df6bf0f5eb19269a9723a8))
+
+
+### Bug Fixes
+
+* balance line breaks in the hosted form's headings and sign-in copy ([878bf4c](https://github.com/postalsys/emailengine/commit/878bf4c469ba3b0de6f128b5224186c6424d43b4))
+* balance line breaks in the hosted form's headings and sign-in copy ([2e829fb](https://github.com/postalsys/emailengine/commit/2e829fb61e30ebdae89e28983a20f0b4e5014b70))
+* bump node from `8a32c8c` to `116b800` ([517616b](https://github.com/postalsys/emailengine/commit/517616b6127095c763851ce1abe6155a5c5dead1))
+* bump node from `8a32c8c` to `116b800` ([fd78f06](https://github.com/postalsys/emailengine/commit/fd78f062fa86b1a6e1299f41e30e3cabae5c92da))
+* flag a rejected Mail.ru OAuth client on the app ([7490e6b](https://github.com/postalsys/emailengine/commit/7490e6b3ecc98b468df0b72468d9334eb5ccd7fc))
+* honor a file-backed log level in the main process, add EENGINE_LOG_REDACT_HEADERS ([d2fea14](https://github.com/postalsys/emailengine/commit/d2fea14670afa53617c3da7e8ce7d959a198f55a))
+* polish public UI copy and translations ([96a1f01](https://github.com/postalsys/emailengine/commit/96a1f01f36e6fb061f3768888c9270a577d1c43c))
+* recognize smtp.google.com as a Google Workspace MX ([c4bb501](https://github.com/postalsys/emailengine/commit/c4bb5010a7deb48a33582ea5f562525493a02ed8))
+* recover accounts whose assignment or worker dispatch was lost ([92cfab9](https://github.com/postalsys/emailengine/commit/92cfab95de7e985d4fee67d1074c34c0df339314))
+* resolve mail settings for domains that publish none ([90ed041](https://github.com/postalsys/emailengine/commit/90ed0412e9193575e958b4a36467faa0eb7f538e))
+* resolve mail settings for domains that publish none ([5cb4bd4](https://github.com/postalsys/emailengine/commit/5cb4bd4c047424e293dd4cf4d896aa8000542666))
+* update dependencies ([740e988](https://github.com/postalsys/emailengine/commit/740e9886ffdb37b11d2161632dab55a03adb62bd))
+* update dependencies ([d066d88](https://github.com/postalsys/emailengine/commit/d066d8822490772e0c24c606d01ed0f13bbfafd3))
+* update dependencies ([e6f506b](https://github.com/postalsys/emailengine/commit/e6f506b82757d66a871da857d3fa6071b4288829))
+* update dependencies ([9c73807](https://github.com/postalsys/emailengine/commit/9c73807861a97018fcdbd444fab0789a170ab28c))
+* warn about Amazon ElastiCache only when the primary has no replica ([2a97862](https://github.com/postalsys/emailengine/commit/2a97862e8398627c6f1147978ac51caa4e4628c4))
+
 ## [2.90.0](https://github.com/postalsys/emailengine/compare/v2.89.0...v2.90.0) (2026-11-20)
 
 
