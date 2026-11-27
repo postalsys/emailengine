@@ -2,7 +2,9 @@
 {{> ui/btn href=newLink label="Create webhook route" icon="icon-[tabler--plus]"}}
 {{/ui/page-header}}
 
-{{> ui/search-crumb parentHref="/admin/webhooks" parentLabel="Webhook Routes" query=query}}
+{{> ui/search-crumb parentHref=clearSearchHref parentLabel="Webhook Routes" query=query}}
+
+{{> ui/filter-bar bar=filterBar}}
 
 {{#unless webhooksEnabled}}
 <div class="alert alert-soft alert-warning mb-6"><span><strong>Note:</strong> Webhooks are disabled
@@ -44,16 +46,7 @@
 
                     <td class="relative" data-label="Status">
                         {{> ui/row-link href=(concat "/admin/webhooks/webhook/" id)}}
-                        {{#if enabled}}
-
-                        {{#if webhookErrorFlag.message}}
-                        {{> ui/badge label="Failing" variant="error" class="" icon="" soft=""}}
-                        {{else}}
-                        {{> ui/badge label="Enabled" variant="success" class="" icon="" soft=""}}
-                        {{/if}}
-                        {{else}}
-                        {{> ui/badge label="Disabled" variant="warning" class="" icon="" soft=""}}
-                        {{/if}}
+                        {{> ui/badge label=statusLabel.name variant=statusLabel.type class="" icon="" soft=""}}
                     </td>
 
                     <td class="ee-stack-actions relative text-end">
@@ -69,7 +62,7 @@
     {{> ui/pagination showPaging=showPaging prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
 </div>
 {{else}}
-{{> ui/list-empty noun="webhook routes" query=query firstPage=firstPage createHref=newLink createLabel="Create your first webhook route" clearHref="/admin/webhooks"}}
+{{> ui/list-empty noun="webhook routes" query=query filterActive=filterBar.active firstPage=firstPage createHref=newLink createLabel="Create your first webhook route" clearHref=emptyClearHref}}
 {{/if}}
 
 {{#> ui/details summary="How webhook routes work" class="card bg-base-100 shadow-md mb-6"}}

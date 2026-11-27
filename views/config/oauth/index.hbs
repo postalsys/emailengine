@@ -18,6 +18,10 @@
 
 {{> oauth_tabs}}
 
+{{> ui/search-crumb parentHref=clearSearchHref parentLabel="OAuth2 Apps" query=query}}
+
+{{> ui/filter-bar bar=filterBar}}
+
 {{#if apps}}
 <div class="card bg-base-100 shadow-md mb-6">
     <div class="overflow-x-auto">
@@ -88,7 +92,7 @@
     {{> ui/pagination showPaging=showPaging prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
 </div>
 {{else}}
-{{> ui/list-empty noun="OAuth2 apps" query=query firstPage=firstPage clearHref="/admin/config/oauth"}}
+{{> ui/list-empty noun="OAuth2 apps" query=query filterActive=filterBar.active firstPage=firstPage clearHref=emptyClearHref}}
 {{/if}}
 
 {{#> ui/delete-modal id="deleteOauthApp" noun="OAuth2 app" action="/admin/config/oauth/delete" fieldName="app"}}

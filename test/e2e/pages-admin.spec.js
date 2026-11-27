@@ -1781,7 +1781,7 @@ test.describe('admin shell', () => {
             await attentionLink.click();
             await page.waitForURL(/\/admin\/accounts\?state=errors/);
             await expect(page.locator(`.state-info[data-account="${ACCOUNT_ID}"]`)).toBeVisible();
-            await expect(page.locator('#search-state-dropdown')).toHaveText(/Needs attention/);
+            await expect(page.locator('#filter-state')).toContainText('Needs attention');
 
             await page.goto('/admin/accounts');
             await expect(badge).toBeVisible();
@@ -2180,7 +2180,7 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
-    test('topbar search: query and state filter narrow the accounts list', async ({ page }) => {
+    test('topbar search and the status pill narrow the accounts list', async ({ page }) => {
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
         await requireAccountUrl(page);
@@ -2191,11 +2191,16 @@ test.describe('admin shell', () => {
         await page.waitForURL(/[?&]query=e2e/);
         await expect(page.getByText('Results for "e2e"')).toBeVisible();
 
-        // the state dropdown navigates with the state filter applied
-        await page.locator('#search-state-dropdown').click();
-        await page.locator('.dropdown-item', { hasText: 'Connected' }).first().click();
+        // the status pill applies on Apply and keeps the search
+        await page.locator('#filter-state').click();
+        await page.locator('input[name="state"][value="connected"]').check();
+        await page
+            .locator('[data-filter-pill]', { has: page.locator('#filter-state') })
+            .getByRole('button', { name: 'Apply' })
+            .click();
         await page.waitForURL(/[?&]state=connected/);
-        await expect(page.locator('#search-state-dropdown')).toContainText('Connected');
+        await expect(page).toHaveURL(/[?&]query=e2e/);
+        await expect(page.locator('#filter-state')).toContainText('Connected');
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });

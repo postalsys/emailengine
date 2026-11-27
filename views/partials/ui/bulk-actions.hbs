@@ -1,0 +1,89 @@
+{{!--
+    ui/bulk-actions - bulk actions on the selected rows of a resource list: the floating bar that
+    appears while rows are selected, and the one dialog every action runs in (confirmation,
+    progress, then the outcome). The bar floats over the bottom of the window rather than sitting
+    above the table, so ticking the first box moves nothing under the pointer, and it is the same
+    control in the stacked phone layout, where the table header and its select-all are hidden.
+
+    The rows carry the selection: a checkbox with class "ee-bulk-select", the item id as its value
+    and the name to show as data-name (data-email adds the address beside it). A header checkbox
+    with id "bulkSelectAll" selects the page. Behavior lives in static/js/list-bulk.js, which posts
+    one item at a time to the endpoint, a few at a time, and expects { result: done | skipped |
+    missing | failed, reason?, note?, error? } back.
+
+    Block form; the block holds the action buttons, one per action:
+      <button type="button" class="btn btn-text btn-sm max-sm:px-2" data-bulk-action="delete"
+          data-confirm="Delete {count}? ..." data-typed="delete" data-danger="1" title="Delete">...</button>
+    data-confirm asks before running ({count} becomes "3 tokens"); without it the action starts at
+    once. data-typed makes the operator type that word first. The action name is posted as `action`.
+      {{#> ui/bulk-actions endpoint="/admin/tokens/:id/bulk" one="token" many="tokens"
+            morePages=showPaging matching=data.total}} ...buttons... {{/ui/bulk-actions}}
+    Params:
+      endpoint  - POST URL with ":id" where the item id goes (required)
+      one/many  - the item noun, singular and plural (required)
+      morePages - true when the list matches more items than this page shows
+      matching  - how many items the list matches
+      revoke    - true to offer "Also revoke OAuth2 access" on delete (accounts)
+--}}
+<div id="bulkSpacer" class="h-24" hidden></div>
+
+<div id="bulkBar" class="pointer-events-none fixed inset-x-0 bottom-4 z-30 flex justify-center px-4 lg:ps-sidebar" hidden
+    data-endpoint="{{endpoint}}" data-one="{{one}}" data-many="{{many}}" data-revoke="{{#if revoke}}1{{/if}}" data-more-pages="{{#if morePages}}1{{/if}}" data-matching="{{matching}}">
+    <div class="pointer-events-auto flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-box border border-base-content/10 bg-base-100 px-3 py-2 shadow-xl sm:gap-x-3 sm:px-4"
+        role="toolbar" aria-label="Bulk actions">
+        <div class="text-sm" aria-live="polite">
+            <strong id="bulkCount">0</strong> selected
+            <span id="bulkScope" class="text-base-content/60 max-md:hidden"></span>
+        </div>
+        <button type="button" id="bulkSelectPage" class="link link-primary link-animated text-sm">Select all<span class="max-md:hidden"> on this page</span></button>
+        <span class="hidden h-6 w-px bg-base-content/15 sm:block" aria-hidden="true"></span>
+        {{!-- Icon-only below sm (the buttons hide their label with max-sm:sr-only), so the bar stays
+              one row on a phone --}}
+        <div class="flex items-center gap-1">
+            {{> @partial-block endpoint="" one="" many="" morePages="" matching="" revoke=""}}
+        </div>
+        <button type="button" id="bulkClear" class="btn btn-text btn-circle btn-sm ms-auto" aria-label="Clear selection" title="Clear selection">
+            <span class="icon-[tabler--x] size-4"></span>
+        </button>
+    </div>
+</div>
+
+{{#> ui/modal id="bulkModal" title="Bulk action" titleId="bulkTitle" static=true hideClose=true}}
+<div class="modal-body">
+    {{!-- Confirmation --}}
+    <div id="bulkConfirmStep">
+        <p id="bulkDescription" class="mb-3"></p>
+        <ul id="bulkList" class="mb-3 max-h-48 list-disc overflow-y-auto ps-5 text-sm"></ul>
+
+        <div id="bulkRevokeRow" class="mb-3" hidden>
+            {{> ui/checkbox id="bulkRevoke" noName=true label="Also revoke OAuth2 access at Google or Microsoft"
+            hint="The provider forgets the grant, so nobody holding a copy of the token can use it. An account whose grant could not be revoked is still deleted and listed in the outcome."}}
+        </div>
+
+        <div id="bulkTypeRow" hidden>
+            <label class="label-text" for="bulkTypeConfirm">Type <strong id="bulkTypeWord">delete</strong> to confirm</label>
+            <input type="text" id="bulkTypeConfirm" class="input" autocomplete="off" spellcheck="false" autocapitalize="off">
+        </div>
+    </div>
+
+    {{!-- Progress --}}
+    <div id="bulkProgressStep" hidden>
+        <p id="bulkProgressText" class="mb-2" aria-live="polite"></p>
+        <progress id="bulkProgress" class="progress progress-primary w-full" value="0" max="100"></progress>
+    </div>
+
+    {{!-- Outcome --}}
+    <div id="bulkResultStep" hidden>
+        <ul id="bulkResults" class="space-y-3"></ul>
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" id="bulkCancel" class="btn btn-soft btn-neutral" data-overlay="#bulkModal">Cancel</button>
+    <button type="button" id="bulkStart" class="btn btn-primary">Confirm</button>
+    <button type="button" id="bulkStop" class="btn btn-soft btn-neutral" hidden>Stop</button>
+    <button type="button" id="bulkRetry" class="btn btn-soft btn-primary" hidden>Retry failed</button>
+    <button type="button" id="bulkDone" class="btn btn-primary" data-overlay="#bulkModal" hidden>Done</button>
+</div>
+{{/ui/modal}}
+
+<script data-cfasync="false" src="/static/js/list-bulk.js"></script>

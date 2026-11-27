@@ -1548,7 +1548,8 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('DOMContentLoaded', () => {
     for (const pill of document.querySelectorAll('[data-filter-pill]')) {
         const form = pill.closest('form');
-        const inputs = () => Array.from(pill.querySelectorAll('.dropdown-menu input:not([type="search"])'));
+        // Named inputs only: the account picker's own search box carries no name and is not a value
+        const inputs = () => Array.from(pill.querySelectorAll('.dropdown-menu input[name]'));
         const snapshot = () => inputs().map(input => (input.type === 'checkbox' ? input.checked : input.value));
 
         let opened = null;
@@ -1572,7 +1573,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 // Enter in a text box applies it. FlyonUI's dropdown keyboard handling takes Enter
                 // for itself, so the form's own implicit submission never happens
-                if (e.key === 'Enter' && e.target.matches('input[type="text"]') && form) {
+                if (e.key === 'Enter' && e.target.matches('input[type="text"][name]') && form) {
                     e.preventDefault();
                     e.stopPropagation();
                     opened = null;
@@ -1581,6 +1582,14 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             true
         );
+
+        // An account picked (or cleared) in an account pill applies at once: the pick is the decision
+        pill.addEventListener('change', e => {
+            if (e.target.matches('input[type="hidden"][name]') && form) {
+                opened = null;
+                form.requestSubmit();
+            }
+        });
 
         pill.addEventListener('close.dropdown', () => {
             if (!opened) {

@@ -2,7 +2,9 @@
 {{> ui/btn href="/admin/gateways/new" label="Add gateway" icon="icon-[tabler--plus]"}}
 {{/ui/page-header}}
 
-{{> ui/search-crumb parentHref="/admin/gateways" parentLabel="Gateways" query=query}}
+{{> ui/search-crumb parentHref=clearSearchHref parentLabel="Gateways" query=query}}
+
+{{> ui/filter-bar bar=filterBar}}
 
 {{#if gateways}}
 
@@ -65,7 +67,7 @@
 </div>
 
 {{else}}
-{{> ui/list-empty noun="gateways" query=query firstPage=firstPage createHref="/admin/gateways/new" createLabel="Add your first gateway" clearHref="/admin/gateways"}}
+{{> ui/list-empty noun="gateways" query=query filterActive=filterBar.active firstPage=firstPage createHref="/admin/gateways/new" createLabel="Add your first gateway" clearHref=emptyClearHref}}
 {{/if}}
 
 {{#> ui/details summary="How to use gateways" class="card bg-base-100 shadow-md mb-6"}}

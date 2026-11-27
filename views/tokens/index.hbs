@@ -11,13 +11,10 @@
 {{/if}}
 {{/ui/page-header}}
 
-{{> ui/search-crumb parentHref="/admin/tokens" parentLabel="Access Tokens" query=query}}
+{{> ui/search-crumb parentHref=clearSearchHref parentLabel="Access Tokens" query=query}}
 
-{{!-- The scope deep-link filter (the MCP pages link here with ?scope=mcp): named the same way an
-     active search is, with the parent crumb as the way out of it --}}
-{{#if scopeFilter}}
-{{> ui/breadcrumb parentHref="/admin/tokens" parentLabel="Access Tokens" current=(concat 'Tokens with the "' scopeFilter '" scope') class="mb-6"}}
-{{/if}}
+{{> ui/filter-bar bar=filterBar}}
+
 
 {{#if data.tokens}}
 <div class="card bg-base-100 shadow-md mb-6">
@@ -34,7 +31,12 @@
         <table class="table ee-table-stack">
             <thead>
                 <tr>
-                    <th>Description</th>
+                    <th>
+                        <span class="flex items-center gap-3">
+                            <input type="checkbox" class="checkbox checkbox-sm" id="bulkSelectAll" autocomplete="off" aria-label="Select all tokens on this page">
+                            Description
+                        </span>
+                    </th>
                     {{#if showAccountColumn}}
                     <th>Bound to</th>
                     {{/if}}
@@ -48,16 +50,22 @@
                 {{#each data.tokens}}
                 <tr>
                     <td>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <strong>{{description}}</strong>
-                            {{#if expiresStr}}
-                            {{> ui/badge label="Expires" variant="warning" soft=true icon="" class=""}}
-                            {{/if}}
+                        <div class="flex items-start gap-3">
+                            <input type="checkbox" class="checkbox checkbox-sm mt-0.5 ee-bulk-select" value="{{id}}" autocomplete="off"
+                                data-name="{{when description description idShort}}" aria-label="Select {{when description description idShort}}">
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <strong>{{description}}</strong>
+                                    {{#if expiresStr}}
+                                    {{> ui/badge label="Expires" variant="warning" soft=true icon="" class=""}}
+                                    {{/if}}
+                                </div>
+                                {{> ui/entity-id id=id short=idShort label="Token ID"}}
+                                {{#if expiresStr}}
+                                <div class="text-base-content/60 text-xs">Expires <span class="relative-time" data-time="{{expiresStr}}"></span></div>
+                                {{/if}}
+                            </div>
                         </div>
-                        {{> ui/entity-id id=id short=idShort label="Token ID"}}
-                        {{#if expiresStr}}
-                        <div class="text-base-content/60 text-xs">Expires <span class="relative-time" data-time="{{expiresStr}}"></span></div>
-                        {{/if}}
                     </td>
 
                     {{#if ../showAccountColumn}}
@@ -122,7 +130,7 @@
      program-association bug (the account note never rendered). Keep the block's first
      content token a static element. --}}
 {{#if account}}
-{{#> ui/list-empty noun="access tokens" query=query filterActive=scopeFilter firstPage=firstPage createHref=newLink createLabel="Create your first access token" clearHref="/admin/tokens"}}
+{{#> ui/list-empty noun="access tokens" query=query filterActive=filterBar.active firstPage=firstPage createHref=newLink createLabel="Create your first access token" clearHref=emptyClearHref}}
 <div class="mb-2">
     Showing tokens for <strong><a href="/admin/accounts/{{urlpart account.account}}"
             class="link link-animated">{{#if account.name}}{{account.name}}{{else}}{{account.email}}{{/if}}</a></strong>.
@@ -130,10 +138,19 @@
 </div>
 {{/ui/list-empty}}
 {{else}}
-{{> ui/list-empty noun="access tokens" query=query filterActive=scopeFilter firstPage=firstPage createHref=newLink createLabel="Create your first access token" clearHref="/admin/tokens"}}
+{{> ui/list-empty noun="access tokens" query=query filterActive=filterBar.active firstPage=firstPage createHref=newLink createLabel="Create your first access token" clearHref=emptyClearHref}}
 {{/if}}
 {{/if}}
 
+
+{{#if data.tokens}}
+{{#> ui/bulk-actions endpoint="/admin/tokens/:id/bulk" one="token" many="tokens" morePages=showPaging matching=data.total}}
+<button type="button" class="btn btn-text btn-sm max-sm:px-2 text-error" data-bulk-action="delete" title="Delete" data-typed="delete" data-danger="1"
+    data-confirm="Delete {count}? Every client using them is refused from the next request, and a deleted token cannot be restored.">
+    <span class="icon-[tabler--trash] size-4 shrink-0"></span><span class="max-sm:sr-only">Delete</span>
+</button>
+{{/ui/bulk-actions}}
+{{/if}}
 
 {{#> ui/details summary="Usage instructions" class="card bg-base-100 shadow-md mb-6"}}
 <div>
