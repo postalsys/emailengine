@@ -9,7 +9,7 @@
 {{#if accounts}}
 {{> accounts_table showActions=true selectable=true}}
 {{else}}
-{{> ui/list-empty noun="accounts" query=query filterActive=filterBar.active firstPage=firstPage createOverlay="#addAccount" createLabel="Add your first account" clearHref=(when query clearSearchHref filterBar.clearHref)}}
+{{> ui/list-empty noun="accounts" query=query filterActive=filterBar.active firstPage=firstPage createOverlay="#addAccount" createLabel="Add your first account" clearHref=emptyClearHref}}
 {{/if}}
 
 {{#> ui/delete-modal id="deleteAccount" noun="account" action="/admin/accounts"}}

@@ -1,11 +1,13 @@
 /* global document, window */
 'use strict';
 
-// Bulk actions on the accounts list (views/partials/accounts_bulk.hbs). The selection lives in the
-// row checkboxes; the floating bar shows while any is ticked. An action runs here, one account per
-// POST /admin/accounts/{account}/bulk and a few at a time, so the dialog shows real progress, Stop
-// takes effect after the requests already in flight, and the outcome names every account that was
-// skipped or failed. Every name shown comes from the page and is written as text, never markup.
+// Bulk actions on a resource list (views/partials/ui/bulk-actions.hbs). The selection lives in the
+// row checkboxes; the floating bar shows while any is ticked. An action runs here, one item per POST
+// to the bar's endpoint and a few at a time, so the dialog shows real progress, Stop takes effect
+// after the requests already in flight, and the outcome names every item that was skipped or
+// failed. The list says what it holds (data-one/data-many on the bar) and what each action asks
+// first (data-confirm, data-typed, data-danger on its button). Every name shown comes from the
+// page and is written as text, never markup.
 
 document.addEventListener('DOMContentLoaded', () => {
     const bar = document.getElementById('bulkBar');
@@ -17,37 +19,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const CONCURRENCY = 3;
     const LIST_LIMIT = 8;
 
-    const ACTIONS = {
+    // The verb forms of the actions a list can offer; what each one asks before it runs comes from
+    // its button
+    const VERBS = {
         reconnect: { verb: 'Reconnect', running: 'Reconnecting', done: 'Reconnected' },
-        pause: {
-            verb: 'Pause',
-            running: 'Pausing',
-            done: 'Paused',
-            confirm: count => `Stop syncing ${plural(count)}? IMAP accounts can still send. Use Resume to turn syncing back on.`
-        },
+        pause: { verb: 'Pause', running: 'Pausing', done: 'Paused' },
         resume: { verb: 'Resume', running: 'Resuming', done: 'Resumed' },
-        delete: {
-            verb: 'Delete',
-            running: 'Deleting',
-            done: 'Deleted',
-            danger: true,
-            typed: 'delete',
-            confirm: count =>
-                `Delete ${plural(count)} from EmailEngine? This removes their synced data, account-specific templates, access tokens and queued emails. Emails on the mail server are not deleted. This cannot be undone.`
-        }
+        delete: { verb: 'Delete', running: 'Deleting', done: 'Deleted' }
     };
+
+    const ACTIONS = {};
+    for (const btn of bar.querySelectorAll('[data-bulk-action]')) {
+        const action = btn.dataset.bulkAction;
+        const template = btn.dataset.confirm;
+        ACTIONS[action] = Object.assign({}, VERBS[action], {
+            typed: btn.dataset.typed || null,
+            danger: !!btn.dataset.danger,
+            confirm: template ? count => template.replace('{count}', plural(count)) : null
+        });
+    }
+
+    const endpoint = bar.dataset.endpoint;
+    const one = bar.dataset.one || 'item';
+    const many = bar.dataset.many || 'items';
+    const revokeOffered = !!bar.dataset.revoke;
 
     const $ = id => document.getElementById(id);
     const boxes = () => Array.from(document.querySelectorAll('.ee-bulk-select'));
     const selected = () => boxes().filter(box => box.checked);
 
-    // "Name (address)", since two accounts often share a display name
+    // "Name (address)": two accounts often share a display name, and a row without an address shows its name
     function label(target) {
         return target.email && target.email !== target.name ? `${target.name} (${target.email})` : target.name;
     }
 
     function plural(count) {
-        return `${count} account${count === 1 ? '' : 's'}`;
+        return `${count} ${count === 1 ? one : many}`;
     }
 
     function show(elm, visible) {
@@ -153,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function open(action) {
         const spec = ACTIONS[action];
         const targets = selected().map(box => ({
-            account: box.value,
+            id: box.value,
             name: box.dataset.name || box.value,
             email: box.dataset.email || '',
             oauth: !!box.dataset.oauth
@@ -175,9 +182,10 @@ document.addEventListener('DOMContentLoaded', () => {
         $('bulkDescription').textContent = spec.confirm(targets.length);
         nameList($('bulkList'), targets);
 
-        show($('bulkRevokeRow'), action === 'delete' && targets.some(target => target.oauth));
+        show($('bulkRevokeRow'), revokeOffered && action === 'delete' && targets.some(target => target.oauth));
         $('bulkRevoke').checked = false;
         show($('bulkTypeRow'), !!spec.typed);
+        $('bulkTypeWord').textContent = spec.typed || '';
         typed.value = '';
 
         startBtn.textContent = `${spec.verb} ${plural(targets.length)}`;
@@ -233,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function runOne(target, opts) {
         try {
-            const res = await window.uiPostJson(`/admin/accounts/${encodeURIComponent(target.account)}/bulk`, {
+            const res = await window.uiPostJson(endpoint.replace(':id', encodeURIComponent(target.id)), {
                 action: current.action,
                 revoke: opts.revoke
             });
@@ -245,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function run(targets) {
         const spec = ACTIONS[current.action];
-        const opts = { revoke: current.action === 'delete' && $('bulkRevoke').checked };
+        const opts = { revoke: revokeOffered && current.action === 'delete' && $('bulkRevoke').checked };
         const queue = targets.slice();
         const results = [];
         ran = true;
@@ -277,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showResults(spec, results, queue);
     }
 
-    // One outcome line, with the accounts it concerns listed under it when they need naming
+    // One outcome line, with the items it concerns listed under it when they need naming
     function resultGroup(icon, tone, title, entries, detail) {
         const item = document.createElement('li');
 

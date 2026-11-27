@@ -55,19 +55,20 @@ test('routes-ui.js stays within the size budget', () => {
 // braces). A statement count is blind to all of that and grows with what the cap is about, the
 // handler code. Route option objects and joi schemas are expressions, so a schema is not counted.
 const MODULE_BUDGETS = {
-    // 502: the accounts list's filters live in account-listing.js
-    'account-routes.js': 502,
+    // 503: the accounts list's filters live in account-listing.js, its paging in list-filters.js
+    'account-routes.js': 503,
     // the accounts list's bulk actions (one action on one account per request)
     'account-bulk.js': 54,
     // helpers of the account pages, moved out of account-routes.js
     'account-edit-form.js': 65,
     // the accounts list's filter definitions and query
-    'account-listing.js': 18,
+    'account-listing.js': 12,
     'account-page.js': 49,
     'account-setup.js': 32,
     // 306: the license page moved to license-routes.js
     'admin-config-routes.js': 306,
-    'admin-entities-routes.js': 574,
+    // 505: the list pages' paging and filters live in list-filters.js and entity-list-filters.js
+    'admin-entities-routes.js': 505,
     'ai-options.js': 22,
     // 522: logout ends the device-bound session binding (require + call)
     'auth-routes.js': 522,
@@ -75,6 +76,8 @@ const MODULE_BUDGETS = {
     // 38: the Node.js runtime notice on the dashboard and the upgrade page (its require)
     'dashboard-routes.js': 38,
     'dbsc-routes.js': 6,
+    // the filter pills of the gateways, webhook routes, templates, tokens and OAuth2 apps lists
+    'entity-list-filters.js': 20,
     'export-routes.js': 49,
     'form-lists.js': 8,
     'gmail-service-auth.js': 12,
@@ -82,11 +85,12 @@ const MODULE_BUDGETS = {
     // the license page, moved out of admin-config-routes.js with the subscription check
     'license-routes.js': 107,
     // the filter pills view model shared by the admin lists
-    'list-filters.js': 46,
+    'list-filters.js': 62,
     'internals-routes.js': 146,
     'mcp-consent-routes.js': 87,
     'network-config-routes.js': 121,
-    'oauth-config-routes.js': 297,
+    // 285: the OAuth2 apps list's paging and filter live in list-filters.js
+    'oauth-config-routes.js': 285,
     'oauth-form-context.js': 3,
     'outlook-subscription-view.js': 15,
     'overridable-fields.js': 18,
@@ -101,6 +105,8 @@ const MODULE_BUDGETS = {
     'special-use-paths.js': 5,
     'suppression-list-routes.js': 83,
     'tls-config-routes.js': 187,
+    // bulk delete on the access tokens list
+    'token-bulk.js': 14,
     'unsubscribe-routes.js': 64
 };
 

@@ -1,82 +1,20 @@
-{{!-- Bulk actions for the accounts list (accounts index only): the floating bar that appears
-      while rows are selected (the checkboxes come from accounts_table with selectable=true), and
-      the one dialog every action runs in - confirmation, progress, then the outcome. The bar
-      floats over the bottom of the window rather than sitting above the table, so ticking the
-      first box moves nothing under the pointer, and it is the same control in the stacked phone
-      layout, where the table header and its select-all are hidden. Behavior lives in
-      static/js/accounts-bulk.js, which posts one account at a time to
-      POST /admin/accounts/{account}/bulk.
+{{!-- Bulk actions for the accounts list (accounts index only), on ui/bulk-actions. Each action
+      posts one account at a time to POST /admin/accounts/{account}/bulk.
       Context: showPaging (the filter matches more accounts than this page shows) and matching
       (how many it matches), from the accounts index view. --}}
-<div id="bulkSpacer" class="h-24" hidden></div>
-
-<div id="bulkBar" class="pointer-events-none fixed inset-x-0 bottom-4 z-30 flex justify-center px-4 lg:ps-sidebar" hidden
-    data-more-pages="{{#if showPaging}}1{{/if}}" data-matching="{{matching}}">
-    <div class="pointer-events-auto flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-box border border-base-content/10 bg-base-100 px-3 py-2 shadow-xl sm:gap-x-3 sm:px-4"
-        role="toolbar" aria-label="Bulk actions">
-        <div class="text-sm" aria-live="polite">
-            <strong id="bulkCount">0</strong> selected
-            <span id="bulkScope" class="text-base-content/60 max-md:hidden"></span>
-        </div>
-        <button type="button" id="bulkSelectPage" class="link link-primary link-animated text-sm">Select all<span class="max-md:hidden"> on this page</span></button>
-        <span class="hidden h-6 w-px bg-base-content/15 sm:block" aria-hidden="true"></span>
-        {{!-- Icon-only below sm, so the bar stays one row on a phone; the label stays for screen readers --}}
-        <div class="flex items-center gap-1">
-            <button type="button" class="btn btn-text btn-sm max-sm:px-2" data-bulk-action="reconnect" title="Reconnect">
-                <span class="icon-[tabler--refresh] size-4 shrink-0"></span><span class="max-sm:sr-only">Reconnect</span>
-            </button>
-            <button type="button" class="btn btn-text btn-sm max-sm:px-2" data-bulk-action="pause" title="Pause">
-                <span class="icon-[tabler--player-pause] size-4 shrink-0"></span><span class="max-sm:sr-only">Pause</span>
-            </button>
-            <button type="button" class="btn btn-text btn-sm max-sm:px-2" data-bulk-action="resume" title="Resume">
-                <span class="icon-[tabler--player-play] size-4 shrink-0"></span><span class="max-sm:sr-only">Resume</span>
-            </button>
-            <button type="button" class="btn btn-text btn-sm max-sm:px-2 text-error" data-bulk-action="delete" title="Delete">
-                <span class="icon-[tabler--trash] size-4 shrink-0"></span><span class="max-sm:sr-only">Delete</span>
-            </button>
-        </div>
-        <button type="button" id="bulkClear" class="btn btn-text btn-circle btn-sm ms-auto" aria-label="Clear selection" title="Clear selection">
-            <span class="icon-[tabler--x] size-4"></span>
-        </button>
-    </div>
-</div>
-
-{{#> ui/modal id="bulkModal" title="Bulk action" titleId="bulkTitle" static=true hideClose=true}}
-<div class="modal-body">
-    {{!-- Confirmation --}}
-    <div id="bulkConfirmStep">
-        <p id="bulkDescription" class="mb-3"></p>
-        <ul id="bulkList" class="mb-3 max-h-48 list-disc overflow-y-auto ps-5 text-sm"></ul>
-
-        <div id="bulkRevokeRow" class="mb-3" hidden>
-            {{> ui/checkbox id="bulkRevoke" noName=true label="Also revoke OAuth2 access at Google or Microsoft"
-            hint="The provider forgets the grant, so nobody holding a copy of the token can use it. An account whose grant could not be revoked is still deleted and listed in the outcome."}}
-        </div>
-
-        <div id="bulkTypeRow" hidden>
-            <label class="label-text" for="bulkTypeConfirm">Type <strong>delete</strong> to confirm</label>
-            <input type="text" id="bulkTypeConfirm" class="input" autocomplete="off" spellcheck="false" autocapitalize="off">
-        </div>
-    </div>
-
-    {{!-- Progress --}}
-    <div id="bulkProgressStep" hidden>
-        <p id="bulkProgressText" class="mb-2" aria-live="polite"></p>
-        <progress id="bulkProgress" class="progress progress-primary w-full" value="0" max="100"></progress>
-    </div>
-
-    {{!-- Outcome --}}
-    <div id="bulkResultStep" hidden>
-        <ul id="bulkResults" class="space-y-3"></ul>
-    </div>
-</div>
-<div class="modal-footer">
-    <button type="button" id="bulkCancel" class="btn btn-soft btn-neutral" data-overlay="#bulkModal">Cancel</button>
-    <button type="button" id="bulkStart" class="btn btn-primary">Confirm</button>
-    <button type="button" id="bulkStop" class="btn btn-soft btn-neutral" hidden>Stop</button>
-    <button type="button" id="bulkRetry" class="btn btn-soft btn-primary" hidden>Retry failed</button>
-    <button type="button" id="bulkDone" class="btn btn-primary" data-overlay="#bulkModal" hidden>Done</button>
-</div>
-{{/ui/modal}}
-
-<script data-cfasync="false" src="/static/js/accounts-bulk.js"></script>
+{{#> ui/bulk-actions endpoint="/admin/accounts/:id/bulk" one="account" many="accounts" morePages=showPaging matching=matching revoke=true}}
+<button type="button" class="btn btn-text btn-sm max-sm:px-2" data-bulk-action="reconnect" title="Reconnect">
+    <span class="icon-[tabler--refresh] size-4 shrink-0"></span><span class="max-sm:sr-only">Reconnect</span>
+</button>
+<button type="button" class="btn btn-text btn-sm max-sm:px-2" data-bulk-action="pause" title="Pause"
+    data-confirm="Stop syncing {count}? IMAP accounts can still send. Use Resume to turn syncing back on.">
+    <span class="icon-[tabler--player-pause] size-4 shrink-0"></span><span class="max-sm:sr-only">Pause</span>
+</button>
+<button type="button" class="btn btn-text btn-sm max-sm:px-2" data-bulk-action="resume" title="Resume">
+    <span class="icon-[tabler--player-play] size-4 shrink-0"></span><span class="max-sm:sr-only">Resume</span>
+</button>
+<button type="button" class="btn btn-text btn-sm max-sm:px-2 text-error" data-bulk-action="delete" title="Delete" data-typed="delete" data-danger="1"
+    data-confirm="Delete {count} from EmailEngine? This removes their synced data, account-specific templates, access tokens and queued emails. Emails on the mail server are not deleted. This cannot be undone.">
+    <span class="icon-[tabler--trash] size-4 shrink-0"></span><span class="max-sm:sr-only">Delete</span>
+</button>
+{{/ui/bulk-actions}}

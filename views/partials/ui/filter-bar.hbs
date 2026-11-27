@@ -2,7 +2,8 @@
     ui/filter-bar - the row of filter pills above a resource list. One pill per filter: an unset
     pill is a dashed "+ Status" button, a set one names its value ("Status: Connected") and carries
     an x that drops just that filter. Each pill opens a short menu (checkboxes, a text box or an
-    account picker) that applies when it closes; Escape throws the change away (static/js/ui.js).
+    account picker) that applies when it closes, or at once for a picked account; Escape throws the
+    change away (static/js/ui.js).
     The menus share one GET form, so applying one pill submits the others as they stand, and the
     Apply button makes it work without JavaScript too.
       {{> ui/filter-bar bar=filterBar}}
@@ -61,12 +62,16 @@
             </div>
             {{/if}}
 
+            {{!-- An account pill has no footer: picking an account applies it, and the picker's own x
+                  (or the pill's) clears it --}}
+            {{#unless isAccount}}
             <div class="flex items-center justify-end gap-2 border-t border-base-content/10 p-2">
                 {{#if active}}
                 <a href="{{clearHref}}" class="btn btn-text btn-sm">Clear</a>
                 {{/if}}
                 <button type="submit" class="btn btn-primary btn-sm">Apply</button>
             </div>
+            {{/unless}}
         </div>
     </div>
     {{/each}}

@@ -2,11 +2,10 @@
 {{> ui/btn href=newLink label="Create template" icon="icon-[tabler--plus]"}}
 {{/ui/page-header}}
 
-{{#if query}}
-{{> ui/search-crumb parentHref="/admin/templates" parentLabel="Templates" query=query}}
-{{else if account}}
-{{> ui/breadcrumb parentHref="/admin/templates" parentLabel="Templates" current=account.name class="mb-6"}}
-{{/if}}
+{{> ui/search-crumb parentHref=clearSearchHref parentLabel="Templates" query=query}}
+
+{{!-- The account pill switches between the shared templates and one account's own --}}
+{{> ui/filter-bar bar=filterBar}}
 
 {{#if templates}}
 <div class="card bg-base-100 shadow-md mb-6">
@@ -62,7 +61,7 @@
      program-association bug (the account note never rendered). Keep the block's first
      content token a static element. --}}
 {{#if account}}
-{{#> ui/list-empty noun="templates" query=query firstPage=firstPage createHref=newLink createLabel="Create your first template" clearHref="/admin/templates"}}
+{{#> ui/list-empty noun="templates" query=query firstPage=firstPage createHref=newLink createLabel="Create your first template" clearHref=clearSearchHref}}
 <div class="mb-2">
     Showing templates for <strong><a href="/admin/accounts/{{urlpart account.account}}"
             class="link link-animated">{{#if account.name}}{{account.name}}{{else}}{{account.email}}{{/if}}</a></strong>.
@@ -70,7 +69,7 @@
 </div>
 {{/ui/list-empty}}
 {{else}}
-{{> ui/list-empty noun="templates" query=query firstPage=firstPage createHref=newLink createLabel="Create your first template" clearHref="/admin/templates"}}
+{{> ui/list-empty noun="templates" query=query firstPage=firstPage createHref=newLink createLabel="Create your first template" clearHref=clearSearchHref}}
 {{/if}}
 {{/if}}
 

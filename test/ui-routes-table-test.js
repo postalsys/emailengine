@@ -201,6 +201,7 @@ const GOLDEN_ROUTES = [
     'POST /admin/templates/test',
     'POST /admin/tokens/delete',
     'POST /admin/tokens/new',
+    'POST /admin/tokens/{token}/bulk',
     'POST /admin/totp',
     'POST /admin/webhooks/delete',
     'POST /admin/webhooks/edit',
