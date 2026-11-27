@@ -8,8 +8,15 @@
     {{/ui/detail-toolbar}}
 
     <h6 class="card-title">{{listId}}</h6>
-    <h6 class="mb-6 text-base-content/60">{{total}} suppressed {{#equals total 1}}address{{else}}addresses{{/equals}}</h6>
+    <h6 class="mb-4 text-base-content/60">{{total}} suppressed {{#equals total 1}}address{{else}}addresses{{/equals}}{{#if filterBar.active}} {{#equals total 1}}matches{{else}}match{{/equals}} the filters{{/if}}</h6>
 
+    {{> ui/filter-bar bar=filterBar}}
+
+    {{#unless addresses}}
+    <p class="mb-2">No addresses match the current filter. <a href="{{filterBar.clearHref}}" class="link link-animated">Show all addresses</a>.</p>
+    {{/unless}}
+
+    {{#if addresses}}
     <div class="overflow-x-auto">
         <table class="table ee-table-stack">
             <thead>
@@ -63,6 +70,7 @@
             </tbody>
         </table>
     </div>
+    {{/if}}
 
     {{> ui/pagination showPaging=showPaging prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
 

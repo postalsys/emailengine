@@ -12,6 +12,7 @@ const { redis } = require('../lib/db');
 const { Gateway, gatewayState } = require('../lib/gateway');
 const { webhooks, webhookStatus } = require('../lib/webhooks');
 const { oauth2Apps } = require('../lib/oauth2-apps');
+const { lists } = require('../lib/lists');
 const { filterListPage } = require('../lib/tools');
 const { listPageView } = require('../lib/ui-routes/list-filters');
 const { LIST_FILTER_QUERY, LIST_FILTERS } = require('../lib/ui-routes/entity-list-filters');
@@ -99,6 +100,33 @@ test('listings filter by the derived state', async t => {
         assert.deepEqual(await list(['failing']), [failing]);
         assert.deepEqual(await list(['enabled', 'disabled']), [on, off].sort());
         assert.deepEqual(await list([]), [failing, off, on].sort());
+    });
+
+    await t.test('suppression list entries by reason, source and account', async () => {
+        const listId = `lpf-${suffix}`;
+        const add = (recipient, account, reason, source) => lists.add(listId, recipient, { account, reason, source });
+        await add('a@example.com', 'acc-1', 'unsubscribe', 'form');
+        await add('b@example.com', 'acc-2', 'unsubscribe', 'api');
+        await add('c@example.com', 'acc-1', 'block', 'api');
+        t.after(async () => {
+            for (const recipient of ['a@example.com', 'b@example.com', 'c@example.com']) {
+                await lists.remove(listId, recipient).catch(() => false);
+            }
+        });
+
+        const list = async opts => {
+            const data = await lists.listContent(listId, 0, 20, opts);
+            return { total: data.total, recipients: data.addresses.map(entry => entry.recipient), values: data.values };
+        };
+
+        assert.deepEqual((await list({ reason: ['unsubscribe'] })).recipients, ['a@example.com', 'b@example.com']);
+        assert.deepEqual((await list({ source: ['api'], account: 'acc-1' })).recipients, ['c@example.com']);
+        // the values come from the whole list, whatever the filter
+        assert.deepEqual((await list({ reason: ['block'], withValues: true })).values, { reason: ['block', 'unsubscribe'], source: ['api', 'form'] });
+        // an unfiltered page reads as before, without values
+        const plain = await list();
+        assert.equal(plain.total, 3);
+        assert.equal(plain.values, undefined);
     });
 
     await t.test('OAuth2 apps by provider', async () => {
