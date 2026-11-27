@@ -19954,35 +19954,43 @@
             "name": "state",
             "in": "query",
             "schema": {
-              "type": "string",
-              "description": "Filter accounts by state",
-              "example": "connected",
-              "x-meta": {
-                "enumDescriptions": {
-                  "init": "The account was just registered and has not connected yet",
-                  "connecting": "Connecting to the mail server or authorizing with the provider",
-                  "syncing": "Connected and performing the initial or a periodic mailbox sync",
-                  "connected": "Connected and watching for changes. This is the healthy steady state",
-                  "disconnected": "The connection dropped and EmailEngine is retrying with backoff",
-                  "paused": "Syncing was paused through the API. No connection is maintained",
-                  "authenticationError": "The credentials were rejected. Requires re-authentication before syncing resumes",
-                  "connectError": "The server could not be reached, the TLS handshake failed, or - for an MS Graph account - its change subscription could not be created or renewed, which leaves the account with no way to learn about new mail. Retried with backoff",
-                  "unset": "The account is not syncing: either no IMAP or OAuth2 configuration is set, or syncing was switched off - by the operator, or automatically after repeated authentication failures"
-                }
+              "type": "array",
+              "description": "Filter accounts by state. Repeat the parameter to list accounts in any of several states",
+              "x-constraint": {
+                "single": true
               },
-              "enum": [
-                "init",
-                "unset",
-                "connected",
-                "connecting",
-                "syncing",
-                "authenticationError",
-                "connectError",
-                "disconnected",
-                "paused"
-              ]
+              "items": {
+                "type": "string",
+                "example": "connected",
+                "x-meta": {
+                  "enumDescriptions": {
+                    "init": "The account was just registered and has not connected yet",
+                    "connecting": "Connecting to the mail server or authorizing with the provider",
+                    "syncing": "Connected and performing the initial or a periodic mailbox sync",
+                    "connected": "Connected and watching for changes. This is the healthy steady state",
+                    "disconnected": "The connection dropped and EmailEngine is retrying with backoff",
+                    "paused": "Syncing was paused through the API. No connection is maintained",
+                    "authenticationError": "The credentials were rejected. Requires re-authentication before syncing resumes",
+                    "connectError": "The server could not be reached, the TLS handshake failed, or - for an MS Graph account - its change subscription could not be created or renewed, which leaves the account with no way to learn about new mail. Retried with backoff",
+                    "unset": "The account is not syncing: either no IMAP or OAuth2 configuration is set, or syncing was switched off - by the operator, or automatically after repeated authentication failures"
+                  }
+                },
+                "enum": [
+                  "init",
+                  "unset",
+                  "connected",
+                  "connecting",
+                  "syncing",
+                  "authenticationError",
+                  "connectError",
+                  "disconnected",
+                  "paused"
+                ]
+              }
             },
-            "description": "Filter accounts by state"
+            "description": "Filter accounts by state. Repeat the parameter to list accounts in any of several states",
+            "style": "form",
+            "explode": true
           },
           {
             "name": "query",
@@ -19993,6 +20001,60 @@
               "example": "user@example.com"
             },
             "description": "Filter accounts by string match"
+          },
+          {
+            "name": "domain",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "Filter accounts by email domain. Matches the domain and its subdomains, so \"example.com\" also lists \"eu.example.com\"",
+              "example": "example.com",
+              "maxLength": 255,
+              "pattern": "^[^\\s@/]+$",
+              "x-convert": {
+                "case": "lower",
+                "trim": true
+              }
+            },
+            "description": "Filter accounts by email domain. Matches the domain and its subdomains, so \"example.com\" also lists \"eu.example.com\""
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "description": "Filter accounts by kind. Repeat the parameter to list several kinds",
+              "example": [
+                "imap"
+              ],
+              "x-constraint": {
+                "single": true
+              },
+              "items": {
+                "type": "string",
+                "x-meta": {
+                  "enumDescriptions": {
+                    "imap": "Accounts that sign in to an IMAP server with their own settings, not through an OAuth2 app",
+                    "sending": "SMTP-only accounts, and IMAP accounts whose syncing the operator switched off",
+                    "gmail": "Accounts of a Gmail OAuth2 app, service-account apps included, over IMAP or the Gmail API",
+                    "outlook": "Accounts of a Microsoft OAuth2 app, application-permission apps included, over IMAP or Microsoft Graph",
+                    "mailRu": "Accounts of a Mail.ru OAuth2 app",
+                    "delegated": "Accounts that read a shared mailbox with the credentials of another account"
+                  }
+                },
+                "enum": [
+                  "imap",
+                  "sending",
+                  "gmail",
+                  "outlook",
+                  "mailRu",
+                  "delegated"
+                ]
+              }
+            },
+            "description": "Filter accounts by kind. Repeat the parameter to list several kinds",
+            "style": "form",
+            "explode": true
           }
         ],
         "tags": [

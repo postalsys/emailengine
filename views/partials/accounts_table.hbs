@@ -6,6 +6,12 @@
         showActions - true to render the trailing kebab (Open / Delete) column;
                       the page must then also provide a #deleteAccount confirm
                       modal (accounts index only; omitted on the thread reuse)
+        selectable  - true to put a selection checkbox in front of each name and a
+                      select-all in the header, for the bulk actions bar
+                      (partials/accounts_bulk.hbs; accounts index only). The box sits
+                      in the name cell rather than a column of its own, so the stacked
+                      phone layout keeps it beside the name instead of on a line of
+                      its own
       Context: accounts (row objects incl. stateLabel/type) plus the
       showPaging/prevPage/nextPage/pageLinks pagination values. --}}
 {{#if accounts}}
@@ -15,7 +21,16 @@
         <table class="table ee-table-stack">
             <thead>
                 <tr>
+                    {{#if selectable}}
+                    <th>
+                        <span class="flex items-center gap-3">
+                            <input type="checkbox" class="checkbox checkbox-sm" id="bulkSelectAll" autocomplete="off" aria-label="Select all accounts on this page">
+                            Name
+                        </span>
+                    </th>
+                    {{else}}
                     <th>Name</th>
+                    {{/if}}
                     <th>Email</th>
                     <th>Type</th>
                     <th>Status</th>
@@ -30,8 +45,21 @@
                 <tr class="hover:bg-base-200/60">
                     <td class="relative">
                         {{> ui/row-link href=(concat "/admin/accounts/" (urlpart account)) label="Open account"}}
+                        {{#if ../selectable}}
+                        <div class="flex items-start gap-3">
+                            {{!-- relative z-[1] lifts the box above the row link, so a click selects instead of opening --}}
+                            <input type="checkbox" class="checkbox checkbox-sm relative z-[1] mt-0.5 ee-bulk-select" value="{{account}}" autocomplete="off"
+                                data-name="{{when name name email}}" data-email="{{email}}"{{#if oauth2.provider}} data-oauth="1"{{/if}}
+                                aria-label="Select {{when name name email}}">
+                            <div class="min-w-0">
+                                <div><strong>{{name}}</strong></div>
+                                {{> ui/entity-id id=account label="Account ID"}}
+                            </div>
+                        </div>
+                        {{else}}
                         <div><strong>{{name}}</strong></div>
                         {{> ui/entity-id id=account label="Account ID"}}
+                        {{/if}}
                     </td>
                     <td class="relative" data-label="Email">
                         {{> ui/row-link href=(concat "/admin/accounts/" (urlpart account))}}{{email}}

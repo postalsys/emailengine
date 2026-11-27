@@ -1540,3 +1540,70 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
+// Filter pills (views/partials/ui/filter-bar.hbs). A pill's menu applies its change when it closes,
+// however it closes (a click elsewhere, the toggle again), so ticking three states is three clicks
+// and not three page loads. Escape is the way out without applying: the inputs go back to what
+// they were when the menu opened. A menu closed with nothing changed submits nothing.
+document.addEventListener('DOMContentLoaded', () => {
+    for (const pill of document.querySelectorAll('[data-filter-pill]')) {
+        const form = pill.closest('form');
+        const inputs = () => Array.from(pill.querySelectorAll('.dropdown-menu input:not([type="search"])'));
+        const snapshot = () => inputs().map(input => (input.type === 'checkbox' ? input.checked : input.value));
+
+        let opened = null;
+        let cancelled = false;
+
+        pill.addEventListener('open.dropdown', () => {
+            opened = snapshot();
+            cancelled = false;
+            const first = pill.querySelector('.dropdown-menu input:not([type="hidden"])');
+            if (first) {
+                first.focus();
+            }
+        });
+
+        pill.addEventListener(
+            'keydown',
+            e => {
+                if (e.key === 'Escape') {
+                    cancelled = true;
+                    return;
+                }
+                // Enter in a text box applies it. FlyonUI's dropdown keyboard handling takes Enter
+                // for itself, so the form's own implicit submission never happens
+                if (e.key === 'Enter' && e.target.matches('input[type="text"]') && form) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    opened = null;
+                    form.requestSubmit();
+                }
+            },
+            true
+        );
+
+        pill.addEventListener('close.dropdown', () => {
+            if (!opened) {
+                return;
+            }
+            const before = opened;
+            opened = null;
+
+            if (cancelled) {
+                inputs().forEach((input, i) => {
+                    if (input.type === 'checkbox') {
+                        input.checked = before[i];
+                    } else {
+                        input.value = before[i];
+                    }
+                });
+                return;
+            }
+
+            const after = snapshot();
+            if (after.some((value, i) => value !== before[i]) && form) {
+                form.requestSubmit();
+            }
+        });
+    }
+});

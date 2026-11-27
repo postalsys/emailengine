@@ -56,6 +56,7 @@
 @source '../../js/passkey-register.js';
 @source '../../js/login-passkey.js';
 @source '../../js/reference.js';
+@source '../../js/accounts-bulk.js';
 @source '../../../node_modules/flyonui/flyonui.js';
 
 /* Safelist for classes assembled dynamically - in JS (badge-${type} etc.) and

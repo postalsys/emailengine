@@ -13,6 +13,7 @@ process.env.EENGINE_REDIS_PREFIX = 'test_lua_scripts';
 
 const { redis } = require('../lib/db');
 const { REDIS_PREFIX } = require('../lib/consts');
+const { accountKind } = require('../lib/account/listing-filters');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
 async function cleanup() {
@@ -248,5 +249,92 @@ test('sListAccounts', async t => {
         assert.deepEqual(await list('*', 10, 2), { total: 5, skip: 10, ids: [] });
         assert.deepEqual(await list('connected', 10, 2), { total: 3, skip: 10, ids: [] });
         assert.deepEqual(await list('*', 10, 2, 'example.org'), { total: 2, skip: 10, ids: [] });
+    });
+});
+
+test('sListAccounts filters by domain and kind', async t => {
+    const listKey = `${REDIS_PREFIX}ia:accounts`;
+    const imap = JSON.stringify({ host: 'imap.example.com', auth: { user: 'u' } });
+    const accounts = [
+        { account: 'kind-01', email: 'a@acme.com', state: 'connected', imap },
+        { account: 'kind-02', email: 'b@EU.Acme.com', state: 'connected', oauth2: JSON.stringify({ provider: 'app-gmail', auth: { user: 'b' } }) },
+        { account: 'kind-03', email: 'c@acme.com.au', state: 'connected', oauth2: JSON.stringify({ provider: 'app-outlook' }) },
+        { account: 'kind-04', email: 'd@notacme.com', state: 'connected', smtp: JSON.stringify({ host: 'smtp.example.com' }) },
+        // the operator switched IMAP off: reported as sending only, like listAccounts() does
+        { account: 'kind-05', email: 'e@acme.com', state: 'unset', imap: JSON.stringify({ host: 'imap.example.com', disabled: true }) },
+        // parked by the auth-failure safety net: still an IMAP account
+        {
+            account: 'kind-06',
+            email: 'f@acme.com',
+            state: 'unset',
+            imap: JSON.stringify({ host: 'imap.example.com', disabled: true }),
+            _authFailureDisabled: '2026-01-01T00:00:00.000Z'
+        },
+        { account: 'kind-07', email: 'g@acme.com', state: 'connected', oauth2: JSON.stringify({ auth: { user: 'g', delegatedAccount: 'kind-03' } }) },
+        // an app this instance no longer has
+        { account: 'kind-08', email: 'h@acme.com', state: 'connected', oauth2: JSON.stringify({ provider: 'app-gone' }) },
+        // stored values that do not parse are no reason to fail the listing
+        { account: 'kind-09', email: 'no-at-sign', state: 'connected', imap: '{broken', oauth2: 'null' }
+    ];
+    const appKinds = 'app-gmail=gmail\napp-outlook=outlook';
+
+    await redis.del(listKey);
+    for (const entry of accounts) {
+        await redis.sadd(listKey, entry.account);
+        await redis.hset(`${REDIS_PREFIX}iad:${entry.account}`, entry);
+    }
+
+    const list = async ({ state = '*', skip = 0, count = 20, search = '', domain = '', kinds = '' } = {}) => {
+        const [total, , rows] = await redis.sListAccounts(listKey, state, skip, count, REDIS_PREFIX, search, domain, kinds, appKinds);
+        return { total, ids: rows.map(row => row[row.indexOf('account') + 1]) };
+    };
+
+    await t.test('a domain matches itself and its subdomains, never a longer or embedding name', async () => {
+        assert.deepEqual(await list({ domain: 'acme.com' }), { total: 6, ids: ['kind-01', 'kind-02', 'kind-05', 'kind-06', 'kind-07', 'kind-08'] });
+        assert.deepEqual(await list({ domain: 'ACME.com.au' }), { total: 1, ids: ['kind-03'] });
+        assert.deepEqual(await list({ domain: 'eu.acme.com' }), { total: 1, ids: ['kind-02'] });
+        assert.deepEqual(await list({ domain: 'cme.com' }), { total: 0, ids: [] });
+    });
+
+    await t.test('kinds follow the OAuth2 app, then a delegated credential, then IMAP', async () => {
+        assert.deepEqual((await list({ kinds: 'imap' })).ids, ['kind-01', 'kind-06']);
+        assert.deepEqual((await list({ kinds: 'sending' })).ids, ['kind-04', 'kind-05', 'kind-09']);
+        assert.deepEqual((await list({ kinds: 'gmail' })).ids, ['kind-02']);
+        assert.deepEqual((await list({ kinds: 'outlook,delegated' })).ids, ['kind-03', 'kind-07']);
+        assert.deepEqual((await list({ kinds: 'oauth2' })).ids, ['kind-08']);
+    });
+
+    await t.test('the script and accountKind() classify every record alike', async () => {
+        const parse = value => {
+            try {
+                const parsed = JSON.parse(value);
+                return parsed && typeof parsed === 'object' ? parsed : undefined;
+            } catch {
+                return undefined;
+            }
+        };
+        const appKindMap = Object.fromEntries(appKinds.split('\n').map(entry => entry.split('=')));
+        const kinds = ['imap', 'sending', 'gmail', 'outlook', 'mailRu', 'delegated', 'oauth2'];
+
+        for (const kind of kinds) {
+            const expected = accounts
+                .filter(
+                    entry =>
+                        accountKind(
+                            { oauth2: parse(entry.oauth2), imap: parse(entry.imap), _authFailureDisabledAt: entry._authFailureDisabled },
+                            appKindMap
+                        ) === kind
+                )
+                .map(entry => entry.account);
+            assert.deepEqual((await list({ kinds: kind })).ids, expected, kind);
+        }
+    });
+
+    await t.test('filters combine with each other, the states and the search, and page the matches', async () => {
+        assert.deepEqual(await list({ domain: 'acme.com', kinds: 'imap,sending' }), { total: 3, ids: ['kind-01', 'kind-05', 'kind-06'] });
+        assert.deepEqual(await list({ domain: 'acme.com', kinds: 'imap,sending', state: 'unset' }), { total: 2, ids: ['kind-05', 'kind-06'] });
+        assert.deepEqual(await list({ domain: 'acme.com', search: 'f@' }), { total: 1, ids: ['kind-06'] });
+        assert.deepEqual(await list({ domain: 'acme.com', skip: 1, count: 2 }), { total: 6, ids: ['kind-02', 'kind-05'] });
+        assert.deepEqual(await list({ kinds: 'gmail', skip: 5 }), { total: 1, ids: [] });
     });
 });

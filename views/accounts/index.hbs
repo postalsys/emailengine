@@ -1,17 +1,23 @@
-{{#> ui/page-header title="Accounts" icon="icon-[tabler--users]" subtitle="Connect and manage email accounts for syncing and sending email." badgeLabel=total badgeVariant="neutral" class="mb-6"}}
+{{#> ui/page-header title="Accounts" icon="icon-[tabler--users]" subtitle="Connect and manage email accounts for syncing and sending email." badgeLabel=countLabel badgeVariant="neutral" class="mb-6"}}
 {{> ui/btn label="Add account" icon="icon-[tabler--user-plus]" overlay="#addAccount"}}
 {{/ui/page-header}}
 
-{{> ui/search-crumb parentHref="/admin/accounts" parentLabel="Accounts" query=query}}
+{{> ui/search-crumb parentHref=clearSearchHref parentLabel="Accounts" query=query}}
+
+{{> ui/filter-bar bar=filterBar}}
 
 {{#if accounts}}
-{{> accounts_table showActions=true}}
+{{> accounts_table showActions=true selectable=true}}
 {{else}}
-{{> ui/list-empty noun="accounts" query=query filterActive=state firstPage=firstPage createOverlay="#addAccount" createLabel="Add your first account" clearHref="/admin/accounts"}}
+{{> ui/list-empty noun="accounts" query=query filterActive=filterBar.active firstPage=firstPage createOverlay="#addAccount" createLabel="Add your first account" clearHref=(when query clearSearchHref filterBar.clearHref)}}
 {{/if}}
 
 {{#> ui/delete-modal id="deleteAccount" noun="account" action="/admin/accounts"}}
 Delete <strong class="delete-target-name"></strong> from EmailEngine? This removes its synced data, account-specific templates, access tokens, and queued emails. Emails on the mail server are not deleted. This action cannot be undone.
 {{/ui/delete-modal}}
+
+{{#if accounts}}
+{{> accounts_bulk}}
+{{/if}}
 
 {{>add_account_modal}}
