@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.91.1](https://github.com/postalsys/emailengine/compare/v2.91.0...v2.91.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* filter a suppression list by reason, source and account ([f94d6a5](https://github.com/postalsys/emailengine/commit/f94d6a59e87f864adb41629cf8bac25a619cda3e))
+* filter a suppression list by reason, source and account ([80b69e9](https://github.com/postalsys/emailengine/commit/80b69e9f6359771c40d0e62fb47497da6f14cc19))
+* filter pills on the other admin lists and bulk delete on access tokens ([31f6d11](https://github.com/postalsys/emailengine/commit/31f6d11fe8e5614a94c8955c285b0c2eafe57f9c))
+* filter pills on the other admin lists and bulk delete on the access tokens list ([781f71c](https://github.com/postalsys/emailengine/commit/781f71ccbc65fdf6bfcaf1aa730c9baabdc41bd4))
+* filter the accounts list and act on selected accounts in bulk ([4ad7cd4](https://github.com/postalsys/emailengine/commit/4ad7cd4e7703049c8a9591e27bfe3c1c427c388c))
+* filter the accounts list by status, type and domain, and act on selected accounts in bulk ([4cc6d3a](https://github.com/postalsys/emailengine/commit/4cc6d3ac9269d39814f6810d64a564ef8448864c))
+
 ## [2.91.0](https://github.com/postalsys/emailengine/compare/v2.90.0...v2.91.0) (2026-11-26)
 
 
