@@ -55,10 +55,14 @@ test('routes-ui.js stays within the size budget', () => {
 // braces). A statement count is blind to all of that and grows with what the cap is about, the
 // handler code. Route option objects and joi schemas are expressions, so a schema is not counted.
 const MODULE_BUDGETS = {
-    // 514: the hosted form's discovery, OAuth2 sign-in page and listed applications live in provider-signin.js
-    'account-routes.js': 514,
+    // 502: the accounts list's filters live in account-listing.js
+    'account-routes.js': 502,
+    // the accounts list's bulk actions (one action on one account per request)
+    'account-bulk.js': 54,
     // helpers of the account pages, moved out of account-routes.js
     'account-edit-form.js': 65,
+    // the accounts list's filter definitions and query
+    'account-listing.js': 18,
     'account-page.js': 49,
     'account-setup.js': 32,
     // 306: the license page moved to license-routes.js
@@ -77,6 +81,8 @@ const MODULE_BUDGETS = {
     'imap-idle-field.js': 11,
     // the license page, moved out of admin-config-routes.js with the subscription check
     'license-routes.js': 107,
+    // the filter pills view model shared by the admin lists
+    'list-filters.js': 46,
     'internals-routes.js': 146,
     'mcp-consent-routes.js': 87,
     'network-config-routes.js': 121,

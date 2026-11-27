@@ -121,6 +121,7 @@ const GOLDEN_ROUTES = [
     'POST /admin/account/tfa/disable',
     'POST /admin/account/tfa/enable',
     'POST /admin/accounts/new',
+    'POST /admin/accounts/{account}/bulk',
     'POST /admin/accounts/{account}/delete',
     'POST /admin/accounts/{account}/edit',
     'POST /admin/accounts/{account}/export',

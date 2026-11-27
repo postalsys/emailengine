@@ -1,0 +1,77 @@
+{{!--
+    ui/filter-bar - the row of filter pills above a resource list. One pill per filter: an unset
+    pill is a dashed "+ Status" button, a set one names its value ("Status: Connected") and carries
+    an x that drops just that filter. Each pill opens a short menu (checkboxes, a text box or an
+    account picker) that applies when it closes; Escape throws the change away (static/js/ui.js).
+    The menus share one GET form, so applying one pill submits the others as they stand, and the
+    Apply button makes it work without JavaScript too.
+      {{> ui/filter-bar bar=filterBar}}
+    Params:
+      bar - the view model built by buildFilterBar() in lib/ui-routes/list-filters.js (required)
+--}}
+<form method="get" action="{{bar.action}}" class="mb-4 flex flex-wrap items-center gap-2" data-filter-bar>
+    {{#each bar.hidden}}
+    <input type="hidden" name="{{name}}" value="{{value}}">
+    {{/each}}
+
+    {{#each bar.pills}}
+    <div class="dropdown relative inline-flex [--auto-close:inside] [--placement:bottom-start]" data-filter-pill>
+        {{#if active}}
+        <div class="join">
+            <button type="button" id="{{id}}" class="dropdown-toggle btn btn-sm btn-soft btn-primary join-item gap-1 font-normal"
+                aria-haspopup="dialog" aria-expanded="false" aria-label="{{label}}: {{summary}}, change filter">
+                <span>{{label}}:</span><span class="max-w-48 truncate font-semibold">{{summary}}</span>
+                <span class="icon-[tabler--chevron-down] size-4"></span>
+            </button>
+            <a href="{{clearHref}}" class="btn btn-sm btn-soft btn-primary join-item px-2" aria-label="Remove the {{label}} filter">
+                <span class="icon-[tabler--x] size-4"></span>
+            </a>
+        </div>
+        {{else}}
+        <button type="button" id="{{id}}" class="dropdown-toggle btn btn-sm btn-outline border-dashed border-base-content/30 text-base-content/80 gap-1 font-normal"
+            aria-haspopup="dialog" aria-expanded="false">
+            <span class="icon-[tabler--plus] size-4"></span>{{label}}
+        </button>
+        {{/if}}
+
+        <div class="dropdown-menu dropdown-open:opacity-100 hidden min-w-60 p-0" role="dialog" aria-labelledby="{{id}}">
+            {{#if isMulti}}
+            <fieldset class="max-h-96 overflow-y-auto p-1">
+                <legend class="sr-only">{{label}}</legend>
+                {{#each options}}
+                <label class="dropdown-item flex cursor-pointer items-center gap-2 py-1.5">
+                    <input type="checkbox" class="checkbox checkbox-sm checkbox-primary" name="{{../name}}" value="{{value}}"{{#if checked}} checked{{/if}}>
+                    <span>{{label}}</span>
+                </label>
+                {{/each}}
+            </fieldset>
+            {{/if}}
+
+            {{#if isText}}
+            <div class="p-3">
+                <label class="label-text" for="{{id}}-input">{{label}}</label>
+                <input type="text" id="{{id}}-input" class="input input-sm" name="{{name}}" value="{{value}}" placeholder="{{placeholder}}" autocomplete="off" spellcheck="false">
+                {{#if hint}}<p class="helper-text">{{hint}}</p>{{/if}}
+            </div>
+            {{/if}}
+
+            {{#if isAccount}}
+            <div class="w-80 max-w-[calc(100vw-2rem)] p-3">
+                {{> ui/account-picker id=(concat id "-account") name=name label=label value=value selected=selected hint=hint placeholder=""}}
+            </div>
+            {{/if}}
+
+            <div class="flex items-center justify-end gap-2 border-t border-base-content/10 p-2">
+                {{#if active}}
+                <a href="{{clearHref}}" class="btn btn-text btn-sm">Clear</a>
+                {{/if}}
+                <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+            </div>
+        </div>
+    </div>
+    {{/each}}
+
+    {{#if bar.active}}
+    <a href="{{bar.clearHref}}" class="link link-animated ms-1 text-sm">Clear filters</a>
+    {{/if}}
+</form>

@@ -54,8 +54,9 @@
         <!-- Topbar -->
         <header class="bg-base-100 border-base-content/20 sticky top-0 z-30 border-b">
             {{!-- flex-wrap: on phones the search form drops to a full-width second row (see its
-                  max-sm classes) instead of disappearing, so the account search and the state
-                  filter stay reachable without a redesign of the bar --}}
+                  max-sm classes) instead of disappearing, so a list search stays reachable.
+                  List filters live on the page itself (ui/filter-bar); the search form carries
+                  them along as searchHidden inputs --}}
             <nav class="navbar flex flex-wrap items-center gap-2 px-6 py-2">
 
                 <button type="button" class="btn btn-text btn-circle btn-sm lg:hidden" aria-haspopup="dialog"
@@ -67,27 +68,6 @@
                 {{#if searchTarget}}
                 <!-- Topbar search -->
                 <form class="flex items-center gap-2 grow max-w-xl max-sm:order-last max-sm:w-full max-sm:max-w-none" method="get" action="{{searchTarget}}">
-
-                    {{#if stateOptions}}
-                    <div class="dropdown relative inline-flex shrink-0">
-                        <button type="button" id="search-state-dropdown" class="dropdown-toggle btn btn-soft btn-sm"
-                            aria-haspopup="menu" aria-expanded="false">
-                            {{#if selectedState}}{{selectedState.label}}{{else}}All{{/if}}
-                            <span class="icon-[tabler--chevron-down] size-4"></span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-40"
-                            role="menu" aria-orientation="vertical" aria-labelledby="search-state-dropdown">
-                            {{#each stateOptions}}
-                            {{#if divider}}
-                            <li><div class="divider my-1"></div></li>
-                            {{else}}
-                            <li><a class="dropdown-item{{#if selected}} dropdown-active{{/if}}" href="{{url}}">{{label}}</a></li>
-                            {{/if}}
-                            {{/each}}
-                        </ul>
-                    </div>
-                    <input type="hidden" name="state" value="{{state}}">
-                    {{/if}}
 
                     {{#each searchHidden}}
                     <input type="hidden" name="{{name}}" value="{{value}}">

@@ -458,7 +458,18 @@ class ConnectionHandler {
                     msg: 'Account update requested'
                 });
 
-                let state = 'connecting';
+                // An update that switched syncing off (the "Disable IMAP" checkbox, the accounts
+                // list's Pause) ends in 'unset', so say that now. A client waiting out a reconnect
+                // backoff does not restart below - reconnect() returns at once - and storing
+                // 'connecting' left the account showing "Connecting" until its next attempt,
+                // minutes later
+                let syncDisabled = false;
+                try {
+                    syncDisabled = await accountObject.connection.isSyncDisabled();
+                } catch (err) {
+                    logger.warn({ msg: 'Failed to check whether syncing is switched off', account, err });
+                }
+                let state = syncDisabled ? 'unset' : 'connecting';
                 await redis.hSetExists(accountObject.connection.getAccountKey(), 'state', state);
                 accountObject.connection.state = state;
                 await emitChangeEvent(logger, account, 'state', state);
