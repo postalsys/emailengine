@@ -117,4 +117,39 @@ test.describe('list filter pills and token bulk delete', () => {
         await expect(page.locator('tbody tr')).toHaveCount(1);
         expect(errors).toEqual([]);
     });
+    test('the reason pill narrows a suppression list', async ({ page, request }) => {
+        const errors = trackConsoleErrors(page);
+        const account = `e2e-sl-${RUN}`;
+        const listId = `e2e-${RUN}`;
+        const created = await request.post('/v1/account', {
+            headers: auth,
+            data: { account, name: 'E2E suppression', email: `sl-${RUN}@example.com`, smtp: { host: '127.0.0.1', port: 9, secure: false } }
+        });
+        expect(created.ok(), `POST /v1/account -> ${created.status()} ${await created.text()}`).toBeTruthy();
+
+        try {
+            for (const [recipient, reason] of [
+                [`one-${RUN}@example.com`, 'unsubscribe'],
+                [`two-${RUN}@example.com`, 'block']
+            ]) {
+                const res = await request.post(`/v1/blocklist/${listId}`, { headers: auth, data: { account, recipient, reason } });
+                expect(res.ok(), `POST /v1/blocklist -> ${res.status()} ${await res.text()}`).toBeTruthy();
+            }
+
+            await page.goto(`${BASE_URL}/admin/suppression-lists/list/${listId}`);
+            await expect(page.locator('tbody tr')).toHaveCount(2);
+
+            await page.locator('#filter-reason').click();
+            await page.locator('input[name="reason"][value="unsubscribe"]').check();
+            await page.locator('h6').first().click();
+            await expect(page).toHaveURL(/reason=unsubscribe/);
+            await expect(page.locator('tbody tr')).toHaveCount(1);
+            await expect(page.getByText(`one-${RUN}@example.com`)).toBeVisible();
+            await expect(page.getByText('1 suppressed address matches the filters')).toBeVisible();
+        } finally {
+            await request.delete(`/v1/account/${account}`, { headers: auth }).catch(() => {});
+        }
+
+        expect(errors).toEqual([]);
+    });
 });

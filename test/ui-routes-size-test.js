@@ -77,7 +77,7 @@ const MODULE_BUDGETS = {
     'dashboard-routes.js': 38,
     'dbsc-routes.js': 6,
     // the filter pills of the gateways, webhook routes, templates, tokens and OAuth2 apps lists
-    'entity-list-filters.js': 20,
+    'entity-list-filters.js': 22,
     'export-routes.js': 49,
     'form-lists.js': 8,
     'gmail-service-auth.js': 12,
@@ -103,7 +103,8 @@ const MODULE_BUDGETS = {
     'sign-in-helpers.js': 16,
     'smtp-test-routes.js': 77,
     'special-use-paths.js': 5,
-    'suppression-list-routes.js': 83,
+    // 87: the entries page's reason, source and account filters
+    'suppression-list-routes.js': 87,
     'tls-config-routes.js': 187,
     // bulk delete on the access tokens list
     'token-bulk.js': 14,
